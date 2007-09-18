@@ -94,11 +94,9 @@ void get_cov_mat(ifstream *cov_file,Matrix &mat){
     for(int j=0; j < 0; j ++)
       (*cov_file) >>   mat(i,j);
 
-  
-
 }
-bool get_camera_params( Config_File *config_file, Vector &camera_pose )
-{
+
+bool get_camera_params( Config_File *config_file, Vector &camera_pose ){
 
  double tmp_pose[6];
 
@@ -136,6 +134,7 @@ bool get_camera_params( Config_File *config_file, Vector &camera_pose )
 
    return true;
 }
+
 //
 // Parse command line arguments into global variables
 //
@@ -348,84 +347,6 @@ static double get_time( void )
 
 
 
-//
-// Remove radial and tangential distortion from the pair of stereo images
-//
-static void undistort_images( const Stereo_Calib  *calib,
-                              const IplImage      *left_image,
-                              const IplImage      *right_image,
-                              IplImage           *&undist_left_image,
-                              IplImage           *&undist_right_image )
-{
-   assert( calib != NULL );
-
-   static Undistort_Data *left_undist_data = NULL;
-   static Undistort_Data *right_undist_data = NULL;
-
-   if( left_undist_data == NULL )
-   {
-      bool interpolate = false;
-      left_undist_data = new Undistort_Data( calib->left_calib,
-                                             left_image,
-                                             interpolate );
-
-      right_undist_data = new Undistort_Data( calib->right_calib,
-                                              right_image,
-                                              interpolate );
-   }
-   
-   undist_left_image = cvCreateImage( cvGetSize(left_image),
-                                      left_image->depth,
-                                      left_image->nChannels );
-   undist_right_image = cvCreateImage( cvGetSize(right_image),
-                                       right_image->depth,
-                                       right_image->nChannels );
-   
-   undistort_image( *left_undist_data, left_image, undist_left_image );
-   undistort_image( *right_undist_data, right_image, undist_right_image );
-} 
-
-
-//
-// Remove radial and tangential distortion from the pair of stereo images
-//
-static void rectify_images( const string &calib_file_name,
-                               IplImage      *left_image,
-			    IplImage      *right_image)/*,
-                              IplImage           *&rect_left_image,
-                              IplImage           *&rect_right_image )
-						       */{
-  // Get OpenCV to load the calibration file.
-   CvCalibFilter opencv_calib;
-   opencv_calib.LoadCameraParams( calib_file_name.c_str( ) );
-
- // Test to see load was successful
-   if( opencv_calib.GetStereoParams( ) == NULL )
-   {
-      stringstream buf;
-      buf << "Unable to load stereo config file: " << calib_file_name;
-      throw buf.str( );
-      std::cerr << "Unable to load stereo config file: " << calib_file_name;
-   }
-   
-   IplImage* images[] = { left_image, right_image };
-   
-   if(opencv_calib.Undistort(images, images) == false){
-     std::cerr << "Image Undistort failed" << std::endl;
-   }
-   if (opencv_calib.Rectify(images, images) == false ){
-     std::cerr << "Image Rectification failed" << std::endl;
-   }
-   cvSaveImage("left.png",left_image);
-   cvSaveImage("right.png",right_image);
-     int maxdisp = 64;
-     IplImage* depthImage = cvCreateImage(cvGetSize(left_image), 8, 1);
-     cvFindStereoCorrespondence( left_image, right_image, CV_DISPARITY_BIRCHFIELD, depthImage, maxdisp);
-     cvNamedWindow("depthImage",1);
-     cvShowImage("depthImage", left_image);
-     cvResizeWindow("depthImage", depthImage->width, depthImage->height);
-     cvWaitKey( 0 );
-} 
 
 void update_bbox (GtsPoint * p, GtsBBox * bb)
 {
@@ -536,43 +457,6 @@ static bool get_stereo_pair( const string  &contents_dir_name,
       IplImage *temp = right_image;
       right_image = grey_right;
       cvReleaseImage( &temp );
-   }
-
- 
-   //
-   // Undistrort images if required
-   // 
-   if( use_undistorted_images )
-   {
-      IplImage *undist_left_image;
-      IplImage *undist_right_image;
-
-      undistort_images( stereo_calib, left_image, right_image,
-                        undist_left_image, undist_right_image );
-
-      cvReleaseImage( &left_image );
-      cvReleaseImage( &right_image );
-      left_image = undist_left_image;
-      right_image = undist_right_image;
-   }
-
- 
-   //
-   // Rect images if required
-   // 
-   if( use_rect_images && !use_undistorted_images)
-   {
-     /*IplImage *rect_left_image;
-      IplImage *rect_right_image;
-     */
-     printf("REctiftiny\n");
-      
-      rectify_images(stereo_calib_file_name, left_image, right_image);
-
-      cvReleaseImage( &left_image );
-      cvReleaseImage( &right_image );
-      /*left_image = undist_left_image;
-	right_image = undist_right_image;*/
    }
 
    //

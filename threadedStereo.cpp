@@ -367,25 +367,9 @@ void save_bbox_frame (GtsBBox * bb, FILE * fptr){
 
 }
 
-
-//
-// Load the next pair of images from the contents file
-//
-static bool get_stereo_pair( const string  &contents_dir_name,
-                             ifstream      &contents_file,
-                             Stereo_Calib *stereo_calib,
-                             IplImage     *&left_image,
-                             IplImage     *&right_image,
-			     IplImage     *&color_image,
-                             unsigned int  &left_frame_id,
-                             unsigned int  &right_frame_id,
-                             string        &left_image_name,
-                             string        &right_image_name, 
-			     double &x,double &y, double &z,
-			     double &r,double &p, double &h,
-			     double &timestamp)
-{
-   static unsigned int frame_id = 0;
+/*
+  
+  static unsigned int frame_id = 0;
    int index;
    //
    // Try to read timestamp and file names
@@ -419,6 +403,24 @@ static bool get_stereo_pair( const string  &contents_dir_name,
    // Load the images (-1 for unchanged grey/rgb)
    //
    string complete_left_name( contents_dir_name+left_image_name );
+*/
+//
+// Load the next pair of images from the contents file
+//
+static bool get_stereo_pair( const string left_image_name,
+                             const string right_image_name,
+			     const string dir,
+                             IplImage     *&left_image,
+                             IplImage     *&right_image,
+			     IplImage     *&color_image)
+                      
+			   
+{
+ 
+    //
+   // Load the images (-1 for unchanged grey/rgb)
+   //
+   string complete_left_name( dir_name+left_image_name );
    left_image  = cvLoadImage( complete_left_name.c_str( ) , -1 );
    if( left_image == NULL )
    {
@@ -426,7 +428,7 @@ static bool get_stereo_pair( const string  &contents_dir_name,
       return false;
    }
 
-   string complete_right_name( contents_dir_name+right_image_name );
+   string complete_right_name( dir_name+right_image_name );
    right_image = cvLoadImage( complete_right_name.c_str( ), -1 );
    if( right_image == NULL )
    {
@@ -435,7 +437,6 @@ static bool get_stereo_pair( const string  &contents_dir_name,
       return false;
    }
 
-   
    //
    // Convert to greyscale. Use cvCvtColor for consistency. Getting cvLoadImage to load
    // the images as greyscale may use different RGB->greyscale weights
@@ -479,11 +480,119 @@ static bool get_stereo_pair( const string  &contents_dir_name,
       right_image = scaled_right;
    }
 
-   left_frame_id = frame_id++;
-   right_frame_id = frame_id++;
+  
    return true;
-}       
-                        
+}   
+    
+typedef struct _auv_images_names{
+  std::string left_name;
+  std::string right_name;
+  std::string mesh_name;
+  std::string dir;
+  Vector *veh_pose;
+  double timestamp;
+  int index;
+}auv_image_names;
+
+class threadedStereo{
+public:
+   threadedStereo(const Config_File config_file, const Config_File dense_config_file,const Stereo_Calib calib , const Vector camera_pose) : calib(calib),camera_pose(camera_pose){
+
+   // Create the stereo feature finder
+   //
+   finder = NULL;
+   finder_dense = NULL;
+   if( use_sift_features || use_surf_features )
+   {
+#ifdef HAVE_LIBKEYPOINT
+      finder = new Stereo_Keypoint_Finder( config_file, 
+                                            use_undistorted_images, 
+                                            image_scale, 
+                                            &calib );
+#endif
+   }
+   else if( use_ncc )
+   {
+      finder = new Stereo_NCC_Corner_Finder( config_file, 
+                                              use_undistorted_images, 
+                                              image_scale, 
+                                              &calib );
+   }
+   else
+   {
+      finder = new Stereo_Corner_Finder( config_file, 
+                                         use_undistorted_images, 
+                                         image_scale, 
+                                         &calib );
+      if(use_dense_feature)
+	finder_dense = new Stereo_Corner_Finder( dense_config_file, 
+                                         use_undistorted_images, 
+                                         image_scale, 
+                                         &calib );
+   }
+   
+  }
+
+  ~threadedStereo(){
+
+    delete finder;
+    if(use_dense_feature)
+    delete finder_dense;
+    
+  }
+ void runP(auv_image_names &name);
+private:
+
+   
+   Matrix *image_coord_covar;
+  Stereo_Feature_Finder *finder;
+  Stereo_Feature_Finder *finder_dense;
+  Stereo_Calib calib;
+ 
+  Vector camera_pose;
+};
+
+
+
+static bool get_auv_image_name( const string  &contents_dir_name,
+                             ifstream      &contents_file,
+			     auv_image_names &name
+			   )
+{
+ 
+   name.veh_pose = new Vector(AUV_NUM_POSE_STATES);
+ 
+  
+ //
+   // Try to read timestamp and file names
+   //
+   bool readok;
+   do{
+    
+     readok =(contents_file >> name.index &&
+	 contents_file >> name.timestamp &&
+         contents_file >> name.left_name &&
+         contents_file >> name.right_name &&
+	      contents_file >>  (*name.veh_pose)[AUV_POSE_INDEX_X] &&
+	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_Y] &&
+	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_Z] &&
+	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PHI] &&
+	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_THETA] &&
+	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PSI] );
+     
+   }
+   while (readok && (name.timestamp < start_time || (skip_counter++ < num_skip)));
+   skip_counter=0;
+   
+   if(!readok || name.timestamp >= stop_time) {
+     // we've reached the end of the contents file
+     return false;
+   }      
+   
+   return true;
+         
+}
+
 
 int main( int argc, char *argv[ ] )
 {
@@ -497,16 +606,17 @@ int main( int argc, char *argv[ ] )
    }
 
 
+    
    //
    // Figure out the directory that contains the config file 
    //
    string config_dir_name;
    int slash_pos = stereo_config_file_name.rfind( "/" );
    if( slash_pos != -1 )
-      config_dir_name = stereo_config_file_name.substr( 0, slash_pos+1 );
-
-
-   //
+     config_dir_name = stereo_config_file_name.substr( 0, slash_pos+1 );
+    
+    
+    //
    // Open the config file
    // Ensure the option to display the feature finding debug images is on.
    //
@@ -543,9 +653,17 @@ int main( int argc, char *argv[ ] )
 
 
    //
+   // Run through the data
+   //
+  ifstream *cov_file;
+  ifstream      contents_file;
+  Vector *camera_pose;
+  Stereo_Calib *calib;
+
+   //
    // Load the stereo camera calibration 
    //
-   Stereo_Calib *calib = NULL;
+   calib = NULL;
    bool have_stereo_calib = false;
    
    if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) )
@@ -573,7 +691,7 @@ int main( int argc, char *argv[ ] )
    //
    // Open the contents file
    //
-   ifstream contents_file( contents_file_name.c_str( ) );
+    contents_file.open( contents_file_name.c_str( ) );
    if( !contents_file )
    {
       cerr << "ERROR - unable to open contents file: " << contents_file_name
@@ -583,7 +701,7 @@ int main( int argc, char *argv[ ] )
    
  
      
-   ifstream *cov_file = new ifstream;
+   cov_file = new ifstream;
    if(have_cov_file){ 
      cov_file->open( cov_file_name);
        if( !cov_file )
@@ -616,56 +734,10 @@ int main( int argc, char *argv[ ] )
      auv_data_tools::makedir(uname); 
      file_name_list.open("mesh/filenames.txt");
    }  
- //
-   // Create the stereo feature finder
    //
-   Stereo_Feature_Finder *finder = NULL;
-   Stereo_Feature_Finder *finder_dense = NULL;
-   if( use_sift_features || use_surf_features )
-   {
-#ifdef HAVE_LIBKEYPOINT
-      finder = new Stereo_Keypoint_Finder( *config_file, 
-                                            use_undistorted_images, 
-                                            image_scale, 
-                                            calib );
-#endif
-   }
-   else if( use_ncc )
-   {
-      finder = new Stereo_NCC_Corner_Finder( *config_file, 
-                                              use_undistorted_images, 
-                                              image_scale, 
-                                              calib );
-   }
-   else
-   {
-      finder = new Stereo_Corner_Finder( *config_file, 
-                                         use_undistorted_images, 
-                                         image_scale, 
-                                         calib );
-      if(use_dense_feature)
-	finder_dense = new Stereo_Corner_Finder( *dense_config_file, 
-                                         use_undistorted_images, 
-                                         image_scale, 
-                                         calib );
-   }
-   
-         
-   //
-   // Run through the data
-   //
-   IplImage *left_frame;
-   IplImage *right_frame;
-   IplImage *color_frame;
-   unsigned int left_frame_id;
-   unsigned int right_frame_id;
-   string left_frame_name;
-   string right_frame_name;
-   unsigned int stereo_pair_count = 0;
+   camera_pose =new Vector(AUV_NUM_POSE_STATES);
+   get_camera_params(config_file,*camera_pose);
    Matrix *image_coord_covar;
-   Vector camera_pose(AUV_NUM_POSE_STATES);
-   get_camera_params(config_file,camera_pose);
-
    if(have_cov_file){
      image_coord_covar = new Matrix(4,4);
      image_coord_covar->clear( );
@@ -675,32 +747,96 @@ int main( int argc, char *argv[ ] )
      config_file->get_value("STEREO_RIGHT_Y_VAR",(*image_coord_covar)(3,3));
    }else
      image_coord_covar=NULL;
-   
-  
-   
-   
+
+   vector<auv_image_names> tasks;
+   unsigned int stereo_pair_count =0;
    while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
-      //
-      // Load the images
-      //
-     double timestamp;
-     printf("Loading images %d\n",stereo_pair_count);
-      double load_start_time = get_time( );
-      Vector veh_pose(AUV_NUM_POSE_STATES);
-      if( !get_stereo_pair( dir_name, contents_file, calib,
+     auv_image_names name;
+     get_auv_image_name( dir_name, contents_file, name);
+     tasks.push_back(name);
+     stereo_pair_count++;
+   }
+   
+   //auv_concurrency<auv_image_names>  con(2,100,&tasks,runP,runC);
+ 
+   threadedStereo ts(*config_file,*dense_config_file,*calib , *camera_pose);
+   
+   for(unsigned int i=0; i < tasks.size(); i++)
+     ts.runP(tasks[i]);
+
+  if(output_uv_file)
+    fclose(uv_fp);
+  if(output_3ds)
+    file_name_list.close();
+  
+  if(fpp)
+    fclose(fpp);
+  if(output_3ds){
+    fpp = fopen("mesh/meshinfo.txt","w");
+    fprintf(fpp,"%d\n",meshNum);
+    fclose(fpp);
+  }
+  if(fpp2)
+    fclose(fpp2);
+  if(conf_ply_file){
+    fclose(conf_ply_file);
+    if(output_pts_cov)
+      fclose(pts_cov_fp);
+    
+    
+    conf_ply_file=fopen("runvrip.sh","w+");
+    //fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -prob\n../myvrip/bin/vripsurf auto.vri out.ply -import_norm\n");
+    fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 100\n../myvrip/bin/vripsurf auto.vri out.ply\n");
+    fchmod(fileno(conf_ply_file),   0777);
+    fclose(conf_ply_file);
+    
+    
+    
+    system("./runvrip.sh");
+  }
+  // 
+  // Clean-up
+  //
+  delete config_file;
+  delete calib;
+
+  //   while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
+
+}
+
+
+
+
+
+
+
+   
+void threadedStereo::runP(auv_image_names &name){
+  IplImage *left_frame;
+  IplImage *right_frame;
+  IplImage *color_frame;
+  unsigned int left_frame_id;
+  unsigned int right_frame_id;
+  string left_frame_name;
+  string right_frame_name;
+  
+  
+  //
+  // Load the images
+  //
+  double timestamp;
+  
+  double load_start_time = get_time( );
+  
+  if( !get_stereo_pair( name.left_name,name.right_name,name.dir,
                             left_frame, right_frame,
-                            color_frame,left_frame_id, right_frame_id,
-                            left_frame_name, right_frame_name,
-			    veh_pose[AUV_POSE_INDEX_X],
-			    veh_pose[AUV_POSE_INDEX_Y],
-			    veh_pose[AUV_POSE_INDEX_Z],
-			    veh_pose[AUV_POSE_INDEX_PHI],
-			    veh_pose[AUV_POSE_INDEX_THETA],
-			    veh_pose[AUV_POSE_INDEX_PSI],
-			    timestamp ))
+			color_frame))
       {
-         break;
-      }                            
+	return;
+      }                          
+ 
+			 
+			    
       double load_end_time = get_time( );
       
       
@@ -751,17 +887,17 @@ int main( int argc, char *argv[ ] )
        
 
 
-	 Matrix pose_cov(4,4);
+	 /*Matrix pose_cov(4,4);
 	 get_cov_mat(cov_file,pose_cov);
-
+	 */
          //cout << "Cov " << pose_cov << "Pose "<< veh_pose<<endl;
 	 list<Stereo_Feature_Estimate> feature_positions;
-         stereo_triangulate( *calib,
+         stereo_triangulate( calib,
                              ref_frame,
                              features,
                              left_frame_id,
                              right_frame_id,
-                             image_coord_covar,
+                             NULL,//image_coord_covar,
                              feature_positions );
 	
 	 //   static ofstream out_file( triangulation_file_name.c_str( ) );
@@ -849,18 +985,18 @@ int main( int argc, char *argv[ ] )
 	   //meshGen->createTexture(color_frame);  
 	   //meshGen->GenTexCoord(surf,&calib->left_calib);
 	 }
-	 GtsMatrix *m=get_sensor_to_world_trans(veh_pose,camera_pose);
+	 GtsMatrix *m=get_sensor_to_world_trans(*name.veh_pose,camera_pose);
 	 gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, m);
 	 gts_matrix_destroy (m);
 	 
 	 if(output_ply_and_conf){
 	   
-	   GtsBBox *bbox=gts_bbox_surface(gts_bbox_class(),surf);
-
+	   //GtsBBox *bbox=gts_bbox_surface(gts_bbox_class(),surf);
+	   /*
 	   fprintf(bboxfp,"%d %f %f %f %f %f %f\n",stereo_pair_count,
 		   bbox->x1,bbox->y1,bbox->z1,
 		   bbox->x2,bbox->y2,bbox->z2); 
-	 
+	   */
 	   
 	   char filename[255];
 	   FILE *fp;
@@ -873,72 +1009,30 @@ int main( int argc, char *argv[ ] )
 		   "bmesh surface-%04d.ply\n"
 		   ,mesh_count-1);
 	 }
-	 /* if(output_3ds){
-	   
-	   
-	 
-	   
-	 
-	   
-	   
-
-	   meshGen->aggSurf.push_back(surf); 
-	   meshNum= meshGen->meshNum;
-	   
-	   
-	   if((meshGen->aggSurf.size() % cfg.meshSplit) == 0){
-	     printf("Creating mesh output\n");
-	     meshGen->createFinalMesh();
-	   }
-	   
-	   fprintf(fpp2,"%f %f %f %f %f %f %f %f %f %f\n",   
-		   timestamp,
-		   veh_pose[AUV_POSE_INDEX_X],
-		   veh_pose[AUV_POSE_INDEX_Y],
-		   veh_pose[AUV_POSE_INDEX_Z],
-		   veh_pose[AUV_POSE_INDEX_PHI],
-		   veh_pose[AUV_POSE_INDEX_THETA],
-		   fmod(veh_pose[AUV_POSE_INDEX_PSI],(M_PI)),
-		   0.0,0.0,0.0);
-	   
-	   fprintf(fpp,"%f %f %f %f %f %f %f\n",   
-		   timestamp,
-		   veh_pose[AUV_POSE_INDEX_X],
-		   veh_pose[AUV_POSE_INDEX_Y],
-		   veh_pose[AUV_POSE_INDEX_Z],
-		   veh_pose[AUV_POSE_INDEX_PHI],
-		   veh_pose[AUV_POSE_INDEX_THETA],
-		   fmod(veh_pose[AUV_POSE_INDEX_PSI],(M_PI))
-		   );
-	 }
-	 */
-  
-	
-   
-      //
-      // Display useful info 
-      //
-      cout << endl;
-      cout << "Left Image : " << left_frame_name << endl;
-      cout << "Right Image: " << right_frame_name << endl;
-      cout << endl;
-      cout << "Number of features found: " << features.size( ) << endl;
-      cout << endl;
-      cout << "Image loading time     : " << load_end_time-load_start_time << endl;
+	 //
+	 // Display useful info 
+	 //
+	 cout << endl;
+	 cout << "Left Image : " << left_frame_name << endl;
+	 cout << "Right Image: " << right_frame_name << endl;
+	 cout << endl;
+	 cout << "Number of features found: " << features.size( ) << endl;
+	 cout << endl;
+	 cout << "Image loading time     : " << load_end_time-load_start_time << endl;
       cout << "Feature finding time   : " << find_end_time-find_start_time << endl;
       cout << endl;
       cout << "------------------------------------" << endl;
       cout << endl;
-
-
+      
+      
       //
       // Pause between frames if requested.
       //
       if( display_debug_images && pause_after_each_frame )
-         cvWaitKey( 0 );
+	cvWaitKey( 0 );
       else if( display_debug_images )
-         cvWaitKey( 100 );
-                  
+	cvWaitKey( 100 );
+      
       
       //
       // Clean-up
@@ -953,56 +1047,18 @@ int main( int argc, char *argv[ ] )
       {
          delete *fitr;
       }     
-
-      stereo_pair_count++;
-   }
-  
-
-   /*if(meshGen->aggSurf.size() >= 0){
-	   printf("Creating mesh output\n");
-	   meshGen->createFinalMesh();
-	   }*/
-
-   if(output_uv_file)
-     fclose(uv_fp);
-   if(output_3ds)
-     file_name_list.close();
-   
-   if(fpp)
-     fclose(fpp);
-   if(output_3ds){
-     fpp = fopen("mesh/meshinfo.txt","w");
-     fprintf(fpp,"%d\n",meshNum);
-     fclose(fpp);
-   }
-   if(fpp2)
-     fclose(fpp2);
-   if(conf_ply_file){
-    fclose(conf_ply_file);
-    if(output_pts_cov)
-      fclose(pts_cov_fp);
-   
- 
-    conf_ply_file=fopen("runvrip.sh","w+");
-    //fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -prob\n../myvrip/bin/vripsurf auto.vri out.ply -import_norm\n");
-fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 100\n../myvrip/bin/vripsurf auto.vri out.ply\n");
-    fchmod(fileno(conf_ply_file),   0777);
- fclose(conf_ply_file);
-   
-    
-    
-    system("./runvrip.sh");
-   }
-   // 
-   // Clean-up
-   //
-   delete config_file;
-   delete calib;
-   delete finder;
-   if(use_dense_feature)
-     delete finder_dense;
-   return 0;
+      
+      
 }
+
+
+
+void runC(auv_image_names &name){
+ 
+  printf("%s Written Out to  %s\n",name.left_name.c_str(),name.mesh_name.c_str());
+}
+
+ 
 
 void print_uv_3dpts( list<Feature*>          &features,
 		    list<Stereo_Feature_Estimate> &feature_positions,

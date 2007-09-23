@@ -32,6 +32,10 @@
 #include "auv_stereo_keypoint_finder.hpp"
 #include "auv_mesh.hpp"
 #include "auv_mesh_io.hpp"
+#define WITH_LOGGING
+#include "auv_concurrency.hpp"
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 
 using namespace std;
 using namespace libplankton;
@@ -183,7 +187,7 @@ static bool parse_args( int argc, char *argv[ ] )
          strcpy(cov_file_name, argv[i+1] );
 	 have_cov_file=true;
 	 i+=2;
-      }
+      }  
       else if( strcmp( argv[i], "-n" ) == 0 )
       {
          if( i == argc-1 ) return false;
@@ -297,14 +301,13 @@ static bool parse_args( int argc, char *argv[ ] )
       return false;
    }
 #endif
-
+ 
    return (have_contents_file_name && have_stereo_config_file_name);
 }
-
-
+   
 //
 // Display information on how to use this program
-//
+// 
 static void print_usage( void )
 {
    cout << "USAGE:" << endl;
@@ -483,9 +486,8 @@ static bool get_stereo_pair( const string left_image_name,
   
    return true;
 }   
-    
 typedef struct _auv_images_names{
-  std::string left_name;
+    std::string left_name;
   std::string right_name;
   std::string mesh_name;
   std::string dir;
@@ -494,7 +496,8 @@ typedef struct _auv_images_names{
   int index;
 }auv_image_names;
 
-class threadedStereo{
+
+typedef class threadedStereo{
 public:
    threadedStereo(const Config_File config_file, const Config_File dense_config_file,const Stereo_Calib calib , const Vector camera_pose) : calib(calib),camera_pose(camera_pose){
 
@@ -503,7 +506,7 @@ public:
    finder = NULL;
    finder_dense = NULL;
    if( use_sift_features || use_surf_features )
-   {
+     {
 #ifdef HAVE_LIBKEYPOINT
       finder = new Stereo_Keypoint_Finder( config_file, 
                                             use_undistorted_images, 
@@ -520,6 +523,8 @@ public:
    }
    else
    {
+
+      
       finder = new Stereo_Corner_Finder( config_file, 
                                          use_undistorted_images, 
                                          image_scale, 
@@ -550,7 +555,76 @@ private:
   Stereo_Calib calib;
  
   Vector camera_pose;
+}threadedStereo;
+
+
+// data structs
+
+
+// PC model related 
+
+typedef auv_image_names  Slice; // row index of matrix srcA...
+
+// convenient typedefs...
+typedef std::vector<Slice> Slices; 
+typedef SPACE_YIN::Pool<Slice> SlicePool;
+typedef SPACE_YIN::Consumer<Slice, SlicePool > SliceConsumer;
+
+
+// forward declare
+struct Convoluter; // subclass of SliceConsumer
+struct Scheduler;  // subclass of SliceProducer
+
+typedef SPACE_YIN::Consuming<Slice, SlicePool, Convoluter > Convolute;
+struct Convoluter : public SliceConsumer
+{
+  //InNOut* ino;
+  threadedStereo *ts;
+
+	Convoluter( SlicePool& slices, 
+		SPACE_YIN::Latch& lh) 
+	  : SliceConsumer(slices, lh) {}
+
+protected:
+	void consume(Slice slice_i) 
+	{
+	  printf("Slice %s\n",slice_i.left_name.c_str());
+	  ts->runP(slice_i);
+	} 
+	bool cancel() { 
+		return !channel_.channel_.size(); // may stop if no more tasks
+	} 
+public:
+  void initThread(const Config_File config_file, const Config_File dense_config_file,const Stereo_Calib calib , const Vector camera_pose){
+    ts= new threadedStereo(config_file,dense_config_file,calib , camera_pose);
+  }
 };
+
+
+// consumer pool test
+struct Convolution : public Convolute
+{
+  //InNOut* ino;
+
+
+  Convolution(SlicePool& channel, size_t nc ,const Config_File config_file,
+	      const Config_File dense_config_file,const Stereo_Calib calib,Vector camera_pose)
+    : Convolute (channel, nc,true,false,true),config_file(&config_file),dense_config_file(&dense_config_file), calib(&calib), camera_pose(&camera_pose) {} 
+
+	void consumerModelCreated(Convoluter& consumer) 
+	{
+	  consumer.initThread(*config_file,*dense_config_file,
+			      *calib,*camera_pose);
+	}
+  const Config_File *config_file;
+ const Config_File *dense_config_file; 
+ const Stereo_Calib *calib;
+ const Vector *camera_pose;
+
+};
+
+
+
 
 
 
@@ -748,7 +822,7 @@ int main( int argc, char *argv[ ] )
    }else
      image_coord_covar=NULL;
 
-   vector<auv_image_names> tasks;
+   Slices tasks;
    unsigned int stereo_pair_count =0;
    while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
      auv_image_names name;
@@ -757,13 +831,39 @@ int main( int argc, char *argv[ ] )
      stereo_pair_count++;
    }
    
-   //auv_concurrency<auv_image_names>  con(2,100,&tasks,runP,runC);
- 
-   threadedStereo ts(*config_file,*dense_config_file,*calib , *camera_pose);
+   //
+   //boost::function<void ()> init = boost::bind(&(threadedStereo::threadedStereo),*config_file,*dense_config_file,*calib , *camera_pose);
+boost::xtime xt, xt2;
+
+long time;
+   { // consumer pool model...
+      
+  
+     unsigned int nConsumers = 2;
+     threadedStereo *ts= new threadedStereo(*config_file,*dense_config_file,*calib , *camera_pose);
+     for(int i=0; i < tasks.size(); i++)
+       ts->runP(tasks[i]);
+     	boost::xtime_get(&xt, boost::TIME_UTC);
+     SlicePool pool(tasks);
+     //   Convolution convolution(pool,tasks.size() > nConsumers ? nConsumers : tasks.size(),*config_file,*dense_config_file,*calib , *camera_pose);
+     // boost::thread thrd(convolution);
+     //thrd.join();
+     
+     boost::xtime_get(&xt2, boost::TIME_UTC);
+     time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
+     
+    
+     
+     printf("max %d consumer pool: %ld msec\n", nConsumers, time);
+   }
+   exit(0);
+   
+   
+   
    
    for(unsigned int i=0; i < tasks.size(); i++)
-     ts.runP(tasks[i]);
-
+   
+   
   if(output_uv_file)
     fclose(uv_fp);
   if(output_3ds)
@@ -815,8 +915,8 @@ void threadedStereo::runP(auv_image_names &name){
   IplImage *left_frame;
   IplImage *right_frame;
   IplImage *color_frame;
-  unsigned int left_frame_id;
-  unsigned int right_frame_id;
+  unsigned int left_frame_id=1;
+  unsigned int right_frame_id=1;
   string left_frame_name;
   string right_frame_name;
   
@@ -832,18 +932,14 @@ void threadedStereo::runP(auv_image_names &name){
                             left_frame, right_frame,
 			color_frame))
       {
+	printf("Failed to get pair\n");
 	return;
       }                          
  
 			 
-			    
+ 
       double load_end_time = get_time( );
-      
-      
-    
-
-      if(output_3ds)
-	file_name_list << dir_name+left_frame_name  << " " << dir_name+right_frame_name << endl;
+     cout  << dir_name+name.left_name  << " " << dir_name+name.right_name << endl;
 
       //
       // Find the features
@@ -874,15 +970,12 @@ void threadedStereo::runP(auv_image_names &name){
       // Triangulate the features if requested
       //
 
-	if(!fpp2 && output_3ds)
+      /*	if(!fpp2 && output_3ds)
 	  fpp2=fopen("mesh/vehpath.txt","w");
 	if(!fpp && output_3ds)	
 	  fpp=fopen("mesh/campath.txt","w");
+      */
 
-	
-         cout << "Saving triangulation to file: "
-              << triangulation_file_name << endl;
-         
          Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
        
 
@@ -909,7 +1002,7 @@ void threadedStereo::runP(auv_image_names &name){
 	  static Vector stereo1_nav( AUV_NUM_POSE_STATES );
 	 // Estimates of the stereo poses in the navigation frame
 
-
+	  printf("Stereo Pts %d\n",feature_positions.size());
 	 list<Stereo_Feature_Estimate>::iterator litr;
 	 GPtrArray *localV = g_ptr_array_new ();
 	 GtsRange r;
@@ -979,35 +1072,36 @@ void threadedStereo::runP(auv_image_names &name){
 	   }
 	 }
 	 
-
-	 GtsSurface *surf= auv_mesh_pts(localV,2.0,0); 
-	 if(output_3ds){
-	   //meshGen->createTexture(color_frame);  
+	 if(localV->len){
+	   GtsSurface *surf= auv_mesh_pts(localV,2.0,0); 
+	   if(output_3ds){
+	     //meshGen->createTexture(color_frame);  
 	   //meshGen->GenTexCoord(surf,&calib->left_calib);
-	 }
-	 GtsMatrix *m=get_sensor_to_world_trans(*name.veh_pose,camera_pose);
-	 gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, m);
-	 gts_matrix_destroy (m);
-	 
-	 if(output_ply_and_conf){
+	   }
+	   GtsMatrix *m=get_sensor_to_world_trans(*name.veh_pose,camera_pose);
+	   gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, m);
+	   gts_matrix_destroy (m);
 	   
-	   //GtsBBox *bbox=gts_bbox_surface(gts_bbox_class(),surf);
-	   /*
-	   fprintf(bboxfp,"%d %f %f %f %f %f %f\n",stereo_pair_count,
+	   if(output_ply_and_conf){
+	     
+	     //GtsBBox *bbox=gts_bbox_surface(gts_bbox_class(),surf);
+	     /*
+	       fprintf(bboxfp,"%d %f %f %f %f %f %f\n",stereo_pair_count,
 		   bbox->x1,bbox->y1,bbox->z1,
 		   bbox->x2,bbox->y2,bbox->z2); 
-	   */
-	   
-	   char filename[255];
-	   FILE *fp;
-	   sprintf(filename,"mesh-agg/surface-%04d.ply",
-		   mesh_count++);
-	   fp = fopen(filename, "w" );
-	   auv_write_ply(surf, fp,have_cov_file,"test");
-	   fclose(fp);
-	   fprintf(conf_ply_file,
-		   "bmesh surface-%04d.ply\n"
-		   ,mesh_count-1);
+	     */
+	     
+	     char filename[255];
+	     FILE *fp;
+	     sprintf(filename,"mesh-agg/surface-%04d.ply",
+		     mesh_count++);
+	     fp = fopen(filename, "w" );
+	     auv_write_ply(surf, fp,have_cov_file,"test");
+	     fclose(fp);
+	     fprintf(conf_ply_file,
+		     "bmesh surface-%04d.ply\n"
+		     ,mesh_count-1);
+	   }
 	 }
 	 //
 	 // Display useful info 

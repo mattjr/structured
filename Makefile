@@ -23,7 +23,6 @@ ARLIST = ranlib
 ifeq ($(strip $(PLATFORM)),darwin-gpp)
 INC_FLAGS = -I/sw/include
 LIBS= -L/sw/lib  -framework osg  -framework osgDB  -framework OpenThreads -framework osgUtil -framework vecLib -L/usr/local/lib/ -lkeypoint -framework AGL -framework OpenGL -framework osgGA -framework Carbon 
-else
 INC_FLAGS= -I/usr/local/include/
 LIBS=-losg -losgDB -losgGA -losgViewer -losgText -lOpenThreads -lGL -lGLU  -losgUtil
 endif
@@ -32,7 +31,7 @@ endif
 
 INC_FLAGS   += `pkg-config --cflags opencv` `pkg-config --cflags libpng` `pkg-config --cflags glib-2.0` -I/usr/local/include/libflounder -I/usr/local/include/libplankton -I/usr/local/include/libadt  -I/usr/local/include/libsnapper
 
-LIBS  += `pkg-config --libs opencv`  `pkg-config --libs libpng` `pkg-config --libs glib-2.0`   -lgts -l3ds -l3dObjects -lplankton -lsnapper -L. -ladt
+LIBS  += `pkg-config --libs opencv`  `pkg-config --libs libpng` `pkg-config --libs glib-2.0`   -lgts -l3ds -l3dObjects -lplankton -lsnapper -L. -ladt -lboost_thread
 
 
 CC_SRCS     =	OSGExport.cpp\

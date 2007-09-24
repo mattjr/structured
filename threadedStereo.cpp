@@ -446,6 +446,7 @@ static bool get_stereo_pair( const string left_image_name,
    //
    if( left_image->nChannels == 3 )
    {
+     
      color_image=left_image;
       IplImage *grey_left  = cvCreateImage( cvGetSize(left_image) , IPL_DEPTH_8U, 1 );
       cvCvtColor( left_image , grey_left , CV_BGR2GRAY );
@@ -456,6 +457,7 @@ static bool get_stereo_pair( const string left_image_name,
 
    if( left_image->nChannels == 3 )
    {
+     color_image=right_image;
       IplImage *grey_right = cvCreateImage( cvGetSize(right_image), IPL_DEPTH_8U, 1 );
       cvCvtColor( right_image, grey_right, CV_BGR2GRAY );
       IplImage *temp = right_image;
@@ -499,41 +501,54 @@ typedef struct _auv_images_names{
 
 typedef class threadedStereo{
 public:
-   threadedStereo(const Config_File config_file, const Config_File dense_config_file,const Stereo_Calib calib , const Vector camera_pose) : calib(calib),camera_pose(camera_pose){
-
+  threadedStereo(const string config_file_name, const string dense_config_file_name ){
+     frame_id=0;
    // Create the stereo feature finder
    //
-   finder = NULL;
-   finder_dense = NULL;
-   if( use_sift_features || use_surf_features )
-     {
+     config_file= new Config_File(config_file_name.c_str());
+     dense_config_file= new Config_File(dense_config_file_name.c_str());
+     
+     if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) ){
+       stereo_calib_file_name = stereo_calib_file_name;
+       try {
+	   calib = new Stereo_Calib( stereo_calib_file_name );
+       }
+       catch( string error ) {
+	 cerr << "ERROR - " << error << endl;
+	 exit( 1 );
+       }
+
+     }
+     finder = NULL;
+     finder_dense = NULL;
+     if( use_sift_features || use_surf_features ){
 #ifdef HAVE_LIBKEYPOINT
-      finder = new Stereo_Keypoint_Finder( config_file, 
+      finder = new Stereo_Keypoint_Finder( *config_file, 
                                             use_undistorted_images, 
                                             image_scale, 
-                                            &calib );
+                                            calib );
 #endif
    }
    else if( use_ncc )
    {
-      finder = new Stereo_NCC_Corner_Finder( config_file, 
+      finder = new Stereo_NCC_Corner_Finder(*config_file, 
                                               use_undistorted_images, 
                                               image_scale, 
-                                              &calib );
+                                              calib );
    }
    else
    {
 
-      
-      finder = new Stereo_Corner_Finder( config_file, 
+     
+      finder = new Stereo_Corner_Finder( *config_file, 
                                          use_undistorted_images, 
                                          image_scale, 
-                                         &calib );
+                                         calib );
       if(use_dense_feature)
-	finder_dense = new Stereo_Corner_Finder( dense_config_file, 
+	finder_dense = new Stereo_Corner_Finder(* dense_config_file, 
                                          use_undistorted_images, 
                                          image_scale, 
-                                         &calib );
+                                         calib );
    }
    
   }
@@ -548,13 +563,15 @@ public:
  void runP(auv_image_names &name);
 private:
 
-   
-   Matrix *image_coord_covar;
+  int frame_id;
+  Matrix *image_coord_covar;
   Stereo_Feature_Finder *finder;
   Stereo_Feature_Finder *finder_dense;
-  Stereo_Calib calib;
- 
-  Vector camera_pose;
+
+  Stereo_Calib *calib;
+  Config_File *config_file; 
+  Config_File *dense_config_file; 
+  Vector *camera_pose;
 }threadedStereo;
 
 
@@ -595,8 +612,8 @@ protected:
 		return !channel_.channel_.size(); // may stop if no more tasks
 	} 
 public:
-  void initThread(const Config_File config_file, const Config_File dense_config_file,const Stereo_Calib calib , const Vector camera_pose){
-    ts= new threadedStereo(config_file,dense_config_file,calib , camera_pose);
+  void initThread(const string config_file_name,const string dense_config_file_name){
+    ts= new threadedStereo(config_file_name,dense_config_file_name);
   }
 };
 
@@ -607,20 +624,15 @@ struct Convolution : public Convolute
   //InNOut* ino;
 
 
-  Convolution(SlicePool& channel, size_t nc ,const Config_File config_file,
-	      const Config_File dense_config_file,const Stereo_Calib calib,Vector camera_pose)
-    : Convolute (channel, nc,true,false,true),config_file(&config_file),dense_config_file(&dense_config_file), calib(&calib), camera_pose(&camera_pose) {} 
+  Convolution(SlicePool& channel, size_t nc ,const string config_file_name,const string dense_config_file_name)
+    : Convolute (channel, nc,true,false,true),config_file_name(config_file_name),dense_config_file_name(dense_config_file_name) {} 
 
 	void consumerModelCreated(Convoluter& consumer) 
 	{
-	  consumer.initThread(*config_file,*dense_config_file,
-			      *calib,*camera_pose);
+	  consumer.initThread(config_file_name,dense_config_file_name);
+			   
 	}
-  const Config_File *config_file;
- const Config_File *dense_config_file; 
- const Stereo_Calib *calib;
- const Vector *camera_pose;
-
+	  const string config_file_name, dense_config_file_name;
 };
 
 
@@ -715,7 +727,7 @@ int main( int argc, char *argv[ ] )
       cerr << "ERROR - " << error << endl;
       exit( 1 );
    }
-
+    
    config_file->set_value( "SKF_SHOW_DEBUG_IMAGES"    , display_debug_images );
    config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"    , display_debug_images );
    config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
@@ -838,22 +850,28 @@ boost::xtime xt, xt2;
 long time;
    { // consumer pool model...
       
-  
+     boost::xtime_get(&xt, boost::TIME_UTC);
      unsigned int nConsumers = 2;
-     threadedStereo *ts= new threadedStereo(*config_file,*dense_config_file,*calib , *camera_pose);
+     threadedStereo *ts= new threadedStereo(stereo_config_file_name,"semi-dense.cfg");
      for(unsigned int i=0; i < tasks.size(); i++)
        ts->runP(tasks[i]);
-     	boost::xtime_get(&xt, boost::TIME_UTC);
-     SlicePool pool(tasks);
-     //   Convolution convolution(pool,tasks.size() > nConsumers ? nConsumers : tasks.size(),*config_file,*dense_config_file,*calib , *camera_pose);
-     // boost::thread thrd(convolution);
-     //thrd.join();
-     
+
      boost::xtime_get(&xt2, boost::TIME_UTC);
      time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
      
     
      double secs=time/1000.0;
+     printf("single thread: %.2f sec\n", secs);
+
+     	boost::xtime_get(&xt, boost::TIME_UTC);
+     SlicePool pool(tasks);
+     Convolution convolution(pool,tasks.size() > nConsumers ? nConsumers : tasks.size(),stereo_config_file_name,"semi-dense.cfg");
+      boost::thread thrd(convolution);
+     thrd.join();
+     
+     boost::xtime_get(&xt2, boost::TIME_UTC);
+     time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000; 
+      secs=time/1000.0;
      printf("max %d consumer pool: %.2f sec\n", nConsumers, secs);
    }
    exit(0);
@@ -915,8 +933,8 @@ void threadedStereo::runP(auv_image_names &name){
   IplImage *left_frame;
   IplImage *right_frame;
   IplImage *color_frame;
-  unsigned int left_frame_id=1;
-  unsigned int right_frame_id=1;
+  unsigned int left_frame_id=frame_id++;
+  unsigned int right_frame_id=frame_id++;
   string left_frame_name;
   string right_frame_name;
   
@@ -945,6 +963,7 @@ void threadedStereo::runP(auv_image_names &name){
       // Find the features
       //
       cout << "Finding features..." << endl;
+      
       double find_start_time = get_time( );
       list<Feature *> features;
       finder->find( left_frame,
@@ -985,7 +1004,7 @@ void threadedStereo::runP(auv_image_names &name){
 	 */
          //cout << "Cov " << pose_cov << "Pose "<< veh_pose<<endl;
 	 list<Stereo_Feature_Estimate> feature_positions;
-         stereo_triangulate( calib,
+         stereo_triangulate( *calib,
                              ref_frame,
                              features,
                              left_frame_id,
@@ -1078,7 +1097,8 @@ void threadedStereo::runP(auv_image_names &name){
 	     //meshGen->createTexture(color_frame);  
 	   //meshGen->GenTexCoord(surf,&calib->left_calib);
 	   }
-	   GtsMatrix *m=get_sensor_to_world_trans(*name.veh_pose,camera_pose);
+	   camera_pose =new Vector(AUV_NUM_POSE_STATES);
+	   GtsMatrix *m=get_sensor_to_world_trans(*name.veh_pose,*camera_pose);
 	   gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, m);
 	   gts_matrix_destroy (m);
 	   

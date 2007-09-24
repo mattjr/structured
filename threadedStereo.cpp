@@ -925,7 +925,7 @@ void threadedStereo::runP(auv_image_names &name){
   //
   // Load the images
   //
-  double load_start_time = get_time( );
+  
   
   if( !get_stereo_pair( name.left_name,name.right_name,name.dir,
                             left_frame, right_frame,
@@ -937,14 +937,13 @@ void threadedStereo::runP(auv_image_names &name){
  
 			 
  
-      double load_end_time = get_time( );
+      
 
 
       //
       // Find the features
       //
       
-      double find_start_time = get_time( );
       list<Feature *> features;
       finder->find( left_frame,
                     right_frame,
@@ -962,9 +961,7 @@ void threadedStereo::runP(auv_image_names &name){
                     features,
                     feature_depth_guess );
       
-      double find_end_time = get_time( );
-      
-      
+            
       //
       // Triangulate the features if requested
       //

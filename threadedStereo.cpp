@@ -67,8 +67,7 @@ static bool use_surf_features = false;
 static bool use_ncc = false;
 static int skip_counter=0;
 static int num_skip=0;
-static bool triangulate = false;
-static string triangulation_file_name;
+
 static bool have_cov_file=false;
 static string stereo_calib_file_name;
 static bool use_rect_images=false;
@@ -76,7 +75,7 @@ static FILE *uv_fp;
 static ofstream file_name_list;
 static FILE *bboxfp;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
-
+static int num_threads=1;
 static FILE *fpp,*fpp2;
 static bool use_dense_feature=false;
 //StereoMatching* stereo;
@@ -181,6 +180,12 @@ static bool parse_args( int argc, char *argv[ ] )
          skip_counter=num_skip;
 	 i+=2;
       }
+      else if( strcmp( argv[i], "-t" ) == 0 )
+      {
+         if( i == argc-1 ) return false;
+         num_threads = atoi( argv[i+1] );
+	 i+=2;
+      }
       else if( strcmp( argv[i], "--cov" ) == 0 )
       {
          if( i == argc-1 ) return false;
@@ -193,13 +198,6 @@ static bool parse_args( int argc, char *argv[ ] )
          if( i == argc-1 ) return false;
          have_max_frame_count = true;
          max_frame_count = atoi( argv[i+1] );
-         i+=2;
-      }
-      else if( strcmp( argv[i], "-t" ) == 0 )
-      {
-         if( i == argc-1 ) return false;
-         triangulate = true;
-         triangulation_file_name = argv[i+1];
          i+=2;
       }
       else if( strcmp( argv[i], "-u" ) == 0 )
@@ -318,7 +316,7 @@ static void print_usage( void )
    cout << "   -m <max_feature_count>  Set the maximum number of features to be found." << endl;
    cout << "   -n <max_frame_count>    Set the maximum number of frames to be processed." << endl;
    cout << "   -z <feature_depth>      Set an estimate for the feature depth relative to cameras." << endl;
-   cout << "   -t <output_file>        Save triangulate feature positions to a file" << endl;
+   cout << "   -t <num_threads>       Number of threads to run" << endl;
  cout << "   --cov <file>               Input covar file." << endl; 
   cout << "   -c                      Use the normalised cross correlation feature descriptor" << endl;
    cout << "   --sift                  Find SIFT features." << endl;
@@ -370,43 +368,7 @@ void save_bbox_frame (GtsBBox * bb, FILE * fptr){
 
 }
 
-/*
-  
-  static unsigned int frame_id = 0;
-   int index;
-   //
-   // Try to read timestamp and file names
-   //
-   bool readok;
-   do{
-    
-     readok =(contents_file >> index &&
-	 contents_file >> timestamp &&
-         contents_file >> left_image_name &&
-         contents_file >> right_image_name &&
-	 contents_file >> x &&
-	 contents_file >> y &&
-	 contents_file >> z &&
-	 contents_file >> r &&
-	 contents_file >> p &&
-	      contents_file >> h );
-     
-   }
-   while (readok && (timestamp < start_time || (skip_counter++ < num_skip)));
-   skip_counter=0;
-   
-   if(!readok || timestamp >= stop_time) {
-     // we've reached the end of the contents file
-     return false;
-   }      
-   
-   
-     
-   //
-   // Load the images (-1 for unchanged grey/rgb)
-   //
-   string complete_left_name( contents_dir_name+left_image_name );
-*/
+
 //
 // Load the next pair of images from the contents file
 //
@@ -519,6 +481,14 @@ public:
        }
 
      }
+     config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
+     config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
+     config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
+     
+     if( use_sift_features )
+       config_file->set_value( "SKF_KEYPOINT_TYPE", "SIFT" );
+     else if( use_surf_features )   
+       config_file->set_value( "SKF_KEYPOINT_TYPE", "SURF" );
      finder = NULL;
      finder_dense = NULL;
      if( use_sift_features || use_surf_features ){
@@ -728,19 +698,12 @@ int main( int argc, char *argv[ ] )
       exit( 1 );
    }
     
-   config_file->set_value( "SKF_SHOW_DEBUG_IMAGES"    , display_debug_images );
-   config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"    , display_debug_images );
-   config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
-
-   if( use_sift_features )
-      config_file->set_value( "SKF_KEYPOINT_TYPE", "SIFT" );
-   else if( use_surf_features )   
-      config_file->set_value( "SKF_KEYPOINT_TYPE", "SURF" );
+ 
 
 
    //
    // Run through the data
-   //
+   //conf
   ifstream *cov_file;
   ifstream      contents_file;
   Vector *camera_pose;
@@ -845,43 +808,39 @@ int main( int argc, char *argv[ ] )
    
    //
    //boost::function<void ()> init = boost::bind(&(threadedStereo::threadedStereo),*config_file,*dense_config_file,*calib , *camera_pose);
-boost::xtime xt, xt2;
-
-long time;
-   { // consumer pool model...
-      
+   boost::xtime xt, xt2;
+   
+   long time;
+   // consumer pool model...
+   if(num_threads == 1){
+     
      boost::xtime_get(&xt, boost::TIME_UTC);
-     unsigned int nConsumers = 2;
      threadedStereo *ts= new threadedStereo(stereo_config_file_name,"semi-dense.cfg");
      for(unsigned int i=0; i < tasks.size(); i++)
        ts->runP(tasks[i]);
-
+     
      boost::xtime_get(&xt2, boost::TIME_UTC);
      time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
      
-    
+     
      double secs=time/1000.0;
      printf("single thread: %.2f sec\n", secs);
-
-     	boost::xtime_get(&xt, boost::TIME_UTC);
+   }
+   else{
+     display_debug_images = false; 
+     boost::xtime_get(&xt, boost::TIME_UTC);
      SlicePool pool(tasks);
-     Convolution convolution(pool,tasks.size() > nConsumers ? nConsumers : tasks.size(),stereo_config_file_name,"semi-dense.cfg");
-      boost::thread thrd(convolution);
+     Convolution convolution(pool,(int)tasks.size() > num_threads ? num_threads : tasks.size(),stereo_config_file_name,"semi-dense.cfg");
+     boost::thread thrd(convolution);
      thrd.join();
      
      boost::xtime_get(&xt2, boost::TIME_UTC);
      time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000; 
-      secs=time/1000.0;
-     printf("max %d consumer pool: %.2f sec\n", nConsumers, secs);
+     double secs=time/1000.0;
+     printf("max %d consumer pool: %.2f sec\n", num_threads, secs);
    }
+   
    exit(0);
-   
-   
-   
-   
-   for(unsigned int i=0; i < tasks.size(); i++)
-   
-   
   if(output_uv_file)
     fclose(uv_fp);
   if(output_3ds)

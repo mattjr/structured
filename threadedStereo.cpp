@@ -32,7 +32,7 @@
 #include "auv_stereo_keypoint_finder.hpp"
 #include "auv_mesh.hpp"
 #include "auv_mesh_io.hpp"
-#define WITH_LOGGING
+//#define WITH_LOGGING
 #include "auv_concurrency.hpp"
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -85,7 +85,7 @@ static bool output_ply_and_conf =false;
 static FILE *conf_ply_file;
 static bool output_3ds=false;
 static char cov_file_name[255];
-static 
+
 void print_uv_3dpts( list<Feature*>          &features,
 		    list<Stereo_Feature_Estimate> &feature_positions,
 		    unsigned int                   left_frame_id,
@@ -575,7 +575,6 @@ struct Convoluter : public SliceConsumer
 protected:
 	void consume(Slice slice_i) 
 	{
-	  printf("Slice %s\n",slice_i.left_name.c_str());
 	  ts->runP(slice_i);
 	} 
 	bool cancel() { 
@@ -839,26 +838,51 @@ int main( int argc, char *argv[ ] )
      double secs=time/1000.0;
      printf("max %d consumer pool: %.2f sec\n", num_threads, secs);
    }
+   if(!fpp2 && output_3ds)
+     fpp2=fopen("mesh/vehpath.txt","w");
+   if(!fpp && output_3ds)	
+     fpp=fopen("mesh/campath.txt","w");
+
+
+   for(unsigned int i=0; i < tasks.size(); i++){
+     /*
+       if(output_pts_cov){
+       // cout << litr->P << endl;
+       fprintf(pts_cov_fp,"%f %f %f ",litr->x[0],litr->x[1],litr->x[2]);
+       for(int i=0;  i<3; i++)
+       for(int j=0;  j<3; j++)
+       
+       fprintf(pts_cov_fp,"%g ",litr->P(i,j));
+       fprintf(pts_cov_fp,"\n");
+       }
+       if(output_uv_file)
+       print_uv_3dpts(features,feature_positions,
+       left_frame_id,right_frame_id,timestamp,
+       left_frame_name,right_frame_name);*/
+     
+     fprintf(conf_ply_file,
+	     "bmesh surface-%04d.ply\n"
+	     ,i); 
+   }
+
+   if(output_uv_file)
+     fclose(uv_fp);
+   if(output_3ds)
+     file_name_list.close();
    
-   exit(0);
-  if(output_uv_file)
-    fclose(uv_fp);
-  if(output_3ds)
-    file_name_list.close();
-  
-  if(fpp)
-    fclose(fpp);
-  if(output_3ds){
-    fpp = fopen("mesh/meshinfo.txt","w");
+   if(fpp)
+     fclose(fpp);
+   if(output_3ds){
+     fpp = fopen("mesh/meshinfo.txt","w");
     fprintf(fpp,"%d\n",meshNum);
     fclose(fpp);
-  }
-  if(fpp2)
-    fclose(fpp2);
-  if(conf_ply_file){
-    fclose(conf_ply_file);
-    if(output_pts_cov)
-      fclose(pts_cov_fp);
+   }
+   if(fpp2)
+     fclose(fpp2);
+   if(conf_ply_file){
+     fclose(conf_ply_file);
+     if(output_pts_cov)
+       fclose(pts_cov_fp);
     
     
     conf_ply_file=fopen("runvrip.sh","w+");
@@ -901,8 +925,6 @@ void threadedStereo::runP(auv_image_names &name){
   //
   // Load the images
   //
-  double timestamp;
-  
   double load_start_time = get_time( );
   
   if( !get_stereo_pair( name.left_name,name.right_name,name.dir,
@@ -916,12 +938,11 @@ void threadedStereo::runP(auv_image_names &name){
 			 
  
       double load_end_time = get_time( );
-     cout  << dir_name+name.left_name  << " " << dir_name+name.right_name << endl;
+
 
       //
       // Find the features
       //
-      cout << "Finding features..." << endl;
       
       double find_start_time = get_time( );
       list<Feature *> features;
@@ -948,98 +969,82 @@ void threadedStereo::runP(auv_image_names &name){
       // Triangulate the features if requested
       //
 
-      /*	if(!fpp2 && output_3ds)
-	  fpp2=fopen("mesh/vehpath.txt","w");
-	if(!fpp && output_3ds)	
-	  fpp=fopen("mesh/campath.txt","w");
-      */
+     
 
-         Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
+      Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
        
 
 
-	 /*Matrix pose_cov(4,4);
-	 get_cov_mat(cov_file,pose_cov);
-	 */
-         //cout << "Cov " << pose_cov << "Pose "<< veh_pose<<endl;
-	 list<Stereo_Feature_Estimate> feature_positions;
-         stereo_triangulate( *calib,
-                             ref_frame,
-                             features,
-                             left_frame_id,
-                             right_frame_id,
-                             NULL,//image_coord_covar,
-                             feature_positions );
-	
-	 //   static ofstream out_file( triangulation_file_name.c_str( ) );
-	 if(output_uv_file)
-	   print_uv_3dpts(features,feature_positions,
-			  left_frame_id,right_frame_id,timestamp,
-			  left_frame_name,right_frame_name);
-	   
-	  static Vector stereo1_nav( AUV_NUM_POSE_STATES );
-	 // Estimates of the stereo poses in the navigation frame
-
-	  printf("Stereo Pts %d\n",feature_positions.size());
-	 list<Stereo_Feature_Estimate>::iterator litr;
-	 GPtrArray *localV = g_ptr_array_new ();
-	 GtsRange r;
-	 gts_range_init(&r);
-	 TVertex *vert;
-         for( litr  = feature_positions.begin( ) ;
-              litr != feature_positions.end( ) ;
-              litr++ )
-         {
+      /*Matrix pose_cov(4,4);
+	get_cov_mat(cov_file,pose_cov);
+      */
+      //cout << "Cov " << pose_cov << "Pose "<< veh_pose<<endl;
+      list<Stereo_Feature_Estimate> feature_positions;
+      stereo_triangulate( *calib,
+			  ref_frame,
+			  features,
+			  left_frame_id,
+			  right_frame_id,
+			  NULL,//image_coord_covar,
+			  feature_positions );
+      
+      //   static ofstream out_file( triangulation_file_name.c_str( ) );
+      
+      static Vector stereo1_nav( AUV_NUM_POSE_STATES );
+      // Estimates of the stereo poses in the navigation frame
+      
+      
+      list<Stereo_Feature_Estimate>::iterator litr;
+      GPtrArray *localV = g_ptr_array_new ();
+      GtsRange r;
+      gts_range_init(&r);
+      TVertex *vert;
+      for( litr  = feature_positions.begin( ) ;
+	   litr != feature_positions.end( ) ;
+	   litr++ )
+	{
 	  
-	   vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
-					    litr->x[0],litr->x[1],litr->x[2]);
-	   double confidence=1.0;
-	   Vector max_eig_v(3);
-	   if(have_cov_file){
-	     
-	     Matrix eig_vecs( litr->P );
-	     Vector eig_vals(3);
-	     int work_size = eig_sym_get_work_size( eig_vecs, eig_vals );
-	     
-	     Vector work( work_size );
-	     eig_sym_inplace( eig_vecs, eig_vals, work );
-	     /* cout << "  eig_vecs: " << eig_vecs << endl;
-	     cout << "  eig_vals: " << eig_vals << endl;
-	     */
-	     double maxE=DBL_MIN;
-	     int maxEidx=0;
-	     for(int i=0; i < 3; i++){
-	       if(eig_vals[i] > maxE){
-		 maxE=eig_vals[i];
-		 maxEidx=i;
-	       }
-	     }
-
-	     for(int i=0; i<3; i++)
-	       max_eig_v(i)=eig_vecs(i,maxEidx);
-	         
-	     confidence= 2*sqrt(maxE);
-	     max_eig_v = max_eig_v / sum(max_eig_v);
-	     //    cout << "  eig_ max: " << max_eig_v << endl;
-	     
-	   
-	   }
-	   vert->confidence=confidence;
-	   vert->ex=max_eig_v(0);
-	   vert->ey=max_eig_v(1);
-	   vert->ez=max_eig_v(2);
-	   gts_range_add_value(&r,vert->confidence);
-	   g_ptr_array_add(localV,GTS_VERTEX(vert));
-	   if(output_pts_cov){
-	     // cout << litr->P << endl;
-	     fprintf(pts_cov_fp,"%f %f %f ",litr->x[0],litr->x[1],litr->x[2]);
-	     for(int i=0;  i<3; i++)
-	       for(int j=0;  j<3; j++)
-
-		 fprintf(pts_cov_fp,"%g ",litr->P(i,j));
-	     fprintf(pts_cov_fp,"\n");
-	   }
-
+	  vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+					   litr->x[0],litr->x[1],litr->x[2]);
+	  double confidence=1.0;
+	  Vector max_eig_v(3);
+	  if(have_cov_file){
+	    
+	    Matrix eig_vecs( litr->P );
+	    Vector eig_vals(3);
+	    int work_size = eig_sym_get_work_size( eig_vecs, eig_vals );
+	    
+	    Vector work( work_size );
+	    eig_sym_inplace( eig_vecs, eig_vals, work );
+	    /* cout << "  eig_vecs: " << eig_vecs << endl;
+	       cout << "  eig_vals: " << eig_vals << endl;
+	    */
+	    double maxE=DBL_MIN;
+	    int maxEidx=0;
+	    for(int i=0; i < 3; i++){
+	      if(eig_vals[i] > maxE){
+		maxE=eig_vals[i];
+		maxEidx=i;
+	      }
+	    }
+	    
+	    for(int i=0; i<3; i++)
+	      max_eig_v(i)=eig_vecs(i,maxEidx);
+	    
+	    confidence= 2*sqrt(maxE);
+	    max_eig_v = max_eig_v / sum(max_eig_v);
+	    //    cout << "  eig_ max: " << max_eig_v << endl;
+	    
+	    
+	  }
+	  vert->confidence=confidence;
+	  vert->ex=max_eig_v(0);
+	  vert->ey=max_eig_v(1);
+	  vert->ez=max_eig_v(2);
+	  gts_range_add_value(&r,vert->confidence);
+	  g_ptr_array_add(localV,GTS_VERTEX(vert));
+	 
+	  
 	 }
 	 gts_range_update(&r);
 	 for(unsigned int i=0; i < localV->len; i++){
@@ -1077,27 +1082,9 @@ void threadedStereo::runP(auv_image_names &name){
 	     fp = fopen(filename, "w" );
 	     auv_write_ply(surf, fp,have_cov_file,"test");
 	     fclose(fp);
-	     fprintf(conf_ply_file,
-		     "bmesh surface-%04d.ply\n"
-		     ,mesh_count-1);
+	   
 	   }
 	 }
-	 //
-	 // Display useful info 
-	 //
-	 cout << endl;
-	 cout << "Left Image : " << left_frame_name << endl;
-	 cout << "Right Image: " << right_frame_name << endl;
-	 cout << endl;
-	 cout << "Number of features found: " << features.size( ) << endl;
-	 cout << endl;
-	 cout << "Image loading time     : " << load_end_time-load_start_time << endl;
-      cout << "Feature finding time   : " << find_end_time-find_start_time << endl;
-      cout << endl;
-      cout << "------------------------------------" << endl;
-      cout << endl;
-      
-      
       //
       // Pause between frames if requested.
       //

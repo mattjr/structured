@@ -24,7 +24,8 @@ ifeq ($(strip $(PLATFORM)),darwin-gpp)
 INC_FLAGS = -I/sw/include
 LIBS= -L/sw/lib  -framework osg  -framework osgDB  -framework OpenThreads -framework osgUtil -framework vecLib -L/usr/local/lib/ -lkeypoint -framework AGL -framework OpenGL -framework osgGA -framework Carbon 
 INC_FLAGS= -I/usr/local/include/
-LIBS=-losg -losgDB -losgGA -losgViewer -losgText -lOpenThreads -lGL -lGLU  -losgUtil
+else
+LIBS=-losg -losgDB -losgGA -losgProducer -losgText -lOpenThreads -lGL -lGLU  -losgUtil
 endif
 
 

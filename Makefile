@@ -23,8 +23,9 @@ ARLIST = ranlib
 ifeq ($(strip $(PLATFORM)),darwin-gpp)
 INC_FLAGS = -I/sw/include
 LIBS= -L/sw/lib  -framework osg  -framework osgDB  -framework OpenThreads -framework osgUtil -framework vecLib -L/usr/local/lib/ -lkeypoint -framework AGL -framework OpenGL -framework osgGA -framework Carbon 
-INC_FLAGS= -I/usr/local/include/
+
 else
+INC_FLAGS= -I/usr/local/include/
 LIBS=-losg -losgDB -losgGA -losgViewer -losgText -lOpenThreads -lGL -lGLU  -losgUtil
 endif
 

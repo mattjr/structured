@@ -25,7 +25,7 @@ INC_FLAGS = -I/sw/include
 LIBS= -L/sw/lib  -framework osg  -framework osgDB  -framework OpenThreads -framework osgUtil -framework vecLib -L/usr/local/lib/ -lkeypoint -framework AGL -framework OpenGL -framework osgGA -framework Carbon 
 INC_FLAGS= -I/usr/local/include/
 else
-LIBS=-losg -losgDB -losgGA -losgProducer -losgText -lOpenThreads -lGL -lGLU  -losgUtil
+LIBS=-losg -losgDB -losgGA -losgViewer -losgText -lOpenThreads -lGL -lGLU  -losgUtil
 endif
 
 

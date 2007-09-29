@@ -34,7 +34,17 @@
 #include "GraphicsWindowCarbon.h"
 #include "PixelBufferCarbon.h"
 #include "auv_mesh.hpp"
-
+#define USE_LIB3DS
+#ifdef USE_LIB3DS
+#include <lib3ds/file.h>
+#include <lib3ds/mesh.h>
+#include <lib3ds/material.h>
+#include <lib3ds/light.h>
+#include <lib3ds/camera.h>
+#include <lib3ds/node.h>
+#include <lib3ds/matrix.h>
+#include <lib3ds/vector.h>
+#endif
 using namespace std;
 
 #if ((OSG_VERSION_MAJOR==2))
@@ -143,7 +153,7 @@ protected:
   bool ive_out;
   //osg::Geometry* convertGtsSurfListToGeometry(GtsSurface *s) const;  
   osg::Geode* convertGtsSurfListToGeometry(GtsSurface *s, std::vector<string> textures) ;  
-  
+  bool Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> material_names);
   string prefixdir;
   bool tex_saved;
   bool compress_tex;
@@ -182,4 +192,5 @@ struct GeometryCollection
 
 
 typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;
+typedef std::map<int,string> MaterialToIDMap;
 #endif

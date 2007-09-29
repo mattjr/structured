@@ -43,6 +43,7 @@ using namespace libsnapper;
 static string stereo_config_file_name;
 static string contents_file_name;
 static string dir_name;
+
 static bool no_simp=false;
 static bool use_undistorted_images = false;
 static bool have_max_frame_count = false;
@@ -532,7 +533,7 @@ int main( int argc, char *argv[ ] )
   int edgeperset=2000;
   double area=gts_surface_area(surf);
   sets=(int)ceil(area/set_size);
-  edgestotal=sets*2000;
+  edgestotal=sets*edgeperset;
  
   if(!no_simp){
     printf("Area %.2fm allocating %d edges per %.1fm swaths\nTotal sets: %d, %d edges\n",area,edgeperset,set_size,sets,edgestotal); 
@@ -544,8 +545,8 @@ int main( int argc, char *argv[ ] )
   gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,bboxes);
   printf("Done\n");
 
-  OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures);    
-  osgExp->convertModelOSG(surf,texture_file_names,"mesh/blended.ive");
+  OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,tex_size);    
+  osgExp->convertModelOSG(surf,texture_file_names,"mesh/blended.3ds");
     
 	 
   fclose(fpp);

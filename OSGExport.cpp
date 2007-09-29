@@ -313,7 +313,7 @@ static void store_face_3ds (T_Face * f, gpointer * data){
 
   Lib3dsMesh *pMesh = (Lib3dsMesh *)data[0];
   uint uiFace =  *((guint *) data[1]);
-  vector<string> material_names =  *((vector<string> *) data[2]);
+  MaterialToIDMap  material_names =  *((MaterialToIDMap *) data[2]);
   
   TVertex * v1, * v2, * v3;
   gts_triangle_vertices (&GTS_FACE(f)->triangle, (GtsVertex **)&v1, (GtsVertex **)&v2,(GtsVertex **)&v3);
@@ -386,7 +386,7 @@ void add_node(Lib3dsFile* file, Lib3dsMesh* mesh)
 bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> material_names){
   char cTemp[512];
   Lib3dsFile *pFile = lib3ds_file_new();
-  std::vector <string> tex_names;
+  // std::vector <string> tex_names;
   MaterialToGeometryCollectionMap mtgcm;
   gpointer data[3];
   gint n=0;
@@ -395,6 +395,7 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> ma
   
   gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
   MaterialToGeometryCollectionMap::iterator itr;
+  MaterialToIDMap newMatMap;
   for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
 
        // set up texture if needed.
@@ -408,7 +409,7 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> ma
    
       sprintf(tname,"tex-%04d-tex",itr->first);
       string fname(tname);
-      tex_names.push_back(fname);
+      newMatMap[itr->first]=fname;
 
       if(!context){
 	printf("Can't use OPENGL without valid context");
@@ -470,7 +471,7 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> ma
   gts_surface_foreach_vertex (s, (GtsFunc) store_vertex_3ds, data);
   gint fcount=0;
   data[1] = &fcount;
-  data[2] = &tex_names;
+  data[2] = &newMatMap;
 
   gts_surface_foreach_face (s, (GtsFunc) store_face_3ds, data);
   gts_surface_foreach_vertex (s, (GtsFunc) gts_object_reset_reserved, NULL);

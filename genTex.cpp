@@ -546,7 +546,7 @@ int main( int argc, char *argv[ ] )
   printf("Done\n");
 
   OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,tex_size);    
-  osgExp->convertModelOSG(surf,texture_file_names,"mesh/blended.3ds");
+  osgExp->convertModelOSG(surf,texture_file_names,"mesh/blended.ive");
     
 	 
   fclose(fpp);

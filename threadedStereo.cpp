@@ -621,6 +621,7 @@ static bool get_auv_image_name( const string  &contents_dir_name,
  //
    // Try to read timestamp and file names
    //
+   double alt;
    bool readok;
    do{
     
@@ -633,7 +634,7 @@ static bool get_auv_image_name( const string  &contents_dir_name,
 	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_Z] &&
 	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PHI] &&
 	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_THETA] &&
-	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PSI] );
+	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PSI] && contents_file >> alt );
      
    }
    while (readok && (name.timestamp < start_time || (skip_counter++ < num_skip)));
@@ -800,9 +801,10 @@ int main( int argc, char *argv[ ] )
    unsigned int stereo_pair_count =0;
    while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
      auv_image_names name;
-     get_auv_image_name( dir_name, contents_file, name);
-     tasks.push_back(name);
-     stereo_pair_count++;
+     if(get_auv_image_name( dir_name, contents_file, name)){
+       tasks.push_back(name);
+       stereo_pair_count++;
+     }
    }
    
    //

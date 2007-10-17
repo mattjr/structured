@@ -26,12 +26,7 @@ LIBS= -L/sw/lib  -framework osg  -framework osgDB  -framework OpenThreads -frame
 
 else
 INC_FLAGS= -I/usr/local/include/
-<<<<<<< Makefile
-else
 LIBS=-losg -losgDB -losgGA -lProducer -losgText -lOpenThreads -lGL -lGLU  -losgUtil
-=======
-LIBS=-losg -losgDB -losgGA -losgViewer -losgText -lOpenThreads -lGL -lGLU  -losgUtil
->>>>>>> 1.5
 endif
 
 

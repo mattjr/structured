@@ -62,7 +62,7 @@ else
 
 	INCLS = -I. -I$(ROOT)/include -I/usr/include/tcl8.4
 
-	LIBPATHS = -L. -L$(ROOT)/lib -L$(ROOT)/src/libply
+	LIBPATHS = -L. -L$(ROOT)/lib -L$(ROOT)/src/libply -L$(ROOT)/src/linear
 
 endif
 

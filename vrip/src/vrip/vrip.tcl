@@ -653,13 +653,15 @@ proc newfromconf {confFile res} {
    for {set index 0} {$index < $count} {incr index} {
       set curline $line($index)
       if {("bmesh" == [lindex $curline 0])} {
-	 set cmd "exec plyxform "
+#	 set cmd "exec plyxform "
 
-	 set cmd "$cmd -t [lindex $curline 2] [lindex $curline 3] [lindex $curline 4]"
-	 set q3 [lindex $curline 8]
-	 set q3 [expr -$q3]
-	 set cmd "$cmd -q [lindex $curline 5] [lindex $curline 6] [lindex $curline 7] $q3"
-	 set cmd "$cmd < [lindex $curline 1] | plybbox"
+	 #set cmd "$cmd -t [lindex $curline 2] [lindex $curline 3] [lindex $curline 4]"
+	 #set q3 [lindex $curline 8]
+	 #set q3 [expr -$q3]
+	 #set cmd "$cmd -q [lindex $curline 5] [lindex $curline 6] [lindex $curline 7] $q3"
+	# set cmd "$cmd < [lindex $curline 1] | plybbox"
+	 set cmd "exec plybbox [lindex $curline 1] " 
+
 	 catch {eval $cmd} msg
 
 	 scan $msg "%f %f %f %f %f %f" newMinx newMiny newMinz \

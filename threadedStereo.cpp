@@ -889,7 +889,7 @@ int main( int argc, char *argv[ ] )
     
     conf_ply_file=fopen("runvrip.sh","w+");
     //fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -prob\n../myvrip/bin/vripsurf auto.vri out.ply -import_norm\n");
-    fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 100\n../myvrip/bin/vripsurf auto.vri out.ply\n");
+    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=$PWD/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd mesh-agg/ \n../vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 100\n../vrip/bin/vripsurf auto.vri out.ply\n");
     fchmod(fileno(conf_ply_file),   0777);
     fclose(conf_ply_file);
     

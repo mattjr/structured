@@ -1,0 +1,28 @@
+#! /usr/bin/tclsh
+
+#
+# plycull.tcl -- David Koller (dk@cs.stanford.edu), 8/16/98
+#
+# This program is a wrapper for the "plycullmaxx" program which
+# culls a .ply file to an axis-aligned bounding box.  This program
+# takes 3 arguments: a .ply file, which is used to define the
+# bounding box, and an input and output .ply filenames:
+#
+#      plycull file.bbox.ply infile.ply outfile.ply
+#
+# This program was written with the intent of working with data
+# files output from a "vripsplit" process.
+#
+
+if {$argc != 4}  {
+    puts "USAGE:  plycull file.bbox.ply infile.ply outfile.ply epsilon"
+} else  {
+
+    set cmd "exec plybbox [lindex $argv 0]"
+    catch {eval $cmd} msg
+    scan $msg "%f %f %f %f %f %f" xmin ymin zmin xmax ymax zmax
+    set epsilon [lindex $argv 3]
+    set cmd "exec plycullmaxx $xmin $ymin $zmin $xmax $ymax $zmax $epsilon < [lindex $argv 1] > [lindex $argv 2]"
+    catch {eval $cmd}
+}
+

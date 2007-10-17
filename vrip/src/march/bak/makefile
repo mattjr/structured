@@ -1,0 +1,128 @@
+#  
+#  Brian Curless
+#  
+#  Computer Graphics Laboratory
+#  Stanford University
+#  
+#  ---------------------------------------------------------------------
+#  
+#  Copyright (1997) The Board of Trustees of the Leland Stanford Junior
+#  University. Except for commercial resale, lease, license or other
+#  commercial transactions, permission is hereby given to use, copy,
+#  modify this software for academic purposes only.  No part of this
+#  software or any derivatives thereof may be used in the production of
+#  computer models for resale or for use in a commercial
+#  product. STANFORD MAKES NO REPRESENTATIONS OR WARRANTIES OF ANY KIND
+#  CONCERNING THIS SOFTWARE.  No support is implied or provided.
+#  
+
+ifndef OPTIMIZER
+	OPTIMIZER = -O
+endif
+
+CSRCS = 
+
+CXXSRCS = main.cc getinfo.cc init.cc edge.cc cube.cc quit.cc \
+	fatal.cc slices.cc OccGridRLE.cc SectionRLE.cc \
+        ChunkAllocator.cc ChunkLink.cc OccGrid.cc
+
+TARGETS = vripmarch
+
+ROOT = ../..
+
+# Get OS uname
+UNAME := $(shell uname)
+
+ifeq ($(UNAME), IRIX)
+
+        # Set optimizer flags to allow it to run on Indys...
+        ifeq ($(OPTIMIZER), -O) 
+	    OPTIMIZER = -O -mips3
+        endif  #OPTIMIZER
+
+	CC = cc
+	CXX = CC
+
+	CFLAGS = -woff3262 -woff1174 -woff1356
+	CXXFLAGS = -woff3262 -woff1174 -woff1356
+
+	INCLS = -I. -I$(ROOT)/include
+
+	LIBPATHS = -L. -L$(ROOT)/lib
+
+	LIBS = -lmcfile -lply -llinear -lm -lmalloc
+
+else
+
+	# Set special optimizer flags...
+	ifeq ($(OPTIMIZER),-O) 
+		OPTIMIZER = -O6 -march=i686 -malign-double  \
+			    -funroll-loops -fomit-frame-pointer -ffast-math
+	endif
+
+	CC = gcc
+	CXX = g++
+
+	CFLAGS = -DLINUX -Wall -Wno-unused
+	CXXFLAGS = -DLINUX -Wall -Wno-unused
+
+	INCLS = -I. -I$(ROOT)/include
+
+	LIBPATHS = -L. -L$(ROOT)/lib
+
+	LIBS = -lmcfile -lply -lm -lc
+
+endif
+
+
+CFLAGS := $(INCLS) -DFUNCPROTO -DHAVE_UNISTD_H $(CFLAGS)
+CXXFLAGS := $(INCLS) -DFUNCPROTO -DHAVE_UNISTD_H $(CXXFLAGS)
+CC := $(CC) $(OPTIMIZER)
+CXX := $(CXX) $(OPTIMIZER)
+
+SRCS = $(CXXSRCS) $(CSRCS)
+
+OBJS = $(CXXSRCS:.cc=.o) $(CSRCS:.c=.o)
+
+OBJ2 = fromden.o
+OBJ3 = polys.o mcfile.o
+OBJ4 = mctoply.o mcfile.o
+
+default: all
+
+all: $(TARGETS)
+
+install: clobber depend all
+
+vripmarch: $(OBJS) libmcfile.a 
+	$(CXX) -o $@ $(OBJS) $(LIBPATHS) $(LIBS)
+
+polys: $(OBJ3)
+	$(CC) $(CFLAGS) $(C++FLAGS) $(OBJ3) -o polys $(LIBPATHS) $(LIBS) 
+
+mctoply: $(OBJ4)
+	$(CC) $(CFLAGS) $(C++FLAGS) $(OBJ4) -o mctoply $(LIBPATHS) $(LIBS) 
+
+fromshd: $(OBJ2)
+	$(CC) $(CFLAGS) -o fromshd $(OBJ2)
+
+fromden: $(OBJ2)
+	$(CC) $(CFLAGS) -o fromden $(OBJ2) $(LIBPATHS) -llevden 
+
+libmcfile.a:	libmcfile.a(mcfile.o)
+#	ranlib libmcfile.a
+
+libmcfile.a(mcfile.o):	mcfile.h
+
+clean:
+	-/bin/rm -f *.o *~ core
+
+clobber:
+	-/bin/rm -f *.o *~ core makedep $(TARGETS)
+
+depend:
+	echo > makedep
+	gccmakedep -fmakedep -- $(CFLAGS) -- $(SRCS)
+	rm makedep.bak
+
+-include makedep

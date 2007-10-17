@@ -1,0 +1,32 @@
+#!/usr/bin/perl
+
+# permute a b c ...
+# reorders the words on each line
+# good for rearranging/selecting columns from ls, etc.
+# first word is word 0
+# e.g. "echo a b c d e f"
+#       a b c d e f
+# e.g. "echo a b c d e f | permute 4 2"
+#       e c
+#
+
+# check usage
+if ($#ARGV == -1 || substr($ARGV[0],0,1) eq "-") {
+    print STDERR "Usage:  permute <col1> [col2] [col3]...\n";
+    print STDERR " e.g. \"echo a b c d e f\"\n";
+    print STDERR "       a b c d e f\n";
+    print STDERR " e.g. \"echo a b c d e f | permute 4 2\"\n";
+    print STDERR "       e c\n";
+    exit(-1);
+}
+    
+
+
+# split on whitespace
+while (<STDIN>) {
+    @words = split(' ', $_);
+    for ($i=0; $i <= $#ARGV; $i++) {
+	print $words[$ARGV[$i]]." ";
+    }
+    print "\n";
+}

@@ -1,0 +1,615 @@
+#!/usr/bin/perl
+#
+# pvripsplit:  Splits a .conf file into subvols for later work by pvrip.
+#
+#
+
+
+sub printUsage {
+    print STDERR "\n";
+    print STDERR "Usage: pvripsplit [options] <subvolsize> <in.conf>\n";
+    print STDERR "Where:\n";
+    print STDERR "      subvolsize     Is the size (in each dimension) of the subvol cube (mm).\n";
+    print STDERR "      in.conf        Is the conf file to splat across the subvols.\n";
+    print STDERR "Options:\n";
+    print STDERR "     -new            Creates new subvols, from scratch (default).\n";
+    print STDERR "     -update         Appends to a previously existing hierarchy.\n";
+    print STDERR "     -dice           Clips each input mesh to each bounding box, and\n"; 
+    print STDERR "                      writes each subpiece out separately (default)\n";
+    print STDERR "                      (uses lots of disk, maybe faster...)\n";
+    print STDERR "     -odice          Halfway between dice and nodice.  It will actually\n";
+    print STDERR "                      run plydice to see which subvols actually contain\n";
+    print STDERR "                      tris, but not generate any new ply files.\n";
+    print STDERR "     -nodice         Do not clip each input mesh.  This will use less\n";
+    print STDERR "                      disk space, but more RAM when pvrip runs, since\n";
+    print STDERR "                      each subvol will load every mesh whose bbox intersects.\n";
+    print STDERR "     -eps epsilon    Is the amount beyond the bbox of each subvol to\n";
+    print STDERR "                      include mesh vertices, roughly:\n";
+    print STDERR "                       (10 * maximum triangle edge length + \n";
+    print STDERR "                        vrip expansion epsilon)\n";
+    print STDERR "     -bound bbox.ply  Uses bbox.ply as the bound limits for generating subvols.\n";
+    print STDERR "                        Behavior outside this bbox is undefined... :-)\n";
+    print STDERR "     -root rootdir    Uses rootdir/XXmm/ as the root for the subvol hierarchy\n";
+    print STDERR "                        (default is ./XXXmm/)\n";
+    print STDERR "parallel options:\n";
+    print STDERR "     -loadlimit <file>   Uses the loadlimit file to run jobs across multiple\n";
+    print STDERR "                           cpus/machines.\n";
+    print STDERR "     -chunklines <size>  Group <size> lines together in a single chunk.  Default\n";
+    print STDERR "                           is 5 .conf lines per chunk. \n";
+    print STDERR "     -linestart  <line>  Only processes lines within a specified range, from\n";
+    print STDERR "                           linestart to linestart+chunklines-1. This is\n";
+    print STDERR "                           intended for recursive calls, not for the user.\n";
+    print STDERR "     -which <pvripsplit> Specify which pvripsplit to call recursively.  Defaults\n";
+    print STDERR "                           to the one in your path, after login.\n";
+    print STDERR "                           e.g. -which /u/lucasp/bin/pvripsplit\n";
+    print STDERR "\n";
+    print STDERR "Examples:\n";
+    print STDERR "one cpu:  pvripsplit -nodice 200 statue.conf\n";
+    print STDERR "parallel: pvripsplit -chunklines 2 -loadlimit loadlimit -dice 200 statue.conf\n";
+    print STDERR "\n";
+
+    exit(-1);
+}
+
+# defaults and stuff.
+$MODE = "new";
+$DODICE = 1;  # 1, .5, or 0
+undef($EPSILON);
+$SVROOT = "";
+$MINWARNSVSIZE = 100;
+$MAXWARNSVSIZE = 2000;
+undef($BOUNDNAME);
+
+# Parallelism assertions:
+# If loadlimit is not specified, then we are doing serial mode, not parallel.
+# If line number is specified, then we have been called from loadbalance,
+# and are doing only that single line.  First line is LineNo 0.
+undef($LOADLIMIT);
+undef($LINESTART);
+$CHUNKLINES = 5;
+$PVRIPSPLIT = "pvripsplit";   # Program to call recursively
+@ORIGARGS = @ARGV;
+# Remove -loadlimit arg from origargs...
+for ($i=0; $i <= $#ORIGARGS; $i++) {
+    if ($ORIGARGS[$i] eq "-loadlimit" ||
+	$ORIGARGS[$i] eq "-which") {
+	splice(@ORIGARGS, $i, 2); $i--;
+    }
+}
+
+# Helper functions for more readability
+sub run { print @_; return(`@_`); }
+sub replace { $tt = $_[0]; $tt =~ s|$_[1]|$_[2]|g; return $tt; }
+sub ls { return(split(' ', `ls @_`)); }
+$starttime = time;
+
+# First handle all the -args, removing
+# them from the args list....
+for ($i=0; $i <= $#ARGV; $i++) {
+    $arg = $ARGV[$i];
+    if (substr($arg, 0, 1) eq "-") {
+	if ($arg eq "-h") {
+	    &printUsage;
+	} elsif ($arg eq "-new") {
+	    $MODE = "new";
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-update") {
+	    $MODE = "update";
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-dice") {
+	    $DODICE = 1;
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-odice") {
+	    $DODICE = .5;
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-nodice") {
+	    $DODICE = 0;
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-eps") {
+	    if ($i == $#ARGV) {
+		print STDERR "\nErr:  -eps needs another argument.\n";
+		&printUsage();
+	    } else {
+		$EPSILON = $ARGV[$i+1];
+		if ($EPSILON <= 0) {
+		    print STDERR "\nErr:  epsilon must be greater than 0.\n";
+		    &printUsage();
+		}
+	    }
+	    splice(@ARGV, $i, 2); $i--;
+	} elsif ($arg eq "-root") {
+	    if ($i == $#ARGV) {
+		print STDERR "\nErr:  -root needs another argument.\n";
+		&printUsage();
+	    } else {
+		$SVROOT = $ARGV[$i+1];
+		$SVROOT .= "/" if (substr($SVROOT, -1, 1) ne "/");
+	    }
+	    splice(@ARGV, $i, 2); $i--;
+	} elsif ($arg eq "-bound") {
+	    if ($i == $#ARGV) {
+		print STDERR "\nErr:  -bound needs another argument.\n";
+		&printUsage();
+		exit -1;
+	    }
+	    $BOUNDNAME = $ARGV[$i+1];
+	    splice(@ARGV, $i, 2); $i--;
+	} elsif ($arg eq "-loadlimit") {
+	    if ($i == $#ARGV) {
+		print STDERR "\nErr:  -loadlimit needs another argument.\n";
+		&printUsage();
+		exit -1;
+	    }
+	    $LOADLIMIT = $ARGV[$i+1];
+	    splice(@ARGV, $i, 2); $i--;
+	} elsif ($arg eq "-chunklines") {
+	    if ($i == $#ARGV) {
+		print STDERR "\nErr:  -chunklines needs another argument.\n";
+		&printUsage();
+		exit -1;
+	    }
+	    $CHUNKLINES = $ARGV[$i+1];
+	    splice(@ARGV, $i, 2); $i--;
+	} elsif ($arg eq "-which") {
+	    if ($i == $#ARGV) {
+		print STDERR "\nErr:  -which needs another argument.\n";
+		&printUsage();
+		exit -1;
+	    }
+	    $PVRIPSPLIT = $ARGV[$i+1];
+	    splice(@ARGV, $i, 2); $i--;
+	} elsif ($arg eq "-linestart") {
+	    if ($i == $#ARGV) {
+		print STDERR "\nErr:  -linestart needs another argument.\n";
+		&printUsage();
+		exit -1;
+	    }
+	    $LINESTART = $ARGV[$i+1];
+	    splice(@ARGV, $i, 2); $i--;
+	    # Set mode to update mode, because the hierarchy should already
+	    # exist (since this is a child process of the original call to
+	    # pvripsplit)
+	    $MODE = "update";
+	} else {
+	    print STDERR "\nErr, unhandled arg: $arg ...\n";
+	    &printUsage();
+	}
+		       
+    }
+}
+
+# Now the args should just be the required args...
+if ($#ARGV != 1) {
+    print STDERR "\nErr: Wrong number of args\n";
+    print STDERR   "     (After stripping flags: @ARGV)\n";
+    &printUsage();
+}
+
+$SVSIZE =     $ARGV[0];
+$INCONFNAME = $ARGV[1];
+
+# Set inconfdir, which is the directory that contains the
+# conf file (then files mentioned in the conf file will be
+# found in $INCONFDIR/<whatever is mentioned>)
+$INCONFDIR = $INCONFNAME;
+$CWD = `pwd`;
+chop($CWD);
+$INCONFDIR = "$CWD/$INCONFDIR" if (substr($INCONFDIR, 0, 1) ne "/");
+$INCONFDIR =~ s|/[^/]+$||g;
+
+# Set epsilon to 10% of volume (173% data duplication), if not defined...
+if (!defined($EPSILON)) { 
+    $EPSILON = $SVSIZE * 0.10;
+}
+
+# Sanity checks on subvolsize...
+if ($SVSIZE <= 0) {
+    print STDERR "\nErr: subvolsize must be greater than zero.\n";
+    &printUsage();
+}
+if ($SVSIZE < $MINWARNSVSIZE) {
+    print STDERR "Warning, subvolsize is less than $MINWARNSVSIZE. There might\n";
+    print STDERR "         be LOTS of subvolumes....\n";
+}
+if ($SVSIZE > $MAXWARNSVSIZE) {
+    print STDERR "Warning, subvolsize is greater than $MAXWARNSVSIZE.  These subvols\n";
+    print STDERR "         might be too large to vrip...\n";
+}
+
+print STDOUT "Breaking conf file $INCONFNAME into subvols ".
+    "of size $SVSIZE, eps $EPSILON...\n";
+
+# Count number of input scans (so we can print progress)
+if (defined($LINESTART)) {
+    $nscans = $CHUNKLINES;
+} else {
+    $nscans = `wc -l $INCONFNAME`;
+    ($nscans, @rest) = split(' ', $nscans);
+}
+
+# Get bbox, if specified
+if (defined($BOUNDNAME)) {
+    $DOBOUND = 1;
+    $cmd = "plybbox $BOUNDNAME\n";
+    ($bminx, $bminy, $bminz, $bmaxx, $bmaxy, $bmaxz, @rest) =
+	split(' ', `$cmd`);
+} else {
+    $DOBOUND = 0;
+}
+
+# Open input conf file...
+open(INCONF, $INCONFNAME) || die 
+    "\nErr: Unable to open input .conf file $INCONFNAME, aborting.\n";
+
+# verify/make the directory...
+$SVROOT = "$SVROOT"."$SVSIZE"."mm";
+
+if ($MODE eq "new") {
+    if (-e $SVROOT) {
+	if (-d $SVROOT) {
+	    # die "Err: Directory $SVROOT already exists. Aborting...\n";
+	    print STDERR "============================================================\n";
+	    print STDERR "Warn: Directory $SVROOT already exists. BAD BAD BAD! Appending..\n";
+	    print STDERR "============================================================\n";
+	} else {
+	    die "Err: A file by the name $SVROOT already exists. Aborting...\n";
+	}
+    } else {
+	$cmd = "mkdir -p $SVROOT\n";
+	system $cmd;
+	(!$?) || die "Err, could not mkdir $SVROOT. Aborting...\n";
+    }
+} else {
+    # Update mode
+    if (-e $SVROOT) {
+	if (-d $SVROOT) {
+	    # Ok
+	} else {
+	    die "Err: $SVROOT is a file, not a directory. Aborting...\n";
+	}
+    } else {
+	die "Err: Cannot find directory $SVROOT....\n";
+    }
+}
+
+# Read all.conf, the list of files that have been splatted into the
+# subvolume so far.  This helps resume a killed pvripsplit.
+# Note that if we're running in serial mode, LINESTART is undefined,
+# and therefore the file is called all.conf.
+$allconf = "$SVROOT/all$LINESTART.conf";
+
+if (-e $allconf) {
+    open(ALLCONF, $allconf) || die "Error: couldn't open $allconf.\n";
+    while (<ALLCONF>) {
+	$seen{$_} = 1;
+    }
+    close ALLCONF;
+}
+
+# Parallel Parent Process Procedure (PPPP):
+# At this point, if we're a parent process, then just call loadbalance
+if (defined($LOADLIMIT)) {
+    # first generate the command file
+    $COMMANDSFILE = "$SVROOT/pvripsplit.commands";
+    $automountdir = "/n/".`hostname`; chop $automountdir;
+    $PWD = `pwd`; chop $PWD;
+    if (substr($PWD, 0, 3) ne "/n/") {
+        $PWD = $automountdir.$PWD;
+    }
+    open(CMDS, ">$COMMANDSFILE") || 
+	die "Error, couldn't open $COMMANDSFILE for writing.\n";
+    for ($iscan = 0; $confline = <INCONF>; $iscan++) {
+	if (($iscan % $CHUNKLINES) == 0) {
+	    # Generate the command line -- calling myself recursively
+	    print CMDS "cd $PWD; $PVRIPSPLIT @ORIGARGS -linestart $iscan\n";
+	}
+    }
+    close CMDS;
+
+    # execute the commands
+    sleep 5; # Allow for NFS propagation delay
+    $LOGDIR = "$SVROOT/pvripsplit.logs";
+    # $cmd = "time /u/leslie/ply/src/pvrip/loadbalance $LOADLIMIT $COMMANDSFILE -logdir $LOGDIR\n";
+    $cmd = "time loadbalance $LOADLIMIT $COMMANDSFILE -logdir $LOGDIR\n";
+    system $cmd;
+
+    # Now concatenate stuff together
+    print "Merging all*.confs together....\n";
+    $cmd = "find $SVROOT -name 'all?*.conf'\n";
+    # print $cmd;
+    @alls = split(' ', `$cmd`);
+    foreach $all (@alls) {
+	($gall = $all) =~ s/all.+\.conf/all.conf/;
+	$cmd = "cat $all >> $gall; /bin/rm $all\n";
+	system $cmd;
+    }
+    print "Done!\n";
+    exit(0);
+}
+	
+
+# Set stdout to autoflush
+$| = 1;
+
+# Process each file mentioned in the conf file...
+$iscan = 0;
+for ($iscan = 0; $confline = <INCONF>; $iscan++) {
+    # iscan, in human-readable (starts with 1) form...
+    $iscanhuman = $iscan + 1;
+
+    # Skip if we're in single-line mode, and wrong line.
+    next if (defined($LINESTART) && 
+	     ($LINESTART > $iscan ||
+	      $iscan >= $LINESTART + $CHUNKLINES));
+
+    @words = split(' ', $confline);
+    $ply = "$INCONFDIR/$words[1]";
+
+    # A few checks for quick skipping...
+    if ($words[0] ne "bmesh") {
+	print STDERR "Warn: skipping non-bmesh line: $confline...\n";
+	next;
+    }
+    if ($seen{$confline} == 1) {
+	print "Skipping $ply ($iscanhuman of $nscans).\n";
+	next;
+    }
+
+    $splatcount = 0;
+    print "Processing $ply ($iscanhuman of $nscans)....";
+
+    $tx = $words[2];
+    $ty = $words[3];
+    $tz = $words[4];
+    $q0 = $words[5];
+    $q1 = $words[6];
+    $q2 = $words[7];
+    $q3 = -$words[8];
+    $q3orig = $words[8];
+	
+    # bbox filename
+    $bboxfile = $ply;
+    $bboxfile =~ s/.ply$/.bbox/;
+    $rawply = $ply;
+    $rawply =~ s|^.*/||g;
+
+    if ($DODICE == 0) {
+	# nodice mode
+
+	# First figure out the bbox (either by cat'ing the bbox file,
+	# or by running plydice to generate a new one)
+	if (-e $bboxfile && 
+	    (-M $bboxfile < -M $INCONFNAME)) {
+	    $cmd = "cat $bboxfile\n";
+	} else {
+	    $cmd = "plydice -t $tx $ty $tz -q $q0 $q1 $q2 $q3 -writebbox $bboxfile -printbbox $ply\n";
+	}
+	($minx, $miny, $minz, $maxx, $maxy, $maxz, @rest) = split(' ', `$cmd`);
+	(!$?) || die "Err, getting bbox $bboxfile failed. aborting...\n";
+
+	# Clip against the user-specified bounds
+	if ($DOBOUND) {
+	    $minx = $bminx if ($minx < $bminx);
+	    $miny = $bminy if ($miny < $bminy);
+	    $minz = $bminz if ($minz < $bminz);
+	    $maxx = $bmaxx if ($maxx > $bmaxx);
+	    $maxy = $bmaxy if ($maxy > $bmaxy);
+	    $maxz = $bmaxz if ($maxz > $bmaxz);
+	}
+
+	# Figure out which subvols must be touched....
+	$minxi = &floor(($minx - $EPSILON) / $SVSIZE);
+	$minyi = &floor(($miny - $EPSILON) / $SVSIZE);
+	$minzi = &floor(($minz - $EPSILON) / $SVSIZE);
+	$maxxi = &floor(($maxx + $EPSILON) / $SVSIZE);
+	$maxyi = &floor(($maxy + $EPSILON) / $SVSIZE);
+	$maxzi = &floor(($maxz + $EPSILON) / $SVSIZE);
+
+	# For each subvol, carve away the chunk
+	if ($maxx < $minx || $maxy < $miny || $maxz < $minz) {
+	    goto done;
+	}
+	for ($x = $minxi; $x <= $maxxi; $x++) {
+	    for ($y = $minyi; $y <= $maxyi; $y++) {
+		for ($z = $minzi; $z <= $maxzi; $z++) {
+		    # print "$x $y $z...\n";
+		    $svdir = "$SVROOT/sv_$x"."_$y"."_$z";
+		    $svinply = "$svdir/in/$rawply";
+		    # Create the directory and necessary files....
+		    &CreateSubvolDir($svdir, $x, $y, $z);
+
+		    # Symlink in the original file (deleting if it exists)
+		    if (-e $svinply) {
+			$cmd = "/bin/rm $svinply\n";
+			# print $cmd; 
+			system $cmd;
+			(!$?) || die "Error: rm $svinply failed.\n";
+		    }
+		    $cmd = "ln -s $INCONFDIR/$rawply $svinply\n";
+		    # print $cmd; 
+		    system $cmd;
+		    (!$?) || die "Error: ln -s failed.\n";
+		    
+		    # Add this file to the end of the .conf file for the subvolume
+		    $svconfline = "bmesh in/$rawply $tx $ty $tz $q0 $q1 $q2 $q3orig\n";
+		    &AddToSubvolConf($svdir, $svconfline);
+		    $splatcount++;
+		}
+	    }
+	}
+    } else {
+	# dice or odice mode....
+
+	# If bbox exists, and there was a user-supplied bound, then first
+	# do basic bbox intersection...
+	if ($DOBOUND && -e $bboxfile && 
+	    (-M $bboxfile < -M $INCONFNAME)) {
+	    $cmd = "cat $bboxfile\n";
+	    ($minx, $miny, $minz, $maxx, $maxy, $maxz, @rest) = split(' ', `$cmd`);
+	    (!$?) || die "Err, getting bbox $bboxfile failed. aborting...\n";
+	    if ($minx > $bmaxx + $EPSILON ||
+		$miny > $bmaxy + $EPSILON ||
+		$minz > $bmaxz + $EPSILON ||
+		$maxx < $bminx - $EPSILON ||
+		$maxy < $bminy - $EPSILON ||
+		$maxz < $bminz - $EPSILON) {
+		goto done;
+	    }
+	}
+
+	# There's not really an easy way to see if the dicing is up to date,
+	# so just always do it.....
+	$dicestr = "-dice";
+	$dicestr = "-odice" if ($DODICE != 1);
+	$basename = "tmp_$rawply";
+	$basename =~ s/.ply$//;
+	# Write bbox only if it's out of date...
+	$bbstr = "";
+	$bbstr = "-writebbox $bboxfile" if (!-e $bboxfile ||
+					    -M $bboxfile >= -M $INCONFNAME);
+	# Crop to the user-specified bound?
+	if ($DOBOUND) {
+	    $cropstr = " -crop $bminx $bminy $bminz $bmaxx $bmaxy $bmaxz ";
+	} else {
+	    $cropstr = "";
+	}
+
+	# Do it
+	$cmd = "plydice -t $tx $ty $tz -q $q0 $q1 $q2 $q3 $bbstr ".
+	    "$cropstr $dicestr $SVSIZE $EPSILON $basename $ply\n";
+	# print $cmd;
+	@subvols = `$cmd`;
+	(!$?) || die "Err, getting bbox $bboxfile failed. aborting...\n";
+
+	# Copy each subvol to the right place
+	foreach $sv (@subvols) {
+	    chop($sv);
+	    $nums = $sv;
+	    $nums =~ s/.ply$//;
+	    $nums =~ s/^$basename//;
+	    ($dummy, $x, $y, $z) = split('_', $nums);
+	    $svdir = "$SVROOT/sv_$x"."_$y"."_$z";
+	    $svinply = "$svdir/in/$rawply";
+	    # Create the directory and necessary files....
+	    &CreateSubvolDir($svdir, $x, $y, $z);
+	    if (-e $svinply) {
+		$cmd = "/bin/rm $svinply\n";
+		# print $cmd; 
+		system $cmd;
+		(!$?) || die "Error: rm $svinply failed.\n";
+	    }
+
+	    # copy / symlink to put the file in place...
+	    if ($DODICE == 1) {
+		$cmd = "/bin/mv $sv $svinply\n";
+	    } else {
+		$cmd = "ln -s $INCONFDIR/$rawply $svinply\n";	
+	    }
+	    system $cmd;
+	    (!$?) || die "Error: $cmd failed.\n";
+
+	    # Add this file to the end of the .conf file for the subvolume
+	    $svconfline = "bmesh in/$rawply $tx $ty $tz $q0 $q1 $q2 $q3orig\n";
+	    &AddToSubvolConf($svdir, $svconfline);
+	    $splatcount++;
+
+	}
+    }
+    
+  done:
+    # Done processing that .ply....
+    print "Done! ($splatcount subvols)\n";
+
+    # Remember this one's been processed
+    $seen{$confline} = 1;
+    open(ALLCONF, ">>$allconf");
+    print ALLCONF $confline;
+    close ALLCONF;
+}
+
+close INCONF;
+
+# Compute and print running time.
+$endtime = time;
+$totaltime = $endtime - $starttime;
+$hours = int($totaltime / 3600);
+$minutes = (int (($totaltime - $hours * 3600) / 60));
+$minutes = substr("000000$minutes",-2);
+$seconds = (int (($totaltime - ($hours * 3600 + $minutes * 60)) ));
+$seconds = substr("000000$seconds",-2);
+print "Total running time for pvripsplit: $hours:$minutes:$seconds"."s.\n";
+exit(0);
+
+######################################################################
+# End of Script.
+######################################################################
+
+
+############################################################
+# CreateSubvolDir:
+#   Creates the directory, as well as the basic files
+#   for it -- the in/ directory, all.conf, all.bbox.ply
+############################################################
+
+sub CreateSubvolDir {
+    local($svd, $x, $y, $z, @rest) = @_;
+    local($bboxminx) = $SVSIZE * $x;
+    local($bboxminy) = $SVSIZE * $y;
+    local($bboxminz) = $SVSIZE * $z;
+    local($bboxmaxx) = $SVSIZE * ($x+1);
+    local($bboxmaxy) = $SVSIZE * ($y+1);
+    local($bboxmaxz) = $SVSIZE * ($z+1);
+
+    # print "Creating subvoldir $svd....\n";
+    if (!-e $svd) {
+	local($cmd) = "mkdir -p $svd";
+	system $cmd;
+	#(!$?) || die "Error, $cmd failed.\n";
+    } 
+    local($svdin) = "$svd/in";
+    if (!-e $svdin) {
+	$cmd = "mkdir -p $svdin";
+	system $cmd;
+	#(!$?) || die "Error, $cmd failed.\n";
+    } 
+    local($svconf) = "$svd/all$LINESTART.conf";
+    if (!-e $svconf) {
+	$cmd = "touch $svconf";
+	system $cmd;
+	(!$?) || die "Error, $cmd failed.\n";
+    }
+    local($svbbox) = "$svd/all.bbox.ply";
+    if (!-e $svbbox) {
+	open(BBOX, ">$svbbox") || die "Couldn't open $svbbox.\n";
+	print BBOX "ply\n";
+	print BBOX "format ascii 1.0\n";
+	print BBOX "element vertex 2\n";
+	print BBOX "property float x\n";
+	print BBOX "property float y\n";
+	print BBOX "property float z\n";
+	print BBOX "end_header\n";
+	print BBOX "$bboxminx $bboxminy $bboxminz\n";
+	print BBOX "$bboxmaxx $bboxmaxy $bboxmaxz\n";
+	close(BBOX);
+    }
+}
+
+
+############################################################
+# Tiny helper funcs.
+############################################################
+
+sub AddToSubvolConf {
+    local($svd, $line) = @_;
+    $confname = "$svd/all$LINESTART.conf";
+    open(SVCONF, ">>$confname") || die "Error: Couldn't open $confname.\n";
+    print SVCONF $line;
+    close SVCONF;
+} 
+
+sub floor {
+    local($val) = $_[0];
+    local($newval) = int($val);
+    $newval-- if ($newval > $val);
+    return $newval;
+}

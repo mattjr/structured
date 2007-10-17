@@ -1,0 +1,622 @@
+#! /usr/bin/tclsh
+
+#
+# vripsplit.tcl -- David Koller (dk@cs.stanford.edu), 8/14/98
+#
+# This program is used for splitting up vrip jobs into smaller
+# subtasks.  The program reads a vrip .conf file, determines
+# an appropriate decomposition of the vrip volume, and outputs a
+# new .conf and a corresponding .bbox.ply file for each subvolume.
+#
+# See usage proc below for usage...
+#
+# where <max#voxels> is the maximum voxel size of the subvolumes,
+# and resolution is the same as the value given to vripnew.
+#
+# The bounding volumes output by this program do not overlap;
+# however, the program assumes that vrip will apply a 10 voxel
+# "border" when vripping the subvolumes, so the individual bmesh's
+# which intersect this border region are included in the appropriate
+# .conf files for the subvolumes.
+#
+# The global bounding box is expanded by BBOXOVERLAP voxels in each
+# dimension beyond the exact bounding box.
+#
+# Modifications
+# -------------
+# * Output .bbox files for each bmesh file to speed global bbox computation
+#   (lucasp, 8/26/98)
+# * Output subvol filenames padded to 4 digits (lucasp, 8/26/98)
+#
+# Known Assumptions/Limitations/Bugs
+# -----------------------
+# * Only "bmesh" commands are recognized from the .conf file
+# * Assumes that vrip will apply a 10 voxel "border" when vripping
+#   the subvolumes
+# * Assumes that vrip will not change the parity of the voxel
+#   dimensions of the subvolume
+#
+
+# The amount to make BBOXES overlap, in voxels, on the seams.
+# Note that it will actually increase the subvols by 2x this
+# amount in each dimension
+set BBOXOVERLAP 20;
+
+# default subvol dir
+set subvoldir ".";
+set bboxesok 0;
+
+proc usage args {
+    global subvoldir;
+    puts "";
+    puts "Usage: vripsplit scans.conf bbox\
+            resolution max#voxels \[-subvoldir subvoldir\]";
+    puts "";
+    puts "Where:";
+    puts "      scans.conf   is the conf file containing all of the scans that you";
+    puts "                   wish to vrip";
+    puts "      bbox         is something that specifies the volume to vrip.  It";
+    puts "                   can be scans.conf, or some other conf/ply file.  It";
+    puts "                   will vrip a volume big enough to cover bbox.";
+    puts "      resolution   Is the voxel size";
+    puts "      max\#voxels  is the maximum number of voxels per chunk.";
+    puts "      subvoldir    is where it will put all the .conf and .bbox.ply";
+    puts "                   files for the subvolumes. Default: $subvoldir";
+    puts "";
+    exit -1;
+}
+
+proc bbox_intersect {xmin1 ymin1 zmin1 xmax1 ymax1 zmax1 \
+			 xmin2 ymin2 zmin2 xmax2 ymax2 zmax2} \
+{
+    if {$xmin1 > $xmax2} {return 0};
+    if {$xmax1 < $xmin2} {return 0};
+    if {$ymin1 > $ymax2} {return 0};
+    if {$ymax1 < $ymin2} {return 0};
+    if {$zmin1 > $zmax2} {return 0};
+    if {$zmax1 < $zmin2} {return 0};
+    
+    return 1;
+}
+
+# Given a "bmesh x.ply tx ty tz q1 q2 q3 q4" line, this routine generates
+# a x.bbox file, which has two lines:
+#         minx miny minz
+#         maxx maxy maxz
+#
+proc confline2bbox {confline} {
+    if {("bmesh" == [lindex $confline 0])} {
+	set cmd "exec plyxform ";
+	set cmd "$cmd -t [lindex $confline 2] [lindex $confline 3] [lindex $confline 4]";
+	set q3 [lindex $confline 8];
+	set q3 [expr -$q3];
+	set cmd "$cmd -q [lindex $confline 5] [lindex $confline 6] [lindex $confline 7] $q3";
+	set cmd "$cmd < [lindex $confline 1] | plybbox";
+
+	catch {eval $cmd} msg;
+	scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
+	set plyname [lindex $confline 1];
+	# Set bboxname to be the corresponding bbox file
+	regsub .ply $plyname .bbox bboxname;
+	set bboxfid [open $bboxname "w+"];
+	puts $bboxfid "$minx $miny $minz";
+	puts $bboxfid "$maxx $maxy $maxz";
+
+	close $bboxfid;
+    }
+}
+
+
+# Recurse through the subvols, dividing and figuring out which
+# scans intersect...
+# The args are the ranges to do (xi...xj-1, etc)
+#
+proc sort_confs {xi yi zi xn yn zn il numMeshes} {
+    global BBOXOVERLAP;
+    global res;
+    global bound;
+    global bbox;
+    global conffilename;
+    global svnum;
+    global subvoldir;
+    global meshlist;
+    global subindexlist;
+
+    #puts "sort_confs $xi $yi $zi $xn $yn $zn <indexlist> $numMeshes";
+    #puts $il;
+	
+    set xinc [expr $BBOXOVERLAP*$res];
+    set yinc [expr $BBOXOVERLAP*$res];
+    set zinc [expr $BBOXOVERLAP*$res];
+
+    set xmin [expr $bound(x,$xi)            - $xinc];
+    set xmax [expr $bound(x,[expr $xi+$xn]) + $xinc];
+    set ymin [expr $bound(y,$yi)            - $yinc];
+    set ymax [expr $bound(y,[expr $yi+$yn]) + $yinc];
+    set zmin [expr $bound(z,$zi)            - $zinc];
+    set zmax [expr $bound(z,[expr $zi+$zn]) + $zinc];
+
+    # Figure out which meshes intersect this volume
+    set mynumMeshes 0;
+    set myil "";
+
+    for {set i 0} {$i < $numMeshes} {incr i}  {
+	set ili [lindex $il $i];
+	if {[bbox_intersect $xmin $ymin $zmin $xmax $ymax $zmax \
+	     $bbox($ili,xmin) $bbox($ili,ymin) $bbox($ili,zmin) \
+	     $bbox($ili,xmax) $bbox($ili,ymax) $bbox($ili,zmax)]} {
+		 lappend myil $ili;
+		 incr mynumMeshes;
+	     }
+    }
+
+    # Don't -- want to define every subvol variable
+    # Quit if we have no more meshes in this subvol...
+    # if {$mynumMeshes == 0} {
+    #     return 0;
+    # }
+
+    # If we have children, recurse
+    if {$xn >= $yn && $xn >= $zn && $xn > 1} {
+	# split in x, recurse
+	set hx1 [expr int($xn / 2)];
+	set hx2 [expr int($xn - $hx1)];
+	set xj [expr $xi + $hx1];
+	sort_confs $xi $yi $zi $hx1 $yn $zn $myil $mynumMeshes;
+	sort_confs $xj $yi $zi $hx2 $yn $zn $myil $mynumMeshes;
+    } elseif {$yn >= $zn && $yn > 1} {
+	# split in y, recurse
+	set hy1 [expr int($yn / 2)];
+	set hy2 [expr int($yn - $hy1)];
+	set yj [expr $yi + $hy1];
+	sort_confs $xi $yi $zi $xn $hy1 $zn $myil $mynumMeshes;
+	sort_confs $xi $yj $zi $xn $hy2 $zn $myil $mynumMeshes;
+    } elseif {$zn > 1} {
+	# split in z, recurse
+	set hz1 [expr int($zn / 2)];
+	set hz2 [expr int($zn - $hz1)];
+	set zj [expr $zi + $hz1];
+	sort_confs $xi $yi $zi $xn $yn $hz1 $myil $mynumMeshes;
+	sort_confs $xi $yi $zj $xn $yn $hz2 $myil $mynumMeshes;
+    } else {
+	# Remember the index list for this subvol, for later
+	set subindexlist($xi,$yi,$zi) $myil;
+    }
+}	
+
+#
+# Main script
+#
+
+if {$argc < 4}  {
+    usage;
+    exit -1;
+} else {
+    # parse extra args first 
+    for {set i 4} {$i < $argc} {incr i}  {
+	set currarg [lindex $argv $i];
+	if {$currarg == "-subvoldir"} {
+	    if {$i+1 >= $argc} {
+		puts "Error: -subvoldir needs second arg.";
+		usage;
+		exit -1;
+	    }
+	    incr i;
+	    set subvoldir [lindex $argv $i];
+	} elseif {$currarg == "-bboxesok"} {
+	    set bboxesok 1;
+	} else {
+	    puts "Error: unhandled arg: $currarg";
+	    usage;
+	    exit -1;
+	}
+    }
+
+    #
+    # Read the .conf file, storing the bboxes for each bmesh
+    # It checks dates.  If the bboxes are out of date, then
+    # it will recreate them.  Otherwise, it will read the
+    # bbox to get the bounds of the mesh.
+    #
+
+    set conffilename [lindex $argv 0];
+    set bboxfilename [lindex $argv 1];
+    set res [expr double([lindex $argv 2])];
+    set maxvoxels [lindex $argv 3];
+    
+    set numMeshes 0;
+
+    # Verify it exists
+    if { ! [file readable $conffilename] } {
+	puts "";
+	puts "Error: unable to open .conf file $conffilename";
+	usage;
+	exit;
+    }
+    
+    set fileid [open $conffilename "r"];
+    
+    while {[gets $fileid inline] >= 0} {
+	if {[lindex $inline 0] == "bmesh"} {
+	    puts "Computing bounding box for [lindex $inline 1]...";
+	    set plyfile [lindex $inline 1];
+	    # Set bboxfile to be the corresponding bbox file
+	    regsub .ply $plyfile .bbox bboxfile;
+
+	    # Check if bbox file needs to be created or updated
+	    if {![file exists $bboxfile]} {
+		puts "bbox does not exist, creating...";
+		confline2bbox $inline;
+	    } else {
+		set bboxmtime [file mtime $bboxfile];
+		set confmtime [file mtime $conffilename];
+		if {$confmtime > $bboxmtime  && $bboxesok == 0} {
+		    puts "bbox file is out of date, redoing....";
+		    confline2bbox $inline;
+		}
+	    }
+
+	    puts "Loading bboxfile: $bboxfile...";
+	    set bboxfid [open $bboxfile "r"];
+	    gets $bboxfid minline;
+	    gets $bboxfid maxline;
+	    scan $minline "%f %f %f" bbox($numMeshes,xmin) \
+		bbox($numMeshes,ymin) bbox($numMeshes,zmin);
+	    scan $maxline "%f %f %f" bbox($numMeshes,xmax) \
+		bbox($numMeshes,ymax) bbox($numMeshes,zmax);
+
+	    close $bboxfid;
+
+	    set bmeshinfo($numMeshes,file) [lindex $inline 1];
+	    set bmeshinfo($numMeshes,tx) [lindex $inline 2];
+	    set bmeshinfo($numMeshes,ty) [lindex $inline 3];
+	    set bmeshinfo($numMeshes,tz) [lindex $inline 4];
+	    set bmeshinfo($numMeshes,q0) [lindex $inline 5];
+	    set bmeshinfo($numMeshes,q1) [lindex $inline 6];
+	    set bmeshinfo($numMeshes,q2) [lindex $inline 7];
+	    set bmeshinfo($numMeshes,q3) [lindex $inline 8];
+
+	    incr numMeshes;
+	}
+    }
+    close $fileid;
+    puts "";
+
+    #
+    # Compute the global bounding box
+    # if bbox is same as input conf file, use Dave's old code.
+    # if bbox is something different, ummm, uhh, figure it out.
+    #
+
+    if {$bboxfilename == $conffilename} {
+	# Just use global bbox of already-computed scan bboxes
+	set bbox(global,xmin) $bbox(0,xmin);
+	set bbox(global,xmax) $bbox(0,xmax);
+	set bbox(global,ymin) $bbox(0,ymin);
+	set bbox(global,ymax) $bbox(0,ymax);
+	set bbox(global,zmin) $bbox(0,zmin);
+	set bbox(global,zmax) $bbox(0,zmax);
+
+	for {set i 1} {$i < $numMeshes} {incr i}  {
+	    if {$bbox($i,xmin) < $bbox(global,xmin)} {
+		set bbox(global,xmin) $bbox($i,xmin)};
+	    if {$bbox($i,xmax) > $bbox(global,xmax)} {
+		set bbox(global,xmax) $bbox($i,xmax)};
+	    if {$bbox($i,ymin) < $bbox(global,ymin)} {
+		set bbox(global,ymin) $bbox($i,ymin)};
+	    if {$bbox($i,ymax) > $bbox(global,ymax)} {
+		set bbox(global,ymax) $bbox($i,ymax)};
+	    if {$bbox($i,zmin) < $bbox(global,zmin)} {
+		set bbox(global,zmin) $bbox($i,zmin)};
+	    if {$bbox($i,zmax) > $bbox(global,zmax)} {
+		set bbox(global,zmax) $bbox($i,zmax)};
+	}
+    } else {
+	# Compute the bbox from the bbox file...
+
+	# Verify it exists
+	if { ! [file readable $bboxfilename] } {
+	    puts "";
+	    puts "Error: unable to open bbox file $bboxfilename";
+	    usage;
+	    exit;
+	}
+	
+	# Detect what kind of bounds we're dealing with here.
+	set ext [file extension $bboxfilename];
+	if {$ext == ".ply"} {
+	    # Call plybbox to get bounds...
+	    puts "Setting bbox to include $bboxfilename...";
+	    catch {exec plybbox < $bboxfilename} msg;
+		
+	    scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
+	    set bbox(global,xmin) $minx;
+	    set bbox(global,ymin) $miny;
+	    set bbox(global,zmin) $minz;
+	    set bbox(global,xmax) $maxx;
+	    set bbox(global,ymax) $maxy;
+	    set bbox(global,zmax) $maxz;
+
+	} elseif {$ext == ".set"} {
+	    # run through the set file for the boundmesh limits
+	    set fileid [open $bboxfilename "r"];
+
+	    # initialize bbox to negative size
+	    set bbox(global,xmin) 1e12;
+	    set bbox(global,ymin) 1e12;
+	    set bbox(global,zmin) 1e12;
+	    set bbox(global,xmax) -1e12;
+	    set bbox(global,ymax) -1e12;
+	    set bbox(global,zmax) -1e12;
+
+	    # Skip 1st two lines of the set file (header stuff)
+	    set numchars [gets $fileid setline];
+	    set numchars [gets $fileid setline];
+	    set lineno 3;
+
+	    # Get the xf file
+	    regsub .set $bboxfilename .xf xfname;
+
+	    # grow bbox to include each mesh in the set
+	    while {1} {
+		set numchars [gets $fileid setline];
+		if {$numchars <= 0} { break; }
+		set setply [lindex $setline 2];
+
+		# Call plyxform to get the bbox in world coordinates
+		set cmd "exec plyxform -f $xfname < $setply | plybbox";
+		puts "Expanding bbox to include $setply..."
+		puts "$cmd"
+		catch {eval $cmd} msg;
+
+		# Grow bbox to include this mesh...
+		scan $msg "%f %f %f %f %f %f" newMinx newMiny newMinz \
+		    newMaxx newMaxy newMaxz;
+		set bbox(global,xmin) [min $bbox(global,xmin) $newMinx];
+		set bbox(global,ymin) [min $bbox(global,ymin) $newMiny];
+		set bbox(global,zmin) [min $bbox(global,zmin) $newMinz];
+		set bbox(global,xmax) [max $bbox(global,xmax) $newMaxx];
+		set bbox(global,ymax) [max $bbox(global,ymax) $newMaxy];
+		set bbox(global,zmax) [max $bbox(global,zmax) $newMaxz];
+
+		incr lineno;
+	    }
+	    close $fileid;
+
+	} elseif {$ext == ".conf"} { 
+	    # run through the conf file to get bounds
+	    set fileid [open $bboxfilename "r"];
+	    set lineno 1;
+
+	    # initialize bbox to negative size
+	    set bbox(global,xmin) 1e12;
+	    set bbox(global,ymin) 1e12;
+	    set bbox(global,zmin) 1e12;
+	    set bbox(global,xmax) -1e12;
+	    set bbox(global,ymax) -1e12;
+	    set bbox(global,zmax) -1e12;
+
+	    # grow bbox to include each bmesh
+	    while {1} {
+		set numchars [gets $fileid bmline];
+		if {$numchars <= 0} { break; }
+		if {[lindex $bmline 0] != "bmesh"} {
+		    puts "Warning: skipping .conf file line $lineno.";
+		    puts "         (vripsplit only handles bmesh lines)";
+		    continue;
+		}
+		# Call plyxform to get the bbox in world coordinates
+		set bmply [lindex $bmline 1];
+		set tx    [lindex $bmline 2];
+		set ty    [lindex $bmline 3];
+		set tz    [lindex $bmline 4];
+		set q0    [lindex $bmline 5];
+		set q1    [lindex $bmline 6];
+		set q2    [lindex $bmline 7];
+		set q3    [lindex $bmline 8];
+		set q3 [expr -$q3];
+		set cmd "exec plyxform -t $tx $ty $tz -q $q0 $q1 $q2 $q3 \
+                         < $bmply | plybbox";
+		puts "Expanding bbox to include $bmply..."
+		catch {eval $cmd} msg;
+
+		# Grow bbox to include this mesh...
+		scan $msg "%f %f %f %f %f %f" newMinx newMiny newMinz \
+		    newMaxx newMaxy newMaxz;
+		set bbox(global,xmin) [min $bbox(global,xmin) $newMinx];
+		set bbox(global,ymin) [min $bbox(global,ymin) $newMiny];
+		set bbox(global,zmin) [min $bbox(global,zmin) $newMinz];
+		set bbox(global,xmax) [max $bbox(global,xmax) $newMaxx];
+		set bbox(global,ymax) [max $bbox(global,ymax) $newMaxy];
+		set bbox(global,zmax) [max $bbox(global,zmax) $newMaxz];
+
+		incr lineno;
+	    }
+	    close $fileid;
+
+	} else {
+	    puts "";
+	    puts "Error: Unrecognized/ unhandled bbox file: $bboxfilename";
+	    puts "       vripsplit only handles .ply and .conf...";
+	    puts "";
+	    exit -1;
+	}
+    }
+
+    # debug info -- print global bbox
+    puts "Global bbox: ($bbox(global,xmin) $bbox(global,ymin) $bbox(global,zmin)) to";
+    puts "             ($bbox(global,xmax) $bbox(global,ymax) $bbox(global,zmax))";
+
+    # Expand the global bounding box by BBOXOVERLAP voxels in each dimension
+    set expand [expr $BBOXOVERLAP * 2 * $res];
+
+    set bbox(global,xmin) [expr $bbox(global,xmin) - $expand];
+    set bbox(global,xmax) [expr $bbox(global,xmax) + $expand];
+    set bbox(global,ymin) [expr $bbox(global,ymin) - $expand];
+    set bbox(global,ymax) [expr $bbox(global,ymax) + $expand];
+    set bbox(global,zmin) [expr $bbox(global,zmin) - $expand];
+    set bbox(global,zmax) [expr $bbox(global,zmax) + $expand];
+
+    # 
+    # Compute the number of subvolumes, and their dimensions
+    #
+
+    set xlen [expr $bbox(global,xmax) - $bbox(global,xmin)];
+    set ylen [expr $bbox(global,ymax) - $bbox(global,ymin)];
+    set zlen [expr $bbox(global,zmax) - $bbox(global,zmin)];
+
+    set xvox [expr ceil($xlen / $res)];
+    set yvox [expr ceil($ylen / $res)];
+    set zvox [expr ceil($zlen / $res)];
+
+    puts "Total dimensions: $xvox x $yvox x $zvox";
+
+    set totaldivs [expr ceil($xvox*$yvox*$zvox / double($maxvoxels))];
+
+    # Initial number of divisions
+    set xdivs 1;
+    set ydivs 1;
+    set zdivs 1;
+
+    while {[expr $xdivs*$ydivs*$zdivs] < $totaldivs}  {
+
+	set xdivlen [expr $xlen / $xdivs];
+	set ydivlen [expr $ylen / $ydivs];
+	set zdivlen [expr $zlen / $zdivs];
+
+	if {($xdivlen >= $ydivlen) && ($xdivlen >= $zdivlen)} {
+	    incr xdivs;
+	} elseif {($ydivlen >= $xdivlen) && ($ydivlen >= $zdivlen)} {
+	    incr ydivs;
+	} else {
+	    incr zdivs;
+	}
+    }
+
+    set xmin $bbox(global,xmin);
+    set ymin $bbox(global,ymin);
+    set zmin $bbox(global,zmin);
+
+    for {set i 0} {$i <= $xdivs} {incr i}  {
+	set target [expr double($i)/$xdivs * $xlen];
+	set bound(x,$i) [expr ceil($target/$res) * $res + $xmin];
+    }
+    for {set i 0} {$i <= $ydivs} {incr i}  {
+	set target [expr double($i)/$ydivs * $ylen];
+	set bound(y,$i) [expr ceil($target/$res) * $res + $ymin];
+    }
+    for {set i 0} {$i <= $zdivs} {incr i}  {
+	set target [expr double($i)/$zdivs * $zlen];
+	set bound(z,$i) [expr ceil($target/$res) * $res + $zmin];
+    }
+
+    #
+    # Write out .bbox.ply and .conf files for each subvolume.
+    # The vrip program will expand the subvolume by 10 voxels.
+    # To (attempt to!) make sure that the entire sphere of influence
+    # of the ramps is handled correctly, we include in the .conf
+    # file any meshes that intersect this enlarged volume.
+    #
+
+    set svnum 0;
+
+    # First do the bbox files...
+    for {set x 0} {$x < $xdivs} {incr x}  {
+	for {set y 0} {$y < $ydivs} {incr y}  {
+	    for {set z 0} {$z < $zdivs} {incr z}  {
+
+		incr svnum; 
+
+		# pad svnumstr with 0's to make it 4 characters long
+		set svnumstr [string range "0000" 0 [expr 3 - \
+						     [string length $svnum]]];
+		set svnumstr "$svnumstr$svnum";
+
+		set xmin $bound(x,$x);
+		set xmax $bound(x,[expr $x+1]);
+		set ymin $bound(y,$y);
+		set ymax $bound(y,[expr $y+1]);
+		set zmin $bound(z,$z);
+		set zmax $bound(z,[expr $z+1]);
+
+		set basename [file rootname $conffilename]_subvol$svnumstr;
+
+		set fileid [open "$subvoldir/$basename.bbox.ply" "w"];
+
+		puts $fileid "ply";
+		puts $fileid "format ascii 1.0";
+		puts $fileid "element vertex 2";
+		puts $fileid "property float x";
+		puts $fileid "property float y";
+		puts $fileid "property float z";
+		puts $fileid "end_header";
+		puts $fileid "$xmin $ymin $zmin";
+		puts $fileid "$xmax $ymax $zmax";
+
+		close $fileid;
+	    }
+	}
+    }
+
+    # 
+    # Now figure out the conf files.
+    # Do this recursively, to try to make it go faster when we're
+    # doing 1000 meshes x 1000 subvols.. :-)
+    #
+    
+    # Precompute the meshlist lines, so we only need to figure out
+    # which ones to paste into each conf file
+    for {set i 0} {$i < $numMeshes} {incr i}  {
+	set meshlist($i) "bmesh $bmeshinfo($i,file)\
+             $bmeshinfo($i,tx) $bmeshinfo($i,ty) $bmeshinfo($i,tz)\
+             $bmeshinfo($i,q0) $bmeshinfo($i,q1)\
+             $bmeshinfo($i,q2) $bmeshinfo($i,q3)";
+	# This is the list of meshes we might possibly consider 
+	# at each recursive level of the traversal
+	# set indexlist($i) $i;
+        lappend indexlist $i;
+    }
+	
+    set svnum 1;
+
+    # Figure out which scans touch each bbox
+    # This does the computation hierarchically; the next step
+    # will traverse again in order, to print out
+    sort_confs 0 0 0 $xdivs $ydivs $zdivs $indexlist $numMeshes;
+
+    # Now write the conf files, traversing in order
+    set svnum 0;
+    for {set x 0} {$x < $xdivs} {incr x}  {
+	for {set y 0} {$y < $ydivs} {incr y}  {
+	    for {set z 0} {$z < $zdivs} {incr z}  {
+
+		incr svnum; 
+
+		# pad svnumstr with 0's to make it 4 characters long
+		set svnumstr [string range "0000" 0 [expr 3 - \
+						     [string length $svnum]]];
+		set svnumstr "$svnumstr$svnum";
+		set basename [file rootname $conffilename]_subvol$svnumstr;
+		set fileid [open "$subvoldir/$basename.conf" "w"];
+
+		# Put all the pre-computed bmesh lines in the conf file.
+		set myil $subindexlist($x,$y,$z);
+		for {set i 0} {$i < [llength $myil]} {incr i} {
+		    puts $fileid $meshlist([lindex $myil $i]);
+		}
+		close $fileid;
+	    }
+	}
+    }
+}
+    
+
+
+
+
+
+
+
+
+
+

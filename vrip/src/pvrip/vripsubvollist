@@ -1,0 +1,103 @@
+#!/usr/bin/perl
+#
+# vripsubvollist: This program, given a list of subvol .conf
+# files, will generate the commands to vrip each of them.
+
+
+sub printUsage {
+    print STDERR "\n";
+    print STDERR "Usage:\n";
+    print STDERR "vripsubvollist [-crunch] [-rampscale s] voxelsize *subvol*.conf > outcommands\n";
+    print STDERR "\n";
+    print STDERR "  -crunch  Will generate plycrunched .set files...\n";
+    print STDERR "  -rampscale <s> Will tell vrip to use rampscale s.\n";
+    print STDERR "  -passtovrip \"X\" will pass X to vrip.\n";
+    print STDERR "  -passtovripsurf \"X\" will pass X to vripsurf.\n";
+    print STDERR "\n";
+    print STDERR "and it will generate a list of the commands necessary\n";
+    print STDERR "to run vripnew, vripsurf, and plycull on the volumes.\n";
+    print STDERR "\n";
+    exit(-1);
+}
+
+if ($#ARGV < 1 || substr($ARGV[0], 0, 2) eq "-h") {
+    &printUsage();
+}
+
+# Extract the options, if present
+$DOCRUNCH = 0;
+while (substr($ARGV[0], 0,1) eq "-") {
+    if ($ARGV[0] eq "-crunch") {
+	$DOCRUNCH=1;
+	splice(@ARGV, 0, 1);
+    } elsif ($ARGV[0] eq "-rampscale") {
+	$RAMPSCALE = $ARGV[1];
+	if ($RAMPSCALE eq "") {
+	    print STDERR "Error: no rampscale???\n\n";
+	    &printUsage;
+	}
+	splice(@ARGV, 0, 2);
+    } elsif ($ARGV[0] eq "-passtovrip") {
+	$PASSTOVRIP = $ARGV[1];
+	splice(@ARGV, 0, 2);
+    } elsif ($ARGV[0] eq "-passtovripsurf") {
+	$PASSTOVRIPSURF = $ARGV[1];
+	splice(@ARGV, 0, 2);
+    } else {
+	print STDERR "Error: unhandled arg $ARGV[0]...\n";
+	&printUsage();
+	exit(-1);
+    }
+}
+
+	
+    
+# Get and check voxel size
+$voxelsize = 0.0+$ARGV[0];
+if ($voxelsize <= 0) {
+    die("Error, voxelsize not greater than zero...\n");
+}
+
+# Get directory
+$cwd = `pwd`;
+chop $cwd;
+
+#Generate the command for each file name...
+for ($n=1; $n <= $#ARGV; $n++) {
+    $conf = $ARGV[$n];
+    $bbox = $conf;
+    $bbox =~ s/.conf/.bbox.ply/g;
+    $vri = $conf;
+    $vri =~ s/.conf/.vri/g;
+    $plyv = $conf;
+    $plyv =~ s/.conf/_beyondbbox.ply/g;
+    $ply = $conf;
+    $ply =~ s/.conf/.ply/g;
+    # Generate the command.  Include "npri -h 250", which sets
+    # its priority really low...
+    if ($DOCRUNCH) {
+	$crunchstr = " ply2crunchset -l 5 $ply;";
+    }
+    if (defined($RAMPSCALE)) {
+	$rampscalestr = " -rampscale $RAMPSCALE "; 
+    } else {
+	$rampscalestr = "";
+    }
+
+    # Remove the plyv (overlapping ply files?)
+    $rm_plyv = "";
+    # $rm_plyv = "/bin/rm $plyv;";
+
+    # Amount of safety in plyculling triangles
+    $epsilon = 2.1 * $voxelsize;
+
+    print STDOUT "cd $cwd; ".
+	"time vripnew $vri $conf $bbox $voxelsize $rampscalestr $PASSTOVRIP -noui; ".
+	    "time vripsurf -no_remove_slivers $vri $plyv $PASSTOVRIPSURF -noui; ".
+		"time plycull $bbox $plyv $ply $epsilon; ".
+		    "$rm_plyv $crunchstr\n";
+    $plys = $plys . " $ply";
+}
+
+# print STDOUT "echo plymerge $plys > all_unshared.ply\n";
+# print STDOUT "echo plyshared < all_unshared.ply > all.ply\n";

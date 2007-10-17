@@ -1,0 +1,334 @@
+#!/usr/bin/perl
+#
+# pvrip:  Takes a vrip file (output), conf file, bound mesh, res in
+# meters, max voxels per chunk, and loadlimit file.
+#
+# All of these are the same as vrip, except the loadlimit file,
+# which lists the desired load on the various parallel machines.
+# It looks something like:
+#                radiance 4
+#                maglio 3
+#                cesello 2.2
+#                blackout 1.4
+#                lambert 7
+#                wavelet 1.2
+#                blueridge 1.4
+#
+# You can edit the numbers while it's running, but you cannot
+# change the order of the list, or add/remove machines while
+# it's running.
+
+sub printUsage {
+    print STDERR "\n";
+    print STDERR "Usage: pvrip <vri_file> <ply_file> <conf_file> <boundmesh> \\\n".
+	"       <res(m)> <max_voxels_per_chunk> <loadlimit_file> [options]\n";
+    print STDERR "e.g.: pvrip v2mm.vri v2mm.ply v.conf v.bbox.ply 2.0 40M loadlimit\n";
+    print STDERR "  or: pvrip v5mm.vri v5mm.ply v.conf v.conf 5.0 9500K ~/loadlimit \\\n";
+    print STDERR "        -noxload -logdir logs -subvoldir subvols\n";
+    print STDERR "\n";
+    print STDERR "Options:\n";
+    print STDERR "     -rampscale <s>  Where s is the scale-factor for the ramp in\n";
+    print STDERR "                       vrip.  If you do not supply a rampscale,\n";
+    print STDERR "                       pvrip will use (2500*voxelsize) as the\n";
+    print STDERR "                       default rampscale.\n";
+    print STDERR "     -norampscale    Don't pass a rampscale to vrip.  (By default,\n";
+    print STDERR "                       pvrip passes a rampscale that overrides .vriprc).\n";
+    print STDERR "     -logdir <dir>   Where dir is the directory to store all the\n";
+    print STDERR "                       log files (cmd, stdout, stderr for each chunk).\n";
+    print STDERR "                       default logdir is logs_PID (Process ID).\n";
+    print STDERR "     -subvoldir <dir> Where dir is the directory to store all the\n";
+    print STDERR "                        subvol .conf/.vri/.ply files.\n";
+    print STDERR "                        default subvoldir is subvols_PID.\n";
+    print STDERR "     -bboxesok       Disables the check to see if bboxes are up to date.\n";
+    print STDERR "                       Normally, bboxes are updated if they are older than the\n";
+    print STDERR "                       conf file, since changing the conf transforms will outdate\n";
+    print STDERR "                       the bbox.  But if you're *sure* your bboxes are ok, this\n";
+    print STDERR "                       will speed it up.\n";
+    print STDERR "     -passtovrip \"X\"     Will pass the string X to each vrip (at the end of the\n";
+    print STDERR "                           of the command line)\n";
+    print STDERR "     -passtovripsurf \"X\" Will pass the string X to each vripsurf (at the end\n";
+    print STDERR "                           of the command line)\n";
+    print STDERR "     -xload          Will pop up xload windows for each host.\n";
+    print STDERR "     -noxload        Will not pop up xload windows for each host.\n";
+    print STDERR "                       (default)\n";
+    print STDERR "     -merge          Will run plymerge/plyshared at the end to merge\n";
+    print STDERR "                       subvols into a single mesh. (default)\n";
+    print STDERR "     -nomerge        Will not run plymerge/plyshared.\n";
+    print STDERR "     -crunch         Will run plycrunch on the subvols and final mesh,\n";
+    print STDERR "                       and generate .set files. (default)\n";
+    print STDERR "     -nocrunch       Will not run plycrunch.\n";
+    print STDERR "     -clean          Will run plyclean -defaults on the final shared mesh,\n";
+    print STDERR "                       to remove slivers (~37% less tris)\n";
+    print STDERR "     -noclean        Will not run plyclean.\n";
+    print STDERR "\n";
+    print STDERR "Notes:\n";
+    print STDERR " - max_voxels_per_chunk recognizes K and M, eg, 20K, 50M\n";
+    print STDERR " - The loadlimit file should look like this:\n";
+    print STDERR "radiance 6.5\n";
+    print STDERR "lambert  3.5\n";
+    print STDERR "phong    1.2\n";
+    print STDERR " - pvrip will not start a job on a machine unless\n";
+    print STDERR "   the limit is larger than 1.\n";
+    print STDERR " - you can adjust the numbers in loadlimit while\n";
+    print STDERR "   pvrip is running, but you cannot add, delete,\n";
+    print STDERR "   or reorder the host lines.\n";
+    print STDERR "\n";
+
+    exit(-1);
+}
+
+if ($#ARGV < 6) {
+    &printUsage();
+}
+
+$VRIFILE = $ARGV[0];
+$PLYFILE = $ARGV[1];
+$CONFFILE = $ARGV[2];
+$BOUNDFILE = $ARGV[3];
+$RES = $ARGV[4];
+$MAXVOX = $ARGV[5];
+$LOADFILE = $ARGV[6];
+
+# Default values
+$LOGDIR = "logs_$$";
+$XLOADSTR = "";
+$SUBVOLDIR = "subvols_$$";
+$DOCRUNCH = 1;
+$DOCLEAN = 1;
+$DOMERGE = 1;
+$BBOXESOKSTR = "";
+$RAMPSCALE = 2500 * $RES;
+$PASSTOVRIP = "";
+$PASSTOVRIPSURF = "";
+
+# Parse the -arguments
+$currarg = 7;
+while ($currarg <= $#ARGV) {
+    if ($ARGV[$currarg] eq "-logdir" || 
+	$ARGV[$currarg] eq "-ld") {
+	$LOGDIR = $ARGV[$currarg+1];
+	$currarg +=2;
+	if ($LOGDIR eq "") {
+	    print STDERR "Error: no logdir???\n\n";
+	    &printUsage();
+	}
+    } elsif ($ARGV[$currarg] eq "-subvoldir" ||
+	     $ARGV[$currarg] eq "-sd") {
+	$SUBVOLDIR = $ARGV[$currarg+1];
+	$currarg +=2;
+	if ($SUBVOLDIR eq "") {
+	    print STDERR "Error: no subvoldir???\n\n";
+	    &printUsage();
+	}
+    } elsif ($ARGV[$currarg] eq "-rampscale" ||
+	     $ARGV[$currarg] eq "-rs") {
+	$RAMPSCALE = $ARGV[$currarg+1];
+	$currarg +=2;
+	if ($RAMPSCALE eq "") {
+	    print STDERR "Error: no rampscale???\n\n";
+	    &printUsage;
+	}
+    } elsif ($ARGV[$currarg] eq "-passtovrip") {
+	$PASSTOVRIP .= $ARGV[$currarg+1];
+	$currarg +=2;
+    } elsif ($ARGV[$currarg] eq "-passtovripsurf") {
+	$PASSTOVRIPSURF .= $ARGV[$currarg+1];
+	$currarg +=2;
+    } elsif ($ARGV[$currarg] eq "-norampscale") {
+	# Turn off the default rampscale
+	undef($RAMPSCALE);
+	$currarg++;
+    } elsif ($ARGV[$currarg] eq "-bboxesok") {
+	$BBOXESOKSTR = " -bboxesok ";
+	$currarg++;
+    } elsif ($ARGV[$currarg] eq "-noxload") {
+	$XLOADSTR = " -noxload ";
+	$currarg++;
+    } elsif ($ARGV[$currarg] eq "-xload") {
+	$XLOADSTR = " -xload ";
+	$currarg++;
+    } elsif ($ARGV[$currarg] eq "-crunch") {
+	$DOCRUNCH = 1;
+	$currarg++;
+    } elsif ($ARGV[$currarg] eq "-nocrunch") {
+	$DOCRUNCH = 0;
+	$currarg++;
+    } elsif ($ARGV[$currarg] eq "-clean") {
+	$DOCLEAN = 1;
+	$currarg++;
+    } elsif ($ARGV[$currarg] eq "-noclean") {
+	$DOCLEAN = 0;
+	$currarg++;
+    } elsif ($ARGV[$currarg] eq "-merge") {
+	$DOMERGE = 1;
+	$currarg++;
+    } elsif ($ARGV[$currarg] eq "-nomerge") {
+	$DOMERGE = 0;
+	$currarg++;
+    } else {
+	print STDERR "Error: Unhandled arg $ARGV[$currarg].\n\n";
+	&printUsage();
+    }
+}
+
+# Allow k, K, m, M for MAXVOX (e.g. 40M)
+$MAXVOX =~ s/k/000/g;    $MAXVOX =~ s/K/000/g;
+$MAXVOX =~ s/m/000000/g; $MAXVOX =~ s/M/000000/g;
+
+
+# Make sure subvoldir is usable,
+# And clean it out if it already exists 
+if (-e $SUBVOLDIR) {
+    if (-d $SUBVOLDIR) {
+	-x $SUBVOLDIR || die "Error: subvoldir $SUBVOLDIR does not have execute permissions\n";
+	-w $SUBVOLDIR || die "Error: subvoldir $SUBVOLDIR does not have write permissions\n";
+
+	# print "Note, loadbalance using existing subvoldir $SUBVOLDIR...\n";
+	# Clear any old loadbalance logfiles
+	$cmd = "cd $SUBVOLDIR; /bin/ls | /bin/grep 'subvol' | ".
+	    "/bin/xargs /bin/rm -f\n";
+	print "} Clearing old subvol files....";
+	system $cmd;
+	print "Done.\n";
+    } else {
+	print STDERR "Error: loadbalance: subvoldir $SUBVOLDIR exists, \n".
+	    "and is not a directory.\n";
+	printUsage();
+    }
+} else {
+    # make subvoldir
+    $errmsg = `mkdir $SUBVOLDIR\n`;
+    if ($?) {
+	die "Error: Could not mkdir $SUBVOLDIR\n";
+    }
+}
+
+# Run vripsplit 
+$cmd = "vripsplit $CONFFILE $BOUNDFILE $RES $MAXVOX -subvoldir $SUBVOLDIR $BBOXESOKSTR\n";
+$timecmd = &timecmd($cmd);
+print "} $cmd";
+system $timecmd;
+!$? || die "Error: vripsplit returned an error. aborting.\n";
+
+# Generate command list to vrip
+# First set a couple of options for vripsubvollist
+if ($DOCRUNCH) { $CRUNCHSTR = " -crunch "; }
+else {$CRUNCHSTR = "";}
+if (defined($RAMPSCALE)) {
+    $RAMPSCALESTR = " -rampscale $RAMPSCALE "; 
+} else {
+    $RAMPSCALESTR = "";
+}
+
+# Pass args blindly to vrip/vripsurf?
+$PASS_STR = "";
+if ($PASSTOVRIP ne "") {
+    $PASS_STR .= "-passtovrip \"$PASSTOVRIP\" ";
+} 
+if ($PASSTOVRIPSURF ne "") {
+    $PASS_STR .= "-passtovripsurf \"$PASSTOVRIPSURF\" ";
+} 
+
+
+# Call vripsubvollist to actually generate the commands
+$cmd = "find $SUBVOLDIR | grep subvol | grep .conf | sort | ".
+    "/bin/xargs vripsubvollist $CRUNCHSTR $RAMPSCALESTR $PASS_STR $RES > commands\n";
+print "} $cmd";
+
+system $cmd;
+!$? || die "Error: vripsubvollist returned an error. aborting.\n";
+
+# Figure out how many subvol pieces there shall be
+$cmd = "wc -l commands\n";
+$nsvs = int(`$cmd`);
+print "Number of subvolumes: $nsvs\n";
+
+# Now execute the commands in parallel
+$cmd = "loadbalance $LOADFILE commands -logdir $LOGDIR $XLOADSTR\n";
+$timecmd = &timecmd($cmd);
+print "} $cmd";
+system $timecmd;
+!$? || die "Error: loadbalance returned an error. aborting.\n";
+
+# Erase any subvolume .ply files with size 0
+$cmd = "/bin/find $SUBVOLDIR | egrep \"subvol....\.ply\"\n";
+@allplys = `$cmd`;
+for ($ii=0; $ii <= $#allplys; $ii++) {
+    if (-z $allplys[$ii]) {
+	# Zero size -- nuke
+	$cmd = "/bin/rm $SUBVOLDIR/$allplys[$ii]\n";
+	print "} $cmd";
+	system $cmd;
+	!$? || die "Error: removing zero-size .plys failed. aborting.\n";
+    }
+}
+
+# Merge all the ply files into a single ply file,
+# which has redundant vertices at the subvolume boundaries:
+if ($DOMERGE) {
+    $cmd = "/bin/find $SUBVOLDIR | /bin/egrep \"subvol....\.ply\" | /bin/xargs plymerge > $PLYFILE.unshared\n";
+    $timecmd = &timecmd($cmd);
+    print "} $cmd";
+    system $timecmd;
+    !$? || die "Error: plymerge returned an error. aborting.\n";
+
+    # Remove redundant vertices
+    $cmd = "plyshared < $PLYFILE.unshared > $PLYFILE\n";
+    $timecmd = &timecmd($cmd);
+    print "} $cmd";
+    system $timecmd;
+    !$? || die "Error: plyshared returned an error. aborting.\n";
+
+    # Plyclean it, to reduce slivers?
+    if ($DOCLEAN) {
+	$PLYCLEAN = $PLYFILE;
+	$PLYCLEAN =~ s/.ply/_clean.ply/g;
+	$cmd = "plyclean -defaults $PLYFILE > $PLYCLEAN\n";
+	$timecmd = &timecmd($cmd);
+	print "} $cmd";
+	system $timecmd;
+	!$? || die "Error: plyclean returned an error. aborting.\n";
+	# otherwise, mv plyclean into place
+
+	$PLYRAW = $PLYFILE;
+	$PLYRAW =~ s/.ply/_raw.ply/g;
+	$cmd = "/bin/mv $PLYFILE $PLYRAW; /bin/mv $PLYCLEAN $PLYFILE\n";
+	$timecmd = &timecmd($cmd);
+	print "} $cmd";
+	system $timecmd;
+	!$? || die "Error: mv returned an error. aborting.\n";
+    }
+
+    # Plycrunch it?
+    if ($DOCRUNCH) {
+	$cmd = "ply2crunchset -l 6 $PLYFILE\n";
+	$timecmd = &timecmd($cmd);
+	print "} $cmd";
+	system $timecmd;
+	!$? || die "Error: ply2crunchset returned an error. aborting.\n";
+    }
+}
+# Done
+print "pvrip finished successfully.\n";
+
+
+######################################################################
+# helper subroutines
+######################################################################
+
+
+
+sub timecmd {
+    $loccmd = $_[0];
+    # Extract program name from loccmd
+    # strip args
+    @words = split(' ', $loccmd);
+    $locdescr = $words[0];
+    # strip path
+    @words = split('/', $locdescr);
+    $locdescr = $words[$#words];
+    
+    $ltcmd = ("/usr/bin/time -f \"$locdescr time: user %U, system %S, elapsed %E, ".
+	      "%P CPU, page faults %F\" $loccmd");
+    return $ltcmd;
+}

@@ -1,0 +1,7 @@
+#!/bin/sh
+# the next line restarts using vrip \
+exec vrip "$0" "$@" -noui
+
+vrip_rangegridtomesh
+exit
+

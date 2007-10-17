@@ -1,0 +1,593 @@
+#!/usr/bin/perl
+#
+# pvrip:  Takes a vrip file (output), conf file, bound mesh, res in
+# meters, max voxels per chunk, and loadlimit file.
+#
+# All of these are the same as vrip, except the loadlimit file,
+# which lists the desired load on the various parallel machines.
+# It looks something like:
+#                radiance 4
+#                maglio 3
+#                cesello 2.2
+#                blackout 1.4
+#                lambert 7
+#                wavelet 1.2
+#                blueridge 1.4
+#
+# You can edit the numbers while it's running, but you cannot
+# change the order of the list, or add/remove machines while
+# it's running.
+
+sub printUsage {
+    print STDERR "\n";
+    print STDERR "Usage: pvrip2 <ply_file> <voxelsize> <subvolsize> <loadlimit_file> [options]\n";
+    print STDERR "e.g.: pvrip2 2mm.ply 2 400 loadlimit\n";
+    print STDERR "\n";
+    print STDERR "Options:\n";
+    print STDERR "\n";
+    print STDERR "     -bound bbox.ply     Will set the bounds to the extent of bbox.ply\n";
+    print STDERR "                           (not yet implemented... :-o )\n";
+    print STDERR "     -new                Runs vripnew, doing the .vri from scratch. (default)\n";
+    print STDERR "     -update             Runs vripupdate, to add more scans.\n";
+    print STDERR "     -root rootdir       Uses rootdir as the root for the subvol hierarchy\n";
+    print STDERR "                           (default is ./XXXmm/)\n";
+#    print STDERR "     -rampscale <s>      Where s is the scale-factor for the ramp in\n";
+#    print STDERR "                           vrip.  If you do not supply a rampscale,\n";
+#    print STDERR "                           pvrip will use (2500*voxelsize) as the\n";
+#    print STDERR "                           default rampscale.\n";
+#    print STDERR "     -norampscale        Don't pass a rampscale to vrip.  (By default,\n";
+#    print STDERR "                           pvrip passes a rampscale that overrides .vriprc).\n";
+    print STDERR "     -ramplength <l>     Will pass l as the VRIP ramp length.\n";
+    print STDERR "                           Default is 6 times the voxel size.\n";
+    print STDERR "     -passtovrip \"X\"     Will pass the string X to each vrip (at the end of the\n";
+    print STDERR "                           of the command line)\n";
+    print STDERR "     -passtovripsurf \"X\" Will pass the string X to each vripsurf (at the end\n";
+    print STDERR "                           of the command line)\n";
+    print STDERR "     -xload              Will pop up xload windows for each host.\n";
+    print STDERR "     -noxload            Will not pop up xload windows for each host.\n";
+    print STDERR "                           (default)\n";
+#    print STDERR "     -merge              Will run plymerge/plyshared at the end to merge\n";
+#    print STDERR "                           subvols into a single mesh. (default)\n";
+#    print STDERR "     -nomerge            Will not run plymerge/plyshared.\n";
+    print STDERR "     -merge              Will run pvmerge at the end to merge\n";
+    print STDERR "                           subvols into a single mesh. (default)\n";
+    print STDERR "     -nomerge            Will not run pvmerge.\n";
+    print STDERR "     -crunch             Will run plycrunch on the subvols and final mesh,\n";
+    print STDERR "                           and generate .set files. (default)\n";
+    print STDERR "     -nocrunch           Will not run plycrunch.\n";
+    print STDERR "     -clean              Will run plyclean -defaults on the final shared mesh,\n";
+    print STDERR "                           to remove slivers (~37% less tris)\n";
+    print STDERR "     -noclean            Will not run plyclean.\n";
+    print STDERR "     -rmtmps             Will remove temporary files (.vri, etc).  Which makes\n";
+    print STDERR "                           it harder to debug, but saves disk space.\n";
+    print STDERR "\n";
+    print STDERR "Notes:\n";
+    print STDERR " - The loadlimit file should look like this:\n";
+    print STDERR "radiance 6.5\n";
+    print STDERR "lambert  3.5\n";
+    print STDERR "phong    1.2\n";
+    print STDERR " - pvrip will not start a job on a machine unless\n";
+    print STDERR "   the limit is larger than 1.\n";
+    print STDERR " - you can adjust the numbers in loadlimit while\n";
+    print STDERR "   pvrip is running, but you cannot add, delete,\n";
+    print STDERR "   or reorder the host lines.\n";
+    print STDERR "\n";
+
+    exit(-1);
+}
+
+# Default values
+$VRIPMODE = "update";
+$BOUNDNAME = "";
+$SVROOT = "";
+$XLOADSTR = "";
+#$DORAMPSCALE = 1;
+$DOCRUNCH = 1;
+$DOCLEAN = 1;
+$DOMERGE = 1;
+$starttime = time;
+
+&printUsage() if ($#ARGV == -1);
+
+# First handle all the -args, removing
+# them from the args list....
+for ($i=0; $i <= $#ARGV; $i++) {
+    $arg = $ARGV[$i];
+    if (substr($arg, 0, 1) eq "-") {
+	if ($arg eq "-h") {
+	    # -h
+	    &printUsage;
+	} elsif ($arg eq "-new") {
+	    # -new
+	    $VRIPMODE = "new";
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-update") {
+	    # -update
+	    $VRIPMODE = "update";
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-bound") {
+	    # -bound
+	    if ($i+1 > $#ARGV) {
+		print STDERR "\nErr: -bound needs a second arg.\n";
+		&printUsage();
+	    }
+	    $nextarg = $ARGV[$i+1];
+	    $BOUNDNAME = $nextarg;
+	    splice(@ARGV, $i, 2); $i--;
+	} elsif ($arg eq "-root") {
+	    # -root
+	    if ($i == $#ARGV) {
+		print STDERR "\nErr:  -root needs another argument.\n";
+		&printUsage();
+	    }
+	    $SVROOT = $ARGV[$i+1];
+	    $SVROOT .= "/" if (substr($SVROOT, -1, 1) ne "/");
+	    splice(@ARGV, $i, 2); $i--;
+#	} elsif ($arg eq "-rampscale" || 
+#		 $arg eq "-rs") {
+#	    # -rampscale
+#	    if ($i == $#ARGV) {
+#		print STDERR "\nErr:  -rampscale needs another argument.\n";
+#		&printUsage();
+#	    }
+#	    $RAMPSCALE = $ARGV[$i+1];
+#	    $DORAMPSCALE = 1;
+#	    splice(@ARGV, $i, 2); $i--;
+#	} elsif ($arg eq "-norampscale" ||
+#		 $arg eq "-nrs") {
+#	    # -norampscale
+#	    $DORAMPSCALE = 0;
+#	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-ramplength" || 
+		 $arg eq "-rl") {
+	    # -ramplength
+	    if ($i == $#ARGV) {
+		print STDERR "\nErr:  -ramplength needs another argument.\n";
+		&printUsage();
+	    }
+	    $RAMPLENGTH = $ARGV[$i+1];
+	    splice(@ARGV, $i, 2); $i--;
+	} elsif ($arg eq "-passtovrip") {
+	    # -passtovrip
+	    $PASSTOVRIP = $ARGV[$i+1];
+	    splice(@ARGV, $i, 2); $i--;
+	} elsif ($arg eq "-passtovripsurf") {
+	    # -passtovripsurf
+	    $PASSTOVRIPSURF = $ARGV[$i+1];
+	    splice(@ARGV, $i, 2); $i--;
+	} elsif ($arg eq "-rmtmps") {
+	    # -rmtmps
+	    $DORMTMPS = 1;
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-noxload") {
+	    # -noxload
+	    $XLOADSTR = " -noxload ";
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-xload") {
+	    # -xload
+	    $XLOADSTR = " -xload ";
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-crunch") {
+	    $DOCRUNCH = 1;
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-nocrunch") {
+	    $DOCRUNCH = 0;
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-clean") {
+	    $DOCLEAN = 1;
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-noclean") {
+	    $DOCLEAN = 0;
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-merge") {
+	    $DOMERGE = 1;
+	    splice(@ARGV, $i, 1); $i--;
+	} elsif ($arg eq "-nomerge") {
+	    $DOMERGE = 0;
+	    splice(@ARGV, $i, 1); $i--;
+	} else {
+	    print STDERR "Error: Unhandled arg $arg.\n\n";
+	    &printUsage();
+	}
+    }
+}
+
+# Ok, now we should have stripped out all the -args.
+# So let's see if we have the right number of args remaining.
+if ($#ARGV != 3) {
+    print STDERR "Err: Expected 5 real args, got ".
+	($#ARGV+1)." args left (after stripping -args).\n";
+    &printUsage();
+}
+
+$PLYFILE = $ARGV[0];
+$VOXELSIZE = $ARGV[1];
+$SVSIZE = $ARGV[2];
+$LOADFILE = $ARGV[3];
+
+# Sanity checks on ply file
+die "Error: output ply filename cannot include a path.\n" 
+    if (index("/", $PLYFILE) > -1);
+
+# compute PLYBASE
+$PLYBASE = $PLYFILE;
+$PLYBASE =~ s/.ply$//;
+die "Error: $PLYFILE doesn't end in .ply?!?\n" if ($PLYBASE eq $PLYFILE);
+
+# Compute vri name from ply name
+$VRIFILE = "$PLYBASE.vri";
+
+# Add the res to svroot...
+$SVROOT = "$SVROOT"."$SVSIZE"."mm";
+$LOGDIR = "$SVROOT/logs_$PLYBASE"."_$$";
+
+## Set rampscale to default (2500*VOXELSIZE)
+#if ($DORAMPSCALE) {
+#    if (!defined ($RAMPSCALE)) {
+#	$RAMPSCALE = 2500 * $VOXELSIZE;
+#    }
+#}
+
+# Set ramplength to default (6*VOXELSIZE)
+if (!defined ($RAMPLENGTH)) {
+	$RAMPLENGTH = 6 * $VOXELSIZE;
+}
+
+
+# Set stdout to autoflush
+$| = 1;
+
+# State check...
+print STDERR ("pvrip2 state check:\n".
+	      "VRIPMODE:    $VRIPMODE,\n".
+	      "BOUNDNAME:   $BOUNDNAME,\n".
+	      "SVROOT:      $SVROOT,\n".
+#	      "RAMPSCALE:   $RAMPSCALE,\n",
+#	      "DORAMPSCALE: $DORAMPSCALE,\n",
+	      "RAMPLENGTH:  $RAMPLENGTH,\n",
+	      "XLOADSTR:    $XLOADSTR,\n".
+	      "DOCRUNCH:    $DOCRUNCH,\n".
+	      "DOCLEAN:     $DOCLEAN,\n".
+	      "DOMERGE:     $DOMERGE.\n");
+
+# Make sure that the proper directories exist.
+# Also, if we're in update mode, make sure that we can find the right .vri files.
+# BUGBUG: Second check not implemented yet...
+die "\nError: Subvol root directory $SVROOT does not exist! Aborting...\n\n" if (!-e $SVROOT);
+die "\nError: Subvol root $SVROOT is not a directory!?!?! Aborting...\n\n"   if (!-d $SVROOT);
+die "\nError: Subvol root directory $SVROOT is unreadable. Aborting...\n\n"  if (!-r $SVROOT);
+die "\nError: Subvol root directory $SVROOT is unwriteable. Aborting...\n\n" if (!-w $SVROOT);
+
+# Figure out @SUBVOLS.  Strip out all path stuff...
+$cmd = "find $SVROOT | egrep '^$SVROOT/sv_[^_]+_[^_]+_[^_/]+\$' | sort\n";
+# print "} $cmd";
+@SUBVOLS = split(' ', `$cmd`);
+# Strip SVROOT path out of subvols...
+for ($i=0; $i <= $#SUBVOLS; $i++) {
+    $SUBVOLS[$i] =~ s|^$SVROOT/||;
+}
+!$? || die "Error: find subvols returned an error. aborting.\n";
+# print "Subvols: @SUBVOLS\n";
+
+# Generate command list to vrip
+# (fills the array @COMMANDS)
+$COMMANDSFILE = "$SVROOT/$PLYBASE.commands";
+
+print STDERR "Generating list of commands ($COMMANDSFILE)....\n";
+&GenCommands();
+print STDERR "Done!    (Number of subvols to vrip: ".($#COMMANDS+1).")\n";
+# print "Commands:\n @COMMANDS";
+open(CMDFILE, ">$COMMANDSFILE");
+print CMDFILE @COMMANDS;
+close(CMDFILE);
+
+# Create logdir (it shouldn't exist)
+if (!-e $LOGDIR) {
+    $cmd = "mkdir $LOGDIR\n";
+    system $cmd;
+    (!$?) || die "Error: $cmd failed....\n";
+}
+
+
+# Now execute the commands in parallel
+sleep 5; # Allow for NFS propagation delay
+# $cmd = "/u/leslie/ply/bin/loadbalance $LOADFILE $COMMANDSFILE -logdir $LOGDIR $XLOADSTR\n";
+$cmd = "loadbalance $LOADFILE $COMMANDSFILE -logdir $LOGDIR $XLOADSTR\n";
+$timecmd = &timecmd($cmd);
+print "} $cmd";
+system $timecmd;
+!$? || die "Error: loadbalance returned an error. aborting.\n";
+
+# Find all the .ply files with this name in all subdirs
+$findplyscmd = "find $SVROOT | egrep '^$SVROOT/sv_[-0-9]+_[-0-9]+_[-0-9]+/$PLYBASE".
+    "_[-0-9]+_[-0-9]+_[-0-9]+.ply\$'";
+#print $findplyscmd;
+@plys = split(' ', `$findplyscmd`);
+
+# Erase any subvolume .ply files with size 0
+for ($i=0; $i <= $#plys; $i++) {
+    $ply = $plys[$i];
+    if (-e $ply) {
+	# File exists
+	$psize = -s $ply;
+	if ($psize == 0) {
+	    # And has size zero. nuke.
+	    $cmd = "/bin/rm $ply\n";
+	    print $cmd;
+	    system $cmd;
+	    (!$?) || die "Error: Couldn't rm zero-sized $ply...\n";
+	    splice(@plys, $i, 1); $i--;
+	}
+    }
+}
+
+# Merge all the ply files into a single ply file,
+# which has redundant vertices at the subvolume boundaries:
+if ($DOMERGE) {
+#    # Plymerge: Generate plymerged version
+#    $PLYMERGED = "$PLYBASE.merged.ply";
+#    $cmd = "$findplyscmd | /bin/xargs plymerge > $PLYMERGED\n";
+#    $timecmd = &timecmd($cmd);
+#    print "} $cmd";
+#    system $timecmd;
+#    !$? || die "Error: plymerge returned an error. aborting.\n";
+#    # merge finished successfully - symlink it in to outfile.
+#    `/bin/rm $PLYFILE\n` if (-e $PLYFILE);
+#    (!$?) || die "Couldn't rm $PLYFILE. aborting.\n";
+#    $cmd = "ln -s $PLYMERGED $PLYFILE\n";
+#    system($cmd);
+#    (!$?) || die "Couldn't $cmd. Aborting.\n";
+#    
+#    # Plyshared: Remove redundant vertices
+#    $PLYSHARED = "$PLYBASE.merged.shared.ply";
+#    $tolerance = $VOXELSIZE / 100;
+#    $cmd = "plyshared -t $tolerance < $PLYMERGED > $PLYSHARED\n";
+#    $timecmd = &timecmd($cmd);
+#    print "} $cmd";
+#    system $timecmd;
+#    !$? || die "Error: plyshared returned an error. aborting.\n";
+#    # plyshared finished successfully - symlink it in to outfile.
+#    `/bin/rm $PLYFILE\n` if (-e $PLYFILE);
+#    (!$?) || die "Couldn't rm $PLYFILE. aborting.\n";
+#    $cmd = "ln -s $PLYSHARED $PLYFILE\n";
+#    system($cmd);
+#    (!$?) || die "Couldn't $cmd. Aborting.\n";
+
+    # pvmerge: Generate merged version
+    $PVMERGED = "$PLYBASE.merged.ply";
+    # changed path temporarily since pvmerge not in CVS - leslie
+    $cmd = "~smr/proj/trimesh/bin.Linux/pvmerge -o $PVMERGED $SVROOT/sv_*_*_*";
+    # $cmd = "pvmerge -o $PVMERGED $SVROOT/sv_*_*_*";
+    $timecmd = &timecmd($cmd);
+    print "} $cmd\n";
+    system $timecmd;
+    !$? || die "Error: pvmerge returned an error. aborting.\n";
+    # merge finished successfully - symlink it in to outfile.
+    `/bin/rm $PLYFILE\n` if (-e $PLYFILE);
+    (!$?) || die "Couldn't rm $PLYFILE. aborting.\n";
+    $cmd = "ln -s $PVMERGED $PLYFILE\n";
+    system($cmd);
+    (!$?) || die "Couldn't $cmd. Aborting.\n";
+    
+
+    # Plyclean: Reduce slivers, tiny triangles.
+    if ($DOCLEAN) {
+#	$PLYCLEANED = "$PLYBASE.merged.shared.cleaned.ply";
+#	$cmd = "plyclean -defaults $PLYSHARED > $PLYCLEANED\n";
+	$PLYCLEANED = "$PLYBASE.merged.cleaned.ply";
+	# $cmd = "/u/leslie/ply/bin/plyclean -defaults $PVMERGED > $PLYCLEANED\n";
+	$cmd = "plyclean -defaults $PVMERGED > $PLYCLEANED\n";
+	$timecmd = &timecmd($cmd);
+	print "} $cmd";
+	system $timecmd;
+	!$? || die "Error: plyclean returned an error. aborting.\n";
+	# plyclean finished successfully - symlink it in to outfile.
+	`/bin/rm $PLYFILE\n` if (-e $PLYFILE);
+	(!$?) || die "Couldn't rm $PLYFILE. aborting.\n";
+	$cmd = "ln -s $PLYCLEANED $PLYFILE\n";
+	system($cmd);
+	(!$?) || die "Couldn't $cmd. Aborting.\n";
+    }
+
+    # Plycrunch it?
+    if ($DOCRUNCH) {
+	# $cmd = "/u/leslie/ply/bin/ply2crunchset -l 6 $PLYFILE\n";
+	$cmd = "ply2crunchset -l 6 $PLYFILE\n";
+	$timecmd = &timecmd($cmd);
+	print "} $cmd";
+	system $timecmd;
+	!$? || die "Error: ply2crunchset returned an error. aborting.\n";
+    }
+}
+
+# Almost done.  Check logs to see if any *stderr* files are nonzero
+$findstderrscmd = "find $LOGDIR | grep \"_stderr_\" ";
+@errlogs = split(' ', `$findstderrscmd`);
+$NOERRS = 1;
+foreach $errlog (@errlogs) {
+    if (-s $errlog != 0) {
+	print STDERR "Warning! $errlog was nonzero.  That subvol probably failed.\n";
+	$NOERRS = 0;
+    }
+}
+
+# Compute and print running time.
+$endtime = time;
+$totaltime = $endtime - $starttime;
+$hours = int($totaltime / 3600);
+$minutes = (int (($totaltime - $hours * 3600) / 60));
+$minutes = substr("000000$minutes",-2);
+$seconds = (int (($totaltime - ($hours * 3600 + $minutes * 60)) ));
+$seconds = substr("000000$seconds",-2);
+print "Total running time for pvrip2: $hours:$minutes:$seconds"."s.\n";
+
+
+if ($NOERRS) {
+    print "\npvrip finished successfully! (I think). :-)\n\n";
+} else {
+    print "\npvrip finished, but some subvols probably failed. :-(\n\n";
+}
+
+exit(0);
+
+
+######################################################################
+# helper subroutine - timecmd
+######################################################################
+
+sub timecmd {
+    $loccmd = $_[0];
+    # Extract program name from loccmd
+    # strip args
+    @words = split(' ', $loccmd);
+    $locdescr = $words[0];
+    # strip path
+    @words = split('/', $locdescr);
+    $locdescr = $words[$#words];
+    
+    $ltcmd = ("/usr/bin/time -f \"$locdescr time: user %U, system %S, elapsed %E, ".
+	      "%P CPU, page faults %F\" $loccmd");
+    return $ltcmd;
+}
+
+######################################################################
+# helper subroutine - maketodolines
+#    Given two .conf files, it figures out which lines have been
+#    added since the last pvrip, and generates a todo list.
+#    Assumes that the args, conf and conftodo, have pathnames
+#    that work w.r.t. the current working directory.
+######################################################################
+
+sub maketodolines 
+{
+    local($all, $conf) = @_;
+    # First step... create associative array listing all the
+    # ply files we've seen so far
+    %seen = ();
+    undef @returnlines;
+    if (-e $conf) {
+	open(CONF, $conf) || die "Error: couldn't open $conf...\n";    
+	while (<CONF>) {
+	    @cwords = split(' ');
+	    $cply = $cwords[1];
+	    $seen{$cply} = 1;
+	}
+	close CONF;
+    }
+
+    # Second step... for every file listed in all, add it 
+    # to the todolist if it's not already in conf...
+    open(ALL, $all) || die "Error: couldn't open $all...\n";
+    while (<ALL>) {
+	@cwords = split(' ');
+	$cply = $cwords[1];
+	if ($seen{$cply} ne "1") {
+	    push(@returnlines, $_);
+	    $seen{$cply} = 1;
+	} else {
+	    # print STDERR "Cool. $cply has been seen.\n";
+	}
+    }
+    close ALL;
+
+    return @returnlines;
+}
+
+######################################################################
+# helper subroutine - GenCommands
+#    Based on vripsubvollist (part of pvrip version 1)
+#    Assumes that $SVROOT, @SUBVOLS have been set
+#    Generates the commands to vrip all the subvols
+#    Does not generate commands for merging, crunching back 
+#    together....
+######################################################################
+
+sub GenCommands
+{
+    local($svi);
+    for ($svi=0; $svi <= $#SUBVOLS; $svi++) {
+	print "Checking subvol ".($svi+1)." of ".($#SUBVOLS+1)." \r";
+	$subvol = $SUBVOLS[$svi];
+
+	# Compute some of the files we'll need
+	($dummy, $x, $y, $z) = split('_', $subvol);
+	$numstr = "$x"."_$y"."_$z";
+	$ply = "$PLYBASE"."_$numstr.ply";
+	$vri = $ply;
+	$vri =~ s/.ply$/.vri/;
+	$plybig = $ply;
+	$plybig =~ s/.ply$/_beyondbbox.ply/;
+	$bbox = "all.bbox.ply";
+	$conf = $ply;
+	$conf =~ s/.ply$/.conf/;
+	$conftodo = $ply;
+	$conftodo =~ s/.ply$/_todo.conf/;
+        $automountdir = "/n/".`hostname`; chop $automountdir;
+	$cwd = `pwd`; chop $cwd;
+        if (substr($cwd, 0, 3) ne "/n/") {
+            $cwd = $automountdir.$cwd;
+        }
+
+	# If we're in -new (bulldozer) mode, nuke everything that
+	# relates to this output name...
+	if ($VRIPMODE eq "new") {
+	    $pattern = "$SVROOT/$subvol/$ply";
+	    $pattern =~ s|.ply$|*|;
+	    $cmd = "/bin/rm $pattern\n";
+	    print "} $cmd";
+	    system $cmd;
+	    (!$?) || die "Error: $cmd failed...\n";
+	}
+	
+	# Now, regardless of whether we were in bulldozer mode
+	# or update mode, at this point we see if the subvolume
+	# is unstarted or partially done, and pick the right
+	# program (vrip or vripdate) to run....
+	@conftodolines = &maketodolines("$SVROOT/$subvol/all.conf", 
+					"$SVROOT/$subvol/$conf");
+	if ($#conftodolines == -1) {
+	    next;
+	}
+
+	# If there's stuff to do, write to todo file
+	open(CONFTODO, ">$SVROOT/$subvol/$conftodo");
+	print CONFTODO @conftodolines;
+	close CONFTODO;
+		 
+	if (!-e "$SVROOT/$subvol/$vri" || 
+	    !-e "$SVROOT/$subvol/$conf") {
+	    $vripstr = "vripnew";
+	} else {
+	    $vripstr = "vripupdate";
+	}
+
+
+	# Set a few options...
+	$crunchstr = "";
+	if ($DOCRUNCH) {
+	    $crunchstr = " ply2crunchset -l 6 $ply;";
+	}
+#	$rampscalestr = "";
+#	if ($DORAMPSCALE) {
+#	    $rampscalestr = " -rampscale $RAMPSCALE ";
+#	}
+	$ramplengthstr = " -ramplength $RAMPLENGTH ";
+	$rmtmpstr = "";
+	if ($DORMTMPS) {
+	    $rmtmpstr = "/bin/rm $plybig $vri;";
+	}
+
+	# Amount of safety in plyculling triangles
+	$cullEpsilon = 2.1 * $VOXELSIZE;
+
+	push(@COMMANDS, 
+	     "cd $cwd/$SVROOT/$subvol; ".
+#	     "time $vripstr $vri $conftodo $bbox $VOXELSIZE $rampscalestr $PASSTOVRIP -noui; ".
+	     "time $vripstr $vri $conftodo $bbox $VOXELSIZE $ramplengthstr $PASSTOVRIP -noui; ".
+	     "time vripsurf -no_remove_slivers $vri $plybig $PASSTOVRIPSURF -noui; ".
+	     "time plycull $bbox $plybig $ply $cullEpsilon; ".
+	     "$rmtmpstr $crunchstr ".
+	     "cat $conftodo >>! $conf; ".
+	     "/bin/rm $conftodo\n");
+    }
+}

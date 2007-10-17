@@ -1,0 +1,107 @@
+#
+#  Brian Curless
+#  
+#  Computer Graphics Laboratory
+#  Stanford University
+#  
+#  ---------------------------------------------------------------------
+#  
+#  Copyright (1997) The Board of Trustees of the Leland Stanford Junior
+#  University. Except for commercial resale, lease, license or other
+#  commercial transactions, permission is hereby given to use, copy,
+#  modify this software for academic purposes only.  No part of this
+#  software or any derivatives thereof may be used in the production of
+#  computer models for resale or for use in a commercial
+#  product. STANFORD MAKES NO REPRESENTATIONS OR WARRANTIES OF ANY KIND
+#  CONCERNING THIS SOFTWARE.  No support is implied or provided.
+#  
+
+ifndef OPTIMIZER
+#	OPTIMIZER = -O -64
+	OPTIMIZER = -O
+endif
+
+CSRCS =	
+
+CXXSRCS = plyclean.cc Mesh.cc plyio.cc undo.cc
+
+ROOT = ../..
+
+TARGETS = plyclean
+
+# Get OS uname
+UNAME := $(shell uname)
+
+ifeq ($(UNAME), IRIX)
+
+        # Set optimizer flags to allow it to run on Indys...
+        ifeq ($(OPTIMIZER), -O) 
+	    OPTIMIZER = -O -mips3
+        endif  #OPTIMIZER
+
+	TARGETS := $(TARGETS)
+
+        CC = cc
+        CXX = CC
+
+	CFLAGS =  -MDupdate makedep -woff3262 -woff1174 -woff1356
+	CXXFLAGS =  -MDupdate makedep -woff3262 -woff1174 -woff1356
+
+	INCLS = -I. -I$(ROOT)/include
+
+	LIBPATHS = -L. -L$(ROOT)/lib
+
+	LIBS = -lply -lm
+
+else
+
+	# Set special optimizer flags...
+	ifeq ($(OPTIMIZER), -O) 
+		OPTIMIZER = -O6 -march=i686 -malign-double -fno-for-scope \
+			    -funroll-loops -fomit-frame-pointer -ffast-math
+	endif
+
+	CC = gcc
+	CXX = g++
+
+	CFLAGS = -DLINUX -Wno-unused
+	CXXFLAGS = -DLINUX -Wno-unused
+
+	INCLS = -I. -I$(ROOT)/include
+
+	LIBPATHS = -L. -L$(ROOT)/lib
+
+	LIBS = -lply -lm
+
+endif
+
+SRCS = $(CXXSRCS) $(CSRCS)
+OBJS = $(CXXSRCS:.cc=.o) $(CSRCS:.c=.o)
+
+CFLAGS := $(INCLS) -DFUNCPROTO -DHAVE_UNISTD_H $(CFLAGS)
+CXXFLAGS := $(INCLS) -DFUNCPROTO -DHAVE_UNISTD_H $(CXXFLAGS)
+CC := $(CC) $(OPTIMIZER)
+CXX := $(CXX) $(OPTIMIZER)
+
+
+
+default: all
+
+all:  $(TARGETS)
+
+install: clobber depend all
+
+clobber:
+	-/bin/rm -f *.o *~ core makedep $(TARGETS)
+
+clean:
+	-/bin/rm -f *.o *~ core
+
+depend: 
+	echo > makedep
+	gccmakedep -fmakedep -- $(CFLAGS) -- $(CSRCS) $(CXXSRCS)
+	-rm makedep.bak
+
+plyclean: $(OBJS)
+	$(CXX) -o $@ $(OBJS) $(LIBPATHS) $(LIBS)
+

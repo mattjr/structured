@@ -1,0 +1,475 @@
+#!/usr/bin/perl
+#
+# loadbalance:
+# This script tries to limit the load on a computer.
+# It is applicable to large batches of small jobs. 
+# It runs only a few jobs at a time, with low priority, and
+# watches the uptime to make sure it stays below the load limit. 
+#
+# Usage:  loadbalance <maxloadfile> <commandfile> [options]
+# Options:
+#          -logdir logdir   saves the cmd,stdout,stderr files
+#                           to another logdir (default is
+#                           /tmp/loadbalance_PID
+#          -xload           Do pop up xload windows
+#          -noxload         Don't pop up xload windows (default)
+# 
+# Where:   <maxloadfile> is a file that lists the maximum load for
+#          each machine.  It should list each machine on a separate
+#          line, e.g:
+#
+#              radiance 6
+#              lambert 6
+#              wavelet 2
+#              snell 1
+#          
+#          You can change this file while it's running, and it will
+#          try to match the new numbers.  It will not run any processes
+#          on machines unlisted here.
+#
+#          <commandfile>  Is a list of commands to be executed, one
+#          command per line.  They should not depend on being executed
+#          within the initial directory; e.g:
+#
+#              cd /usr/data/raytrace; myrt -o f0.rgb f0.iv
+#              cd /usr/data/raytrace; myrt -o f1.rgb f1.iv
+#              cd /usr/data/raytrace; myrt -o f2.rgb f2.iv
+#              cd /usr/data/raytrace; myrt -o f3.rgb f3.iv
+#              ....
+#
+#          You can use a single dash ("-") instead of commandfile,
+#          and it will read from stdin.
+#
+#
+
+sub printUsage {
+    print STDERR "Usage:  loadbalance <maxloadfile> <commandfile> [options]\n";
+    print STDERR "Options:\n";
+    print STDERR "         -logdir logdir   saves the cmd,stdout,stderr files\n";
+    print STDERR "                          to another logdir (default is\n";
+    print STDERR "                          /tmp/loadbalance_PID\n";
+    print STDERR "         -xload           Do pop up xload windows\n";
+    print STDERR "         -noxload         Don't pop up xload windows (default)\n";
+    print STDERR "\n";
+    print STDERR "Where:   <maxloadfile> is a file that lists the maximum load for\n";
+    print STDERR "         each machine.  An optional 3rd word lists the minimum\n";
+    print STDERR "         number of jobs (not load!) for each machine.\n";
+    print STDERR "         maxloadfile should list each machine on a separate line, e.g:\n";
+    print STDERR "\n";
+    print STDERR "             radiance 6 3\n";
+    print STDERR "             lambert 6 2\n";
+    print STDERR "             wavelet 2\n";
+    print STDERR "             snell 1\n";
+    print STDERR "             aegean 0\n";
+    print STDERR "         \n";
+    print STDERR "         You can change this file while it's running, and it will\n";
+    print STDERR "         try to match the new numbers.  However, you can only change\n";
+    print STDERR "         the numbers, NOT THE MACHINES.  Please keep the same machines\n";
+    print STDERR "         in the same order, to aid bookkeeping.\n";
+    print STDERR "\n";
+    print STDERR "         <commandfile>  Is a list of commands to be executed, one\n";
+    print STDERR "         command per line.  They should not depend on being executed\n";
+    print STDERR "         within the initial directory; e.g:\n";
+    print STDERR "\n";
+    print STDERR "             cd /usr/data/raytrace; myrt -o f0.rgb f0.iv\n";
+    print STDERR "             cd /usr/data/raytrace; myrt -o f1.rgb f1.iv\n";
+    print STDERR "             cd /usr/data/raytrace; myrt -o f2.rgb f2.iv\n";
+    print STDERR "             cd /usr/data/raytrace; myrt -o f3.rgb f3.iv\n";
+    print STDERR "             ....\n";
+    print STDERR "\n";
+    print STDERR "         You can use a single dash (\"-\") instead of commandfile,\n";
+    print STDERR "         and it will read from stdin.\n";
+    exit(-1);
+}
+
+# Timesteps, in seconds. This is how often it checks to see if it
+# should spawn a new process.
+$TIMEINTERVAL = 6.0;
+# Amount to decay PENDING each time step.
+# This decay compensates for uptime's 1-min lag.
+$STEPDECAY = 0.8;
+
+# Option defaults
+$DOXLOAD = 0;
+
+# Default directory for log files
+$AUTOMOUNTPREFIX = "/n/";
+$BASEHOST = `hostname`;
+chop $BASEHOST;
+$LOGDIR = $AUTOMOUNTPREFIX.$BASEHOST."/tmp/loadbalance_$$";
+
+# Make stderr autoflush
+use IO::Handle;
+STDOUT->autoflush(1);
+
+# Open command and maxload files
+if ($#ARGV < 1) {
+    print STDERR "Wrong number of arguments...\n";
+    &printUsage;
+    exit(-1);
+} else {
+    # Figure out and open maxload file...
+    $maxloadfile = $ARGV[0];
+    if (substr($maxloadfile,0,1) eq "-") {
+	print STDERR "Unknown flag: $ARGV[0]...\n";
+	&printUsage;
+    } else {
+	if (!open(MAXLOAD, $maxloadfile)) {
+	    print  STDERR "Unable to open maxload file $maxloadfile...\n";
+	    &printUsage;
+	}
+
+	# Initialize some arrays for tracking load, and then 
+	# close maxload for now... we'll open it every time we want
+	# to check it, so that it can be updated on-the-fly
+	print STDERR "Host check:  Making sure all listed hosts are reachable,\n";
+	print STDERR "             and have proper ssh permissions...\n";
+	for ($n=0; ($line = <MAXLOAD>); $n++) {
+	    ($host[$n], $limit[$n]) = split(' ', $line);
+
+	    # First just run simple rsh, to verify host is usable.
+	    if ($limit[$n] >= 1) {
+		# since rsh is disabled on most machines, I changed this to ssh - leslie
+		$errstat = `ssh $host[$n] date\n`;
+		# $errstat = `rsh $host[$n] date\n`;
+		if ($?) {
+		    die "Error: `ssh $host[$n] date` failed.  Fix ssh settings,\n".
+			"or remove host $host[$n] from loadlimit file: $maxloadfile.\n";
+		    # die "Error: `rsh $host[$n] date` failed.  Fix rsh settings,\n".
+			# "or remove host $host[$n] from loadlimit file: $maxloadfile.\n";
+		}
+	    } else {
+		print STDERR "$host[$n]: Skipping ssh check, limit less than 1.\n";
+	    }
+
+	    # ok, so ssh works. Get initial uptime info.
+	    $load[$n] = &uptime($host[$n]);
+	    $oldload[$n] = $load[$n];
+	    $pending[$n] = 0;
+	    print STDERR "Using host $host[$n], load $load[$n], limit $limit[$n].\n";
+	    $guessload[$n] = 0;
+	    
+	}
+	close(MAXLOAD);
+    }
+    
+    # Figure out and open command file...
+    $commandfile = $ARGV[1];
+    if ($commandfile eq '-') {
+	open(COMMAND, "&STDIN");
+	$ncommands = "???";
+    } elsif (substr($commandfile,0,1) eq "-") {
+	print STDERR "Unknown flag: $ARGV[1]...\n";
+	&printUsage;
+    } else {
+	($ncommands, @rest) = split(' ', `wc -l $commandfile\n`);
+	if (!open(COMMAND, $commandfile)) {
+	    print  STDERR "Unable to open command file $commandfile...\n";
+	    &printUsage;
+	}
+    }
+}
+
+# Parse options
+$currarg = 2;
+while ($currarg <= $#ARGV) {
+    # Handle -logdir
+    if ($ARGV[$currarg] eq "-logdir") {
+	$LOGDIR = $ARGV[$currarg+1];
+	$currarg +=2;
+	# check arg existed
+	if ($LOGDIR eq "") {
+	    print STDERR "Error: no logdir???\n\n";
+	    &printUsage();
+	}
+	# add absolute path to logdir
+	if (substr($LOGDIR, 0, 1) ne "/") {
+	    $PWD = `pwd`; chop $PWD;
+	    $LOGDIR = "$PWD/$LOGDIR";
+	}
+	# Add /n/basehost, if necessary
+	if (substr($LOGDIR, 0, length($AUTOMOUNTPREFIX)) ne
+	    $AUTOMOUNTPREFIX) {
+	    $LOGDIR = $AUTOMOUNTPREFIX.$BASEHOST.$LOGDIR;
+	}
+	
+    } elsif ($ARGV[$currarg] eq "-noxload") {
+	$DOXLOAD = 0;
+	$currarg++;
+    } elsif ($ARGV[$currarg] eq "-xload") {
+	$DOXLOAD = 1;
+	$currarg++;
+    } else {
+	print STDERR "Error: Unhandled arg $ARGV[$currarg].\n\n";
+	&printUsage();
+    }
+}
+
+# Make sure logdir is usable
+if (-e $LOGDIR) {
+    if (-d $LOGDIR) {
+	-x $LOGDIR || die "Error: logdir $LOGDIR does not have execute permissions\n";
+	-w $LOGDIR || die "Error: logdir $LOGDIR does not have write permissions\n";
+
+	# print STDERR "Note, loadbalance using existing logdir $LOGDIR...\n";
+	# Clear any old loadbalance logfiles
+	$cmd = "cd $LOGDIR; /bin/ls | /bin/egrep '\$loadbalance_' | ".
+	    "xargs /bin/rm -f\n";
+	print STDERR "Clearing old log files....";
+	system $cmd;
+	print STDERR "Done.\n";
+
+    } else {
+	print STDERR "Error: loadbalance: logdir $LOGDIR exists, \n".
+	    "and is not a directory.\n";
+	printUsage();
+    }
+} else {
+    # make logdir
+    $errmsg = `mkdir $LOGDIR\n`;
+    if ($?) {
+	die "Error: Could not mkdir $LOGDIR\n";
+    }
+}
+
+# Pop up an xload window for fun.... :-)
+if ($DOXLOAD) {
+    print STDERR "Starting xloads...";
+    for ($n=0; $n <= $#host; $n++) {
+	if ($limit[$n] >= 1) {
+	    $scale = int($limit[$n]) + 1;
+	    $geomscale = ($scale+1) * 20;
+	    $cmd = "ssh $host[$n] xload -fg green -hl blue -bg black ".
+		"-scale $scale -geom 300x$geomscale &\n";
+	    # $cmd = "rsh $host[$n] xload -fg green -hl blue -bg black ".
+		# "-scale $scale -geom 300x$geomscale &\n";
+	    # print ($cmd);
+	    system($cmd);
+	}
+    }
+    print STDERR "Done!\n";
+}
+
+
+######################################################################
+##########
+##########      Main Loop
+##########
+######################################################################
+
+
+# Loop until commands are exhausted
+for ($cmdno=1; ($commandline = <COMMAND>); $cmdno++) {
+    chop($commandline);
+    # Find a host for ssh.  Wait, if necessary...
+    $host = &findHost();
+    $psfile = &addps($host, $cmdno);
+    # print STDERR "Adding psfile: $psfile....\n";
+	
+    # run 1 copy of the program 
+    # Note, the command must be run in the background, or else this
+    # script will never run more than 1 at a time... :-)
+    #
+    # Also note, that this does not add the "npri -h 250", which
+    # cuts down the priority of the process.  (Some things, like
+    # cd, don't work with npri).  So you'll want to add that
+    # yourself into the commmand line... :-)
+    # $cmd="rsh $host \"npri -h 250 $commandline\" &\n";
+
+    # Redirect STDOUT, STDERR to log files
+    open(SAVEOUT, ">&STDOUT");
+    open(SAVEERR, ">&STDERR");
+    $stdoutname = $psfile; $stdoutname =~ s/_ps_/_stdout_/;
+    $stderrname = $psfile; $stderrname =~ s/_ps_/_stderr_/;
+    
+    # Set up the command...
+    $cmdname = $psfile; $cmdname =~ s/_ps_/_cmd_/;
+    open(CMD, ">$cmdname");
+    $cmdlines = $commandline;
+    $cmdlines =~ s/;/\n/g;
+    print CMD "$cmdlines\n";
+    print CMD "/bin/rm $psfile\n";
+    close(CMD);
+#    $cmd = "rsh $host npri -h 250 csh $cmdname &\n";
+    $cmd = "ssh $host /bin/nice -20 csh -ef $cmdname &\n";
+    # $cmd = "rsh $host /bin/nice -20 csh -ef $cmdname &\n";
+    print STDERR $cmd;
+
+    open(STDOUT, ">$stdoutname");
+    open(STDERR, ">$stderrname");
+    select(STDERR); $| = 1;
+    select(STDOUT); $| = 1;
+
+    # Actually run the ssh command
+    system($cmd);
+
+    #restore STDOUT, STDERR
+    open(STDOUT, ">&SAVEOUT");
+    open(STDERR, ">&SAVEERR");
+
+}
+
+# Once all the commands are started, wait for them all to
+# finish
+$nleft = &countallps();
+print STDERR "loadbalance waiting for $nleft processes to finish...\n";
+while ($nleft > 0) {
+    $oleft = $nleft;
+    $nleft = &countallps();
+    $nleft = int($nleft);
+    
+    if ($nleft != $oleft) {
+	print STDERR "$nleft...";
+    }
+    sleep 4;
+}
+print STDERR " Done!\n";
+
+
+
+
+
+######################################################################
+##########
+##########      Helper functions
+##########
+######################################################################
+
+
+# Find a host for ssh.  Wait, if necessary.
+sub findHost {
+    while (1) {
+	# Make sure we have reloaded maxload file, if necessary.
+	if (!$midmaxloadfile) {
+	    open(MAXLOAD, $maxloadfile);
+	    for ($n=0; ($line = <MAXLOAD>); $n++) {
+		@words = split(' ', $line);
+		$host[$n] = $words[0];
+		$limit[$n] = $words[1];
+		$minlimit[$n] = $words[2];
+	    }
+	    close(MAXLOAD);
+	    $midmaxloadfile = 1;
+	}
+
+	# Run through the list, checking uptime...
+	for ($n=0; $n <= $#host; $n++) {
+	    # Skip machines with limit 0
+	    if ($limit[$n] == 0) {
+		next;
+	    }
+	    # Compute guessload, our guess of the what the load "should"
+	    # be....
+	    $load[$n] = &uptime($host[$n]);
+	    $guessload = $load[$n];
+	    if ($load[$n] > $oldload[$n]) {
+		# Add derivative to load if rising...
+		$load += (60.0 / $TIMEINTERVAL) * ($load[$n] - $oldload[$n]);
+	    }
+	    $oldload[$n] = $guessload;
+
+	    # Count number of processes still running on this host
+	    $pscount = 0+ &countps($host[$n]);
+	    
+	    # Reduce pending to pscount, if it's too big
+	    # Since the pending load (from our jobs) cannot be larger
+	    # than the total number of (our) jobs
+	    $pending[$n] = $pscount if ($pending[$n] > $pscount);
+
+	    if (($guessload + $pending[$n] + 1 <= $limit[$n] &&
+		$pscount +1 <= $limit[$n]) ||
+		$minlimit[$n] > $pscount) {
+		# We found a processor to use....
+		print STDERR "========\n";
+		$icommand++;
+		print STDERR "Using $host[$n] ($icommand of $ncommands): load: $load[$n], guess: $guessload,".
+		    " pending: $pending[$n], limit: $limit[$n], ".
+			"pscount: $pscount ...\n";
+		# add 1.1, to be cautious...
+		$pending[$n] += 1.1;
+		return($host[$n]);
+	    } 
+	}
+	# Print waiting message so people know it's still alive...
+	
+	print STDOUT "Uptimes: ";
+	for ($n=0; $n <= $#host; $n++) {
+	    print STDOUT $host[$n]." ".$load[$n].", ";
+	}
+	print "\r";
+
+	# If we get here, we ran through the whole list.
+	# wait 8 seconds, decay pending, and loop again...
+	$midmaxloadfile = 0;
+	sleep $TIMEINTERVAL;
+	for ($n=0; $n <= $#pending; $n++) {
+	    $pending[$n] *= $STEPDECAY;
+	}
+	
+    }
+}
+
+# Add a file to LOGDIR, to record that a process is running.
+# The process will remove it when it's done.
+# returns the name of the file.
+sub addps {
+    $host = $_[0];
+    $cmdno = $_[1];
+    $basehost = `hostname`;
+    chop $basehost;
+    $psfile = "$LOGDIR/loadbalance_ps_".$host."_$cmdno";
+    system("touch $psfile\n");
+    return $psfile;
+}
+
+# Count the files in LOGDIR for a particular host, to know
+# how many processes we are running there....
+sub countps {
+    $host = $_[0];
+    $basehost = `hostname`;
+    chop $basehost;
+    $cmd = "ls $LOGDIR | grep loadbalance_ps_".$host." | wc -l";
+    $pscount = `$cmd`;
+    return $pscount;
+}
+
+# Count the files in /LOGDIR for all hosts, to know the total number
+# of running processes...
+sub countallps {
+    $basehost = `hostname`;
+    chop $basehost;
+    $cmd = "ls $LOGDIR | grep loadbalance_ps_ | wc -l";
+    $pscount = `$cmd`;
+    return $pscount;
+}
+
+
+# Get the uptime on a remote system
+sub uptime {
+    $host = $_[0];
+    # Run uptime to get the system load
+    # Port to Linux - Changing rup to ssh <machine> uptime since it looks like rup is not
+    # part of the default Linux install.
+
+    local($loadstr) = `ssh $host uptime`;
+    # local($loadstr) = `rup $host\n`;
+
+    # Find the word after "average:"
+    @words = split(' ', $loadstr);
+
+    $upt = "";
+    for ($i=0; $i <= $#words; $i++) {
+	if ($words[$i] eq "average:") {
+	    $upt = $words[$i+1];
+	}
+    }
+    if ($upt eq "") {
+	print STDERR "WARNING!  ssh $host uptime failed!\n";
+	return(99999999);
+    }
+    # Chop off comma, return uptime...
+    chop($upt);
+    return($upt + 0);
+}
+
+

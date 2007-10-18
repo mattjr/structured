@@ -297,15 +297,16 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::ve
 
     if(apply_tex_to_tri(f,calib,back_trans[indexClosest],indexClosest,tex_size))
       validCount++;
-    else
-      gts_surface_remove_face(s,GTS_FACE(f));
+     else
+   gts_surface_remove_face(s,GTS_FACE(f));
   
   }
  
   gts_surface_traverse_destroy (t);
-  
+  #warning "Does work when faces are rmoved when not valid tex fixme"
   gts_surface_foreach_face (s, (GtsFunc) pick_first_face,&first );
   t = gts_surface_traverse_new (s, first);
+  
   std::vector<T_Face *> border_faces;
   while ((f =(T_Face *) gts_surface_traverse_next (t, &level))) {
     GtsTriangle * t = &GTS_FACE(f)->triangle;
@@ -454,7 +455,7 @@ int main( int argc, char *argv[ ] )
       // printf("Loading images %d\n",stereo_pair_count);
       
       Vector veh_pose(AUV_NUM_POSE_STATES);
-  
+      double alt;
       
       if( !(contents_file >> index &&
 	    contents_file >> timestamp &&
@@ -465,7 +466,8 @@ int main( int argc, char *argv[ ] )
 	    contents_file >> veh_pose[AUV_POSE_INDEX_Z] &&
 	    contents_file >> veh_pose[AUV_POSE_INDEX_PHI] &&
 	    contents_file >> veh_pose[AUV_POSE_INDEX_THETA] &&
-	    contents_file >> veh_pose[AUV_POSE_INDEX_PSI]))
+	    contents_file >> veh_pose[AUV_POSE_INDEX_PSI] &&
+	    contents_file >> alt))
 	{
 	  // we've reached the end of the contents file
 	  break;

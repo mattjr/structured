@@ -621,6 +621,7 @@ static bool get_auv_image_name( const string  &contents_dir_name,
  //
    // Try to read timestamp and file names
    //
+
    double alt;
    bool readok;
    do{
@@ -635,6 +636,7 @@ static bool get_auv_image_name( const string  &contents_dir_name,
 	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PHI] &&
 	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_THETA] &&
 	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PSI] && contents_file >> alt );
+
      
    }
    while (readok && (name.timestamp < start_time || (skip_counter++ < num_skip)));
@@ -861,10 +863,11 @@ int main( int argc, char *argv[ ] )
        print_uv_3dpts(features,feature_positions,
        left_frame_id,right_frame_id,timestamp,
        left_frame_name,right_frame_name);*/
-     
+     if( output_ply_and_conf){    
      fprintf(conf_ply_file,
 	     "bmesh surface-%04d.ply\n"
 	     ,i); 
+     }
    }
 
    if(output_uv_file)

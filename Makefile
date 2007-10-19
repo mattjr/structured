@@ -26,7 +26,7 @@ LIBS= -L/sw/lib  -framework osg  -framework osgDB  -framework OpenThreads -frame
 
 else
 INC_FLAGS= -I/usr/local/include/
-LIBS=-losg -losgDB -losgGA  -losgText -lOpenThreads -lGL -lGLU  -losgUtil
+LIBS=-losg -losgDB -losgGA -losgViewer -losgText -lOpenThreads -lGL -lGLU  -losgUtil
 endif
 
 

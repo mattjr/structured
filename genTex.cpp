@@ -298,7 +298,7 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::ve
     if(apply_tex_to_tri(f,calib,back_trans[indexClosest],indexClosest,tex_size))
       validCount++;
      else
-   gts_surface_remove_face(s,GTS_FACE(f));
+       ;//gts_surface_remove_face(s,GTS_FACE(f));
   
   }
  

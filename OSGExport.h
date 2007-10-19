@@ -49,6 +49,8 @@ using namespace std;
 
 #if ((OSG_VERSION_MAJOR==2))
 #include <osgViewer/Viewer>
+
+
 class MyGraphicsContext {
     public:
         MyGraphicsContext()
@@ -67,7 +69,7 @@ class MyGraphicsContext {
 
 #else
             _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-	    
+	    printf("Creating linux contex\n");
 #endif
 
 
@@ -86,7 +88,10 @@ class MyGraphicsContext {
                 _gc->realize();
                 _gc->makeCurrent();
                 std::cout<<"Realized window"<<std::endl;
-            }
+            }else{
+	      printf("Can't realize window\n");
+	      exit(0);
+	    }
         }
         
         bool valid() const { return _gc.valid() && _gc->isRealized(); }

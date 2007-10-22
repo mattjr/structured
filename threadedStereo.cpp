@@ -67,7 +67,8 @@ static bool use_surf_features = false;
 static bool use_ncc = false;
 static int skip_counter=0;
 static int num_skip=0;
-
+static string mb_ply_filename;
+static bool have_mb_ply=false;
 static bool have_cov_file=false;
 static string stereo_calib_file_name;
 static bool use_rect_images=false;
@@ -165,6 +166,13 @@ static bool parse_args( int argc, char *argv[ ] )
       {
          if( i == argc-1 ) return false;
          dir_name=string( argv[i+1]) ;
+         i+=2;
+      }
+      else if( strcmp( argv[i], "--mbfile" ) == 0 )
+      {
+	have_mb_ply=true;
+         if( i == argc-1 ) return false;
+	 mb_ply_filename=string( argv[i+1]) ;
          i+=2;
       }
       else if( strcmp( argv[i], "-z" ) == 0 )
@@ -317,6 +325,7 @@ static void print_usage( void )
    cout << "   -n <max_frame_count>    Set the maximum number of frames to be processed." << endl;
    cout << "   -z <feature_depth>      Set an estimate for the feature depth relative to cameras." << endl;
    cout << "   -t <num_threads>       Number of threads to run" << endl;
+  cout << "   --mbfile       Multibeam ply mesh" << endl;
  cout << "   --cov <file>               Input covar file." << endl; 
   cout << "   -c                      Use the normalised cross correlation feature descriptor" << endl;
    cout << "   --sift                  Find SIFT features." << endl;
@@ -627,18 +636,18 @@ static bool get_auv_image_name( const string  &contents_dir_name,
    do{
     
      readok =(contents_file >> name.index &&
-	 contents_file >> name.timestamp &&
-         contents_file >> name.left_name &&
-         contents_file >> name.right_name &&
+	      contents_file >> name.timestamp &&
+	      contents_file >> name.left_name &&
+	      contents_file >> name.right_name &&
 	      contents_file >>  (*name.veh_pose)[AUV_POSE_INDEX_X] &&
-	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_Y] &&
-	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_Z] &&
-	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PHI] &&
-	 contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_THETA] &&
-	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PSI] && contents_file >> alt );
-
-     
-   }
+	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_Y] &&
+	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_Z] &&
+	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PHI] &&
+	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_THETA] &&
+	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PSI] &&
+	      contents_file >> alt );
+  
+ }
    while (readok && (name.timestamp < start_time || (skip_counter++ < num_skip)));
    skip_counter=0;
    
@@ -646,6 +655,8 @@ static bool get_auv_image_name( const string  &contents_dir_name,
      // we've reached the end of the contents file
      return false;
    }      
+   if (name.left_name == "DeltaT" || name.right_name == "DeltaT")
+     return false;
    
    return true;
          
@@ -868,7 +879,12 @@ int main( int argc, char *argv[ ] )
 	     "bmesh surface-%04d.ply\n"
 	     ,i); 
      }
+     
    }
+   if(output_ply_and_conf && have_mb_ply)
+          fprintf(conf_ply_file,
+		  "bmesh ../%s\n"
+		  ,mb_ply_filename.c_str()); 
 
    if(output_uv_file)
      fclose(uv_fp);
@@ -892,7 +908,7 @@ int main( int argc, char *argv[ ] )
     
     conf_ply_file=fopen("runvrip.sh","w+");
     //   fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -prob\n../myvrip/bin/vripsurf auto.vri out.ply -import_norm\n");
-    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=$PWD/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd mesh-agg/ \n../vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 100\n../vrip/bin/vripsurf auto.vri out.ply\n");
+    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=$PWD/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd mesh-agg/ \n../vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 400\n../vrip/bin/vripsurf auto.vri out.ply\n");
     fchmod(fileno(conf_ply_file),   0777);
     fclose(conf_ply_file);
     

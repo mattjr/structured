@@ -78,7 +78,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   (*gc._vertices++).set(GTS_VERTEX(v1)->p.x,GTS_VERTEX(v1)->p.y,GTS_VERTEX(v1)->p.z);
   (*gc._vertices++).set(GTS_VERTEX(v2)->p.x,GTS_VERTEX(v2)->p.y,GTS_VERTEX(v2)->p.z);
   (*gc._vertices++).set(GTS_VERTEX(v3)->p.x,GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.z); 
-
+  // printf("%f %f %f\n",GTS_VERTEX(v3)->p.x,GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.z);
   /*
   (*gc._colors++).set(v3->r,v3->b,v3->g,1.0);
   (*gc._colors++).set(v2->r,v2->b,v2->g,1.0);
@@ -221,7 +221,7 @@ int OSGExporter::convertModelOSG(GtsSurface *s,std::vector<string> textures,std:
   geode->setName(fileNameOut);
   root->addChild(geode);
 
-  osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,fileNameOut);
+  osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,fileNameOut,osgDB::Registry::instance()->getOptions());
   if (result.success())	{
     osg::notify(osg::NOTICE)<<"Data written to '"<<fileNameOut<<"'."<< std::endl;
     return true;

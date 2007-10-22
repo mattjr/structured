@@ -472,7 +472,9 @@ int main( int argc, char *argv[ ] )
 	  // we've reached the end of the contents file
 	  break;
 	}      
-      	 
+      
+      if(left_frame_name == "DeltaT" || right_frame_name == "DeltaT")
+	continue;
       GtsMatrix *m=get_sensor_to_world_trans(veh_pose,camera_pose);
      
       texture_file_names.push_back(left_frame_name);
@@ -523,6 +525,7 @@ int main( int argc, char *argv[ ] )
   printf("Loading Surface....\n");
   FILE *surfFP = fopen("mesh-agg/out.ply","r");
   GtsSurface *surf = auv_read_ply(surfFP);
+   
   //fclose(surfFP);
     
   if(!surf){
@@ -544,12 +547,12 @@ int main( int argc, char *argv[ ] )
     printf("Done\n");
   }
   printf("Gen texture coordinates\n");
-  gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,bboxes);
+   gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,bboxes);
   printf("Done\n");
 
   OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,tex_size);    
-  osgExp->convertModelOSG(surf,texture_file_names,"mesh/blended.ive");
-    
+  osgExp->convertModelOSG(surf,texture_file_names,"mesh/blended.osg");
+     
 	 
   fclose(fpp);
   fclose(fpp2);

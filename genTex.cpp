@@ -624,7 +624,7 @@ int main( int argc, char *argv[ ] )
   time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
   secs=time/1000.0;
   printf("Done Took %.2f secs\n",secs);
-  exit(0);
+  
   printf("Converting to model for export\n");
   OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,tex_size);    
   boost::xtime_get(&xt, boost::TIME_UTC);

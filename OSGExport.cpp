@@ -3,7 +3,8 @@
 #include <osgUtil/SmoothingVisitor>
 #include <osg/GraphicsContext>
 #include <osgDB/WriteFile>
-
+#include <cv.h>
+#include <highgui.h>
 
 bool Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> material_names)
 #ifdef USE_LIB3DS 
@@ -147,55 +148,43 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, std::vector
 	   printf("Can't use OPENGL without valid context");
 	   exit(0);
 	 }
-	 printf("Loading and Scaling Texture: %03d/%03d\r",tex_count++,mtgcm.size());
-	 fflush(stdout);
-	 osg::ref_ptr<osg::Image> image =osgDB::readImageFile(filename);
-#warning "not freed ever find mem leak"
-	 if(image.get()){
-	 
-	   image->scaleImage(tex_size,tex_size,1,GL_UNSIGNED_BYTE);
-	 }else 
-	   printf("\nFailed to load %s\n",filename.c_str());
-
-	 if(!tex_saved){
-	 
-	   if(!ive_out){	     
-	     osgDB::writeImageFile(*image,fname);
-	     image->setFileName(fname);
-	   }
-	 }
-	 if (image.get()){
-	     
-	     // create state
-	     osg::StateSet* stateset = new osg::StateSet;
-	     
+	 printf("\rLoading and Scaling Texture: %03d/%03d",tex_count++,mtgcm.size());
+	 fflush(stdout); 
+	 IplImage *cvImg=NULL;
+	 osg::ref_ptr<osg::Image> image= LoadResizeSave(filename,fname, (!ive_out),cvImg);
+	 if (image.get()){	     
+	   // create state
+	   osg::StateSet* stateset = new osg::StateSet;
+	   
 	     // create texture
-	     osg::Texture2D* texture = new osg::Texture2D;
-	     texture->setUnRefImageDataAfterApply( true );
-	     texture->setImage(image.get());
-	     stateset->setTextureAttributeAndModes(0,texture,
-						   osg::StateAttribute::ON);
-	     gc._texturesActive=true;
-	    
-	       
-	     gc._geom->setStateSet(stateset);
+	   osg::Texture2D* texture = new osg::Texture2D;
+	   texture->setUnRefImageDataAfterApply( true );
+	   texture->setImage(image.get());
+	   stateset->setTextureAttributeAndModes(0,texture,
+						 osg::StateAttribute::ON);
+	   gc._texturesActive=true;
+	   
+	   
+	   gc._geom->setStateSet(stateset);
 	     
-	     osg::Vec2Array* texcoordArray = new osg::Vec2Array(gc._numPoints);
-	     gc._texcoords = texcoordArray->begin();
-	     gc._geom->setTexCoordArray(0,texcoordArray);
-
-	     if(compress_tex)
-	       compress(texture);
-	     else{
-	       if(!state)
-		 state = new osg::State;
-	       texture->apply(*state);
-	     }
-	      
+	   osg::Vec2Array* texcoordArray = new osg::Vec2Array(gc._numPoints);
+	   gc._texcoords = texcoordArray->begin();
+	   gc._geom->setTexCoordArray(0,texcoordArray);
+	   
+	   if(compress_tex)
+	     compress(texture);
+	   else{
+	     if(!state)
+	       state = new osg::State;
+	     texture->apply(*state);
+	   }
+	   if(cvImg)
+	     cvReleaseImage(&cvImg);
 	 }
        }
      }
    }
+   
    printf("\n");
    gts_surface_foreach_face (s, (GtsFunc) add_face_mat_osg , data);
    osg::Geode* geode = new osg::Geode;
@@ -226,10 +215,12 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, std::vector
 int OSGExporter::convertModelOSG(GtsSurface *s,std::vector<string> textures,std::string fileNameOut) {
 
   std::string ext = osgDB::getFileExtension(fileNameOut);
+  ive_out= (ext=="ive");
+  
   if(ext == "3ds"){
     Export3DS(s,fileNameOut.c_str(),textures);
     return true;
-  }else if(ext != "ive" && compress_tex){
+  }else if(!ive_out && compress_tex){
     std::cout<<"Warning: compressing texture only supported when out";
     std::cout << "puting to .ive"<<std::endl;
     compress_tex=false;
@@ -411,6 +402,69 @@ std::string relative_path(std::string pathString){
  	        }
  	        return (a);
 }
+
+osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg){
+
+        if(cvImg->nChannels == 3)
+        {
+                // Flip image from top-left to bottom-left origin
+                if(cvImg->origin == 0) {
+                        cvConvertImage(cvImg , cvImg, CV_CVTIMG_FLIP);
+                        cvImg->origin = 1;
+                }
+
+                // Convert from BGR to RGB color format
+                //printf("Color format %s\n",cvImg->colorModel);
+                cvCvtColor( cvImg, cvImg, CV_BGR2RGB );
+
+                osg::Image* osgImg = new osg::Image();
+
+                osgImg->setImage(
+                        cvImg->width, //s
+                        cvImg->height, //t
+                        3, //r
+                        3, //GLint internalTextureformat, (GL_LINE_STRIP,0x0003)
+                        6407, // GLenum pixelFormat, (GL_RGB, 0x1907)
+                        5121, // GLenum type, (GL_UNSIGNED_BYTE, 0x1401)
+                        (unsigned char *)(cvImg->imageData), // unsigned char* data
+                        osg::Image::NO_DELETE // AllocationMode mode (shallow copy)
+                        );//int packing=1); (???)
+
+                //printf("Conversion completed\n");
+                return osgImg;
+        }
+        else {
+                printf("Unrecognized image type");
+                return 0;
+        }
+
+}
+osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save,IplImage *cvImg){
+
+  
+  
+  IplImage *fullimg=cvLoadImage(filename.c_str(),-1);
+  cvImg=cvCreateImage(cvSize(tex_size,tex_size),
+				     IPL_DEPTH_8U,3);
+  
+  if(fullimg){
+    cvResize(fullimg,cvImg);
+    cvReleaseImage(&fullimg);
+  }
+  else {
+    printf("Failed to load %s\n",filename.c_str());
+    cvReleaseImage(&cvImg);
+    return NULL;
+  }
+  osg::Image* image =Convert_OpenCV_TO_OSG_IMAGE(cvImg);
+  
+  if(save){  
+    printf("Writing %s\n",outname.c_str());
+    osgDB::writeImageFile(*image,outname);
+    image->setFileName(outname);
+  }
+  return image;
+}
 bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> material_names){
   char cTemp[512];
   Lib3dsFile *pFile = lib3ds_file_new();
@@ -424,6 +478,7 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> ma
   gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
   MaterialToGeometryCollectionMap::iterator itr;
   MaterialToIDMap newMatMap;
+  int tex_count=0;
   for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
 
        // set up texture if needed.
@@ -438,35 +493,17 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> ma
      sprintf(tname,"tex-%s-%04d-tex",relative_path(path).c_str(),itr->first);
      string fname(tname);
      newMatMap[itr->first]=fname;
-
-      if(!context){
-	printf("Can't use OPENGL without valid context");
-	exit(0);
-	 }
-      printf("Loaded %s\n",filename.c_str());
-      osg::Image* image =osgDB::readImageFile(filename);
-      if(image){
-	printf("Scaling...\n");
-	image->scaleImage(tex_size,tex_size,1,GL_UNSIGNED_BYTE);
-      }
-      else {
-	   printf("Failed to load %s\n",filename.c_str());
-      }
-      if(!tex_saved){
-	
-	if(!ive_out){	     
-	  printf("Writing %s\n",fname.c_str());
-	  osgDB::writeImageFile(*image,"mesh/"+fname+".png");
-	  image->setFileName("mesh/"+fname+".png");
-	}
-      }
-      
-      
-      Lib3dsMaterial *pMaterial = lib3ds_material_new();
-      
-      strcpy(pMaterial->name,fname.c_str() );
-    
-      strcpy(pMaterial->texture1_map.name,(fname+".png").c_str() );
+     
+     printf("\rLoading and Scaling Texture: %03d/%03d",tex_count++,mtgcm.size());
+     IplImage *cvImg=NULL;
+     LoadResizeSave(filename,"mesh/"+fname+".png", (!tex_saved),cvImg);
+     if(cvImg)
+       cvReleaseImage(&cvImg);
+     Lib3dsMaterial *pMaterial = lib3ds_material_new();
+     
+     strcpy(pMaterial->name,fname.c_str() );
+     
+     strcpy(pMaterial->texture1_map.name,(fname+".png").c_str() );
       lib3ds_file_insert_material(pFile, pMaterial);
     }       
   }

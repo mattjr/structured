@@ -147,7 +147,7 @@ public:
 #endif
     }
   }
-
+  osg::Image *LoadResizeSave(string filename,string outname,bool save,IplImage *cvImg);
   int convertModelOSG(GtsSurface *s,std::vector<string> textures,std::string fileNameOut) ;
 
 protected:

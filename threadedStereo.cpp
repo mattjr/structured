@@ -853,7 +853,7 @@ int main( int argc, char *argv[ ] )
      fpp=fopen("mesh/campath.txt","w");
 
 
-   for(unsigned int i=0; i < tasks.size(); i++){
+   for(unsigned int i=1; i <= tasks.size(); i++){
      /*
        if(output_pts_cov){
        // cout << litr->P << endl;

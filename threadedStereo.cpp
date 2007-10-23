@@ -591,6 +591,8 @@ protected:
 	} 
 public:
   void initThread(const string config_file_name,const string dense_config_file_name){
+    g_thread_init (NULL);
+    
     ts= new threadedStereo(config_file_name,dense_config_file_name);
   }
 };

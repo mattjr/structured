@@ -29,7 +29,7 @@
 #include "auv_stereo_keypoint_finder.hpp"
 #include "adt_raw_file.hpp"
 #include "OSGExport.h"
-
+#include  <boost/thread/xtime.hpp> 
 #include "auv_mesh_utils.hpp"
 #include "auv_mesh_io.hpp"
 using namespace std;
@@ -206,20 +206,15 @@ void pick_first_face (GtsFace * f, GtsFace ** first)
     *first = f;
 }
 static int currentBBox=0;
-int find_closet_img_trans(GtsTriangle *t, std::vector<GtsMatrix *> back_trans,std::vector<GtsBBox *> bboxes,int type){
+
+int find_closet_img_trans(GtsTriangle *t,std::vector<GtsBBox *> bboxes, std::vector<GtsPoint> camPosePts,int type){
 
   double minDist=DBL_MAX;
-  GtsPoint transP;
+  
   int index=INT_MAX;
   if(type ==0){
-    for(int i=0; i < (int)back_trans.size(); i++){
-      GtsMatrix *m= gts_matrix_inverse(back_trans[i]); 
-      transP.x=m[0][3];
-      transP.y=m[1][3];
-      transP.z=m[2][3];
-      
-      
-      double dist=gts_point_triangle_distance(&transP,t);
+    for(int i=0; i < (int)camPosePts.size(); i++){
+      double dist=gts_point_triangle_distance(&camPosePts[i],t);
       
       GtsVertex * v1,* v2,* v3;
       gts_triangle_vertices(t,(GtsVertex **)& v1, 
@@ -269,6 +264,16 @@ int find_closet_img_trans(GtsTriangle *t, std::vector<GtsMatrix *> back_trans,st
 std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::vector<GtsMatrix *> back_trans,std::vector<GtsBBox *> bboxes){
   GtsFace * first = NULL;
 
+  std::vector<GtsPoint> camPosePts;
+  GtsPoint transP;
+  for(int i=0; i < (int)back_trans.size(); i++){
+      GtsMatrix *m= gts_matrix_inverse(back_trans[i]); 
+      transP.x=m[0][3];
+      transP.y=m[1][3];
+      transP.z=m[2][3];
+      camPosePts.push_back(transP);
+      gts_matrix_destroy(m);
+  }
 
   vector<int> tex_used;
   gts_surface_foreach_vertex(s,(GtsFunc)set_tex_id_unknown,NULL);
@@ -282,7 +287,7 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::ve
   
   while ((f =(T_Face *) gts_surface_traverse_next (t, &level))) {
     int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
-					   back_trans,bboxes,0);
+					  bboxes,camPosePts,0);
     if(indexClosest == INT_MAX){
       printf("Can't find tex in range\n");
       continue;
@@ -320,7 +325,7 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::ve
   
   for(int i=0; i < (int) border_faces.size(); i++){
    T_Face *f2 = copy_face(border_faces[i],s);
-   int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,back_trans,bboxes,0);
+   int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,bboxes,camPosePts,0);
     if(apply_tex_to_tri(f2,calib,back_trans[idx],idx,tex_size))
       validCount++;
     
@@ -438,7 +443,7 @@ int main( int argc, char *argv[ ] )
 
   std::vector<GtsMatrix *> gts_trans;
 
-  printf("Outputting texture images and poses...\n");
+  
   auv_data_tools::makedir("mesh");
   if(!fpp2)
     fpp2=fopen("mesh/vehpath.txt","w");
@@ -478,8 +483,12 @@ int main( int argc, char *argv[ ] )
       GtsMatrix *m=get_sensor_to_world_trans(veh_pose,camera_pose);
      
       texture_file_names.push_back(left_frame_name);
-      gts_trans.push_back(gts_matrix_inverse(m));
-      
+      GtsMatrix *invM=gts_matrix_inverse(m);
+      gts_matrix_destroy(m);
+
+      gts_trans.push_back(invM);
+    
+
       
       fprintf(fpp2,"%f %f %f %f %f %f %f %f %f %f\n",   
 	      timestamp,
@@ -521,7 +530,7 @@ int main( int argc, char *argv[ ] )
     }
     fclose(bboxfp);
   }
-  printf("Bbox %d\n",(int)bboxes.size());
+
   printf("Loading Surface....\n");
   FILE *surfFP = fopen("mesh-agg/out.ply","r");
   GtsSurface *surf = auv_read_ply(surfFP);
@@ -547,13 +556,26 @@ int main( int argc, char *argv[ ] )
     printf("Done\n");
   }
   printf("Gen texture coordinates\n");
-   gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,bboxes);
-  printf("Done\n");
-
+  boost::xtime xt, xt2;
+  long time;
+  double secs;
+ 
+  boost::xtime_get(&xt, boost::TIME_UTC);
+  gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,bboxes);
+  boost::xtime_get(&xt2, boost::TIME_UTC);
+  time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
+  secs=time/1000.0;
+  printf("Done Took %.2f secs\n",secs);
+ 
+  printf("Converting to model for export\n");
   OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,tex_size);    
-  osgExp->convertModelOSG(surf,texture_file_names,"mesh/blended.osg");
-     
-	 
+  boost::xtime_get(&xt, boost::TIME_UTC);
+  osgExp->convertModelOSG(surf,texture_file_names,"mesh/blended.ive");
+  boost::xtime_get(&xt2, boost::TIME_UTC);
+  time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
+  secs=time/1000.0;
+  printf("Done Took %.2f secs\n",secs);
+
   fclose(fpp);
   fclose(fpp2);
   if(conf_ply_file)
@@ -562,6 +584,8 @@ int main( int argc, char *argv[ ] )
   // 
   // Clean-up
   //
+  for(int i=0; i < (int)gts_trans.size(); i++)
+     gts_matrix_destroy(gts_trans[i]);
   delete config_file;
   delete calib;
   

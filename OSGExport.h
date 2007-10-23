@@ -69,7 +69,7 @@ class MyGraphicsContext {
 
 #else
             _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-	    printf("Creating linux contex\n");
+	  
 #endif
 
 
@@ -87,7 +87,7 @@ class MyGraphicsContext {
             {
                 _gc->realize();
                 _gc->makeCurrent();
-                std::cout<<"Realized window"<<std::endl;
+                //std::cout<<"Realized window"<<std::endl;
             }else{
 	      printf("Can't realize window\n");
 	      exit(0);

@@ -75,20 +75,28 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
 			  (GtsVertex **)&v2, (GtsVertex **)&v3);
  
 
-  (*gc._vertices++).set(GTS_VERTEX(v1)->p.x,GTS_VERTEX(v1)->p.y,GTS_VERTEX(v1)->p.z);
+  /* (*gc._vertices++).set(GTS_VERTEX(v1)->p.x,GTS_VERTEX(v1)->p.y,GTS_VERTEX(v1)->p.z);
   (*gc._vertices++).set(GTS_VERTEX(v2)->p.x,GTS_VERTEX(v2)->p.y,GTS_VERTEX(v2)->p.z);
   (*gc._vertices++).set(GTS_VERTEX(v3)->p.x,GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.z); 
-  // printf("%f %f %f\n",GTS_VERTEX(v3)->p.x,GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.z);
+  // printf("%f %f %f\n",GTS_VERTEX(v3)->p.x,GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.z);*/
+
+ 
+  (*gc._vertices++).set(GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.x,-GTS_VERTEX(v3)->p.z);
+  (*gc._vertices++).set(GTS_VERTEX(v2)->p.y,GTS_VERTEX(v2)->p.x,-GTS_VERTEX(v2)->p.z);
+  (*gc._vertices++).set(GTS_VERTEX(v1)->p.y,GTS_VERTEX(v1)->p.x,-GTS_VERTEX(v1)->p.z);
+ 
   /*
   (*gc._colors++).set(v3->r,v3->b,v3->g,1.0);
   (*gc._colors++).set(v2->r,v2->b,v2->g,1.0);
   (*gc._colors++).set(v1->r,v1->b,v1->g,1.0);
   */
   if (gc._texturesActive && f->material >= 0){
-    (*gc._texcoords++).set(v1->u,1-v1->v);
-    (*gc._texcoords++).set(v2->u,1-v2->v); 
+ 
     (*gc._texcoords++).set(v3->u,1-v3->v); 
-    
+   
+    (*gc._texcoords++).set(v2->u,1-v2->v); 
+  (*gc._texcoords++).set(v1->u,1-v1->v);  
+   
   }
 }
 
@@ -105,6 +113,7 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, std::vector
       
    gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
    MaterialToGeometryCollectionMap::iterator itr;
+   int tex_count=0;
    for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
      GeometryCollection& gc = itr->second;
      if (gc._numPrimitives){
@@ -126,6 +135,7 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, std::vector
           */
 
        // set up texture if needed.
+   
        if (itr->first >= 0 && itr->first < (int)textures.size()){
 	 
 	 std::string filename=prefixdir+textures[itr->first];
@@ -137,11 +147,15 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, std::vector
 	   printf("Can't use OPENGL without valid context");
 	   exit(0);
 	 }
-	 osg::Image* image =osgDB::readImageFile(filename);
-	 if(image)
+	 printf("Loading and Scaling Texture: %03d/%03d\r",tex_count++,mtgcm.size());
+	 fflush(stdout);
+	 osg::ref_ptr<osg::Image> image =osgDB::readImageFile(filename);
+#warning "not freed ever find mem leak"
+	 if(image.get()){
+	 
 	   image->scaleImage(tex_size,tex_size,1,GL_UNSIGNED_BYTE);
-	 else 
-	   printf("Failed to load %s\n",filename.c_str());
+	 }else 
+	   printf("\nFailed to load %s\n",filename.c_str());
 
 	 if(!tex_saved){
 	 
@@ -150,14 +164,15 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, std::vector
 	     image->setFileName(fname);
 	   }
 	 }
-	 if (image){
+	 if (image.get()){
 	     
 	     // create state
 	     osg::StateSet* stateset = new osg::StateSet;
 	     
 	     // create texture
 	     osg::Texture2D* texture = new osg::Texture2D;
-	     texture->setImage(image);
+	     texture->setUnRefImageDataAfterApply( true );
+	     texture->setImage(image.get());
 	     stateset->setTextureAttributeAndModes(0,texture,
 						   osg::StateAttribute::ON);
 	     gc._texturesActive=true;
@@ -171,11 +186,17 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, std::vector
 
 	     if(compress_tex)
 	       compress(texture);
+	     else{
+	       if(!state)
+		 state = new osg::State;
+	       texture->apply(*state);
+	     }
+	      
 	 }
        }
      }
    }
-   
+   printf("\n");
    gts_surface_foreach_face (s, (GtsFunc) add_face_mat_osg , data);
    osg::Geode* geode = new osg::Geode;
     
@@ -232,7 +253,7 @@ int OSGExporter::convertModelOSG(GtsSurface *s,std::vector<string> textures,std:
   else    {
     osg::notify(osg::NOTICE)<<result.message()<< std::endl;
   }
-  
+
   return false;
   
 }
@@ -415,15 +436,19 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> ma
 	printf("Can't use OPENGL without valid context");
 	exit(0);
 	 }
+      printf("Loaded %s\n",filename.c_str());
       osg::Image* image =osgDB::readImageFile(filename);
-      if(image)
+      if(image){
+	printf("Scaling...\n");
 	image->scaleImage(tex_size,tex_size,1,GL_UNSIGNED_BYTE);
-	 else 
+      }
+      else {
 	   printf("Failed to load %s\n",filename.c_str());
-      
+      }
       if(!tex_saved){
 	
 	if(!ive_out){	     
+	  printf("Writing %s\n",fname.c_str());
 	  osgDB::writeImageFile(*image,"mesh/"+fname+".png");
 	  image->setFileName("mesh/"+fname+".png");
 	}

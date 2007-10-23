@@ -591,7 +591,7 @@ protected:
 	} 
 public:
   void initThread(const string config_file_name,const string dense_config_file_name){
-    g_thread_init (NULL);
+   
     
     ts= new threadedStereo(config_file_name,dense_config_file_name);
   }
@@ -843,6 +843,7 @@ int main( int argc, char *argv[ ] )
      printf("single thread: %.2f sec\n", secs);
    }
    else{
+     g_thread_init (NULL);
      display_debug_images = false; 
      boost::xtime_get(&xt, boost::TIME_UTC);
      SlicePool pool(tasks);

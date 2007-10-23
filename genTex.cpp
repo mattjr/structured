@@ -433,6 +433,8 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::vec
   }
 
   */
+
+  printf("Checking weird border cases...\n");
   gts_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,&tex_data );
 
   tex_data.count=1;

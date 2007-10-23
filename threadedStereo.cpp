@@ -343,21 +343,6 @@ static void print_usage( void )
 }
 
 
-
-//
-// Get the time in seconds (since the Unix Epoch in 1970)
-//
-static double get_time( void )
-{
-   struct timeval tv;
-   
-   gettimeofday( &tv, NULL );
-   return tv.tv_sec+(double)tv.tv_usec/1e6;
-}
-
-
-
-
 void update_bbox (GtsPoint * p, GtsBBox * bb)
 {
   if (p->x < bb->x1) bb->x1 = p->x;
@@ -465,6 +450,7 @@ typedef struct _auv_images_names{
   std::string mesh_name;
   std::string dir;
   Vector *veh_pose;
+  double alt;
   double timestamp;
   int index;
 }auv_image_names;
@@ -570,7 +556,8 @@ typedef SPACE_YIN::Consumer<Slice, SlicePool > SliceConsumer;
 // forward declare
 struct Convoluter; // subclass of SliceConsumer
 struct Scheduler;  // subclass of SliceProducer
-
+ts_counter doneCount(1);
+int totalTodoCount;
 typedef SPACE_YIN::Consuming<Slice, SlicePool, Convoluter > Convolute;
 struct Convoluter : public SliceConsumer
 {
@@ -632,8 +619,6 @@ static bool get_auv_image_name( const string  &contents_dir_name,
  //
    // Try to read timestamp and file names
    //
-
-   double alt;
    bool readok;
    do{
     
@@ -647,7 +632,7 @@ static bool get_auv_image_name( const string  &contents_dir_name,
 	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PHI] &&
 	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_THETA] &&
 	      contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PSI] &&
-	      contents_file >> alt );
+	      contents_file >> name.alt );
   
  }
    while (readok && (name.timestamp < start_time || (skip_counter++ < num_skip)));
@@ -821,6 +806,7 @@ int main( int argc, char *argv[ ] )
        stereo_pair_count++;
      }
    }
+   totalTodoCount=stereo_pair_count;
    
    //
    //boost::function<void ()> init = boost::bind(&(threadedStereo::threadedStereo),*config_file,*dense_config_file,*calib , *camera_pose);
@@ -958,7 +944,9 @@ void threadedStereo::runP(auv_image_names &name){
 	printf("Failed to get pair\n");
 	return;
       }                          
- 
+  
+  if(feature_depth_guess == AUV_NO_Z_GUESS)
+    feature_depth_guess = name.alt;
 			 
  
       
@@ -967,7 +955,8 @@ void threadedStereo::runP(auv_image_names &name){
       //
       // Find the features
       //
-      
+  
+
       list<Feature *> features;
       finder->find( left_frame,
                     right_frame,
@@ -1130,6 +1119,10 @@ void threadedStereo::runP(auv_image_names &name){
       {
          delete *fitr;
       }     
+      
+      printf("Stereo processing on image %u/%u complete.\n",doneCount.value(),totalTodoCount);
+      fflush(stdout);
+      doneCount.increment();
       
       
 }

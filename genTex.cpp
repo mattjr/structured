@@ -315,8 +315,54 @@ gboolean tex_add_verbose ( guint number, guint total)
   }
   return FALSE;
 }
-std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::vector<GtsMatrix *> back_trans,std::vector<GtsBBox *> bboxes){
-  GtsFace * first = NULL;
+typedef struct _texGenData{
+ std::vector<GtsBBox *> bboxes;
+  std::vector<GtsPoint> camPosePts;
+  vector<int> *tex_used;
+  int oldIndex;
+  std::vector<GtsMatrix *> back_trans;
+  int validCount;
+  int count;
+  int total;
+std::vector<T_Face *> *border_faces;
+  Camera_Calib *calib;
+}texGenData;
+
+static void texcoord_foreach_face (T_Face * f,
+				   texGenData *data)
+{
+  
+  int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
+					 data->bboxes,data->camPosePts,0);
+  if(indexClosest == INT_MAX){
+      printf("Can't find tex in range\n");
+  }
+     data->tex_used->push_back(indexClosest);
+    
+    if(indexClosest !=data->oldIndex){
+      data->oldIndex=indexClosest;
+    }
+
+    if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,tex_size))
+      data->validCount++;
+     else
+       ;//gts_surface_remove_face(s,GTS_FACE(f));
+    tex_add_verbose(data->count++,data->total);
+
+}
+static void findborder_foreach_face (T_Face * f,
+				   texGenData *data)
+{
+   GtsTriangle * t = &GTS_FACE(f)->triangle;
+    TVertex * v1,* v2,* v3; 
+    gts_triangle_vertices(t,(GtsVertex **)& v1, 
+			  (GtsVertex **)&v2, (GtsVertex **)&v3);
+    if(f->material != v1->id || f->material != v2->id || f->material != v3->id)
+      data->border_faces->push_back(f);
+}
+
+std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::vector<GtsMatrix *> back_trans,std::vector<GtsBBox *> bboxes){
+  
 
   std::vector<GtsPoint> camPosePts;
   GtsPoint transP;
@@ -331,16 +377,22 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::ve
 
   vector<int> tex_used;
   gts_surface_foreach_vertex(s,(GtsFunc)set_tex_id_unknown,NULL);
-  gts_surface_foreach_face (s, (GtsFunc) pick_first_face,&first );
-  
-  int validCount=0;
-  GtsSurfaceTraverse * t = gts_surface_traverse_new (s, first);
-  T_Face * f;
-  guint level;
-  int oldIndex=INT_MAX;
-  int count=1;
-  int total =gts_surface_face_number(s);
 
+  std::vector<T_Face *> border_faces;
+
+  texGenData tex_data;
+  tex_data.bboxes=bboxes;
+  tex_data.camPosePts =camPosePts;
+  tex_data.tex_used = &tex_used;
+  tex_data.oldIndex=INT_MAX;
+  tex_data.back_trans=back_trans;
+  tex_data.validCount=0;
+  tex_data.count=1;
+  tex_data.total=gts_surface_face_number(s);
+  tex_data.calib=calib;
+  tex_data.border_faces = &border_faces;
+  gts_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,&tex_data );
+  /*
   while ((f =(T_Face *) gts_surface_traverse_next (t, &level))) {
     int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
 					  bboxes,camPosePts,0);
@@ -364,13 +416,14 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::ve
   }
  
   gts_surface_traverse_destroy (t);
+  */
   #warning "Does work when faces are rmoved when not valid tex fixme"
-  gts_surface_foreach_face (s, (GtsFunc) pick_first_face,&first );
+  /*  gts_surface_foreach_face (s, (GtsFunc) pick_first_face,&first );
   t = gts_surface_traverse_new (s, first);
   printf("Checking weird border cases...\n");
   std::vector<T_Face *> border_faces;
   while ((f =(T_Face *) gts_surface_traverse_next (t, &level))) {
-    GtsTriangle * t = &GTS_FACE(f)->triangle;
+   GtsTriangle * t = &GTS_FACE(f)->triangle;
     TVertex * v1,* v2,* v3; 
     gts_triangle_vertices(t,(GtsVertex **)& v1, 
 			  (GtsVertex **)&v2, (GtsVertex **)&v3);
@@ -378,19 +431,23 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::ve
       border_faces.push_back(f);
 
   }
-  count=1;
-  total =border_faces.size();
+
+  */
+  gts_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,&tex_data );
+
+  tex_data.count=1;
+  tex_data.total =border_faces.size();
   for(int i=0; i < (int) border_faces.size(); i++){
    T_Face *f2 = copy_face(border_faces[i],s);
    int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,bboxes,camPosePts,0);
     if(apply_tex_to_tri(f2,calib,back_trans[idx],idx,tex_size))
-      validCount++;
+      tex_data.validCount++;
     
     gts_surface_remove_face(s,GTS_FACE(border_faces[i]));
-    tex_add_verbose(count++,total);
+    tex_add_verbose(tex_data.count++,tex_data.total);
   }
 
-  printf("Valid tex %d\n", validCount);
+  printf("Valid tex %d\n", tex_data.validCount);
  
   sort( tex_used.begin(), tex_used.end() );
   tex_used.erase( unique( tex_used.begin(), tex_used.end() ), tex_used.end() );

@@ -261,6 +261,60 @@ int find_closet_img_trans(GtsTriangle *t,std::vector<GtsBBox *> bboxes, std::vec
 
 }
 
+gboolean tex_add_verbose ( guint number, guint total)
+{
+  static guint nmax = 0, nold = 0;
+  static GTimer * timer = NULL, * total_timer = NULL;
+
+
+
+  if (timer == NULL) {
+    nmax = nold = number;
+    timer = g_timer_new ();
+    total_timer = g_timer_new ();
+    g_timer_start (total_timer);
+  }
+
+  if (number != nold){// && number % 1 == 0 ){//&& number < nmax && nmax > total) {
+    gdouble total_elapsed = g_timer_elapsed (total_timer, NULL);
+    gdouble remaining;
+    gdouble hours, mins, secs;
+    gdouble hours1, mins1, secs1;
+
+    g_timer_stop (timer);
+
+    hours = floor (total_elapsed/3600.);
+    mins = floor ((total_elapsed - 3600.*hours)/60.);
+    secs = floor (total_elapsed - 3600.*hours - 60.*mins);
+
+    remaining = ((total_elapsed/(gdouble)number) *((gdouble)total-number));
+    hours1 = floor (remaining/3600.);
+    mins1 = floor ((remaining - 3600.*hours1)/60.);
+    secs1 = floor (remaining - 3600.*hours1 - 60.*mins1);
+
+    fprintf (stderr, 
+	     "\rFaces: %4u/%4u %3.0f%% %6.0f edges/s "
+	     "Elapsed: %02.0f:%02.0f:%02.0f "
+	     "Remaining: %02.0f:%02.0f:%02.0f ",
+	     number, total,
+	     100.*( number)/( total),
+	     (number - nold  )/g_timer_elapsed (timer, NULL),
+	     hours, mins, secs,
+	     hours1, mins1, secs1);
+    fflush (stderr);
+
+    nold = number;
+    g_timer_start (timer);
+  }
+  if (number == total) {
+    g_timer_destroy (timer);
+    g_timer_destroy (total_timer);
+    timer =NULL;
+    printf("\n");
+    return TRUE;
+  }
+  return FALSE;
+}
 std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::vector<GtsMatrix *> back_trans,std::vector<GtsBBox *> bboxes){
   GtsFace * first = NULL;
 
@@ -284,7 +338,9 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::ve
   T_Face * f;
   guint level;
   int oldIndex=INT_MAX;
-  
+  int count=1;
+  int total =gts_surface_face_number(s);
+
   while ((f =(T_Face *) gts_surface_traverse_next (t, &level))) {
     int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
 					  bboxes,camPosePts,0);
@@ -304,14 +360,14 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::ve
       validCount++;
      else
        ;//gts_surface_remove_face(s,GTS_FACE(f));
-  
+    tex_add_verbose(count++,total);
   }
  
   gts_surface_traverse_destroy (t);
   #warning "Does work when faces are rmoved when not valid tex fixme"
   gts_surface_foreach_face (s, (GtsFunc) pick_first_face,&first );
   t = gts_surface_traverse_new (s, first);
-  
+  printf("Checking weird border cases...\n");
   std::vector<T_Face *> border_faces;
   while ((f =(T_Face *) gts_surface_traverse_next (t, &level))) {
     GtsTriangle * t = &GTS_FACE(f)->triangle;
@@ -322,7 +378,8 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::ve
       border_faces.push_back(f);
 
   }
-  
+  count=1;
+  total =border_faces.size();
   for(int i=0; i < (int) border_faces.size(); i++){
    T_Face *f2 = copy_face(border_faces[i],s);
    int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,bboxes,camPosePts,0);
@@ -330,6 +387,7 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib  *calib, std::ve
       validCount++;
     
     gts_surface_remove_face(s,GTS_FACE(border_faces[i]));
+    tex_add_verbose(count++,total);
   }
 
   printf("Valid tex %d\n", validCount);

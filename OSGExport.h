@@ -34,6 +34,7 @@
 #include "GraphicsWindowCarbon.h"
 #include "PixelBufferCarbon.h"
 #include "auv_mesh.hpp"
+#include "auv_stereo_geometry.hpp"
 #define USE_LIB3DS
 #ifdef USE_LIB3DS
 #include <lib3ds/file.h>
@@ -46,7 +47,7 @@
 #include <lib3ds/vector.h>
 #endif
 using namespace std;
-
+using namespace libsnapper;
 #if ((OSG_VERSION_MAJOR==2))
 #include <osgViewer/Viewer>
 
@@ -198,4 +199,5 @@ struct GeometryCollection
 
 typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;
 typedef std::map<int,string> MaterialToIDMap;
+std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::vector<GtsMatrix *> back_trans,std::vector<GtsBBox *> bboxes,int tex_size);
 #endif

@@ -36,7 +36,7 @@
 #include "auv_concurrency.hpp"
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
-
+#include "OSGExport.h"
 using namespace std;
 using namespace libplankton;
 using namespace ulapack;
@@ -81,7 +81,7 @@ static FILE *fpp,*fpp2;
 static bool use_dense_feature=false;
 //StereoMatching* stereo;
 //StereoImage simage;
-static int mesh_count=0;
+
 static bool output_ply_and_conf =false;
 static FILE *conf_ply_file;
 static bool output_3ds=false;
@@ -460,6 +460,7 @@ typedef class threadedStereo{
 public:
   threadedStereo(const string config_file_name, const string dense_config_file_name ){
      frame_id=0;
+     tex_size=512;
    // Create the stereo feature finder
    //
      config_file= new Config_File(config_file_name.c_str());
@@ -479,6 +480,7 @@ public:
      config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
      config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
      config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
+     config_file->set_value( "MESH_TEX_SIZE", tex_size );
      
      if( use_sift_features )
        config_file->set_value( "SKF_KEYPOINT_TYPE", "SIFT" );
@@ -515,6 +517,8 @@ public:
                                          image_scale, 
                                          calib );
    }
+     
+     osgExp=new OSGExporter(dir_name,false,false,tex_size);    
    
   }
 
@@ -532,11 +536,12 @@ private:
   Matrix *image_coord_covar;
   Stereo_Feature_Finder *finder;
   Stereo_Feature_Finder *finder_dense;
-
+  int tex_size;
   Stereo_Calib *calib;
   Config_File *config_file; 
   Config_File *dense_config_file; 
   Vector *camera_pose;
+  OSGExporter *osgExp;
 }threadedStereo;
 
 
@@ -556,7 +561,7 @@ typedef SPACE_YIN::Consumer<Slice, SlicePool > SliceConsumer;
 // forward declare
 struct Convoluter; // subclass of SliceConsumer
 struct Scheduler;  // subclass of SliceProducer
-ts_counter doneCount(1);
+ts_counter doneCount(0);
 int totalTodoCount;
 typedef SPACE_YIN::Consuming<Slice, SlicePool, Convoluter > Convolute;
 struct Convoluter : public SliceConsumer
@@ -930,7 +935,7 @@ void threadedStereo::runP(auv_image_names &name){
   unsigned int right_frame_id=frame_id++;
   string left_frame_name;
   string right_frame_name;
-  
+  GtsMatrix *m=NULL;
   
   //
   // Load the images
@@ -1067,17 +1072,30 @@ void threadedStereo::runP(auv_image_names &name){
 	 
 	 if(localV->len){
 	   GtsSurface *surf= auv_mesh_pts(localV,2.0,0); 
-	   if(output_3ds){
-	     //meshGen->createTexture(color_frame);  
-	   //meshGen->GenTexCoord(surf,&calib->left_calib);
-	   }
+
 	   Vector camera_pose(AUV_NUM_POSE_STATES);
 	   get_camera_params(config_file,camera_pose);
 	   
-	   GtsMatrix *m=get_sensor_to_world_trans(*name.veh_pose,camera_pose);
+	   m=get_sensor_to_world_trans(*name.veh_pose,camera_pose);
 	   gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, m);
-	   gts_matrix_destroy (m);
+	 
 	   
+	   char filename[255];
+
+	   if(output_3ds){
+	     std::vector<string>textures;
+	     textures.push_back(name.dir+name.left_name);
+	     sprintf(filename,"mesh/surface-%04d.3ds",
+		     doneCount.increment());
+	     std::vector<GtsBBox *> bboxes;
+	     std::vector<GtsMatrix *> gts_trans;
+	     GtsMatrix *invM = gts_matrix_inverse(m);
+	     gts_trans.push_back(invM);
+	     gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
+				bboxes,tex_size);
+	     osgExp->convertModelOSG(surf,textures,string(filename));
+	     gts_matrix_destroy (invM);
+	   }
 	   if(output_ply_and_conf){
 	     
 	     //GtsBBox *bbox=gts_bbox_surface(gts_bbox_class(),surf);
@@ -1087,10 +1105,10 @@ void threadedStereo::runP(auv_image_names &name){
 		   bbox->x2,bbox->y2,bbox->z2); 
 	     */
 	     
-	     char filename[255];
+	  
 	     FILE *fp;
 	     sprintf(filename,"mesh-agg/surface-%04d.ply",
-		     mesh_count++);
+		     doneCount.increment());
 	     fp = fopen(filename, "w" );
 	     auv_write_ply(surf, fp,have_cov_file,"test");
 	     fclose(fp);
@@ -1109,6 +1127,8 @@ void threadedStereo::runP(auv_image_names &name){
       //
       // Clean-up
       //
+      if(m)
+	gts_matrix_destroy (m);
       cvReleaseImage( &left_frame );
       cvReleaseImage( &right_frame );
       cvReleaseImage( &color_frame);
@@ -1122,7 +1142,7 @@ void threadedStereo::runP(auv_image_names &name){
       
       printf("Stereo processing on image %u/%u complete.\n",doneCount.value(),totalTodoCount);
       fflush(stdout);
-      doneCount.increment();
+      // doneCount.increment();
       
       
 }

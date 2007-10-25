@@ -134,7 +134,7 @@ class MyGraphicsContext {
 class OSGExporter 
 {
 public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int tex_size=512): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),tex_size(tex_size) {state=NULL;
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int tex_size=512,int num_threads=1): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),tex_size(tex_size),num_threads(num_threads) {state=NULL;
     context=NULL;
     context=new MyGraphicsContext();
     internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
@@ -164,6 +164,7 @@ protected:
   bool tex_saved;
   bool compress_tex;
  int tex_size;
+  int num_threads;
   /*
     inline osg::Vec3 transformVertex(const osg::Vec3& vec, const bool rotate) const ;
     inline osg::Vec3 transformNormal(const osg::Vec3& vec, const bool rotate) const ;
@@ -199,5 +200,5 @@ struct GeometryCollection
 
 typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;
 typedef std::map<int,string> MaterialToIDMap;
-std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size);
+std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads);
 #endif

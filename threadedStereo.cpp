@@ -787,6 +787,13 @@ int main( int argc, char *argv[ ] )
 	 }
    }
 
+
+  if(!fpp2 )
+     fpp2=fopen("mesh/vehpath.txt","w");
+   if(!fpp)	
+     fpp=fopen("mesh/campath.txt","w");
+
+
    if(output_ply_and_conf){
      const char *uname="mesh-agg";
      auv_data_tools::makedir(uname);
@@ -868,12 +875,7 @@ int main( int argc, char *argv[ ] )
      double secs=time/1000.0;
      printf("max %d consumer pool: %.2f sec\n", num_threads, secs);
    }
-   if(!fpp2 && output_3ds)
-     fpp2=fopen("mesh/vehpath.txt","w");
-   if(!fpp && output_3ds)	
-     fpp=fopen("mesh/campath.txt","w");
-
-
+ 
    for(unsigned int i=1; i <= tasks.size(); i++){
      /*
        if(output_pts_cov){
@@ -1113,7 +1115,7 @@ void threadedStereo::runP(auv_image_names &name){
 	     GtsMatrix *invM = gts_matrix_inverse(m);
 	     gts_trans[0]=(invM);
 	     gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
-				NULL,tex_size);
+				NULL,tex_size,num_threads);
 	     osgExp->convertModelOSG(surf,textures,string(filename));
 	     gts_matrix_destroy (invM);
 	   }

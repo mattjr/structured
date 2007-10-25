@@ -4,8 +4,13 @@
 #include <osg/GraphicsContext>
 #include <osgDB/WriteFile>
 #include <cv.h>
+#include <glib.h>
 #include <highgui.h>
+#include <boost/thread/thread.hpp>
+typedef struct _GHashNode      GHashNode;
 std::vector<GtsBBox *> bboxes_all;;
+FILE *errFP;
+int lastBP;
 bool Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> material_names)
 #ifdef USE_LIB3DS 
   ;
@@ -631,32 +636,65 @@ int find_closet_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> 
     gts_triangle_vertices(t,(GtsVertex **)& v1, 
 			  (GtsVertex **)&v2, (GtsVertex **)&v3);
     
-    printf("%f %f %f %f %f %f dist: %f\n",//transP.x,transP.y,transP.z,
-	   v1->p.x,v1->p.y,v1->p.z);
+    fprintf(errFP,"%f %f %f %f %f %f %f %f %f \n",
+	    v1->p.x,v1->p.y,v1->p.z,v2->p.x,v2->p.y,v2->p.z,
+	    v3->p.x,v3->p.y,v3->p.z);
 	
-	  GtsPoint tc;
-	  tc.x=(v1->p.x+v2->p.x+v3->p.x)/3.0;
-	  tc.y=(v1->p.y+v2->p.y+v3->p.y)/3.0;
-	  tc.z=(v1->p.z+v2->p.z+v3->p.z)/3.0;
-	  int bestProjection=INT_MAX;
-	  int p=35;
-	  GtsPoint tcT=tc;
-	  gts_point_transform(&tcT,back_trans[p]);
-	  double vX,vY;
-	   tcT=v1->p;
-	   gts_point_transform(&tcT,back_trans[p]);
-	  camera_frame_to_dist_pixel_coords(*calib,tcT.x,tcT.y,tcT.z,vX,vY);
-	  printf("Global %d %f %f %f %f %f\n",p,tcT.x,tcT.y,tcT.z,vX,vY);
-	  tcT=v2->p;
-	  gts_point_transform(&tcT,back_trans[p]);
-	  camera_frame_to_dist_pixel_coords(*calib,tcT.x,tcT.y,tcT.z,vX,vY);
-	  printf("Global %d %f %f %f %f %f\n",p,tcT.x,tcT.y,tcT.z,vX,vY);
-	  tcT=v3->p;
-	  gts_point_transform(&tcT,back_trans[p]);
-	  camera_frame_to_dist_pixel_coords(*calib,tcT.x,tcT.y,tcT.z,vX,vY);
-	  printf("Global %d %f %f %f %f %f\n",p,tcT.x,tcT.y,tcT.z,vX,vY);
-	  return INT_MAX;
+    GtsPoint tc;
+    tc.x=(v1->p.x+v2->p.x+v3->p.x)/3.0;
+    tc.y=(v1->p.y+v2->p.y+v3->p.y)/3.0;
+    tc.z=(v1->p.z+v2->p.z+v3->p.z)/3.0;
+    int bestProjection=INT_MAX;
+    int p=lastBP;
+    for(p -=2; p < lastBP+2; p++){
+      GtsPoint tcT=tc;
+      gts_point_transform(&tcT,back_trans[p]);
+      double vX,vY;
+      tcT=v1->p;
+      gts_point_transform(&tcT,back_trans[p]);
+      camera_frame_to_dist_pixel_coords(*calib,tcT.x,tcT.y,tcT.z,vX,vY);
+      fprintf(errFP,"V1 proj:%d %f %f %f %f %f\n",p,tcT.x,tcT.y,tcT.z,vX,vY);
+      tcT=v2->p;
+      gts_point_transform(&tcT,back_trans[p]);
+      camera_frame_to_dist_pixel_coords(*calib,tcT.x,tcT.y,tcT.z,vX,vY);
+      fprintf(errFP,"V2 %d %f %f %f %f %f\n",p,tcT.x,tcT.y,tcT.z,vX,vY);
+      tcT=v3->p;
+      gts_point_transform(&tcT,back_trans[p]);
+      camera_frame_to_dist_pixel_coords(*calib,tcT.x,tcT.y,tcT.z,vX,vY);
+      fprintf(errFP,"V3 %d %f %f %f %f %f\n",p,tcT.x,tcT.y,tcT.z,vX,vY);
+    }
+ GSList * list ,*itr;
+    
+    
+    GtsVertex * v[3];
+    gts_triangle_vertices(t,(GtsVertex **)& v[0], 
+			    (GtsVertex **)&v[1], (GtsVertex **)&v[2]);
+    
+    tc.x=(v[0]->p.x+v[1]->p.x+v[2]->p.x)/3.0;
+    tc.y=(v[0]->p.y+v[1]->p.y+v[2]->p.y)/3.0;
+    tc.z=(v[0]->p.z+v[1]->p.z+v[2]->p.z)/3.0;
+   
+    bestProjection=INT_MAX;
+    int quickMethod=1;
 
+    itr = list =  gts_bb_tree_point_closest_bboxes(bboxTree,&tc);
+    double minDist=DBL_MAX;
+    double dist=DBL_MAX;
+      while (itr) {
+	GtsBBox * bbox=GTS_BBOX (itr->data);
+	if(!gts_bbox_point_is_inside(bbox,&tc)){
+	  itr = itr->next;
+	  continue;
+	}     
+	int val= (int)bbox->bounded;
+	if(find_min_project_dist_bbox(v,back_trans[val],calib, dist))
+	  fprintf(errFP,"Aleged valid %d\n",val);
+	
+	itr = itr->next;
+      }
+      fflush(errFP);
+      return INT_MAX;*/
+    /*
     for(int i=0; i < (int)camPosePts.size(); i++){
       double dist=gts_point_triangle_distance(&camPosePts[i],t);
       
@@ -684,48 +722,42 @@ int find_closet_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> 
     tc.z=(v[0]->p.z+v[1]->p.z+v[2]->p.z)/3.0;
    
     int bestProjection=INT_MAX;
-    int quickMethod=1;
 
     itr = list =  gts_bb_tree_point_closest_bboxes(bboxTree,&tc);
     double minDist=DBL_MAX;
     double dist=DBL_MAX;
-    if(quickMethod){
-      while (itr) {
-	GtsBBox * bbox=GTS_BBOX (itr->data);
-	if(!gts_bbox_point_is_inside(bbox,&tc)){
+    
+    while (itr) {
+      GtsBBox * bbox=GTS_BBOX (itr->data);
+      if(!gts_bbox_point_is_inside(bbox,&tc)){
 	  itr = itr->next;
 	  continue;
-	}     
-	int val= (int)bbox->bounded;
-	if(find_min_project_dist_bbox(v,back_trans[val],calib, dist)){
-	  //   printf("Valid projections 1: %d\n",val);
-	  if(dist < minDist){
-	    minDist=dist;
+      }     
+      int val= (int)bbox->bounded;
+      if(find_min_project_dist_bbox(v,back_trans[val],calib, dist)){
+	if(dist < minDist){
+	  minDist=dist;
 	 bestProjection=val;
-	  }
 	}
-	itr = itr->next;
       }
-      g_slist_free (list);   
+      itr = itr->next;
     }
-    else{
+    g_slist_free (list);   
+    
+    //Brute force quick method failed
+    if(bestProjection == INT_MAX){
+      minDist=DBL_MAX;
       for(int i =0; i < (int)bboxes_all.size(); i++){
 	int val= (int)bboxes_all[i]->bounded;
 	if(find_min_project_dist_bbox(v,back_trans[val],calib, dist)){
-	  //	printf("Valid projections 2: %d check %d\n",val, gts_bbox_point_is_inside(bboxes_all[i],&v[0]->p));
 	  if(dist < minDist){
 	    minDist=dist;
 	    bestProjection=val;
 	  }
-	  
-	  //if( gts_bbox_point_is_inside(bboxes_all[i],&tc))
-	  //printf("%d:\n",(int)bboxes_all[i]->bounded);
 	}
-	//else
-	//  printf("Invalid %d check %d\n",val,gts_bbox_point_is_inside(bboxes_all[i],&v[0]->p));
-	
-      }
+      } 
     }
+     
     return bestProjection;
   }
   
@@ -733,7 +765,7 @@ int find_closet_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> 
 
 }
 
-gboolean tex_add_verbose ( guint number, guint total)
+gboolean tex_add_verbose ( guint number, guint total, int reject)
 {
   static guint nmax = 0, nold = 0;
   static GTimer * timer = NULL, * total_timer = NULL;
@@ -767,12 +799,12 @@ gboolean tex_add_verbose ( guint number, guint total)
     fprintf (stderr, 
 	     "\rFaces: %4u/%4u %3.0f%% %6.0f edges/s "
 	     "Elapsed: %02.0f:%02.0f:%02.0f "
-	     "Remaining: %02.0f:%02.0f:%02.0f ",
+	     "Remaining: %02.0f:%02.0f:%02.0f Rej %d",
 	     number, total,
 	     100.*( number)/( total),
 	     (number - nold  )/g_timer_elapsed (timer, NULL),
 	     hours, mins, secs,
-	     hours1, mins1, secs1);
+	     hours1, mins1, secs1,reject);
     fflush (stderr);
 
     nold = number;
@@ -796,10 +828,141 @@ typedef struct _texGenData{
   std::map<int,GtsMatrix *> back_trans;
   int validCount;
   int count;
+  int reject;
   int total;
 std::vector<T_Face *> *border_faces;
   Camera_Calib *calib;
 }texGenData;
+
+#ifdef USE_SURFACE_BTREE
+static gint foreach_face (GtsFace * f, 
+			  gpointer t_data,
+			  gpointer * info)
+#else /* not USE_SURFACE_BTREE */
+static void foreach_face (GtsFace * f, 
+			  gpointer t_data,
+			  gpointer * info)
+#endif /* not USE_SURFACE_BTREE */
+{
+  (*((GtsFunc) info[0])) (f, info[1]);
+#ifdef USE_SURFACE_BTREE
+  return FALSE;
+#endif /* USE_SURFACE_BTREE */
+}
+struct _GHashNode
+{
+  gpointer   key;
+  gpointer   value;
+  GHashNode *next;
+};
+
+struct _GHashTable
+{
+  gint             size;
+  gint             nnodes;
+  GHashNode      **nodes;
+  GHashFunc        hash_func;
+  GEqualFunc       key_equal_func;
+  GDestroyNotify   key_destroy_func;
+  GDestroyNotify   value_destroy_func;
+};
+struct threaded_hash_exec
+{
+  threaded_hash_exec(int rangeLow,int rangeHi, GHashTable *hash_table,GHFunc func, gpointer	  user_data) : rangeLow(rangeLow),rangeHi(rangeHi),hash_table(hash_table), func(func),user_data(user_data) { }
+   void operator()()
+   {
+     GHashNode *node;
+     printf("Hello doing %d to %d\n",rangeLow,rangeHi);
+     for (int i = rangeLow; i < rangeHi; i++)
+       for (node = hash_table->nodes[i]; node; node = node->next)
+	 (* func) (node->key, node->value, user_data);
+
+   }
+
+  
+  int rangeLow,rangeHi;
+  GHashTable *hash_table;
+
+  GHFunc	  func;
+  gpointer	  user_data;
+};
+
+
+
+void
+threaded_hash_table_foreach (GHashTable *hash_table,
+		      GHFunc	  func,
+			     gpointer	  user_data,int num_threads)
+{
+    
+  g_return_if_fail (hash_table != NULL);
+  g_return_if_fail (func != NULL);
+  int task_size=(int)ceil(hash_table->size /(double)num_threads);
+  boost::thread_group thread_gr;
+threaded_hash_exec *the[2];
+ printf("Task size %d %d\n",task_size,hash_table->size);
+  for(int i=0; i < num_threads; i++)
+    the[i] = new threaded_hash_exec(i*task_size,min((i+1)*task_size,hash_table->size),hash_table,func,user_data);
+
+  for(int i=0; i < num_threads; i++)
+    thread_gr.create_thread(*the[i]);
+  
+ thread_gr.join_all();
+}
+void gts_write_triangle (GtsTriangle * t, 
+			 GtsPoint * o,
+			 FILE * fptr)
+{
+  gdouble xo = o ? o->x : 0.0;
+  gdouble yo = o ? o->y : 0.0;
+  gdouble zo = o ? o->z : 0.0;
+
+  g_return_if_fail (t != NULL && fptr != NULL);
+
+ 
+  fprintf (fptr, "OFF 3 1 0\n"
+	   "%g %g %g\n%g %g %g\n%g %g %g\n3 0 1 2\n})\n",
+	   GTS_POINT (GTS_SEGMENT (t->e1)->v1)->x - xo, 
+	   GTS_POINT (GTS_SEGMENT (t->e1)->v1)->y - yo,
+	   GTS_POINT (GTS_SEGMENT (t->e1)->v1)->z - zo,
+	   GTS_POINT (GTS_SEGMENT (t->e1)->v2)->x - xo, 
+	   GTS_POINT (GTS_SEGMENT (t->e1)->v2)->y - yo, 
+	   GTS_POINT (GTS_SEGMENT (t->e1)->v2)->z - zo,
+	   GTS_POINT (gts_triangle_vertex (t))->x - xo,
+	   GTS_POINT (gts_triangle_vertex (t))->y - yo,
+	   GTS_POINT (gts_triangle_vertex (t))->z - zo);
+	 
+}
+/**
+ * threaded_surface_foreach_face:
+ * @s: a #GtsSurface.
+ * @func: a #GtsFunc.
+ * @data: user data to be passed to @func.
+ *
+ * Calls @func once for each face of @s.
+ */
+void threaded_surface_foreach_face (GtsSurface * s,
+			       GtsFunc func, 
+				    gpointer data,int num_threads)
+{
+  gpointer info[2];
+
+  g_return_if_fail (s != NULL);
+  g_return_if_fail (func != NULL);
+
+  /* forbid removal of faces */
+  s->keep_faces = TRUE;
+  info[0] = (void *)func;
+  info[1] = data;
+#ifdef USE_SURFACE_BTREE
+  g_tree_traverse (s->faces, (GTraverseFunc) foreach_face, G_IN_ORDER,
+		   info);
+#else /* not USE_SURFACE_BTREE */
+  threaded_hash_table_foreach (s->faces, (GHFunc) foreach_face, info,num_threads);
+#endif /* not USE_SURFACE_BTREE */
+  /* allow removal of faces */
+  s->keep_faces = FALSE;
+}
 
 static void texcoord_foreach_face (T_Face * f,
 				   texGenData *data)
@@ -808,8 +971,11 @@ static void texcoord_foreach_face (T_Face * f,
   int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
 					 data->bboxTree,data->camPosePts,data->back_trans,data->calib,1);
   if(indexClosest == INT_MAX){
-      printf("Can't find tex in range\n");
-      return;
+    fprintf(errFP,"Failed traingle\n");
+    gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
+    fflush(errFP);
+    tex_add_verbose(data->count++,data->total,data->reject++);
+    return;
   }
      data->tex_used->push_back(indexClosest);
     
@@ -825,7 +991,7 @@ static void texcoord_foreach_face (T_Face * f,
 	 data->bboxTree,data->camPosePts,data->back_trans,data->calib,0);
     }
     // if(!data->bboxTree)
-      tex_add_verbose(data->count++,data->total);
+    tex_add_verbose(data->count++,data->total,data->reject);
 
 }
 static void findborder_foreach_face (T_Face * f,
@@ -839,9 +1005,9 @@ static void findborder_foreach_face (T_Face * f,
       data->border_faces->push_back(f);
 }
 
-std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size){
+std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads){
   
-
+  errFP=fopen("err.txt","w");
   std::vector<GtsPoint> camPosePts;
   GtsPoint transP;
   map<int,GtsMatrix *>::iterator iter;
@@ -868,15 +1034,24 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map
   tex_data.validCount=0;
   tex_data.tex_size=tex_size;
   tex_data.count=1;
+  tex_data.reject=0;
   tex_data.total=gts_surface_face_number(s);
   tex_data.calib=calib;
   tex_data.border_faces = &border_faces;
-  gts_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,&tex_data );
- 
-  printf("Checking weird border cases...\n");
-  gts_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,&tex_data );
+  if(num_threads > 1)
+    threaded_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,
+				   &tex_data ,num_threads);
+else
+  gts_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,&tex_data);
 
+  printf("Checking weird border cases...\n");
+  if(num_threads > 1)
+    threaded_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,
+				   &tex_data ,num_threads);   
+  else
+    gts_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,&tex_data );
   tex_data.count=1;
+  tex_data.reject=0;
   tex_data.total =border_faces.size();
   for(int i=0; i < (int) border_faces.size(); i++){
    T_Face *f2 = copy_face(border_faces[i],s);
@@ -885,7 +1060,7 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map
       tex_data.validCount++;
     
     gts_surface_remove_face(s,GTS_FACE(border_faces[i]));
-    tex_add_verbose(tex_data.count++,tex_data.total);
+    tex_add_verbose(tex_data.count++,tex_data.total,tex_data.reject);
     }
 
   printf("Valid tex %d\n", tex_data.validCount);

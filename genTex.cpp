@@ -48,7 +48,7 @@ static bool no_simp=false;
 
 static bool have_max_frame_count = false;
 static unsigned int max_frame_count;
-
+static int num_threads=1;
 static bool display_debug_images = true;
 
 static bool compress_textures = false;
@@ -104,6 +104,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	  max_frame_count = atoi( argv[i+1] );
 	  i+=2;
 	}
+      else if( strcmp( argv[i], "-t" ) == 0 )
+      {
+         if( i == argc-1 ) return false;
+         num_threads = atoi( argv[i+1] );
+	 i+=2;
+      }
       else if( !have_stereo_config_file_name )
 	{
 	  stereo_config_file_name = argv[i];
@@ -208,8 +214,8 @@ int main( int argc, char *argv[ ] )
  
   
   auv_data_tools::makedir("mesh");
- 
-       
+  if(num_threads > 1)
+    g_thread_init (NULL);
   
 
   FILE *bboxfp = fopen("mesh-agg/bbox.txt","r");
@@ -220,8 +226,8 @@ int main( int argc, char *argv[ ] )
     char name[255];
     double x1,x2,y1,y2,z1,z2;
     GtsMatrix *mtmp=gts_matrix_identity(NULL);
-    int eof0, eof1,eof2;
-    while (eof0 != EOF && eof1 != EOF && eof2 != EOF){
+    int eof0, eof1,eof2,frame_count=0;
+    while (eof0 != EOF && eof1 != EOF && eof2 != EOF && !(frame_count >=(int) max_frame_count && have_max_frame_count)){
       
       eof0 = fscanf(bboxfp,"%d %s %lf %lf %lf %lf %lf %lf" ,&count, name,
 	     &x1,&y1,&z1,&x2,&y2,&z2);
@@ -239,7 +245,7 @@ int main( int argc, char *argv[ ] )
       bboxes= g_slist_prepend (bboxes,bbox);
       bboxes_all.push_back(bbox);
       gts_trans_map[count]=gts_matrix_inverse(mtmp);
-    
+      frame_count++;
     }
     gts_matrix_destroy(mtmp);
     fclose(bboxfp);
@@ -280,14 +286,14 @@ int main( int argc, char *argv[ ] )
   double secs;
  
   boost::xtime_get(&xt, boost::TIME_UTC);
-  gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,tex_size);
+  gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,tex_size,num_threads);
   boost::xtime_get(&xt2, boost::TIME_UTC);
   time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
   secs=time/1000.0;
   printf("Done Took %.2f secs\n",secs);
   
   printf("Converting to model for export\n");
-  OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,tex_size);    
+  OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,tex_size,num_threads);    
   boost::xtime_get(&xt, boost::TIME_UTC);
   osgExp->convertModelOSG(surf,texture_file_names,"mesh/blended.ive");
   boost::xtime_get(&xt2, boost::TIME_UTC);

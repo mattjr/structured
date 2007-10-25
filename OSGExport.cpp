@@ -9,7 +9,7 @@
 #include <boost/thread/thread.hpp>
 typedef struct _GHashNode      GHashNode;
 std::vector<GtsBBox *> bboxes_all;;
-FILE *errFP;
+//FILE *errFP;
 int lastBP;
 bool Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> material_names)
 #ifdef USE_LIB3DS 
@@ -779,7 +779,7 @@ gboolean tex_add_verbose ( guint number, guint total, int reject)
     g_timer_start (total_timer);
   }
 
-  if (number != nold){// && number % 1 == 0 ){//&& number < nmax && nmax > total) {
+  if (number != nold && number % 121 == 0 ){// && number % 1 == 0 ){//&& number < nmax && nmax > total) {
     gdouble total_elapsed = g_timer_elapsed (total_timer, NULL);
     gdouble remaining;
     gdouble hours, mins, secs;
@@ -797,9 +797,9 @@ gboolean tex_add_verbose ( guint number, guint total, int reject)
     secs1 = floor (remaining - 3600.*hours1 - 60.*mins1);
 
     fprintf (stderr, 
-	     "\rFaces: %4u/%4u %3.0f%% %6.0f edges/s "
+	     "\rFaces: %8u/%8u %3.0f%% %6.0f edges/s "
 	     "Elapsed: %02.0f:%02.0f:%02.0f "
-	     "Remaining: %02.0f:%02.0f:%02.0f Rej %d",
+	     "Remaining: %02.0f:%02.0f:%02.0f Rej %6u",
 	     number, total,
 	     100.*( number)/( total),
 	     (number - nold  )/g_timer_elapsed (timer, NULL),
@@ -822,8 +822,8 @@ gboolean tex_add_verbose ( guint number, guint total, int reject)
 typedef struct _texGenData{
   GNode *bboxTree;
   std::vector<GtsPoint> camPosePts;
-  vector<int> *tex_used;
-  int oldIndex;
+  
+  
   int tex_size;
   std::map<int,GtsMatrix *> back_trans;
   int validCount;
@@ -899,7 +899,7 @@ threaded_hash_table_foreach (GHashTable *hash_table,
   g_return_if_fail (func != NULL);
   int task_size=(int)ceil(hash_table->size /(double)num_threads);
   boost::thread_group thread_gr;
-threaded_hash_exec *the[2];
+threaded_hash_exec *the[num_threads];
  printf("Task size %d %d\n",task_size,hash_table->size);
   for(int i=0; i < num_threads; i++)
     the[i] = new threaded_hash_exec(i*task_size,min((i+1)*task_size,hash_table->size),hash_table,func,user_data);
@@ -971,20 +971,17 @@ static void texcoord_foreach_face (T_Face * f,
   int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
 					 data->bboxTree,data->camPosePts,data->back_trans,data->calib,1);
   if(indexClosest == INT_MAX){
-    fprintf(errFP,"Failed traingle\n");
+    /*fprintf(errFP,"Failed traingle\n");
     gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
-    fflush(errFP);
+    fflush(errFP);*/
     tex_add_verbose(data->count++,data->total,data->reject++);
     return;
   }
-     data->tex_used->push_back(indexClosest);
-    
-    if(indexClosest !=data->oldIndex){
-      data->oldIndex=indexClosest;
-    }
-    // if(indexClosest == 0)
-    if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size))
-      data->validCount++;
+  
+  
+  
+  if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size))
+    data->validCount++;
     else{
       printf("Index closest %d\n",indexClosest);
        find_closet_img_trans(&GTS_FACE(f)->triangle,
@@ -1005,13 +1002,14 @@ static void findborder_foreach_face (T_Face * f,
       data->border_faces->push_back(f);
 }
 
-std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads){
+void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads){
   
-  errFP=fopen("err.txt","w");
+  //errFP=fopen("err.txt","w");
   std::vector<GtsPoint> camPosePts;
   GtsPoint transP;
   map<int,GtsMatrix *>::iterator iter;
   for(  iter=back_trans.begin();  iter != back_trans.end(); iter++){
+  
       GtsMatrix *m= gts_matrix_inverse(iter->second); 
       transP.x=m[0][3];
       transP.y=m[1][3];
@@ -1020,7 +1018,7 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map
       gts_matrix_destroy(m);
   }
 
-  vector<int> tex_used;
+  
   gts_surface_foreach_vertex(s,(GtsFunc)set_tex_id_unknown,NULL);
 
   std::vector<T_Face *> border_faces;
@@ -1028,8 +1026,8 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map
   texGenData tex_data;
   tex_data.bboxTree=bboxTree;
   tex_data.camPosePts =camPosePts;
-  tex_data.tex_used = &tex_used;
-  tex_data.oldIndex=INT_MAX;
+  
+  
   tex_data.back_trans=back_trans;
   tex_data.validCount=0;
   tex_data.tex_size=tex_size;
@@ -1065,8 +1063,7 @@ else
 
   printf("Valid tex %d\n", tex_data.validCount);
  
-  sort( tex_used.begin(), tex_used.end() );
-  tex_used.erase( unique( tex_used.begin(), tex_used.end() ), tex_used.end() );
-  return tex_used;
+  
+  
 }
 #endif

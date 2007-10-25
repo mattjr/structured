@@ -650,6 +650,27 @@ static bool get_auv_image_name( const string  &contents_dir_name,
    if (name.left_name == "DeltaT" || name.right_name == "DeltaT")
      return false;
    
+
+   fprintf(fpp2,"%f %f %f %f %f %f %f %f %f %f\n",   
+	      name.timestamp,
+	       (*name.veh_pose)[AUV_POSE_INDEX_X],
+	       (*name.veh_pose)[AUV_POSE_INDEX_Y],
+	      (*name.veh_pose)[AUV_POSE_INDEX_Z],
+	       (*name.veh_pose)[AUV_POSE_INDEX_PHI],
+	       (*name.veh_pose)[AUV_POSE_INDEX_THETA],
+	      fmod( (*name.veh_pose)[AUV_POSE_INDEX_PSI],(M_PI)),
+	      0.0,0.0,0.0);
+
+   fprintf(fpp,"%f %f %f %f %f %f %f\n",   
+	      name.timestamp,
+	   (*name.veh_pose)[AUV_POSE_INDEX_X],
+	   (*name.veh_pose)[AUV_POSE_INDEX_Y],
+	   (*name.veh_pose)[AUV_POSE_INDEX_Z],
+	   (*name.veh_pose)[AUV_POSE_INDEX_PHI],
+	   (*name.veh_pose)[AUV_POSE_INDEX_THETA],
+	   fmod( (*name.veh_pose)[AUV_POSE_INDEX_PSI],(M_PI))
+	   );
+
    return true;
          
 }
@@ -940,7 +961,7 @@ void threadedStereo::runP(auv_image_names &name){
   //
   // Load the images
   //
-  
+  int progCount=doneCount.increment();
   
   if( !get_stereo_pair( name.left_name,name.right_name,name.dir,
                             left_frame, right_frame,
@@ -1083,32 +1104,38 @@ void threadedStereo::runP(auv_image_names &name){
 	   char filename[255];
 
 	   if(output_3ds){
-	     std::vector<string>textures;
-	     textures.push_back(name.dir+name.left_name);
+	     map<int,string>textures;
+	     textures[0]=(name.dir+name.left_name);
 	     sprintf(filename,"mesh/surface-%04d.3ds",
-		     doneCount.increment());
-	     std::vector<GtsBBox *> bboxes;
-	     std::vector<GtsMatrix *> gts_trans;
+		     progCount);
+	   
+	     std::map<int,GtsMatrix *> gts_trans;
 	     GtsMatrix *invM = gts_matrix_inverse(m);
-	     gts_trans.push_back(invM);
+	     gts_trans[0]=(invM);
 	     gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
-				bboxes,tex_size);
+				NULL,tex_size);
 	     osgExp->convertModelOSG(surf,textures,string(filename));
 	     gts_matrix_destroy (invM);
 	   }
 	   if(output_ply_and_conf){
 	     
-	     //GtsBBox *bbox=gts_bbox_surface(gts_bbox_class(),surf);
-	     /*
-	       fprintf(bboxfp,"%d %f %f %f %f %f %f\n",stereo_pair_count,
-		   bbox->x1,bbox->y1,bbox->z1,
-		   bbox->x2,bbox->y2,bbox->z2); 
-	     */
+	     GtsBBox *bbox=gts_bbox_surface(gts_bbox_class(),surf);
+	     
+	     fprintf(bboxfp,"%d %s %f %f %f %f %f %f",progCount,
+		     name.left_name.c_str(),
+		     bbox->x1,bbox->y1,bbox->z1,
+		     bbox->x2,bbox->y2,bbox->z2); 
+	     for(int i=0; i< 4; i++)
+	       for(int j=0; j<4; j++)
+		 fprintf(bboxfp," %f",m[i][j]);
+	     fprintf(bboxfp,"\n");
+	    
+
 	     
 	  
 	     FILE *fp;
 	     sprintf(filename,"mesh-agg/surface-%04d.ply",
-		     doneCount.increment());
+		     progCount);
 	     fp = fopen(filename, "w" );
 	     auv_write_ply(surf, fp,have_cov_file,"test");
 	     fclose(fp);
@@ -1140,7 +1167,7 @@ void threadedStereo::runP(auv_image_names &name){
          delete *fitr;
       }     
       
-      printf("Stereo processing on image %u/%u complete.\n",doneCount.value(),totalTodoCount);
+      printf("Stereo processing on image %u/%u complete.\n",progCount,totalTodoCount);
       fflush(stdout);
       // doneCount.increment();
       

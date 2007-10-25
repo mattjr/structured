@@ -5,7 +5,7 @@
 #include <osgDB/WriteFile>
 #include <cv.h>
 #include <highgui.h>
-
+std::vector<GtsBBox *> bboxes_all;;
 bool Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> material_names)
 #ifdef USE_LIB3DS 
   ;
@@ -103,7 +103,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
 
 
 
-osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, std::vector<string> textures) 
+osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures) 
 {
   
   MaterialToGeometryCollectionMap mtgcm;
@@ -137,7 +137,7 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, std::vector
 
        // set up texture if needed.
    
-       if (itr->first >= 0 && itr->first < (int)textures.size()){
+       if (itr->first >= 0 &&  textures.count(itr->first) > 0){
 	 
 	 std::string filename=prefixdir+textures[itr->first];
 	 osg::notify(osg::INFO) << "ctex " << filename  << std::endl;
@@ -148,9 +148,12 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, std::vector
 	   printf("Can't use OPENGL without valid context");
 	   exit(0);
 	 }
-	 printf("\rLoading and Scaling Texture: %03d/%03d",tex_count++,mtgcm.size());
+	 printf("\rLoading and Scaling Texture: %03d/%03d",++tex_count,mtgcm.size());
+	 if(!ive_out)
+	   printf("\n");	 
 	 fflush(stdout); 
 	 IplImage *cvImg=NULL;
+	 
 	 osg::ref_ptr<osg::Image> image= LoadResizeSave(filename,fname, (!ive_out),cvImg);
 	 if (image.get()){	     
 	   // create state
@@ -212,7 +215,7 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, std::vector
     return geode;
 }
 
-int OSGExporter::convertModelOSG(GtsSurface *s,std::vector<string> textures,std::string fileNameOut) {
+int OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std::string fileNameOut) {
 
   std::string ext = osgDB::getFileExtension(fileNameOut);
   ive_out= (ext=="ive");
@@ -465,7 +468,7 @@ osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save
   }
   return image;
 }
-bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> material_names){
+bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names){
   char cTemp[512];
   Lib3dsFile *pFile = lib3ds_file_new();
   // std::vector <string> tex_names;
@@ -494,7 +497,9 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> ma
      string fname(tname);
      newMatMap[itr->first]=fname;
      
-     printf("\rLoading and Scaling Texture: %03d/%03d",tex_count++,mtgcm.size());
+     printf("\rLoading and Scaling Texture: %03d/%03d",++tex_count,mtgcm.size());
+     if(!tex_saved)
+       printf("\n");
      IplImage *cvImg=NULL;
      LoadResizeSave(filename,"mesh/"+fname+".png", (!tex_saved),cvImg);
      if(cvImg)
@@ -553,64 +558,177 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> ma
 
   return bResult;
 }
+static bool find_min_project_dist_bbox(GtsVertex ** triVert,GtsMatrix* back_trans,Camera_Calib *calib, double &dist){
+
+  double vX[3],vY[3];
+  GtsPoint tmpP[3];
+
+  
+ for(int i=0; i< 3; i++)
+   tmpP[i]=triVert[i]->p;
+ 
+ for(int i=0; i < 3; i++){
+   gts_point_transform(&tmpP[i],back_trans);
+   camera_frame_to_dist_pixel_coords(*calib,tmpP[i].x,tmpP[i].y,tmpP[i].z,
+				     vX[i],vY[i]);
+ }
+ 
+ 
+ for(int i=0; i < 3; i++){
+   
+   if(vX[i]> calib->width || vY[i] > calib->height || vX[i] < 0.0 || vY[i] < 0.0 ){
+     return false;
+   }
+ }
+ dist=0.0;
+ for(int i=0; i < 3; i++){
+   dist+= sqrt(pow((calib->width/2.0)-vX[i],2)+pow((calib->height/2.0)-vY[i],2));
+   //((  (vY[i])-(calib->width/2.0))+ (vX[i]-(calib->height/2.0))/2.0) ;
+   
+   // 1/min(pow(vX[i]-calib->width-(calib->width/2.0),2),
+   //	pow(vY[i]-calib->height-(calib->height/2.0),2));
+  
+ }
+
+
+ // sqrt(pow((calib->width/2.0)-vX[i],2)+pow((calib->height/2.0)-vY[i],2)); 
+       /*  printf("%f(%f) %f(%f) = %f\n",vY[0],
+	   (  (vY[0])-(calib->width/2.0)),
+	   vX[0],
+	   (vX[0]-(calib->height/2.0)),
+	   
+	   
+	   );*/
+ //  100000/min(pow(vX[0]-calib->width-(calib->width/2.0),2),
+ //pow(vY[0]-calib->height-(calib->height/2.0),2));
+ //pow(vY[i]-calib->height-(calib->height/2.0),2))
+ /*1/max(pow(vX-calib->width-(calib->width/2.0),2),
+   pow(vY-calib->height-(calib->height/2.0),2));*/
+ //
+ return true;
+}
 
 static void set_tex_id_unknown (TVertex *v)
 {
   v->id= -1;
 }
 
-static int currentBBox=0;
-
-int find_closet_img_trans(GtsTriangle *t,std::vector<GtsBBox *> bboxes, std::vector<GtsPoint> camPosePts,int type){
-
-  double minDist=DBL_MAX;
+gdouble dist_to_bbox_center(GtsBBox*bb,GtsPoint *pt){
+  GtsPoint center;
+  center.x = (bb->x1 + bb->x2) / 2.0f;
+  center.y = (bb->y1 + bb->y2) / 2.0f;
+  center.z = (bb->z1 + bb->z2) / 2.0f;
+  return gts_point_distance(pt,&center);
+}
+int find_closet_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> camPosePts,std::map<int,GtsMatrix *> back_trans,Camera_Calib *calib,int type){
+ 
   
+  if(bboxTree==NULL)
+    return 0;
   int index=INT_MAX;
   if(type ==0){
+    /*   GtsVertex * v1,* v2,* v3;
+    gts_triangle_vertices(t,(GtsVertex **)& v1, 
+			  (GtsVertex **)&v2, (GtsVertex **)&v3);
+    
+    printf("%f %f %f %f %f %f dist: %f\n",//transP.x,transP.y,transP.z,
+	   v1->p.x,v1->p.y,v1->p.z);
+	
+	  GtsPoint tc;
+	  tc.x=(v1->p.x+v2->p.x+v3->p.x)/3.0;
+	  tc.y=(v1->p.y+v2->p.y+v3->p.y)/3.0;
+	  tc.z=(v1->p.z+v2->p.z+v3->p.z)/3.0;
+	  int bestProjection=INT_MAX;
+	  int p=35;
+	  GtsPoint tcT=tc;
+	  gts_point_transform(&tcT,back_trans[p]);
+	  double vX,vY;
+	   tcT=v1->p;
+	   gts_point_transform(&tcT,back_trans[p]);
+	  camera_frame_to_dist_pixel_coords(*calib,tcT.x,tcT.y,tcT.z,vX,vY);
+	  printf("Global %d %f %f %f %f %f\n",p,tcT.x,tcT.y,tcT.z,vX,vY);
+	  tcT=v2->p;
+	  gts_point_transform(&tcT,back_trans[p]);
+	  camera_frame_to_dist_pixel_coords(*calib,tcT.x,tcT.y,tcT.z,vX,vY);
+	  printf("Global %d %f %f %f %f %f\n",p,tcT.x,tcT.y,tcT.z,vX,vY);
+	  tcT=v3->p;
+	  gts_point_transform(&tcT,back_trans[p]);
+	  camera_frame_to_dist_pixel_coords(*calib,tcT.x,tcT.y,tcT.z,vX,vY);
+	  printf("Global %d %f %f %f %f %f\n",p,tcT.x,tcT.y,tcT.z,vX,vY);
+	  return INT_MAX;
+
     for(int i=0; i < (int)camPosePts.size(); i++){
       double dist=gts_point_triangle_distance(&camPosePts[i],t);
       
       GtsVertex * v1,* v2,* v3;
       gts_triangle_vertices(t,(GtsVertex **)& v1, 
 			    (GtsVertex **)&v2, (GtsVertex **)&v3);
-      //    printf("%f %f %f %f %f %f dist: %f\n",//transP.x,transP.y,transP.z,
-      //   v1->p.x,v1->p.y,v1->p.z, dist);
+          printf("%f %f %f %f %f %f dist: %f\n",//transP.x,transP.y,transP.z,
+       v1->p.x,v1->p.y,v1->p.z, dist);
       
       if(dist < minDist){
 	minDist=dist;
 	index=i;
       }
-    }
+      }*/
   }else{
-    if(currentBBox == -1){
-      for(int i=0; i < (int)bboxes.size(); i++){
-	if(gts_bbox_overlaps_triangle(bboxes[i],t)){
-	  index=i;
-	  currentBBox = i;
-	  break;
+    GSList * list ,*itr;
+    
+    
+    GtsVertex * v[3];
+    gts_triangle_vertices(t,(GtsVertex **)& v[0], 
+			    (GtsVertex **)&v[1], (GtsVertex **)&v[2]);
+    GtsPoint tc;
+    tc.x=(v[0]->p.x+v[1]->p.x+v[2]->p.x)/3.0;
+    tc.y=(v[0]->p.y+v[1]->p.y+v[2]->p.y)/3.0;
+    tc.z=(v[0]->p.z+v[1]->p.z+v[2]->p.z)/3.0;
+   
+    int bestProjection=INT_MAX;
+    int quickMethod=1;
+
+    itr = list =  gts_bb_tree_point_closest_bboxes(bboxTree,&tc);
+    double minDist=DBL_MAX;
+    double dist=DBL_MAX;
+    if(quickMethod){
+      while (itr) {
+	GtsBBox * bbox=GTS_BBOX (itr->data);
+	if(!gts_bbox_point_is_inside(bbox,&tc)){
+	  itr = itr->next;
+	  continue;
+	}     
+	int val= (int)bbox->bounded;
+	if(find_min_project_dist_bbox(v,back_trans[val],calib, dist)){
+	  //   printf("Valid projections 1: %d\n",val);
+	  if(dist < minDist){
+	    minDist=dist;
+	 bestProjection=val;
+	  }
 	}
+	itr = itr->next;
       }
-    }else{
-      if(gts_bbox_overlaps_triangle(bboxes[currentBBox],t))
-	return currentBBox;
-      else{
-	int i;
-	for(i=currentBBox+1; i < (int)bboxes.size(); i++){
-	   if(gts_bbox_overlaps_triangle(bboxes[i],t))
-	     break;
-	 }
-
-	for(; i < (int)bboxes.size(); i++){
-	   if(!gts_bbox_overlaps_triangle(bboxes[i],t))
-	     break;
-	 }
-	 return i-1;
-	 
-
-      }
-	
+      g_slist_free (list);   
     }
+    else{
+      for(int i =0; i < (int)bboxes_all.size(); i++){
+	int val= (int)bboxes_all[i]->bounded;
+	if(find_min_project_dist_bbox(v,back_trans[val],calib, dist)){
+	  //	printf("Valid projections 2: %d check %d\n",val, gts_bbox_point_is_inside(bboxes_all[i],&v[0]->p));
+	  if(dist < minDist){
+	    minDist=dist;
+	    bestProjection=val;
+	  }
+	  
+	  //if( gts_bbox_point_is_inside(bboxes_all[i],&tc))
+	  //printf("%d:\n",(int)bboxes_all[i]->bounded);
+	}
+	//else
+	//  printf("Invalid %d check %d\n",val,gts_bbox_point_is_inside(bboxes_all[i],&v[0]->p));
+	
+      }
+    }
+    return bestProjection;
   }
+  
   return index;
 
 }
@@ -670,12 +788,12 @@ gboolean tex_add_verbose ( guint number, guint total)
   return FALSE;
 }
 typedef struct _texGenData{
- std::vector<GtsBBox *> bboxes;
+  GNode *bboxTree;
   std::vector<GtsPoint> camPosePts;
   vector<int> *tex_used;
   int oldIndex;
   int tex_size;
-  std::vector<GtsMatrix *> back_trans;
+  std::map<int,GtsMatrix *> back_trans;
   int validCount;
   int count;
   int total;
@@ -688,21 +806,26 @@ static void texcoord_foreach_face (T_Face * f,
 {
   
   int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
-					 data->bboxes,data->camPosePts,0);
+					 data->bboxTree,data->camPosePts,data->back_trans,data->calib,1);
   if(indexClosest == INT_MAX){
       printf("Can't find tex in range\n");
+      return;
   }
      data->tex_used->push_back(indexClosest);
     
     if(indexClosest !=data->oldIndex){
       data->oldIndex=indexClosest;
     }
-
+    // if(indexClosest == 0)
     if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size))
       data->validCount++;
-     else
-       ;//gts_surface_remove_face(s,GTS_FACE(f));
-    tex_add_verbose(data->count++,data->total);
+    else{
+      printf("Index closest %d\n",indexClosest);
+       find_closet_img_trans(&GTS_FACE(f)->triangle,
+	 data->bboxTree,data->camPosePts,data->back_trans,data->calib,0);
+    }
+    // if(!data->bboxTree)
+      tex_add_verbose(data->count++,data->total);
 
 }
 static void findborder_foreach_face (T_Face * f,
@@ -716,13 +839,14 @@ static void findborder_foreach_face (T_Face * f,
       data->border_faces->push_back(f);
 }
 
-std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::vector<GtsMatrix *> back_trans,std::vector<GtsBBox *> bboxes,int tex_size){
+std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size){
   
 
   std::vector<GtsPoint> camPosePts;
   GtsPoint transP;
-  for(int i=0; i < (int)back_trans.size(); i++){
-      GtsMatrix *m= gts_matrix_inverse(back_trans[i]); 
+  map<int,GtsMatrix *>::iterator iter;
+  for(  iter=back_trans.begin();  iter != back_trans.end(); iter++){
+      GtsMatrix *m= gts_matrix_inverse(iter->second); 
       transP.x=m[0][3];
       transP.y=m[1][3];
       transP.z=m[2][3];
@@ -736,7 +860,7 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::vec
   std::vector<T_Face *> border_faces;
 
   texGenData tex_data;
-  tex_data.bboxes=bboxes;
+  tex_data.bboxTree=bboxTree;
   tex_data.camPosePts =camPosePts;
   tex_data.tex_used = &tex_used;
   tex_data.oldIndex=INT_MAX;
@@ -748,48 +872,7 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::vec
   tex_data.calib=calib;
   tex_data.border_faces = &border_faces;
   gts_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,&tex_data );
-  /*
-  while ((f =(T_Face *) gts_surface_traverse_next (t, &level))) {
-    int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
-					  bboxes,camPosePts,0);
-    if(indexClosest == INT_MAX){
-      printf("Can't find tex in range\n");
-      continue;
-     
-    }
-
-    tex_used.push_back(indexClosest);
-    
-    if(indexClosest !=oldIndex){
-      oldIndex=indexClosest;
-    }
-
-    if(apply_tex_to_tri(f,calib,back_trans[indexClosest],indexClosest,tex_size))
-      validCount++;
-     else
-       ;//gts_surface_remove_face(s,GTS_FACE(f));
-    tex_add_verbose(count++,total);
-  }
  
-  gts_surface_traverse_destroy (t);
-  */
-  #warning "Does work when faces are rmoved when not valid tex fixme"
-  /*  gts_surface_foreach_face (s, (GtsFunc) pick_first_face,&first );
-  t = gts_surface_traverse_new (s, first);
-  printf("Checking weird border cases...\n");
-  std::vector<T_Face *> border_faces;
-  while ((f =(T_Face *) gts_surface_traverse_next (t, &level))) {
-   GtsTriangle * t = &GTS_FACE(f)->triangle;
-    TVertex * v1,* v2,* v3; 
-    gts_triangle_vertices(t,(GtsVertex **)& v1, 
-			  (GtsVertex **)&v2, (GtsVertex **)&v3);
-    if(f->material != v1->id || f->material != v2->id || f->material != v3->id)
-      border_faces.push_back(f);
-
-  }
-
-  */
-
   printf("Checking weird border cases...\n");
   gts_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,&tex_data );
 
@@ -797,13 +880,13 @@ std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::vec
   tex_data.total =border_faces.size();
   for(int i=0; i < (int) border_faces.size(); i++){
    T_Face *f2 = copy_face(border_faces[i],s);
-   int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,bboxes,camPosePts,0);
+   int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,bboxTree,camPosePts,back_trans,calib,1);
     if(apply_tex_to_tri(f2,calib,back_trans[idx],idx,tex_size))
       tex_data.validCount++;
     
     gts_surface_remove_face(s,GTS_FACE(border_faces[i]));
     tex_add_verbose(tex_data.count++,tex_data.total);
-  }
+    }
 
   printf("Valid tex %d\n", tex_data.validCount);
  

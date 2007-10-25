@@ -148,7 +148,7 @@ public:
     }
   }
   osg::Image *LoadResizeSave(string filename,string outname,bool save,IplImage *cvImg);
-  int convertModelOSG(GtsSurface *s,std::vector<string> textures,std::string fileNameOut) ;
+  int convertModelOSG(GtsSurface *s,std::map<int,string> textures,std::string fileNameOut) ;
 
 protected:
   osg::ref_ptr<osg::State> state;
@@ -158,8 +158,8 @@ protected:
     MyGraphicsContext *context;
   bool ive_out;
   //osg::Geometry* convertGtsSurfListToGeometry(GtsSurface *s) const;  
-  osg::Geode* convertGtsSurfListToGeometry(GtsSurface *s, std::vector<string> textures) ;  
-  bool Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> material_names);
+  osg::Geode* convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures) ;  
+  bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names);
   string prefixdir;
   bool tex_saved;
   bool compress_tex;
@@ -199,5 +199,5 @@ struct GeometryCollection
 
 typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;
 typedef std::map<int,string> MaterialToIDMap;
-std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::vector<GtsMatrix *> back_trans,std::vector<GtsBBox *> bboxes,int tex_size);
+std::vector<int> gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size);
 #endif

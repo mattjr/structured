@@ -45,7 +45,7 @@ static string contents_file_name;
 static string dir_name;
 
 static bool no_simp=false;
-static bool use_undistorted_images = false;
+
 static bool have_max_frame_count = false;
 static unsigned int max_frame_count;
 
@@ -57,11 +57,12 @@ static bool compress_textures = false;
 static string stereo_calib_file_name;
 
 
-static std::vector<std::string> texture_file_names;
-static FILE *fpp,*fpp2;
+static std::map<int,std::string> texture_file_names;
+
 static int tex_size=512;
 
 static FILE *conf_ply_file;
+extern std::vector<GtsBBox *> bboxes_all;
 
 //
 // Parse command line arguments into global variables
@@ -69,7 +70,7 @@ static FILE *conf_ply_file;
 static bool parse_args( int argc, char *argv[ ] )
 {
   bool have_stereo_config_file_name = false;
-  bool have_contents_file_name = false;
+  
    
   int i=1;
   while( i < argc )
@@ -109,12 +110,7 @@ static bool parse_args( int argc, char *argv[ ] )
 	  have_stereo_config_file_name = true;
 	  i++;
 	}
-      else if( !have_contents_file_name )
-	{
-	  contents_file_name = argv[i];
-	  have_contents_file_name = true;
-	  i++;
-	}
+   
       else
 	{
 	  cerr << "Error - unknown parameter: " << argv[i] << endl;
@@ -125,55 +121,17 @@ static bool parse_args( int argc, char *argv[ ] )
 
 
 
-  return (have_contents_file_name && have_stereo_config_file_name);
+  return ( have_stereo_config_file_name);
 }
 
-bool get_camera_params( Config_File *config_file, Vector &camera_pose )
-{
 
- double tmp_pose[6];
-
-   if( config_file->get_value( "STEREO_POSE_X", tmp_pose[AUV_POSE_INDEX_X]) == 0 )
-   {
-      return false;
-   }
-   if( config_file->get_value( "STEREO_POSE_Y", tmp_pose[AUV_POSE_INDEX_Y]) == 0 )
-   {
-      return false;
-   }
-   if( config_file->get_value( "STEREO_POSE_Z", tmp_pose[AUV_POSE_INDEX_Z]) == 0 )
-   {
-      return false;
-   }
-   if( config_file->get_value( "STEREO_POSE_PHI", tmp_pose[AUV_POSE_INDEX_PHI]) == 0 )
-   {
-      return false;
-   }
-   if( config_file->get_value( "STEREO_POSE_THETA", tmp_pose[AUV_POSE_INDEX_THETA]) == 0 )
-   {
-      return false;
-   }
-   if( config_file->get_value( "STEREO_POSE_PSI", tmp_pose[AUV_POSE_INDEX_PSI]) == 0 )
-   {
-      return false;
-   }
-   
-   camera_pose[AUV_POSE_INDEX_X]=tmp_pose[AUV_POSE_INDEX_X];
-   camera_pose[AUV_POSE_INDEX_Y]=tmp_pose[AUV_POSE_INDEX_Y];
-   camera_pose[AUV_POSE_INDEX_Z]=tmp_pose[AUV_POSE_INDEX_Z];
-   camera_pose[AUV_POSE_INDEX_PHI]=tmp_pose[AUV_POSE_INDEX_PHI];
-   camera_pose[AUV_POSE_INDEX_THETA]=tmp_pose[AUV_POSE_INDEX_THETA];
-   camera_pose[AUV_POSE_INDEX_PSI]=tmp_pose[AUV_POSE_INDEX_PSI];
-
-   return true;
-}
 //
 // Display information on how to use this program
 //
 static void print_usage( void )
 {
   cout << "USAGE:" << endl;
-  cout << "   stereo_feature_finder_test [OPTIONS] <stereo_cfg> <contents_file>" << endl; 
+  cout << "   stereo_feature_finder_test [OPTIONS] <stereo_cfg> " << endl; 
   cout << endl;
   cout << "OPTIONS:" << endl;
   cout << "   -r <resize_scale>       Resize the images by a scaling factor." << endl;
@@ -246,138 +204,56 @@ int main( int argc, char *argv[ ] )
       have_stereo_calib = true;
     }      
 
-  if( use_undistorted_images == true && have_stereo_calib == false )
-    {
-      cerr << "ERROR - A stereo calibration file is required to undistort "
-           << "images." << endl;
-      exit( 1 );     
-    }
+  std::map<int,GtsMatrix *> gts_trans_map;
  
-  //
-  // Open the contents file
-  //
-  ifstream contents_file( contents_file_name.c_str( ) );
-  if( !contents_file )
-    {
-      cerr << "ERROR - unable to open contents file: " << contents_file_name
-           << endl;
-      exit( 1 );     
-    }
-
-
-   
-  //
-  // Figure out the directory that contains the contents file 
-  //
-   
-   
-         
-  //
-  // Run through the data
-  //
-
-  
-  string left_frame_name;
-  string right_frame_name;
-  unsigned int stereo_pair_count = 0;
- 
-  Vector camera_pose(AUV_NUM_POSE_STATES);
-  get_camera_params(config_file,camera_pose);
-
-  std::vector<GtsMatrix *> gts_trans;
-
   
   auv_data_tools::makedir("mesh");
-  if(!fpp2)
-    fpp2=fopen("mesh/vehpath.txt","w");
-  if(!fpp)	
-    fpp=fopen("mesh/campath.txt","w");
-
-  while( !have_max_frame_count || stereo_pair_count < max_frame_count )
-    {
-      //
-      // Load the images
-      //
-      double timestamp;
-      int index;
-      // printf("Loading images %d\n",stereo_pair_count);
-      
-      Vector veh_pose(AUV_NUM_POSE_STATES);
-      double alt;
-      
-      if( !(contents_file >> index &&
-	    contents_file >> timestamp &&
-	    contents_file >> left_frame_name &&
-	    contents_file >> right_frame_name &&
-	    contents_file >> veh_pose[AUV_POSE_INDEX_X] &&
-	    contents_file >> veh_pose[AUV_POSE_INDEX_Y] &&
-	    contents_file >> veh_pose[AUV_POSE_INDEX_Z] &&
-	    contents_file >> veh_pose[AUV_POSE_INDEX_PHI] &&
-	    contents_file >> veh_pose[AUV_POSE_INDEX_THETA] &&
-	    contents_file >> veh_pose[AUV_POSE_INDEX_PSI] &&
-	    contents_file >> alt))
-	{
-	  // we've reached the end of the contents file
-	  break;
-	}      
-      
-      if(left_frame_name == "DeltaT" || right_frame_name == "DeltaT")
-	continue;
-      GtsMatrix *m=get_sensor_to_world_trans(veh_pose,camera_pose);
-     
-      texture_file_names.push_back(left_frame_name);
-      GtsMatrix *invM=gts_matrix_inverse(m);
-      gts_matrix_destroy(m);
-
-      gts_trans.push_back(invM);
-    
-
-      
-      fprintf(fpp2,"%f %f %f %f %f %f %f %f %f %f\n",   
-	      timestamp,
-	      veh_pose[AUV_POSE_INDEX_X],
-	      veh_pose[AUV_POSE_INDEX_Y],
-	      veh_pose[AUV_POSE_INDEX_Z],
-	      veh_pose[AUV_POSE_INDEX_PHI],
-	      veh_pose[AUV_POSE_INDEX_THETA],
-	      fmod(veh_pose[AUV_POSE_INDEX_PSI],(M_PI)),
-	      0.0,0.0,0.0);
-
-      fprintf(fpp,"%f %f %f %f %f %f %f\n",   
-	      timestamp,
-	      veh_pose[AUV_POSE_INDEX_X],
-	      veh_pose[AUV_POSE_INDEX_Y],
-	      veh_pose[AUV_POSE_INDEX_Z],
-	      veh_pose[AUV_POSE_INDEX_PHI],
-	      veh_pose[AUV_POSE_INDEX_THETA],
-	      fmod(veh_pose[AUV_POSE_INDEX_PSI],(M_PI))
-	      );
-
-      stereo_pair_count++;
-      
-    }
-
+ 
        
   
 
   FILE *bboxfp = fopen("mesh-agg/bbox.txt","r");
   int count;
-  std::vector<GtsBBox *> bboxes;
+  GNode *bboxTree=NULL;
+  GSList * bboxes = NULL;
   if(bboxfp){
-    
+    char name[255];
     double x1,x2,y1,y2,z1,z2;
-    while (fscanf(bboxfp,"%d %lf %lf %lf %lf %lf %lf\n" ,&count, 
-		  &x1,&y1,&z1,&x2,&y2,&z2) != EOF){
+    GtsMatrix *mtmp=gts_matrix_identity(NULL);
+    int eof0, eof1,eof2;
+    while (eof0 != EOF && eof1 != EOF && eof2 != EOF){
+      
+      eof0 = fscanf(bboxfp,"%d %s %lf %lf %lf %lf %lf %lf" ,&count, name,
+	     &x1,&y1,&z1,&x2,&y2,&z2);
+      
+      for(int i=0; i < 4; i++)
+	for(int j=0; j < 4; j++)
+	 eof1 = fscanf(bboxfp," %lf",&mtmp[i][j]);
+     eof2 = fscanf(bboxfp,"\n");
+      
+     
+      
+      texture_file_names[count]=(name);
       GtsBBox *bbox= gts_bbox_new(gts_bbox_class(),NULL,x1,y1,z1,x2,y2,z2);
-      bboxes.push_back(bbox);
+      bbox->bounded=(void *)count;
+      bboxes= g_slist_prepend (bboxes,bbox);
+      bboxes_all.push_back(bbox);
+      gts_trans_map[count]=gts_matrix_inverse(mtmp);
+    
     }
+    gts_matrix_destroy(mtmp);
     fclose(bboxfp);
+
+    bboxTree=gts_bb_tree_new(bboxes);
   }
 
   printf("Loading Surface....\n");
+
   FILE *surfFP = fopen("mesh-agg/out.ply","r");
   GtsSurface *surf = auv_read_ply(surfFP);
-   
+  /*FILE *gFP=fopen("surf2.gts","w");
+  gts_surface_write(surf,gFP);
+  fclose(gFP);*/
   //fclose(surfFP);
     
   if(!surf){
@@ -404,7 +280,7 @@ int main( int argc, char *argv[ ] )
   double secs;
  
   boost::xtime_get(&xt, boost::TIME_UTC);
-  gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,bboxes,tex_size);
+  gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,tex_size);
   boost::xtime_get(&xt2, boost::TIME_UTC);
   time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
   secs=time/1000.0;
@@ -419,16 +295,15 @@ int main( int argc, char *argv[ ] )
   secs=time/1000.0;
   printf("Done Took %.2f secs\n",secs);
 
-  fclose(fpp);
-  fclose(fpp2);
+
   if(conf_ply_file)
     fclose(conf_ply_file);
 
   // 
   // Clean-up
   //
-  for(int i=0; i < (int)gts_trans.size(); i++)
-     gts_matrix_destroy(gts_trans[i]);
+  //for(int i=0; i < (int)gts_trans.size(); i++)
+  // gts_matrix_destroy(gts_trans[i]);
   delete config_file;
   delete calib;
   

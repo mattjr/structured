@@ -331,10 +331,10 @@ static bool parse_args( int argc, char *argv[ ] )
 static void print_usage( void )
 {
    cout << "USAGE:" << endl;
-   cout << "   stereo_feature_finder_test [OPTIONS] <stereo_cfg> <contents_file>" << endl; 
+   cout << "   threadedStereo [OPTIONS] <stereo_cfg> <contents_file>" << endl; 
    cout << endl;
    cout << "OPTIONS:" << endl;
-   cout << "   -r <resize_scale>       Resize the images by a scaling factor." << endl;
+   cout << "   -r <texture size>       Final texture output size." << endl;
    cout << "   -m <max_feature_count>  Set the maximum number of features to be found." << endl;
    cout << "   -n <max_frame_count>    Set the maximum number of frames to be processed." << endl;
    cout << "   -z <feature_depth>      Set an estimate for the feature depth relative to cameras." << endl;
@@ -346,6 +346,7 @@ static void print_usage( void )
    cout << "   --surf                  Find SURF features." << endl;
    cout << "   -d                      Do not display debug images." << endl;
    cout << "   --confply               Output confply file." << endl;
+   cout << "   --genmb               Generate MB mesh" << endl;
 
    cout << "   -p                      Pause after each frame." << endl;
    cout << "   --uv                    Output UV File." << endl;

@@ -59,7 +59,6 @@ static int max_feature_count = 5000;
 
 static bool have_max_frame_count = false;
 static unsigned int max_frame_count;
-
 static bool display_debug_images = true;
 static bool output_pts_cov=false;
 static bool use_sift_features = false;
@@ -81,11 +80,13 @@ static FILE *fpp,*fpp2;
 static bool use_dense_feature=false;
 //StereoMatching* stereo;
 //StereoImage simage;
-
+static bool gen_mb_ply=false;
 static bool output_ply_and_conf =false;
 static FILE *conf_ply_file;
 static bool output_3ds=false;
 static char cov_file_name[255];
+static string deltaT_config_name;
+static string deltaT_dir;
 
 void print_uv_3dpts( list<Feature*>          &features,
 		    list<Stereo_Feature_Estimate> &feature_positions,
@@ -174,6 +175,16 @@ static bool parse_args( int argc, char *argv[ ] )
          if( i == argc-1 ) return false;
 	 mb_ply_filename=string( argv[i+1]) ;
          i+=2;
+      }
+      else if( strcmp( argv[i], "--genmb" ) == 0 )
+      {
+	if( i == argc-2 ) return false;	
+	gen_mb_ply=true;
+	have_mb_ply=true;
+	mb_ply_filename=string("mb.ply") ;
+	deltaT_config_name=string( argv[i+1]) ;
+	deltaT_dir=string( argv[i+2]) ;
+	i+=3;
       }
       else if( strcmp( argv[i], "-z" ) == 0 )
       {
@@ -839,6 +850,8 @@ int main( int argc, char *argv[ ] )
        stereo_pair_count++;
      }
    }
+   start_time=tasks[0].timestamp;
+   stop_time=tasks[tasks.size()-1].timestamp;
    totalTodoCount=stereo_pair_count;
    
    //
@@ -921,7 +934,12 @@ int main( int argc, char *argv[ ] )
      fclose(conf_ply_file);
      if(output_pts_cov)
        fclose(pts_cov_fp);
-    
+     FILE *genmbfp=fopen("genmb.sh","w");
+
+     fprintf(genmbfp,"#!/bin/bash\n../seabed_localisation/bin/seabed_pipe --start %f --stop %f --mesh %s %s %s",start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),contents_file_name.c_str());
+    fchmod(fileno(genmbfp),   0777);
+    fclose(genmbfp);
+    system("./genmb.sh");
     
     conf_ply_file=fopen("runvrip.sh","w+");
     //   fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -prob\n../myvrip/bin/vripsurf auto.vri out.ply -import_norm\n");

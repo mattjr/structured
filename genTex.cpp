@@ -210,14 +210,14 @@ int main( int argc, char *argv[ ] )
       have_stereo_calib = true;
     }      
 
-  std::map<int,GtsMatrix *> gts_trans_map;
+ 
  
   
   auv_data_tools::makedir("mesh");
   if(num_threads > 1)
     g_thread_init (NULL);
   
-
+  std::map<int,GtsMatrix *> gts_trans_map;
   FILE *bboxfp = fopen("mesh-agg/bbox.txt","r");
   int count;
   GNode *bboxTree=NULL;
@@ -251,8 +251,9 @@ int main( int argc, char *argv[ ] )
     fclose(bboxfp);
 
     bboxTree=gts_bb_tree_new(bboxes);
+  }else{
+    printf("No bbox file bailing...\n");
   }
-
   printf("Loading Surface....\n");
 
   FILE *surfFP = fopen("mesh-agg/out.ply","r");

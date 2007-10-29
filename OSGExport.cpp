@@ -1007,6 +1007,7 @@ void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatr
   //errFP=fopen("err.txt","w");
   std::vector<GtsPoint> camPosePts;
   GtsPoint transP;
+  printf("Size %d\n",back_trans.size());
   map<int,GtsMatrix *>::iterator iter;
   for(  iter=back_trans.begin();  iter != back_trans.end(); iter++){
   

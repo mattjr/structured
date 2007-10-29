@@ -85,7 +85,7 @@ static bool output_ply_and_conf =false;
 static FILE *conf_ply_file;
 static bool output_3ds=false;
 static char cov_file_name[255];
-
+static string basepath;
 enum {END_FILE,NO_ADD,ADD_IMG};
 
 static string deltaT_config_name;
@@ -477,11 +477,23 @@ public:
      tex_size=512;
    // Create the stereo feature finder
    //
-     config_file= new Config_File(config_file_name.c_str());
-     dense_config_file= new Config_File(dense_config_file_name.c_str());
+  //
+   // Figure out the directory that contains the config file 
+   //
+   string config_dir_name;
+   int slash_pos = config_file_name.rfind( "/" );
+   if( slash_pos != -1 )
+     config_dir_name = config_file_name.substr( 0, slash_pos+1 );
+    
+  
+
+   
+   config_file= new Config_File(config_file_name.c_str());
+     if(use_dense_feature)
+       dense_config_file= new Config_File(dense_config_file_name.c_str());
      
      if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) ){
-       stereo_calib_file_name = stereo_calib_file_name;
+       stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
        try {
 	   calib = new Stereo_Calib( stereo_calib_file_name );
        }
@@ -700,18 +712,12 @@ int main( int argc, char *argv[ ] )
       print_usage( );
       exit( 1 );
    }
-
-
-   printf("%s ass\n",argv[0]);
-   //
-   // Figure out the directory that contains the config file 
-   //
-   string config_dir_name;
-   int slash_pos = stereo_config_file_name.rfind( "/" );
-   if( slash_pos != -1 )
-     config_dir_name = stereo_config_file_name.substr( 0, slash_pos+1 );
-    
-    
+   string path=string(argv[0]);
+   unsigned int loc=path.rfind("/");
+   
+   string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
+   
+ 
     //
    // Open the config file
    // Ensure the option to display the feature finding debug images is on.
@@ -723,21 +729,10 @@ int main( int argc, char *argv[ ] )
    }
    catch( string error )
    {
-      cerr << "ERROR - " << error << endl;
+      cerr << "a ERROR - " << error << endl;
       exit( 1 );
    }
-
-   Config_File *dense_config_file;
-   try
-   {
-     dense_config_file = new Config_File( "semi-dense.cfg");
-   }
-   catch( string error )
-   {
-      cerr << "ERROR - " << error << endl;
-      exit( 1 );
-   }
-    
+ 
  
 
 
@@ -747,37 +742,14 @@ int main( int argc, char *argv[ ] )
   ifstream *cov_file;
   ifstream      contents_file;
   Vector *camera_pose;
-  Stereo_Calib *calib;
 
-   //
-   // Load the stereo camera calibration 
-   //
-   calib = NULL;
-   bool have_stereo_calib = false;
    
-   if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) )
-   {
-      stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
-      try
-      {
-         calib = new Stereo_Calib( stereo_calib_file_name );
-      }
-      catch( string error )
-      {
-         cerr << "ERROR - " << error << endl;
-         exit( 1 );
-      }
-      have_stereo_calib = true;
-   }      
-
-   if( use_undistorted_images == true && have_stereo_calib == false )
-   {
-      cerr << "ERROR - A stereo calibration file is required to undistort "
-           << "images." << endl;
-      exit( 1 );     
-   }
+   
+ 
+   
+   
     
-   const char *uname="mesh-agg";
+   const char *uname="mesh";
    const char *uname2="mesh-agg";
    auv_data_tools::makedir(uname);
   
@@ -808,11 +780,18 @@ int main( int argc, char *argv[ ] )
    }
 
 
-  if(!fpp2 )
+  
      fpp2=fopen("mesh/vehpath.txt","w");
-   if(!fpp)	
+     if(!fpp2 ){
+       fprintf(stderr,"Cannot open mesh/vehpath.txt\n");
+       exit(-1);
+     }
+   
      fpp=fopen("mesh/campath.txt","w");
-
+     if(!fpp ){
+       fprintf(stderr,"Cannot open mesh/campath.txt\n");
+       exit(-1);
+     }
 
    if(output_ply_and_conf){
  
@@ -947,16 +926,17 @@ int main( int argc, char *argv[ ] )
      fclose(conf_ply_file);
      if(output_pts_cov)
        fclose(pts_cov_fp);
-     FILE *genmbfp=fopen("genmb.sh","w");
-
-     fprintf(genmbfp,"#!/bin/bash\n../seabed_localisation/bin/seabed_pipe --start %f --stop %f --mesh %s %s %s",start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),contents_file_name.c_str());
-    fchmod(fileno(genmbfp),   0777);
-    fclose(genmbfp);
-    system("./genmb.sh");
-    
-    conf_ply_file=fopen("runvrip.sh","w+");
+     if(gen_mb_ply){
+       FILE *genmbfp=fopen("genmb.sh","w");
+       
+       fprintf(genmbfp,"#!/bin/bash\n%s/../seabed_localisation/bin/seabed_pipe --start %f --stop %f --mesh %s %s %s",basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),contents_file_name.c_str());
+       fchmod(fileno(genmbfp),   0777);
+       fclose(genmbfp);
+       system("./genmb.sh");
+     }
+    conf_ply_file=fopen("./runvrip.sh","w+");
     //   fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -prob\n../myvrip/bin/vripsurf auto.vri out.ply -import_norm\n");
-    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=$PWD/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd mesh-agg/ \n../vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 400\n../vrip/bin/vripsurf auto.vri out.ply\n");
+    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 400\n$PWD/../%s/vrip/bin/vripsurf auto.vri out.ply\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
     fchmod(fileno(conf_ply_file),   0777);
     fclose(conf_ply_file);
     
@@ -968,9 +948,9 @@ int main( int argc, char *argv[ ] )
   // Clean-up
   //
   delete config_file;
-  delete calib;
+  
 
-  //   while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
+  
 
 }
 

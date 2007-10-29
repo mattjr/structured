@@ -1056,9 +1056,9 @@ void threadedStereo::runP(auv_image_names &name){
 	  
 	  vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
 					   litr->x[0],litr->x[1],litr->x[2]);
-	  double confidence=1.0;
+	  //double confidence=1.0;
 	  Vector max_eig_v(3);
-	  if(have_cov_file){
+	  /*  if(have_cov_file){
 	    
 	    Matrix eig_vecs( litr->P );
 	    Vector eig_vals(3);
@@ -1066,9 +1066,7 @@ void threadedStereo::runP(auv_image_names &name){
 	    
 	    Vector work( work_size );
 	    eig_sym_inplace( eig_vecs, eig_vals, work );
-	    /* cout << "  eig_vecs: " << eig_vecs << endl;
-	       cout << "  eig_vals: " << eig_vals << endl;
-	    */
+	   
 	    double maxE=DBL_MIN;
 	    int maxEidx=0;
 	    for(int i=0; i < 3; i++){
@@ -1091,12 +1089,12 @@ void threadedStereo::runP(auv_image_names &name){
 	  vert->ex=max_eig_v(0);
 	  vert->ey=max_eig_v(1);
 	  vert->ez=max_eig_v(2);
-	  gts_range_add_value(&r,vert->confidence);
+	  gts_range_add_value(&r,vert->confidence);*/
 	  g_ptr_array_add(localV,GTS_VERTEX(vert));
 	 
 	  
 	 }
-	 gts_range_update(&r);
+      /*	 gts_range_update(&r);
 	 for(unsigned int i=0; i < localV->len; i++){
 	   TVertex *v=(TVertex *) g_ptr_array_index(localV,i);
 	   if(have_cov_file){
@@ -1104,7 +1102,7 @@ void threadedStereo::runP(auv_image_names &name){
 	     jet_color_map(val,v->r,v->g,v->b);
 	   }
 	 }
-	 
+      */ 
 	 if(localV->len){
 	   GtsSurface *surf= auv_mesh_pts(localV,2.0,0); 
 

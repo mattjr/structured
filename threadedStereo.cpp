@@ -58,7 +58,7 @@ static double image_scale = 1.0;
 static int max_feature_count = 5000;
 
 static bool have_max_frame_count = false;
-static unsigned int max_frame_count;
+static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
 static bool output_pts_cov=false;
 static bool use_sift_features = false;
@@ -85,6 +85,9 @@ static bool output_ply_and_conf =false;
 static FILE *conf_ply_file;
 static bool output_3ds=false;
 static char cov_file_name[255];
+
+enum {END_FILE,NO_ADD,ADD_IMG};
+
 static string deltaT_config_name;
 static string deltaT_dir;
 
@@ -623,7 +626,7 @@ struct Convolution : public Convolute
 
 
 
-static bool get_auv_image_name( const string  &contents_dir_name,
+static int get_auv_image_name( const string  &contents_dir_name,
                              ifstream      &contents_file,
 			     auv_image_names &name
 			   )
@@ -656,10 +659,10 @@ static bool get_auv_image_name( const string  &contents_dir_name,
    
    if(!readok || name.timestamp >= stop_time) {
      // we've reached the end of the contents file
-     return false;
+     return END_FILE;
    }      
    if (name.left_name == "DeltaT" || name.right_name == "DeltaT")
-     return false;
+     return NO_ADD;
    
 
    fprintf(fpp2,"%f %f %f %f %f %f %f %f %f %f\n",   
@@ -682,7 +685,7 @@ static bool get_auv_image_name( const string  &contents_dir_name,
 	   fmod( (*name.veh_pose)[AUV_POSE_INDEX_PSI],(M_PI))
 	   );
 
-   return true;
+   return ADD_IMG;
          
 }
 
@@ -699,7 +702,7 @@ int main( int argc, char *argv[ ] )
    }
 
 
-    
+   printf("%s ass\n",argv[0]);
    //
    // Figure out the directory that contains the config file 
    //
@@ -773,7 +776,13 @@ int main( int argc, char *argv[ ] )
            << "images." << endl;
       exit( 1 );     
    }
- 
+    
+   const char *uname="mesh-agg";
+   const char *uname2="mesh-agg";
+   auv_data_tools::makedir(uname);
+  
+   auv_data_tools::makedir(uname2);
+
    //
    // Open the contents file
    //
@@ -806,8 +815,7 @@ int main( int argc, char *argv[ ] )
 
 
    if(output_ply_and_conf){
-     const char *uname="mesh-agg";
-     auv_data_tools::makedir(uname);
+ 
      conf_ply_file=fopen("mesh-agg/surface.conf","w");
      bboxfp = fopen("mesh-agg/bbox.txt","w");
    }
@@ -845,10 +853,15 @@ int main( int argc, char *argv[ ] )
    unsigned int stereo_pair_count =0;
    while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
      auv_image_names name;
-     if(get_auv_image_name( dir_name, contents_file, name)){
+     int ret=get_auv_image_name( dir_name, contents_file, name) ;
+     if(ret == ADD_IMG){
        tasks.push_back(name);
        stereo_pair_count++;
-     }
+     }else if(ret == NO_ADD){
+       continue;
+     }else if(ret == END_FILE)
+       break;
+   
    }
    start_time=tasks[0].timestamp;
    stop_time=tasks[tasks.size()-1].timestamp;

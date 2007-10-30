@@ -676,27 +676,16 @@ static int get_auv_image_name( const string  &contents_dir_name,
    }      
    if (name.left_name == "DeltaT" || name.right_name == "DeltaT")
      return NO_ADD;
-   
-
-   fprintf(fpp2,"%f %f %f %f %f %f %f %f %f %f\n",   
-	      name.timestamp,
-	       (*name.veh_pose)[AUV_POSE_INDEX_X],
-	       (*name.veh_pose)[AUV_POSE_INDEX_Y],
-	      (*name.veh_pose)[AUV_POSE_INDEX_Z],
-	       (*name.veh_pose)[AUV_POSE_INDEX_PHI],
-	       (*name.veh_pose)[AUV_POSE_INDEX_THETA],
-	      fmod( (*name.veh_pose)[AUV_POSE_INDEX_PSI],(M_PI)),
-	      0.0,0.0,0.0);
-
-   fprintf(fpp,"%f %f %f %f %f %f %f\n",   
-	      name.timestamp,
+    fprintf(fpp,"%f %f %f %f %f %f %f %f\n",   
+	   name.timestamp,
 	   (*name.veh_pose)[AUV_POSE_INDEX_X],
 	   (*name.veh_pose)[AUV_POSE_INDEX_Y],
 	   (*name.veh_pose)[AUV_POSE_INDEX_Z],
 	   (*name.veh_pose)[AUV_POSE_INDEX_PHI],
 	   (*name.veh_pose)[AUV_POSE_INDEX_THETA],
-	   fmod( (*name.veh_pose)[AUV_POSE_INDEX_PSI],(M_PI))
-	   );
+	    fmod( (*name.veh_pose)[AUV_POSE_INDEX_PSI],(M_PI)),
+	   name.alt);
+
 
    return ADD_IMG;
          
@@ -782,11 +771,6 @@ int main( int argc, char *argv[ ] )
 
 
   
-     fpp2=fopen("mesh/vehpath.txt","w");
-     if(!fpp2 ){
-       fprintf(stderr,"Cannot open mesh/vehpath.txt\n");
-       exit(-1);
-     }
    
      fpp=fopen("mesh/campath.txt","w");
      if(!fpp ){
@@ -1179,7 +1163,7 @@ void threadedStereo::runP(auv_image_names &name){
          delete *fitr;
       }     
       
-      printf("Stereo processing on image %u/%u complete.\n",progCount,totalTodoCount);
+      printf("\rStereo processing on image %u/%u complete.",progCount,totalTodoCount);
       fflush(stdout);
       // doneCount.increment();
       

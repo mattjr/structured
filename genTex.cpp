@@ -267,7 +267,8 @@ int main( int argc, char *argv[ ] )
     printf("Failed to load\n");
     exit(-1);
   }
-  printf("Done\n");
+  printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(surf),
+	 gts_surface_edge_number(surf));
   int sets,edgestotal;
   double set_size=2.5;
   int edgeperset=2000;

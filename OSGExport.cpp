@@ -764,21 +764,30 @@ int find_closet_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> 
   return index;
 
 }
+boost::once_flag once = BOOST_ONCE_INIT;
+boost::once_flag once2 = BOOST_ONCE_INIT;
+ guint nmax = 0, nold = 0;
+ GTimer * timer = NULL, * total_timer = NULL;
+void timer_init(){
 
+  timer = g_timer_new ();
+  total_timer = g_timer_new ();
+  g_timer_start (total_timer);
+}
+void timer_destroy(){
+  g_timer_destroy (timer);
+  g_timer_destroy (total_timer);
+  timer =NULL;
+
+}
 gboolean tex_add_verbose ( guint number, guint total, int reject)
 {
-  static guint nmax = 0, nold = 0;
-  static GTimer * timer = NULL, * total_timer = NULL;
-
-
-
-  if (timer == NULL) {
+  
+  if (timer == NULL) { 
+    boost::call_once(&timer_init, once);
     nmax = nold = number;
-    timer = g_timer_new ();
-    total_timer = g_timer_new ();
-    g_timer_start (total_timer);
   }
-
+  
   if (number != nold && number % 121 == 0 ){// && number % 1 == 0 ){//&& number < nmax && nmax > total) {
     gdouble total_elapsed = g_timer_elapsed (total_timer, NULL);
     gdouble remaining;
@@ -811,10 +820,8 @@ gboolean tex_add_verbose ( guint number, guint total, int reject)
     g_timer_start (timer);
   }
   if (number == total) {
-    g_timer_destroy (timer);
-    g_timer_destroy (total_timer);
-    timer =NULL;
-    printf("\n");
+    boost::call_once(&timer_destroy, once2);
+    
     return TRUE;
   }
   return FALSE;
@@ -872,7 +879,6 @@ struct threaded_hash_exec
    void operator()()
    {
      GHashNode *node;
-     printf("Hello doing %d to %d\n",rangeLow,rangeHi);
      for (int i = rangeLow; i < rangeHi; i++)
        for (node = hash_table->nodes[i]; node; node = node->next)
 	 (* func) (node->key, node->value, user_data);
@@ -899,8 +905,8 @@ threaded_hash_table_foreach (GHashTable *hash_table,
   g_return_if_fail (func != NULL);
   int task_size=(int)ceil(hash_table->size /(double)num_threads);
   boost::thread_group thread_gr;
-threaded_hash_exec *the[num_threads];
- printf("Task size %d %d\n",task_size,hash_table->size);
+  threaded_hash_exec *the[num_threads];
+ 
   for(int i=0; i < num_threads; i++)
     the[i] = new threaded_hash_exec(i*task_size,min((i+1)*task_size,hash_table->size),hash_table,func,user_data);
 
@@ -998,8 +1004,10 @@ static void findborder_foreach_face (T_Face * f,
     TVertex * v1,* v2,* v3; 
     gts_triangle_vertices(t,(GtsVertex **)& v1, 
 			  (GtsVertex **)&v2, (GtsVertex **)&v3);
-    if(f->material != v1->id || f->material != v2->id || f->material != v3->id)
+    if(f->material != v1->id || f->material != v2->id || f->material != v3->id){
+      boost::mutex::scoped_lock scoped_lock(bfMutex);
       data->border_faces->push_back(f);
+    }
 }
 
 void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads){
@@ -1043,7 +1051,7 @@ void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatr
 else
   gts_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,&tex_data);
 
-  printf("Checking weird border cases...\n");
+  printf("\nChecking weird border cases...\n");
   if(num_threads > 1)
     threaded_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,
 				   &tex_data ,num_threads);   
@@ -1062,7 +1070,7 @@ else
     tex_add_verbose(tex_data.count++,tex_data.total,tex_data.reject);
     }
 
-  printf("Valid tex %d\n", tex_data.validCount);
+  printf("\nValid tex %d\n", tex_data.validCount);
  
   
   

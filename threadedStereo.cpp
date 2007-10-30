@@ -103,6 +103,61 @@ void get_cov_mat(ifstream *cov_file,Matrix &mat){
       (*cov_file) >>   mat(i,j);
 
 }
+extern boost::once_flag once;
+extern guint nmax,nold;
+extern GTimer * timer, * total_timer;
+void timer_init();
+gboolean image_count_verbose ( guint number, guint total)
+{
+ 
+
+
+
+  if (timer == NULL) {
+    boost::call_once(&timer_init, once);
+    nmax = nold = number;
+  }
+
+  if (number != nold && number % 1 == 0 ){// && number % 1 == 0 ){//&& number < nmax && nmax > total) {
+    gdouble total_elapsed = g_timer_elapsed (total_timer, NULL);
+    gdouble remaining;
+    gdouble hours, mins, secs;
+    gdouble hours1, mins1, secs1;
+
+    g_timer_stop (timer);
+
+    hours = floor (total_elapsed/3600.);
+    mins = floor ((total_elapsed - 3600.*hours)/60.);
+    secs = floor (total_elapsed - 3600.*hours - 60.*mins);
+
+    remaining = ((total_elapsed/(gdouble)number) *((gdouble)total-number));
+    hours1 = floor (remaining/3600.);
+    mins1 = floor ((remaining - 3600.*hours1)/60.);
+    secs1 = floor (remaining - 3600.*hours1 - 60.*mins1);
+
+    fprintf (stderr, 
+	     "\rImage: %6u/%6u %3.0f%% "// %2.2f s/img "
+	     "Elapsed: %02.0f:%02.0f:%02.0f "
+	     "Remaining: %02.0f:%02.0f:%02.0f",
+	     number, total,
+	     100.*( number)/( total),
+	     //g_timer_elapsed (timer, NULL)/ (number - nold  ),
+	     hours, mins, secs,
+	     hours1, mins1, secs1);
+    fflush (stderr);
+
+    nold = number;
+    g_timer_start (timer);
+  }
+  if (number == total) {
+    g_timer_destroy (timer);
+    g_timer_destroy (total_timer);
+    timer =NULL;
+    printf("\n");
+    return TRUE;
+  }
+  return FALSE;
+}
 
 bool get_camera_params( Config_File *config_file, Vector &camera_pose ){
 
@@ -312,6 +367,11 @@ static bool parse_args( int argc, char *argv[ ] )
          return false;
       }
    }
+   if(!output_3ds && !output_ply_and_conf){
+     cerr << "Must do ply or 3ds output\n";
+     return false;
+   }
+
 
 
 #ifndef HAVE_LIBKEYPOINT
@@ -1162,9 +1222,9 @@ void threadedStereo::runP(auv_image_names &name){
       {
          delete *fitr;
       }     
-      
-      printf("\rStereo processing on image %u/%u complete.",progCount,totalTodoCount);
-      fflush(stdout);
+      image_count_verbose (progCount, totalTodoCount);
+      // printf("\rStereo processing on image %u/%u complete.",progCount,totalTodoCount);
+      //fflush(stdout);
       // doneCount.increment();
       
       

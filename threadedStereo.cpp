@@ -994,7 +994,7 @@ int main( int argc, char *argv[ ] )
     system("./runvrip.sh");
     subvol=150.0;
     FILE *dicefp=fopen("./dice.sh","w+");
-    fprintf(dicefp,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice -dice %f %f %s out.ply",basepath.c_str(),basepath.c_str(),subvol,eps,"out-sec");
+    fprintf(dicefp,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice -dice %f %f %s out.ply > diced.txt",basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
       fchmod(fileno(dicefp),   0777);
       fclose(dicefp);
       system("./dice.sh");

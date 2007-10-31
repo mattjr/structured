@@ -254,59 +254,79 @@ int main( int argc, char *argv[ ] )
   }else{
     printf("No bbox file bailing...\n");
   }
-  printf("Loading Surface....\n");
-
-  FILE *surfFP = fopen("mesh-agg/out.ply","r");
-  GtsSurface *surf = auv_read_ply(surfFP);
-  /*FILE *gFP=fopen("surf2.gts","w");
-  gts_surface_write(surf,gFP);
-  fclose(gFP);*/
-  //fclose(surfFP);
+  string dicefile("mesg-agg/dice.txt");
+  std::vector<string> meshNames;
+  struct stat BUF;
+  if(stat(dicefile.c_str(),&BUF)==-1){
+   
+    meshNames.push_back( "mesh-agg/out.ply");
     
-  if(!surf){
-    printf("Failed to load\n");
-    exit(-1);
-  }
-  printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(surf),
-	 gts_surface_edge_number(surf));
-  int sets,edgestotal;
-  double set_size=2.5;
-  int edgeperset=2000;
-  double area=gts_surface_area(surf);
-  sets=(int)ceil(area/set_size);
-  edgestotal=sets*edgeperset;
- 
-  if(!no_simp){
-    printf("Area %.2fm allocating %d edges per %.1fm swaths\nTotal sets: %d, %d edges\n",area,edgeperset,set_size,sets,edgestotal); 
-   printf("Coarsen...\n");
-    coarsen(surf,edgestotal);
-    printf("Done\n");
-  }
-  printf("Gen texture coordinates\n");
-  boost::xtime xt, xt2;
-  long time;
-  double secs;
- 
-  boost::xtime_get(&xt, boost::TIME_UTC);
-  gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,tex_size,num_threads);
-  boost::xtime_get(&xt2, boost::TIME_UTC);
-  time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
+  }else{
+    
+    FILE *dicefp=fopen(dicefile.c_str(),"r");
+    char tmp[255];
+    int eof;
+    while(eof != EOF){
+      eof=fscanf(dicefp,"%s\n",tmp);
+      meshNames.push_back(string(tmp));
+    }
+    
+    for(int i=0; i < (int) meshNames.size(); i++){
+
+      printf("Loading Surface %s ...\n",meshNames[i].c_str());
+      FILE *surfFP = fopen(meshNames[i].c_str(),"r");
+      GtsSurface *surf = auv_read_ply(surfFP);
+      
+      
+      
+      if(!surf){
+	printf("Failed to load\n");
+	exit(-1);
+      }
+      printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(surf),
+	     gts_surface_edge_number(surf));
+      int sets,edgestotal;
+      double set_size=2.5;
+      int edgeperset=2000;
+      double area=gts_surface_area(surf);
+      sets=(int)ceil(area/set_size);
+      edgestotal=sets*edgeperset;
+      
+      if(!no_simp){
+	printf("Area %.2fm allocating %d edges per %.1fm swaths\nTotal sets: %d, %d edges\n",area,edgeperset,set_size,sets,edgestotal); 
+	printf("Coarsen...\n");
+	coarsen(surf,edgestotal);
+	printf("Done\n");
+      }
+      printf("Gen texture coordinates\n");
+      boost::xtime xt, xt2;
+      long time;
+      double secs;
+      
+      boost::xtime_get(&xt, boost::TIME_UTC);
+      gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,
+			 tex_size,num_threads);
+      boost::xtime_get(&xt2, boost::TIME_UTC);
+      time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
+      secs=time/1000.0;
+      printf("Done Took %.2f secs\n",secs);
+      
+      printf("Converting to model for export\n");
+      OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
+				      tex_size,num_threads);    
+      boost::xtime_get(&xt, boost::TIME_UTC);
+      osgExp->convertModelOSG(surf,texture_file_names,"mesh/blended.ive");
+      boost::xtime_get(&xt2, boost::TIME_UTC);
+      time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
   secs=time/1000.0;
   printf("Done Took %.2f secs\n",secs);
   
-  printf("Converting to model for export\n");
-  OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,tex_size,num_threads);    
-  boost::xtime_get(&xt, boost::TIME_UTC);
-  osgExp->convertModelOSG(surf,texture_file_names,"mesh/blended.ive");
-  boost::xtime_get(&xt2, boost::TIME_UTC);
-  time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
-  secs=time/1000.0;
-  printf("Done Took %.2f secs\n",secs);
-
-
+    }
+  }
+  
   if(conf_ply_file)
     fclose(conf_ply_file);
-
+    
   // 
   // Clean-up
   //

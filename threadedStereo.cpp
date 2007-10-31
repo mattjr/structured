@@ -481,9 +481,9 @@ static bool get_stereo_pair( const string left_image_name,
      color_image=left_image;
       IplImage *grey_left  = cvCreateImage( cvGetSize(left_image) , IPL_DEPTH_8U, 1 );
       cvCvtColor( left_image , grey_left , CV_BGR2GRAY );
-      // IplImage *temp = left_image;
+      //IplImage *temp = left_image;
       left_image = grey_left;
-      //cvReleaseImage( &temp );
+      //  cvReleaseImage( &temp );
    }
 
    if( left_image->nChannels == 3 )
@@ -612,6 +612,8 @@ public:
   ~threadedStereo(){
 
     delete finder;
+    delete osgExp;
+    delete calib;
     if(use_dense_feature)
     delete finder_dense;
     
@@ -910,6 +912,8 @@ int main( int argc, char *argv[ ] )
      
      double secs=time/1000.0;
      printf("single thread: %.2f sec\n", secs);
+     
+     delete ts;
    }
    else{
      g_thread_init (NULL);
@@ -941,6 +945,7 @@ int main( int argc, char *argv[ ] )
        print_uv_3dpts(features,feature_positions,
        left_frame_id,right_frame_id,timestamp,
        left_frame_name,right_frame_name);*/
+
      if( output_ply_and_conf){    
      fprintf(conf_ply_file,
 	     "bmesh surface-%04d.ply\n"
@@ -992,10 +997,13 @@ int main( int argc, char *argv[ ] )
   // 
   // Clean-up
   //
-  delete config_file;
-  
 
-  
+   for(int i =0; i < (int)tasks.size(); i++)
+     delete tasks[i].veh_pose; 
+  delete config_file;
+  delete camera_pose;
+
+  delete cov_file;
 
 }
 
@@ -1186,7 +1194,7 @@ void threadedStereo::runP(auv_image_names &name){
 		 fprintf(bboxfp," %f",m[i][j]);
 	     fprintf(bboxfp,"\n");
 	    
-
+	     delete bbox;
 	     
 	  
 	     FILE *fp;
@@ -1197,6 +1205,8 @@ void threadedStereo::runP(auv_image_names &name){
 	     fclose(fp);
 	   
 	   }
+	   //Destory Surf
+	   gts_object_destroy (GTS_OBJECT (surf)); 
 	 }
       //
       // Pause between frames if requested.
@@ -1215,6 +1225,7 @@ void threadedStereo::runP(auv_image_names &name){
       cvReleaseImage( &left_frame );
       cvReleaseImage( &right_frame );
       cvReleaseImage( &color_frame);
+        
       list<Feature*>::iterator fitr;
       for( fitr  = features.begin( ) ;
            fitr != features.end( ) ;

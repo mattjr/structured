@@ -197,7 +197,7 @@ struct GeometryCollection
   osg::Geometry*              _geom;
 };
 
-boost::mutex bfMutex;
+
 typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;
 typedef std::map<int,string> MaterialToIDMap;
 void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads);

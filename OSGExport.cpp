@@ -9,6 +9,7 @@
 #include <boost/thread/thread.hpp>
 typedef struct _GHashNode      GHashNode;
 std::vector<GtsBBox *> bboxes_all;;
+boost::mutex bfMutex;
 //FILE *errFP;
 int lastBP;
 bool Export3DS(GtsSurface *s,const char *c3DSFile,vector<string> material_names)

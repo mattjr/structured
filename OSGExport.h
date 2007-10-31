@@ -147,7 +147,7 @@ public:
 #endif
     }
   }
-  osg::Image *LoadResizeSave(string filename,string outname,bool save,IplImage *cvImg);
+  osg::Image *LoadResizeSave(string filename,string outname,bool save);
   int convertModelOSG(GtsSurface *s,std::map<int,string> textures,std::string fileNameOut) ;
 
 protected:
@@ -165,6 +165,8 @@ protected:
   bool compress_tex;
  int tex_size;
   int num_threads;
+  vector<IplImage *> cv_img_ptrs;
+  vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
   /*
     inline osg::Vec3 transformVertex(const osg::Vec3& vec, const bool rotate) const ;
     inline osg::Vec3 transformNormal(const osg::Vec3& vec, const bool rotate) const ;

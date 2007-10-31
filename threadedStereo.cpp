@@ -27,6 +27,7 @@
 #include "auv_image_distortion.hpp"
 #include "auv_stereo_geometry.hpp"
 #include "adt_raw_file.hpp"
+#include "auv_mesh_utils.hpp"
 #include "auv_stereo_corner_finder.hpp"
 #include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
@@ -104,10 +105,7 @@ void get_cov_mat(ifstream *cov_file,Matrix &mat){
       (*cov_file) >>   mat(i,j);
 
 }
-extern boost::once_flag once;
-extern guint nmax,nold;
-extern GTimer * timer, * total_timer;
-void timer_init();
+
 gboolean image_count_verbose ( guint number, guint total)
 {
  
@@ -151,9 +149,7 @@ gboolean image_count_verbose ( guint number, guint total)
     g_timer_start (timer);
   }
   if (number == total) {
-    g_timer_destroy (timer);
-    g_timer_destroy (total_timer);
-    timer =NULL;
+    boost::call_once(&timer_destroy, once2);
     printf("\n");
     return TRUE;
   }

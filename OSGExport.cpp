@@ -8,6 +8,7 @@
 #include <highgui.h>
 #include <boost/thread/thread.hpp>
 typedef struct _GHashNode      GHashNode;
+using namespace libsnapper;
 std::vector<GtsBBox *> bboxes_all;;
 boost::mutex bfMutex;
 //FILE *errFP;
@@ -158,9 +159,9 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,str
 	 if(!ive_out)
 	   printf("\n");	 
 	 fflush(stdout); 
-	 IplImage *cvImg=NULL;
+	
 	 
-	 osg::ref_ptr<osg::Image> image= LoadResizeSave(filename,fname, (!ive_out),cvImg);
+	 osg::ref_ptr<osg::Image> image= LoadResizeSave(filename,fname, (!ive_out));
 	 if (image.get()){	     
 	   // create state
 	   osg::StateSet* stateset = new osg::StateSet;
@@ -187,8 +188,8 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,str
 	       state = new osg::State;
 	     texture->apply(*state);
 	   }
-	   if(cvImg)
-	     cvReleaseImage(&cvImg);
+	   
+	   osg_tex_ptrs.push_back(texture);
 	 }
        }
      }
@@ -236,7 +237,7 @@ int OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std
   }    
 
 
-  
+  bool ret=false;
   osg::Group* root = new osg::Group;
   osg::Geode* geode = convertGtsSurfListToGeometry(s,textures);
   geode->setName(fileNameOut);
@@ -245,7 +246,9 @@ int OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,fileNameOut,osgDB::Registry::instance()->getOptions());
   if (result.success())	{
     osg::notify(osg::NOTICE)<<"Data written to '"<<fileNameOut<<"'."<< std::endl;
-    return true;
+
+    
+    ret=true;
   }
   else if  (result.message().empty()){
     osg::notify(osg::NOTICE)<<"Warning: file write to '"<<fileNameOut<<"' no supported."<< std::endl;
@@ -253,8 +256,24 @@ int OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std
   else    {
     osg::notify(osg::NOTICE)<<result.message()<< std::endl;
   }
-
-  return false;
+  
+  for(size_t i=0; i < cv_img_ptrs.size(); i++)
+    if(cv_img_ptrs[i]){
+      IplImage *tmp=cv_img_ptrs.back();
+	cv_img_ptrs.pop_back();
+      cvReleaseImage(&tmp);
+    }
+  for(size_t i=0; i < osg_tex_ptrs.size(); i++){
+    if(osg_tex_ptrs[i].valid()){
+      //osg_tex_ptrs[i]->setUnRefImageDataAfterApply(true);
+      //     osg_tex_ptrs[i]->dirtyTextureObject();
+      //   osg_tex_ptrs[i]->apply(*state);
+      
+    }
+  }
+  cv_img_ptrs.clear();
+  osg_tex_ptrs.clear();
+  return ret;
   
 }
 #ifdef USE_LIB3DS
@@ -448,12 +467,12 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg){
         }
 
 }
-osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save,IplImage *cvImg){
+osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save){
 
   
   
   IplImage *fullimg=cvLoadImage(filename.c_str(),-1);
-  cvImg=cvCreateImage(cvSize(tex_size,tex_size),
+  IplImage *cvImg=cvCreateImage(cvSize(tex_size,tex_size),
 				     IPL_DEPTH_8U,3);
   
   if(fullimg){
@@ -465,8 +484,11 @@ osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save
     cvReleaseImage(&cvImg);
     return NULL;
   }
+  
+  cv_img_ptrs.push_back(cvImg);
   osg::Image* image =Convert_OpenCV_TO_OSG_IMAGE(cvImg);
   
+
   if(save){  
     printf("Writing %s\n",outname.c_str());
     osgDB::writeImageFile(*image,outname);
@@ -506,10 +528,9 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> m
      printf("\rLoading and Scaling Texture: %03d/%03d",++tex_count,mtgcm.size());
      if(!tex_saved)
        printf("\n");
-     IplImage *cvImg=NULL;
-     LoadResizeSave(filename,"mesh/"+fname+".png", (!tex_saved),cvImg);
-     if(cvImg)
-       cvReleaseImage(&cvImg);
+  
+     LoadResizeSave(filename,"mesh/"+fname+".png", (!tex_saved));
+   
      Lib3dsMaterial *pMaterial = lib3ds_material_new();
      
      strcpy(pMaterial->name,fname.c_str() );
@@ -562,6 +583,10 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> m
   bool bResult = lib3ds_file_save(pFile, c3DSFile) == LIB3DS_TRUE;
   lib3ds_file_free(pFile);
 
+
+  for(size_t i=0; i < cv_img_ptrs.size(); i++)
+    cvReleaseImage(&cv_img_ptrs[i]);
+  cv_img_ptrs.clear();
   return bResult;
 }
 static bool find_min_project_dist_bbox(GtsVertex ** triVert,GtsMatrix* back_trans,Camera_Calib *calib, double &dist){
@@ -765,68 +790,9 @@ int find_closet_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> 
   return index;
 
 }
-boost::once_flag once = BOOST_ONCE_INIT;
-boost::once_flag once2 = BOOST_ONCE_INIT;
- guint nmax = 0, nold = 0;
- GTimer * timer = NULL, * total_timer = NULL;
-void timer_init(){
 
-  timer = g_timer_new ();
-  total_timer = g_timer_new ();
-  g_timer_start (total_timer);
-}
-void timer_destroy(){
-  g_timer_destroy (timer);
-  g_timer_destroy (total_timer);
-  timer =NULL;
 
-}
-gboolean tex_add_verbose ( guint number, guint total, int reject)
-{
-  
-  if (timer == NULL) { 
-    boost::call_once(&timer_init, once);
-    nmax = nold = number;
-  }
-  
-  if (number != nold && number % 121 == 0 ){// && number % 1 == 0 ){//&& number < nmax && nmax > total) {
-    gdouble total_elapsed = g_timer_elapsed (total_timer, NULL);
-    gdouble remaining;
-    gdouble hours, mins, secs;
-    gdouble hours1, mins1, secs1;
 
-    g_timer_stop (timer);
-
-    hours = floor (total_elapsed/3600.);
-    mins = floor ((total_elapsed - 3600.*hours)/60.);
-    secs = floor (total_elapsed - 3600.*hours - 60.*mins);
-
-    remaining = ((total_elapsed/(gdouble)number) *((gdouble)total-number));
-    hours1 = floor (remaining/3600.);
-    mins1 = floor ((remaining - 3600.*hours1)/60.);
-    secs1 = floor (remaining - 3600.*hours1 - 60.*mins1);
-
-    fprintf (stderr, 
-	     "\rFaces: %8u/%8u %3.0f%% %6.0f edges/s "
-	     "Elapsed: %02.0f:%02.0f:%02.0f "
-	     "Remaining: %02.0f:%02.0f:%02.0f Rej %6u",
-	     number, total,
-	     100.*( number)/( total),
-	     (number - nold  )/g_timer_elapsed (timer, NULL),
-	     hours, mins, secs,
-	     hours1, mins1, secs1,reject);
-    fflush (stderr);
-
-    nold = number;
-    g_timer_start (timer);
-  }
-  if (number == total) {
-    boost::call_once(&timer_destroy, once2);
-    
-    return TRUE;
-  }
-  return FALSE;
-}
 typedef struct _texGenData{
   GNode *bboxTree;
   std::vector<GtsPoint> camPosePts;
@@ -981,7 +947,7 @@ static void texcoord_foreach_face (T_Face * f,
     /*fprintf(errFP,"Failed traingle\n");
     gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
     fflush(errFP);*/
-    tex_add_verbose(data->count++,data->total,data->reject++);
+    libsnapper::tex_add_verbose(data->count++,data->total,data->reject++);
     return;
   }
   

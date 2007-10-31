@@ -336,6 +336,7 @@ int main( int argc, char *argv[ ] )
     if(surf)
       gts_object_destroy (GTS_OBJECT (surf)); 
     printf("Done Took %.2f secs\n",secs);
+   
     
   }
   

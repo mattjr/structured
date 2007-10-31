@@ -256,19 +256,21 @@ int OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std
   else    {
     osg::notify(osg::NOTICE)<<result.message()<< std::endl;
   }
-  
-  for(size_t i=0; i < cv_img_ptrs.size(); i++)
+  size_t size= cv_img_ptrs.size();
+  for(size_t i=0; i < size; i++)
     if(cv_img_ptrs[i]){
       IplImage *tmp=cv_img_ptrs.back();
 	cv_img_ptrs.pop_back();
       cvReleaseImage(&tmp);
+     
     }
   for(size_t i=0; i < osg_tex_ptrs.size(); i++){
     if(osg_tex_ptrs[i].valid()){
-      //osg_tex_ptrs[i]->setUnRefImageDataAfterApply(true);
-      //     osg_tex_ptrs[i]->dirtyTextureObject();
-      //   osg_tex_ptrs[i]->apply(*state);
-      
+      if(compress_tex){
+	osg_tex_ptrs[i]->setUnRefImageDataAfterApply(true);
+	osg_tex_ptrs[i]->dirtyTextureObject();
+	osg_tex_ptrs[i]->apply(*state);
+      }
     }
   }
   cv_img_ptrs.clear();

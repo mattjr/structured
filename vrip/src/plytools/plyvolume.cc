@@ -239,7 +239,7 @@ computeSignedVolume(FILE * fp, const Plane & plane,
 	 }
 	 
 	 int percent = -1;
-	 
+
 	 for (j = 0; j < num_elems; j++) 
 	 {		
 	    int newpercent = 100 * j / num_elems;
@@ -323,7 +323,7 @@ computeSignedVolume(FILE * fp, const Plane & plane,
       }
    }
 
-   ply_close(ply);
+   //ply_close(ply);
 
    return false;
 }

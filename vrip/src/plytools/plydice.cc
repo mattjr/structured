@@ -355,7 +355,7 @@ clip_and_write_subvols()
 	      exit(-1);
 	    }
 	    write_file(out);
-	    fclose(out);
+	    //fclose(out);
 	  }
 
 	}
@@ -567,7 +567,7 @@ write_file(FILE *out)
   PlyFile *ply;
   int num_elems;
   char *elem_name;
-
+  //hasConfidence = 0;
   /*** Write out the transformed PLY object ***/
 
 

@@ -56,7 +56,8 @@ static bool use_undistorted_images = false;
 static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
 static int max_feature_count = 5000;
-
+static double eps=1e-1;
+static double subvol;
 static bool have_max_frame_count = false;
 static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
@@ -991,10 +992,12 @@ int main( int argc, char *argv[ ] )
     fchmod(fileno(conf_ply_file),   0777);
     fclose(conf_ply_file);
     system("./runvrip.sh");
-
+    subvol=150.0;
     FILE *dicefp=fopen("./dice.sh","w+");
-      fprintf(dicefp,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice",basepath.c_str(),basepath.c_str());
-  
+    fprintf(dicefp,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice -dice %f %f %s out.ply",basepath.c_str(),basepath.c_str(),subvol,eps,"out-sec");
+      fchmod(fileno(dicefp),   0777);
+      fclose(dicefp);
+      system("./dice.sh");
   }
   // 
   // Clean-up

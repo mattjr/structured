@@ -676,6 +676,7 @@ public:
     
     ts= new threadedStereo(config_file_name,dense_config_file_name);
   }
+ 
 };
 
 
@@ -880,7 +881,7 @@ int main( int argc, char *argv[ ] )
    while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
      auv_image_names name;
      int ret=get_auv_image_name( dir_name, contents_file, name) ;
-     if(ret == ADD_IMG){
+     if(ret == ADD_IMG ){
        tasks.push_back(name);
        stereo_pair_count++;
      }else if(ret == NO_ADD){
@@ -989,10 +990,11 @@ int main( int argc, char *argv[ ] )
     fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 400\n$PWD/../%s/vrip/bin/vripsurf auto.vri out.ply\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
     fchmod(fileno(conf_ply_file),   0777);
     fclose(conf_ply_file);
-    
-    
-    
     system("./runvrip.sh");
+
+    FILE *dicefp=fopen("./dice.sh","w+");
+      fprintf(dicefp,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice",basepath.c_str(),basepath.c_str());
+  
   }
   // 
   // Clean-up
@@ -1193,8 +1195,9 @@ void threadedStereo::runP(auv_image_names &name){
 	       for(int j=0; j<4; j++)
 		 fprintf(bboxfp," %f",m[i][j]);
 	     fprintf(bboxfp,"\n");
-	    
-	     delete bbox;
+
+	     gts_object_destroy (GTS_OBJECT(bbox));
+
 	     
 	  
 	     FILE *fp;
@@ -1206,7 +1209,8 @@ void threadedStereo::runP(auv_image_names &name){
 	   
 	   }
 	   //Destory Surf
-	   gts_object_destroy (GTS_OBJECT (surf)); 
+	   if(surf)
+	     gts_object_destroy (GTS_OBJECT (surf)); 
 	 }
       //
       // Pause between frames if requested.

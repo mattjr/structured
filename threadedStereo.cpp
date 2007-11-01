@@ -48,6 +48,7 @@ static double stop_time = numeric_limits<double>::max();
 //
 // Command-line arguments
 //
+static int vrip_split=500;
 static FILE *pts_cov_fp;
 static string stereo_config_file_name;
 static string contents_file_name;
@@ -58,7 +59,7 @@ static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
 static int max_feature_count = 5000;
 static double eps=1e-1;
-static double subvol;
+static double subvol=150.0;
 static bool have_max_frame_count = false;
 static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
@@ -88,6 +89,7 @@ static FILE *conf_ply_file;
 static bool output_3ds=false;
 static char cov_file_name[255];
 static string basepath;
+static int split_chunks=0;
 enum {END_FILE,NO_ADD,ADD_IMG};
 
 static string deltaT_config_name;
@@ -304,6 +306,18 @@ static bool parse_args( int argc, char *argv[ ] )
          use_ncc = true;
          i+=1;
       }
+      else if( strcmp( argv[i], "--split" ) == 0 )
+      {  
+	if( i == argc-1 ) return false;
+	vrip_split = atoi( argv[i+1] );
+	i+=2;
+      }
+      else if( strcmp( argv[i], "--dicevol" ) == 0 )
+      {  
+	if( i == argc-1 ) return false;
+        subvol = atof( argv[i+1] );
+	i+=2;
+      }
       else if( strcmp( argv[i], "--confply" ) == 0 )
       {
          output_ply_and_conf = true;
@@ -404,6 +418,8 @@ static void print_usage( void )
    cout << "   -d                      Do not display debug images." << endl;
    cout << "   --confply               Output confply file." << endl;
    cout << "   --genmb               Generate MB mesh" << endl;
+   cout << "   --split <num>         Split individual meshes passed to vrip at num" << endl;
+  cout << "   --split <vol>         Dice mesh to subvolume pieces of <vol> size" << endl;
 
    cout << "   -p                      Pause after each frame." << endl;
    cout << "   --uv                    Output UV File." << endl;
@@ -660,8 +676,9 @@ struct Convoluter : public SliceConsumer
 	  : SliceConsumer(slices, lh) {}
 
 protected:
-	void consume(Slice slice_i) 
+	void consume(Slice &slice_i) 
 	{
+	 
 	  ts->runP(slice_i);
 	} 
 	bool cancel() { 
@@ -840,7 +857,7 @@ int main( int argc, char *argv[ ] )
 
    if(output_ply_and_conf){
  
-     conf_ply_file=fopen("mesh-agg/surface.conf","w");
+   
      bboxfp = fopen("mesh-agg/bbox.txt","w");
    }
    if(output_pts_cov)
@@ -927,35 +944,50 @@ int main( int argc, char *argv[ ] )
      double secs=time/1000.0;
      printf("max %d consumer pool: %.2f sec\n", num_threads, secs);
    }
- 
-   for(unsigned int i=1; i <= tasks.size(); i++){
-     /*
-       if(output_pts_cov){
-       // cout << litr->P << endl;
-       fprintf(pts_cov_fp,"%f %f %f ",litr->x[0],litr->x[1],litr->x[2]);
-       for(int i=0;  i<3; i++)
-       for(int j=0;  j<3; j++)
-       
-       fprintf(pts_cov_fp,"%g ",litr->P(i,j));
-       fprintf(pts_cov_fp,"\n");
+   if(output_ply_and_conf){
+     char conf_name[255];
+     sprintf(conf_name,"mesh-agg/surface-%08d.conf",split_chunks);
+     
+     conf_ply_file=fopen(conf_name,"w");
+   
+     for(unsigned int i=1; i <= tasks.size(); i++){
+       printf("Tasks %s\n",tasks[i].left_name.c_str());
+       /*
+	 if(output_pts_cov){
+	 // cout << litr->P << endl;
+	 fprintf(pts_cov_fp,"%f %f %f ",litr->x[0],litr->x[1],litr->x[2]);
+	 for(int i=0;  i<3; i++)
+	 for(int j=0;  j<3; j++)
+	 
+	 fprintf(pts_cov_fp,"%g ",litr->P(i,j));
+	 fprintf(pts_cov_fp,"\n");
        }
        if(output_uv_file)
        print_uv_3dpts(features,feature_positions,
        left_frame_id,right_frame_id,timestamp,
        left_frame_name,right_frame_name);*/
-
-     if( output_ply_and_conf){    
-     fprintf(conf_ply_file,
-	     "bmesh surface-%04d.ply\n"
-	     ,i); 
+    
+       if((int)i > vrip_split*(split_chunks+1)){
+	 fclose(conf_ply_file);
+	 split_chunks++;
+	 sprintf(conf_name,"mesh-agg/surface-%08d.conf",split_chunks);
+	 conf_ply_file=fopen(conf_name,"w");
+       }
+       #warning "change back to 8d"
+       
+       fprintf(conf_ply_file,
+	       "bmesh surface-%04d.ply\n"
+	       ,i); 
+       
+       
      }
-     
    }
-   if(output_ply_and_conf && have_mb_ply)
+   
+   /*if(output_ply_and_conf && have_mb_ply)
           fprintf(conf_ply_file,
 		  "bmesh ../%s\n"
 		  ,mb_ply_filename.c_str()); 
-
+   */
    if(output_uv_file)
      fclose(uv_fp);
    if(output_3ds)
@@ -982,15 +1014,31 @@ int main( int argc, char *argv[ ] )
        fclose(genmbfp);
        system("./genmb.sh");
      }
+
+ //   fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -prob\n../myvrip/bin/vripsurf auto.vri out.ply -import_norm\n");
+
+
     conf_ply_file=fopen("./runvrip.sh","w+");
-    //   fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -prob\n../myvrip/bin/vripsurf auto.vri out.ply -import_norm\n");
-    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 400\n$PWD/../%s/vrip/bin/vripsurf auto.vri out.ply\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
+    
+    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/\n",basepath.c_str());
+ #warning "uncomment"
+    /* for(int i=0; i < split_chunks; i++){   
+      fprintf(conf_ply_file,"$PWD/../%s/vrip/bin/vripnew auto-%08d.vri surface-%08d.conf surface-%08d.conf 0.033 -rampscale 400\n$PWD/../%s/vrip/bin/vripsurf auto-%08d.vri out-%08d.ply\n",basepath.c_str(),i,i,i,basepath.c_str(),i,i);
+      }*/
+    fprintf(conf_ply_file,"echo 'Joining Meshes...'\n$PWD/../%s/vrip/bin/plyshared ",
+	    basepath.c_str());
+    for(int i=0; i < split_chunks; i++)  
+      fprintf(conf_ply_file,"out-%08d.ply ",i);
+    fprintf(conf_ply_file," > total.ply\n echo 'Done'\n");
+    
+
+     
     fchmod(fileno(conf_ply_file),   0777);
     fclose(conf_ply_file);
     system("./runvrip.sh");
-    subvol=150.0;
+    
     FILE *dicefp=fopen("./dice.sh","w+");
-    fprintf(dicefp,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice -dice %f %f %s out.ply | tee diced.txt",basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice -dice %f %f %s total.ply | tee diced.txt",basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
       fchmod(fileno(dicefp),   0777);
       fclose(dicefp);
       system("./dice.sh");
@@ -1024,7 +1072,8 @@ void threadedStereo::runP(auv_image_names &name){
   string left_frame_name;
   string right_frame_name;
   GtsMatrix *m=NULL;
-  
+  name.left_name = "scrote";
+  return;
   //
   // Load the images
   //
@@ -1171,7 +1220,7 @@ void threadedStereo::runP(auv_image_names &name){
 	   if(output_3ds){
 	     map<int,string>textures;
 	     textures[0]=(name.dir+name.left_name);
-	     sprintf(filename,"mesh/surface-%04d.3ds",
+	     sprintf(filename,"mesh/surface-%08d.3ds",
 		     progCount);
 	   
 	     std::map<int,GtsMatrix *> gts_trans;
@@ -1195,12 +1244,12 @@ void threadedStereo::runP(auv_image_names &name){
 		 fprintf(bboxfp," %f",m[i][j]);
 	     fprintf(bboxfp,"\n");
 
-	     gts_object_destroy (GTS_OBJECT(bbox));
+	     
 
 	     
 	  
 	     FILE *fp;
-	     sprintf(filename,"mesh-agg/surface-%04d.ply",
+	     sprintf(filename,"mesh-agg/surface-%08d.ply",
 		     progCount);
 	     fp = fopen(filename, "w" );
 	     auv_write_ply(surf, fp,have_cov_file,"test");

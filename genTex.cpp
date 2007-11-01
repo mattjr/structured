@@ -270,8 +270,10 @@ int main( int argc, char *argv[ ] )
     int eof=0;
     while(eof != EOF){
       eof=fscanf(dicefp,"%s\n",tmp);
-      printf("%s\n",tmp);
-      meshNames.push_back("mesh-agg/"+string(tmp));
+      if(eof != EOF){
+	printf("Diced files %s\n",tmp);
+	meshNames.push_back("mesh-agg/"+string(tmp));
+      }
     }
   }
 

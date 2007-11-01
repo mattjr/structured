@@ -537,6 +537,8 @@ typedef struct _auv_images_names{
   std::string right_name;
   std::string mesh_name;
   std::string dir;
+  GtsMatrix *m;
+  GtsBBox *bbox;
   Vector *veh_pose;
   double alt;
   double timestamp;
@@ -723,15 +725,16 @@ static int get_auv_image_name( const string  &contents_dir_name,
 {
  
    name.veh_pose = new Vector(AUV_NUM_POSE_STATES);
- 
+   name.m =gts_matrix_identity (NULL);
   
  //
    // Try to read timestamp and file names
    //
    bool readok;
+   int index;
    do{
-    
-     readok =(contents_file >> name.index &&
+     
+     readok =(contents_file >> index &&
 	      contents_file >> name.timestamp &&
 	      contents_file >> name.left_name &&
 	      contents_file >> name.right_name &&
@@ -855,11 +858,6 @@ int main( int argc, char *argv[ ] )
        exit(-1);
      }
 
-   if(output_ply_and_conf){
- 
-   
-     bboxfp = fopen("mesh-agg/bbox.txt","w");
-   }
    if(output_pts_cov)
      pts_cov_fp=  fopen("pts_cov.txt","w");
 
@@ -896,8 +894,8 @@ int main( int argc, char *argv[ ] )
      auv_image_names name;
      int ret=get_auv_image_name( dir_name, contents_file, name) ;
      if(ret == ADD_IMG ){
+       name.index= stereo_pair_count++;
        tasks.push_back(name);
-       stereo_pair_count++;
      }else if(ret == NO_ADD){
        continue;
      }else if(ret == END_FILE)
@@ -950,8 +948,11 @@ int main( int argc, char *argv[ ] )
      
      conf_ply_file=fopen(conf_name,"w");
    
-     for(unsigned int i=1; i <= tasks.size(); i++){
-       printf("Tasks %s\n",tasks[i].left_name.c_str());
+     sprintf(conf_name,"mesh-agg/bbox-%08d.txt",split_chunks);
+     bboxfp = fopen(conf_name,"w");
+   
+     for(unsigned int i=0; i < tasks.size(); i++){
+    
        /*
 	 if(output_pts_cov){
 	 // cout << litr->P << endl;
@@ -972,17 +973,30 @@ int main( int argc, char *argv[ ] )
 	 split_chunks++;
 	 sprintf(conf_name,"mesh-agg/surface-%08d.conf",split_chunks);
 	 conf_ply_file=fopen(conf_name,"w");
+	 fclose(bboxfp);
+	 sprintf(conf_name,"mesh-agg/bbox-%08d.txt",split_chunks);
+	 bboxfp = fopen(conf_name,"w");
+   
        }
-       #warning "change back to 8d"
-       
+     
        fprintf(conf_ply_file,
-	       "bmesh surface-%04d.ply\n"
+	       "bmesh surface-%08d.ply\n"
 	       ,i); 
+       fprintf(bboxfp,"%d %s %f %f %f %f %f %f",i,
+	       tasks[i].left_name.c_str(),
+	       tasks[i].bbox->x1,tasks[i].bbox->y1,tasks[i].bbox->z1,
+	       tasks[i].bbox->x2,tasks[i].bbox->y2,tasks[i].bbox->z2); 
+       for(int i=0; i< 4; i++)
+	 for(int j=0; j<4; j++)
+	   fprintf(bboxfp," %f",tasks[i].m[i][j]);
+       fprintf(bboxfp,"\n");
        
        
      }
    }
-   
+   fclose(bboxfp);
+   fclose(conf_ply_file);
+
    /*if(output_ply_and_conf && have_mb_ply)
           fprintf(conf_ply_file,
 		  "bmesh ../%s\n"
@@ -1003,7 +1017,7 @@ int main( int argc, char *argv[ ] )
    if(fpp2)
      fclose(fpp2);
    if(conf_ply_file){
-     fclose(conf_ply_file);
+   
      if(output_pts_cov)
        fclose(pts_cov_fp);
      if(gen_mb_ply){
@@ -1021,10 +1035,9 @@ int main( int argc, char *argv[ ] )
     conf_ply_file=fopen("./runvrip.sh","w+");
     
     fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/\n",basepath.c_str());
- #warning "uncomment"
-    /* for(int i=0; i < split_chunks; i++){   
+     for(int i=0; i < split_chunks; i++){   
       fprintf(conf_ply_file,"$PWD/../%s/vrip/bin/vripnew auto-%08d.vri surface-%08d.conf surface-%08d.conf 0.033 -rampscale 400\n$PWD/../%s/vrip/bin/vripsurf auto-%08d.vri out-%08d.ply\n",basepath.c_str(),i,i,i,basepath.c_str(),i,i);
-      }*/
+      }
     fprintf(conf_ply_file,"echo 'Joining Meshes...'\n$PWD/../%s/vrip/bin/plyshared ",
 	    basepath.c_str());
     for(int i=0; i < split_chunks; i++)  
@@ -1071,9 +1084,9 @@ void threadedStereo::runP(auv_image_names &name){
   unsigned int right_frame_id=frame_id++;
   string left_frame_name;
   string right_frame_name;
-  GtsMatrix *m=NULL;
-  name.left_name = "scrote";
+  #warning ch
   return;
+  
   //
   // Load the images
   //
@@ -1211,8 +1224,8 @@ void threadedStereo::runP(auv_image_names &name){
 	   Vector camera_pose(AUV_NUM_POSE_STATES);
 	   get_camera_params(config_file,camera_pose);
 	   
-	   m=get_sensor_to_world_trans(*name.veh_pose,camera_pose);
-	   gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, m);
+	   get_sensor_to_world_trans(*name.veh_pose,camera_pose,name.m);
+	   gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, name.m);
 	 
 	   
 	   char filename[255];
@@ -1221,10 +1234,10 @@ void threadedStereo::runP(auv_image_names &name){
 	     map<int,string>textures;
 	     textures[0]=(name.dir+name.left_name);
 	     sprintf(filename,"mesh/surface-%08d.3ds",
-		     progCount);
+		     name.index);
 	   
 	     std::map<int,GtsMatrix *> gts_trans;
-	     GtsMatrix *invM = gts_matrix_inverse(m);
+	     GtsMatrix *invM = gts_matrix_inverse(name.m);
 	     gts_trans[0]=(invM);
 	     gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
 				NULL,tex_size,num_threads);
@@ -1233,24 +1246,19 @@ void threadedStereo::runP(auv_image_names &name){
 	   }
 	   if(output_ply_and_conf){
 	     
-	     GtsBBox *bbox=gts_bbox_surface(gts_bbox_class(),surf);
-	     
-	     fprintf(bboxfp,"%d %s %f %f %f %f %f %f",progCount,
-		     name.left_name.c_str(),
-		     bbox->x1,bbox->y1,bbox->z1,
-		     bbox->x2,bbox->y2,bbox->z2); 
-	     for(int i=0; i< 4; i++)
-	       for(int j=0; j<4; j++)
-		 fprintf(bboxfp," %f",m[i][j]);
-	     fprintf(bboxfp,"\n");
+	     GtsBBox *tmpBBox=gts_bbox_surface(gts_bbox_class(),surf);
+	     gts_bbox_set(name.bbox,tmpBBox->bounded,
+			  tmpBBox->x1,
+			  tmpBBox->y1,
+			  tmpBBox->z1,
+			  tmpBBox->x2,
+			  tmpBBox->y2,
+			  tmpBBox->z2);
+	     gts_object_destroy (GTS_OBJECT (tmpBBox));
 
-	     
-
-	     
-	  
 	     FILE *fp;
 	     sprintf(filename,"mesh-agg/surface-%08d.ply",
-		     progCount);
+		     name.index);
 	     fp = fopen(filename, "w" );
 	     auv_write_ply(surf, fp,have_cov_file,"test");
 	     fclose(fp);
@@ -1272,8 +1280,7 @@ void threadedStereo::runP(auv_image_names &name){
       //
       // Clean-up
       //
-      if(m)
-	gts_matrix_destroy (m);
+     
       cvReleaseImage( &left_frame );
       cvReleaseImage( &right_frame );
       cvReleaseImage( &color_frame);

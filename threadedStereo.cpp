@@ -678,7 +678,7 @@ struct Convoluter : public SliceConsumer
 	  : SliceConsumer(slices, lh) {}
 
 protected:
-	void consume(Slice &slice_i) 
+	void consume(Slice slice_i) 
 	{
 	 
 	  ts->runP(slice_i);
@@ -1084,8 +1084,7 @@ void threadedStereo::runP(auv_image_names &name){
   unsigned int right_frame_id=frame_id++;
   string left_frame_name;
   string right_frame_name;
-  #warning ch
-  return;
+  
   
   //
   // Load the images

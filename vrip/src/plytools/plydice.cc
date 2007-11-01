@@ -107,7 +107,7 @@ static Matrix4f xfmat;
 
 void usage(char *progname);
 void write_file(FILE *out);
-void clip_and_write_subvols();
+void clip_and_write_subvols(char *bboxall);
 void read_file(FILE *inFile);
 void transform();
 int  clip_to_bounds(float svminx, float svminy, float svminz, 
@@ -126,6 +126,7 @@ main(int argc, char *argv[])
   char *xfname = NULL;
   FILE *inFile = stdin;
   char *writebboxname = NULL;
+  char *writebboxnameall = NULL;
   bool printbbox = FALSE;
 
   progname = argv[0];
@@ -152,6 +153,10 @@ main(int argc, char *argv[])
     } else if (equal_strings(s, "-writebbox")) {
       if (argc < 2) usage(progname);
       writebboxname = (*++argv);
+      argc -= 1;
+    }else if (equal_strings(s, "-writebboxall")) {
+      if (argc < 2) usage(progname);
+      writebboxnameall = (*++argv);
       argc -= 1;
     } else if (equal_strings(s, "-outdir")) {
       if (argc < 2) usage(progname);
@@ -295,7 +300,7 @@ main(int argc, char *argv[])
   }
 
   if (subvolSize > 0) {
-    clip_and_write_subvols();
+    clip_and_write_subvols(writebboxnameall);
   }
   return(0);
 }
@@ -306,13 +311,15 @@ Assumes that transform has been called, so that bboxes are set....
 ******************************************************************************/
 
 void
-clip_and_write_subvols()
+clip_and_write_subvols(char *bboxall)
 {
   int x, y, z;
   int minxi, minyi, minzi, maxxi, maxyi, maxzi;
   float svminx, svminy, svminz;
   float svmaxx, svmaxy, svmaxz;
-
+  FILE *fp;
+  if(bboxall)
+    fp=fopen(bboxall,"w");
   minxi = int(floor((minx - epsilon) / subvolSize));
   minyi = int(floor((miny - epsilon) / subvolSize));
   minzi = int(floor((minz - epsilon) / subvolSize));
@@ -349,7 +356,9 @@ clip_and_write_subvols()
 	  }
 	  // Print name to stdout
 	  fprintf(stdout, "%s\n", fname);
-	  fprintf(stdout, "%f %f %f %f %f %f\n",svminx, svminy, svminz,svmaxx, svmaxy, svmaxz);
+	  if(bboxall)
+	    fprintf(fp, "%f %f %f %f %f %f\n",svminx, svminy, svminz,svmaxx, svmaxy, svmaxz);
+	  
 	  if (writeDiced) {
 	    FILE *out = fopen(fname, "w");
 	    if (out == NULL) {
@@ -364,6 +373,8 @@ clip_and_write_subvols()
       }
     }
   }
+  if(bboxall)
+    fclose(fp);
 }	
 
 /******************************************************************************

@@ -948,8 +948,7 @@ int main( int argc, char *argv[ ] )
      
      conf_ply_file=fopen(conf_name,"w");
    
-     sprintf(conf_name,"mesh-agg/bbox-%08d.txt",split_chunks);
-     bboxfp = fopen(conf_name,"w");
+    
    
      for(unsigned int i=0; i < tasks.size(); i++){
     
@@ -973,28 +972,19 @@ int main( int argc, char *argv[ ] )
 	 split_chunks++;
 	 sprintf(conf_name,"mesh-agg/surface-%08d.conf",split_chunks);
 	 conf_ply_file=fopen(conf_name,"w");
-	 fclose(bboxfp);
-	 sprintf(conf_name,"mesh-agg/bbox-%08d.txt",split_chunks);
-	 bboxfp = fopen(conf_name,"w");
+
    
        }
      
        fprintf(conf_ply_file,
 	       "bmesh surface-%08d.ply\n"
 	       ,i); 
-       fprintf(bboxfp,"%d %s %f %f %f %f %f %f",i,
-	       tasks[i].left_name.c_str(),
-	       tasks[i].bbox->x1,tasks[i].bbox->y1,tasks[i].bbox->z1,
-	       tasks[i].bbox->x2,tasks[i].bbox->y2,tasks[i].bbox->z2); 
-       for(int i=0; i< 4; i++)
-	 for(int j=0; j<4; j++)
-	   fprintf(bboxfp," %f",tasks[i].m[i][j]);
-       fprintf(bboxfp,"\n");
+   
        
        
      }
    }
-   fclose(bboxfp);
+   
    fclose(conf_ply_file);
 
    /*if(output_ply_and_conf && have_mb_ply)
@@ -1051,18 +1041,50 @@ int main( int argc, char *argv[ ] )
     system("./runvrip.sh");
     
     FILE *dicefp=fopen("./dice.sh","w+");
-    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice -dice %f %f %s total.ply | tee diced.txt",basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt",basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
       fchmod(fileno(dicefp),   0777);
       fclose(dicefp);
       system("./dice.sh");
-  }
+
+      dicefp=fopen("mesh-agg/bbtmp.txt","r");
+      int eof=0;
+      double x1,x2,y1,y2,z1,z2;
+      vector<GtsBBox *> bboxes;
+      while(eof != EOF){
+	eof=fscanf(dicefp,"%lf %lf %lf %lf %lf %lf\n" ,&x1,&y1,&z1,&x2,&y2,&z2);
+	if(eof != EOF){
+	  GtsBBox *bbox=gts_bbox_new(gts_bbox_class(),NULL,x1,y1,z1,x2,y2,z2);
+	  bboxes.push_back(bbox);
+	}
+      }
+      printf("Outputing %d bounding box files\n",bboxes.size());
+      char conf_name[255];
+      for(int i=0; i < (int)bboxes.size(); i++){
+	sprintf(conf_name,"mesh-agg/bbox-%08d.txt",i);
+	bboxfp = fopen(conf_name,"w");
+	for(unsigned int j=0; j < tasks.size(); j++){
+	  if(gts_bboxes_are_overlapping(tasks[j].bbox,bboxes[i])){
+	    fprintf(bboxfp,"%d %s %f %f %f %f %f %f",j,
+		    tasks[j].left_name.c_str(),
+		    tasks[j].bbox->x1,tasks[j].bbox->y1,tasks[j].bbox->z1,
+		    tasks[j].bbox->x2,tasks[j].bbox->y2,tasks[j].bbox->z2); 
+	    for(int n=0; n< 4; n++)
+	      for(int p=0; p<4; p++)
+		fprintf(bboxfp," %f",tasks[j].m[n][p]);
+	    fprintf(bboxfp,"\n");
+	  }
+	}  
+	fclose(bboxfp);
+      }
+   }
+
   // 
   // Clean-up
   //
 
    //  for(int i =0; i < (int)tasks.size(); i++)
    // delete tasks[i].veh_pose; 
-  delete config_file;
+   delete config_file;
   delete camera_pose;
 
   delete cov_file;

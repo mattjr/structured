@@ -129,7 +129,51 @@ static bool parse_args( int argc, char *argv[ ] )
 
   return ( have_stereo_config_file_name);
 }
+GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
+  char conf_name[255];
+  
+  sprintf(conf_name,"mesh-agg/bbox-%08d.txt",num);
+  
+  FILE *bboxfp = fopen(conf_name,"r");
+  int count;
+  GNode *bboxTree=NULL;
+  GSList * bboxes = NULL;
+  if(bboxfp){
+    char name[255];
+    double x1,x2,y1,y2,z1,z2;
+    GtsMatrix *mtmp=gts_matrix_identity(NULL);
+    int eof0, eof1,eof2,frame_count=0;
+    while (eof0 != EOF && eof1 != EOF && eof2 != EOF && !(frame_count >=(int) max_frame_count && have_max_frame_count)){
+      
+      eof0 = fscanf(bboxfp,"%d %s %lf %lf %lf %lf %lf %lf" ,&count, name,
+	     &x1,&y1,&z1,&x2,&y2,&z2);
+      
+      for(int i=0; i < 4; i++)
+	for(int j=0; j < 4; j++)
+	 eof1 = fscanf(bboxfp," %lf",&mtmp[i][j]);
+     eof2 = fscanf(bboxfp,"\n");
+      
+     
+      
+      texture_file_names[count]=(name);
+      GtsBBox *bbox= gts_bbox_new(gts_bbox_class(),NULL,x1,y1,z1,x2,y2,z2);
+      bbox->bounded=(void *)count;
+      bboxes= g_slist_prepend (bboxes,bbox);
+      bboxes_all.push_back(bbox);
+      gts_trans_map[count]=gts_matrix_inverse(mtmp);
+      frame_count++;
+    }
+    gts_matrix_destroy(mtmp);
+    fclose(bboxfp);
 
+    bboxTree=gts_bb_tree_new(bboxes);
+    return bboxTree;
+  }
+    printf("No bbox file bailing...\n");
+    return NULL;
+
+
+}
 
 //
 // Display information on how to use this program
@@ -218,42 +262,7 @@ int main( int argc, char *argv[ ] )
     g_thread_init (NULL);
   
   std::map<int,GtsMatrix *> gts_trans_map;
-  FILE *bboxfp = fopen("mesh-agg/bbox.txt","r");
-  int count;
-  GNode *bboxTree=NULL;
-  GSList * bboxes = NULL;
-  if(bboxfp){
-    char name[255];
-    double x1,x2,y1,y2,z1,z2;
-    GtsMatrix *mtmp=gts_matrix_identity(NULL);
-    int eof0, eof1,eof2,frame_count=0;
-    while (eof0 != EOF && eof1 != EOF && eof2 != EOF && !(frame_count >=(int) max_frame_count && have_max_frame_count)){
-      
-      eof0 = fscanf(bboxfp,"%d %s %lf %lf %lf %lf %lf %lf" ,&count, name,
-	     &x1,&y1,&z1,&x2,&y2,&z2);
-      
-      for(int i=0; i < 4; i++)
-	for(int j=0; j < 4; j++)
-	 eof1 = fscanf(bboxfp," %lf",&mtmp[i][j]);
-     eof2 = fscanf(bboxfp,"\n");
-      
-     
-      
-      texture_file_names[count]=(name);
-      GtsBBox *bbox= gts_bbox_new(gts_bbox_class(),NULL,x1,y1,z1,x2,y2,z2);
-      bbox->bounded=(void *)count;
-      bboxes= g_slist_prepend (bboxes,bbox);
-      bboxes_all.push_back(bbox);
-      gts_trans_map[count]=gts_matrix_inverse(mtmp);
-      frame_count++;
-    }
-    gts_matrix_destroy(mtmp);
-    fclose(bboxfp);
-
-    bboxTree=gts_bb_tree_new(bboxes);
-  }else{
-    printf("No bbox file bailing...\n");
-  }
+  
   string dicefile("mesh-agg/diced.txt");
   std::vector<string> meshNames;
   std::vector<string> outNames;
@@ -282,15 +291,17 @@ int main( int argc, char *argv[ ] )
   OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
 					tex_size,num_threads);    
 
+  printf("Loading %d bbox files\n",meshNames.size());
   for(int i=0; i < (int) meshNames.size(); i++){
     
     printf("Loading Surface %s ...\n",meshNames[i].c_str());
     FILE *surfFP = fopen(meshNames[i].c_str(),"r");
     GtsSurface *surf = auv_read_ply(surfFP);
+   
+    GNode *bboxTree=loadBBox(i,gts_trans_map);
+   
     
-    
-    
-    if(!surf){
+    if(!surf || !bboxTree){
       printf("Failed to load\n");
       exit(-1);
     }

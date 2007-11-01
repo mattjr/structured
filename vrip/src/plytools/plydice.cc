@@ -349,7 +349,7 @@ clip_and_write_subvols()
 	  }
 	  // Print name to stdout
 	  fprintf(stdout, "%s\n", fname);
-
+	  fprintf(stdout, "%f %f %f %f %f %f\n",svminx, svminy, svminz,svmaxx, svmaxy, svmaxz);
 	  if (writeDiced) {
 	    FILE *out = fopen(fname, "w");
 	    if (out == NULL) {

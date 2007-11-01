@@ -726,7 +726,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
  
    name.veh_pose = new Vector(AUV_NUM_POSE_STATES);
    name.m =gts_matrix_identity (NULL);
-  
+   name.bbox = gts_bbox_new(gts_bbox_class(),NULL,0,0,0,0,0,0);
  //
    // Try to read timestamp and file names
    //
@@ -1060,8 +1060,8 @@ int main( int argc, char *argv[ ] )
   // Clean-up
   //
 
-   for(int i =0; i < (int)tasks.size(); i++)
-     delete tasks[i].veh_pose; 
+   //  for(int i =0; i < (int)tasks.size(); i++)
+   // delete tasks[i].veh_pose; 
   delete config_file;
   delete camera_pose;
 
@@ -1089,7 +1089,7 @@ void threadedStereo::runP(auv_image_names &name){
   //
   // Load the images
   //
-  int progCount=doneCount.increment();
+  
   
   if( !get_stereo_pair( name.left_name,name.right_name,name.dir,
                             left_frame, right_frame,
@@ -1291,6 +1291,7 @@ void threadedStereo::runP(auv_image_names &name){
       {
          delete *fitr;
       }     
+      int progCount=doneCount.increment();
       image_count_verbose (progCount, totalTodoCount);
       // printf("\rStereo processing on image %u/%u complete.",progCount,totalTodoCount);
       //fflush(stdout);

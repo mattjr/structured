@@ -419,7 +419,7 @@ static void print_usage( void )
    cout << "   --confply               Output confply file." << endl;
    cout << "   --genmb               Generate MB mesh" << endl;
    cout << "   --split <num>         Split individual meshes passed to vrip at num" << endl;
-  cout << "   --split <vol>         Dice mesh to subvolume pieces of <vol> size" << endl;
+  cout << "   --dicevol <vol>         Dice mesh to subvolume pieces of <vol> size" << endl;
 
    cout << "   -p                      Pause after each frame." << endl;
    cout << "   --uv                    Output UV File." << endl;

@@ -271,6 +271,8 @@ main(int argc, char *argv[])
   }
 
   read_file(inFile);
+
+
   transform();
 
   // Print bbox to stdout?
@@ -355,7 +357,7 @@ clip_and_write_subvols()
 	      exit(-1);
 	    }
 	    write_file(out);
-	    //fclose(out);
+	    fclose(out);
 	  }
 
 	}
@@ -552,7 +554,7 @@ read_file(FILE *inFile)
   comments = ply_get_comments (ply, &num_comments);
   obj_info = ply_get_obj_info (ply, &num_obj_info);
 
-  ply_close (ply);
+  //ply_close (ply);
 }
 
 
@@ -619,7 +621,7 @@ write_file(FILE *out)
   }
 
 
-  ply_close (ply);
+  //ply_close (ply);
 }
 
 

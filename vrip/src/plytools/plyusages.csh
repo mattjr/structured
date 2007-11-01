@@ -1,5 +1,5 @@
-#! /bin/tcsh -f
-
+#! /bin/bash
+PATH=$PWD
 ply2asc -h
 ply2bboxcube -h
 ply2bin -h

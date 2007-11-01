@@ -259,7 +259,8 @@ int main( int argc, char *argv[ ] )
   std::vector<string> outNames;
 
   struct stat BUF;
-  if(stat(dicefile.c_str(),&BUF)==-1){
+  bool have_dice=(stat(dicefile.c_str(),&BUF)!=-1);
+  if(!have_dice){
    
     meshNames.push_back( "mesh-agg/out.ply");
     
@@ -342,9 +343,17 @@ int main( int argc, char *argv[ ] )
     
   }
   
+  if(have_dice){
   
-  
-  
+    FILE *joinfp=fopen("./join.sh","w+");
+    fprintf(joinfp,"#!/bin/bash\n osgconv ");
+    for(size_t i=0; i < outNames.size(); i++)
+      fprintf(joinfp,"%s ",outNames[i].c_str());
+    fprintf(joinfp,"final.ive\n");
+    fchmod(fileno(joinfp),   0777);
+    fclose(joinfp);
+    system("./join.sh");
+  }
   // 
   // Clean-up
   //

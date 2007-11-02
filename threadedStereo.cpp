@@ -1025,12 +1025,12 @@ int main( int argc, char *argv[ ] )
     conf_ply_file=fopen("./runvrip.sh","w+");
     
     fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/\n",basepath.c_str());
-     for(int i=0; i < split_chunks; i++){   
+     for(int i=0; i <= split_chunks; i++){   
       fprintf(conf_ply_file,"$PWD/../%s/vrip/bin/vripnew auto-%08d.vri surface-%08d.conf surface-%08d.conf 0.033 -rampscale 400\n$PWD/../%s/vrip/bin/vripsurf auto-%08d.vri out-%08d.ply\n",basepath.c_str(),i,i,i,basepath.c_str(),i,i);
       }
     fprintf(conf_ply_file,"echo 'Joining Meshes...'\n$PWD/../%s/vrip/bin/plyshared ",
 	    basepath.c_str());
-    for(int i=0; i < split_chunks; i++)  
+    for(int i=0; i <=split_chunks; i++)  
       fprintf(conf_ply_file,"out-%08d.ply ",i);
     fprintf(conf_ply_file," > total.ply\n echo 'Done'\n");
     

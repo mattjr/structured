@@ -256,6 +256,42 @@ int OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std
   else    {
     osg::notify(osg::NOTICE)<<result.message()<< std::endl;
   }
+
+  int lodTexSize[]={512,256,64};
+  char out_name[255];
+  for(int j=1; j <= 2; j++){
+  size_t size= cv_img_ptrs.size();
+  for(size_t i=0; i < size; i++)
+    if(cv_img_ptrs[i]){
+      IplImage *tmp=cv_img_ptrs[i];
+      IplImage *smaller=cvCreateImage(cvSize(lodTexSize[j],lodTexSize[j]),
+				      IPL_DEPTH_8U,3);
+      cvResize(tmp,smaller);
+      cvReleaseImage(&tmp);
+      cv_img_ptrs[i]=smaller;
+      osg::Image* image = Convert_OpenCV_TO_OSG_IMAGE(smaller,false);
+      osg_tex_ptrs[i]->setImage(image);
+      osg_tex_ptrs[i]->setTextureSize(lodTexSize[j],lodTexSize[j]);
+      compress(osg_tex_ptrs[i].get());
+    }
+ 
+  sprintf(out_name,"%s-lod%d.ive",fileNameOut.substr(0,fileNameOut.size()-4).c_str(),j);
+  printf("Output %s\n",out_name);
+  osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
+  printf("asda %s\n", result.message().c_str());
+ if (result.success())	{
+    osg::notify(osg::NOTICE)<<"Data written to '"<<out_name<<"'."<< std::endl;
+
+    
+    ret=true;
+  }
+  else if  (result.message().empty()){
+    osg::notify(osg::NOTICE)<<"Warning: file write to '"<<out_name<<"' no supported."<< std::endl;
+  }
+  }
+ 
+
+  
   size_t size= cv_img_ptrs.size();
   for(size_t i=0; i < size; i++)
     if(cv_img_ptrs[i]){
@@ -433,10 +469,10 @@ std::string relative_path(std::string pathString){
  	        return (a);
 }
 
-osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg){
+osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip){
 
-        if(cvImg->nChannels == 3)
-        {
+        if(cvImg->nChannels == 3){
+	  if(flip){
                 // Flip image from top-left to bottom-left origin
                 if(cvImg->origin == 0) {
                         cvConvertImage(cvImg , cvImg, CV_CVTIMG_FLIP);
@@ -446,7 +482,7 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg){
                 // Convert from BGR to RGB color format
                 //printf("Color format %s\n",cvImg->colorModel);
                 cvCvtColor( cvImg, cvImg, CV_BGR2RGB );
-
+	  }
                 osg::Image* osgImg = new osg::Image();
 
                 osgImg->setImage(
@@ -487,9 +523,8 @@ osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save
     return NULL;
   }
   
-  cv_img_ptrs.push_back(cvImg);
   osg::Image* image =Convert_OpenCV_TO_OSG_IMAGE(cvImg);
-  
+  cv_img_ptrs.push_back(cvImg);
 
   if(save){  
     printf("Writing %s\n",outname.c_str());

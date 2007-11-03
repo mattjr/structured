@@ -10,6 +10,7 @@
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 std::vector<GtsBBox *> bboxes_all;;
+static const char *ext_strings[]={"ive","osg","3ds"};
 boost::mutex bfMutex;
 //FILE *errFP;
 int lastBP;
@@ -222,14 +223,15 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,str
     return geode;
 }
 
-int OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std::string fileNameOut) {
-
-  std::string ext = osgDB::getFileExtension(fileNameOut);
-  ive_out= (ext=="ive");
+osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std::string filebase,int format,int lodLevels,vector<string> &lodnames) {
+  char out_name[255];
   
-  if(ext == "3ds"){
-    Export3DS(s,fileNameOut.c_str(),textures);
-    return true;
+  sprintf(out_name,"%s-lod%d.%s",filebase.c_str(),0,ext_strings[format]);
+  ive_out=(format==IVE_OUT);
+  
+  if(format==THREEDS_OUT){
+    Export3DS(s,out_name,textures);
+    return NULL;
   }else if(!ive_out && compress_tex){
     std::cout<<"Warning: compressing texture only supported when out";
     std::cout << "puting to .ive"<<std::endl;
@@ -237,29 +239,29 @@ int OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std
   }    
 
 
-  bool ret=false;
+  osg::Node* ret=NULL;
   osg::Group* root = new osg::Group;
   osg::Geode* geode = convertGtsSurfListToGeometry(s,textures);
-  geode->setName(fileNameOut);
+  geode->setName(out_name);
   root->addChild(geode);
-
-  osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,fileNameOut,osgDB::Registry::instance()->getOptions());
+ 
+  osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
   if (result.success())	{
-    osg::notify(osg::NOTICE)<<"Data written to '"<<fileNameOut<<"'."<< std::endl;
+    osg::notify(osg::NOTICE)<<"Data written to '"<<out_name<<"'."<< std::endl;
 
+     ret=root;
     
-    ret=true;
   }
   else if  (result.message().empty()){
-    osg::notify(osg::NOTICE)<<"Warning: file write to '"<<fileNameOut<<"' no supported."<< std::endl;
+    osg::notify(osg::NOTICE)<<"Warning: file write to '"<<out_name<<"' no supported."<< std::endl;
   }
   else    {
     osg::notify(osg::NOTICE)<<result.message()<< std::endl;
   }
 
   int lodTexSize[]={512,256,64};
-  char out_name[255];
-  for(int j=1; j <= 2; j++){
+  
+  for(int j=1; j < lodLevels; j++){
   size_t size= cv_img_ptrs.size();
   for(size_t i=0; i < size; i++)
     if(cv_img_ptrs[i]){
@@ -275,15 +277,16 @@ int OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std
       compress(osg_tex_ptrs[i].get());
     }
  
-  sprintf(out_name,"%s-lod%d.ive",fileNameOut.substr(0,fileNameOut.size()-4).c_str(),j);
+  sprintf(out_name,"%s-lod%d.ive",filebase.c_str(),j);
+ 
   printf("Output %s\n",out_name);
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
   printf("asda %s\n", result.message().c_str());
  if (result.success())	{
     osg::notify(osg::NOTICE)<<"Data written to '"<<out_name<<"'."<< std::endl;
 
-    
-    ret=true;
+     ret=root;
+   
   }
   else if  (result.message().empty()){
     osg::notify(osg::NOTICE)<<"Warning: file write to '"<<out_name<<"' no supported."<< std::endl;
@@ -311,6 +314,14 @@ int OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std
   }
   cv_img_ptrs.clear();
   osg_tex_ptrs.clear();
+  unsigned int slashpos = filebase.rfind("/");
+  string tmp=filebase;
+  if(slashpos != string::npos)
+    tmp=filebase.substr(slashpos+1);
+  for(int i=lodLevels; i> 0; i--){
+    sprintf(out_name,"%s-lod%d.ive",tmp.c_str(),i-1);
+    lodnames.push_back(out_name);
+  }
   return ret;
   
 }

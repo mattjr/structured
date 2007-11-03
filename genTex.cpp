@@ -129,6 +129,54 @@ static bool parse_args( int argc, char *argv[ ] )
 
   return ( have_stereo_config_file_name);
 }
+osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
+  
+  const osg::BoundingSphere& bs = model->getBound();
+  if (bs.valid()){
+    float cut_off_distance = 8.0f;
+    float max_visible_distance = 300.0f;
+    osg::PagedLOD* pagedlod = new osg::PagedLOD;
+
+    pagedlod->setDatabasePath("");
+    pagedlod->setCenter(bs.center());
+    pagedlod->setRadius(bs.radius());
+    pagedlod->setNumChildrenThatCannotBeExpired(2);
+    
+    pagedlod->setRange(0,max_visible_distance,1e7);
+    pagedlod->addChild(model);
+    
+    pagedlod->setRange(1,cut_off_distance,max_visible_distance);
+    pagedlod->setFileName(1,lod_file_names[1]);
+ 
+    pagedlod->setRange(2,0.0f,cut_off_distance);
+    pagedlod->setFileName(2,lod_file_names[2]);
+   
+   
+    return pagedlod;
+  }
+  return NULL;
+}
+void genPagedLod(vector<osg::Node *> nodes, vector< vector<string> > lodnames){
+  osg::Group *total=new osg::Group;
+
+  for(int i=0; i < (int)nodes.size(); i++){
+  
+    osg::Node *tmp=create_paged_lod(nodes[i],lodnames[i]);
+    total->addChild(tmp);
+  }
+  osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*total,"mesh/final.ive",osgDB::Registry::instance()->getOptions());
+
+ if (result.success())	{
+    osg::notify(osg::NOTICE)<<"Data written to '"<<"mesh/final.ive" <<"'."<< std::endl;
+
+     
+   
+  }
+  else if  (result.message().empty()){
+    osg::notify(osg::NOTICE)<<"Warning: file write to '"<<"mesh/final.ive" <<"' no supported."<< std::endl;
+  }
+
+}
 GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
   char conf_name[255];
   
@@ -265,7 +313,8 @@ int main( int argc, char *argv[ ] )
   
   string dicefile("mesh-agg/diced.txt");
   std::vector<string> meshNames;
-  std::vector<string> outNames;
+  std::vector<vector<string > > outNames;
+  std::vector<osg::Node * > outNodes;
 
   struct stat BUF;
   bool have_dice=(stat(dicefile.c_str(),&BUF)!=-1);
@@ -338,11 +387,14 @@ int main( int argc, char *argv[ ] )
     boost::xtime_get(&xt, boost::TIME_UTC);
     char out_name[255];
     if(!compress_textures)
-      sprintf(out_name,"mesh/blended-%02d.osg",i);
+      sprintf(out_name,"mesh/blended-%02d",i);
     else
-       sprintf(out_name,"mesh/blended-%02d.ive",i);
-    outNames.push_back(string(out_name));
-    osgExp->convertModelOSG(surf,texture_file_names,out_name);
+       sprintf(out_name,"mesh/blended-%02d",i);
+    
+    std::vector<string> lodnames;
+    osg::Node * node =osgExp->convertModelOSG(surf,texture_file_names,out_name,IVE_OUT,3,lodnames);
+    outNames.push_back(lodnames);
+    outNodes.push_back(node);
     boost::xtime_get(&xt2, boost::TIME_UTC);
     time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
     secs=time/1000.0;
@@ -355,7 +407,10 @@ int main( int argc, char *argv[ ] )
   }
   
   if(have_dice){
-  
+ 
+    genPagedLod(outNodes,outNames);
+    
+    /*  
     FILE *joinfp=fopen("./join.sh","w+");
     fprintf(joinfp,"#!/bin/bash\n osgconv ");
     for(size_t i=0; i < outNames.size(); i++)
@@ -363,7 +418,7 @@ int main( int argc, char *argv[ ] )
     fprintf(joinfp,"final.ive\n");
     fchmod(fileno(joinfp),   0777);
     fclose(joinfp);
-    system("./join.sh");
+    system("./join.sh");*/
   }
   // 
   // Clean-up

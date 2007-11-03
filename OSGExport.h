@@ -148,7 +148,7 @@ public:
     }
   }
   osg::Image *LoadResizeSave(string filename,string outname,bool save);
-  int convertModelOSG(GtsSurface *s,std::map<int,string> textures,std::string fileNameOut) ;
+  osg::Node *convertModelOSG(GtsSurface *s,std::map<int,string> textures,std::string filebase,int ive,int lodLevels,vector<string> &lodnames) ;
 
 protected:
   osg::ref_ptr<osg::State> state;
@@ -198,6 +198,8 @@ struct GeometryCollection
   int                         _coordCount;
   osg::Geometry*              _geom;
 };
+enum {IVE_OUT,OSG_OUT,THREEDS_OUT};
+
 
 
 typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;

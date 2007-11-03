@@ -1254,7 +1254,7 @@ void threadedStereo::runP(auv_image_names &name){
 	   if(output_3ds){
 	     map<int,string>textures;
 	     textures[0]=(name.dir+name.left_name);
-	     sprintf(filename,"mesh/surface-%08d.3ds",
+	     sprintf(filename,"mesh/surface-%08d",
 		     name.index);
 	   
 	     std::map<int,GtsMatrix *> gts_trans;
@@ -1262,7 +1262,8 @@ void threadedStereo::runP(auv_image_names &name){
 	     gts_trans[0]=(invM);
 	     gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
 				NULL,tex_size,num_threads);
-	     osgExp->convertModelOSG(surf,textures,string(filename));
+	     std::vector<string> lodnames;
+	     osgExp->convertModelOSG(surf,textures,string(filename),THREEDS_OUT,1,lodnames);
 	     gts_matrix_destroy (invM);
 	   }
 	   if(output_ply_and_conf){

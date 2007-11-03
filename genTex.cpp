@@ -133,8 +133,8 @@ osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
   
   const osg::BoundingSphere& bs = model->getBound();
   if (bs.valid()){
-    float cut_off_distance = 8.0f;
-    float max_visible_distance = 300.0f;
+    float cut_off_distance = 70.0f;
+    float max_visible_distance = 450.0f;
     osg::PagedLOD* pagedlod = new osg::PagedLOD;
 
     pagedlod->setDatabasePath("");

@@ -241,11 +241,13 @@ osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> text
 
   osg::Node* ret=NULL;
   osg::Group* root = new osg::Group;
-  osg::Geode* geode = convertGtsSurfListToGeometry(s,textures);
+
+   osg::ref_ptr<osg::Geode> geode = convertGtsSurfListToGeometry(s,textures);
   geode->setName(out_name);
-  root->addChild(geode);
+  root->addChild(geode.get());
  
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
+
   if (result.success())	{
     osg::notify(osg::NOTICE)<<"Data written to '"<<out_name<<"'."<< std::endl;
 
@@ -259,7 +261,7 @@ osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> text
     osg::notify(osg::NOTICE)<<result.message()<< std::endl;
   }
 
-  int lodTexSize[]={512,256,64};
+  int lodTexSize[]={512,256,32};
   
   for(int j=1; j < lodLevels; j++){
   size_t size= cv_img_ptrs.size();
@@ -314,6 +316,7 @@ osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> text
   }
   cv_img_ptrs.clear();
   osg_tex_ptrs.clear();
+
   unsigned int slashpos = filebase.rfind("/");
   string tmp=filebase;
   if(slashpos != string::npos)
@@ -322,7 +325,10 @@ osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> text
     sprintf(out_name,"%s-lod%d.ive",tmp.c_str(),i-1);
     lodnames.push_back(out_name);
   }
+
   return ret;
+  /*  root->removeChild(0,1);
+      geode=NULL;*/
   
 }
 #ifdef USE_LIB3DS

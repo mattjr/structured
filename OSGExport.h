@@ -131,6 +131,101 @@ class MyGraphicsContext {
 
 #endif
 
+class CompressTexturesVisitor : public osg::NodeVisitor
+{
+public:
+
+  CompressTexturesVisitor(osg::Texture::InternalFormatMode internalFormatMode,int tex_size):
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        _internalFormatMode(internalFormatMode),_tex_size(tex_size) {}
+
+    virtual void apply(osg::Node& node)
+    {
+        if (node.getStateSet()) apply(*node.getStateSet());
+        traverse(node);
+    }
+    
+    virtual void apply(osg::Geode& node)
+    {
+        if (node.getStateSet()) apply(*node.getStateSet());
+        
+        for(unsigned int i=0;i<node.getNumDrawables();++i)
+        {
+            osg::Drawable* drawable = node.getDrawable(i);
+            if (drawable && drawable->getStateSet()) apply(*drawable->getStateSet());
+        }
+        
+        traverse(node);
+    }
+    
+    virtual void apply(osg::StateSet& stateset)
+    {
+        // search for the existance of any texture object attributes
+        for(unsigned int i=0;i<stateset.getTextureAttributeList().size();++i)
+        {
+            osg::Texture* texture = dynamic_cast<osg::Texture*>(stateset.getTextureAttribute(i,osg::StateAttribute::TEXTURE));
+            if (texture)
+            {
+                _textureSet.insert(texture);
+            }
+        }
+    }
+    
+    void compress()
+    {
+        MyGraphicsContext context;
+        if (!context.valid())
+        {
+            osg::notify(osg::NOTICE)<<"Error: Unable to create graphis context - cannot run compression"<<std::endl;
+            return;
+        }
+
+        osg::ref_ptr<osg::State> state = new osg::State;
+
+        for(TextureSet::iterator itr=_textureSet.begin();
+            itr!=_textureSet.end();
+            ++itr)
+        {
+            osg::Texture* texture = const_cast<osg::Texture*>(itr->get());
+            
+            osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(texture);
+            osg::Texture3D* texture3D = dynamic_cast<osg::Texture3D*>(texture);
+
+
+            osg::ref_ptr<osg::Image> image = texture2D ? texture2D->getImage() : (texture3D ? texture3D->getImage() : 0);
+            if (image.valid() && 
+                (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) &&
+                (image->s()>=32 && image->t()>=32))
+            {
+	      
+	      if(_tex_size)
+		image->scaleImage(_tex_size,_tex_size,image->r());
+
+	      texture->setInternalFormatMode(_internalFormatMode);
+	      
+	      // need to disable the unref after apply, other the image could go out of scope.
+	      bool unrefImageDataAfterApply = texture->getUnRefImageDataAfterApply();
+	      texture->setUnRefImageDataAfterApply(false);
+              
+	      // get OpenGL driver to create texture from image.
+	      texture->apply(*state);
+	      
+                // restore the original setting
+                texture->setUnRefImageDataAfterApply(unrefImageDataAfterApply);
+
+                image->readImageFromCurrentTexture(0,true);
+
+                texture->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+            }
+        }
+    }
+    
+    typedef std::set< osg::ref_ptr<osg::Texture> > TextureSet;
+    TextureSet                          _textureSet;
+    osg::Texture::InternalFormatMode    _internalFormatMode;
+    int _tex_size;
+};
+
 class OSGExporter 
 {
 public:

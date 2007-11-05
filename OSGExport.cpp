@@ -3,6 +3,7 @@
 #include <osgUtil/SmoothingVisitor>
 #include <osg/GraphicsContext>
 #include <osgDB/WriteFile>
+#include <osgUtil/Simplifier>
 #include <cv.h>
 #include <glib.h>
 #include <highgui.h>
@@ -174,7 +175,7 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,str
 	   stateset->setTextureAttributeAndModes(0,texture,
 						 osg::StateAttribute::ON);
 	   gc._texturesActive=true;
-	   
+	   stateset->setDataVariance(osg::Object::STATIC);
 	   
 	   gc._geom->setStateSet(stateset);
 	     
@@ -262,7 +263,10 @@ osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> text
   }
 
   int lodTexSize[]={512,256,32};
-  
+  float simpRatio[]={1.0,1.0,0.00001};
+  //Really don't care about where points lie in the end
+  double maxError=1e25;
+ osg::setNotifyLevel(osg::INFO);
   for(int j=1; j < lodLevels; j++){
   size_t size= cv_img_ptrs.size();
   for(size_t i=0; i < size; i++)
@@ -276,10 +280,43 @@ osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> text
       osg::Image* image = Convert_OpenCV_TO_OSG_IMAGE(smaller,false);
       osg_tex_ptrs[i]->setImage(image);
       osg_tex_ptrs[i]->setTextureSize(lodTexSize[j],lodTexSize[j]);
-      compress(osg_tex_ptrs[i].get());
+      osg_tex_ptrs[i]->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+      //      compress(osg_tex_ptrs[i].get());
     }
- 
+  
+  osg::setNotifyLevel(osg::INFO);
+  osgUtil::Optimizer optimzer;
+  osgUtil::Optimizer::TextureAtlasVisitor tav(&optimzer);
+  osgUtil::Optimizer::TextureAtlasBuilder &tb=tav.getTextureAtlasBuilder();
+  tb.setMaximumAtlasSize(2048,2048);
+  root->accept(tav);
+  tav.optimize();
+  
+  
+
+  osgUtil::Optimizer::MergeGeometryVisitor mgv(&optimzer);
+   mgv.setTargetMaximumNumberOfVertices(1000000000);
+  root->accept(mgv);
+  
+  optimzer.optimize(root);
   sprintf(out_name,"%s-lod%d.ive",filebase.c_str(),j);
+  printf("Doing %s simp %f tex %d\n",out_name,simpRatio[j],lodTexSize[j]);
+  if(simpRatio[j] < 1.0){
+    printf("Simplifing to Ratio %f\n",simpRatio[j]);
+    osgUtil::Simplifier simplifier(simpRatio[j], maxError);
+    root->accept(simplifier);
+    
+  }
+
+ 
+ 
+
+  /* CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT5_COMPRESSION,512);
+  root->accept(ctv);
+  ctv.compress();
+  */
+ 
+ 
  
   printf("Output %s\n",out_name);
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
@@ -505,7 +542,7 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip){
                 osgImg->setImage(
                         cvImg->width, //s
                         cvImg->height, //t
-                        3, //r
+                        1, //r 3
                         3, //GLint internalTextureformat, (GL_LINE_STRIP,0x0003)
                         6407, // GLenum pixelFormat, (GL_RGB, 0x1907)
                         5121, // GLenum type, (GL_UNSIGNED_BYTE, 0x1401)

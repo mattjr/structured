@@ -1041,7 +1041,7 @@ int main( int argc, char *argv[ ] )
     system("./runvrip.sh");
     
     FILE *dicefp=fopen("./dice.sh","w+");
-    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt",basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\ncat diced.txt |while read line; do $PWD/../%s/vrip/bin/plyclean -decimate 5  < ${line} > ${line%%.*}-lod2.ply; done",basepath.c_str(),basepath.c_str(),subvol,eps,"diced",basepath.c_str());
       fchmod(fileno(dicefp),   0777);
       fclose(dicefp);
       system("./dice.sh");

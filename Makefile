@@ -38,7 +38,8 @@ LIBS  += `pkg-config --libs opencv`  `pkg-config --libs libpng` `pkg-config --li
 
 CC_SRCS     =	OSGExport.cpp\
 		PixelBufferCarbon.cpp\
-		GraphicsWindowCarbon.cpp	
+		GraphicsWindowCarbon.cpp\
+		mcd.cpp
 
 
 HH_SRCS = 	
@@ -56,7 +57,7 @@ LINK	=	g++
 LFLAGS	=  -g
 
 ifdef DEBUG_FLAGS
-CC_FLAGS    = -g  $(CYGWINFLAGS) -Wall -Wno-missing-braces
+CC_FLAGS    = -g  $(CYGWINFLAGS) -Wall -Wno-missing-braces -D_MCD_CHECK
 LFLAGS	=  -g
 endif
 TARGET = threadedStereo

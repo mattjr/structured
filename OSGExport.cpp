@@ -11,7 +11,8 @@
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 std::vector<GtsBBox *> bboxes_all;;
-static const char *ext_strings[]={"ive","osg","3ds"};
+
+
 boost::mutex bfMutex;
 //FILE *errFP;
 int lastBP;
@@ -112,7 +113,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
 
 
 
-osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures) 
+osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,int tex_size) 
 {
   
   MaterialToGeometryCollectionMap mtgcm;
@@ -163,7 +164,7 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,str
 	 fflush(stdout); 
 	
 	 
-	 osg::ref_ptr<osg::Image> image= LoadResizeSave(filename,fname, (!ive_out));
+	 osg::ref_ptr<osg::Image> image= LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	 if (image.get()){	     
 	   // create state
 	   osg::StateSet* stateset = new osg::StateSet;
@@ -224,90 +225,53 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,str
     return geode;
 }
 
-osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,std::string filebase,int format,int lodLevels,vector<string> &lodnames) {
-  char out_name[255];
+osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size) {
+
+  osg::Node* ret=NULL;
   
-  sprintf(out_name,"%s-lod%d.%s",filebase.c_str(),0,ext_strings[format]);
-  ive_out=(format==IVE_OUT);
+  string format = osgDB::getFileExtension(string(out_name));
   
-  if(format==THREEDS_OUT){
-    Export3DS(s,out_name,textures);
+  ive_out= (format=="ive");
+  
+  if(format==".3ds"){
+    Export3DS(s,out_name,textures,tex_size);
     return NULL;
   }else if(!ive_out && compress_tex){
     std::cout<<"Warning: compressing texture only supported when out";
     std::cout << "puting to .ive"<<std::endl;
     compress_tex=false;
   }    
-
-
-  osg::Node* ret=NULL;
+ 
   osg::Group* root = new osg::Group;
 
-   osg::ref_ptr<osg::Geode> geode = convertGtsSurfListToGeometry(s,textures);
+  osg::ref_ptr<osg::Geode> geode = convertGtsSurfListToGeometry(s,textures,tex_size);
+
   geode->setName(out_name);
   root->addChild(geode.get());
  
-  osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
-
-  if (result.success())	{
-    osg::notify(osg::NOTICE)<<"Data written to '"<<out_name<<"'."<< std::endl;
-
-     ret=root;
-    
-  }
-  else if  (result.message().empty()){
-    osg::notify(osg::NOTICE)<<"Warning: file write to '"<<out_name<<"' no supported."<< std::endl;
-  }
-  else    {
-    osg::notify(osg::NOTICE)<<result.message()<< std::endl;
-  }
-
-  int lodTexSize[]={512,256,32};
-  float simpRatio[]={1.0,1.0,0.00001};
-  //Really don't care about where points lie in the end
-  double maxError=1e25;
- osg::setNotifyLevel(osg::INFO);
-  for(int j=1; j < lodLevels; j++){
-  size_t size= cv_img_ptrs.size();
-  for(size_t i=0; i < size; i++)
-    if(cv_img_ptrs[i]){
-      IplImage *tmp=cv_img_ptrs[i];
-      IplImage *smaller=cvCreateImage(cvSize(lodTexSize[j],lodTexSize[j]),
-				      IPL_DEPTH_8U,3);
-      cvResize(tmp,smaller);
-      cvReleaseImage(&tmp);
-      cv_img_ptrs[i]=smaller;
-      osg::Image* image = Convert_OpenCV_TO_OSG_IMAGE(smaller,false);
-      osg_tex_ptrs[i]->setImage(image);
-      osg_tex_ptrs[i]->setTextureSize(lodTexSize[j],lodTexSize[j]);
-      osg_tex_ptrs[i]->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
-      //      compress(osg_tex_ptrs[i].get());
-    }
-  
-  osg::setNotifyLevel(osg::INFO);
-  osgUtil::Optimizer optimzer;
+  //  osg::setNotifyLevel(osg::INFO);
+   osgUtil::Optimizer optimzer;
   osgUtil::Optimizer::TextureAtlasVisitor tav(&optimzer);
   osgUtil::Optimizer::TextureAtlasBuilder &tb=tav.getTextureAtlasBuilder();
   tb.setMaximumAtlasSize(2048,2048);
   root->accept(tav);
   tav.optimize();
   
-  
+  /*
 
   osgUtil::Optimizer::MergeGeometryVisitor mgv(&optimzer);
    mgv.setTargetMaximumNumberOfVertices(1000000000);
-  root->accept(mgv);
-  
+   root->accept(mgv);*/
   optimzer.optimize(root);
-  sprintf(out_name,"%s-lod%d.ive",filebase.c_str(),j);
-  printf("Doing %s simp %f tex %d\n",out_name,simpRatio[j],lodTexSize[j]);
+ 
+  /*printf("Doing %s simp %f tex %d\n",out_name,simpRatio[j],lodTexSize[j]);
   if(simpRatio[j] < 1.0){
     printf("Simplifing to Ratio %f\n",simpRatio[j]);
     osgUtil::Simplifier simplifier(simpRatio[j], maxError);
     root->accept(simplifier);
     
   }
-
+  */
  
  
 
@@ -321,49 +285,20 @@ osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> text
   printf("Output %s\n",out_name);
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
   printf("asda %s\n", result.message().c_str());
- if (result.success())	{
+  if (result.success())	{
     osg::notify(osg::NOTICE)<<"Data written to '"<<out_name<<"'."<< std::endl;
-
-     ret=root;
-   
+    
+    ret=root;
+    
   }
   else if  (result.message().empty()){
     osg::notify(osg::NOTICE)<<"Warning: file write to '"<<out_name<<"' no supported."<< std::endl;
+    
   }
-  }
- 
-
   
-  size_t size= cv_img_ptrs.size();
-  for(size_t i=0; i < size; i++)
-    if(cv_img_ptrs[i]){
-      IplImage *tmp=cv_img_ptrs.back();
-	cv_img_ptrs.pop_back();
-      cvReleaseImage(&tmp);
-     
-    }
-  for(size_t i=0; i < osg_tex_ptrs.size(); i++){
-    if(osg_tex_ptrs[i].valid()){
-      if(compress_tex){
-	osg_tex_ptrs[i]->setUnRefImageDataAfterApply(true);
-	osg_tex_ptrs[i]->dirtyTextureObject();
-	osg_tex_ptrs[i]->apply(*state);
-      }
-    }
-  }
-  cv_img_ptrs.clear();
-  osg_tex_ptrs.clear();
-
-  unsigned int slashpos = filebase.rfind("/");
-  string tmp=filebase;
-  if(slashpos != string::npos)
-    tmp=filebase.substr(slashpos+1);
-  for(int i=lodLevels; i> 0; i--){
-    sprintf(out_name,"%s-lod%d.ive",tmp.c_str(),i-1);
-    lodnames.push_back(out_name);
-  }
-
+  
   return ret;
+
   /*  root->removeChild(0,1);
       geode=NULL;*/
   
@@ -559,17 +494,34 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip){
         }
 
 }
-osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save){
+osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save,int tex_size){
 
-  
-  
-  IplImage *fullimg=cvLoadImage(filename.c_str(),-1);
+  IplImage *fullimg=NULL;
+  bool cached=false;
+  if(tex_image_cache.find(filename) == tex_image_cache.end() || !tex_image_cache[filename] ){
+    fullimg=cvLoadImage(filename.c_str(),-1);
+   
+  }
+  else{
+
+    fullimg=tex_image_cache[filename];
+   
+    if(fullimg && fullimg->width < tex_size){
+      printf("Warning Upsampling from cached so reloading\n");
+      fullimg=cvLoadImage(filename.c_str(),-1);
+    }else{
+      cached=true;
+    }
+  }
+
   IplImage *cvImg=cvCreateImage(cvSize(tex_size,tex_size),
 				     IPL_DEPTH_8U,3);
   
   if(fullimg){
+    
     cvResize(fullimg,cvImg);
     cvReleaseImage(&fullimg);
+    tex_image_cache[filename]=cvImg;
   }
   else {
     printf("Failed to load %s\n",filename.c_str());
@@ -577,8 +529,7 @@ osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save
     return NULL;
   }
   
-  osg::Image* image =Convert_OpenCV_TO_OSG_IMAGE(cvImg);
-  cv_img_ptrs.push_back(cvImg);
+  osg::Image* image =Convert_OpenCV_TO_OSG_IMAGE(cvImg,!cached);
 
   if(save){  
     printf("Writing %s\n",outname.c_str());
@@ -587,7 +538,7 @@ osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save
   }
   return image;
 }
-bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names){
+bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size){
   char cTemp[512];
   Lib3dsFile *pFile = lib3ds_file_new();
   // std::vector <string> tex_names;
@@ -620,7 +571,7 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> m
      if(!tex_saved)
        printf("\n");
   
-     LoadResizeSave(filename,"mesh/"+fname+".png", (!tex_saved));
+     LoadResizeSave(filename,"mesh/"+fname+".png", (!tex_saved),tex_size);
    
      Lib3dsMaterial *pMaterial = lib3ds_material_new();
      
@@ -674,10 +625,6 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> m
   bool bResult = lib3ds_file_save(pFile, c3DSFile) == LIB3DS_TRUE;
   lib3ds_file_free(pFile);
 
-
-  for(size_t i=0; i < cv_img_ptrs.size(); i++)
-    cvReleaseImage(&cv_img_ptrs[i]);
-  cv_img_ptrs.clear();
   return bResult;
 }
 static bool find_min_project_dist_bbox(GtsVertex ** triVert,GtsMatrix* back_trans,Camera_Calib *calib, double &dist){
@@ -1132,5 +1079,28 @@ else
  
   
   
+}
+
+OSGExporter::~OSGExporter(){
+  map<string, IplImage *>::const_iterator itr;
+  for(itr = tex_image_cache.begin(); itr != tex_image_cache.end(); ++itr){
+
+    IplImage *tmp=(*itr).second;
+    cvReleaseImage(&tmp);
+    
+  }
+  /*
+  for(size_t i=0; i < osg_tex_ptrs.size(); i++){
+    if(osg_tex_ptrs[i].valid()){
+      if(compress_tex){
+	osg_tex_ptrs[i]->setUnRefImageDataAfterApply(true);
+	osg_tex_ptrs[i]->dirtyTextureObject();
+	osg_tex_ptrs[i]->apply(*state);
+      }
+    }
+    }*/
+  tex_image_cache.clear();
+
+  //  osg_tex_ptrs.clear();
 }
 #endif

@@ -229,7 +229,7 @@ public:
 class OSGExporter 
 {
 public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int tex_size=512,int num_threads=1): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),tex_size(tex_size),num_threads(num_threads) {state=NULL;
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads) {state=NULL;
     context=NULL;
     context=new MyGraphicsContext();
     internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
@@ -242,25 +242,27 @@ public:
 #endif
     }
   }
-  osg::Image *LoadResizeSave(string filename,string outname,bool save);
-  osg::Node *convertModelOSG(GtsSurface *s,std::map<int,string> textures,std::string filebase,int ive,int lodLevels,vector<string> &lodnames) ;
+  osg::Image *LoadResizeSave(string filename,string outname,bool save,int tex_size);
+  osg::Node *convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size) ;
+~OSGExporter();
+ std::map<string,IplImage *> tex_image_cache;
 
 protected:
   osg::ref_ptr<osg::State> state;
-
+  
   void compress(osg::Texture2D* texture2D);
   osg::Texture::InternalFormatMode internalFormatMode;
     MyGraphicsContext *context;
   bool ive_out;
   //osg::Geometry* convertGtsSurfListToGeometry(GtsSurface *s) const;  
-  osg::Geode* convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures) ;  
-  bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names);
+  osg::Geode* convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,int tex_size) ;  
+  bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size);
   string prefixdir;
   bool tex_saved;
   bool compress_tex;
- int tex_size;
+
   int num_threads;
-  vector<IplImage *> cv_img_ptrs;
+  
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
   /*
     inline osg::Vec3 transformVertex(const osg::Vec3& vec, const bool rotate) const ;
@@ -268,6 +270,7 @@ protected:
     
     bool _fixBlackMaterials;
   */
+ 
 };
 
 // collect all the data relavent to a particular osg::Geometry being created.

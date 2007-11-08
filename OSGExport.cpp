@@ -285,13 +285,10 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
   if (result.success())	{
     osg::notify(osg::NOTICE)<<"Data written to '"<<out_name<<"'."<< std::endl;
-    
-    root=NULL;
-    
   }
   else if  (result.message().empty()){
     osg::notify(osg::NOTICE)<<"Warning: file write to '"<<out_name<<"' no supported."<< std::endl;
-    
+     root=NULL;
   }
   
   

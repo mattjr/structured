@@ -48,6 +48,7 @@
 #endif
 using namespace std;
 using namespace libsnapper;
+using namespace libpolyp;
 IplImage *doCvResize(osg::Image *img,int size);
 #if ((OSG_VERSION_MAJOR==2))
 #include <osgViewer/Viewer>

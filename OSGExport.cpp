@@ -8,6 +8,7 @@
 #include <glib.h>
 #include <highgui.h>
 #include <boost/thread/thread.hpp>
+using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 std::vector<GtsBBox *> bboxes_all;;
@@ -982,7 +983,7 @@ static void texcoord_foreach_face (T_Face * f,
     /*fprintf(errFP,"Failed traingle\n");
     gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
     fflush(errFP);*/
-    libsnapper::tex_add_verbose(data->count++,data->total,data->reject++);
+    libpolyp::tex_add_verbose(data->count++,data->total,data->reject++);
     return;
   }
   

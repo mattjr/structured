@@ -346,8 +346,11 @@ int main( int argc, char *argv[ ] )
   for(int i=0; i < (int) meshNames.size(); i++){
     
     printf("Loading Surface %s ...\n",meshNames[i].c_str());
-    FILE *surfFP = fopen(meshNames[i].c_str(),"r");
-    GtsSurface *s = auv_read_ply(surfFP);
+  
+    GtsSurface *s = gts_surface_new(gts_surface_class(),
+					(GtsFaceClass *) t_face_class(),
+					 gts_edge_class(), t_vertex_class());
+    read_ply(meshNames[i].c_str(),s);
     GNode *bboxTree=loadBBox(i,gts_trans_map);
     if(!s || !bboxTree){
       printf("Failed to load boudning box or surface\n");

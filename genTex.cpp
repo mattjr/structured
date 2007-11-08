@@ -32,7 +32,7 @@
 #include  <boost/thread/xtime.hpp> 
 #include "auv_mesh_utils.hpp"
 #include "auv_mesh_io.hpp"
-#include "mcd.h"
+
 using namespace std;
 using namespace libplankton;
 using namespace libsnapper;
@@ -250,9 +250,10 @@ int main( int argc, char *argv[ ] )
       print_usage( );
       exit( 1 );
     }
-
+#ifdef _MCD_CHECK
   FILE *fpm=fopen("memstat.txt","w");
-  _MCD_MemStatLog(fpm); 
+  _MCD_MemStatLog(fpm);
+#endif 
   //
   // Figure out the directory that contains the config file 
   //
@@ -354,7 +355,8 @@ int main( int argc, char *argv[ ] )
     }
     printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(s),
 	   gts_surface_edge_number(s));
-    
+    int initialEdges=gts_surface_edge_number(s);
+
     int lodTexSize[]={512,256,32};
     float simpRatio[]={0.8,0.1,0.01};
     std::vector<string> lodnames;
@@ -365,16 +367,16 @@ int main( int argc, char *argv[ ] )
       GtsSurface *surf = gts_surface_new(gts_surface_class(),
 					 (GtsFaceClass*)t_face_class(),
 					 gts_edge_class(), t_vertex_class());
-      gts_surface_copy(surf,s);
-
+      
+      int currentEdges=gts_surface_edge_number(s);
       if(!no_simp){
-	int currentEdges=gts_surface_edge_number(s);
-	int targetEdges=(int)(currentEdges*simpRatio[j]);
+	int targetEdges=(int)(initialEdges*simpRatio[j]);
 	printf("LOD %d Surface has %d edges downsampling to %d\n",
 	       j,currentEdges,targetEdges);
 	printf("Coarsen...\n");
-	coarsen(surf,targetEdges);
+	coarsen(s,targetEdges);
 	printf("Done\n");
+	gts_surface_copy(surf,s);
       }
    
       printf("Gen texture coordinates\n");
@@ -410,16 +412,20 @@ int main( int argc, char *argv[ ] )
       if(surf)
 	gts_object_destroy (GTS_OBJECT (surf)); 
       printf("Done Took %.2f secs\n",secs);
-      fprintf(fpm,"End of single lod %d in diced %d\n",j,i);
-      showMemStats(); 
+#ifdef _MCD_CHECK  
+    fprintf(fpm,"End of single lod %d in diced %d\n",j,i);
+      showMemStats();
+#endif 
     }
     //Destory Surf
     if(s)
       gts_object_destroy (GTS_OBJECT (s)); 
     outNames.push_back(lodnames);
     delete osgExp;
-    fprintf(fpm,"End of whole diced %d\n",i);
+#ifdef _MCD_CHECK  
+   fprintf(fpm,"End of whole diced %d\n",i);
     showMemStats(); 
+#endif
   }
   
   if(have_dice){
@@ -443,7 +449,8 @@ int main( int argc, char *argv[ ] )
   // gts_matrix_destroy(gts_trans[i]);
   delete config_file;
   delete calib;
+#ifdef _MCD_CHECK
   fclose(fpm);
-   
+#endif
   return 0;
 }

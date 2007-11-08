@@ -12,7 +12,20 @@ typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 std::vector<GtsBBox *> bboxes_all;;
 
+IplImage *doCvResize(osg::Image *img,int size){
+  IplImage *in=cvCreateImageHeader(cvSize(img->s(),img->t()),IPL_DEPTH_8U,3);
+  in->imageData=(char *)img->data();
+  IplImage *tmp=cvCreateImage(cvSize(size,size),IPL_DEPTH_8U,3);
+  cvResize(in,tmp);
+  cvReleaseImageHeader(&in);
+ int pixelFormat = GL_RGB;
+ int dataType = GL_UNSIGNED_BYTE;
+ //Detetes img data upon set
+ img->setImage(tmp->width,tmp->height,1,3,pixelFormat,dataType,(unsigned char*)tmp->imageData,osg::Image::NO_DELETE);
 
+
+ return tmp;
+}
 boost::mutex bfMutex;
 //FILE *errFP;
 int lastBP;
@@ -184,13 +197,11 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,str
 	   gc._texcoords = texcoordArray->begin();
 	   gc._geom->setTexCoordArray(0,texcoordArray);
 	   
-	   if(compress_tex)
-	     compress(texture);
-	   else{
-	     if(!state)
-	       state = new osg::State;
-	     texture->apply(*state);
-	   }
+	 
+	   if(!state)
+	     state = new osg::State;
+	   texture->apply(*state);
+	   
 	   
 	   osg_tex_ptrs.push_back(texture);
 	 }
@@ -272,14 +283,17 @@ osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> text
     
   }
   */
- 
- 
-
-  /* CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT5_COMPRESSION,512);
-  root->accept(ctv);
-  ctv.compress();
-  */
- 
+  if(compress_tex){
+    int atlas_compressed_size=0;
+    if(tex_size == 32)
+      atlas_compressed_size=1024;
+    
+    CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT5_COMPRESSION,
+				atlas_compressed_size);
+    root->accept(ctv);
+    ctv.compress();
+    
+  }
  
  
   printf("Output %s\n",out_name);

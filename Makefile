@@ -57,7 +57,7 @@ LINK	=	g++
 LFLAGS	=  -g
 
 ifdef DEBUG_FLAGS
-CC_FLAGS    = -g  $(CYGWINFLAGS) -Wall -Wno-missing-braces -D_MCD_CHECK
+CC_FLAGS    = -g  $(CYGWINFLAGS) -Wall -Wno-missing-braces #-D_MCD_CHECK
 LFLAGS	=  -g
 endif
 TARGET = threadedStereo

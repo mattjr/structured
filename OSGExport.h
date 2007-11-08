@@ -48,6 +48,7 @@
 #endif
 using namespace std;
 using namespace libsnapper;
+IplImage *doCvResize(osg::Image *img,int size);
 #if ((OSG_VERSION_MAJOR==2))
 #include <osgViewer/Viewer>
 
@@ -131,6 +132,7 @@ class MyGraphicsContext {
 
 #endif
 
+
 class CompressTexturesVisitor : public osg::NodeVisitor
 {
 public:
@@ -197,10 +199,10 @@ public:
                 (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) &&
                 (image->s()>=32 && image->t()>=32))
             {
-	      
+	      IplImage *cvptr=NULL;
 	      if(_tex_size)
-		image->scaleImage(_tex_size,_tex_size,image->r());
-
+		cvptr= doCvResize(image.get(),_tex_size);
+	      
 	      texture->setInternalFormatMode(_internalFormatMode);
 	      
 	      // need to disable the unref after apply, other the image could go out of scope.
@@ -216,6 +218,10 @@ public:
                 image->readImageFromCurrentTexture(0,true);
 
                 texture->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+		if(_tex_size){
+		  if(cvptr)
+		    cvReleaseImage(&cvptr);
+		}
             }
         }
     }

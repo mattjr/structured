@@ -103,7 +103,8 @@ threadedStereo: $(LIB) $(OUT_DIR)/threadedStereo.o
 genTex:  $(LIB) $(OUT_DIR)/genTex.o
 	$(LINK) $(LFLAGS) -o genTex $(OUT_DIR)/genTex.o $(LIB) $(LIBS)
 
-
+lodgen:  $(LIB) $(OUT_DIR)/lodgen.o
+	$(LINK) $(LFLAGS) -o lodgen $(OUT_DIR)/lodgen.o $(LIB) $(LIBS)
 # Skip depend rule if clean (-include would otherwise make it).
 # Pass -I flags (INC_FLAGS) to makedepend or it will omit those directories.
 # -include depends on $(OUT_DIR)/deps which make will make.

@@ -249,7 +249,7 @@ public:
     }
   }
   osg::Image *LoadResizeSave(string filename,string outname,bool save,int tex_size);
-  osg::Node *convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size) ;
+  osg::ref_ptr< osg::Group>convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size) ;
 ~OSGExporter();
  std::map<string,IplImage *> tex_image_cache;
 
@@ -261,7 +261,7 @@ protected:
     MyGraphicsContext *context;
   bool ive_out;
   //osg::Geometry* convertGtsSurfListToGeometry(GtsSurface *s) const;  
-  osg::Geode* convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,int tex_size) ;  
+  osg::ref_ptr<osg::Geode> convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,int tex_size) ;  
   bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size);
   string prefixdir;
   bool tex_saved;

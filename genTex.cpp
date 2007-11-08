@@ -157,12 +157,12 @@ osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
   }
   return NULL;
 }
-void genPagedLod(vector<osg::Node *> nodes, vector< vector<string> > lodnames){
+void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<string> > lodnames){
   osg::Group *total=new osg::Group;
 
   for(int i=0; i < (int)nodes.size(); i++){
   
-    osg::Node *tmp=create_paged_lod(nodes[i],lodnames[i]);
+    osg::Node *tmp=create_paged_lod(nodes[i].get(),lodnames[i]);
     total->addChild(tmp);
   }
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*total,"mesh/final.ive",osgDB::Registry::instance()->getOptions());
@@ -317,7 +317,7 @@ int main( int argc, char *argv[ ] )
   string dicefile("mesh-agg/diced.txt");
   std::vector<string> meshNames;
   std::vector<vector<string > > outNames;
-  std::vector<osg::Node * > outNodes;
+  std::vector<osg::ref_ptr<osg::Group>  > outNodes;
 
   struct stat BUF;
   bool have_dice=(stat(dicefile.c_str(),&BUF)!=-1);
@@ -399,7 +399,7 @@ int main( int argc, char *argv[ ] )
     
       sprintf(out_name,"mesh/blended-%02d-lod%d.ive",i,j);
            
-      osg::Node * node =osgExp->convertModelOSG(surf,texture_file_names,
+      osg::ref_ptr<osg::Group> node =osgExp->convertModelOSG(surf,texture_file_names,
 						out_name,lodTexSize[j]);
       lodnames.push_back(osgDB::getSimpleFileName(string(out_name)).c_str());
       if(j == (lodNum -1))
@@ -427,7 +427,8 @@ int main( int argc, char *argv[ ] )
     showMemStats(); 
 #endif
   }
-  
+
+
   if(have_dice){
  
     genPagedLod(outNodes,outNames);

@@ -126,7 +126,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
 
 
 
-osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,int tex_size) 
+osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,int tex_size) 
 {
   
   MaterialToGeometryCollectionMap mtgcm;
@@ -177,8 +177,8 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,str
 	 fflush(stdout); 
 	
 	 
-	 osg::ref_ptr<osg::Image> image= LoadResizeSave(filename,fname, (!ive_out),tex_size);
-	 if (image.get()){	     
+	 osg::ref_ptr<osg::Image> image=NULL;// LoadResizeSave(filename,fname, (!ive_out),tex_size);
+	 if (image.valid()){	     
 	   // create state
 	   osg::StateSet* stateset = new osg::StateSet;
 	   
@@ -208,10 +208,10 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,str
        }
      }
    }
-   
+  
    printf("\n");
    gts_surface_foreach_face (s, (GtsFunc) add_face_mat_osg , data);
-   osg::Geode* geode = new osg::Geode;
+   osg::ref_ptr<osg::Geode> geode = new osg::Geode;
     
     // osgUtil::Tessellator tessellator;
     
@@ -236,9 +236,9 @@ osg::Geode* OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,str
     return geode;
 }
 
-osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size) {
+osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size) {
 
-  osg::Node* ret=NULL;
+
   
   string format = osgDB::getFileExtension(string(out_name));
   
@@ -253,56 +253,39 @@ osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> text
     compress_tex=false;
   }    
  
-  osg::Group* root = new osg::Group;
+  osg::ref_ptr<osg::Group> root_ptr = new osg::Group;
 
   osg::ref_ptr<osg::Geode> geode = convertGtsSurfListToGeometry(s,textures,tex_size);
+  osg::Group * root = root_ptr.get();
 
   geode->setName(out_name);
   root->addChild(geode.get());
- 
-  //  osg::setNotifyLevel(osg::INFO);
-   osgUtil::Optimizer optimzer;
+  printf("Texture Atlas Creation\n"); 
+  osgUtil::Optimizer optimzer;
   osgUtil::Optimizer::TextureAtlasVisitor tav(&optimzer);
   osgUtil::Optimizer::TextureAtlasBuilder &tb=tav.getTextureAtlasBuilder();
   tb.setMaximumAtlasSize(2048,2048);
   root->accept(tav);
   tav.optimize();
-  
-  /*
-
-  osgUtil::Optimizer::MergeGeometryVisitor mgv(&optimzer);
-   mgv.setTargetMaximumNumberOfVertices(1000000000);
-   root->accept(mgv);*/
   optimzer.optimize(root);
  
-  /*printf("Doing %s simp %f tex %d\n",out_name,simpRatio[j],lodTexSize[j]);
-  if(simpRatio[j] < 1.0){
-    printf("Simplifing to Ratio %f\n",simpRatio[j]);
-    osgUtil::Simplifier simplifier(simpRatio[j], maxError);
-    root->accept(simplifier);
-    
-  }
-  */
   if(compress_tex){
     int atlas_compressed_size=0;
     if(tex_size == 32)
       atlas_compressed_size=1024;
-    
+    printf("Texture Compression\n");
     CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT5_COMPRESSION,
 				atlas_compressed_size);
-    root->accept(ctv);
+    root->accept(ctv); 
     ctv.compress();
     
   }
  
- 
-  printf("Output %s\n",out_name);
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
-  printf("asda %s\n", result.message().c_str());
   if (result.success())	{
     osg::notify(osg::NOTICE)<<"Data written to '"<<out_name<<"'."<< std::endl;
     
-    ret=root;
+    root=NULL;
     
   }
   else if  (result.message().empty()){
@@ -311,7 +294,7 @@ osg::Node * OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> text
   }
   
   
-  return ret;
+  return root;
 
   /*  root->removeChild(0,1);
       geode=NULL;*/

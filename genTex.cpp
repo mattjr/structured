@@ -350,9 +350,9 @@ int main( int argc, char *argv[ ] )
     GtsSurface *s = gts_surface_new(gts_surface_class(),
 					(GtsFaceClass *) t_face_class(),
 					 gts_edge_class(), t_vertex_class());
-    read_ply(meshNames[i].c_str(),s);
+    bool res=read_ply(meshNames[i].c_str(),s);
     GNode *bboxTree=loadBBox(i,gts_trans_map);
-    if(!s || !bboxTree){
+    if(!res || !bboxTree){
       printf("Failed to load boudning box or surface\n");
       exit(-1);
     }

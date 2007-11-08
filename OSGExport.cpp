@@ -177,7 +177,7 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	 fflush(stdout); 
 	
 	 
-	 osg::ref_ptr<osg::Image> image=NULL;// LoadResizeSave(filename,fname, (!ive_out),tex_size);
+	 osg::ref_ptr<osg::Image> image=LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	 if (image.valid()){	     
 	   // create state
 	   osg::StateSet* stateset = new osg::StateSet;

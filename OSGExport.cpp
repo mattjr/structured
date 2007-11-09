@@ -8,11 +8,13 @@
 #include <glib.h>
 #include <highgui.h>
 #include <boost/thread/thread.hpp>
+
+
 using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 std::vector<GtsBBox *> bboxes_all;;
-int texMargin=200;
+int texMargin=300;
 IplImage *doCvResize(osg::Image *img,int size){
   IplImage *in=cvCreateImageHeader(cvSize(img->s(),img->t()),IPL_DEPTH_8U,3);
   in->imageData=(char *)img->data();
@@ -127,7 +129,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
 
 
 
-osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,int tex_size) 
+osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,int tex_size,VerboseMeshFunc vmcallback)
 {
   
   MaterialToGeometryCollectionMap mtgcm;
@@ -172,9 +174,12 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	   printf("Can't use OPENGL without valid context");
 	   exit(0);
 	 }
-	 printf("\rLoading and Scaling Texture: %03d/%03d",++tex_count,mtgcm.size());
+	 if(vmcallback)
+	   vmcallback(++tex_count,mtgcm.size());
+	 if(verbose)
+	   printf("\rLoading and Scaling Texture: %03d/%03d",++tex_count,mtgcm.size());
 	 if(!ive_out)
-	   printf("\n");	 
+	   if(verbose)printf("\n");	 
 	 fflush(stdout); 
 	
 	 
@@ -209,8 +214,8 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
        }
      }
    }
-  
-   printf("\n");
+   if(verbose)
+     printf("\n");
    gts_surface_foreach_face (s, (GtsFunc) add_face_mat_osg , data);
    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
     
@@ -237,7 +242,7 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
     return geode;
 }
 
-osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size) {
+osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback) {
 
 
   
@@ -256,12 +261,13 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
  
   osg::ref_ptr<osg::Group> root_ptr = new osg::Group;
 
-  osg::ref_ptr<osg::Geode> geode = convertGtsSurfListToGeometry(s,textures,tex_size);
+  osg::ref_ptr<osg::Geode> geode = convertGtsSurfListToGeometry(s,textures,tex_size,vmcallback);
   osg::Group * root = root_ptr.get();
 
   geode->setName(out_name);
   root->addChild(geode.get());
-  printf("Texture Atlas Creation\n"); 
+  if(verbose)
+    printf("Texture Atlas Creation\n"); 
   osgUtil::Optimizer optimzer;
   osgUtil::Optimizer::TextureAtlasVisitor tav(&optimzer);
   osgUtil::Optimizer::TextureAtlasBuilder &tb=tav.getTextureAtlasBuilder();
@@ -274,7 +280,8 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
     int atlas_compressed_size=0;
     if(tex_size == 32)
       atlas_compressed_size=1024;
-    printf("Texture Compression\n");
+    if(verbose)
+      printf("Texture Compression\n");
     CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT5_COMPRESSION,
 				atlas_compressed_size);
     root->accept(ctv); 
@@ -284,7 +291,8 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
  
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
   if (result.success())	{
-    osg::notify(osg::NOTICE)<<"Data written to '"<<out_name<<"'."<< std::endl;
+    if(verbose)
+      osg::notify(osg::NOTICE)<<"Data written to '"<<out_name<<"'."<< std::endl;
   }
   else if  (result.message().empty()){
     osg::notify(osg::NOTICE)<<"Warning: file write to '"<<out_name<<"' no supported."<< std::endl;
@@ -840,7 +848,7 @@ int find_closet_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> 
 typedef struct _texGenData{
   GNode *bboxTree;
   std::vector<GtsPoint> camPosePts;
-  
+  int verbose;
   
   int tex_size;
   std::map<int,GtsMatrix *> back_trans;
@@ -991,7 +999,8 @@ static void texcoord_foreach_face (T_Face * f,
     /*fprintf(errFP,"Failed traingle\n");
     gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
     fflush(errFP);*/
-    libpolyp::tex_add_verbose(data->count++,data->total,data->reject++);
+    if(data->verbose)
+      libpolyp::tex_add_verbose(data->count++,data->total,data->reject++);
     return;
   }
   
@@ -1005,6 +1014,7 @@ static void texcoord_foreach_face (T_Face * f,
 	 data->bboxTree,data->camPosePts,data->back_trans,data->calib,0);
     }
     // if(!data->bboxTree)
+  if(data->verbose)
     tex_add_verbose(data->count++,data->total,data->reject);
 
 }
@@ -1021,12 +1031,13 @@ static void findborder_foreach_face (T_Face * f,
     }
 }
 
-void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads){
+void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads,int verbose){
   
   //errFP=fopen("err.txt","w");
   std::vector<GtsPoint> camPosePts;
   GtsPoint transP;
-  printf("Size %d\n",back_trans.size());
+  if(verbose)
+    printf("Size %d\n",back_trans.size());
   map<int,GtsMatrix *>::iterator iter;
   for(  iter=back_trans.begin();  iter != back_trans.end(); iter++){
   
@@ -1055,14 +1066,15 @@ void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatr
   tex_data.reject=0;
   tex_data.total=gts_surface_face_number(s);
   tex_data.calib=calib;
+  tex_data.verbose=verbose;
   tex_data.border_faces = &border_faces;
   if(num_threads > 1)
     threaded_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,
 				   &tex_data ,num_threads);
 else
   gts_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,&tex_data);
-
-  printf("\nChecking weird border cases...\n");
+  if(verbose)
+    printf("\nChecking weird border cases...\n");
   if(num_threads > 1)
     threaded_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,
 				   &tex_data ,num_threads);   
@@ -1078,10 +1090,11 @@ else
       tex_data.validCount++;
     
     gts_surface_remove_face(s,GTS_FACE(border_faces[i]));
-    tex_add_verbose(tex_data.count++,tex_data.total,tex_data.reject);
+    if(verbose)
+      tex_add_verbose(tex_data.count++,tex_data.total,tex_data.reject);
     }
-
-  printf("\nValid tex %d\n", tex_data.validCount);
+  if(verbose)
+    printf("\nValid tex %d\n", tex_data.validCount);
  
   
   
@@ -1090,23 +1103,9 @@ else
 OSGExporter::~OSGExporter(){
   map<string, IplImage *>::const_iterator itr;
   for(itr = tex_image_cache.begin(); itr != tex_image_cache.end(); ++itr){
-
     IplImage *tmp=(*itr).second;
-    cvReleaseImage(&tmp);
-    
+    cvReleaseImage(&tmp); 
   }
-  /*
-  for(size_t i=0; i < osg_tex_ptrs.size(); i++){
-    if(osg_tex_ptrs[i].valid()){
-      if(compress_tex){
-	osg_tex_ptrs[i]->setUnRefImageDataAfterApply(true);
-	osg_tex_ptrs[i]->dirtyTextureObject();
-	osg_tex_ptrs[i]->apply(*state);
-      }
-    }
-    }*/
   tex_image_cache.clear();
-
-  //  osg_tex_ptrs.clear();
 }
 #endif

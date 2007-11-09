@@ -44,7 +44,7 @@ using namespace libsnapper;
 static string stereo_config_file_name;
 static string contents_file_name;
 static string dir_name;
-
+static int verbose=false;
 static bool no_simp=false;
 
 static bool have_max_mesh_count = false;
@@ -96,6 +96,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--compress-tex" ) == 0 )
 	{
 	  compress_textures=true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "-v" ) == 0 )
+	{
+	  verbose=true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "-n" ) == 0 )
@@ -228,7 +233,51 @@ GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
 
 
 }
+gboolean mesh_count ( guint number, guint total,int lod,int maxlod,int tex,int textotal){
+  
+  if (timer == NULL) {
+    boost::call_once(&timer_init, once);
+    nmax = nold = number;
+  }
+  
+  {// && number % 1 == 0 ){//&& number < nmax && nmax > total) {
+    gdouble total_elapsed = g_timer_elapsed (total_timer, NULL);
+    gdouble remaining;
+    gdouble hours, mins, secs;
+    gdouble hours1, mins1, secs1;
+    
+    g_timer_stop (timer);
+    
+    hours = floor (total_elapsed/3600.);
+    mins = floor ((total_elapsed - 3600.*hours)/60.);
+    secs = floor (total_elapsed - 3600.*hours - 60.*mins);
+    
+    remaining = ((total_elapsed/(gdouble)number) *((gdouble)total-number));
+    hours1 = floor (remaining/3600.);
+    mins1 = floor ((remaining - 3600.*hours1)/60.);
+    secs1 = floor (remaining - 3600.*hours1 - 60.*mins1);
+    
+    fprintf (stderr, 
+	     "\rMesh %2d/%2d LOD %d/%d, Tex %d/%d "
+	     "Elapsed: %02.0f:%02.0f:%02.0f "
+	     "Remaining: %02.0f:%02.0f:%02.0f",
+	     number, total,lod,maxlod,tex,textotal,
+	     //   100.*( number)/( total),
+	     //g_timer_elapsed (timer, NULL)/ (number - nold  ),
+	     hours, mins, secs,
+	     hours1, mins1, secs1);
+    fflush (stderr);
 
+    nold = number;
+    g_timer_start (timer);
+  }
+  if (number == total) {
+    boost::call_once(&timer_destroy, once2);
+    fprintf(stderr,"\n");
+    return TRUE;
+  }
+  return FALSE;
+}
 //
 // Display information on how to use this program
 //
@@ -255,10 +304,7 @@ int main( int argc, char *argv[ ] )
       print_usage( );
       exit( 1 );
     }
-#ifdef _MCD_CHECK
-  FILE *fpm=fopen("memstat.txt","w");
-  _MCD_MemStatLog(fpm);
-#endif 
+
   //
   // Figure out the directory that contains the config file 
   //
@@ -311,8 +357,10 @@ int main( int argc, char *argv[ ] )
     }      
 
  
+
  
-  
+
+
   auv_data_tools::makedir("mesh");
   if(num_threads > 1)
     g_thread_init (NULL);
@@ -338,40 +386,49 @@ int main( int argc, char *argv[ ] )
     while(eof != EOF){
       eof=fscanf(dicefp,"%s\n",tmp);
       if(eof != EOF){
-	printf("Diced files %s\n",tmp);
+	if(verbose)
+	  printf("Diced files %s\n",tmp);
 	meshNames.push_back("mesh-agg/"+string(tmp));
       }
     }
   }
 
-
  
 
-  printf("Loading %d bbox files\n",meshNames.size());
-  for(int i=0; i < (int) meshNames.size() && !(have_max_mesh_count && i >=(int) max_mesh_count); i++){
+  int totalMeshCount=meshNames.size();
+  int i;
+  for( i=0; i < (int) meshNames.size() && !(have_max_mesh_count && i >=(int) max_mesh_count); i++){
     
-    printf("Loading Surface %s ...\n",meshNames[i].c_str());
+   
+
+    if(verbose)
+      printf("Loading Surface %s ...\n",meshNames[i].c_str());
   
     GtsSurface *s = gts_surface_new(gts_surface_class(),
 					(GtsFaceClass *) t_face_class(),
 					 gts_edge_class(), t_vertex_class());
-    bool res=read_ply(meshNames[i].c_str(),s);
+    bool res=read_ply(meshNames[i].c_str(),s,verbose);
     GNode *bboxTree=loadBBox(i,gts_trans_map);
     if(!res || !bboxTree){
-      printf("Failed to load boudning box or surface\n");
+      printf("Failed to load boudning box or surface %s\n",
+	     meshNames[i].c_str());
       exit(-1);
     }
-    printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(s),
-	   gts_surface_edge_number(s));
+    if(verbose)
+      printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(s),
+	     gts_surface_edge_number(s));
     int initialEdges=gts_surface_edge_number(s);
 
     int lodTexSize[]={512,256,32};
     float simpRatio[]={0.5,0.1,0.01};
     std::vector<string> lodnames;
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
-					num_threads);    
+					num_threads,verbose);    
 
     for(int j=0; j < lodNum; j++){
+     
+      boost::function<bool(int,int)> callback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,_2);
+      mesh_count(i,totalMeshCount,j,lodNum,0,0);
       GtsSurface *surf = gts_surface_new(gts_surface_class(),
 					 (GtsFaceClass*)t_face_class(),
 					 gts_edge_class(), t_vertex_class());
@@ -379,36 +436,43 @@ int main( int argc, char *argv[ ] )
       int currentEdges=gts_surface_edge_number(s);
       if(!no_simp){
 	int targetEdges=(int)(initialEdges*simpRatio[j]);
-	printf("LOD %d Surface has %d edges downsampling to %d\n",
-	       j,currentEdges,targetEdges);
-	printf("Coarsen...\n");
-	coarsen(s,targetEdges);
-	printf("Done\n");
+
+	if(verbose){
+	  printf("LOD %d Surface has %d edges downsampling to %d\n",
+		 j,currentEdges,targetEdges);
+	  printf("Coarsen...\n");
+	}
+	
+	coarsen(s,targetEdges,verbose);
+	
+	if(verbose)
+	  printf("Done\n");
 	gts_surface_copy(surf,s);
       }
    
-      printf("Gen texture coordinates\n");
+      if(verbose)
+	printf("Gen texture coordinates\n");
       boost::xtime xt, xt2;
       long time;
       double secs;
       
       boost::xtime_get(&xt, boost::TIME_UTC);
       gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,
-			 lodTexSize[j],num_threads);
+			 lodTexSize[j],num_threads,verbose);
       boost::xtime_get(&xt2, boost::TIME_UTC);
       time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
       secs=time/1000.0;
-      printf("Done Took %.2f secs\n",secs);
-      
-      printf("Converting to model for export\n");
-      
+      if(verbose){
+	printf("Done Took %.2f secs\n",secs);
+	printf("Converting to model for export\n");
+      }
       boost::xtime_get(&xt, boost::TIME_UTC);
       char out_name[255];
     
       sprintf(out_name,"mesh/blended-%02d-lod%d.ive",i,j);
            
       osg::ref_ptr<osg::Group> node =osgExp->convertModelOSG(surf,texture_file_names,
-						out_name,lodTexSize[j]);
+							     out_name,lodTexSize[j],callback);
       
       lodnames.push_back(osgDB::getSimpleFileName(string(out_name)).c_str());
       if(j == (lodNum -1))
@@ -420,36 +484,19 @@ int main( int argc, char *argv[ ] )
       //Destory Surf
       if(surf)
 	gts_object_destroy (GTS_OBJECT (surf)); 
-      printf("Done Took %.2f secs\n",secs);
-#ifdef _MCD_CHECK  
-    fprintf(fpm,"End of single lod %d in diced %d\n",j,i);
-      showMemStats();
-#endif 
+      if(verbose)
+	printf("Done Took %.2f secs\n",secs);
     }
     //Destory Surf
     if(s)
       gts_object_destroy (GTS_OBJECT (s)); 
     outNames.push_back(lodnames);
     delete osgExp;
-#ifdef _MCD_CHECK  
-   fprintf(fpm,"End of whole diced %d\n",i);
-    showMemStats(); 
-#endif
   }
-
+  mesh_count(i,totalMeshCount,lodNum,lodNum,0,0);
 
   if(have_dice){
     genPagedLod(outNodes,outNames);
-    
-    /*  
-    FILE *joinfp=fopen("./join.sh","w+");
-    fprintf(joinfp,"#!/bin/bash\n osgconv ");
-    for(size_t i=0; i < outNames.size(); i++)
-      fprintf(joinfp,"%s ",outNames[i].c_str());
-    fprintf(joinfp,"final.ive\n");
-    fchmod(fileno(joinfp),   0777);
-    fclose(joinfp);
-    system("./join.sh");*/
   }
   // 
   // Clean-up
@@ -458,8 +505,6 @@ int main( int argc, char *argv[ ] )
   // gts_matrix_destroy(gts_trans[i]);
   delete config_file;
   delete calib;
-#ifdef _MCD_CHECK
-  fclose(fpm);
-#endif
+
   return 0;
 }

@@ -46,13 +46,15 @@
 #include <lib3ds/matrix.h>
 #include <lib3ds/vector.h>
 #endif
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
 using namespace std;
 using namespace libsnapper;
 using namespace libpolyp;
 IplImage *doCvResize(osg::Image *img,int size);
 #if ((OSG_VERSION_MAJOR==2))
 #include <osgViewer/Viewer>
-
+typedef  boost::function<bool( int ,int)> VerboseMeshFunc;
 
 class MyGraphicsContext {
     public:
@@ -236,9 +238,9 @@ public:
 class OSGExporter 
 {
 public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads) {state=NULL;
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose) {state=NULL;
 
-  
+   
     context=NULL;
     context=new MyGraphicsContext();
     internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
@@ -252,7 +254,7 @@ public:
     }
   }
   osg::Image *LoadResizeSave(string filename,string outname,bool save,int tex_size);
-  osg::ref_ptr< osg::Group>convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size) ;
+  osg::ref_ptr< osg::Group>convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback=NULL) ;
 ~OSGExporter();
  std::map<string,IplImage *> tex_image_cache;
 
@@ -264,14 +266,14 @@ protected:
     MyGraphicsContext *context;
   bool ive_out;
   //osg::Geometry* convertGtsSurfListToGeometry(GtsSurface *s) const;  
-  osg::ref_ptr<osg::Geode> convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,int tex_size) ;  
+  osg::ref_ptr<osg::Geode> convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,int tex_size,VerboseMeshFunc vmcallback=NULL) ;  
   bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size);
   string prefixdir;
   bool tex_saved;
   bool compress_tex;
 
   int num_threads;
-  
+  int verbose;
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
   /*
     inline osg::Vec3 transformVertex(const osg::Vec3& vec, const bool rotate) const ;
@@ -312,6 +314,6 @@ enum {IVE_OUT,OSG_OUT,THREEDS_OUT};
 
 typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;
 typedef std::map<int,string> MaterialToIDMap;
-void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads);
+void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads,int verbose=0);
 osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip=true);
 #endif

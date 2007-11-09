@@ -12,7 +12,7 @@ using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 std::vector<GtsBBox *> bboxes_all;;
-int texMargin=25;
+int texMargin=200;
 IplImage *doCvResize(osg::Image *img,int size){
   IplImage *in=cvCreateImageHeader(cvSize(img->s(),img->t()),IPL_DEPTH_8U,3);
   in->imageData=(char *)img->data();

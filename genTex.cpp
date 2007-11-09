@@ -133,7 +133,7 @@ static bool parse_args( int argc, char *argv[ ] )
 osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
 
   float cut_off_distance = 25.0f;
-    float max_visible_distance = 125.0f;
+    float max_visible_distance = 150.0f;
     float max_dist=1e7;
 
   const osg::BoundingSphere& bs = model->getBound();
@@ -366,7 +366,7 @@ int main( int argc, char *argv[ ] )
     int initialEdges=gts_surface_edge_number(s);
 
     int lodTexSize[]={512,256,32};
-    float simpRatio[]={0.8,0.1,0.05};
+    float simpRatio[]={0.5,0.1,0.01};
     std::vector<string> lodnames;
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
 					num_threads);    

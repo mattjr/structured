@@ -786,7 +786,8 @@ int main( int argc, char *argv[ ] )
    unsigned int loc=path.rfind("/");
    
    string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
-   
+   basepath= osgDB::getRealPath (basepath);
+   cout << "Basepath " <<basepath <<endl;
  
     //
    // Open the config file
@@ -1024,11 +1025,11 @@ int main( int argc, char *argv[ ] )
 
     conf_ply_file=fopen("./runvrip.sh","w+");
     
-    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/\n",basepath.c_str());
+    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/\n",basepath.c_str());
      for(int i=0; i <= split_chunks; i++){   
-      fprintf(conf_ply_file,"$PWD/../%s/vrip/bin/vripnew auto-%08d.vri surface-%08d.conf surface-%08d.conf 0.033 -rampscale 400\n$PWD/../%s/vrip/bin/vripsurf auto-%08d.vri out-%08d.ply\n",basepath.c_str(),i,i,i,basepath.c_str(),i,i);
+      fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto-%08d.vri surface-%08d.conf surface-%08d.conf 0.033 -rampscale 400\n%s/vrip/bin/vripsurf auto-%08d.vri out-%08d.ply\n",basepath.c_str(),i,i,i,basepath.c_str(),i,i);
       }
-    fprintf(conf_ply_file,"echo 'Joining Meshes...'\n$PWD/../%s/vrip/bin/plyshared ",
+    fprintf(conf_ply_file,"echo 'Joining Meshes...'\n%s/vrip/bin/plyshared ",
 	    basepath.c_str());
     for(int i=0; i <=split_chunks; i++)  
       fprintf(conf_ply_file,"out-%08d.ply ",i);
@@ -1041,7 +1042,7 @@ int main( int argc, char *argv[ ] )
     system("./runvrip.sh");
     
     FILE *dicefp=fopen("./dice.sh","w+");
-    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=$PWD/%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n$PWD/../%s/vrip/bin/plydice -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n%s/vrip/bin/plydice -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
 
     //"cat diced.txt |while read line; do $PWD/../%s/vrip/bin/plyclean -edgecol 40%% 120 -sliver 160 -edgecol .1 120  < ${line} > tmp.ply; mv ${line} ${line%%.*}-full.ply; mv tmp.ply ${line}; done"
       fchmod(fileno(dicefp),   0777);

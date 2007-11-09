@@ -36,11 +36,6 @@ PROGS = \
 	plyhead \
 	plynormals \
 	plyremove \
-	plys2set \
-	plysets2conf \
-	plysetlevel \
-	ply2bboxcube \
-	ply2crunchset \
 	plyshared \
 	plystrip \
 	plysubtract \
@@ -52,7 +47,6 @@ PROGS = \
 	plyvolume \
 	plysubdiv \
 	xyz2ply \
-	mm2plys \
 	vrip \
 	vriphead \
 	vripmarch \

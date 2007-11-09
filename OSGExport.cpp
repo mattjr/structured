@@ -12,7 +12,7 @@ using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 std::vector<GtsBBox *> bboxes_all;;
-
+int texMargin=25;
 IplImage *doCvResize(osg::Image *img,int size){
   IplImage *in=cvCreateImageHeader(cvSize(img->s(),img->t()),IPL_DEPTH_8U,3);
   in->imageData=(char *)img->data();
@@ -622,7 +622,8 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> m
 
   return bResult;
 }
-static bool find_min_project_dist_bbox(GtsVertex ** triVert,GtsMatrix* back_trans,Camera_Calib *calib, double &dist){
+enum {TEX_VALID,TEX_MARGIN,TEX_NOT_VALID};
+static int find_min_project_dist_bbox(GtsVertex ** triVert,GtsMatrix* back_trans,Camera_Calib *calib, double &dist){
 
   double vX[3],vY[3];
   GtsPoint tmpP[3];
@@ -636,14 +637,24 @@ static bool find_min_project_dist_bbox(GtsVertex ** triVert,GtsMatrix* back_tran
    camera_frame_to_dist_pixel_coords(*calib,tmpP[i].x,tmpP[i].y,tmpP[i].z,
 				     vX[i],vY[i]);
  }
- 
+ int ret=TEX_VALID;
  
  for(int i=0; i < 3; i++){
-   
-   if(vX[i]> calib->width || vY[i] > calib->height || vX[i] < 0.0 || vY[i] < 0.0 ){
-     return false;
+   if(vX[i]> calib->width || vY[i] > calib->height || vX[i] < 0.0 || vY[i] < 0.0  ){ ret=TEX_NOT_VALID;
+
    }
  }
+ if(ret==TEX_NOT_VALID){
+   int testMargin=1;
+   for(int i=0; i < 3; i++){
+     if(vX[i]> calib->width+texMargin || vY[i] > calib->height+texMargin || vX[i] < 0.0 -texMargin || vY[i] < 0.0 -texMargin ){
+       testMargin=0;
+     }
+   }
+   if(testMargin)
+     ret=TEX_MARGIN;
+ }
+
  dist=0.0;
  for(int i=0; i < 3; i++){
    dist+= sqrt(pow((calib->width/2.0)-vX[i],2)+pow((calib->height/2.0)-vY[i],2));
@@ -669,7 +680,7 @@ static bool find_min_project_dist_bbox(GtsVertex ** triVert,GtsMatrix* back_tran
  /*1/max(pow(vX-calib->width-(calib->width/2.0),2),
    pow(vY-calib->height-(calib->height/2.0),2));*/
  //
- return true;
+ return ret;
 }
 
 static void set_tex_id_unknown (TVertex *v)
@@ -793,7 +804,7 @@ int find_closet_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> 
 	  continue;
       }     
       int val= (int)bbox->bounded;
-      if(find_min_project_dist_bbox(v,back_trans[val],calib, dist)){
+      if(find_min_project_dist_bbox(v,back_trans[val],calib, dist) == TEX_VALID){
 	if(dist < minDist){
 	  minDist=dist;
 	 bestProjection=val;
@@ -808,7 +819,7 @@ int find_closet_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> 
       minDist=DBL_MAX;
       for(int i =0; i < (int)bboxes_all.size(); i++){
 	int val= (int)bboxes_all[i]->bounded;
-	if(find_min_project_dist_bbox(v,back_trans[val],calib, dist)){
+	if(find_min_project_dist_bbox(v,back_trans[val],calib, dist) == TEX_MARGIN){
 	  if(dist < minDist){
 	    minDist=dist;
 	    bestProjection=val;
@@ -986,7 +997,7 @@ static void texcoord_foreach_face (T_Face * f,
   
   
   
-  if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size))
+  if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size,texMargin))
     data->validCount++;
     else{
       printf("Index closest %d\n",indexClosest);
@@ -1063,7 +1074,7 @@ else
   for(int i=0; i < (int) border_faces.size(); i++){
    T_Face *f2 = copy_face(border_faces[i],s);
    int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,bboxTree,camPosePts,back_trans,calib,1);
-    if(apply_tex_to_tri(f2,calib,back_trans[idx],idx,tex_size))
+   if(apply_tex_to_tri(f2,calib,back_trans[idx],idx,tex_size,texMargin))
       tex_data.validCount++;
     
     gts_surface_remove_face(s,GTS_FACE(border_faces[i]));

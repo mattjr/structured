@@ -237,6 +237,8 @@ class OSGExporter
 {
 public:
   OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads) {state=NULL;
+
+  
     context=NULL;
     context=new MyGraphicsContext();
     internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
@@ -277,7 +279,7 @@ protected:
     
     bool _fixBlackMaterials;
   */
- 
+  
 };
 
 // collect all the data relavent to a particular osg::Geometry being created.
@@ -302,6 +304,7 @@ struct GeometryCollection
   osg::Vec2Array::iterator    _texcoords;
   int                         _coordCount;
   osg::Geometry*              _geom;
+
 };
 enum {IVE_OUT,OSG_OUT,THREEDS_OUT};
 

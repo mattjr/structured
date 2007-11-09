@@ -366,7 +366,7 @@ int main( int argc, char *argv[ ] )
     int initialEdges=gts_surface_edge_number(s);
 
     int lodTexSize[]={512,256,32};
-    float simpRatio[]={0.8,0.1,0.01};
+    float simpRatio[]={0.8,0.1,0.05};
     std::vector<string> lodnames;
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
 					num_threads);    

@@ -425,10 +425,10 @@ int main( int argc, char *argv[ ] )
 					num_threads,verbose);    
 
     for(int j=0; j < lodNum; j++){
-       boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
+       boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount-1,j,lodNum-1,_1,0,0);
 
     
-       mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
+       mesh_count(i,totalMeshCount-1,j,lodNum-1,0,0,0);
       GtsSurface *surf = gts_surface_new(gts_surface_class(),
 					 (GtsFaceClass*)t_face_class(),
 					 gts_edge_class(), t_vertex_class());
@@ -450,7 +450,7 @@ int main( int argc, char *argv[ ] )
 	gts_surface_copy(surf,s);
       }
 
-      boost::function<bool(int,int)> texcallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,100,_1,_2);
+      boost::function<bool(int,int)> texcallback = boost::bind(mesh_count,i,totalMeshCount-1,j,lodNum-1,100,_1,_2);
 
       if(verbose)
 	printf("Gen texture coordinates\n");
@@ -495,7 +495,7 @@ int main( int argc, char *argv[ ] )
     outNames.push_back(lodnames);
     delete osgExp;
   }
-  mesh_count(i,totalMeshCount,lodNum,lodNum,0,0,0);
+  mesh_count(i,totalMeshCount-1,lodNum-1,lodNum-1,0,0,0);
 
   if(have_dice){
     genPagedLod(outNodes,outNames);

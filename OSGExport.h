@@ -245,7 +245,8 @@ public:
     context=new MyGraphicsContext();
     internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
     if(compress_tex){
-      printf("Compressing Textures\n");
+      if(verbose)
+	printf("Compressing Textures\n");
 #ifndef __APPLE__
       internalFormatMode=osg::Texture::USE_S3TC_DXT5_COMPRESSION; 
 #else

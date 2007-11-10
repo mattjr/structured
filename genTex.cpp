@@ -233,7 +233,7 @@ GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
 
 
 }
-gboolean mesh_count ( guint number, guint total,int lod,int maxlod,int tex,int textotal){
+gboolean mesh_count ( int number, int total,int lod,int maxlod,int coarseper,int tex,int textotal){
   
   if (timer == NULL) {
     boost::call_once(&timer_init, once);
@@ -258,10 +258,10 @@ gboolean mesh_count ( guint number, guint total,int lod,int maxlod,int tex,int t
     secs1 = floor (remaining - 3600.*hours1 - 60.*mins1);
     
     fprintf (stderr, 
-	     "\rMesh %2d/%2d LOD %d/%d, Tex %d/%d "
-	     "Elapsed: %02.0f:%02.0f:%02.0f "
-	     "Remaining: %02.0f:%02.0f:%02.0f",
-	     number, total,lod,maxlod,tex,textotal,
+	     "\rMesh %2d/%2d LOD %d/%d, Simp: %3d%% Tex %d/%d "
+	     "Elap: %02.0f:%02.0f:%02.0f "
+	     "Rem: %02.0f:%02.0f:%02.0f",
+	     number, total,lod,maxlod, coarseper,tex,textotal,
 	     //   100.*( number)/( total),
 	     //g_timer_elapsed (timer, NULL)/ (number - nold  ),
 	     hours, mins, secs,
@@ -400,7 +400,6 @@ int main( int argc, char *argv[ ] )
   for( i=0; i < (int) meshNames.size() && !(have_max_mesh_count && i >=(int) max_mesh_count); i++){
     
    
-
     if(verbose)
       printf("Loading Surface %s ...\n",meshNames[i].c_str());
   
@@ -426,9 +425,10 @@ int main( int argc, char *argv[ ] )
 					num_threads,verbose);    
 
     for(int j=0; j < lodNum; j++){
-     
-      boost::function<bool(int,int)> callback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,_2);
-      mesh_count(i,totalMeshCount,j,lodNum,0,0);
+       boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
+
+    
+       mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
       GtsSurface *surf = gts_surface_new(gts_surface_class(),
 					 (GtsFaceClass*)t_face_class(),
 					 gts_edge_class(), t_vertex_class());
@@ -443,13 +443,15 @@ int main( int argc, char *argv[ ] )
 	  printf("Coarsen...\n");
 	}
 	
-	coarsen(s,targetEdges,verbose);
+	coarsen(s,targetEdges,verbose,coarsecallback);
 	
 	if(verbose)
 	  printf("Done\n");
 	gts_surface_copy(surf,s);
       }
-   
+
+      boost::function<bool(int,int)> texcallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,100,_1,_2);
+
       if(verbose)
 	printf("Gen texture coordinates\n");
       boost::xtime xt, xt2;
@@ -472,7 +474,7 @@ int main( int argc, char *argv[ ] )
       sprintf(out_name,"mesh/blended-%02d-lod%d.ive",i,j);
            
       osg::ref_ptr<osg::Group> node =osgExp->convertModelOSG(surf,texture_file_names,
-							     out_name,lodTexSize[j],callback);
+							     out_name,lodTexSize[j],texcallback);
       
       lodnames.push_back(osgDB::getSimpleFileName(string(out_name)).c_str());
       if(j == (lodNum -1))
@@ -493,7 +495,7 @@ int main( int argc, char *argv[ ] )
     outNames.push_back(lodnames);
     delete osgExp;
   }
-  mesh_count(i,totalMeshCount,lodNum,lodNum,0,0);
+  mesh_count(i,totalMeshCount,lodNum,lodNum,0,0,0);
 
   if(have_dice){
     genPagedLod(outNodes,outNames);

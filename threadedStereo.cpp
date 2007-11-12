@@ -1034,11 +1034,13 @@ int main( int argc, char *argv[ ] )
 	 fprintf(conf_ply_file,") &\n");
        else
 	 fprintf(conf_ply_file,"\n");
-       if(i % 4 == 0)
+       if(i % num_threads == 1)
 	 fprintf(conf_ply_file,"wait\n");
      }
     fprintf(conf_ply_file,"echo 'Joining Meshes...'\n%s/vrip/bin/plyshared ",
 	    basepath.c_str());
+
+
     for(int i=0; i <=split_chunks; i++)  
       fprintf(conf_ply_file,"out-%08d.ply ",i);
     fprintf(conf_ply_file," > total.ply\n echo 'Done'\n");
@@ -1118,7 +1120,7 @@ void threadedStereo::runP(auv_image_names &name){
   string left_frame_name;
   string right_frame_name;
   
-  
+  return;
   //
   // Load the images
   //

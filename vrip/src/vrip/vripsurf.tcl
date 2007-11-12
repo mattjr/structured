@@ -121,7 +121,7 @@ if {$fillHoles} {
     puts "Preparing for marching cubes"
     vrip_varfromconst
 
-    set i 0
+    set i [pid]
 
     while {1} {
 	set tempFileName $tempDir/temp_$i.occ
@@ -164,7 +164,7 @@ if {$fillHoles} {
       puts "Preparing for marching cubes"
       vrip_varfromconst
       
-      set i 0
+      set i [pid]
       while {1} {
 	 set tempFileName $tempDir/temp_$i.vri
 	 if {![file exists $tempFileName]} {

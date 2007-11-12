@@ -1035,7 +1035,7 @@ int main( int argc, char *argv[ ] )
        else
 	 fprintf(conf_ply_file,"\n");
        if(i % num_threads == 1)
-	 fprintf(conf_ply_file,"wait\necho 'Completed (%d to %d) of %d'\n",i-(num_threads-1),i,split_chunks);
+	 fprintf(conf_ply_file,"wait\necho 'Completed %d meshes (%d to %d) of %d'\n",vrip_split * num_threads,i-(num_threads-1),i,split_chunks);
      }
     fprintf(conf_ply_file,"echo 'Joining Meshes...'\n%s/vrip/bin/plyshared ",
 	    basepath.c_str());

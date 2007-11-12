@@ -48,7 +48,7 @@ static double stop_time = numeric_limits<double>::max();
 //
 // Command-line arguments
 //
-static int vrip_split=500;
+static int vrip_split=250;
 static FILE *pts_cov_fp;
 static string stereo_config_file_name;
 static string contents_file_name;
@@ -59,7 +59,7 @@ static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
 static int max_feature_count = 5000;
 static double eps=1e-1;
-static double subvol=150.0;
+static double subvol=25.0;
 static bool have_max_frame_count = false;
 static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
@@ -1027,8 +1027,16 @@ int main( int argc, char *argv[ ] )
     
     fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/\n",basepath.c_str());
      for(int i=0; i <= split_chunks; i++){   
-      fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto-%08d.vri surface-%08d.conf surface-%08d.conf 0.033 -rampscale 400\n%s/vrip/bin/vripsurf auto-%08d.vri out-%08d.ply\n",basepath.c_str(),i,i,i,basepath.c_str(),i,i);
-      }
+       if(num_threads > 1)
+	 fprintf(conf_ply_file,"(");
+       fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto-%08d.vri surface-%08d.conf surface-%08d.conf 0.033 -rampscale 400\n%s/vrip/bin/vripsurf auto-%08d.vri out-%08d.ply",basepath.c_str(),i,i,i,basepath.c_str(),i,i);
+       if(num_threads > 1)
+	 fprintf(conf_ply_file,") &\n");
+       else
+	 fprintf(conf_ply_file,"\n");
+       if(i % 4 == 0)
+	 fprintf(conf_ply_file,"wait\n");
+     }
     fprintf(conf_ply_file,"echo 'Joining Meshes...'\n%s/vrip/bin/plyshared ",
 	    basepath.c_str());
     for(int i=0; i <=split_chunks; i++)  

@@ -1029,13 +1029,13 @@ int main( int argc, char *argv[ ] )
      for(int i=0; i <= split_chunks; i++){   
        if(num_threads > 1)
 	 fprintf(conf_ply_file,"(");
-       fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto-%08d.vri surface-%08d.conf surface-%08d.conf 0.033 -rampscale 400\n%s/vrip/bin/vripsurf auto-%08d.vri out-%08d.ply",basepath.c_str(),i,i,i,basepath.c_str(),i,i);
+       fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto-%08d.vri surface-%08d.conf surface-%08d.conf 0.033 -rampscale 400 > vriplog-%08d.txt\n%s/vrip/bin/vripsurf auto-%08d.vri out-%08d.ply > vripsurflog-%08d.txt",basepath.c_str(),i,i,i,i,basepath.c_str(),i,i,i);
        if(num_threads > 1)
 	 fprintf(conf_ply_file,") &\n");
        else
 	 fprintf(conf_ply_file,"\n");
        if(i % num_threads == 1)
-	 fprintf(conf_ply_file,"wait\n");
+	 fprintf(conf_ply_file,"wait\necho 'Completed (%d to %d) of %d'\n",i-(num_threads-1),i,split_chunks);
      }
     fprintf(conf_ply_file,"echo 'Joining Meshes...'\n%s/vrip/bin/plyshared ",
 	    basepath.c_str());
@@ -1120,7 +1120,6 @@ void threadedStereo::runP(auv_image_names &name){
   string left_frame_name;
   string right_frame_name;
   
-  return;
   //
   // Load the images
   //

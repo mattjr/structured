@@ -1,5 +1,5 @@
 #include "auv_clipped_texture_atlas.hpp"
-
+#include <osgDB/WriteFile>
 void ClippedTextureAtlasBuilder::buildAtlas(){
     // assign the source to the atlas
     _atlasList.clear();
@@ -46,18 +46,19 @@ void ClippedTextureAtlasBuilder::buildAtlas(){
         ++aitr)
       {
         ClippedAtlas* atlas = aitr->get();
-	
+
         if (atlas->_sourceList.size()==1)
         {
+	  printf("One Source\n");
             // no point building an atlas with only one entry
             // so disconnect the source.
             Source* source = atlas->_sourceList[0].get();
             source->_atlas = 0;
             atlas->_sourceList.clear();
         }
-        
         if (!(atlas->_sourceList.empty()))
         {
+	 
             std::stringstream ostr;
             ostr<<"atlas_"<<activeAtlasList.size()<<".rgb";
             atlas->_image->setFileName(ostr.str());
@@ -89,13 +90,13 @@ void ClippedTextureAtlasBuilder::ClippedAtlas::copySources(){
     for(unsigned int i=0; i<size; ++i) *(str++) = 0;
   }        
   
-  osg::notify(osg::INFO)<<"Atlas::copySources() "<<std::endl;
+  osg::notify(osg::INFO)<<"ClippedAtlas::copySources() "<<std::endl;
   for(SourceList::iterator itr = _sourceList.begin();
       itr !=_sourceList.end();
       ++itr)
     {
-        Source* source = itr->get();
-        Atlas* atlas = source->_atlas;
+        ClippedSource* source = itr->get();
+        ClippedAtlas* atlas = source->_atlas;
 
         if (atlas)
         {
@@ -131,7 +132,7 @@ void ClippedTextureAtlasBuilder::ClippedAtlas::copySources(){
 	}
     }
 
-#if 0
+#if 1
     osg::notify(osg::NOTICE)<<"Writing atlas image "<<_image->getFileName()<<std::endl;
     osgDB::writeImageFile(*_image,_image->getFileName() + ".png");
 #endif
@@ -144,10 +145,11 @@ void ClippedTextureAtlasVisitor::optimize()
     
     if (_textures.size()<2)
     {
+      printf("No textures\n");
         // nothing to optimize
         return;
     }
-
+printf("D o ittextures\n");
     Textures texturesThatRepeat;
     Textures texturesThatRepeatAndAreOutOfRange;
 
@@ -325,6 +327,7 @@ void ClippedTextureAtlasVisitor::optimize()
         sitr != _statesetMap.end();
         ++sitr)
     {
+
         osg::StateSet* stateset = sitr->first;
         osg::StateSet::TextureAttributeList& tal = stateset->getTextureAttributeList();
         for(unsigned int unit=0; unit<tal.size(); ++unit)
@@ -340,7 +343,7 @@ void ClippedTextureAtlasVisitor::optimize()
 
                 osg::Texture2D* newTexture = _builder.getTextureAtlas(texture);
                 if (newTexture && newTexture!=texture)
-                {
+                {      
                     if (s_repeat || t_repeat)
                     {
                         osg::notify(osg::NOTICE)<<"Warning!!! shouldn't get here"<<std::endl;
@@ -374,7 +377,7 @@ void ClippedTextureAtlasVisitor::optimize()
 
                     if (canTexMatBeFlattenedToAllDrawables)
                     {
-                        // osg::notify(osg::NOTICE)<<"All drawables can be flattened "<<drawables.size()<<std::endl;
+                        osg::notify(osg::NOTICE)<<"All drawables can be flattened "<<drawables.size()<<std::endl;
                         for(Drawables::iterator ditr = drawables.begin();
                             ditr != drawables.end();
                             ++ditr)
@@ -400,7 +403,7 @@ void ClippedTextureAtlasVisitor::optimize()
                     }
                     else
                     {
-                        // osg::notify(osg::NOTICE)<<"Applying TexMat "<<drawables.size()<<std::endl;
+                         osg::notify(osg::NOTICE)<<"Applying TexMat "<<drawables.size()<<std::endl;
                         stateset->setTextureAttribute(unit, new osg::TexMat(matrix));
                     }
                 }
@@ -408,4 +411,187 @@ void ClippedTextureAtlasVisitor::optimize()
         }
 
     }
+}
+bool ClippedTextureAtlasBuilder::ClippedAtlas::addSource(ClippedSource* source)
+{
+    // double check source is compatible
+    if (!doesSourceFit(source))
+    {
+        osg::notify(osg::INFO)<<"source "<<source->_image->getFileName()<<" does not fit in atlas "<<this<<std::endl;
+        return false;
+    }
+    
+    const osg::Image* sourceImage = source->_image.get();
+    const osg::Texture2D* sourceTexture = source->_texture.get();
+
+    if (!_image)
+    {
+        // need to create an image of the same pixel format to store the atlas in
+        _image = new osg::Image;
+        _image->setPixelFormat(sourceImage->getPixelFormat());
+        _image->setDataType(sourceImage->getDataType());
+    }
+    
+    if (!_texture && sourceTexture)
+    {
+        _texture = new osg::Texture2D(_image.get());
+
+        _texture->setWrap(osg::Texture2D::WRAP_S, sourceTexture->getWrap(osg::Texture2D::WRAP_S));
+        _texture->setWrap(osg::Texture2D::WRAP_T, sourceTexture->getWrap(osg::Texture2D::WRAP_T));
+        
+        _texture->setBorderColor(sourceTexture->getBorderColor());
+        _texture->setBorderWidth(0);
+            
+        _texture->setFilter(osg::Texture2D::MIN_FILTER, sourceTexture->getFilter(osg::Texture2D::MIN_FILTER));
+        _texture->setFilter(osg::Texture2D::MAG_FILTER, sourceTexture->getFilter(osg::Texture2D::MAG_FILTER));
+
+        _texture->setMaxAnisotropy(sourceTexture->getMaxAnisotropy());
+
+        _texture->setInternalFormat(sourceTexture->getInternalFormat());
+
+        _texture->setShadowCompareFunc(sourceTexture->getShadowCompareFunc());
+        _texture->setShadowTextureMode(sourceTexture->getShadowTextureMode());
+        _texture->setShadowAmbient(sourceTexture->getShadowAmbient());
+
+    }
+
+    // now work out where to fit it, first try current row.
+    if ((_x + sourceImage->s() + 2*_margin) <= _maximumAtlasWidth)
+    {
+        // yes it fits, so add the source to the atlas's list of sources it contains
+        _sourceList.push_back(source);
+
+        osg::notify(osg::INFO)<<"current row insertion, source "<<source->_image->getFileName()<<" "<<_x<<","<<_y<<" fits in row of atlas "<<this<<std::endl;
+
+        // set up the source so it knows where it is in the atlas
+        source->_x = _x + _margin;
+        source->_y = _y + _margin;
+        source->_atlas = this;
+        
+        // move the atlas' cursor along to the right
+        _x += sourceImage->s() + 2*_margin;
+        
+        if (_x > _width) _width = _x;
+        
+        unsigned int localTop = _y + sourceImage->t() + 2*_margin;
+        if ( localTop > _height) _height = localTop;
+
+        return true;
+    }
+
+    // does the source fit in the new row up?
+    if ((_height + sourceImage->t() + 2*_margin) <= _maximumAtlasHeight)
+    {
+        // now row so first need to reset the atlas cursor
+        _x = 0;
+        _y = _height;
+
+        // yes it fits, so add the source to the atlas' list of sources it contains
+        _sourceList.push_back(source);
+
+        osg::notify(osg::INFO)<<"next row insertion, source "<<source->_image->getFileName()<<" "<<_x<<","<<_y<<" fits in row of atlas "<<this<<std::endl;
+
+        // set up the source so it knows where it is in the atlas
+        source->_x = _x + _margin;
+        source->_y = _y + _margin;
+        source->_atlas = this;
+        
+        // move the atlas' cursor along to the right
+        _x += sourceImage->s() + 2*_margin;
+
+        if (_x > _width) _width = _x;
+
+        _height = _y + sourceImage->t() + 2*_margin;
+
+        osg::notify(osg::INFO)<<"source "<<source->_image->getFileName()<<" "<<_x<<","<<_y<<" fits in row of atlas "<<this<<std::endl;
+
+        return true;
+    }
+
+    osg::notify(osg::INFO)<<"source "<<source->_image->getFileName()<<" does not fit in atlas "<<this<<std::endl;
+
+    // shouldn't get here, unless doesSourceFit isn't working...
+    return false;
+}
+
+osg::Image* ClippedTextureAtlasBuilder::getImageAtlas(unsigned int i)
+{
+    ClippedSource* source = _sourceList[i].get();
+    ClippedAtlas* atlas = source ? source->_atlas : 0;
+    return atlas ? atlas->_image.get() : 0;
+}
+
+osg::Texture2D* ClippedTextureAtlasBuilder::getTextureAtlas(unsigned int i)
+{
+    ClippedSource* source = _sourceList[i].get();
+    ClippedAtlas* atlas = source ? source->_atlas : 0;
+    return atlas ? atlas->_texture.get() : 0;
+}
+
+osg::Matrix ClippedTextureAtlasBuilder::getTextureMatrix(unsigned int i)
+{
+    ClippedSource* source = _sourceList[i].get();
+    return source ? source->computeTextureMatrix() : osg::Matrix();
+}
+
+osg::Image* ClippedTextureAtlasBuilder::getImageAtlas(const osg::Image* image)
+{
+    ClippedSource* source = getSource(image);
+    ClippedAtlas* atlas = source ? source->_atlas : 0;
+    return atlas ? atlas->_image.get() : 0;
+}
+
+osg::Texture2D* ClippedTextureAtlasBuilder::getTextureAtlas(const osg::Image* image)
+{
+    ClippedSource* source = getSource(image);
+    ClippedAtlas* atlas = source ? source->_atlas : 0;
+    return atlas ? atlas->_texture.get() : 0;
+}
+
+osg::Matrix ClippedTextureAtlasBuilder::getTextureMatrix(const osg::Image* image)
+{
+    ClippedSource* source = getSource(image);
+    return source ? source->computeTextureMatrix() : osg::Matrix();
+}
+
+osg::Image* ClippedTextureAtlasBuilder::getImageAtlas(const osg::Texture2D* texture)
+{
+    ClippedSource* source = getSource(texture);
+    ClippedAtlas* atlas = source ? source->_atlas : 0;
+    return atlas ? atlas->_image.get() : 0;
+}
+
+osg::Texture2D* ClippedTextureAtlasBuilder::getTextureAtlas(const osg::Texture2D* texture)
+{
+    ClippedSource* source = getSource(texture);
+    ClippedAtlas* atlas = source ? source->_atlas : 0;
+    return atlas ? atlas->_texture.get() : 0;
+}
+
+osg::Matrix ClippedTextureAtlasBuilder::getTextureMatrix(const osg::Texture2D* texture)
+{
+    ClippedSource* source = getSource(texture);
+    return source ? source->computeTextureMatrix() : osg::Matrix();
+}
+
+ClippedTextureAtlasBuilder::ClippedSource* ClippedTextureAtlasBuilder::getSource(const osg::Image* image)
+{
+    for(SourceList::iterator itr = _sourceList.begin();
+        itr != _sourceList.end();
+        ++itr)
+    {
+        if ((*itr)->_image == image) return itr->get();
+    }
+    return 0;
+}
+
+ClippedTextureAtlasBuilder::ClippedSource* ClippedTextureAtlasBuilder::getSource(const osg::Texture2D* texture)
+{
+    for(SourceList::iterator itr = _sourceList.begin();
+        itr != _sourceList.end();
+        ++itr)
+    {
+        if ((*itr)->_texture == texture) return itr->get();
+    }
+    return 0;
 }

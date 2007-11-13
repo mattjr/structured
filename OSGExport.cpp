@@ -196,6 +196,7 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	   osg::Texture2D* texture = new osg::Texture2D;
 	   texture->setUnRefImageDataAfterApply( true );
 	   texture->setImage(image.get());
+	  
 	   stateset->setTextureAttributeAndModes(0,texture,
 						 osg::StateAttribute::ON);
 	   gc._texturesActive=true;
@@ -278,17 +279,24 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
   if(verbose)
     printf("Texture Atlas Creation\n"); 
   osgUtil::Optimizer optimzer;
-  /*  ClippedTextureAtlasVisitor ctav(&optimzer);
-      ClippedTextureAtlasBuilder &ctb=ctav.getTextureAtlasBuilder();*/
+  osg::setNotifyLevel(osg::INFO);
+  int optnew=1;
+#if 1
+    ClippedTextureAtlasVisitor ctav(&optimzer);
+    ClippedTextureAtlasBuilder &ctb=ctav.getTextureAtlasBuilder();
+#else
 
-  osgUtil::Optimizer::TextureAtlasVisitor ctav(&optimzer);
-  osgUtil::Optimizer::TextureAtlasBuilder &ctb=ctav.getTextureAtlasBuilder();
+    osgUtil::Optimizer::TextureAtlasVisitor ctav(&optimzer);
+    osgUtil::Optimizer::TextureAtlasBuilder &ctb=ctav.getTextureAtlasBuilder();
+#endif
+
 
   ctb.setMaximumAtlasSize(2048,2048);
   root->accept(ctav);
   ctav.optimize();
+ osg::setNotifyLevel(osg::FATAL);  
   optimzer.optimize(root);
- 
+
   if(compress_tex){
     int atlas_compressed_size=0;
     if(tex_size == 32)
@@ -547,7 +555,7 @@ osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save
   }
   
   osg::Image* image =Convert_OpenCV_TO_OSG_IMAGE(cvImg,!cached);
-
+  image->setFileName(osgDB::getSimpleFileName(filename));
   if(save){  
     printf("Writing %s\n",outname.c_str());
     osgDB::writeImageFile(*image,outname);

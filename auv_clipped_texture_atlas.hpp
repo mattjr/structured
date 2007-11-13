@@ -31,9 +31,22 @@ public:
       return osg::Matrix::scale(float(_image->s())/float(_atlas->_image->s()), float(_image->t())/float(_atlas->_image->t()), 1.0)*
 	osg::Matrix::translate(float(_x)/float(_atlas->_image->s()), float(_y)/float(_atlas->_image->t()), 0.0);
     }
-   
+    ClippedAtlas *_atlas;
   };
-  
+    osg::Image* getImageAtlas(unsigned int i);
+            osg::Texture2D* getTextureAtlas(unsigned int i);
+            osg::Matrix getTextureMatrix(unsigned int i);
+            
+            osg::Image* getImageAtlas(const osg::Image* image);
+            osg::Texture2D* getTextureAtlas(const osg::Image* image);
+            osg::Matrix getTextureMatrix(const osg::Image* image);
+            
+            osg::Image* getImageAtlas(const osg::Texture2D* textue);
+            osg::Texture2D* getTextureAtlas(const osg::Texture2D* texture);
+            osg::Matrix getTextureMatrix(const osg::Texture2D* texture);
+            
+
+
   void addSource(const osg::Image* image){
     if (!getSource(image)) _sourceList.push_back(new ClippedSource(image));
     }
@@ -49,7 +62,8 @@ public:
 public:
   void buildAtlas();
 
-
+  ClippedSource* getSource(const osg::Image* image);
+            ClippedSource* getSource(const osg::Texture2D* texture);
 
 class ClippedAtlas: public osgUtil::Optimizer::TextureAtlasBuilder::Atlas{
 public:
@@ -58,7 +72,7 @@ public:
   typedef std::vector< osg::ref_ptr<ClippedSource> > SourceList;   
   SourceList _sourceList; 
 ClippedAtlas(unsigned int width, unsigned height, unsigned margin):Atlas(width,height,margin){} 
-
+  bool addSource(ClippedSource* source);
   void copySources();
 private :
  

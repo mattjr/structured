@@ -1,6 +1,7 @@
 #include "OSGExport.h"
 #include <osgUtil/TriStripVisitor>
 #include <osgUtil/SmoothingVisitor>
+#include <osgUtil/Optimizer>
 #include <osg/GraphicsContext>
 #include <osgDB/WriteFile>
 #include <osgUtil/Simplifier>
@@ -8,7 +9,7 @@
 #include <glib.h>
 #include <highgui.h>
 #include <boost/thread/thread.hpp>
-
+#include "auv_clipped_texture_atlas.hpp"
 
 using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
@@ -118,11 +119,14 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   (*gc._colors++).set(v1->r,v1->b,v1->g,1.0);
   */
   if (gc._texturesActive && f->material >= 0){
- 
+    gc._texLimits.expandBy(v3->u,1-v3->v,0.0);
+    gc._texLimits.expandBy(v2->u,1-v2->v,0.0);
+    gc._texLimits.expandBy(v1->u,1-v1->v,0.0);
+
     (*gc._texcoords++).set(v3->u,1-v3->v); 
    
     (*gc._texcoords++).set(v2->u,1-v2->v); 
-  (*gc._texcoords++).set(v1->u,1-v1->v);  
+    (*gc._texcoords++).set(v1->u,1-v1->v);  
    
   }
 }
@@ -202,7 +206,7 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	   osg::Vec2Array* texcoordArray = new osg::Vec2Array(gc._numPoints);
 	   gc._texcoords = texcoordArray->begin();
 	   gc._geom->setTexCoordArray(0,texcoordArray);
-	   
+	  
 	 
 	   if(!state)
 	     state = new osg::State;
@@ -217,6 +221,7 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
    if(verbose)
      printf("\n");
    gts_surface_foreach_face (s, (GtsFunc) add_face_mat_osg , data);
+  
    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
     
     // osgUtil::Tessellator tessellator;
@@ -236,11 +241,15 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
             smoother.smooth(*gc._geom);
             
             geode->addDrawable(gc._geom);
+	    //  printf("Grilled Shrip %f %f %f %f\n",gc._texLimits.xMin(),
+	    //   gc._texLimits.xMax(),gc._texLimits.yMin(),gc._texLimits.yMax());
         }
 
     }
     return geode;
 }
+
+
 
 osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback) {
 
@@ -269,11 +278,15 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
   if(verbose)
     printf("Texture Atlas Creation\n"); 
   osgUtil::Optimizer optimzer;
-  osgUtil::Optimizer::TextureAtlasVisitor tav(&optimzer);
-  osgUtil::Optimizer::TextureAtlasBuilder &tb=tav.getTextureAtlasBuilder();
-  tb.setMaximumAtlasSize(2048,2048);
-  root->accept(tav);
-  tav.optimize();
+  /*  ClippedTextureAtlasVisitor ctav(&optimzer);
+      ClippedTextureAtlasBuilder &ctb=ctav.getTextureAtlasBuilder();*/
+
+  osgUtil::Optimizer::TextureAtlasVisitor ctav(&optimzer);
+  osgUtil::Optimizer::TextureAtlasBuilder &ctb=ctav.getTextureAtlasBuilder();
+
+  ctb.setMaximumAtlasSize(2048,2048);
+  root->accept(ctav);
+  ctav.optimize();
   optimzer.optimize(root);
  
   if(compress_tex){
@@ -481,7 +494,7 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip){
                         cvImg->width, //s
                         cvImg->height, //t
                         1, //r 3
-                        3, //GLint internalTextureformat, (GL_LINE_STRIP,0x0003)
+                        osg::Texture::USE_IMAGE_DATA_FORMAT, //GLint internalTextureformat, (GL_LINE_STRIP,0x0003)
                         6407, // GLenum pixelFormat, (GL_RGB, 0x1907)
                         5121, // GLenum type, (GL_UNSIGNED_BYTE, 0x1401)
                         (unsigned char *)(cvImg->imageData), // unsigned char* data

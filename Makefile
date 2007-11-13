@@ -39,7 +39,7 @@ LIBS  += `pkg-config --libs opencv`  `pkg-config --libs libpng` `pkg-config --li
 CC_SRCS     =	OSGExport.cpp\
 		PixelBufferCarbon.cpp\
 		GraphicsWindowCarbon.cpp\
-		mcd.cpp
+		auv_clipped_texture_atlas.cpp
 
 
 HH_SRCS = 	

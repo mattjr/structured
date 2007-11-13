@@ -52,7 +52,7 @@ static unsigned int max_mesh_count;
 static int num_threads=1;
 static bool display_debug_images = true;
 
-static bool compress_textures = false;
+static bool compress_textures = true;
 
 static int lodNum=3;
 static string stereo_calib_file_name;
@@ -93,9 +93,9 @@ static bool parse_args( int argc, char *argv[ ] )
 	  no_simp=true;
 	  i+=1;
 	}
-      else if( strcmp( argv[i], "--compress-tex" ) == 0 )
+      else if( strcmp( argv[i], "--no-compress-tex" ) == 0 )
 	{
-	  compress_textures=true;
+	  compress_textures=false;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "-v" ) == 0 )
@@ -234,6 +234,11 @@ GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
 
 }
 gboolean mesh_count ( int number, int total,int lod,int maxlod,int coarseper,int tex,int textotal){
+  if (number == total) {
+    boost::call_once(&timer_destroy, once2);
+    
+    return TRUE;
+  }
   
   if (timer == NULL) {
     boost::call_once(&timer_init, once);
@@ -261,7 +266,7 @@ gboolean mesh_count ( int number, int total,int lod,int maxlod,int coarseper,int
 	     "\rMesh %2d/%2d LOD %d/%d, Simp: %3d%% Tex %d/%d "
 	     "Elap: %02.0f:%02.0f:%02.0f "
 	     "Rem: %02.0f:%02.0f:%02.0f",
-	     number, total,lod,maxlod, coarseper,tex,textotal,
+	     number+1, total,lod+1,maxlod, coarseper,tex,textotal,
 	     //   100.*( number)/( total),
 	     //g_timer_elapsed (timer, NULL)/ (number - nold  ),
 	     hours, mins, secs,
@@ -271,11 +276,7 @@ gboolean mesh_count ( int number, int total,int lod,int maxlod,int coarseper,int
     nold = number;
     g_timer_start (timer);
   }
-  if (number == total) {
-    boost::call_once(&timer_destroy, once2);
-    fprintf(stderr,"\n");
-    return TRUE;
-  }
+ 
   return FALSE;
 }
 //
@@ -290,7 +291,7 @@ static void print_usage( void )
   cout << "   -r <resize_scale>       Resize the images by a scaling factor." << endl;
  
   cout << "   -n <max_frame_count>    Set the maximum number of frames to be processed." << endl;
- cout << "    --compress-tex           Compress Textures" << endl;
+ cout << "    --no-compress-tex           Don't Compress Textures" << endl;
   cout << endl;
 }
 
@@ -425,10 +426,10 @@ int main( int argc, char *argv[ ] )
 					num_threads,verbose);    
 
     for(int j=0; j < lodNum; j++){
-       boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount-1,j,lodNum-1,_1,0,0);
+       boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
 
     
-       mesh_count(i,totalMeshCount-1,j,lodNum-1,0,0,0);
+       mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
       GtsSurface *surf = gts_surface_new(gts_surface_class(),
 					 (GtsFaceClass*)t_face_class(),
 					 gts_edge_class(), t_vertex_class());
@@ -450,7 +451,7 @@ int main( int argc, char *argv[ ] )
 	gts_surface_copy(surf,s);
       }
 
-      boost::function<bool(int,int)> texcallback = boost::bind(mesh_count,i,totalMeshCount-1,j,lodNum-1,100,_1,_2);
+      boost::function<bool(int,int)> texcallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,100,_1,_2);
 
       if(verbose)
 	printf("Gen texture coordinates\n");
@@ -495,7 +496,7 @@ int main( int argc, char *argv[ ] )
     outNames.push_back(lodnames);
     delete osgExp;
   }
-  mesh_count(i,totalMeshCount-1,lodNum-1,lodNum-1,0,0,0);
+  mesh_count(i,totalMeshCount,lodNum,lodNum,0,0,0);
 
   if(have_dice){
     genPagedLod(outNodes,outNames);

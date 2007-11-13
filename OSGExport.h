@@ -307,6 +307,7 @@ struct GeometryCollection
   osg::Vec2Array::iterator    _texcoords;
   int                         _coordCount;
   osg::Geometry*              _geom;
+  osg::BoundingBox            _texLimits;
 
 };
 enum {IVE_OUT,OSG_OUT,THREEDS_OUT};

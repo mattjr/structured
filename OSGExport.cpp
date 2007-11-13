@@ -25,7 +25,7 @@ IplImage *doCvResize(osg::Image *img,int size){
  int pixelFormat = GL_RGB;
  int dataType = GL_UNSIGNED_BYTE;
  //Detetes img data upon set
- img->setImage(tmp->width,tmp->height,1,3,pixelFormat,dataType,(unsigned char*)tmp->imageData,osg::Image::NO_DELETE);
+ img->setImage(tmp->width,tmp->height,1,osg::Texture::USE_IMAGE_DATA_FORMAT,pixelFormat,dataType,(unsigned char*)tmp->imageData,osg::Image::NO_DELETE);
 
 
  return tmp;
@@ -489,14 +489,15 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip){
                 cvCvtColor( cvImg, cvImg, CV_BGR2RGB );
 	  }
                 osg::Image* osgImg = new osg::Image();
-
+ int pixelFormat = GL_RGB;
+ int dataType = GL_UNSIGNED_BYTE;
                 osgImg->setImage(
                         cvImg->width, //s
                         cvImg->height, //t
                         1, //r 3
                         osg::Texture::USE_IMAGE_DATA_FORMAT, //GLint internalTextureformat, (GL_LINE_STRIP,0x0003)
-                        6407, // GLenum pixelFormat, (GL_RGB, 0x1907)
-                        5121, // GLenum type, (GL_UNSIGNED_BYTE, 0x1401)
+                        pixelFormat, // GLenum pixelFormat, (GL_RGB, 0x1907)
+                        dataType, // GLenum type, (GL_UNSIGNED_BYTE, 0x1401)
                         (unsigned char *)(cvImg->imageData), // unsigned char* data
                         osg::Image::NO_DELETE // AllocationMode mode (shallow copy)
                         );//int packing=1); (???)

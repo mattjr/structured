@@ -67,7 +67,7 @@ CC_OBJS         := $(addprefix $(OUT_DIR)/,$(CC_SRCS:$(SRC_EXT)=.o))
 CC_SRCS         := $(addprefix $(SRC_DIR)/,$(CC_SRCS))
 HH_SRCS         := $(addprefix $(SRC_DIR)/,$(HH_SRCS))
 LIB = libquickstereo.a
-SUBDIRS = vrip
+SUBDIRS = # vrip
 # myvrip
 # EStereo
 

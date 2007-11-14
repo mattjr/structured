@@ -54,7 +54,7 @@ static bool display_debug_images = true;
 
 static bool compress_textures = true;
 
-static int lodNum=1;
+static int lodNum=3;
 static string stereo_calib_file_name;
 
 

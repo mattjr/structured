@@ -179,10 +179,6 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	 char fname[255];
 	 sprintf(fname,"mesh/%s",textures[itr->first].c_str());
 
-	 if(!context){
-	   printf("Can't use OPENGL without valid context");
-	   exit(0);
-	 }
 	 if(vmcallback)
 	   vmcallback(++tex_count,mtgcm.size());
 	 if(verbose)
@@ -201,7 +197,7 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	   osg::Texture2D* texture = new osg::Texture2D;
 	   texture->setUnRefImageDataAfterApply( false );
 	   texture->setImage(image.get());
-	  
+	   texture->setInternalFormatMode(internalFormatMode);
 	   stateset->setTextureAttributeAndModes(0,texture,
 						 osg::StateAttribute::ON);
 	   gc._texturesActive=true;
@@ -213,12 +209,13 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	   gc._texcoords = texcoordArray->begin();
 	   gc._geom->setTexCoordArray(0,texcoordArray);
 	  
-	 
-	   /*if(!state)
+	   if(compress_tex && !do_atlas)
+	     compress(texture);
+	  if(!state)
 	     state = new osg::State;
 	   texture->apply(*state);
-	   */
-	   
+	  
+	 
 	   osg_tex_ptrs.push_back(texture);
 	 }
        }
@@ -281,40 +278,37 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
 
   geode->setName(out_name);
   root->addChild(geode.get());
-  if(verbose)
-    printf("Texture Atlas Creation\n"); 
+
+
   osgUtil::Optimizer optimzer;
-  //osg::setNotifyLevel(osg::INFO);
-#if 1
-  osgUtil::Optimizer::TextureAtlasVisitor ctav(&optimzer);
-  osgUtil::Optimizer::TextureAtlasBuilder &tb=ctav.getTextureAtlasBuilder();
-  tb.setMargin(0);
 
-#else
-    ClippedTextureAtlasVisitor ctav(&optimzer);
-  ClippedTextureAtlasBuilder &ctb=ctav.getTextureAtlasBuilder();
-  ctb.setClipMap(&cm);
-  ctb.setMargin(0);
-
-  ctb.setMaximumAtlasSize(2048,2048);
-#endif 
- root->accept(ctav);
-  ctav.optimize();
- osg::setNotifyLevel(osg::FATAL);  
- optimzer.optimize(root);
-
-  if(compress_tex){
-    int atlas_compressed_size=0;
-    if(tex_size == 32)
-      atlas_compressed_size=1024;
+  if(do_atlas){
     if(verbose)
-      printf("Texture Compression\n");
-    CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT5_COMPRESSION,
-				atlas_compressed_size);
-    root->accept(ctv); 
-    ctv.compress();
-    
+      printf("Texture Atlas Creation\n"); 
+    osgUtil::Optimizer::TextureAtlasVisitor ctav(&optimzer);
+    osgUtil::Optimizer::TextureAtlasBuilder &tb=ctav.getTextureAtlasBuilder();
+    tb.setMargin(0);
+    tb.setMaximumAtlasSize(2048,2048);
+    root->accept(ctav);
+    ctav.optimize();
+
+    if(compress_tex){
+      int atlas_compressed_size=0;
+      if(tex_size == 32)
+	atlas_compressed_size=1024;
+      if(verbose)
+	printf("Texture Compression\n");
+      CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT5_COMPRESSION,
+				  atlas_compressed_size);
+      root->accept(ctv); 
+      ctv.compress();
+      
+    }
   }
+  
+  optimzer.optimize(root);
+
+ 
  
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
   if (result.success())	{
@@ -509,7 +503,7 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip){
                         cvImg->width, //s
                         cvImg->height, //t
                         3, //r 3
-                       3, //GLint internalTextureformat, (GL_LINE_STRIP,0x0003)
+                       pixelFormat, //GLint internalTextureformat, (GL_LINE_STRIP,0x0003)
                         pixelFormat, // GLenum pixelFormat, (GL_RGB, 0x1907)
                         dataType, // GLenum type, (GL_UNSIGNED_BYTE, 0x1401)
                         (unsigned char *)(cvImg->imageData), // unsigned char* data
@@ -561,6 +555,8 @@ osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save
   }
   
   osg::Image* image =Convert_OpenCV_TO_OSG_IMAGE(cvImg,!cached);
+  // osg::Image* k = osgDB::readImageFile(filename);
+  //printf("Format klnFace %d %d %d %d %d\n Format mine %d %d %d %d %d\n",k->r(),k->getInternalTextureFormat(),k->getPixelFormat(),k->getDataType(),k->getPacking()image->r(),image->getInternalTextureFormat(),image->getPixelFormat(),image->getDataType(),image->getPacking());
   image->setFileName(osgDB::getSimpleFileName(filename));
   if(save){  
     printf("Writing %s\n",outname.c_str());

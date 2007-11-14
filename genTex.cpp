@@ -60,8 +60,7 @@ static string stereo_calib_file_name;
 
 static std::map<int,std::string> texture_file_names;
 
-static int tex_size=512;
-
+static float tex_scale=1.0;
 
 extern std::vector<GtsBBox *> bboxes_all;
 
@@ -79,7 +78,7 @@ static bool parse_args( int argc, char *argv[ ] )
       if( strcmp( argv[i], "-r" ) == 0 )
 	{
 	  if( i == argc-1 ) return false;
-	  tex_size = atoi( argv[i+1] );
+	  tex_scale = atof( argv[i+1] );
 	  i+=2;
 	}
       else if( strcmp( argv[i], "-f" ) == 0 )
@@ -169,7 +168,7 @@ osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
 }
 void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<string> > lodnames){
   osg::Group *total=new osg::Group;
-
+  printf("Final Paged LOD Hierarchy\n");
   for(int i=0; i < (int)nodes.size(); i++){
   
     osg::Node *tmp=create_paged_lod(nodes[i].get(),lodnames[i]);
@@ -236,7 +235,8 @@ GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
 gboolean mesh_count ( int number, int total,int lod,int maxlod,int coarseper,int tex,int textotal){
   if (number == total) {
     boost::call_once(&timer_destroy, once2);
-    
+    fprintf (stderr, "\n");
+    fflush (stderr);
     return TRUE;
   }
   
@@ -396,9 +396,13 @@ int main( int argc, char *argv[ ] )
 
  
 
-  int totalMeshCount=meshNames.size();
+  int totalMeshCount;
+  if(have_max_mesh_count )
+    totalMeshCount=max_mesh_count;
+  else
+    totalMeshCount=meshNames.size();
   int i;
-  for( i=0; i < (int) meshNames.size() && !(have_max_mesh_count && i >=(int) max_mesh_count); i++){
+  for( i=0; i < (int) totalMeshCount; i++){
     
    
     if(verbose)
@@ -419,7 +423,7 @@ int main( int argc, char *argv[ ] )
 	     gts_surface_edge_number(s));
     int initialEdges=gts_surface_edge_number(s);
 
-    int lodTexSize[]={512,256,32};
+    int lodTexSize[]={max((int)(512*tex_scale),32),max((int)(256*tex_scale),32),max((int)(32*tex_scale),32)};
     float simpRatio[]={0.5,0.1,0.01};
     std::vector<string> lodnames;
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,

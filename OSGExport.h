@@ -240,16 +240,24 @@ class OSGExporter
 {
 public:
   OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose) {state=NULL;
-
+    do_atlas=false;
    
     context=NULL;
-    context=new MyGraphicsContext();
+   
+    
     internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
     if(compress_tex){
+
       if(verbose)
 	printf("Compressing Textures\n");
+      context=new MyGraphicsContext();
+      
+      if(!context){
+	printf("Can't use OPENGL without valid context");
+	exit(0);
+      }
 #ifndef __APPLE__
-      internalFormatMode=osg::Texture::USE_S3TC_DXT5_COMPRESSION; 
+      internalFormatMode=osg::Texture::USE_S3TC_DXT5_COMPRESSION;/// USE_ARB_COMPRESSION; 
 #else
       internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION; 
 #endif
@@ -273,7 +281,7 @@ protected:
   string prefixdir;
   bool tex_saved;
   bool compress_tex;
-
+  bool do_atlas;
   int num_threads;
   int verbose;
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;

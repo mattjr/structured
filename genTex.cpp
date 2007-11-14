@@ -54,7 +54,7 @@ static bool display_debug_images = true;
 
 static bool compress_textures = true;
 
-static int lodNum=3;
+static int lodNum=1;
 static string stereo_calib_file_name;
 
 
@@ -498,7 +498,7 @@ int main( int argc, char *argv[ ] )
   }
   mesh_count(i,totalMeshCount,lodNum,lodNum,0,0,0);
 
-  if(have_dice){
+  if(have_dice && lodNum > 1){
     genPagedLod(outNodes,outNames);
   }
   // 

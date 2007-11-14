@@ -48,6 +48,7 @@
 #endif
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include "auv_clipped_texture_atlas.hpp"
 using namespace std;
 using namespace libsnapper;
 using namespace libpolyp;
@@ -267,7 +268,7 @@ protected:
     MyGraphicsContext *context;
   bool ive_out;
   //osg::Geometry* convertGtsSurfListToGeometry(GtsSurface *s) const;  
-  osg::ref_ptr<osg::Geode> convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,int tex_size,VerboseMeshFunc vmcallback=NULL) ;  
+  osg::ref_ptr<osg::Geode> convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback=NULL) ;  
   bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size);
   string prefixdir;
   bool tex_saved;

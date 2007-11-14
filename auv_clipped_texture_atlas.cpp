@@ -60,7 +60,7 @@ void ClippedTextureAtlasBuilder::buildAtlas(){
         {
 	 
             std::stringstream ostr;
-            ostr<<"atlas_"<<activeAtlasList.size()<<".rgb";
+            ostr<<"atlas_"<<activeAtlasList.size()<<".rgb.png";
             atlas->_image->setFileName(ostr.str());
         
             activeAtlasList.push_back(atlas);
@@ -73,6 +73,146 @@ void ClippedTextureAtlasBuilder::buildAtlas(){
     // keep only the active atlas'
     _atlasList.swap(activeAtlasList);
 
+}
+bool  ClippedTextureAtlasBuilder::ClippedAtlas::doesSourceFit(ClippedSource* source)
+{
+
+    // does the source have a valid image?
+    const osg::Image* sourceImage = source->_image.get();
+    if (!sourceImage){printf("invalid\n"); return false;
+    }
+    // does pixel format match?
+    if (_image.valid())
+    {
+      if (_image->getPixelFormat() != sourceImage->getPixelFormat()) {printf("pf %d %d\n",_image->getPixelFormat(),sourceImage->getPixelFormat());return false;}
+        if (_image->getDataType() != sourceImage->getDataType()) {printf("dt %d %d\n",_image->getDataType(),sourceImage->getDataType());return false;}
+    }
+    
+    const osg::Texture2D* sourceTexture = source->_texture.get();
+    if (sourceTexture)
+    {
+        if (sourceTexture->getWrap(osg::Texture2D::WRAP_S)==osg::Texture2D::REPEAT ||
+            sourceTexture->getWrap(osg::Texture2D::WRAP_S)==osg::Texture2D::MIRROR)
+        {
+            // can't support repeating textures in texture atlas
+            return false;
+        }
+
+        if (sourceTexture->getWrap(osg::Texture2D::WRAP_T)==osg::Texture2D::REPEAT ||
+            sourceTexture->getWrap(osg::Texture2D::WRAP_T)==osg::Texture2D::MIRROR)
+        {
+            // can't support repeating textures in texture atlas
+            return false;
+        }
+
+        if (sourceTexture->getReadPBuffer()!=0)
+        {
+            // pbuffer textures not suitable
+            return false;
+        }
+
+        if (_texture.valid())
+        {
+
+            bool sourceUsesBorder = sourceTexture->getWrap(osg::Texture2D::WRAP_S)==osg::Texture2D::CLAMP_TO_BORDER || 
+                                    sourceTexture->getWrap(osg::Texture2D::WRAP_T)==osg::Texture2D::CLAMP_TO_BORDER;
+
+            bool atlasUsesBorder = sourceTexture->getWrap(osg::Texture2D::WRAP_S)==osg::Texture2D::CLAMP_TO_BORDER || 
+                                   sourceTexture->getWrap(osg::Texture2D::WRAP_T)==osg::Texture2D::CLAMP_TO_BORDER;
+
+            if (sourceUsesBorder!=atlasUsesBorder)
+            {
+                // border wrapping does not match
+                return false;
+            }
+
+            if (sourceUsesBorder)
+            {
+                // border colours don't match
+                if (_texture->getBorderColor() != sourceTexture->getBorderColor()) return false;
+            }
+            
+            if (_texture->getFilter(osg::Texture2D::MIN_FILTER) != sourceTexture->getFilter(osg::Texture2D::MIN_FILTER))
+            {
+                // inconsitent min filters
+                return false;
+            }
+ 
+            if (_texture->getFilter(osg::Texture2D::MAG_FILTER) != sourceTexture->getFilter(osg::Texture2D::MAG_FILTER))
+            {
+                // inconsitent mag filters
+                return false;
+            }
+            
+            if (_texture->getMaxAnisotropy() != sourceTexture->getMaxAnisotropy())
+            {
+                // anisotropy different.
+                return false;
+            }
+            
+            if (_texture->getInternalFormat() != sourceTexture->getInternalFormat())
+            {
+	      printf("Internal format inconsis\n");
+                // internal formats inconistent
+                return false;
+            }
+            
+            if (_texture->getShadowCompareFunc() != sourceTexture->getShadowCompareFunc())
+            {
+                // shadow functions inconsitent
+                return false;
+            }
+                
+            if (_texture->getShadowTextureMode() != sourceTexture->getShadowTextureMode())
+            {
+                // shadow texture mode inconsitent
+                return false;
+            }
+
+            if (_texture->getShadowAmbient() != sourceTexture->getShadowAmbient())
+            {
+                // shadow ambient inconsitent
+                return false;
+            }
+        }
+    }
+    
+    if (sourceImage->s() + 2*_margin > _maximumAtlasWidth)
+    {
+        // image too big for Atlas
+        return false;
+    }
+    
+    if (sourceImage->t() + 2*_margin > _maximumAtlasHeight)
+    {
+        // image too big for Atlas
+        return false;
+    }
+
+    if ((_y + sourceImage->t() + 2*_margin) > _maximumAtlasHeight)
+    {
+        // image doesn't have up space in height axis.
+        return false;
+    }
+
+    // does the source fit in the current row?
+    if ((_x + sourceImage->s() + 2*_margin) <= _maximumAtlasWidth)
+    {
+        // yes it fits :-)
+        osg::notify(osg::INFO)<<"Fits in current row"<<std::endl;
+        return true;
+    }
+
+    // does the source fit in the new row up?
+    if ((_height + sourceImage->t() + 2*_margin) <= _maximumAtlasHeight)
+    {
+        // yes it fits :-)
+        osg::notify(osg::INFO)<<"Fits in next row"<<std::endl;
+        return true;
+    }
+    
+    // no space for the texture
+    return false;
 }
 
 
@@ -106,20 +246,39 @@ void ClippedTextureAtlasBuilder::ClippedAtlas::copySources(){
             const osg::Image* sourceImage = source->_image.get();
             osg::Image* atlasImage = atlas->_image.get();
 
-            unsigned int rowSize = sourceImage->getRowSizeInBytes();
+            //unsigned int rowSize = sourceImage->getRowSizeInBytes();
             unsigned int pixelSizeInBits = sourceImage->getPixelSizeInBits();
             unsigned int pixelSizeInBytes = pixelSizeInBits/8;
-            unsigned int marginSizeInBytes = pixelSizeInBytes*_margin;
+            //unsigned int marginSizeInBytes = pixelSizeInBytes*_margin;
 
-            unsigned int x = source->_x;
-            unsigned int y = source->_y;
+           
 
             int t;
-	    int tmin=0;
-	    int tmax=sourceImage->t();
-	    unsigned int sminBytes=0;
-	    unsigned int smaxBytes=pixelSizeInBytes*sourceImage->s();
-	    printf("Clipped Min %d %d Max %d %d\n",tmin,tmax,sminBytes,smaxBytes);
+	    printf("Clipped X %2.f%% Y %2.f%%\n",100*(double)source->sclipped/source->_image->s(),100*(double)source->tclipped/source->_image->t());
+	    printf("Clipped Min %f Max %f Min %f Max %f\n",source->_texLimit->xMin(),
+		   source->_texLimit->xMax(),
+		   source->_texLimit->yMin(),
+		   source->_texLimit->yMax());
+	    int pixelMinX=(int)(source->_image->s()*source->_texLimit->xMin());
+	    int pixelMaxX=(int)(source->_image->s()*source->_texLimit->xMax());
+
+	    int pixelMinY=(int)(source->_image->t()*source->_texLimit->yMin());
+	    int pixelMaxY=(int)(source->_image->t()*source->_texLimit->yMax());
+	    
+	    unsigned int x = source->_x;//+pixelMinX;
+            unsigned int y = source->_y;//+pixelMinY;
+	    unsigned int rowSize = sourceImage->getRowSizeInBytes();
+
+
+	    
+            unsigned int marginSizeInBytes = pixelSizeInBytes*_margin;
+	    int tmin=pixelMinY;
+	    int tmax=pixelMaxY;
+
+	 
+	    unsigned int sminBytes=pixelMinX*pixelSizeInBytes;
+	    unsigned int smaxBytes=pixelMaxX*pixelSizeInBytes;
+	    //printf("Clipped Min %d Y Max Y %d Min X %d  Max %d\n",tmin,tmax,sminBytes/pixelSizeInBytes,smaxBytes/pixelSizeInBytes);
             for(t=tmin; t<tmax; ++t, ++y)
             {
                 unsigned char* destPtr = atlasImage->data(x, y);
@@ -129,12 +288,122 @@ void ClippedTextureAtlasBuilder::ClippedAtlas::copySources(){
                     *(destPtr++) = *(sourcePtr++);
                 }
             }
-	}
-    }
+	
+    // copy top row margin
+            y = source->_y + sourceImage->t();
+            unsigned int m;
+            for(m=0; m<_margin; ++m, ++y)
+            {
+                unsigned char* destPtr = atlasImage->data(x, y);
+                const unsigned char* sourcePtr = sourceImage->data(0, sourceImage->t()-1);
+                for(unsigned int i=0; i<rowSize; i++)
+                {
+                    *(destPtr++) = *(sourcePtr++);
+                }
+                
+            }
+            
 
+
+
+            // copy bottom row margin
+            y = source->_y-1;
+            for(m=0; m<_margin; ++m, --y)
+            {
+                unsigned char* destPtr = atlasImage->data(x, y);
+                const unsigned char* sourcePtr = sourceImage->data(0, 0);
+                for(unsigned int i=0; i<rowSize; i++)
+                {
+                    *(destPtr++) = *(sourcePtr++);
+                }
+                
+            }
+
+            // copy left column margin
+            y = source->_y;
+            for(t=0; t<sourceImage->t(); ++t, ++y)
+            {
+                x = source->_x-1;
+                for(m=0; m<_margin; ++m, --x)
+                {
+                    unsigned char* destPtr = atlasImage->data(x, y);
+                    const unsigned char* sourcePtr = sourceImage->data(0, t);
+                    for(unsigned int i=0; i<pixelSizeInBytes; i++)
+                    {
+                        *(destPtr++) = *(sourcePtr++);
+                    }
+                }
+            }            
+
+            // copy right column margin
+            y = source->_y;
+            for(t=0; t<sourceImage->t(); ++t, ++y)
+            {
+                x = source->_x + sourceImage->s();
+                for(m=0; m<_margin; ++m, ++x)
+                {
+                    unsigned char* destPtr = atlasImage->data(x, y);
+                    const unsigned char* sourcePtr = sourceImage->data(sourceImage->s()-1, t);
+                    for(unsigned int i=0; i<pixelSizeInBytes; i++)
+                    {
+                        *(destPtr++) = *(sourcePtr++);
+                    }
+                }
+            }            
+
+            // copy top left corner margin
+            y = source->_y + sourceImage->t();
+            for(m=0; m<_margin; ++m, ++y)
+            {
+                unsigned char* destPtr = atlasImage->data(source->_x - _margin, y);
+                unsigned char* sourcePtr = atlasImage->data(source->_x - _margin, y-1); // copy from row below
+                for(unsigned int i=0; i<marginSizeInBytes; i++)
+                {
+                    *(destPtr++) = *(sourcePtr++);
+                }
+            }
+
+            // copy top right corner margin
+            y = source->_y + sourceImage->t();
+            for(m=0; m<_margin; ++m, ++y)
+            {
+                unsigned char* destPtr = atlasImage->data(source->_x + sourceImage->s(), y);
+                unsigned char* sourcePtr = atlasImage->data(source->_x + sourceImage->s(), y-1); // copy from row below
+                for(unsigned int i=0; i<marginSizeInBytes; i++)
+                {
+                    *(destPtr++) = *(sourcePtr++);
+                }
+            }
+
+            // copy bottom left corner margin
+            y = source->_y - 1;
+            for(m=0; m<_margin; ++m, --y)
+            {
+                unsigned char* destPtr = atlasImage->data(source->_x - _margin, y);
+                unsigned char* sourcePtr = atlasImage->data(source->_x - _margin, y+1); // copy from row below
+                for(unsigned int i=0; i<marginSizeInBytes; i++)
+                {
+                    *(destPtr++) = *(sourcePtr++);
+                }
+            }
+
+            // copy bottom right corner margin
+            y = source->_y - 1;
+            for(m=0; m<_margin; ++m, --y)
+            {
+                unsigned char* destPtr = atlasImage->data(source->_x + sourceImage->s(), y);
+                unsigned char* sourcePtr = atlasImage->data(source->_x + sourceImage->s(), y+1); // copy from row below
+                for(unsigned int i=0; i<marginSizeInBytes; i++)
+                {
+                    *(destPtr++) = *(sourcePtr++);
+                }
+            }
+
+        }
+    }
 #if 1
     osg::notify(osg::NOTICE)<<"Writing atlas image "<<_image->getFileName()<<std::endl;
-    osgDB::writeImageFile(*_image,_image->getFileName() + ".png");
+    osgDB::writeImageFile(*_image,"mesh/"+_image->getFileName() );
 #endif
 }
 
@@ -149,7 +418,7 @@ void ClippedTextureAtlasVisitor::optimize()
         // nothing to optimize
         return;
     }
-printf("D o ittextures\n");
+
     Textures texturesThatRepeat;
     Textures texturesThatRepeatAndAreOutOfRange;
 
@@ -257,6 +526,7 @@ printf("D o ittextures\n");
 
         if (!s_repeat && !t_repeat)
         {
+
             _builder.addSource(*titr);
         }
     }
@@ -354,7 +624,8 @@ printf("D o ittextures\n");
                     Drawables& drawables = sitr->second;
                     
                     osg::Matrix matrix = _builder.getTextureMatrix(texture);
-                    
+		    osg::Vec3d texmin= _builder.getTextureMin(texture);
+		    cout << texmin << endl;
                     // first check to see if all drawables are ok for applying texturematrix to.
                     bool canTexMatBeFlattenedToAllDrawables = true;
                     for(Drawables::iterator ditr = drawables.begin();
@@ -377,7 +648,7 @@ printf("D o ittextures\n");
 
                     if (canTexMatBeFlattenedToAllDrawables)
                     {
-                        osg::notify(osg::NOTICE)<<"All drawables can be flattened "<<drawables.size()<<std::endl;
+		      //osg::notify(osg::NOTICE)<<"All drawables can be flattened "<<drawables.size()<<std::endl;
                         for(Drawables::iterator ditr = drawables.begin();
                             ditr != drawables.end();
                             ++ditr)
@@ -391,8 +662,9 @@ printf("D o ittextures\n");
                                     ++titr)
                                 {
                                     osg::Vec2 tc = *titr;
-                                    (*titr).set(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
-                                              tc[0]*matrix(0,1) + tc[1]*matrix(1,1) + matrix(3,1));
+                                    (*titr).set((tc[0]-texmin[0])*matrix(0,0) + (tc[1]-texmin[1])*matrix(1,0) + matrix(3,0),
+						(tc[0]-texmin[0])*matrix(0,1) + (tc[1]-texmin[1])*matrix(1,1) + matrix(3,1));
+				    // cout << tc << endl;
                                 }
                             }
                             else
@@ -431,7 +703,7 @@ bool ClippedTextureAtlasBuilder::ClippedAtlas::addSource(ClippedSource* source)
         _image->setPixelFormat(sourceImage->getPixelFormat());
         _image->setDataType(sourceImage->getDataType());
     }
-    
+   
     if (!_texture && sourceTexture)
     {
         _texture = new osg::Texture2D(_image.get());
@@ -454,9 +726,12 @@ bool ClippedTextureAtlasBuilder::ClippedAtlas::addSource(ClippedSource* source)
         _texture->setShadowAmbient(sourceTexture->getShadowAmbient());
 
     }
-
+    
+    int sclipped=source->sclipped;
+    int tclipped=source->tclipped;
+    printf("S clip %d T Clip %d\n",sclipped,tclipped);
     // now work out where to fit it, first try current row.
-    if ((_x + sourceImage->s() + 2*_margin) <= _maximumAtlasWidth)
+    if ((_x + sclipped + 2*_margin) <= _maximumAtlasWidth)
     {
         // yes it fits, so add the source to the atlas's list of sources it contains
         _sourceList.push_back(source);
@@ -469,18 +744,18 @@ bool ClippedTextureAtlasBuilder::ClippedAtlas::addSource(ClippedSource* source)
         source->_atlas = this;
         
         // move the atlas' cursor along to the right
-        _x += sourceImage->s() + 2*_margin;
+        _x += sclipped + 2*_margin;
         
         if (_x > _width) _width = _x;
         
-        unsigned int localTop = _y + sourceImage->t() + 2*_margin;
+        unsigned int localTop = _y + tclipped + 2*_margin;
         if ( localTop > _height) _height = localTop;
 
         return true;
     }
 
     // does the source fit in the new row up?
-    if ((_height + sourceImage->t() + 2*_margin) <= _maximumAtlasHeight)
+    if ((_height + tclipped + 2*_margin) <= _maximumAtlasHeight)
     {
         // now row so first need to reset the atlas cursor
         _x = 0;
@@ -497,7 +772,7 @@ bool ClippedTextureAtlasBuilder::ClippedAtlas::addSource(ClippedSource* source)
         source->_atlas = this;
         
         // move the atlas' cursor along to the right
-        _x += sourceImage->s() + 2*_margin;
+        _x += sclipped  + 2*_margin;
 
         if (_x > _width) _width = _x;
 
@@ -572,6 +847,13 @@ osg::Matrix ClippedTextureAtlasBuilder::getTextureMatrix(const osg::Texture2D* t
 {
     ClippedSource* source = getSource(texture);
     return source ? source->computeTextureMatrix() : osg::Matrix();
+}
+
+
+osg::Vec3d ClippedTextureAtlasBuilder::getTextureMin(const osg::Texture2D* texture)
+{
+    ClippedSource* source = getSource(texture);
+    return source ? osg::Vec3d(source->_texLimit->xMin(), source->_texLimit->yMin(),0.0)  : osg::Vec3d();
 }
 
 ClippedTextureAtlasBuilder::ClippedSource* ClippedTextureAtlasBuilder::getSource(const osg::Image* image)

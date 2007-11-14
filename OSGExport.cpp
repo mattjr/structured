@@ -67,7 +67,7 @@ void OSGExporter::compress(osg::Texture2D* texture2D){
     // restore the original setting
     texture2D->setUnRefImageDataAfterApply(unrefImageDataAfterApply);
     
-    image->readImageFromCurrentTexture(0,true);
+    image->readImageFromCurrentTexture(state->getContextID(),true);
     texture2D->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
   }
 

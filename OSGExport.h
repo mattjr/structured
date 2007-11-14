@@ -102,6 +102,11 @@ class MyGraphicsContext {
         
         bool valid() const { return _gc.valid() && _gc->isRealized(); }
         
+        osg::GraphicsContext *getContext( void )
+        {
+           return _gc.get();
+        }
+
     private:
         osg::ref_ptr<osg::GraphicsContext> _gc;
 

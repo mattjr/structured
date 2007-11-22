@@ -69,7 +69,7 @@ static bool use_surf_features = false;
 static bool use_ncc = false;
 static int skip_counter=0;
 static int num_skip=0;
-static string mb_ply_filename;
+static vector<string> mb_ply_filenames;
 static bool have_mb_ply=false;
 static bool have_cov_file=false;
 static string stereo_calib_file_name;
@@ -229,17 +229,20 @@ static bool parse_args( int argc, char *argv[ ] )
       }
       else if( strcmp( argv[i], "--mbfile" ) == 0 )
       {
+	
+	if( i == argc-1 ) return false;
+	
 	have_mb_ply=true;
-         if( i == argc-1 ) return false;
-	 mb_ply_filename=string( argv[i+1]) ;
-         i+=2;
+	for(i++; i < argc && argv[i][0] != '-'; i++)
+	  mb_ply_filenames.push_back(string( argv[i])) ;
+	
       }
       else if( strcmp( argv[i], "--genmb" ) == 0 )
       {
 	if( i == argc-2 ) return false;	
 	gen_mb_ply=true;
 	have_mb_ply=true;
-	mb_ply_filename=string("mb.ply") ;
+	mb_ply_filenames.push_back(string("mb.ply")) ;
 	deltaT_config_name=string( argv[i+1]) ;
 	deltaT_dir=string( argv[i+2]) ;
 	i+=3;
@@ -826,7 +829,7 @@ int main( int argc, char *argv[ ] )
    auv_data_tools::makedir(uname);
   
    auv_data_tools::makedir(subvoldir);
-
+   chmod(subvoldir,   0777);
    //
    // Open the contents file
    //
@@ -985,7 +988,7 @@ int main( int argc, char *argv[ ] )
        }
        */
        fprintf(conf_ply_file,
-	       "bmesh surface-%08d.ply\n"
+	       "bmesh surface-%08d.ply 0.033\n"
 	       ,i); 
    
        
@@ -996,10 +999,18 @@ int main( int argc, char *argv[ ] )
   
 
   if(output_ply_and_conf && have_mb_ply)
-          fprintf(conf_ply_file,
-		  "bmesh %s\n"
-		  ,mb_ply_filename.c_str()); 
-  
+    for(int i=0; i < mb_ply_filenames.size(); i++){
+      string simpname =osgDB::getSimpleFileName(mb_ply_filenames[i]);
+      string inname=mb_ply_filenames[i];
+      string outname=(string(subvoldir)+string("/")+simpname);
+      cout << "Copying " << inname << " to " << outname<<endl;
+      std::ifstream  IN (inname.c_str());
+      std::ofstream  OUT(outname.c_str()); 
+      OUT << IN.rdbuf();
+      fprintf(conf_ply_file,
+	      "bmesh %s .1\n"
+	      ,simpname.c_str()); 
+    }
 
   fclose(conf_ply_file);
 
@@ -1032,11 +1043,10 @@ int main( int argc, char *argv[ ] )
 
  //   fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -prob\n../myvrip/bin/vripsurf auto.vri out.ply -import_norm\n");
 
-
     conf_ply_file=fopen("./runvrip.sh","w+");
        
-    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd %s/\n",basepath.c_str(),subvoldir);
-    fprintf(conf_ply_file,"%s/vrip/bin/pvrip1 auto.vri auto.ply surface.conf surface.conf  0.033 100M ~/loadlimit  -logdir /mnt/shared -rampscale 300 -subvoldir %s -nocrunch  \n",basepath.c_str(),subvoldir);
+    fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd %s/\n",basepath.c_str(),subvoldir);
+    fprintf(conf_ply_file,"%s/vrip/bin/pvrip1 auto.vri $OUTDIR/auto.ply surface.conf surface.conf  0.033 100M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir %s -nocrunch -passtovrip -use_bigger_bbox\n",basepath.c_str(),subvoldir);
     
     //fprintf(conf_ply_file,"%s/vrip/bin/vripsplit surface.conf surface.conf  0.033 100000000 \n",basepath.c_str());
     //fprintf(conf_ply_file,"echo '#!/bin/bash\\nVRIP_HOME=%s/vrip\\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\\nPATH=$PATH:$VRIP_HOME/bin\\ncd $PWD/mesh-agg/\\n' > ../subvol.sh\n %s/vrip/bin/vripsubvollist -rampscale 400 0.033 *subvol*.conf >> ../subvol.sh\ncd ..;chmod +x subvol.sh\nsh subvol.sh",basepath.c_str(),basepath.c_str());

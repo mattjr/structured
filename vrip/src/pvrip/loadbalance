@@ -226,7 +226,7 @@ if (-e $LOGDIR) {
     }
 } else {
     # make logdir
-    $errmsg = `mkdir -p $LOGDIR\n`;
+    $errmsg = `mkdir  -m 0777 -p $LOGDIR\n`;
     if ($?) {
 	die "Error: Could not mkdir $LOGDIR\n";
     }

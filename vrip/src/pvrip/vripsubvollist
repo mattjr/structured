@@ -70,6 +70,29 @@ chop $cwd;
 #Generate the command for each file name...
 for ($n=1; $n <= $#ARGV; $n++) {
     $conf = $ARGV[$n];
+    $nscans = `wc -l $conf`;
+# Open input conf file...
+    open(INCONF, $conf) || die 
+	"\nErr: Unable to open input .conf file $conf, aborting.\n";
+    
+    # Process each file mentioned in the conf file...
+    $iscan = 0;
+    $minscale = 2.0;
+    for ($iscan = 0; $confline = <INCONF>; $iscan++) {
+
+	@words = split(' ', $confline);
+	$inply = "$words[1]";
+	
+	# A few checks for quick skipping...
+	if ($words[0] ne "bmesh") {
+	    #print STDERR "Warn: skipping non-bmesh line: $confline...\n";
+	    next;
+	}
+	$scale = $words[2];
+	$minscale = $scale if ($scale < $minscale);
+	
+    }
+    $voxelsize = 0.0+$minscale;
     $bbox = $conf;
     $bbox =~ s/.conf/.bbox.ply/g;
     $vri = $conf;

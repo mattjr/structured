@@ -187,7 +187,7 @@ main(int argc, char *argv[])
 	numTotalVerts += numVerts[i];
 	numTotalFaces += numFaces[i];
 
-	fclose(f);
+	//fclose(f);
     }
 
     WritePlyFile();

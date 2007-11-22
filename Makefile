@@ -33,7 +33,7 @@ endif
 
 INC_FLAGS   += `pkg-config --cflags opencv` `pkg-config --cflags libpng` `pkg-config --cflags glib-2.0` -I/usr/local/include/libflounder -I/usr/local/include/libplankton -I/usr/local/include/libadt  -I/usr/local/include/libsnapper  -I/usr/local/include/libpolyp
 
-LIBS  += `pkg-config --libs opencv`  `pkg-config --libs libpng` `pkg-config --libs glib-2.0`   -lgts -l3ds -l3dObjects -lplankton -lsnapper -L. -ladt -lboost_thread -lpolyp
+LIBS  += `pkg-config --libs opencv`  `pkg-config --libs libpng` `pkg-config --libs glib-2.0`   -lgts -l3ds -l3dObjects -lplankton -lsnapper -L. -ladt -lboost_thread -lpolyp -L squish-1.10/ -lsquish
 
 
 CC_SRCS     =	OSGExport.cpp\

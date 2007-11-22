@@ -86,13 +86,13 @@ proc bbox_intersect {xmin1 ymin1 zmin1 xmax1 ymax1 zmax1 \
 #
 proc confline2bbox {confline} {
     if {("bmesh" == [lindex $confline 0])} {
-	set cmd "exec plyxform ";
-	set cmd "$cmd -t [lindex $confline 2] [lindex $confline 3] [lindex $confline 4]";
-	set q3 [lindex $confline 8];
-	set q3 [expr -$q3];
-	set cmd "$cmd -q [lindex $confline 5] [lindex $confline 6] [lindex $confline 7] $q3";
-	set cmd "$cmd < [lindex $confline 1] | plybbox";
-
+	#set cmd "exec plyxform ";
+	#set cmd "$cmd -t [lindex $confline 2] [lindex $confline 3] [lindex $confline 4]";
+	#set q3 [lindex $confline 8];
+	#set q3 [expr -$q3];
+	#set cmd "$cmd -q [lindex $confline 5] [lindex $confline 6] [lindex $confline 7] $q3";
+	#set cmd "$cmd < [lindex $confline 1] | plybbox";
+	set cmd "exec plybbox [lindex $confline 1]";
 	catch {eval $cmd} msg;
 	scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
 	set plyname [lindex $confline 1];

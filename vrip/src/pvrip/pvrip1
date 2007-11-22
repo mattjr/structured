@@ -186,7 +186,7 @@ if (-e $SUBVOLDIR) {
 	# print "Note, loadbalance using existing subvoldir $SUBVOLDIR...\n";
 	# Clear any old loadbalance logfiles
 	$cmd = "cd $SUBVOLDIR; /bin/ls | /bin/grep 'subvol' | ".
-	    "/bin/xargs /bin/rm -f\n";
+	    "/usr/bin/xargs /bin/rm -f\n";
 	print "} Clearing old subvol files....";
 	system $cmd;
 	print "Done.\n";
@@ -232,7 +232,7 @@ if ($PASSTOVRIPSURF ne "") {
 
 # Call vripsubvollist to actually generate the commands
 $cmd = "find $SUBVOLDIR | grep subvol | grep .conf | sort | ".
-    "/bin/xargs vripsubvollist $CRUNCHSTR $RAMPSCALESTR $PASS_STR $RES > commands\n";
+    "/usr/bin/xargs vripsubvollist -subvoldir $SUBVOLDIR $CRUNCHSTR $RAMPSCALESTR $PASS_STR $RES > commands\n";
 print "} $cmd";
 
 system $cmd;
@@ -251,7 +251,7 @@ system $timecmd;
 !$? || die "Error: loadbalance returned an error. aborting.\n";
 
 # Erase any subvolume .ply files with size 0
-$cmd = "/bin/find $SUBVOLDIR | egrep \"subvol....\.ply\"\n";
+$cmd = "/usr/bin/find $SUBVOLDIR | egrep \"subvol....\.ply\"\n";
 @allplys = `$cmd`;
 for ($ii=0; $ii <= $#allplys; $ii++) {
     if (-z $allplys[$ii]) {
@@ -266,10 +266,11 @@ for ($ii=0; $ii <= $#allplys; $ii++) {
 # Merge all the ply files into a single ply file,
 # which has redundant vertices at the subvolume boundaries:
 if ($DOMERGE) {
-    $cmd = "/bin/find $SUBVOLDIR | /bin/egrep \"subvol....\.ply\" | /bin/xargs plymerge > $PLYFILE.unshared\n";
+    $setcmd="export VRIP_DIR=$ENV{'VRIP_DIR'}; export PATH=$ENV{'PATH'};";
+    $cmd = "/usr/bin/find $SUBVOLDIR | /bin/egrep \"subvol....\.ply\" | /usr/bin/xargs plymerge > $PLYFILE.unshared\n";
     $timecmd = &timecmd($cmd);
     print "} $cmd";
-    system $timecmd;
+    system "$setcmd $timecmd";
     !$? || die "Error: plymerge returned an error. aborting.\n";
 
     # Remove redundant vertices

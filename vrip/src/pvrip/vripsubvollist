@@ -26,6 +26,7 @@ if ($#ARGV < 1 || substr($ARGV[0], 0, 2) eq "-h") {
 
 # Extract the options, if present
 $DOCRUNCH = 0;
+$SUBVOLDIR=".";
 while (substr($ARGV[0], 0,1) eq "-") {
     if ($ARGV[0] eq "-crunch") {
 	$DOCRUNCH=1;
@@ -36,6 +37,10 @@ while (substr($ARGV[0], 0,1) eq "-") {
 	    print STDERR "Error: no rampscale???\n\n";
 	    &printUsage;
 	}
+	splice(@ARGV, 0, 2);
+    }
+    elsif ($ARGV[0] eq "-subvoldir") {
+	$SUBVOLDIR = $ARGV[1];
 	splice(@ARGV, 0, 2);
     } elsif ($ARGV[0] eq "-passtovrip") {
 	$PASSTOVRIP = $ARGV[1];
@@ -90,14 +95,16 @@ for ($n=1; $n <= $#ARGV; $n++) {
 
     # Amount of safety in plyculling triangles
     $epsilon = 2.1 * $voxelsize;
+    $BASEDIR = "$ENV{'HOME'}/cvs/threadedStereo/vrip/bin";
+    $VRIP_DIR = "$ENV{'HOME'}/cvs/threadedStereo/vrip/src/vrip";
 
-    print STDOUT "cd $cwd; ".
-	"time vripnew $vri $conf $bbox $voxelsize $rampscalestr $PASSTOVRIP -noui; ".
-	    "time vripsurf -no_remove_slivers $vri $plyv $PASSTOVRIPSURF -noui; ".
-		"time plycull $bbox $plyv $ply $epsilon; ".
-		    "$rm_plyv $crunchstr\n";
+    print STDOUT "cd $SUBVOLDIR; set path = ($BASEDIR \$path); setenv VRIP_DIR '$VRIP_DIR'; $BASEDIR/vripnew $vri $conf $bbox $voxelsize $rampscalestr $PASSTOVRIP; ".
+	"$BASEDIR/vripsurf -no_remove_slivers $vri $plyv $PASSTOVRIPSURF; ".
+	"$BASEDIR/plycull $bbox $plyv $ply $epsilon; ".
+	"$rm_plyv $crunchstr\n";
     $plys = $plys . " $ply";
 }
 
-# print STDOUT "echo plymerge $plys > all_unshared.ply\n";
-# print STDOUT "echo plyshared < all_unshared.ply > all.ply\n";
+#print STDOUT "plymerge $plys > all_unshared.ply\n";
+#print STDOUT "plyshared < all_unshared.ply > all.ply\n";
+#print STDOUT "plyclean  -defaults all.ply > clean.ply\n";

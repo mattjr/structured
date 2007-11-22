@@ -59,7 +59,7 @@ static string stereo_calib_file_name;
 
 
 static std::map<int,std::string> texture_file_names;
-
+static bool hardware_compress=true;
 static float tex_scale=1.0;
 
 extern std::vector<GtsBBox *> bboxes_all;
@@ -97,9 +97,20 @@ static bool parse_args( int argc, char *argv[ ] )
 	  compress_textures=false;
 	  i+=1;
 	}
+      else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
+	{
+	  hardware_compress=false;
+	  i+=1;
+	}
       else if( strcmp( argv[i], "-v" ) == 0 )
 	{
 	  verbose=true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "-vv" ) == 0 )
+	{
+	  verbose=true;
+	  osg::setNotifyLevel(osg::INFO);
 	  i+=1;
 	}
       else if( strcmp( argv[i], "-n" ) == 0 )
@@ -291,7 +302,13 @@ static void print_usage( void )
   cout << "   -r <resize_scale>       Resize the images by a scaling factor." << endl;
  
   cout << "   -n <max_frame_count>    Set the maximum number of frames to be processed." << endl;
- cout << "    --no-compress-tex           Don't Compress Textures" << endl;
+  cout << "    --no-compress-tex           Don't Compress Textures" << endl;
+  cout << "    --no-hardware-compress      Software Texture Compress" << endl;
+  cout << "    --nosimp      Don't Simplify" << endl;
+  cout << "    -v      Verbose" << endl;
+  cout << "    -vv      Very Verbose" << endl;
+  cout << "    -f <imagedir> Image dir prefix" << endl;
+  cout << "    -t <num_threads> Num threads" << endl;
   cout << endl;
 }
 
@@ -427,7 +444,7 @@ int main( int argc, char *argv[ ] )
     float simpRatio[]={0.5,0.1,0.01};
     std::vector<string> lodnames;
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
-					num_threads,verbose);    
+					num_threads,verbose,hardware_compress);    
 
     for(int j=0; j < lodNum; j++){
        boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);

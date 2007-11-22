@@ -84,14 +84,15 @@ static bool use_dense_feature=false;
 //StereoMatching* stereo;
 //StereoImage simage;
 static bool gen_mb_ply=false;
-static bool output_ply_and_conf =false;
+static bool output_ply_and_conf =true;
 static FILE *conf_ply_file;
 static bool output_3ds=false;
 static char cov_file_name[255];
+static bool thread_vrip=false;
 static string basepath;
 static int split_chunks=0;
 enum {END_FILE,NO_ADD,ADD_IMG};
-
+  const char *subvoldir="/mnt/shared/mesh-agg";
 static string deltaT_config_name;
 static string deltaT_dir;
 
@@ -318,11 +319,6 @@ static bool parse_args( int argc, char *argv[ ] )
         subvol = atof( argv[i+1] );
 	i+=2;
       }
-      else if( strcmp( argv[i], "--confply" ) == 0 )
-      {
-         output_ply_and_conf = true;
-         i+=1;
-      }
       else if( strcmp( argv[i], "--uv" ) == 0 )
       {
          output_uv_file = true;
@@ -543,6 +539,7 @@ typedef struct _auv_images_names{
   double alt;
   double timestamp;
   int index;
+  bool valid;
 }auv_image_names;
 
 
@@ -633,7 +630,7 @@ public:
     delete finder_dense;
     
   }
- void runP(auv_image_names &name);
+ bool runP(auv_image_names &name);
 private:
 
   int frame_id;
@@ -681,7 +678,11 @@ protected:
 	void consume(Slice slice_i) 
 	{
 	 
-	  ts->runP(slice_i);
+	  if(!ts->runP(slice_i))
+	    slice_i.valid=false;
+	  else
+	    slice_i.valid=true;
+	  
 	} 
 	bool cancel() { 
 		return !channel_.channel_.size(); // may stop if no more tasks
@@ -766,7 +767,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
 	    (*name.veh_pose)[AUV_POSE_INDEX_PSI],
 	   name.alt);
 
-
+    
    return ADD_IMG;
          
 }
@@ -821,10 +822,10 @@ int main( int argc, char *argv[ ] )
    
     
    const char *uname="mesh";
-   const char *uname2="mesh-agg";
+ 
    auv_data_tools::makedir(uname);
   
-   auv_data_tools::makedir(uname2);
+   auv_data_tools::makedir(subvoldir);
 
    //
    // Open the contents file
@@ -896,6 +897,7 @@ int main( int argc, char *argv[ ] )
      int ret=get_auv_image_name( dir_name, contents_file, name) ;
      if(ret == ADD_IMG ){
        name.index= stereo_pair_count++;
+       name.valid=true;
        tasks.push_back(name);
      }else if(ret == NO_ADD){
        continue;
@@ -917,9 +919,10 @@ int main( int argc, char *argv[ ] )
      
      boost::xtime_get(&xt, boost::TIME_UTC);
      threadedStereo *ts= new threadedStereo(stereo_config_file_name,"semi-dense.cfg");
-     for(unsigned int i=0; i < tasks.size(); i++)
-       ts->runP(tasks[i]);
-     
+     for(unsigned int i=0; i < tasks.size(); i++){
+       if(!ts->runP(tasks[i]));
+       tasks.erase(tasks.begin()+i);
+     }    
      boost::xtime_get(&xt2, boost::TIME_UTC);
      time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
      
@@ -942,10 +945,14 @@ int main( int argc, char *argv[ ] )
      time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000; 
      double secs=time/1000.0;
      printf("max %d consumer pool: %.2f sec\n", num_threads, secs);
+     for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++)
+       if(!itr->valid)
+	 tasks.erase(itr);
    }
    if(output_ply_and_conf){
      char conf_name[255];
-     sprintf(conf_name,"mesh-agg/surface-%08d.conf",split_chunks);
+     sprintf(conf_name,"%s/surface-%08d.conf",subvoldir,split_chunks);
+     sprintf(conf_name,"%s/surface.conf",subvoldir);
      
      conf_ply_file=fopen(conf_name,"w");
    
@@ -968,7 +975,7 @@ int main( int argc, char *argv[ ] )
        left_frame_id,right_frame_id,timestamp,
        left_frame_name,right_frame_name);*/
     
-       if((int)i > vrip_split*(split_chunks+1)){
+       /*  if((int)i > vrip_split*(split_chunks+1)){
 	 fclose(conf_ply_file);
 	 split_chunks++;
 	 sprintf(conf_name,"mesh-agg/surface-%08d.conf",split_chunks);
@@ -976,23 +983,26 @@ int main( int argc, char *argv[ ] )
 
    
        }
-     
+       */
        fprintf(conf_ply_file,
 	       "bmesh surface-%08d.ply\n"
 	       ,i); 
    
        
        
-     }
+       //}
    }
    
-   fclose(conf_ply_file);
+  
 
-   /*if(output_ply_and_conf && have_mb_ply)
+  if(output_ply_and_conf && have_mb_ply)
           fprintf(conf_ply_file,
-		  "bmesh ../%s\n"
+		  "bmesh %s\n"
 		  ,mb_ply_filename.c_str()); 
-   */
+  
+
+  fclose(conf_ply_file);
+
    if(output_uv_file)
      fclose(uv_fp);
    if(output_3ds)
@@ -1024,18 +1034,28 @@ int main( int argc, char *argv[ ] )
 
 
     conf_ply_file=fopen("./runvrip.sh","w+");
+       
+    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd %s/\n",basepath.c_str(),subvoldir);
+    fprintf(conf_ply_file,"%s/vrip/bin/pvrip1 auto.vri auto.ply surface.conf surface.conf  0.033 100M ~/loadlimit  -logdir /mnt/shared -rampscale 300 -subvoldir %s -nocrunch  \n",basepath.c_str(),subvoldir);
     
-    fprintf(conf_ply_file,"#!/bin/bash\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/\n",basepath.c_str());
-     for(int i=0; i <= split_chunks; i++){   
-       if(num_threads > 1)
+    //fprintf(conf_ply_file,"%s/vrip/bin/vripsplit surface.conf surface.conf  0.033 100000000 \n",basepath.c_str());
+    //fprintf(conf_ply_file,"echo '#!/bin/bash\\nVRIP_HOME=%s/vrip\\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\\nPATH=$PATH:$VRIP_HOME/bin\\ncd $PWD/mesh-agg/\\n' > ../subvol.sh\n %s/vrip/bin/vripsubvollist -rampscale 400 0.033 *subvol*.conf >> ../subvol.sh\ncd ..;chmod +x subvol.sh\nsh subvol.sh",basepath.c_str(),basepath.c_str());
+
+
+    /* for(int i=0; i <= split_chunks; i++){   
+       if(num_threads > 1 && thread_vrip)
 	 fprintf(conf_ply_file,"(");
        fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto-%08d.vri surface-%08d.conf surface-%08d.conf 0.033 -rampscale 400 > vriplog-%08d.txt\n%s/vrip/bin/vripsurf auto-%08d.vri out-%08d.ply > vripsurflog-%08d.txt",basepath.c_str(),i,i,i,i,basepath.c_str(),i,i,i);
-       if(num_threads > 1)
+       if(num_threads > 1 && thread_vrip)
 	 fprintf(conf_ply_file,") &\n");
        else
 	 fprintf(conf_ply_file,"\n");
-       if(i % num_threads == 1)
-	 fprintf(conf_ply_file,"wait\necho 'Completed %d meshes (%d to %d) of %d'\n",vrip_split * num_threads,i-(num_threads-1),i,split_chunks);
+       if(num_threads > 1){
+	 if(i % num_threads == 1)
+	   fprintf(conf_ply_file,"wait\necho 'Completed %d meshes (%d to %d) of %d'\n",vrip_split * num_threads,i-(num_threads-1),i,split_chunks);
+       }else 
+	 fprintf(conf_ply_file,"wait\necho 'Completed %d meshes set %d of %d'\n",vrip_split * num_threads,i,split_chunks);
+     
      }
      fprintf(conf_ply_file,"wait\necho 'Last mesh'\n");
 
@@ -1047,13 +1067,13 @@ int main( int argc, char *argv[ ] )
     for(int i=0; i <=split_chunks; i++)  
       fprintf(conf_ply_file,"out-%08d.ply ",i);
     fprintf(conf_ply_file," > total.ply\n echo 'Done'\n");
-    
+    */
 
      
     fchmod(fileno(conf_ply_file),   0777);
     fclose(conf_ply_file);
     system("./runvrip.sh");
-    
+    /*
     FILE *dicefp=fopen("./dice.sh","w+");
     fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n%s/vrip/bin/plydice -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
 
@@ -1090,10 +1110,11 @@ int main( int argc, char *argv[ ] )
 	    fprintf(bboxfp,"\n");
 	  }
 	}  
-	fclose(bboxfp);
-      }
+	fclose(bboxfp);*/
+	}
    }
-
+   
+  
   // 
   // Clean-up
   //
@@ -1114,7 +1135,7 @@ int main( int argc, char *argv[ ] )
 
 
    
-void threadedStereo::runP(auv_image_names &name){
+bool threadedStereo::runP(auv_image_names &name){
   IplImage *left_frame;
   IplImage *right_frame;
   IplImage *color_frame;
@@ -1133,7 +1154,7 @@ void threadedStereo::runP(auv_image_names &name){
 			color_frame))
       {
 	printf("Failed to get pair\n");
-	return;
+	return false;
       }                          
   
   if(feature_depth_guess == AUV_NO_Z_GUESS)
@@ -1254,24 +1275,26 @@ void threadedStereo::runP(auv_image_names &name){
 	   }
 	 }
       */ 
-	 if(localV->len){
-	   GtsSurface *surf= auv_mesh_pts(localV,2.0,0); 
-
-	   Vector camera_pose(AUV_NUM_POSE_STATES);
-	   get_camera_params(config_file,camera_pose);
-	   
-	   get_sensor_to_world_trans(*name.veh_pose,camera_pose,name.m);
-	   gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, name.m);
+	 if(!localV->len)
+	   return false;
 	 
+	 GtsSurface *surf= auv_mesh_pts(localV,2.0,0); 
+	 
+	 Vector camera_pose(AUV_NUM_POSE_STATES);
+	 get_camera_params(config_file,camera_pose);
+	 
+	 get_sensor_to_world_trans(*name.veh_pose,camera_pose,name.m);
+	 gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, name.m);
 	   
-	   char filename[255];
-
-	   if(output_3ds){
-	     map<int,string>textures;
+	 
+	 char filename[255];
+	 
+	 if(output_3ds){
+	   map<int,string>textures;
 	     textures[0]=(name.dir+name.left_name);
 	     sprintf(filename,"mesh/surface-%08d.3ds",
 		     name.index);
-	   
+	     
 	     std::map<int,GtsMatrix *> gts_trans;
 	     GtsMatrix *invM = gts_matrix_inverse(name.m);
 	     gts_trans[0]=(invM);
@@ -1280,46 +1303,46 @@ void threadedStereo::runP(auv_image_names &name){
 	     std::vector<string> lodnames;
 	     osgExp->convertModelOSG(surf,textures,filename,512,NULL);
 	     gts_matrix_destroy (invM);
-	   }
-	   if(output_ply_and_conf){
-	     
-	     GtsBBox *tmpBBox=gts_bbox_surface(gts_bbox_class(),surf);
-	     gts_bbox_set(name.bbox,tmpBBox->bounded,
-			  tmpBBox->x1,
-			  tmpBBox->y1,
-			  tmpBBox->z1,
-			  tmpBBox->x2,
-			  tmpBBox->y2,
+	 }
+	 if(output_ply_and_conf){
+	   
+	   GtsBBox *tmpBBox=gts_bbox_surface(gts_bbox_class(),surf);
+	   gts_bbox_set(name.bbox,tmpBBox->bounded,
+			tmpBBox->x1,
+			tmpBBox->y1,
+			tmpBBox->z1,
+			tmpBBox->x2,
+			tmpBBox->y2,
 			  tmpBBox->z2);
-	     gts_object_destroy (GTS_OBJECT (tmpBBox));
-
-	     FILE *fp;
-	     sprintf(filename,"mesh-agg/surface-%08d.ply",
-		     name.index);
+	   gts_object_destroy (GTS_OBJECT (tmpBBox));
+	   
+	   FILE *fp;
+	   sprintf(filename,"%s/surface-%08d.ply",
+		   subvoldir,name.index);
 	     fp = fopen(filename, "w" );
 	     auv_write_ply(surf, fp,have_cov_file,"test");
 	     fclose(fp);
-	   
-	   }
-	   //Destory Surf
-	   if(surf)
-	     gts_object_destroy (GTS_OBJECT (surf)); 
+	     
 	 }
+	 //Destory Surf
+	 if(surf)
+	   gts_object_destroy (GTS_OBJECT (surf)); 
+	 
+//
+// Pause between frames if requested.
       //
-      // Pause between frames if requested.
-      //
-      if( display_debug_images && pause_after_each_frame )
-	cvWaitKey( 0 );
-      else if( display_debug_images )
-	cvWaitKey( 100 );
-      
-      
+	 if( display_debug_images && pause_after_each_frame )
+	   cvWaitKey( 0 );
+	 else if( display_debug_images )
+	   cvWaitKey( 100 );
+	 
+	 
       //
       // Clean-up
       //
-     
-      cvReleaseImage( &left_frame );
-      cvReleaseImage( &right_frame );
+	 
+	 cvReleaseImage( &left_frame );
+	 cvReleaseImage( &right_frame );
       cvReleaseImage( &color_frame);
         
       list<Feature*>::iterator fitr;
@@ -1335,7 +1358,7 @@ void threadedStereo::runP(auv_image_names &name){
       //fflush(stdout);
       // doneCount.increment();
       
-      
+      return true;
 }
 
 

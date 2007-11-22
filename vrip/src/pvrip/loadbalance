@@ -93,7 +93,7 @@ $STEPDECAY = 0.8;
 $DOXLOAD = 0;
 
 # Default directory for log files
-$AUTOMOUNTPREFIX = "/n/";
+$AUTOMOUNTPREFIX = "/mnt/";
 $BASEHOST = `hostname`;
 chop $BASEHOST;
 $LOGDIR = $AUTOMOUNTPREFIX.$BASEHOST."/tmp/loadbalance_$$";
@@ -226,7 +226,7 @@ if (-e $LOGDIR) {
     }
 } else {
     # make logdir
-    $errmsg = `mkdir $LOGDIR\n`;
+    $errmsg = `mkdir -p $LOGDIR\n`;
     if ($?) {
 	die "Error: Could not mkdir $LOGDIR\n";
     }
@@ -291,8 +291,8 @@ for ($cmdno=1; ($commandline = <COMMAND>); $cmdno++) {
     print CMD "/bin/rm $psfile\n";
     close(CMD);
 #    $cmd = "rsh $host npri -h 250 csh $cmdname &\n";
-    $cmd = "ssh $host /bin/nice -20 csh -ef $cmdname &\n";
-    # $cmd = "rsh $host /bin/nice -20 csh -ef $cmdname &\n";
+    $cmd = "ssh $host /usr/bin/nice -20 csh -ef $cmdname &\n";
+    # $cmd = "rsh $host /usr/bin/nice -20 csh -ef $cmdname &\n";
     print STDERR $cmd;
 
     open(STDOUT, ">$stdoutname");

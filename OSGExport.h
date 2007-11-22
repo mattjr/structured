@@ -244,12 +244,12 @@ public:
 class OSGExporter 
 {
 public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose) {state=NULL;
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),hardware_compress(hardware_compress) {state=NULL;
     do_atlas=false;
    
     context=NULL;
    
-    
+    hardware_compress=true;
     internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
     if(compress_tex){
 
@@ -261,11 +261,10 @@ public:
 	printf("Can't use OPENGL without valid context");
 	exit(0);
       }
-#ifndef __APPLE__
-      internalFormatMode=osg::Texture::USE_S3TC_DXT5_COMPRESSION;/// USE_ARB_COMPRESSION; 
-#else
+
+
       internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION; 
-#endif
+
     }
   }
   osg::Image *LoadResizeSave(string filename,string outname,bool save,int tex_size);
@@ -280,7 +279,7 @@ protected:
   osg::Texture::InternalFormatMode internalFormatMode;
     MyGraphicsContext *context;
   bool ive_out;
-  //osg::Geometry* convertGtsSurfListToGeometry(GtsSurface *s) const;  
+  
   osg::ref_ptr<osg::Geode> convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback=NULL) ;  
   bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size);
   string prefixdir;
@@ -289,13 +288,8 @@ protected:
   bool do_atlas;
   int num_threads;
   int verbose;
+  bool hardware_compress;
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
-  /*
-    inline osg::Vec3 transformVertex(const osg::Vec3& vec, const bool rotate) const ;
-    inline osg::Vec3 transformNormal(const osg::Vec3& vec, const bool rotate) const ;
-    
-    bool _fixBlackMaterials;
-  */
   
 };
 

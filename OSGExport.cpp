@@ -9,7 +9,7 @@
 #include <glib.h>
 #include <highgui.h>
 #include <boost/thread/thread.hpp>
-
+#include "squish-1.10/squish.h"
 
 using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
@@ -66,7 +66,7 @@ void OSGExporter::compress(osg::Texture2D* texture2D){
     
     // restore the original setting
     texture2D->setUnRefImageDataAfterApply(unrefImageDataAfterApply);
-    
+
     image->readImageFromCurrentTexture(state->getContextID(),true);
     texture2D->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
   }
@@ -195,9 +195,9 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	   
 	     // create texture
 	   osg::Texture2D* texture = new osg::Texture2D;
-	   texture->setUnRefImageDataAfterApply( false );
+	   // texture->setUnRefImageDataAfterApply( false );
 	   texture->setImage(image.get());
-	   texture->setInternalFormatMode(internalFormatMode);
+	   //texture->setInternalFormatMode(internalFormatMode);
 	   stateset->setTextureAttributeAndModes(0,texture,
 						 osg::StateAttribute::ON);
 	   gc._texturesActive=true;
@@ -209,11 +209,8 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	   gc._texcoords = texcoordArray->begin();
 	   gc._geom->setTexCoordArray(0,texcoordArray);
 	  
-	   if(compress_tex && !do_atlas)
+	   if(compress_tex && hardware_compress && !do_atlas)
 	     compress(texture);
-	  if(!state)
-	     state = new osg::State;
-	   texture->apply(*state);
 	  
 	 
 	   osg_tex_ptrs.push_back(texture);
@@ -482,7 +479,7 @@ std::string relative_path(std::string pathString){
  	        return (a);
 }
 
-osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip){
+osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip,bool compress){
 
         if(cvImg->nChannels == 3){
 	  if(flip){
@@ -497,12 +494,21 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip){
                 cvCvtColor( cvImg, cvImg, CV_BGR2RGB );
 	  }
                 osg::Image* osgImg = new osg::Image();
- int pixelFormat = GL_RGB;
- int dataType = GL_UNSIGNED_BYTE;
+		int pixelFormat;
+		
+		int dataType;
+
+		if(compress){
+		  pixelFormat= 33776;
+		  dataType =GL_UNSIGNED_BYTE;
+		}else{		
+		pixelFormat= GL_RGB;
+		dataType= GL_UNSIGNED_BYTE;
+		}
                 osgImg->setImage(
                         cvImg->width, //s
                         cvImg->height, //t
-                        3, //r 3
+                        1, //r 3
                        pixelFormat, //GLint internalTextureformat, (GL_LINE_STRIP,0x0003)
                         pixelFormat, // GLenum pixelFormat, (GL_RGB, 0x1907)
                         dataType, // GLenum type, (GL_UNSIGNED_BYTE, 0x1401)
@@ -519,6 +525,61 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip){
         }
 
 }
+using namespace squish;
+void CompressImageRGB( u8 const* rgb, int width, int height, void* blocks, int flags )
+{
+	// fix any bad flags
+	//flags = FixFlags( flags );
+
+	// initialise the block output
+	u8* targetBlock = reinterpret_cast< u8* >( blocks );
+	int bytesPerBlock = ( ( flags & kDxt1 ) != 0 ) ? 8 : 16;
+
+	// loop over blocks
+	for( int y = 0; y < height; y += 4 )
+	{
+		for( int x = 0; x < width; x += 4 )
+		{
+			// build the 4x4 block of pixels
+			u8 sourceRgba[16*4];
+			u8* targetPixel = sourceRgba;
+			int mask = 0;
+			for( int py = 0; py < 4; ++py )
+			{
+				for( int px = 0; px < 4; ++px )
+				{
+					// get the source pixel in the image
+					int sx = x + px;
+					int sy = y + py;
+					
+					// enable if we're in the image
+					if( sx < width && sy < height )
+					{
+						// copy the rgba value
+						u8 const* sourcePixel = rgb + 3*( width*sy + sx );
+						for( int i = 0; i < 3; ++i )
+							*targetPixel++ = *sourcePixel++;
+						*targetPixel++ =255;
+						// enable this pixel
+						mask |= ( 1 << ( 4*py + px ) );
+					}
+					else
+					{
+						// skip this pixel as its outside the image
+						targetPixel += 4;
+					}
+				}
+			}
+			
+			// compress it into the output
+			CompressMasked( sourceRgba, mask, targetBlock, flags );
+			
+			// advance
+			targetBlock += bytesPerBlock;
+		}
+	}
+}
+
 osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save,int tex_size){
 
   IplImage *fullimg=NULL;
@@ -548,15 +609,25 @@ osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save
     cvReleaseImage(&fullimg);
     tex_image_cache[filename]=cvImg;
   }
+  
   else {
     printf("Failed to load %s\n",filename.c_str());
     cvReleaseImage(&cvImg);
     return NULL;
   }
+  int compressedSize=squish::GetStorageRequirements(cvImg->width,cvImg->height,squish::kDxt1);
+  char *compressed_data=new char[compressedSize];
+  osg::Image* image=NULL;
   
-  osg::Image* image =Convert_OpenCV_TO_OSG_IMAGE(cvImg,!cached);
+  if(compress_tex && !hardware_compress){
+    printf("assa\n");
+    CompressImageRGB((unsigned char *)cvImg->imageData,cvImg->width,cvImg->height,compressed_data,squish::kDxt1);
+    image =Convert_OpenCV_TO_OSG_IMAGE(cvImg,!cached,true);
+  }else
+    image =Convert_OpenCV_TO_OSG_IMAGE(cvImg,!cached,false);
   // osg::Image* k = osgDB::readImageFile(filename);
-  //printf("Format klnFace %d %d %d %d %d\n Format mine %d %d %d %d %d\n",k->r(),k->getInternalTextureFormat(),k->getPixelFormat(),k->getDataType(),k->getPacking()image->r(),image->getInternalTextureFormat(),image->getPixelFormat(),image->getDataType(),image->getPacking());
+  //printf("Format klnFace %d %d %d %d %d\n Format mine %d %d %d %d %d\n",k->r(),k->getInternalTextureFormat(),k->getPixelFormat(),k->getDataType(),k->getPacking(),image->r(),image->getInternalTextureFormat(),image->getPixelFormat(),image->getDataType(),image->getPacking());
+ 
   image->setFileName(osgDB::getSimpleFileName(filename));
   if(save){  
     printf("Writing %s\n",outname.c_str());

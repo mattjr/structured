@@ -197,7 +197,7 @@ if (-e $SUBVOLDIR) {
     }
 } else {
     # make subvoldir
-    $errmsg = `mkdir $SUBVOLDIR\n`;
+    $errmsg = `mkdir -p -m 0777 $SUBVOLDIR\n`;
     if ($?) {
 	die "Error: Could not mkdir $SUBVOLDIR\n";
     }

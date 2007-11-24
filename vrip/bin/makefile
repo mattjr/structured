@@ -55,6 +55,7 @@ PROGS = \
 	vripsurf \
 	vripupdate \
 	loadbalance \
+	vripdicebbox\
 	permute \
 	plycull \
 	plycullmaxx \
@@ -207,6 +208,9 @@ ifeq ($(UNAME), Cygwin)
     loadbalance:
 	    cp ../src/pvrip/loadbalance .
 
+    vripdicebbox:
+	cp ../src/pvrip/vripdicebbox .
+
     permute:
 	    cp ../src/pvrip/permute .
 
@@ -358,6 +362,9 @@ else
 
     loadbalance:
 	    ln -s ../src/pvrip/loadbalance loadbalance
+
+    vripdicebbox:
+	    ln -s ../src/pvrip/vripdicebbox vripdicebbox
 
     permute:
 	    ln -s ../src/pvrip/permute permute

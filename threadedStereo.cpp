@@ -76,7 +76,7 @@ static string stereo_calib_file_name;
 static bool use_rect_images=false;
 static FILE *uv_fp;
 static ofstream file_name_list;
-static FILE *bboxfp;
+
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 static int num_threads=1;
 static FILE *fpp,*fpp2;
@@ -88,11 +88,11 @@ static bool output_ply_and_conf =true;
 static FILE *conf_ply_file;
 static bool output_3ds=false;
 static char cov_file_name[255];
-static bool thread_vrip=false;
+
 static string basepath;
 static int split_chunks=0;
 enum {END_FILE,NO_ADD,ADD_IMG};
-  const char *subvoldir="/mnt/shared/mesh-agg";
+  const char *subvoldir="/mnt/shared/svol";
 static string deltaT_config_name;
 static string deltaT_dir;
 
@@ -825,8 +825,10 @@ int main( int argc, char *argv[ ] )
    
     
    const char *uname="mesh";
+   const char *uname2="mesh-agg";
  
    auv_data_tools::makedir(uname);
+   auv_data_tools::makedir(uname2);
   
    auv_data_tools::makedir(subvoldir);
    chmod(subvoldir,   0777);
@@ -988,7 +990,7 @@ int main( int argc, char *argv[ ] )
        }
        */
        fprintf(conf_ply_file,
-	       "bmesh surface-%08d.ply 0.033\n"
+	       "bmesh surface-%08d.ply 0.033 1\n"
 	       ,i); 
    
        
@@ -999,7 +1001,7 @@ int main( int argc, char *argv[ ] )
   
 
   if(output_ply_and_conf && have_mb_ply)
-    for(int i=0; i < mb_ply_filenames.size(); i++){
+    for(int i=0; i < (int)mb_ply_filenames.size(); i++){
       string simpname =osgDB::getSimpleFileName(mb_ply_filenames[i]);
       string inname=mb_ply_filenames[i];
       string outname=(string(subvoldir)+string("/")+simpname);
@@ -1008,7 +1010,7 @@ int main( int argc, char *argv[ ] )
       std::ofstream  OUT(outname.c_str()); 
       OUT << IN.rdbuf();
       fprintf(conf_ply_file,
-	      "bmesh %s .1\n"
+	      "bmesh %s .1 0\n"
 	      ,simpname.c_str()); 
     }
 
@@ -1046,7 +1048,7 @@ int main( int argc, char *argv[ ] )
     conf_ply_file=fopen("./runvrip.sh","w+");
        
     fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd %s/\n",basepath.c_str(),subvoldir);
-    fprintf(conf_ply_file,"%s/vrip/bin/pvrip1 auto.vri $OUTDIR/auto.ply surface.conf surface.conf  0.033 100M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir %s -nocrunch -passtovrip -use_bigger_bbox\n",basepath.c_str(),subvoldir);
+    fprintf(conf_ply_file,"%s/vrip/bin/pvrip1 auto.vri $OUTDIR/mesh-agg/total.ply surface.conf surface.conf  0.033 100M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir %s -nocrunch -passtovrip -use_bigger_bbox\n",basepath.c_str(),subvoldir);
     
     //fprintf(conf_ply_file,"%s/vrip/bin/vripsplit surface.conf surface.conf  0.033 100000000 \n",basepath.c_str());
     //fprintf(conf_ply_file,"echo '#!/bin/bash\\nVRIP_HOME=%s/vrip\\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\\nPATH=$PATH:$VRIP_HOME/bin\\ncd $PWD/mesh-agg/\\n' > ../subvol.sh\n %s/vrip/bin/vripsubvollist -rampscale 400 0.033 *subvol*.conf >> ../subvol.sh\ncd ..;chmod +x subvol.sh\nsh subvol.sh",basepath.c_str(),basepath.c_str());
@@ -1083,15 +1085,15 @@ int main( int argc, char *argv[ ] )
     fchmod(fileno(conf_ply_file),   0777);
     fclose(conf_ply_file);
     system("./runvrip.sh");
-    /*
+   
     FILE *dicefp=fopen("./dice.sh","w+");
-    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd $PWD/mesh-agg/ \n%s/vrip/bin/plydice -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
-
+    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nDICEDIR=$PWD/mesh-agg/\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+    fprintf(dicefp,"cd %s\n%s/vrip/bin/vripdicebbox surface.conf $DICEDIR\n",subvoldir,basepath.c_str());
     //"cat diced.txt |while read line; do $PWD/../%s/vrip/bin/plyclean -edgecol 40%% 120 -sliver 160 -edgecol .1 120  < ${line} > tmp.ply; mv ${line} ${line%%.*}-full.ply; mv tmp.ply ${line}; done"
       fchmod(fileno(dicefp),   0777);
       fclose(dicefp);
       system("./dice.sh");
-
+      /*
       dicefp=fopen("mesh-agg/bbtmp.txt","r");
       int eof=0;
       double x1,x2,y1,y2,z1,z2;
@@ -1329,10 +1331,20 @@ bool threadedStereo::runP(auv_image_names &name){
 	   FILE *fp;
 	   sprintf(filename,"%s/surface-%08d.ply",
 		   subvoldir,name.index);
-	     fp = fopen(filename, "w" );
-	     auv_write_ply(surf, fp,have_cov_file,"test");
-	     fclose(fp);
-	     
+	   fp = fopen(filename, "w" );
+	   auv_write_ply(surf, fp,have_cov_file,"test");
+	   fclose(fp);
+	  
+	   sprintf(filename,"%s/surface-%08d.trans",
+		   subvoldir,name.index);
+	   fp = fopen(filename, "w" );
+	   fprintf(fp,"%s\n",name.left_name.c_str());
+	   for(int n=0; n< 4; n++)
+	     for(int p=0; p<4; p++)
+	       fprintf(fp,"%f ",name.m[n][p]);
+	   fprintf(fp,"\n");
+	   fclose(fp);
+
 	 }
 	 //Destory Surf
 	 if(surf)

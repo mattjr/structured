@@ -1,0 +1,274 @@
+#! /usr/bin/tclsh
+
+#
+# vripdicebbox 
+# Finds all the bboxes that are contained in the diced section
+# and outputs image name and bbox to genTex
+
+# default diced dir
+set diceddir ".";
+
+proc usage args {
+    global diceddir;
+    puts "";
+    puts "Usage: vripdicebbox diceddir";
+    puts "";
+    puts "Where:";
+    puts "      diceddir    is where it will find all the diced files";
+    puts "                   files for the dicedumes. Default: $diceddir";
+    puts "";
+    exit -1;
+}
+
+proc bbox_intersect {xmin1 ymin1 zmin1 xmax1 ymax1 zmax1 \
+			 xmin2 ymin2 zmin2 xmax2 ymax2 zmax2} \
+{
+    if {$xmin1 > $xmax2} {return 0};
+    if {$xmax1 < $xmin2} {return 0};
+    if {$ymin1 > $ymax2} {return 0};
+    if {$ymax1 < $ymin2} {return 0};
+    if {$zmin1 > $zmax2} {return 0};
+    if {$zmax1 < $zmin2} {return 0};
+    
+    return 1;
+}
+
+
+# Given a "bmesh x.ply tx ty tz q1 q2 q3 q4" line, this routine generates
+# a x.bbox file, which has two lines:
+#         minx miny minz
+#         maxx maxy maxz
+#
+proc confline2bbox {confline} {
+    if {("bmesh" == [lindex $confline 0])} {
+	#set cmd "exec plyxform ";
+	#set cmd "$cmd -t [lindex $confline 2] [lindex $confline 3] [lindex $confline 4]";
+	#set q3 [lindex $confline 8];
+	#set q3 [expr -$q3];
+	#set cmd "$cmd -q [lindex $confline 5] [lindex $confline 6] [lindex $confline 7] $q3";
+	#set cmd "$cmd < [lindex $confline 1] | plybbox";
+	set cmd "exec plybbox [lindex $confline 1]";
+	catch {eval $cmd} msg;
+	scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
+	set plyname [lindex $confline 1];
+	# Set bboxname to be the corresponding bbox file
+	regsub .ply $plyname .bbox bboxname;
+	set bboxfid [open $bboxname "w+"];
+	puts $bboxfid "$minx $miny $minz";
+	puts $bboxfid "$maxx $maxy $maxz";
+
+	close $bboxfid;
+    }
+}
+
+
+# Recurse through the subvols, dividing and figuring out which
+# scans intersect...
+# The args are the ranges to do (xi...xj-1, etc)
+#
+proc sort_confs {xi yi zi xn yn zn il numMeshes} {
+    global BBOXOVERLAP;
+    global res;
+    global bound;
+    global bbox;
+    global conffilename;
+    global svnum;
+    global subvoldir;
+    global meshlist;
+    global subindexlist;
+
+    #puts "sort_confs $xi $yi $zi $xn $yn $zn <indexlist> $numMeshes";
+    #puts $il;
+	
+    set xinc [expr $BBOXOVERLAP*$res];
+    set yinc [expr $BBOXOVERLAP*$res];
+    set zinc [expr $BBOXOVERLAP*$res];
+
+    set xmin [expr $bound(x,$xi)            - $xinc];
+    set xmax [expr $bound(x,[expr $xi+$xn]) + $xinc];
+    set ymin [expr $bound(y,$yi)            - $yinc];
+    set ymax [expr $bound(y,[expr $yi+$yn]) + $yinc];
+    set zmin [expr $bound(z,$zi)            - $zinc];
+    set zmax [expr $bound(z,[expr $zi+$zn]) + $zinc];
+
+    # Figure out which meshes intersect this volume
+    set mynumMeshes 0;
+    set myil "";
+
+    for {set i 0} {$i < $numMeshes} {incr i}  {
+	set ili [lindex $il $i];
+	if {[bbox_intersect $xmin $ymin $zmin $xmax $ymax $zmax \
+	     $bbox($ili,xmin) $bbox($ili,ymin) $bbox($ili,zmin) \
+	     $bbox($ili,xmax) $bbox($ili,ymax) $bbox($ili,zmax)]} {
+		 lappend myil $ili;
+		 incr mynumMeshes;
+	     }
+    }
+
+    # Don't -- want to define every subvol variable
+    # Quit if we have no more meshes in this subvol...
+    # if {$mynumMeshes == 0} {
+    #     return 0;
+    # }
+
+    # If we have children, recurse
+    if {$xn >= $yn && $xn >= $zn && $xn > 1} {
+	# split in x, recurse
+	set hx1 [expr int($xn / 2)];
+	set hx2 [expr int($xn - $hx1)];
+	set xj [expr $xi + $hx1];
+	sort_confs $xi $yi $zi $hx1 $yn $zn $myil $mynumMeshes;
+	sort_confs $xj $yi $zi $hx2 $yn $zn $myil $mynumMeshes;
+    } elseif {$yn >= $zn && $yn > 1} {
+	# split in y, recurse
+	set hy1 [expr int($yn / 2)];
+	set hy2 [expr int($yn - $hy1)];
+	set yj [expr $yi + $hy1];
+	sort_confs $xi $yi $zi $xn $hy1 $zn $myil $mynumMeshes;
+	sort_confs $xi $yj $zi $xn $hy2 $zn $myil $mynumMeshes;
+    } elseif {$zn > 1} {
+	# split in z, recurse
+	set hz1 [expr int($zn / 2)];
+	set hz2 [expr int($zn - $hz1)];
+	set zj [expr $zi + $hz1];
+	sort_confs $xi $yi $zi $xn $yn $hz1 $myil $mynumMeshes;
+	sort_confs $xi $yi $zj $xn $yn $hz2 $myil $mynumMeshes;
+    } else {
+	# Remember the index list for this subvol, for later
+	set subindexlist($xi,$yi,$zi) $myil;
+    }
+}	
+
+#
+# Main script
+#
+global dbbox;
+global trans;
+if {$argc < 2}  {
+    usage;
+    exit -1;
+} else {
+  
+    #
+    # Read the .conf file, storing the bboxes for each bmesh
+    # It checks dates.  If the bboxes are out of date, then
+    # it will recreate them.  Otherwise, it will read the
+    # bbox to get the bounds of the mesh.
+    #
+    set dicedir [lindex $argv 1];
+    set bboxfilename "$dicedir/bbtmp.txt";    
+    set numDiced 0;
+
+    # Verify it exists
+    if { ! [file readable $bboxfilename] } {
+	puts "";
+	puts "Error: unable to open bbox file $bboxfilename";
+	usage;
+	exit;
+    }
+    
+    set fileid [open $bboxfilename "r"];
+    
+    while {[gets $fileid bboxline] >= 0} {
+	
+	scan $bboxline "%f %f %f %f %f %f" dbbox($numDiced,xmin) \
+	    dbbox($numDiced,ymin) dbbox($numDiced,zmin)\
+	    dbbox($numDiced,xmax) \
+	    dbbox($numDiced,ymax) dbbox($numDiced,zmax);
+	incr numDiced;
+    }
+
+    # Read the .conf file, storing the bboxes for each bmesh
+    # It checks dates.  If the bboxes are out of date, then
+    # it will recreate them.  Otherwise, it will read the
+    # bbox to get the bounds of the mesh.
+    #
+
+    set conffilename [lindex $argv 0];
+    
+    set numMeshes 0;
+
+    # Verify it exists
+    if { ! [file readable $conffilename] } {
+	puts "";
+	puts "Error: unable to open .conf file $conffilename";
+	usage;
+	exit;
+    }
+    
+    set fileid [open $conffilename "r"];
+    
+    while {[gets $fileid inline] >= 0} {
+	if {[lindex $inline 0] == "bmesh"} {
+	    if {[lindex $inline 3] == "1" } {
+		puts "Computing bounding box for [lindex $inline 1]...";
+		set plyfile [lindex $inline 1];
+		# Set bboxfile to be the corresponding bbox file
+		regsub .ply $plyfile .bbox bboxfile;
+		regsub .ply $plyfile .trans transfile;
+		# Check if bbox file needs to be created or updated
+		if {![file exists $transfile]} {
+		    puts "Cannot find trans file skipping";
+		    continue;
+		} else {
+		    set transfid [open $transfile "r"];
+		    gets $transfid imgname;
+		    gets $transfid transline;
+		    #trans($numMeshes,name) = $imgname;		    
+		    scan $imgname "%s" trans($numMeshes,name);		    
+		    set  trans($numMeshes,trans) $transline;
+		}
+		
+		# Check if bbox file needs to be created or updated
+		if {![file exists $bboxfile]} {
+		    puts "bbox does not exist, creating...";
+		    confline2bbox $inline;
+		} else {
+		    set bboxmtime [file mtime $bboxfile];
+		    set confmtime [file mtime $conffilename];
+		    if {$confmtime > $bboxmtime  && $bboxesok == 0} {
+			puts "bbox file is out of date, redoing....";
+			confline2bbox $inline;
+		    }
+		}
+		
+		puts "Loading bboxfile: $bboxfile...";
+		set bboxfid [open $bboxfile "r"];
+		gets $bboxfid minline;
+		gets $bboxfid maxline;
+		scan $minline "%f %f %f" bbox($numMeshes,xmin) \
+		    bbox($numMeshes,ymin) bbox($numMeshes,zmin);
+		scan $maxline "%f %f %f" bbox($numMeshes,xmax) \
+		    bbox($numMeshes,ymax) bbox($numMeshes,zmax);
+		
+		close $bboxfid;
+		incr numMeshes;
+	    }
+	}
+    }
+    close $fileid;
+    puts "";	
+    puts "$numMeshes $numDiced";
+   
+    # Precompute the meshlist lines, so we only need to figure out
+    # which ones to paste into each conf file
+    for {set i 0} {$i < $numDiced} {incr i}  {
+	# pad svnumstr with 0's to make it 4 characters long
+	set svnumstr [string range "00000000" 0 [expr 7 - \
+						 [string length $i]]];
+	set svnumstr "$dicedir/bbox-$svnumstr$i.txt";	
+	set bboxfid [open $svnumstr "w"];
+	for {set j 0} {$j < $numMeshes} {incr j}  {
+	    if {[bbox_intersect $dbbox($i,xmin) $dbbox($i,ymin)\
+		     $dbbox($i,zmin) \
+		     $dbbox($i,xmax) $dbbox($i,ymax) $dbbox($i,zmax) \
+		     $bbox($j,xmin) $bbox($j,ymin) $bbox($j,zmin) \
+		     $bbox($j,xmax) $bbox($j,ymax) $bbox($j,zmax)]} {
+		puts $bboxfid "$j $trans($j,name) $bbox($j,xmin) $bbox($j,ymin) $bbox($j,zmin) $bbox($j,xmax) $bbox($j,ymax) $bbox($j,zmax) $trans($j,trans)"
+	    }
+	
+	}
+	
+	close $bboxfid;
+    }
+}

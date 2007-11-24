@@ -144,9 +144,9 @@ proc bmesh args {
     global useNorm
 
     if {!$useNorm} {
-	eval vrip_rangescanrle $args
+	eval vrip_rangescanrle  [lindex $args 0]
     } else {
-	eval vrip_rangescannormrle $args
+	eval vrip_rangescannormrle [lindex $args 0]
     }
     update_slice
 }

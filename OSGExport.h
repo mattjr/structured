@@ -312,6 +312,7 @@ struct GeometryCollection
   bool                        _texturesActive;
   osg::Vec3Array::iterator    _vertices;
   osg::Vec4Array::iterator    _colors;
+  bool                        _colorsActive;
   osg::Vec2Array::iterator    _texcoords;
   int                         _coordCount;
   osg::Geometry*              _geom;

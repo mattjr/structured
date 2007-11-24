@@ -3,6 +3,7 @@
 #include <osgUtil/SmoothingVisitor>
 #include <osgUtil/Optimizer>
 #include <osg/GraphicsContext>
+#include <osg/TexEnvCombine>
 #include <osgDB/WriteFile>
 #include <osgUtil/Simplifier>
 #include <cv.h>
@@ -123,39 +124,31 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
     texLimits.expandBy(v3->u,1-v3->v,0.0);
     texLimits.expandBy(v2->u,1-v2->v,0.0);
     texLimits.expandBy(v1->u,1-v1->v,0.0);
-
     (*gc._texcoords++).set(v3->u,1-v3->v); 
-   
     (*gc._texcoords++).set(v2->u,1-v2->v); 
-    (*gc._texcoords++).set(v1->u,1-v1->v);  
+    (*gc._texcoords++).set(v1->u,1-v1->v);    
 
-    (*gc._colors++).set(0.0,0.0,0.0,0.0);
-    (*gc._colors++).set(0.0,0.0,0.0,0.0);
-    (*gc._colors++).set(0.0,0.0,0.0,0.0);
-    
-
-  }else {
-    if(!zrange){
-      (*gc._colors++).set(0.0,0.0,0.0,0.0);
-      (*gc._colors++).set(0.0,0.0,0.0,0.0);
-      (*gc._colors++).set(0.0,0.0,0.0,0.0);
-    }
-    float range=zrange[1]-zrange[0];
-    
-    float r,g,b,val;
-    val = ( GTS_VERTEX(v3)->p.z -zrange[0] )/range;    
-    jet_color_map(val,r,g,b);
-    (*gc._colors++).set(r,b,g,1.0);
-    val = ( GTS_VERTEX(v2)->p.z -zrange[0] )/range;    
-    jet_color_map(val,r,g,b);
-    (*gc._colors++).set(r,b,g,1.0);
-    val = ( GTS_VERTEX(v1)->p.z -zrange[0] )/range;    
-    jet_color_map(val,r,g,b);
-    (*gc._colors++).set(r,b,g,1.0);
-
-
-    
   }
+
+  if(gc._colorsActive){
+      if(!zrange){
+	(*gc._colors++).set(0.5,0.5,0.5,0.0);
+	(*gc._colors++).set(0.5,0.5,0.5,0.0);
+	(*gc._colors++).set(0.5,0.5,0.5,0.0);
+      }
+      float range=zrange[1]-zrange[0];
+      
+      float r,g,b,val;
+      val = ( GTS_VERTEX(v3)->p.z -zrange[0] )/range;    
+      jet_color_map(val,r,g,b);
+      (*gc._colors++).set(r,b,g,1.0);
+      val = ( GTS_VERTEX(v2)->p.z -zrange[0] )/range;    
+      jet_color_map(val,r,g,b);
+      (*gc._colors++).set(r,b,g,1.0);
+      val = ( GTS_VERTEX(v1)->p.z -zrange[0] )/range;    
+      jet_color_map(val,r,g,b);
+      (*gc._colors++).set(r,b,g,1.0);
+    }
 }
 
 
@@ -187,13 +180,16 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
        gc._geom->setVertexArray(vertArray);
        
        // set up color.
-       
-       osg::Vec4Array* colorsArray = new osg::Vec4Array(gc._numPoints);
-       
-       gc._colors=colorsArray->begin();                 
-       gc._geom->setColorArray(colorsArray);
-       gc._geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-       
+       {
+	 osg::Vec4Array* colorsArray = new osg::Vec4Array(gc._numPoints);
+	 
+	 
+	 gc._colors=colorsArray->begin();                 
+	 gc._colorsActive=true;
+	 gc._geom->setColorArray(colorsArray);
+	 
+	 gc._geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+       }
 
        // set up texture if needed.
    
@@ -217,7 +213,8 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	 if (image.valid()){	     
 	   // create state
 	   osg::StateSet* stateset = new osg::StateSet;
-	   
+	   stateset->setMode(GL_LIGHTING,
+			     osg::StateAttribute::OVERRIDE|osg::StateAttribute::OFF); 
 	     // create texture
 	   osg::Texture2D* texture = new osg::Texture2D;
 	   // texture->setUnRefImageDataAfterApply( false );
@@ -225,6 +222,21 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	   //texture->setInternalFormatMode(internalFormatMode);
 	   stateset->setTextureAttributeAndModes(0,texture,
 						 osg::StateAttribute::ON);
+	   osg::TexEnvCombine *te = new osg::TexEnvCombine;    
+	   // Modulate diffuse texture with vertex color.
+	   te->setCombine_RGB(osg::TexEnvCombine::REPLACE);
+	   te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
+	   te->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+	   te->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
+	   te->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+	  
+	   // Alpha doesn't matter.
+	   te->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
+	   te->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
+	   te->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+
+	   stateset->setTextureAttribute(0, te);
+
 	   gc._texturesActive=true;
 	   stateset->setDataVariance(osg::Object::STATIC);
 	   

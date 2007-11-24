@@ -213,8 +213,6 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	 if (image.valid()){	     
 	   // create state
 	   osg::StateSet* stateset = new osg::StateSet;
-	   stateset->setMode(GL_LIGHTING,
-			     osg::StateAttribute::OVERRIDE|osg::StateAttribute::OFF); 
 	     // create texture
 	   osg::Texture2D* texture = new osg::Texture2D;
 	   // texture->setUnRefImageDataAfterApply( false );

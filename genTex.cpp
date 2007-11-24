@@ -424,7 +424,7 @@ int main( int argc, char *argv[ ] )
   else
     totalMeshCount=meshNames.size();
   int i;
-  for( i=0; i < (int) totalMeshCount; i++){
+  for( i=5; i < (int) totalMeshCount; i++){
     
    
     if(verbose)

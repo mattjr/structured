@@ -53,10 +53,10 @@ static int num_threads=1;
 static bool display_debug_images = true;
 
 static bool compress_textures = true;
-
+static bool single_run=false;
+static int single_run_index=0;
 static int lodNum=3;
 static string stereo_calib_file_name;
-
 
 static std::map<int,std::string> texture_file_names;
 static bool hardware_compress=true;
@@ -106,6 +106,19 @@ static bool parse_args( int argc, char *argv[ ] )
 	{
 	  verbose=true;
 	  i+=1;
+	}
+      else if( strcmp( argv[i], "--single-run" ) == 0 )
+	{
+	  if( i == argc-1 ) return false;
+	  single_run_index = atoi( argv[i+1] );
+	  i+=2;
+	  single_run=true;
+	}
+      else if( strcmp( argv[i], "--lods" ) == 0 )
+	{
+	  if( i == argc-1 ) return false;
+	  lodNum= atoi( argv[i+1] );
+	  i+=2;
 	}
       else if( strcmp( argv[i], "-vv" ) == 0 )
 	{
@@ -397,6 +410,11 @@ int main( int argc, char *argv[ ] )
 
   struct stat BUF;
   bool have_dice=(stat(dicefile.c_str(),&BUF)!=-1);
+  if(!have_dice && single_run){
+    fprintf(stderr,"Error need dice for single run\n");
+    return(-1);
+  }
+    
   if(!have_dice){
    
     meshNames.push_back( "mesh-agg/out.ply");
@@ -418,13 +436,20 @@ int main( int argc, char *argv[ ] )
 
  
 
-  int totalMeshCount;
-  if(have_max_mesh_count )
+  int totalMeshCount,startRun;
+  if(single_run){
+    startRun=single_run_index;
+    totalMeshCount=single_run_index+1;
+  }else{
+    startRun=0;
+    if(have_max_mesh_count )
     totalMeshCount=max_mesh_count;
   else
     totalMeshCount=meshNames.size();
+  }
+  
   int i;
-  for( i=0; i < (int) totalMeshCount; i++){
+  for( i=startRun; i < (int) totalMeshCount; i++){
     
    
     if(verbose)
@@ -529,7 +554,7 @@ int main( int argc, char *argv[ ] )
   }
   mesh_count(i,totalMeshCount,lodNum,lodNum,0,0,0);
 
-  if(have_dice && lodNum > 1){
+  if(have_dice && lodNum > 1 && !single_run){
     genPagedLod(outNodes,outNames);
   }
   // 

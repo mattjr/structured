@@ -90,7 +90,7 @@ static bool output_3ds=false;
 static char cov_file_name[255];
 
 static string basepath;
-static int split_chunks=0;
+
 enum {END_FILE,NO_ADD,ADD_IMG};
   const char *subvoldir="/mnt/shared/svol";
 static string deltaT_config_name;
@@ -157,6 +157,33 @@ gboolean image_count_verbose ( guint number, guint total)
     return TRUE;
   }
   return FALSE;
+}
+void print_uv_3dpts( list<Feature*>          &features,
+		    list<Stereo_Feature_Estimate> &feature_positions,
+		    unsigned int                   left_frame_id,
+		     unsigned int                   right_frame_id,
+		     double timestamp, string leftname,string rightname){
+  list<Stereo_Feature_Estimate>::iterator litr;
+  list<Feature *>::iterator fitr;
+  fprintf(uv_fp,"%f %s %s %d %d\n",timestamp, leftname.c_str(),
+	  rightname.c_str(),(int)feature_positions.size(),(int)features.size());
+  
+  for( litr  = feature_positions.begin( ),
+	 fitr = features.begin();
+       litr != feature_positions.end( ) || fitr != features.end(); 
+       litr++,fitr++ ){
+    const Feature_Obs *p1_left_obs;
+    p1_left_obs = (*fitr)->get_observation( left_frame_id );
+    const Feature_Obs *p1_right_obs;
+    p1_right_obs = (*fitr)->get_observation( right_frame_id );
+    fprintf(uv_fp,"%f %f %f %f %f %f %f\n",litr->x[0],litr->x[1],
+	   litr->x[2], p1_left_obs->u, 
+	   p1_left_obs->v,
+	   p1_right_obs->u, 
+	   p1_right_obs->v);
+    
+  } 
+  fprintf(uv_fp,"\n");
 }
 
 bool get_camera_params( Config_File *config_file, Vector &camera_pose ){
@@ -775,377 +802,6 @@ static int get_auv_image_name( const string  &contents_dir_name,
          
 }
 
-
-int main( int argc, char *argv[ ] )
-{
-   //
-   // Parse command line arguments
-   //
-   if( !parse_args( argc, argv ) )
-   {
-      print_usage( );
-      exit( 1 );
-   }
-   string path=string(argv[0]);
-   unsigned int loc=path.rfind("/");
-   
-   string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
-   basepath= osgDB::getRealPath (basepath);
-   cout << "Basepath " <<basepath <<endl;
- 
-    //
-   // Open the config file
-   // Ensure the option to display the feature finding debug images is on.
-   //
-   Config_File *config_file;
-   try
-   {
-      config_file = new Config_File( stereo_config_file_name );
-   }
-   catch( string error )
-   {
-      cerr << "a ERROR - " << error << endl;
-      exit( 1 );
-   }
- 
- 
-
-
-   //
-   // Run through the data
-   //conf
-  ifstream *cov_file;
-  ifstream      contents_file;
-  Vector *camera_pose;
-
-   
-   
- 
-   
-   
-    
-   const char *uname="mesh";
-   const char *uname2="mesh-agg";
- 
-   auv_data_tools::makedir(uname);
-   auv_data_tools::makedir(uname2);
-  
-   auv_data_tools::makedir(subvoldir);
-   chmod(subvoldir,   0777);
-   //
-   // Open the contents file
-   //
-    contents_file.open( contents_file_name.c_str( ) );
-   if( !contents_file )
-   {
-      cerr << "ERROR - unable to open contents file: " << contents_file_name
-           << endl;
-      exit( 1 );     
-   }
-   
- 
-     
-   cov_file = new ifstream;
-   if(have_cov_file){ 
-     cov_file->open( cov_file_name);
-       if( !cov_file )
-	 {
-	   cerr << "ERROR - unable to open contents file: " << cov_file_name
-		<< endl;
-	   exit( 1 );     
-	 }
-   }
-
-
-  
-   
-     fpp=fopen("mesh/campath.txt","w");
-     if(!fpp ){
-       fprintf(stderr,"Cannot open mesh/campath.txt\n");
-       exit(-1);
-     }
-
-   if(output_pts_cov)
-     pts_cov_fp=  fopen("pts_cov.txt","w");
-
-   //
-   // Figure out the directory that contains the contents file 
-   //
-   
-   
-   
-   if(output_uv_file)
-     uv_fp= fopen("uvfile.txt","w");
-   if(output_3ds){
-     const char *uname="mesh";
-     auv_data_tools::makedir(uname); 
-     file_name_list.open("mesh/filenames.txt");
-   }  
-   //
-   camera_pose =new Vector(AUV_NUM_POSE_STATES);
-   get_camera_params(config_file,*camera_pose);
-   Matrix *image_coord_covar;
-   if(have_cov_file){
-     image_coord_covar = new Matrix(4,4);
-     image_coord_covar->clear( );
-     config_file->get_value("STEREO_LEFT_X_VAR",(*image_coord_covar)(0,0) );
-     config_file->get_value("STEREO_LEFT_Y_VAR",(*image_coord_covar)(1,1) );
-     config_file->get_value("STEREO_RIGHT_X_VAR",(*image_coord_covar)(2,2));
-     config_file->get_value("STEREO_RIGHT_Y_VAR",(*image_coord_covar)(3,3));
-   }else
-     image_coord_covar=NULL;
-
-   Slices tasks;
-   unsigned int stereo_pair_count =0;
-   while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
-     auv_image_names name;
-     int ret=get_auv_image_name( dir_name, contents_file, name) ;
-     if(ret == ADD_IMG ){
-       name.index= stereo_pair_count++;
-       name.valid=true;
-       tasks.push_back(name);
-     }else if(ret == NO_ADD){
-       continue;
-     }else if(ret == END_FILE)
-       break;
-   
-   }
-   start_time=tasks[0].timestamp;
-   stop_time=tasks[tasks.size()-1].timestamp;
-   totalTodoCount=stereo_pair_count;
-   
-   //
-   //boost::function<void ()> init = boost::bind(&(threadedStereo::threadedStereo),*config_file,*dense_config_file,*calib , *camera_pose);
-   boost::xtime xt, xt2;
-   
-   long time;
-   // consumer pool model...
-   if(num_threads == 1){
-     
-     boost::xtime_get(&xt, boost::TIME_UTC);
-     threadedStereo *ts= new threadedStereo(stereo_config_file_name,"semi-dense.cfg");
-     for(unsigned int i=0; i < tasks.size(); i++){
-       if(!ts->runP(tasks[i]));
-       tasks.erase(tasks.begin()+i);
-     }    
-     boost::xtime_get(&xt2, boost::TIME_UTC);
-     time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
-     
-     
-     double secs=time/1000.0;
-     printf("single thread: %.2f sec\n", secs);
-     
-     delete ts;
-   }
-   else{
-     g_thread_init (NULL);
-     display_debug_images = false; 
-     boost::xtime_get(&xt, boost::TIME_UTC);
-     SlicePool pool(tasks);
-     Convolution convolution(pool,(int)tasks.size() > num_threads ? num_threads : tasks.size(),stereo_config_file_name,"semi-dense.cfg");
-     boost::thread thrd(convolution);
-     thrd.join();
-     
-     boost::xtime_get(&xt2, boost::TIME_UTC);
-     time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000; 
-     double secs=time/1000.0;
-     printf("max %d consumer pool: %.2f sec\n", num_threads, secs);
-     for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++)
-       if(!itr->valid)
-	 tasks.erase(itr);
-   }
-   if(output_ply_and_conf){
-     char conf_name[255];
-     sprintf(conf_name,"%s/surface-%08d.conf",subvoldir,split_chunks);
-     sprintf(conf_name,"%s/surface.conf",subvoldir);
-     
-     conf_ply_file=fopen(conf_name,"w");
-   
-    
-   
-     for(unsigned int i=0; i < tasks.size(); i++){
-    
-       /*
-	 if(output_pts_cov){
-	 // cout << litr->P << endl;
-	 fprintf(pts_cov_fp,"%f %f %f ",litr->x[0],litr->x[1],litr->x[2]);
-	 for(int i=0;  i<3; i++)
-	 for(int j=0;  j<3; j++)
-	 
-	 fprintf(pts_cov_fp,"%g ",litr->P(i,j));
-	 fprintf(pts_cov_fp,"\n");
-       }
-       if(output_uv_file)
-       print_uv_3dpts(features,feature_positions,
-       left_frame_id,right_frame_id,timestamp,
-       left_frame_name,right_frame_name);*/
-    
-       /*  if((int)i > vrip_split*(split_chunks+1)){
-	 fclose(conf_ply_file);
-	 split_chunks++;
-	 sprintf(conf_name,"mesh-agg/surface-%08d.conf",split_chunks);
-	 conf_ply_file=fopen(conf_name,"w");
-
-   
-       }
-       */
-       fprintf(conf_ply_file,
-	       "bmesh surface-%08d.ply 0.033 1\n"
-	       ,i); 
-   
-       
-       
-       //}
-   }
-   
-  
-
-  if(output_ply_and_conf && have_mb_ply)
-    for(int i=0; i < (int)mb_ply_filenames.size(); i++){
-      string simpname =osgDB::getSimpleFileName(mb_ply_filenames[i]);
-      string inname=mb_ply_filenames[i];
-      string outname=(string(subvoldir)+string("/")+simpname);
-      cout << "Copying " << inname << " to " << outname<<endl;
-      std::ifstream  IN (inname.c_str());
-      std::ofstream  OUT(outname.c_str()); 
-      OUT << IN.rdbuf();
-      fprintf(conf_ply_file,
-	      "bmesh %s .1 0\n"
-	      ,simpname.c_str()); 
-    }
-
-  fclose(conf_ply_file);
-
-   if(output_uv_file)
-     fclose(uv_fp);
-   if(output_3ds)
-     file_name_list.close();
-   
-   if(fpp)
-     fclose(fpp);
-   if(output_3ds){
-     fpp = fopen("mesh/meshinfo.txt","w");
-    fprintf(fpp,"%d\n",meshNum);
-    fclose(fpp);
-   }
-   if(fpp2)
-     fclose(fpp2);
-   if(conf_ply_file){
-   
-     if(output_pts_cov)
-       fclose(pts_cov_fp);
-     if(gen_mb_ply){
-       FILE *genmbfp=fopen("genmb.sh","w");
-       
-       fprintf(genmbfp,"#!/bin/bash\n%s/../seabed_localisation/bin/seabed_pipe --start %f --stop %f --mesh %s %s %s",basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),contents_file_name.c_str());
-       fchmod(fileno(genmbfp),   0777);
-       fclose(genmbfp);
-       system("./genmb.sh");
-     }
-
- //   fprintf(conf_ply_file,"#!/bin/bash\nPATH=$PATH:$PWD/myvrip/bin/\ncd mesh-agg/ \n../myvrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -prob\n../myvrip/bin/vripsurf auto.vri out.ply -import_norm\n");
-
-    conf_ply_file=fopen("./runvrip.sh","w+");
-       
-    fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd %s/\n",basepath.c_str(),subvoldir);
-    fprintf(conf_ply_file,"%s/vrip/bin/pvrip1 auto.vri $OUTDIR/mesh-agg/total.ply surface.conf surface.conf  0.033 100M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir %s -nocrunch -passtovrip -use_bigger_bbox\n",basepath.c_str(),subvoldir);
-    
-    //fprintf(conf_ply_file,"%s/vrip/bin/vripsplit surface.conf surface.conf  0.033 100000000 \n",basepath.c_str());
-    //fprintf(conf_ply_file,"echo '#!/bin/bash\\nVRIP_HOME=%s/vrip\\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\\nPATH=$PATH:$VRIP_HOME/bin\\ncd $PWD/mesh-agg/\\n' > ../subvol.sh\n %s/vrip/bin/vripsubvollist -rampscale 400 0.033 *subvol*.conf >> ../subvol.sh\ncd ..;chmod +x subvol.sh\nsh subvol.sh",basepath.c_str(),basepath.c_str());
-
-
-    /* for(int i=0; i <= split_chunks; i++){   
-       if(num_threads > 1 && thread_vrip)
-	 fprintf(conf_ply_file,"(");
-       fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto-%08d.vri surface-%08d.conf surface-%08d.conf 0.033 -rampscale 400 > vriplog-%08d.txt\n%s/vrip/bin/vripsurf auto-%08d.vri out-%08d.ply > vripsurflog-%08d.txt",basepath.c_str(),i,i,i,i,basepath.c_str(),i,i,i);
-       if(num_threads > 1 && thread_vrip)
-	 fprintf(conf_ply_file,") &\n");
-       else
-	 fprintf(conf_ply_file,"\n");
-       if(num_threads > 1){
-	 if(i % num_threads == 1)
-	   fprintf(conf_ply_file,"wait\necho 'Completed %d meshes (%d to %d) of %d'\n",vrip_split * num_threads,i-(num_threads-1),i,split_chunks);
-       }else 
-	 fprintf(conf_ply_file,"wait\necho 'Completed %d meshes set %d of %d'\n",vrip_split * num_threads,i,split_chunks);
-     
-     }
-     fprintf(conf_ply_file,"wait\necho 'Last mesh'\n");
-
-
-    fprintf(conf_ply_file,"echo 'Joining Meshes...'\n%s/vrip/bin/plyshared ",
-	    basepath.c_str());
-
-
-    for(int i=0; i <=split_chunks; i++)  
-      fprintf(conf_ply_file,"out-%08d.ply ",i);
-    fprintf(conf_ply_file," > total.ply\n echo 'Done'\n");
-    */
-
-     
-    fchmod(fileno(conf_ply_file),   0777);
-    fclose(conf_ply_file);
-    system("./runvrip.sh");
-   
-    FILE *dicefp=fopen("./dice.sh","w+");
-    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebbox range.txt -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
-    fprintf(dicefp,"cd %s\n%s/vrip/bin/vripdicebbox surface.conf $DICEDIR\n",subvoldir,basepath.c_str());
-    //"cat diced.txt |while read line; do $PWD/../%s/vrip/bin/plyclean -edgecol 40%% 120 -sliver 160 -edgecol .1 120  < ${line} > tmp.ply; mv ${line} ${line%%.*}-full.ply; mv tmp.ply ${line}; done"
-      fchmod(fileno(dicefp),   0777);
-      fclose(dicefp);
-      system("./dice.sh");
-      /*
-      dicefp=fopen("mesh-agg/bbtmp.txt","r");
-      int eof=0;
-      double x1,x2,y1,y2,z1,z2;
-      vector<GtsBBox *> bboxes;
-      while(eof != EOF){
-	eof=fscanf(dicefp,"%lf %lf %lf %lf %lf %lf\n" ,&x1,&y1,&z1,&x2,&y2,&z2);
-	if(eof != EOF){
-	  GtsBBox *bbox=gts_bbox_new(gts_bbox_class(),NULL,x1,y1,z1,x2,y2,z2);
-	  bboxes.push_back(bbox);
-	}
-      }
-      printf("Outputing %d bounding box files\n",bboxes.size());
-      char conf_name[255];
-      for(int i=0; i < (int)bboxes.size(); i++){
-	sprintf(conf_name,"mesh-agg/bbox-%08d.txt",i);
-	bboxfp = fopen(conf_name,"w");
-	for(unsigned int j=0; j < tasks.size(); j++){
-	  if(gts_bboxes_are_overlapping(tasks[j].bbox,bboxes[i])){
-	    fprintf(bboxfp,"%d %s %f %f %f %f %f %f",j,
-		    tasks[j].left_name.c_str(),
-		    tasks[j].bbox->x1,tasks[j].bbox->y1,tasks[j].bbox->z1,
-		    tasks[j].bbox->x2,tasks[j].bbox->y2,tasks[j].bbox->z2); 
-	    for(int n=0; n< 4; n++)
-	      for(int p=0; p<4; p++)
-		fprintf(bboxfp," %f",tasks[j].m[n][p]);
-	    fprintf(bboxfp,"\n");
-	  }
-	}  
-	fclose(bboxfp);*/
-	}
-   }
-   
-  
-  // 
-  // Clean-up
-  //
-
-   //  for(int i =0; i < (int)tasks.size(); i++)
-   // delete tasks[i].veh_pose; 
-   delete config_file;
-  delete camera_pose;
-
-  delete cov_file;
-
-}
-
-
-
-
-
-
-
    
 bool threadedStereo::runP(auv_image_names &name){
   IplImage *left_frame;
@@ -1344,7 +1000,7 @@ bool threadedStereo::runP(auv_image_names &name){
 	       fprintf(fp,"%f ",name.m[n][p]);
 	   fprintf(fp,"\n");
 	   fclose(fp);
-
+	  
 	 }
 	 //Destory Surf
 	 if(surf)
@@ -1390,32 +1046,296 @@ void runC(auv_image_names &name){
   printf("%s Written Out to  %s\n",name.left_name.c_str(),name.mesh_name.c_str());
 }
 
+
+int main( int argc, char *argv[ ] )
+{
+   //
+   // Parse command line arguments
+   //
+   if( !parse_args( argc, argv ) )
+   {
+      print_usage( );
+      exit( 1 );
+   }
+   string path=string(argv[0]);
+   unsigned int loc=path.rfind("/");
+   
+   string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
+   basepath= osgDB::getRealPath (basepath);
+   cout << "Basepath " <<basepath <<endl;
+ 
+    //
+   // Open the config file
+   // Ensure the option to display the feature finding debug images is on.
+   //
+   Config_File *config_file;
+   try
+   {
+      config_file = new Config_File( stereo_config_file_name );
+   }
+   catch( string error )
+   {
+      cerr << "a ERROR - " << error << endl;
+      exit( 1 );
+   }
+ 
  
 
-void print_uv_3dpts( list<Feature*>          &features,
-		    list<Stereo_Feature_Estimate> &feature_positions,
-		    unsigned int                   left_frame_id,
-		     unsigned int                   right_frame_id,
-		     double timestamp, string leftname,string rightname){
-  list<Stereo_Feature_Estimate>::iterator litr;
-  list<Feature *>::iterator fitr;
-  fprintf(uv_fp,"%f %s %s %d %d\n",timestamp, leftname.c_str(),
-	  rightname.c_str(),(int)feature_positions.size(),(int)features.size());
-  
-  for( litr  = feature_positions.begin( ),
-	 fitr = features.begin();
-       litr != feature_positions.end( ) || fitr != features.end(); 
-       litr++,fitr++ ){
-    const Feature_Obs *p1_left_obs;
-    p1_left_obs = (*fitr)->get_observation( left_frame_id );
-    const Feature_Obs *p1_right_obs;
-    p1_right_obs = (*fitr)->get_observation( right_frame_id );
-    fprintf(uv_fp,"%f %f %f %f %f %f %f\n",litr->x[0],litr->x[1],
-	   litr->x[2], p1_left_obs->u, 
-	   p1_left_obs->v,
-	   p1_right_obs->u, 
-	   p1_right_obs->v);
+
+   //
+   // Run through the data
+   //conf
+  ifstream *cov_file;
+  ifstream      contents_file;
+  Vector *camera_pose;
+
+   
+   
+ 
+   
+   
     
-  } 
-  fprintf(uv_fp,"\n");
+   const char *uname="mesh";
+   const char *uname2="mesh-agg";
+ 
+   auv_data_tools::makedir(uname);
+   auv_data_tools::makedir(uname2);
+  
+   auv_data_tools::makedir(subvoldir);
+   chmod(subvoldir,   0777);
+   //
+   // Open the contents file
+   //
+    contents_file.open( contents_file_name.c_str( ) );
+   if( !contents_file )
+   {
+      cerr << "ERROR - unable to open contents file: " << contents_file_name
+           << endl;
+      exit( 1 );     
+   }
+   
+ 
+     
+   cov_file = new ifstream;
+   if(have_cov_file){ 
+     cov_file->open( cov_file_name);
+       if( !cov_file )
+	 {
+	   cerr << "ERROR - unable to open contents file: " << cov_file_name
+		<< endl;
+	   exit( 1 );     
+	 }
+   }
+
+
+  
+   
+     fpp=fopen("mesh/campath.txt","w");
+     if(!fpp ){
+       fprintf(stderr,"Cannot open mesh/campath.txt\n");
+       exit(-1);
+     }
+
+   if(output_pts_cov)
+     pts_cov_fp=  fopen("pts_cov.txt","w");
+
+   //
+   // Figure out the directory that contains the contents file 
+   //
+   
+   
+   
+   if(output_uv_file)
+     uv_fp= fopen("uvfile.txt","w");
+   if(output_3ds){
+     const char *uname="mesh";
+     auv_data_tools::makedir(uname); 
+     file_name_list.open("mesh/filenames.txt");
+   }  
+   //
+   camera_pose =new Vector(AUV_NUM_POSE_STATES);
+   get_camera_params(config_file,*camera_pose);
+   Matrix *image_coord_covar;
+   if(have_cov_file){
+     image_coord_covar = new Matrix(4,4);
+     image_coord_covar->clear( );
+     config_file->get_value("STEREO_LEFT_X_VAR",(*image_coord_covar)(0,0) );
+     config_file->get_value("STEREO_LEFT_Y_VAR",(*image_coord_covar)(1,1) );
+     config_file->get_value("STEREO_RIGHT_X_VAR",(*image_coord_covar)(2,2));
+     config_file->get_value("STEREO_RIGHT_Y_VAR",(*image_coord_covar)(3,3));
+   }else
+     image_coord_covar=NULL;
+
+   Slices tasks;
+   unsigned int stereo_pair_count =0;
+   while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
+     auv_image_names name;
+     int ret=get_auv_image_name( dir_name, contents_file, name) ;
+     if(ret == ADD_IMG ){
+       name.index= stereo_pair_count++;
+       name.valid=true;
+       tasks.push_back(name);
+     }else if(ret == NO_ADD){
+       continue;
+     }else if(ret == END_FILE)
+       break;
+   
+   }
+   start_time=tasks[0].timestamp;
+   stop_time=tasks[tasks.size()-1].timestamp;
+   totalTodoCount=stereo_pair_count;
+   
+   //
+   //boost::function<void ()> init = boost::bind(&(threadedStereo::threadedStereo),*config_file,*dense_config_file,*calib , *camera_pose);
+   boost::xtime xt, xt2;
+   
+   long time;
+   // consumer pool model...
+   if(num_threads == 1){
+     
+     boost::xtime_get(&xt, boost::TIME_UTC);
+     threadedStereo *ts= new threadedStereo(stereo_config_file_name,"semi-dense.cfg");
+     for(unsigned int i=0; i < tasks.size(); i++){
+       if(!ts->runP(tasks[i]));
+       tasks.erase(tasks.begin()+i);
+     }    
+     boost::xtime_get(&xt2, boost::TIME_UTC);
+     time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
+     
+     
+     double secs=time/1000.0;
+     printf("single thread: %.2f sec\n", secs);
+     
+     delete ts;
+   }
+   else{
+     g_thread_init (NULL);
+     display_debug_images = false; 
+     boost::xtime_get(&xt, boost::TIME_UTC);
+     SlicePool pool(tasks);
+     Convolution convolution(pool,(int)tasks.size() > num_threads ? num_threads : tasks.size(),stereo_config_file_name,"semi-dense.cfg");
+     boost::thread thrd(convolution);
+     thrd.join();
+     
+     boost::xtime_get(&xt2, boost::TIME_UTC);
+     time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000; 
+     double secs=time/1000.0;
+     printf("max %d consumer pool: %.2f sec\n", num_threads, secs);
+     for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++)
+       if(!itr->valid)
+	 tasks.erase(itr);
+   }
+   if(output_ply_and_conf){
+     char conf_name[255];
+     sprintf(conf_name,"%s/surface.conf",subvoldir);
+     
+     conf_ply_file=fopen(conf_name,"w");
+   
+    
+   
+     for(unsigned int i=0; i < tasks.size(); i++){
+       if(tasks[i].valid)
+	 fprintf(conf_ply_file,
+		 "bmesh surface-%08d.ply 0.033 1\n"
+		 ,tasks[i].index); 
+    
+   }
+   
+  
+
+  if(output_ply_and_conf && have_mb_ply)
+    for(int i=0; i < (int)mb_ply_filenames.size(); i++){
+      string simpname =osgDB::getSimpleFileName(mb_ply_filenames[i]);
+      string inname=mb_ply_filenames[i];
+      string outname=(string(subvoldir)+string("/")+simpname);
+      cout << "Copying " << inname << " to " << outname<<endl;
+      std::ifstream  IN (inname.c_str());
+      std::ofstream  OUT(outname.c_str()); 
+      OUT << IN.rdbuf();
+      fprintf(conf_ply_file,
+	      "bmesh %s .1 0\n"
+	      ,simpname.c_str()); 
+    }
+
+  fclose(conf_ply_file);
+
+   if(output_uv_file)
+     fclose(uv_fp);
+   if(output_3ds)
+     file_name_list.close();
+   
+   if(fpp)
+     fclose(fpp);
+   if(output_3ds){
+     fpp = fopen("mesh/meshinfo.txt","w");
+    fprintf(fpp,"%d\n",meshNum);
+    fclose(fpp);
+   }
+   if(fpp2)
+     fclose(fpp2);
+   if(conf_ply_file){
+   
+     if(output_pts_cov)
+       fclose(pts_cov_fp);
+     if(gen_mb_ply){
+       FILE *genmbfp=fopen("genmb.sh","w");
+       
+       fprintf(genmbfp,"#!/bin/bash\n%s/../seabed_localisation/bin/seabed_pipe --start %f --stop %f --mesh %s %s %s",basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),contents_file_name.c_str());
+       fchmod(fileno(genmbfp),   0777);
+       fclose(genmbfp);
+       system("./genmb.sh");
+     }
+
+     
+
+     conf_ply_file=fopen("./runvrip.sh","w+");
+       
+     fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd %s/\n",basepath.c_str(),subvoldir);
+     fprintf(conf_ply_file,"%s/vrip/bin/pvrip1 auto.vri $OUTDIR/mesh-agg/total.ply surface.conf surface.conf  0.033 100M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir %s -nocrunch -passtovrip -use_bigger_bbox\n",basepath.c_str(),subvoldir);
+    
+  
+
+     
+     fchmod(fileno(conf_ply_file),   0777);
+    fclose(conf_ply_file);
+    system("./runvrip.sh");
+    const char *logdir = "/mnt/shared/log";
+    FILE *dicefp=fopen("./dice.sh","w+");
+    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebbox range.txt -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\n" ,
+	    basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+    fprintf(dicefp,"rm -f gentexcmds\nNUMDICED=$((`wc -l diced.txt | awk '{ print $1 }'` - 1))\nfor i in `seq 0 $NUMDICED`;\ndo\n\techo \"cd $DICEDIR/..;%s/genTex %s -f %s --single-run $i\" >> gentexcmds\ndone\n",basepath.c_str(),stereo_config_file_name.c_str(),dir_name.c_str());
+
+    fprintf(dicefp,"cd %s\n%s/vrip/bin/vripdicebbox surface.conf $DICEDIR\n",
+	    subvoldir,basepath.c_str());
+
+    fprintf(dicefp,"cd $DICEDIR\n%s/vrip/bin/loadbalance ~/loadlimit gentexcmds -logdir %s\n",basepath.c_str(),logdir);
+    fchmod(fileno(dicefp),   0777);
+    fclose(dicefp);
+    system("./dice.sh");
+    
+   }
+   }
+   
+  
+  // 
+  // Clean-up
+  //
+
+   //  for(int i =0; i < (int)tasks.size(); i++)
+   // delete tasks[i].veh_pose; 
+   delete config_file;
+  delete camera_pose;
+
+  delete cov_file;
+
 }
+
+
+
+
+
+
+
+
+ 
+

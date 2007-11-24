@@ -226,7 +226,7 @@ if {$argc < 2}  {
 		} else {
 		    set bboxmtime [file mtime $bboxfile];
 		    set confmtime [file mtime $conffilename];
-		    if {$confmtime > $bboxmtime  && $bboxesok == 0} {
+		    if {$confmtime > $bboxmtime} {
 			puts "bbox file is out of date, redoing....";
 			confline2bbox $inline;
 		    }

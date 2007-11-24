@@ -268,7 +268,7 @@ public:
     }
   }
   osg::Image *LoadResizeSave(string filename,string outname,bool save,int tex_size);
-  osg::ref_ptr< osg::Group>convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback=NULL) ;
+  osg::ref_ptr< osg::Group>convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;
 ~OSGExporter();
  std::map<string,IplImage *> tex_image_cache;
 
@@ -280,7 +280,7 @@ protected:
     MyGraphicsContext *context;
   bool ive_out;
   
-  osg::ref_ptr<osg::Geode> convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback=NULL) ;  
+  osg::ref_ptr<osg::Geode> convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;  
   bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size);
   string prefixdir;
   bool tex_saved;

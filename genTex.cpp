@@ -216,7 +216,8 @@ GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
       
       eof0 = fscanf(bboxfp,"%d %s %lf %lf %lf %lf %lf %lf" ,&count, name,
 	     &x1,&y1,&z1,&x2,&y2,&z2);
-      
+      if(eof0 == EOF)
+	break;
       for(int i=0; i < 4; i++)
 	for(int j=0; j < 4; j++)
 	 eof1 = fscanf(bboxfp," %lf",&mtmp[i][j]);
@@ -234,8 +235,8 @@ GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
     }
     gts_matrix_destroy(mtmp);
     fclose(bboxfp);
-
-    bboxTree=gts_bb_tree_new(bboxes);
+    if(bboxes)
+      bboxTree=gts_bb_tree_new(bboxes);
     return bboxTree;
   }
     printf("No bbox file bailing...\n");
@@ -382,9 +383,13 @@ int main( int argc, char *argv[ ] )
   auv_data_tools::makedir("mesh");
   if(num_threads > 1)
     g_thread_init (NULL);
-  
+ 
+  float zrange[2];
   std::map<int,GtsMatrix *> gts_trans_map;
-  
+  FILE *fp =fopen("mesh-agg/range.txt","r");
+  fscanf(fp,"%*f %*f %f\n%*f %*f %f\n",&(zrange[0]),&(zrange[1]));
+  fclose(fp);
+
   string dicefile("mesh-agg/diced.txt");
   std::vector<string> meshNames;
   std::vector<vector<string > > outNames;
@@ -430,8 +435,8 @@ int main( int argc, char *argv[ ] )
 					 gts_edge_class(), t_vertex_class());
     bool res=read_ply(meshNames[i].c_str(),s,verbose);
     GNode *bboxTree=loadBBox(i,gts_trans_map);
-    if(!res || !bboxTree){
-      printf("Failed to load boudning box or surface %s\n",
+    if(!res ){
+      printf("Failed to load surface %s\n",
 	     meshNames[i].c_str());
       exit(-1);
     }
@@ -445,7 +450,7 @@ int main( int argc, char *argv[ ] )
     std::vector<string> lodnames;
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
 					num_threads,verbose,hardware_compress);    
-
+   
     for(int j=0; j < lodNum; j++){
        boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
 
@@ -471,32 +476,37 @@ int main( int argc, char *argv[ ] )
 	  printf("Done\n");
 	gts_surface_copy(surf,s);
       }
-
-      boost::function<bool(int,int)> texcallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,100,_1,_2);
-
-      if(verbose)
-	printf("Gen texture coordinates\n");
       boost::xtime xt, xt2;
       long time;
       double secs;
+      boost::function<bool(int,int)> texcallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,100,_1,_2);
+      if(bboxTree){
+
+	
+	if(verbose)
+	  printf("Gen texture coordinates\n");
+
+      
+	boost::xtime_get(&xt, boost::TIME_UTC);
+    
+	gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,
+			   lodTexSize[j],num_threads,verbose);
+	boost::xtime_get(&xt2, boost::TIME_UTC);
+	time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
+	secs=time/1000.0;
+	if(verbose)
+	  printf("Done Took %.2f secs\n",secs);
+      }
+      if(verbose)
+	printf("Converting to model for export\n");
       
       boost::xtime_get(&xt, boost::TIME_UTC);
-      gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,
-			 lodTexSize[j],num_threads,verbose);
-      boost::xtime_get(&xt2, boost::TIME_UTC);
-      time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
-      secs=time/1000.0;
-      if(verbose){
-	printf("Done Took %.2f secs\n",secs);
-	printf("Converting to model for export\n");
-      }
-      boost::xtime_get(&xt, boost::TIME_UTC);
       char out_name[255];
-    
+      
       sprintf(out_name,"mesh/blended-%02d-lod%d.ive",i,j);
-           
+      
       osg::ref_ptr<osg::Group> node =osgExp->convertModelOSG(surf,texture_file_names,
-							     out_name,lodTexSize[j],texcallback);
+							     out_name,lodTexSize[j],texcallback,zrange);
       
       lodnames.push_back(osgDB::getSimpleFileName(string(out_name)).c_str());
       if(j == (lodNum -1))

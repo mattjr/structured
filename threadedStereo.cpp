@@ -1087,7 +1087,7 @@ int main( int argc, char *argv[ ] )
     system("./runvrip.sh");
    
     FILE *dicefp=fopen("./dice.sh","w+");
-    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nDICEDIR=$PWD/mesh-agg/\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+    fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebbox range.txt -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
     fprintf(dicefp,"cd %s\n%s/vrip/bin/vripdicebbox surface.conf $DICEDIR\n",subvoldir,basepath.c_str());
     //"cat diced.txt |while read line; do $PWD/../%s/vrip/bin/plyclean -edgecol 40%% 120 -sliver 160 -edgecol .1 120  < ${line} > tmp.ply; mv ${line} ${line%%.*}-full.ply; mv tmp.ply ${line}; done"
       fchmod(fileno(dicefp),   0777);
@@ -1313,7 +1313,7 @@ bool threadedStereo::runP(auv_image_names &name){
 	     gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
 				NULL,tex_size,num_threads,0);
 	     std::vector<string> lodnames;
-	     osgExp->convertModelOSG(surf,textures,filename,512,NULL);
+	     osgExp->convertModelOSG(surf,textures,filename,512,NULL,NULL);
 	     gts_matrix_destroy (invM);
 	 }
 	 if(output_ply_and_conf){

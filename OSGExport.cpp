@@ -89,7 +89,7 @@ static void bin_face_mat_osg (T_Face * f, gpointer * data){
 static void add_face_mat_osg (T_Face * f, gpointer * data){
  
   MaterialToGeometryCollectionMap *mtgcm=(MaterialToGeometryCollectionMap *)data[0];
-
+  float *zrange = (float *)data[4];
   map<int,string> *textures = (map<int,string> *)data[3];
   ClippingMap *cm=(ClippingMap *)data[2];
   GeometryCollection& gc = (*mtgcm)[f->material];
@@ -115,11 +115,10 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   (*gc._vertices++).set(GTS_VERTEX(v2)->p.y,GTS_VERTEX(v2)->p.x,-GTS_VERTEX(v2)->p.z);
   (*gc._vertices++).set(GTS_VERTEX(v1)->p.y,GTS_VERTEX(v1)->p.x,-GTS_VERTEX(v1)->p.z);
  
-  /*
-  (*gc._colors++).set(v3->r,v3->b,v3->g,1.0);
-  (*gc._colors++).set(v2->r,v2->b,v2->g,1.0);
-  (*gc._colors++).set(v1->r,v1->b,v1->g,1.0);
-  */
+ 
+
+  
+  
   if (gc._texturesActive && f->material >= 0){
     texLimits.expandBy(v3->u,1-v3->v,0.0);
     texLimits.expandBy(v2->u,1-v2->v,0.0);
@@ -129,23 +128,49 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
    
     (*gc._texcoords++).set(v2->u,1-v2->v); 
     (*gc._texcoords++).set(v1->u,1-v1->v);  
-   
+
+    (*gc._colors++).set(0.0,0.0,0.0,0.0);
+    (*gc._colors++).set(0.0,0.0,0.0,0.0);
+    (*gc._colors++).set(0.0,0.0,0.0,0.0);
+    
+
+  }else {
+    if(!zrange){
+      (*gc._colors++).set(0.0,0.0,0.0,0.0);
+      (*gc._colors++).set(0.0,0.0,0.0,0.0);
+      (*gc._colors++).set(0.0,0.0,0.0,0.0);
+    }
+    float range=zrange[1]-zrange[0];
+    
+    float r,g,b,val;
+    val = ( GTS_VERTEX(v3)->p.z -zrange[0] )/range;    
+    jet_color_map(val,r,g,b);
+    (*gc._colors++).set(r,b,g,1.0);
+    val = ( GTS_VERTEX(v2)->p.z -zrange[0] )/range;    
+    jet_color_map(val,r,g,b);
+    (*gc._colors++).set(r,b,g,1.0);
+    val = ( GTS_VERTEX(v1)->p.z -zrange[0] )/range;    
+    jet_color_map(val,r,g,b);
+    (*gc._colors++).set(r,b,g,1.0);
+
+
+    
   }
 }
 
 
 
-osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback)
+osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback,float *zrange)
 {
   
   MaterialToGeometryCollectionMap mtgcm;
-  gpointer data[4];
+  gpointer data[5];
   gint n=0;
   data[0]=&mtgcm;
   data[1] = &n;
   data[2]=cm;
   data[3]=&textures;
-
+  data[4]=zrange;
 
    gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
    MaterialToGeometryCollectionMap::iterator itr;
@@ -162,13 +187,13 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
        gc._geom->setVertexArray(vertArray);
        
        // set up color.
-       /*
-	 osg::Vec4Array* colorsArray = new osg::Vec4Array(gc._numPoints);
-	  		
+       
+       osg::Vec4Array* colorsArray = new osg::Vec4Array(gc._numPoints);
+       
        gc._colors=colorsArray->begin();                 
        gc._geom->setColorArray(colorsArray);
        gc._geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-          */
+       
 
        // set up texture if needed.
    
@@ -251,7 +276,7 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 
 
 
-osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback) {
+osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback,float *zrange) {
 
 
   
@@ -270,7 +295,7 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
  
   osg::ref_ptr<osg::Group> root_ptr = new osg::Group;
   ClippingMap cm;
-  osg::ref_ptr<osg::Geode> geode = convertGtsSurfListToGeometry(s,textures,&cm,tex_size,vmcallback);
+  osg::ref_ptr<osg::Geode> geode = convertGtsSurfListToGeometry(s,textures,&cm,tex_size,vmcallback,zrange);
   osg::Group * root = root_ptr.get();
 
   geode->setName(out_name);

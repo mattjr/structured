@@ -1299,11 +1299,11 @@ int main( int argc, char *argv[ ] )
      fchmod(fileno(conf_ply_file),   0777);
     fclose(conf_ply_file);
     system("./runvrip.sh");
-    const char *logdir = "/mnt/shared/log";
+    const char *logdir = "/mnt/shared/log-tex";
     FILE *dicefp=fopen("./dice.sh","w+");
     fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebbox range.txt -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\n" ,
 	    basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
-    fprintf(dicefp,"rm -f gentexcmds\nNUMDICED=$((`wc -l diced.txt | awk '{ print $1 }'` - 1))\nfor i in `seq 0 $NUMDICED`;\ndo\n\techo \"cd $DICEDIR/..;%s/genTex %s -f %s --single-run $i\" >> gentexcmds\ndone\n",basepath.c_str(),stereo_config_file_name.c_str(),dir_name.c_str());
+    fprintf(dicefp,"rm -f gentexcmds\nNUMDICED=$((`wc -l diced.txt | awk '{ print $1 }'` - 1))\nfor i in `seq 0 $NUMDICED`;\ndo\n\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;%s/genTex %s -f %s --single-run $i\" >> gentexcmds\ndone\n",basepath.c_str(),stereo_config_file_name.c_str(),dir_name.c_str());
 
     fprintf(dicefp,"cd %s\n%s/vrip/bin/vripdicebbox surface.conf $DICEDIR\n",
 	    subvoldir,basepath.c_str());

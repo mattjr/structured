@@ -57,7 +57,6 @@ static bool single_run=false;
 static int single_run_index=0;
 static int lodNum=3;
 static string stereo_calib_file_name;
-
 static std::map<int,std::string> texture_file_names;
 static bool hardware_compress=true;
 static float tex_scale=1.0;
@@ -258,7 +257,9 @@ GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
 
 }
 gboolean mesh_count ( int number, int total,int lod,int maxlod,int coarseper,int tex,int textotal){
-  if (number == total) {
+  if(verbose)
+    return true;
+ if (number == total) {
     boost::call_once(&timer_destroy, once2);
     fprintf (stderr, "\n");
     fflush (stderr);
@@ -438,6 +439,7 @@ int main( int argc, char *argv[ ] )
 
   int totalMeshCount,startRun;
   if(single_run){
+    verbose=true;
     startRun=single_run_index;
     totalMeshCount=single_run_index+1;
   }else{

@@ -395,6 +395,7 @@ int main( int argc, char *argv[ ] )
 
 
   auv_data_tools::makedir("mesh");
+  chmod("mesh",   0777);
   if(num_threads > 1)
     g_thread_init (NULL);
  

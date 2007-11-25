@@ -291,7 +291,7 @@ for ($cmdno=1; ($commandline = <COMMAND>); $cmdno++) {
     print CMD "/bin/rm $psfile\n";
     close(CMD);
 #    $cmd = "rsh $host npri -h 250 csh $cmdname &\n";
-    $cmd = "ssh $host /usr/bin/nice -20 csh -ef $cmdname &\n";
+    $cmd = "ssh -x $host /usr/bin/nice -20 csh -ef $cmdname &\n";
     # $cmd = "rsh $host /usr/bin/nice -20 csh -ef $cmdname &\n";
     print STDERR $cmd;
 

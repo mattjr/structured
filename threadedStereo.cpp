@@ -1117,13 +1117,13 @@ int main( int argc, char *argv[ ] )
 	exit( 1 );     
       }
   }
-
-  fpp=fopen("mesh/campath.txt","w");
-  if(!fpp ){
-    fprintf(stderr,"Cannot open mesh/campath.txt\n");
-    exit(-1);
+  if(!single_run){
+    fpp=fopen("mesh/campath.txt","w");
+    if(!fpp ){
+      fprintf(stderr,"Cannot open mesh/campath.txt\n");
+      exit(-1);
+    }
   }
-
   if(output_pts_cov)
     pts_cov_fp=  fopen("pts_cov.txt","w");
 

@@ -57,6 +57,6 @@ echo -e "cd $SUBVOLDIR\n$BASEPATH/vrip/bin/vripdicebbox surface.conf \$DICEDIR\n
 echo -e "cd \$DICEDIR\n$BASEPATH/vrip/bin/loadbalance ~/loadlimit gentexcmds -logdir $LOGDIR\n" >> diced.sh
 chmod 0777 diced.sh 
 ./diced.sh
-echo -e "#!/bin/bash\necho 'LODGen...\\n'\ncd $3;$BASEPATH/lodgen $3\n" > lodgen.sh
+echo -e "#!/bin/bash\necho 'LODGen...'\ncd $3;$BASEPATH/lodgen \n" > lodgen.sh
 chmod 0777 lodgen.sh
 ./lodgen.sh

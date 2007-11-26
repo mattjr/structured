@@ -265,6 +265,7 @@ for ($ii=0; $ii <= $#allplys; $ii++) {
 
 # Merge all the ply files into a single ply file,
 # which has redundant vertices at the subvolume boundaries:
+
 if ($DOMERGE) {
     $setcmd="export VRIP_DIR=$ENV{'VRIP_DIR'}; export PATH=$ENV{'PATH'};";
     $cmd = "/usr/bin/find $SUBVOLDIR | /bin/egrep \"subvol....\.ply\" | /usr/bin/xargs plymerge > $PLYFILE.unshared\n";
@@ -273,14 +274,34 @@ if ($DOMERGE) {
     system "$setcmd $timecmd";
     !$? || die "Error: plymerge returned an error. aborting.\n";
 
+   
+
+    # Plyclean it, to reduce slivers?
+   
+    $PLYCLEAN = $PLYFILE;
+    $PLYCLEAN =~ s/.ply/_unshared_clean.ply/g;
+    $cmd = "plyclean -defaults $PLYFILE.unshared > $PLYCLEAN\n";
+    $timecmd = &timecmd($cmd);
+    print "} $cmd";
+    system $timecmd;
+    !$? || die "Error: plyclean returned an error. aborting.\n";
+    # otherwise, mv plyclean into place
+    
+    $PLYRAW = $PLYCLEAN;
+    $PLYRAW =~ s/.ply/_raw.ply/g;
+    $cmd = "/bin/mv $PLYFILE.unshared $PLYRAW\n";
+    $timecmd = &timecmd($cmd);
+    print "} $cmd";
+    system $timecmd;
+    !$? || die "Error: mv returned an error. aborting.\n";
+
     # Remove redundant vertices
-    $cmd = "plyshared < $PLYFILE.unshared > $PLYFILE\n";
+    $cmd = "plyshared < $PLYCLEAN > $PLYFILE\n";
     $timecmd = &timecmd($cmd);
     print "} $cmd";
     system $timecmd;
     !$? || die "Error: plyshared returned an error. aborting.\n";
-
-    # Plyclean it, to reduce slivers?
+     # Plyclean again
     if ($DOCLEAN) {
 	$PLYCLEAN = $PLYFILE;
 	$PLYCLEAN =~ s/.ply/_clean.ply/g;
@@ -292,14 +313,13 @@ if ($DOMERGE) {
 	# otherwise, mv plyclean into place
 
 	$PLYRAW = $PLYFILE;
-	$PLYRAW =~ s/.ply/_raw.ply/g;
+	$PLYRAW =~ s/.ply/_filt.ply/g;
 	$cmd = "/bin/mv $PLYFILE $PLYRAW; /bin/mv $PLYCLEAN $PLYFILE\n";
 	$timecmd = &timecmd($cmd);
 	print "} $cmd";
 	system $timecmd;
 	!$? || die "Error: mv returned an error. aborting.\n";
     }
-
     # Plycrunch it?
     if ($DOCRUNCH) {
 	$cmd = "ply2crunchset -l 6 $PLYFILE\n";

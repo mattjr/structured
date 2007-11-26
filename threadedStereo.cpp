@@ -797,7 +797,8 @@ static int get_auv_image_name( const string  &contents_dir_name,
   }      
   if (name.left_name == "DeltaT" || name.right_name == "DeltaT")
     return NO_ADD;
-  fprintf(fpp,"%f %f %f %f %f %f %f %f\n",   
+  if(single_run){
+    fprintf(fpp,"%f %f %f %f %f %f %f %f\n",   
 	  name.timestamp,
 	  (*name.veh_pose)[AUV_POSE_INDEX_X],
 	  (*name.veh_pose)[AUV_POSE_INDEX_Y],
@@ -806,7 +807,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
 	  (*name.veh_pose)[AUV_POSE_INDEX_THETA],
 	  (*name.veh_pose)[AUV_POSE_INDEX_PSI],
 	  name.alt);
-
+  }
     
   return ADD_IMG;
          

@@ -1092,7 +1092,8 @@ int main( int argc, char *argv[ ] )
  
   auv_data_tools::makedir(uname);
   auv_data_tools::makedir(uname2);
-  
+  chmod(uname,   0777);
+  chmod(uname2,   0777);
   auv_data_tools::makedir(subvoldir);
   chmod(subvoldir,   0777);
   //

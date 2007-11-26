@@ -217,6 +217,7 @@ if {$argc < 2}  {
 		    #trans($numMeshes,name) = $imgname;		    
 		    scan $imgname "%s" trans($numMeshes,name);		    
 		    set  trans($numMeshes,trans) $transline;
+		    close $transfid
 		}
 		
 		# Check if bbox file needs to be created or updated

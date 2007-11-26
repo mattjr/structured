@@ -797,7 +797,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
   }      
   if (name.left_name == "DeltaT" || name.right_name == "DeltaT")
     return NO_ADD;
-  if(single_run){
+  if(!single_run){
     fprintf(fpp,"%f %f %f %f %f %f %f %f\n",   
 	  name.timestamp,
 	  (*name.veh_pose)[AUV_POSE_INDEX_X],

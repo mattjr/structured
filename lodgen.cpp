@@ -81,7 +81,7 @@ static bool parse_args( int argc, char *argv[ ] )
 osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
 
   float cut_off_distance = 25.0f;
-    float max_visible_distance = 125.0f;
+    float max_visible_distance = 150.0f;
     float max_dist=1e7;
 
   const osg::BoundingSphere& bs = model->getBound();
@@ -94,7 +94,7 @@ osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
     pagedlod->setDatabasePath("");
     pagedlod->setCenter(bs.center());
     pagedlod->setRadius(bs.radius());
-    //  pagedlod->setNumChildrenThatCannotBeExpired(2);
+    pagedlod->setNumChildrenThatCannotBeExpired(2);
     
     pagedlod->setRange(0,max_visible_distance,max_dist);
     pagedlod->addChild(model);
@@ -112,7 +112,7 @@ osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
 }
 void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<string> > lodnames){
   osg::Group *total=new osg::Group;
-
+  printf("Final Paged LOD Hierarchy\n");
   for(int i=0; i < (int)nodes.size(); i++){
   
     osg::Node *tmp=create_paged_lod(nodes[i].get(),lodnames[i]);
@@ -133,19 +133,17 @@ void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<strin
 }
 
 
-//
 // Display information on how to use this program
 //
 static void print_usage( void )
 {
   cout << "USAGE:" << endl;
-  cout << "   stereo_feature_finder_test [OPTIONS] <stereo_cfg> " << endl; 
+  cout << "   loggen [OPTIONS] dir" << endl; 
   cout << endl;
   cout << "OPTIONS:" << endl;
-  cout << "   -r <resize_scale>       Resize the images by a scaling factor." << endl;
+ 
  
   cout << "   -n <max_frame_count>    Set the maximum number of frames to be processed." << endl;
- cout << "    --compress-tex           Compress Textures" << endl;
   cout << endl;
 }
 

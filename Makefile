@@ -71,7 +71,7 @@ SUBDIRS =  vrip squish-1.10
 # myvrip
 # EStereo
 
-all:  threadedStereo genTex subdirs
+all:  threadedStereo genTex lodgen subdirs
 
 .PHONY: subdirs $(SUBDIRS)
 

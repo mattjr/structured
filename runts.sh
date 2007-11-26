@@ -21,8 +21,6 @@ if [ $check -gt 0 ];then
     final=$COUNT
     echo "cd $3;/home/mkj/cvs/threadedStereo/threadedStereo /home/mkj/cvs/threadedStereo/ng2_stereo.cfg -f /media//coral/r20071004_013437_gbr_05_noggin_grids/i20071004_013437_cv/ $1 --single-run $LAST $final" >> tscmds
 fi
-
-
 ~/cvs/threadedStereo/vrip/bin/loadbalance ~/loadlimit tscmds -logdir /mnt/shared/log-ts/  -noxload
 TARGET_DIR=/mnt/shared/svol
 for i in `find $4 -name '*.ply'`; do

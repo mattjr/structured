@@ -489,7 +489,7 @@ int main( int argc, char *argv[ ] )
 					 gts_edge_class(), t_vertex_class());
       
       int currentEdges=gts_surface_edge_number(s);
-      if(!no_simp || !bboxTree){
+      if(!no_simp && bboxTree){
 	int targetEdges=(int)(initialEdges*simpRatio[j]);
 
 	if(verbose){

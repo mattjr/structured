@@ -95,10 +95,10 @@ static int single_run_start=0;
 static int single_run_stop=0;
 
 enum {END_FILE,NO_ADD,ADD_IMG};
-const char *subvoldir="/mnt/shared/svol";
+char subvoldir[255];
 static string deltaT_config_name;
 static string deltaT_dir;
-
+static bool hardware_compress=true;
 void print_uv_3dpts( list<Feature*>          &features,
 		     list<Stereo_Feature_Estimate> &feature_positions,
 		     unsigned int                   left_frame_id,
@@ -236,7 +236,7 @@ static bool parse_args( int argc, char *argv[ ] )
 {
   bool have_stereo_config_file_name = false;
   bool have_contents_file_name = false;
-   
+  strcpy(subvoldir,"mesh-agg/");
   int i=1;
   while( i < argc )
     {
@@ -356,11 +356,22 @@ static bool parse_args( int argc, char *argv[ ] )
 	  vrip_split = atoi( argv[i+1] );
 	  i+=2;
 	}
+      else if( strcmp( argv[i], "--subvoldir" ) == 0 )
+	{  
+	  if( i == argc-1 ) return false;
+	  strcpy(subvoldir , argv[i+1] );
+	  i+=2;
+	}
       else if( strcmp( argv[i], "--dicevol" ) == 0 )
 	{  
 	  if( i == argc-1 ) return false;
 	  subvol = atof( argv[i+1] );
 	  i+=2;
+	}
+      else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
+	{  
+	  hardware_compress=false;
+	  i+=1;
 	}
       else if( strcmp( argv[i], "--uv" ) == 0 )
 	{
@@ -395,6 +406,11 @@ static bool parse_args( int argc, char *argv[ ] )
 	  i+=2;
 	}
       else if( strcmp( argv[i], "--3ds" ) == 0 )
+	{
+	  output_3ds=true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
 	{
 	  output_3ds=true;
 	  i+=1;
@@ -1274,19 +1290,22 @@ int main( int argc, char *argv[ ] )
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
 	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd %s/\n",basepath.c_str(),subvoldir);
-	fprintf(conf_ply_file,"%s/vrip/bin/pvrip1 auto.vri $OUTDIR/mesh-agg/total.ply surface.conf surface.conf  0.033 100M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir %s -nocrunch -passtovrip -use_bigger_bbox\n",basepath.c_str(),subvoldir);
+	fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 400 > vriplog.txt\n%s/vrip/bin/vripsurf auto.vri total.ply > vripsurflog.txt",basepath.c_str(),basepath.c_str());
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	system("./runvrip.sh");
       
-	const char *logdir = "/mnt/shared/log-tex";
+	
 	FILE *dicefp=fopen("./dice.sh","w+");
-	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebbox range.txt -writebboxall bbtmp.txt -dice %f %f %s total.ply | tee diced.txt\n" ,
-		basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
-	fprintf(dicefp,"rm -f gentexcmds\nNUMDICED=$((`wc -l diced.txt | awk '{ print $1 }'` - 1))\nfor i in `seq 0 $NUMDICED`;\ndo\n\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;%s/genTex %s -f %s --single-run $i\" >> gentexcmds\ndone\n",basepath.c_str(),stereo_config_file_name.c_str(),dir_name.c_str());
-	fprintf(dicefp,"cd %s\n%s/vrip/bin/vripdicebbox surface.conf $DICEDIR\n",
-		subvoldir,basepath.c_str());
-	fprintf(dicefp,"cd $DICEDIR\n%s/vrip/bin/loadbalance ~/loadlimit gentexcmds -logdir %s\n",basepath.c_str(),logdir);
+	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+	fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.conf $DICEDIR\n",
+       	basepath.c_str());
+	fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s/%s -f %s ",basepath.c_str(),basepath.c_str(),stereo_config_file_name.c_str(),dir_name.c_str());
+	if(!hardware_compress)
+	  fprintf(dicefp,"--no-hardware-compress\n");
+	else
+	  fprintf(dicefp,"\n");
+
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
 	system("./dice.sh");

@@ -42,7 +42,9 @@ CC_SRCS     =	OSGExport.cpp\
 		auv_clipped_texture_atlas.cpp
 
 
-HH_SRCS = 	
+HH_SRCS = 	OSGExport.h\
+		GraphicsWindowCarbon.h\
+		PixelBufferCarbon.h
 
 OUT_DIR     = objs
 SRC_DIR     = .

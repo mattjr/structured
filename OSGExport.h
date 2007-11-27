@@ -141,7 +141,7 @@ class MyGraphicsContext {
 
 #endif
 
-
+#if 0
 class CompressTexturesVisitor : public osg::NodeVisitor
 {
 public:
@@ -240,19 +240,16 @@ public:
     osg::Texture::InternalFormatMode    _internalFormatMode;
     int _tex_size;
 };
-
+#endif
 class OSGExporter 
 {
 public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),hardware_compress(hardware_compress) {state=NULL;
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress) {state=NULL;
     do_atlas=false;
-   
     context=NULL;
-   
-    hardware_compress=true;
     internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
-    if(compress_tex){
-
+    if(compress_tex && _hardware_compress){
+      
       if(verbose)
 	printf("Compressing Textures\n");
       context=new MyGraphicsContext();
@@ -288,7 +285,7 @@ protected:
   bool do_atlas;
   int num_threads;
   int verbose;
-  bool hardware_compress;
+  bool _hardware_compress;
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
   
 };

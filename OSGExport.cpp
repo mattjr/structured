@@ -244,7 +244,7 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	  gc._texcoords = texcoordArray->begin();
 	  gc._geom->setTexCoordArray(0,texcoordArray);
 	  
-	  if(compress_tex && hardware_compress && !do_atlas)
+	  if(compress_tex && _hardware_compress && !do_atlas)
 	    compress(texture);
 	  
 	 
@@ -313,7 +313,7 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
 
 
   osgUtil::Optimizer optimzer;
-
+  /*
   if(do_atlas){
     if(verbose)
       printf("Texture Atlas Creation\n"); 
@@ -330,14 +330,14 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
 	atlas_compressed_size=1024;
       if(verbose)
 	printf("Texture Compression\n");
-      CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT5_COMPRESSION,
-				  atlas_compressed_size);
+      // CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT5_COMPRESSION,
+      //	  atlas_compressed_size);
       root->accept(ctv); 
       ctv.compress();
       
     }
   }
-  
+  */
   optimzer.optimize(root);
 
  
@@ -672,7 +672,7 @@ osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save
 
   osg::Image* image=NULL;
   
-  if(compress_tex && !hardware_compress){
+  if(compress_tex && !_hardware_compress){
     image =Convert_OpenCV_TO_OSG_IMAGE(cvImg,!cached,true);
   }else
     image =Convert_OpenCV_TO_OSG_IMAGE(cvImg,!cached,false);

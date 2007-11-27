@@ -476,9 +476,10 @@ int main( int argc, char *argv[ ] )
     int lodTexSize[]={max((int)(512*tex_scale),32),max((int)(256*tex_scale),32),max((int)(32*tex_scale),32)};
     float simpRatio[]={0.5,0.1,0.01};
     std::vector<string> lodnames;
+    
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
 					num_threads,verbose,hardware_compress);    
-   
+
     for(int j=0; j < lodNum; j++){
        boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
 

@@ -534,6 +534,7 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip,bool compress)
     int internalFormat;
     int dataType;
     char *data=NULL;
+    osg::Image::AllocationMode allocMode;
     dataType =GL_UNSIGNED_BYTE;
 
     if(compress){
@@ -552,12 +553,13 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip,bool compress)
       cvReleaseImage(&tmp);
       internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
       pixelFormat    = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-		 
+	allocMode= osg::Image::USE_NEW_DELETE ;	 
 		 
     }else{		
       pixelFormat= GL_RGB;
       internalFormat= GL_RGB;
       data=cvImg->imageData;
+      allocMode= osg::Image::NO_DELETE ;
     }
     osgImg->setImage(
 		     cvImg->width, //s
@@ -567,7 +569,7 @@ osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip,bool compress)
 		     pixelFormat, // GLenum pixelFormat, (GL_RGB, 0x1907)
 		     dataType, // GLenum type, (GL_UNSIGNED_BYTE, 0x1401)
 		     (unsigned char *)data, // unsigned char* data
-		     osg::Image::USE_NEW_DELETE // AllocationMode mode (shallow copy)
+		    allocMode// AllocationMode mode (shallow copy)
 		     );//int packing=1); (???)
 
     //printf("Conversion completed\n");

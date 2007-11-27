@@ -93,7 +93,7 @@ class MyGraphicsContext {
             {
                 _gc->realize();
                 _gc->makeCurrent();
-                //std::cout<<"Realized window"<<std::endl;
+                std::cout<<"Realized window"<<std::endl;
             }else{
 	      printf("Can't realize window\n");
 	      exit(0);

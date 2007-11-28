@@ -201,7 +201,7 @@ if {$argc < 2}  {
     while {[gets $fileid inline] >= 0} {
 	if {[lindex $inline 0] == "bmesh"} {
 	    if {[lindex $inline 3] == "1" } {
-		puts "Computing bounding box for [lindex $inline 1]...";
+	#	puts "Computing bounding box for [lindex $inline 1]...";
 		set plyfile [lindex $inline 1];
 		# Set bboxfile to be the corresponding bbox file
 		regsub .ply $plyfile .bbox bboxfile;
@@ -222,18 +222,18 @@ if {$argc < 2}  {
 		
 		# Check if bbox file needs to be created or updated
 		if {![file exists $bboxfile]} {
-		    puts "bbox does not exist, creating...";
+		#    puts "bbox does not exist, creating...";
 		    confline2bbox $inline;
 		} else {
 		    set bboxmtime [file mtime $bboxfile];
 		    set confmtime [file mtime $conffilename];
 		    if {$confmtime > $bboxmtime} {
-			puts "bbox file is out of date, redoing....";
+			#puts "bbox file is out of date, redoing....";
 			confline2bbox $inline;
 		    }
 		}
 		
-		puts "Loading bboxfile: $bboxfile...";
+		#puts "Loading bboxfile: $bboxfile...";
 		set bboxfid [open $bboxfile "r"];
 		gets $bboxfid minline;
 		gets $bboxfid maxline;
@@ -248,8 +248,8 @@ if {$argc < 2}  {
 	}
     }
     close $fileid;
-    puts "";	
-    puts "$numMeshes $numDiced";
+   
+    puts "Number of input meshes: $numMeshes total diced: $numDiced";
    
     # Precompute the meshlist lines, so we only need to figure out
     # which ones to paste into each conf file

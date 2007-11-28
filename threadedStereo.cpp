@@ -1300,7 +1300,7 @@ int main( int argc, char *argv[ ] )
 	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
 	fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.conf $DICEDIR\n",
        	basepath.c_str());
-	fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s/%s -f %s ",basepath.c_str(),basepath.c_str(),stereo_config_file_name.c_str(),dir_name.c_str());
+	fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),dir_name.c_str());
 	if(!hardware_compress)
 	  fprintf(dicefp,"--no-hardware-compress\n");
 	else

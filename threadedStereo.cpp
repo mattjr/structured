@@ -76,7 +76,7 @@ static string stereo_calib_file_name;
 static bool use_rect_images=false;
 static FILE *uv_fp;
 static ofstream file_name_list;
-
+static string base_dir;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 static int num_threads=1;
 static FILE *fpp,*fpp2;
@@ -234,10 +234,15 @@ bool get_camera_params( Config_File *config_file, Vector &camera_pose ){
 //
 static bool parse_args( int argc, char *argv[ ] )
 {
-  bool have_stereo_config_file_name = false;
-  bool have_contents_file_name = false;
+  bool have_stereo_config_file_name = true;
+  bool have_contents_file_name = true;
+  bool have_base_dir=false;
+
+  stereo_config_file_name = "stereo.cfg";
+  contents_file_name = "pose_file.data";
+  dir_name = "img/";
   strcpy(subvoldir,"mesh-agg/");
-  int i=1;
+  int i=0;
   while( i < argc )
     {
       if( strcmp( argv[i], "-r" ) == 0 )
@@ -394,7 +399,7 @@ static bool parse_args( int argc, char *argv[ ] )
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--start" ) == 0 )
-	{
+	{	
 	  if( i == argc-1 ) return false;
 	  start_time = strtod( argv[i+1], NULL );
 	  i+=2;
@@ -415,17 +420,26 @@ static bool parse_args( int argc, char *argv[ ] )
 	  output_3ds=true;
 	  i+=1;
 	}
-      else if( !have_stereo_config_file_name )
+      else if(strcmp( argv[i], "--stereo-config" ) == 0)
 	{
-	  stereo_config_file_name = argv[i];
-	  have_stereo_config_file_name = true;
-	  i++;
+	  if( i == argc-1 ) return false;
+	  stereo_config_file_name = argv[i+1];
+
+	  i+=2;
 	}
-      else if( !have_contents_file_name )
+      else if(strcmp( argv[i], "--contents-file" ) == 0)
 	{
-	  contents_file_name = argv[i];
-	  have_contents_file_name = true;
-	  i++;
+	  if( i == argc-1 ) return false;
+	  contents_file_name = argv[i+1];
+
+	  i+=2;
+	}
+      else if(!have_base_dir)
+	{
+	  if( i == argc-1 ) return false;
+	  base_dir = argv[i+1];
+	  have_base_dir = true;
+	  i+=2;
 	}
       else
 	{
@@ -438,8 +452,22 @@ static bool parse_args( int argc, char *argv[ ] )
     return false;
   }
 
+  if(have_base_dir){
+    stereo_config_file_name= base_dir+string("/")+stereo_config_file_name;
+    contents_file_name= base_dir+string("/")+contents_file_name;
+    dir_name= base_dir+string("/")+dir_name;
+  }
 
+  struct stat statinfo;
+  if(stat(stereo_config_file_name.c_str(), &statinfo) < 0 ){
+    have_stereo_config_file_name = false;
+    cerr << "Don't have stereo config " << stereo_config_file_name << endl;
 
+  }
+  if(stat(contents_file_name.c_str(), &statinfo) < 0 ){
+    have_contents_file_name = false;
+      cerr << "Don't have contents " << contents_file_name << endl;
+  }
 #ifndef HAVE_LIBKEYPOINT
   if( use_sift_features || use_surf_features )
     {
@@ -447,7 +475,7 @@ static bool parse_args( int argc, char *argv[ ] )
       return false;
     }
 #endif
- 
+  
   return (have_contents_file_name && have_stereo_config_file_name);
 }
    
@@ -457,8 +485,11 @@ static bool parse_args( int argc, char *argv[ ] )
 static void print_usage( void )
 {
   cout << "USAGE:" << endl;
-  cout << "   threadedStereo [OPTIONS] <stereo_cfg> <contents_file>" << endl; 
-  cout << endl;
+  cout << "   threadedStereo [OPTIONS] <basedir>" << endl; 
+  cout << "   <basedir> allows you to choose one directory under which the program "<<endl;
+
+  cout << "   will look for stereo.cfg pose_file.data and dir img for images"<< endl;
+cout << "     I suggest creating symlinks to those files allowing for varible configuration."<< endl;
   cout << "OPTIONS:" << endl;
   cout << "   -r <texture size>       Final texture output size." << endl;
   cout << "   -m <max_feature_count>  Set the maximum number of features to be found." << endl;
@@ -481,6 +512,8 @@ static void print_usage( void )
   cout << "   --3ds                   Output 3ds Files." << endl;
   cout << "   --dense-features        Dense features ." << endl;
   cout << "   --ptscov                Output pts and cov ." << endl;
+  cout << "   --stereo-config              Specify diffrent stereo config" << endl;
+ cout << "   --contents-file         Specify diffrent contents file ." << endl;
 
   cout << endl;
 }
@@ -966,7 +999,7 @@ bool threadedStereo::runP(auv_image_names &name){
   if(!localV->len)
     return false;
 	 
-  GtsSurface *surf= auv_mesh_pts(localV,2.0,0); 
+  GtsSurface *surf= auv_mesh_pts(localV,0.5,0); 
 	 
   Vector camera_pose(AUV_NUM_POSE_STATES);
   get_camera_params(config_file,camera_pose);

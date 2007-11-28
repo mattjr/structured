@@ -15,6 +15,7 @@
 using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
+MyGraphicsContext *mgc=NULL;
 std::vector<GtsBBox *> bboxes_all;;
 int texMargin=0;//475;
 IplImage *doCvResize(osg::Image *img,int size){

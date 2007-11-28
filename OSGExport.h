@@ -59,47 +59,7 @@ typedef  boost::function<bool( int ,int)> VerboseMeshFunc;
 
 class MyGraphicsContext {
     public:
-        MyGraphicsContext()
-        {
-            osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-            traits->x = 0;
-            traits->y = 0;
-            traits->width = 1;
-            traits->height = 1;
-            traits->windowDecoration = false;
-            traits->doubleBuffer = false;
-            traits->sharedContext = 0;
-	    traits->pbuffer = true;
-#ifdef __APPLE__
-	    _gw= new osgViewer::GraphicsWindowCarbon(traits.get()); 
-
-#else
-            _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-	  
-#endif
-
-
-            if (!_gc)
-            {
-                osg::notify(osg::NOTICE)<<"Failed to create pbuffer, failing back to normal graphics window."<<std::endl;
-                
-                traits->pbuffer = false;
-                _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-            }
-
-            if (_gc.valid()) 
-            
-            
-            {
-                _gc->realize();
-                _gc->makeCurrent();
-                std::cout<<"Realized window"<<std::endl;
-            }else{
-	      printf("Can't realize window\n");
-	      exit(0);
-	    }
-        }
-        
+  MyGraphicsContext(); 
         bool valid() const { return _gc.valid() && _gc->isRealized(); }
         
         osg::GraphicsContext *getContext( void )

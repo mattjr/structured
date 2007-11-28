@@ -31,6 +31,39 @@ IplImage *doCvResize(osg::Image *img,int size){
 
   return tmp;
 }
+MyGraphicsContext::MyGraphicsContext()
+        {
+            osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+            traits->x = 0;
+            traits->y = 0;
+            traits->width = 1;
+            traits->height = 1;
+            traits->windowDecoration = false;
+            traits->doubleBuffer = false;
+            traits->sharedContext = 0;
+	    traits->pbuffer = false;
+#ifdef __APPLE__
+	    _gw= new osgViewer::GraphicsWindowCarbon(traits.get()); 
+
+#else
+            _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+	  
+#endif
+
+            if (_gc.valid()) 
+            
+            
+            {
+                _gc->realize();
+                _gc->makeCurrent();
+                std::cout<<"Realized window"<<std::endl;
+				
+            }else{
+	      printf("Can't realize window\n");
+	      exit(0);
+	    }
+        }
+       
 boost::mutex bfMutex;
 //FILE *errFP;
 int lastBP;

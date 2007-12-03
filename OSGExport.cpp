@@ -1288,4 +1288,72 @@ OSGExporter::~OSGExporter(){
   }
   tex_image_cache.clear();
 }
+
+osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
+  
+  /*  float cut_off_distance = 25.0f;
+      float max_visible_distance = 150.0f;
+      float max_dist=1e7;
+      float cut_off_distance = 500.0f;
+      float max_visible_distance =0.0;
+      float max_dist=250.0f;*/
+  
+  float min_pixel_size=0;
+  float midrange_pixel_size=750;    
+  float near_pixel_size=1500;
+  float max_pixel_size=1e7;
+  const osg::BoundingSphere& bs = model->getBound();
+  
+  if (bs.valid()){
+    
+    printf("%s dist: %g - %g\n",lod_file_names[2].c_str(),min_pixel_size,midrange_pixel_size);
+    printf("\t%s dist: %g - %g\n",lod_file_names[1].c_str(),midrange_pixel_size,near_pixel_size);
+    
+    printf("\t%s dist: %g - %g\n",lod_file_names[0].c_str(),near_pixel_size,max_pixel_size);  
+    
+    osg::PagedLOD* pagedlod = new osg::PagedLOD;
+    pagedlod->setRangeMode(osg::LOD::PIXEL_SIZE_ON_SCREEN);
+    pagedlod->setDatabasePath("");
+    pagedlod->setCenter(bs.center());
+    pagedlod->setRadius(bs.radius());
+    pagedlod->setNumChildrenThatCannotBeExpired(2);
+    
+    pagedlod->setRange(0,min_pixel_size,midrange_pixel_size);
+    pagedlod->addChild(model);
+    
+    pagedlod->setRange(1,midrange_pixel_size,near_pixel_size);
+    pagedlod->setFileName(1,lod_file_names[1]);
+ 
+    pagedlod->setRange(2,near_pixel_size,max_pixel_size);
+    pagedlod->setFileName(2,lod_file_names[0]);
+   
+   
+    return pagedlod;
+  }
+  return NULL;
+}
+
+void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<string> > lodnames){
+  osg::Group *total=new osg::Group;
+  printf("Final Paged LOD Hierarchy\n");
+  for(int i=0; i < (int)nodes.size(); i++){
+  
+    osg::Node *tmp=create_paged_lod(nodes[i].get(),lodnames[i]);
+    total->addChild(tmp);
+  }
+  osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*total,"mesh/final.ive",osgDB::Registry::instance()->getOptions());
+
+ if (result.success())	{
+    osg::notify(osg::NOTICE)<<"Data written to '"<<"mesh/final.ive" <<"'."<< std::endl;
+
+     
+   
+  }
+  else if  (result.message().empty()){
+    osg::notify(osg::NOTICE)<<"Warning: file write to '"<<"mesh/final.ive" <<"' no supported."<< std::endl;
+  }
+
+}
+
+
 #endif

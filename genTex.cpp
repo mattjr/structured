@@ -157,59 +157,7 @@ static bool parse_args( int argc, char *argv[ ] )
 
   return ( have_stereo_config_file_name);
 }
-osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
 
-  float cut_off_distance = 25.0f;
-    float max_visible_distance = 150.0f;
-    float max_dist=1e7;
-
-  const osg::BoundingSphere& bs = model->getBound();
-  if (bs.valid()){
-
-    printf("%s dist: %g - %g\n\t%s dist: %g - %g\n\t%s dist: %g - %g\n",lod_file_names[0].c_str(),max_visible_distance,max_dist,lod_file_names[1].c_str(),cut_off_distance,max_visible_distance,lod_file_names[2].c_str(),0.0,cut_off_distance);  
-    
-    osg::PagedLOD* pagedlod = new osg::PagedLOD;
-
-    pagedlod->setDatabasePath("");
-    pagedlod->setCenter(bs.center());
-    pagedlod->setRadius(bs.radius());
-    pagedlod->setNumChildrenThatCannotBeExpired(2);
-    
-    pagedlod->setRange(0,max_visible_distance,max_dist);
-    pagedlod->addChild(model);
-    
-    pagedlod->setRange(1,cut_off_distance,max_visible_distance);
-    pagedlod->setFileName(1,lod_file_names[1]);
- 
-    pagedlod->setRange(2,0.0f,cut_off_distance);
-    pagedlod->setFileName(2,lod_file_names[0]);
-   
-   
-    return pagedlod;
-  }
-  return NULL;
-}
-void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<string> > lodnames){
-  osg::Group *total=new osg::Group;
-  printf("Final Paged LOD Hierarchy\n");
-  for(int i=0; i < (int)nodes.size(); i++){
-  
-    osg::Node *tmp=create_paged_lod(nodes[i].get(),lodnames[i]);
-    total->addChild(tmp);
-  }
-  osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*total,"mesh/final.ive",osgDB::Registry::instance()->getOptions());
-
- if (result.success())	{
-    osg::notify(osg::NOTICE)<<"Data written to '"<<"mesh/final.ive" <<"'."<< std::endl;
-
-     
-   
-  }
-  else if  (result.message().empty()){
-    osg::notify(osg::NOTICE)<<"Warning: file write to '"<<"mesh/final.ive" <<"' no supported."<< std::endl;
-  }
-
-}
 GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
   char conf_name[255];
   

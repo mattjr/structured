@@ -78,59 +78,7 @@ static bool parse_args( int argc, char *argv[ ] )
 
   return ( true);
 }
-osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
 
-  float cut_off_distance = 25.0f;
-    float max_visible_distance = 150.0f;
-    float max_dist=1e7;
-
-  const osg::BoundingSphere& bs = model->getBound();
-  if (bs.valid()){
-
-    printf("%s dist: %g - %g\n\t%s dist: %g - %g\n\t%s dist: %g - %g\n",lod_file_names[0].c_str(),max_visible_distance,max_dist,lod_file_names[1].c_str(),cut_off_distance,max_visible_distance,lod_file_names[2].c_str(),0.0,cut_off_distance);  
-    
-    osg::PagedLOD* pagedlod = new osg::PagedLOD;
-
-    pagedlod->setDatabasePath("");
-    pagedlod->setCenter(bs.center());
-    pagedlod->setRadius(bs.radius());
-    pagedlod->setNumChildrenThatCannotBeExpired(2);
-    
-    pagedlod->setRange(0,max_visible_distance,max_dist);
-    pagedlod->addChild(model);
-    
-    pagedlod->setRange(1,cut_off_distance,max_visible_distance);
-    pagedlod->setFileName(1,lod_file_names[1]);
- 
-    pagedlod->setRange(2,0.0f,cut_off_distance);
-    pagedlod->setFileName(2,lod_file_names[0]);
-   
-   
-    return pagedlod;
-  }
-  return NULL;
-}
-void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<string> > lodnames){
-  osg::Group *total=new osg::Group;
-  printf("Final Paged LOD Hierarchy\n");
-  for(int i=0; i < (int)nodes.size(); i++){
-  
-    osg::Node *tmp=create_paged_lod(nodes[i].get(),lodnames[i]);
-    total->addChild(tmp);
-  }
-  osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*total,"mesh/final.ive",osgDB::Registry::instance()->getOptions());
-
- if (result.success())	{
-    osg::notify(osg::NOTICE)<<"Data written to '"<<"mesh/final.ive" <<"'."<< std::endl;
-
-     
-   
-  }
-  else if  (result.message().empty()){
-    osg::notify(osg::NOTICE)<<"Warning: file write to '"<<"mesh/final.ive" <<"' no supported."<< std::endl;
-  }
-
-}
 
 
 // Display information on how to use this program
@@ -157,37 +105,40 @@ int main( int argc, char *argv[ ] )
       print_usage( );
       exit( 1 );
     }
-
-  string dicefile("mesh-agg/diced.txt");
-  std::vector<string> meshNames;
   std::vector<vector<string > > outNames;
-  std::vector<osg::ref_ptr<osg::Group>  > outNodes;
-
-  struct stat BUF;
-  bool have_dice=(stat(dicefile.c_str(),&BUF)!=-1);
-  if(!have_dice){
-    printf("Dice can't be found\n");
+   std::vector<osg::ref_ptr<osg::Group>  > outNodes;
+  if(!have_max_mesh_count){
+    string dicefile("mesh-agg/diced.txt");
+    std::vector<string> meshNames;
+ 
+    
+    struct stat BUF;
+    bool have_dice=(stat(dicefile.c_str(),&BUF)!=-1);
+    if(!have_dice){
+      printf("Dice can't be found\n");
     exit(0);
     
-  }else{
-    
-    FILE *dicefp=fopen(dicefile.c_str(),"r");
-    char tmp[255];
-    int eof=0;
-    while(eof != EOF){
-      eof=fscanf(dicefp,"%s\n",tmp);
-      if(eof != EOF){
-	printf("Diced files %s\n",tmp);
-	meshNames.push_back("mesh-agg/"+string(tmp));
+    }else{
+      
+      FILE *dicefp=fopen(dicefile.c_str(),"r");
+      char tmp[255];
+      int eof=0;
+      while(eof != EOF){
+	eof=fscanf(dicefp,"%s\n",tmp);
+	if(eof != EOF){
+	  printf("Diced files %s\n",tmp);
+	  meshNames.push_back("mesh-agg/"+string(tmp));
+	 
+	}
       }
+     max_mesh_count = meshNames.size();
     }
   }
 
-
  
 
-  printf("Loading %d bbox files\n",meshNames.size());
-  for(int i=0; i < (int) meshNames.size() && !(have_max_mesh_count && i >=(int) max_mesh_count); i++){
+  printf("Loading %d bbox files\n",max_mesh_count);
+  for(int i=0; i <  (int)max_mesh_count; i++){
     std::vector<string> lodnames;
     for(int j=0; j < lodNum; j++){
       
@@ -208,9 +159,9 @@ int main( int argc, char *argv[ ] )
   }
   
   
-  if(have_dice){
-    genPagedLod(outNodes,outNames);
-  }
+ 
+  genPagedLod(outNodes,outNames);
+  
  
   return 0;
 }

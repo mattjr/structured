@@ -287,4 +287,8 @@ typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;
 typedef std::map<int,string> MaterialToIDMap;
 void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads,int verbose=0);
 osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip=true);
+
+void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<string> > lodnames);
+osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names);
+
 #endif

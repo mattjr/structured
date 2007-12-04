@@ -1316,7 +1316,7 @@ osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
     pagedlod->setDatabasePath("");
     pagedlod->setCenter(bs.center());
     pagedlod->setRadius(bs.radius());
-    pagedlod->setNumChildrenThatCannotBeExpired(2);
+    pagedlod->setNumChildrenThatCannotBeExpired(0);
     
     pagedlod->setRange(0,min_pixel_size,midrange_pixel_size);
     pagedlod->addChild(model);

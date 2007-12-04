@@ -1,37 +1,39 @@
 #!/bin/bash
 COUNT=0
 LOGDIR="/mnt/shared/log-tex"
-BASEPATH="/home/mkj/cvs/threadedStereo/"
+BASEPATH=`dirname $0`
 SUBVOLDIR="/mnt/shared/svol"
 SHAREBASE="/mnt/shared/"
 POSEFILE=$1/pose_est.data
-IMGDIR=$1/cv/
-STEREOCONFIG=$BASEPATH/ng2_stereo.cfg
+IMGDIR=$1/img/
+STEREOCONFIG=$1/stereo.cfg
+MBDIR="."
+OUTPUTLOC="/mnt/shared/"
 NUMPOSE=$((`grep PR_ \$1 |wc -l $POSEFILE | awk '{ print $1 }'` - 1))
 # bash until loop
 LAST=0
-if [ $# -eq 5 ];then
-    NUMPOSE=$5
+if [ $# -eq 2 ];then
+    NUMPOSE=$2
 fi
-
+SPLIT=500
 
 echo "Creating Stereo Meshes for $NUMPOSE frame pairs"
 rm -f tscmds
 while [ $COUNT -lt $NUMPOSE ]; do
-check=$(($COUNT % $2));   
+check=$(($COUNT % $SPLIT));   
     if [ $check -eq 0 ]  && [ "$COUNT" -gt 0 ];then
-        echo "cd $3;$BASEPATH/threadedStereo $STEREOCONFIG -f $IMGDIR $POSEFILE --single-run $LAST $COUNT" >> tscmds
+        echo "cd $OUTPUTLOC;$BASEPATH/threadedStereo $STEREOCONFIG -f $IMGDIR $POSEFILE --single-run $LAST $COUNT" >> tscmds
 	LAST=$COUNT
     fi
         let COUNT=COUNT+1
 done
 if [ $check -gt 0 ];then
     final=$COUNT
-    echo "cd $3;$BASEPATH/threadedStereo $STEREOCONFIG -f  $IMGDIR $POSEFILE --single-run $LAST $final" >> tscmds
+    echo "cd $OUTPUTLOC;$BASEPATH/threadedStereo $STEREOCONFIG -f  $IMGDIR $POSEFILE --single-run $LAST $final" >> tscmds
 fi
 ~/cvs/threadedStereo/vrip/bin/loadbalance ~/loadlimit tscmds -logdir /mnt/shared/log-ts/  -noxload
 TARGET_DIR=/mnt/shared/svol
-for i in `find $4 -name '*.ply'`; do
+for i in `find $MBDIR -name '*.ply'`; do
     cp "$i" $TARGET_DIR/
     echo  cp "$i" $TARGET_DIR/
 done
@@ -60,6 +62,6 @@ echo -e "cd $SUBVOLDIR\n$BASEPATH/vrip/bin/vripdicebbox surface.conf \$DICEDIR\n
 echo -e "cd \$DICEDIR\n$BASEPATH/vrip/bin/loadbalance ~/loadlimit gentexcmds -logdir $LOGDIR\n" >> diced.sh
 chmod 0777 diced.sh 
 ./diced.sh
-echo -e "#!/bin/bash\necho 'LODGen...'\ncd $3;$BASEPATH/lodgen \n" > lodgen.sh
+echo -e "#!/bin/bash\necho 'LODGen...'\ncd $OUTPUTLOC;$BASEPATH/lodgen \n" > lodgen.sh
 chmod 0777 lodgen.sh
 ./lodgen.sh

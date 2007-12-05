@@ -241,7 +241,7 @@ protected:
   bool ive_out;
   
   osg::ref_ptr<osg::Geode> convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;  
-  bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size);
+  bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback=NULL);
   string prefixdir;
   bool tex_saved;
   bool compress_tex;

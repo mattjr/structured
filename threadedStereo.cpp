@@ -38,6 +38,7 @@
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include "OSGExport.h"
+#include "keypoint.hpp"
 using namespace std;
 using namespace libplankton;
 using namespace ulapack;
@@ -88,7 +89,7 @@ static bool output_ply_and_conf =true;
 static FILE *conf_ply_file;
 static bool output_3ds=false;
 static char cov_file_name[255];
-
+static bool no_gen_tex=false;
 static string basepath;
 static bool single_run=false;
 static int single_run_start=0;
@@ -234,15 +235,15 @@ bool get_camera_params( Config_File *config_file, Vector &camera_pose ){
 //
 static bool parse_args( int argc, char *argv[ ] )
 {
-  bool have_stereo_config_file_name = true;
-  bool have_contents_file_name = true;
+  bool have_stereo_config_file_name = false;
+  bool have_contents_file_name = false;
   bool have_base_dir=false;
 
   stereo_config_file_name = "stereo.cfg";
   contents_file_name = "pose_file.data";
   dir_name = "img/";
   strcpy(subvoldir,"mesh-agg/");
-  int i=0;
+  int i=1;
   while( i < argc )
     {
       if( strcmp( argv[i], "-r" ) == 0 )
@@ -402,6 +403,7 @@ static bool parse_args( int argc, char *argv[ ] )
 	{	
 	  if( i == argc-1 ) return false;
 	  start_time = strtod( argv[i+1], NULL );
+	  printf("start time %f\n",start_time);
 	  i+=2;
 	}
       else if( strcmp( argv[i], "--stop" ) == 0 )
@@ -424,22 +426,29 @@ static bool parse_args( int argc, char *argv[ ] )
 	{
 	  if( i == argc-1 ) return false;
 	  stereo_config_file_name = argv[i+1];
-
+	  have_stereo_config_file_name = true;
 	  i+=2;
 	}
       else if(strcmp( argv[i], "--contents-file" ) == 0)
 	{
 	  if( i == argc-1 ) return false;
 	  contents_file_name = argv[i+1];
-
+	  have_contents_file_name = true;
 	  i+=2;
+	}
+      else if(strcmp( argv[i], "--nogentex" ) == 0)
+	{
+	  no_gen_tex=true;
+
+	  i+=1;
 	}
       else if(!have_base_dir)
 	{
-	  if( i == argc-1 ) return false;
-	  base_dir = argv[i+1];
+
+	  base_dir = argv[i];
+	  cout <<"Basedir " <<base_dir << endl;
 	  have_base_dir = true;
-	  i+=2;
+	  i++;
 	}
       else
 	{
@@ -453,8 +462,10 @@ static bool parse_args( int argc, char *argv[ ] )
   }
 
   if(have_base_dir){
-    stereo_config_file_name= base_dir+string("/")+stereo_config_file_name;
-    contents_file_name= base_dir+string("/")+contents_file_name;
+    if(!have_stereo_config_file_name)
+      stereo_config_file_name= base_dir+string("/")+stereo_config_file_name;
+    if(!have_contents_file_name )
+      contents_file_name= base_dir+string("/")+contents_file_name;
     dir_name= base_dir+string("/")+dir_name;
   }
 
@@ -463,11 +474,13 @@ static bool parse_args( int argc, char *argv[ ] )
     have_stereo_config_file_name = false;
     cerr << "Don't have stereo config " << stereo_config_file_name << endl;
 
-  }
+  }else
+    have_stereo_config_file_name = true;
   if(stat(contents_file_name.c_str(), &statinfo) < 0 ){
     have_contents_file_name = false;
       cerr << "Don't have contents " << contents_file_name << endl;
-  }
+  }else 
+    have_contents_file_name = true;
 #ifndef HAVE_LIBKEYPOINT
   if( use_sift_features || use_surf_features )
     {
@@ -503,6 +516,7 @@ cout << "     I suggest creating symlinks to those files allowing for varible co
   cout << "   --surf                  Find SURF features." << endl;
   cout << "   -d                      Do not display debug images." << endl;
   cout << "   --confply               Output confply file." << endl;
+  cout << "   --nogentex              Don't texture" << endl;
   cout << "   --genmb               Generate MB mesh" << endl;
   cout << "   --split <num>         Split individual meshes passed to vrip at num" << endl;
   cout << "   --dicevol <vol>         Dice mesh to subvolume pieces of <vol> size" << endl;
@@ -886,6 +900,7 @@ bool threadedStereo::runP(auv_image_names &name){
   
   if(feature_depth_guess == AUV_NO_Z_GUESS)
     feature_depth_guess = name.alt;
+  
   //
   // Find the features
   //
@@ -916,7 +931,7 @@ bool threadedStereo::runP(auv_image_names &name){
 
   Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
        
-
+ 
 
   /*Matrix pose_cov(4,4);
     get_cov_mat(cov_file,pose_cov);
@@ -946,9 +961,14 @@ bool threadedStereo::runP(auv_image_names &name){
        litr != feature_positions.end( ) ;
        litr++ )
     {
-	  
+      // if(litr->x[2] > 8.0 || litr->x[2] < 0.25)
+      //continue;
+      //  if(name.alt > 5.0 || name.alt < 0.75)
+      //litr->x[2]=name.alt;
       vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
 				       litr->x[0],litr->x[1],litr->x[2]);
+      // printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
+   
       //double confidence=1.0;
       Vector max_eig_v(3);
       /*  if(have_cov_file){
@@ -998,9 +1018,13 @@ bool threadedStereo::runP(auv_image_names &name){
   */ 
   if(!localV->len)
     return false;
-	 
-  GtsSurface *surf= auv_mesh_pts(localV,0.5,0); 
-	 
+  double mult;
+  if(name.alt < 4.0)
+    mult=8.0;
+  else
+    mult=8.0;
+  GtsSurface *surf= auv_mesh_pts(localV,mult,0); 
+  gts_surface_print_stats(surf,stdout);
   Vector camera_pose(AUV_NUM_POSE_STATES);
   get_camera_params(config_file,camera_pose);
 	 
@@ -1115,7 +1139,7 @@ int main( int argc, char *argv[ ] )
    
   string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
   basepath= osgDB::getRealPath (basepath);
-  cout << "Basepath " <<basepath <<endl;
+  cout << "Binary Path " <<basepath <<endl;
  
   //
   // Open the config file
@@ -1341,7 +1365,8 @@ int main( int argc, char *argv[ ] )
 
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
-	system("./dice.sh");
+	if(!no_gen_tex)
+	  system("./dice.sh");
       }
     }
   }

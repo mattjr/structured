@@ -328,8 +328,8 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
   
   ive_out= (format=="ive");
   
-  if(format==".3ds"){
-    Export3DS(s,out_name,textures,tex_size);
+  if(format=="3ds"){
+    Export3DS(s,out_name,textures,tex_size,vmcallback);
     return NULL;
   }else if(!ive_out && compress_tex){
     std::cout<<"Warning: compressing texture only supported when out";
@@ -715,13 +715,13 @@ osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save
  
   image->setFileName(osgDB::getSimpleFileName(filename));
   if(save){  
-    printf("Writing %s\n",outname.c_str());
+    //printf("Writing %s\n",outname.c_str());
     osgDB::writeImageFile(*image,outname);
     image->setFileName(outname);
   }
   return image;
 }
-bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size){
+bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback){
   char cTemp[512];
   Lib3dsFile *pFile = lib3ds_file_new();
   // std::vector <string> tex_names;
@@ -730,7 +730,7 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> m
   gint n=0;
   data[0]=&mtgcm;
   data[1] = &n;
-  
+ 
   gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
   MaterialToGeometryCollectionMap::iterator itr;
   MaterialToIDMap newMatMap;
@@ -746,13 +746,13 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> m
       char tname[255];
       
       string path(c3DSFile);
-      sprintf(tname,"tex-%s-%04d-tex",relative_path(path).c_str(),itr->first);
+      sprintf(tname,"%s-%04d-tex",osgDB::getStrippedName(path).c_str(),itr->first);
       string fname(tname);
       newMatMap[itr->first]=fname;
-     
-      printf("\rLoading and Scaling Texture: %03d/%03d",++tex_count,mtgcm.size());
-      if(!tex_saved)
-	printf("\n");
+      if(vmcallback)
+	vmcallback(++tex_count,mtgcm.size());
+      //printf("\rLoading and Scaling Texture: %03d/%03d",++tex_count,mtgcm.size());
+    
   
       LoadResizeSave(filename,"mesh/"+fname+".png", (!tex_saved),tex_size);
    

@@ -46,7 +46,7 @@ static string contents_file_name;
 static string dir_name;
 static int verbose=false;
 static bool no_simp=false;
-
+static     bool output_3ds=false;
 static bool have_max_mesh_count = false;
 static unsigned int max_mesh_count;
 static int num_threads=1;
@@ -89,6 +89,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--nosimp" ) == 0 )
 	{
 	  no_simp=true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--3ds" ) == 0 )
+	{
+	  output_3ds=true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--no-compress-tex" ) == 0 )
@@ -270,6 +275,8 @@ static void print_usage( void )
   cout << "    --nosimp      Don't Simplify" << endl;
   cout << "    -v      Verbose" << endl;
   cout << "    -vv      Very Verbose" << endl;
+  cout << "    --3ds      3ds output" << endl;
+  cout << "    --lods <num>       Num of lods to output" << endl;
   cout << "    -f <imagedir> Image dir prefix" << endl;
   cout << "    -t <num_threads> Num threads" << endl;
   cout << endl;
@@ -479,8 +486,13 @@ int main( int argc, char *argv[ ] )
       
       boost::xtime_get(&xt, boost::TIME_UTC);
       char out_name[255];
-      
-      sprintf(out_name,"mesh/blended-%02d-lod%d.ive",i,j);
+      char ext[5];
+  
+      if(output_3ds)
+	strcpy(ext,"3ds");
+      else
+	strcpy(ext,"ive");
+      sprintf(out_name,"mesh/blended-%02d-lod%d.%s",i,j,ext);
       
       osg::ref_ptr<osg::Group> node =osgExp->convertModelOSG(surf,texture_file_names,
 							     out_name,lodTexSize[j],texcallback,zrange);
@@ -506,7 +518,7 @@ int main( int argc, char *argv[ ] )
   }
   mesh_count(i,totalMeshCount,lodNum,lodNum,0,0,0);
 
-  if(have_dice && lodNum > 1 && !single_run){
+  if(have_dice && lodNum > 1 && !single_run && !output_3ds){
     genPagedLod(outNodes,outNames);
   }
   // 

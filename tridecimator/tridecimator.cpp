@@ -212,7 +212,7 @@ if(argc<4) Usage();
   }
 
 
-  printf("reducing it to %i\n",TargetFaceNum);
+  printf("Reducing it to %i\n",TargetFaceNum);
 
 
 
@@ -257,80 +257,11 @@ if(argc<4) Usage();
  };
  int t3=clock();
  DeciSession.Finalize<MyTriEdgeCollapse >();
- printf("mesh  %d %d Error %g \n",cm.vn,cm.fn,DeciSession.currMetric);
- printf("\nCompleted in (%i+%i) msec\n",t2-t1,t3-t2);
+ printf("Final Mesh Verts: %d Faces: %d Error %g \n",cm.vn,cm.fn,DeciSession.currMetric);
+ printf("Completed in %.2f sec (%.2f init + %.2f proc)\n",(t3-t1)/(double)CLOCKS_PER_SEC,(t2-t1)/(double)CLOCKS_PER_SEC,(t3-t2)/(double)CLOCKS_PER_SEC);
  
-
-
-/*
-  int FinalSize=atoi(argv[3]);
-	//int t0=clock();	
-   int err=vcg::tri::io::Importer<CMeshO>::Open(mesh,argv[1]);
-  if(err) 
-  {
-    printf("Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::Importer<CMeshO>::ErrorMsg(err));
-    exit(-1);
-  }
-
-    
-  TriEdgeCollapseQuadricParameter qparams;
-  MyTriEdgeCollapse::SetDefaultParams();
-  qparams.QualityThr  =.3;
-  float TargetError=numeric_limits<float>::max();
-  bool CleaningFlag =false;
-  
-
  
-	  math::Quadric<double> QZero;
-  QZero.Zero();
-  QuadricTemp TD(mesh.vert);
-  QHelper::TDp()=&TD;
-
-  TD.Start(QZero);
-  MyTriEdgeCollapse::SetDefaultParams();
-  MyTriEdgeCollapse::SetHint(MyTriEdgeCollapse::HNHasVFTopology);
-  MyTriEdgeCollapse::SetHint(MyTriEdgeCollapse::HNHasBorderFlag);
-
-  MyTriEdgeCollapse::Params().QualityThr=qparams.QualityThr;
-  
-*/
-  /*
-  if(PreserveBoundary) 
-    MyTriEdgeCollapse::Params().FastPreserveBoundary=true;
-
-  MyTriEdgeCollapse::Params().OptimalPlacement=OptimalPlacement;
-  	
-  if(PreserveNormal) {
-	MyTriEdgeCollapse::Params().NormalCheck= true;
-	MyTriEdgeCollapse::Params().NormalThrRad = M_PI/4.0;
-	}
-	else
-	MyTriEdgeCollapse::Params().NormalCheck= false;
-  
-  vcg::LocalOptimization<CMeshO> DeciSession(mesh);
-  int t1=clock();		
-  DeciSession.Init<MyTriEdgeCollapse >();
-  int t2=clock();	
-  printf("Initial Heap Size %i\n",DeciSession.h.size());
-  
-  DeciSession.SetTargetSimplices(FinalSize);
-  DeciSession.SetTimeBudget(0.1f); // this allow to update the progress bar 10 time for sec...
-  
-  // if(TargetError< numeric_limits<double>::max() ) DeciSession.SetTargetMetric(TargetError);
-  int startFn=mesh.fn;
-  int faceToDel=mesh.fn-FinalSize;
-  printf("%d %d\n",mesh.fn,FinalSize);
-  while(DeciSession.DoOptimization() && mesh.fn>FinalSize)
-    printf("Current Mesh size %7i %2d%% done \r",mesh.fn,100-100*(mesh.fn-FinalSize)/(faceToDel));
-
- 	
-
-	DeciSession.Finalize<MyTriEdgeCollapse >();
-  
-  
-  */
- 
-  vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,argv[2]);
-	return 0;
+ vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,argv[2]);
+ return 0;
 
 }

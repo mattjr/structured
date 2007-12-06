@@ -205,7 +205,7 @@ int main(int argc ,char**argv){
     i++;
   }
 
-
+  int t1,t2,t3;
   MyTriEdgeCollapse::Params()=qparams;
 
   int err=vcg::tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1]);
@@ -216,8 +216,11 @@ int main(int argc ,char**argv){
   printf("Mesh loaded Verts: %d Faces: %d \n",cm.vn,cm.fn);
   tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);
   tri::UpdateBounding<CMeshO>::Box(cm);
-  vcg::tri::Clean<CMeshO>::RemoveDegenerateFace(cm);
- 
+  
+
+
+  
+  
   if(QualityClean){
     CMeshO::VertexIterator vi;
     for(vi=cm.vert.begin();vi!=cm.vert.end();++vi)
@@ -236,17 +239,6 @@ int main(int argc ,char**argv){
     printf("After Quality Clean Vertex: %d Faces: %d\n",cm.vn,cm.fn);
   }
  
-  if(FillHoles){
-    cm.face.EnableFFAdjacency();
-    cm.face.EnableMark();
-    tri::UpdateTopology<CMeshO>::FaceFace(cm);
-    tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
-    
-    tri::Hole<CMeshO>::EarCuttingIntersectionFill<tri::SelfIntersectionEar< CMeshO> >(cm,MaxHoleSize,false);
-    assert(tri::Clean<CMeshO>::IsFFAdjacencyConsistent(cm));
-    tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);	    
-    tri::UpdateFlags<CMeshO>::FaceBorderFromNone(cm);
-  }
 
 
   if(SizeClean){
@@ -255,32 +247,25 @@ int main(int argc ,char**argv){
     tri::UpdateTopology<CMeshO>::FaceFace(cm);
     tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
     RemoveSmallConnectedComponentsDiameter<CMeshO>(cm,minDiaSmallCC);
-    cm.face.DisableFFAdjacency();
-    cm.face.DisableMark();
     printf("After Size Clean Vertex: %d Faces: %d\n",cm.vn,cm.fn);
   }
  
 
+  int dup= tri::Clean<CMeshO>::RemoveDuplicateVertex(cm);
+  int unref= tri::Clean<CMeshO>::RemoveUnreferencedVertex(cm);
+  int deg= vcg::tri::Clean<CMeshO>::RemoveDegenerateFace(cm);
+  
+  printf("Removed %i degenrate faces %i duplicate and %i unreferenced vertices from mesh\n",deg,dup,unref);
  
- 
- 
+  
   tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);
   tri::UpdateBounding<CMeshO>::Box(cm);
-  vcg::tri::Clean<CMeshO>::RemoveDegenerateFace(cm);
+  
  
   cm.face.EnableVFAdjacency();
   tri::UpdateTopology<CMeshO>::VertexFace(cm);	
   tri::UpdateFlags<CMeshO>::FaceBorderFromNone(cm);
 
-
-
- 
-  if(CleaningFlag){
-    int dup = tri::Clean<CMeshO>::RemoveDuplicateVertex(cm);
-    int unref =  tri::Clean<CMeshO>::RemoveUnreferencedVertex(cm);
-    printf("Removed %i duplicate and %i unreferenced vertices from mesh \n",dup,unref);
-  }
- 
   if(TargetFaceNum != 0){
     printf("Reducing it to %i\n",TargetFaceNum);
  
@@ -302,10 +287,10 @@ int main(int argc ,char**argv){
   
   
     vcg::LocalOptimization<CMeshO> DeciSession(cm);
-    int t1=clock();	
+    t1=clock();	
     printf("Initializing simplification\n");
     DeciSession.Init<MyTriEdgeCollapse >();
-    int t2=clock();	
+    t2=clock();	
 
 
     DeciSession.SetTargetSimplices(TargetFaceNum);
@@ -318,13 +303,28 @@ int main(int argc ,char**argv){
 	printf("Percent %2d%%\r",(100-100*(cm.fn-TargetFaceNum)/(faceToDel)));
 	fflush(stdout);
       };
-    int t3=clock();
+    t3=clock();
     DeciSession.Finalize<MyTriEdgeCollapse >();
-    printf("Final Mesh Verts: %d Faces: %d Error %g \n",cm.vn,cm.fn,DeciSession.currMetric);
-    printf("Completed in %.2f sec (%.2f init + %.2f proc)\n",(t3-t1)/(double)CLOCKS_PER_SEC,(t2-t1)/(double)CLOCKS_PER_SEC,(t3-t2)/(double)CLOCKS_PER_SEC);
+    printf("Simplified Mesh Verts: %d Faces: %d Error %g \n",cm.vn,cm.fn,DeciSession.currMetric);
+ 
  
   }
+  
+ 
+  if(FillHoles){
+    cm.face.EnableFFAdjacency();
+    cm.face.EnableMark();
+    tri::UpdateTopology<CMeshO>::FaceFace(cm);
+    tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
+    int nonManif=tri::Clean<CMeshO>::RemoveNonManifoldFace(cm);
 
+
+    tri::Hole<CMeshO>::EarCuttingIntersectionFill<tri::SelfIntersectionEar< CMeshO> >(cm,MaxHoleSize,false);
+    assert(tri::Clean<CMeshO>::IsFFAdjacencyConsistent(cm));
+    tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);	    
+   printf("After Hole filling Verts: %d Faces: %d\n",cm.vn,cm.fn);
+  }
+     printf("Completed in %.2f sec (%.2f init + %.2f proc)\n",(t3-t1)/(double)CLOCKS_PER_SEC,(t2-t1)/(double)CLOCKS_PER_SEC,(t3-t2)/(double)CLOCKS_PER_SEC);
 
   vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,argv[2]);
   return 0;

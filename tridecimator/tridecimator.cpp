@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <math.h>
 using namespace std;
 
 // stuff to define the mesh
@@ -172,7 +172,9 @@ int main(int argc ,char**argv){
   float minDiaSmallCC=100.0;
   int MaxHoleSize=0;
   bool FillHoles=false;
-  int TargetFaceNum=atoi(argv[3]);
+  int TargetFaceNum=0;
+  string tgtStr(argv[3]);
+
   MyTriEdgeCollapse::SetDefaultParams();
   TriEdgeCollapseQuadricParameter qparams=MyTriEdgeCollapse::Params();
 
@@ -214,6 +216,10 @@ int main(int argc ,char**argv){
     exit(-1);
   }
   printf("Mesh loaded Verts: %d Faces: %d \n",cm.vn,cm.fn);
+
+ 
+    
+    
   tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);
   tri::UpdateBounding<CMeshO>::Box(cm);
   
@@ -265,7 +271,12 @@ int main(int argc ,char**argv){
   cm.face.EnableVFAdjacency();
   tri::UpdateTopology<CMeshO>::VertexFace(cm);	
   tri::UpdateFlags<CMeshO>::FaceBorderFromNone(cm);
-
+  
+  if(tgtStr.substr(tgtStr.size()-1) == "%")
+    TargetFaceNum= (int) rint( cm.fn * 0.01 *atoi(tgtStr.substr(0,tgtStr.size()-1).c_str()));
+  else
+    TargetFaceNum=atoi(tgtStr.c_str());
+  
   if(TargetFaceNum != 0){
     printf("Reducing it to %i\n",TargetFaceNum);
  

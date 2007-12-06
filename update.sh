@@ -1,5 +1,5 @@
 #!/bin/bash
 cd ~/cvs/threadedStereo/
-cvs upd
+cvs upd -d
 make
 

@@ -22,7 +22,7 @@ using namespace std;
 // io
 #include <wrap/io_trimesh/import.h>
 #include <wrap/io_trimesh/export_ply.h>
-
+#include <wrap/io_trimesh/export_stl.h>
 
 // update
 #include <vcg/complex/trimesh/update/topology.h>
@@ -155,6 +155,7 @@ void Usage()
 	 "     -T[y|n]  Preserve or not Topology (default no)\n"
 	 "     -H#  Fill holes up to size[ range > 0]\n"
 	 "     -P       Before simplification, remove duplicate & unreferenced vertices\n"
+	 "     -F     FLip mesh\n"
 	 );
   exit(-1);
 }
@@ -164,7 +165,7 @@ void Usage()
 CMeshO cm;
 int main(int argc ,char**argv){
   if(argc<4) Usage();
-
+  bool FlipMesh=false;
   bool QualityClean=false;
   float QualityCleanVal=0.3;
   bool SizeClean=false;
@@ -182,7 +183,8 @@ int main(int argc ,char**argv){
   for(int i=4; i < argc;){
     if(argv[i][0]=='-')
       switch(argv[i][1]){ 
-     
+       case 'F' :   FlipMesh	= true;  printf("Flipping Mesh\n");    
+	  break;
       case 'N' : if(argv[i][2]=='y') { qparams.NormalCheck	= true;  printf("Using Normal Deviation Checking\n");	}
 	else { qparams.NormalCheck	= false; printf("NOT Using Normal Deviation Checking\n");	}        break;		
       case 'O' : if(argv[i][2]=='y') { qparams.OptimalPlacement	= true;  printf("Using OptimalPlacement\n");	}
@@ -280,10 +282,6 @@ int main(int argc ,char**argv){
   if(TargetFaceNum != 0){
     printf("Reducing it to %i\n",TargetFaceNum);
  
-
-
- 
-
     math::Quadric<double> QZero;
     QZero.Zero();
     QuadricTemp TD(cm.vert);
@@ -294,9 +292,6 @@ int main(int argc ,char**argv){
     MyTriEdgeCollapse::SetHint(MyTriEdgeCollapse::HNHasVFTopology);
     MyTriEdgeCollapse::SetHint(MyTriEdgeCollapse::HNHasBorderFlag);
 
-  
-  
-  
     vcg::LocalOptimization<CMeshO> DeciSession(cm);
     t1=clock();	
     printf("Initializing simplification\n");
@@ -335,9 +330,31 @@ int main(int argc ,char**argv){
     tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);	    
    printf("After Hole filling Verts: %d Faces: %d\n",cm.vn,cm.fn);
   }
-     printf("Completed in %.2f sec (%.2f init + %.2f proc)\n",(t3-t1)/(double)CLOCKS_PER_SEC,(t2-t1)/(double)CLOCKS_PER_SEC,(t3-t2)/(double)CLOCKS_PER_SEC);
+  if(FlipMesh)
+    tri::Clean<CMeshO>::FlipMesh(cm);
+  
+  printf("Completed in %.2f sec (%.2f init + %.2f proc)\n",(t3-t1)/(double)CLOCKS_PER_SEC,(t2-t1)/(double)CLOCKS_PER_SEC,(t3-t2)/(double)CLOCKS_PER_SEC);
+  string filename=string(argv[2]);
+  string format=filename.substr(filename.length()-3);
 
-  vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,argv[2]);
+  if(format == "stl")	{
+    int result = vcg::tri::io::ExporterSTL<CMeshO>::Save(cm,filename.c_str());
+    if(result!=0){
+      printf("Saving Error %s for file %s\n", vcg::tri::io::ExporterSTL<CMeshO>::ErrorMsg(result),filename.c_str());
+      return -1;
+    }
+   
+  }else if(format == "ply")	{
+    int result = vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,filename.c_str());
+    if(result!=0){
+      printf("Saving Error %s for file %s\n", vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result),filename.c_str());
+      return -1;
+    }
+  }else {
+    printf("Format %s unknown\n",format.c_str());
+    return -1;
+  }
+
   return 0;
 
 }

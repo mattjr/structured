@@ -11,7 +11,7 @@ using namespace std;
 #include <vcg/simplex/faceplus/base.h>
 #include <vcg/simplex/edge/edge.h>
 #include <vcg/complex/trimesh/base.h>
-
+#include <vcg/complex/trimesh/hole.h>
 #include <vcg/math/quadric.h>
 #include <vcg/complex/trimesh/clean.h>
 #include<vcg/complex/trimesh/base.h>
@@ -153,7 +153,7 @@ void Usage()
 	 "     -S#  Use  connected comp size filtering  diameter [must be >0]\n"
 	 "     -B[y|n]  Preserve or not mesh boundary (default no)\n"
 	 "     -T[y|n]  Preserve or not Topology (default no)\n"
-	 "     -H[y|n]  Use or not Safe Heap Update (default no)\n"
+	 "     -H#  Fill holes up to size[ range > 0]\n"
 	 "     -P       Before simplification, remove duplicate & unreferenced vertices\n"
 	 );
   exit(-1);
@@ -165,12 +165,13 @@ CMeshO cm;
 int main(int argc ,char**argv){
   if(argc<4) Usage();
 
-  bool QualityClean=true;
+  bool QualityClean=false;
   float QualityCleanVal=0.3;
   bool SizeClean=false;
   bool CleaningFlag=false;
   float minDiaSmallCC=100.0;
-
+  int MaxHoleSize=0;
+  bool FillHoles=false;
   int TargetFaceNum=atoi(argv[3]);
   MyTriEdgeCollapse::SetDefaultParams();
   TriEdgeCollapseQuadricParameter qparams=MyTriEdgeCollapse::Params();
@@ -179,7 +180,7 @@ int main(int argc ,char**argv){
   for(int i=4; i < argc;){
     if(argv[i][0]=='-')
       switch(argv[i][1]){ 
-      case 'H' : MyTriEdgeCollapse::Params().SafeHeapUpdate=true; printf("Using Safe heap option\n"); break;	
+     
       case 'N' : if(argv[i][2]=='y') { qparams.NormalCheck	= true;  printf("Using Normal Deviation Checking\n");	}
 	else { qparams.NormalCheck	= false; printf("NOT Using Normal Deviation Checking\n");	}        break;		
       case 'O' : if(argv[i][2]=='y') { qparams.OptimalPlacement	= true;  printf("Using OptimalPlacement\n");	}
@@ -196,6 +197,7 @@ int main(int argc ,char**argv){
        
       case 'Q' :	QualityClean=true; QualityCleanVal=atof(argv[i]+2); printf("Cleaning with quality threshold of %f\n",atof(argv[i]+2)); break;	
       case 'S' :	SizeClean=true; minDiaSmallCC=atof(argv[i]+2); printf("Cleaning with connected componet diameter threshold of %f\n",atof(argv[i]+2)); break;	
+      case 'H' :	FillHoles=true; MaxHoleSize=atoi(argv[i]+2); printf("Filling holes with a maximum size of %d\n",atoi(argv[i]+2)); break;	
    
       default  :  printf("Unknown option '%s'\n", argv[i]);
 	exit(0);
@@ -234,6 +236,17 @@ int main(int argc ,char**argv){
     printf("After Quality Clean Vertex: %d Faces: %d\n",cm.vn,cm.fn);
   }
  
+  if(FillHoles){
+    cm.face.EnableFFAdjacency();
+    cm.face.EnableMark();
+    tri::UpdateTopology<CMeshO>::FaceFace(cm);
+    tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
+    
+    tri::Hole<CMeshO>::EarCuttingIntersectionFill<tri::SelfIntersectionEar< CMeshO> >(cm,MaxHoleSize,false);
+    assert(tri::Clean<CMeshO>::IsFFAdjacencyConsistent(cm));
+    tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);	    
+    tri::UpdateFlags<CMeshO>::FaceBorderFromNone(cm);
+  }
 
 
   if(SizeClean){
@@ -311,6 +324,8 @@ int main(int argc ,char**argv){
     printf("Completed in %.2f sec (%.2f init + %.2f proc)\n",(t3-t1)/(double)CLOCKS_PER_SEC,(t2-t1)/(double)CLOCKS_PER_SEC,(t3-t2)/(double)CLOCKS_PER_SEC);
  
   }
+
+
   vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,argv[2]);
   return 0;
 

@@ -1333,9 +1333,9 @@ int main( int argc, char *argv[ ] )
   if(!single_run){
     char conf_name[255];
     sprintf(conf_name,"%s/surface.txt",cachedmeshdir);
-     
+ 
     conf_ply_file=fopen(conf_name,"w");
-      
+    chmod(conf_name,0666);
     for(unsigned int i=0; i < tasks.size(); i++){
       if(tasks[i].valid)
 	fprintf(conf_ply_file,
@@ -1343,7 +1343,8 @@ int main( int argc, char *argv[ ] )
 		,osgDB::getStrippedName(tasks[i].left_name).c_str());
     
     }
-   
+ 
+
     if(!single_run && have_mb_ply){
       for(int i=0; i < (int)mb_ply_filenames.size(); i++){
 	string simpname =osgDB::getSimpleFileName(mb_ply_filenames[i]);

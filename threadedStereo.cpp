@@ -1020,9 +1020,9 @@ bool threadedStereo::runP(auv_image_names &name){
     return false;
   double mult;
   if(name.alt < 4.0)
-    mult=8.0;
+    mult=2.0;
   else
-    mult=8.0;
+    mult=2.0;
   GtsSurface *surf= auv_mesh_pts(localV,mult,0); 
   
   Vector camera_pose(AUV_NUM_POSE_STATES);
@@ -1346,8 +1346,8 @@ int main( int argc, char *argv[ ] )
       }
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\ncd %s/\n",basepath.c_str(),subvoldir);
-	fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 400 > vriplog.txt\n%s/vrip/bin/vripsurf auto.vri total-unclean.ply > vripsurflog.txt\n %s/tridecimator/tridecimator total-unclean.ply total.ply 50%% -By -H1500 -Q0.2 -S3\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
+	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n",basepath.c_str(),basepath.c_str(),subvoldir);
+	fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 400 > vriplog.txt\n%s/vrip/bin/vripsurf auto.vri total-unclean.ply > vripsurflog.txt\n %s/tridecimator/tridecimator total-unclean.ply total.ply 50%% -By -H1500 -Q0.3 -S3\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	system("./runvrip.sh");

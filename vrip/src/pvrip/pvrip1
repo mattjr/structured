@@ -320,6 +320,24 @@ if ($DOMERGE) {
 	system $timecmd;
 	!$? || die "Error: mv returned an error. aborting.\n";
     }
+    if ($DODEC) {
+	$PLYDEC = $PLYFILE;
+	$PLYDEC =~ s/.ply/_dec.ply/g;
+	$cmd = "tridecimator $PLYFILE $PLYDEC 50% -By -H1500 -Q0.3 -S3\n";
+	$timecmd = &timecmd($cmd);
+	print "} $cmd";
+	system $timecmd;
+	!$? || die "Error: plydec returned an error. aborting.\n";
+	# otherwise, mv plydec into place
+
+	$PLYRAW = $PLYFILE;
+	$PLYRAW =~ s/.ply/_filt.ply/g;
+	$cmd = "/bin/mv $PLYFILE $PLYRAW; /bin/mv $PLYDEC $PLYFILE\n";
+	$timecmd = &timecmd($cmd);
+	print "} $cmd";
+	system $timecmd;
+	!$? || die "Error: mv returned an error. aborting.\n";
+    }
     # Plycrunch it?
     if ($DOCRUNCH) {
 	$cmd = "ply2crunchset -l 6 $PLYFILE\n";

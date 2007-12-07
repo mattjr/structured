@@ -1020,7 +1020,7 @@ bool threadedStereo::runP(auv_image_names &name){
     return false;
   double mult;
   if(name.alt < 4.0)
-    mult=2.0;
+    mult=4.0;
   else
     mult=2.0;
   GtsSurface *surf= auv_mesh_pts(localV,mult,0); 

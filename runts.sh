@@ -16,7 +16,7 @@ LAST=0
 if [ $# -eq 2 ];then
     NUMPOSE=$2
 fi
-SPLIT=500
+SPLIT=50
 
 echo "Creating Stereo Meshes for $NUMPOSE frame pairs"
 rm -f tscmds

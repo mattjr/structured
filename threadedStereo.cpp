@@ -938,7 +938,7 @@ bool threadedStereo::runP(auv_image_names &name){
     } 
                          
   if(!texcached){
-    printf("Caching texture\n");
+    printf("Caching texture %s\n",texfilename);
     osgExp->cacheCompressedImage(color_frame,texfilename,512);
   }
 

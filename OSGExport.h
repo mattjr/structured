@@ -52,7 +52,7 @@
 using namespace std;
 using namespace libsnapper;
 using namespace libpolyp;
-
+bool FileExists(string strFilename);
 IplImage *doCvResize(osg::Image *img,int size);
 #if ((OSG_VERSION_MAJOR==2))
 #include <osgViewer/Viewer>
@@ -231,7 +231,8 @@ public:
   osg::ref_ptr< osg::Group>convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;
 ~OSGExporter();
  std::map<string,IplImage *> tex_image_cache;
-
+  osg::Image *getCachedCompressedImage(string name);
+  osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
 protected:
   osg::ref_ptr<osg::State> state;
   
@@ -286,7 +287,7 @@ enum {IVE_OUT,OSG_OUT,THREEDS_OUT};
 typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;
 typedef std::map<int,string> MaterialToIDMap;
 void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads,int verbose=0);
-osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip=true);
+osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip=true,bool compress=false);
 
 void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<string> > lodnames);
 osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names);

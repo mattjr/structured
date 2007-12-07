@@ -97,6 +97,7 @@ static int single_run_stop=0;
 
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[255];
+char cachedtexdir[255];
 static string deltaT_config_name;
 static string deltaT_dir;
 static bool hardware_compress=true;
@@ -113,29 +114,6 @@ void get_cov_mat(ifstream *cov_file,Matrix &mat){
 
 }
 
-bool FileExists(string strFilename) {
-  struct stat stFileInfo;
-  bool blnReturn;
-  int intStat;
-
-  // Attempt to get the file attributes
-  intStat = stat(strFilename.c_str(),&stFileInfo);
-  if(intStat == 0) {
-    // We were able to get the file attributes
-    // so the file obviously exists.
-    blnReturn = true;
-  } else {
-    // We were not able to get the file attributes.
-    // This may mean that we don't have permission to
-    // access the folder which contains this file. If you
-    // need to do that level of checking, lookup the
-    // return values of stat which will give you
-    // more details on why stat failed.
-    blnReturn = false;
-  }
-  
-  return(blnReturn);
-}
 gboolean image_count_verbose ( guint number, guint total)
 {
  
@@ -266,6 +244,7 @@ static bool parse_args( int argc, char *argv[ ] )
   contents_file_name = "pose_file.data";
   dir_name = "img/";
   strcpy(cachedmeshdir,"cache-mesh/");
+  strcpy(cachedtexdir,"cache-tex/");
   int i=1;
   while( i < argc )
     {
@@ -491,6 +470,7 @@ static bool parse_args( int argc, char *argv[ ] )
       contents_file_name= base_dir+string("/")+contents_file_name;
     dir_name= base_dir+string("/")+dir_name;
     strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
+    strcpy(cachedtexdir,string(base_dir+string("/")+cachedtexdir).c_str());
 
   }
 
@@ -745,7 +725,7 @@ public:
 						  calib );
       }
      
-    osgExp=new OSGExporter(dir_name,false,false,tex_size);    
+    osgExp=new OSGExporter(dir_name,false,true,tex_size);    
    
   }
 
@@ -912,7 +892,10 @@ bool threadedStereo::runP(auv_image_names &name){
   string right_frame_name;
   char filename[255];
   char meshfilename[255];
-  
+  char texfilename[255];
+  bool meshcached=false;
+  bool texcached=false;
+
   FILE *fp;
   sprintf(filename,"%s/surface-%s.xf",
 	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
@@ -925,14 +908,20 @@ bool threadedStereo::runP(auv_image_names &name){
   }
   fclose(fp);
 
+  sprintf(texfilename,"%s/%s.dds",
+	  cachedtexdir,osgDB::getStrippedName(name.left_name).c_str());
+ 
+    
+
   
   sprintf(meshfilename,"%s/surface-%s.ply",
 	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
 
-  if(FileExists(meshfilename))
+  meshcached=FileExists(meshfilename);
+  texcached=FileExists(texfilename);
+  
+  if(meshcached && texcached)
     return true;
-  else
-    printf("Not cached creating\n");
   //
   // Load the images
   //
@@ -943,8 +932,18 @@ bool threadedStereo::runP(auv_image_names &name){
     {
       printf("Failed to get pair\n");
       return false;
-    }                          
-  
+    } 
+                         
+  if(!texcached){
+    printf("Caching texture\n");
+    osgExp->cacheCompressedImage(color_frame,texfilename,512);
+  }
+
+  if(!meshcached)
+      printf("Not cached creating\n");
+  else
+    return true;
+
   if(feature_depth_guess == AUV_NO_Z_GUESS)
     feature_depth_guess = name.alt;
   
@@ -1206,6 +1205,8 @@ int main( int argc, char *argv[ ] )
 
   auv_data_tools::makedir(cachedmeshdir);
   chmod(cachedmeshdir,   0777);
+  auv_data_tools::makedir(cachedtexdir);
+  chmod(cachedtexdir,   0777);
   //
   // Open the contents file
   //

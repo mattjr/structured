@@ -11,7 +11,7 @@
 #include <highgui.h>
 #include <boost/thread/thread.hpp>
 #include "squish-1.10/squish.h"
-
+#include <sys/stat.h>
 using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
@@ -184,7 +184,63 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
     (*gc._colors++).set(r,b,g,1.0);
   }
 }
+bool FileExists(string strFilename) {
+  struct stat stFileInfo;
+  bool blnReturn;
+  int intStat;
 
+  // Attempt to get the file attributes
+  intStat = stat(strFilename.c_str(),&stFileInfo);
+  if(intStat == 0) {
+    // We were able to get the file attributes
+    // so the file obviously exists.
+    blnReturn = true;
+  } else {
+    // We were not able to get the file attributes.
+    // This may mean that we don't have permission to
+    // access the folder which contains this file. If you
+    // need to do that level of checking, lookup the
+    // return values of stat which will give you
+    // more details on why stat failed.
+    blnReturn = false;
+  }
+  
+  return(blnReturn);
+}
+osg::ref_ptr<osg::Image>OSGExporter::cacheCompressedImage(IplImage *img,string name,int tex_size){
+  string ddsname=osgDB::getNameLessExtension(name);
+  ddsname +=".dds";
+  IplImage *tex_img=cvCreateImage(cvSize(tex_size,tex_size),
+				IPL_DEPTH_8U,3);
+  if(img && tex_img)
+    cvResize(img,tex_img);
+  else
+    printf("Invalid Images\n");
+  
+  osg::ref_ptr<osg::Image> image= Convert_OpenCV_TO_OSG_IMAGE(tex_img);
+  osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
+  texture->setImage(image.get());
+  compress(texture.get());
+  osgDB::writeImageFile(*image.get(),ddsname);
+  cvReleaseImage(&tex_img);
+  return image;
+}
+osg::Image *OSGExporter::getCachedCompressedImage(string name){
+  string ddsname=osgDB::getNameLessExtension(name);
+  ddsname +=".dds";
+  if(FileExists(ddsname)){
+    return osgDB::readImageFile(ddsname);
+  }else{
+    IplImage *img = cvLoadImage(name.c_str(),-1);
+    if(!img)
+      printf("Load failed %s\n",name.c_str());
+    else
+      return  cacheCompressedImage(img,ddsname,512).get();
+  }
+  //Should never get herer
+  return NULL;
+
+}
 
 
 osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback,float *zrange)

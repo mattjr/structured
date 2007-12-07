@@ -742,7 +742,8 @@ proc newfromlist {listfile res} {
    set maxz -10000000
 
    for {set index 0} {$index < $count} {incr index} {
-      set curmesh $line($index)
+      set curmesh [lindex $line($index) 0] 
+       # $line($index)
       set rootName [file root $curmesh]
       set xfFile "${rootName}.xf"
       if {[file exists $xfFile]} {
@@ -752,7 +753,7 @@ proc newfromlist {listfile res} {
       }
 
       catch {eval $cmd} msg
-
+       puts $msg
       scan $msg "%f %f %f %f %f %f" newMinx newMiny newMinz \
       newMaxx newMaxy newMaxz	 
 
@@ -833,7 +834,7 @@ proc newFromConf {gridFile confFile boundMesh voxelSize} {
 	set numchars [gets $fileid filename]
 	puts $numchars
 	while {$numchars > 0} {
-	    bmesh $filename
+	    bmesh  [lindex $filename 0]
 	    set numchars [gets $fileid filename]
 	}
 	close $fileid

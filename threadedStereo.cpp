@@ -895,12 +895,15 @@ bool threadedStereo::runP(auv_image_names &name){
   char texfilename[255];
   bool meshcached=false;
   bool texcached=false;
-
+  Vector camera_pose(AUV_NUM_POSE_STATES);
+  get_camera_params(config_file,camera_pose);
+  
+  get_sensor_to_world_trans(*name.veh_pose,camera_pose,name.m);
+  
   FILE *fp;
   sprintf(filename,"%s/surface-%s.xf",
 	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
   fp = fopen(filename, "w" );
-  fprintf(fp,"%s\n",name.left_name.c_str());
   for(int n=0; n< 4; n++){
     for(int p=0; p<4; p++)
       fprintf(fp,"%f ",name.m[n][p]);
@@ -1072,10 +1075,7 @@ bool threadedStereo::runP(auv_image_names &name){
 
 	 
   if(output_3ds){
-    Vector camera_pose(AUV_NUM_POSE_STATES);
-    get_camera_params(config_file,camera_pose);
-    
-    get_sensor_to_world_trans(*name.veh_pose,camera_pose,name.m);
+
     gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, name.m);
     
 
@@ -1197,8 +1197,12 @@ int main( int argc, char *argv[ ] )
   ifstream      contents_file;
   Vector *camera_pose;
   const char *uname="mesh";
+  const char *aggdir="mesh-agg";
 
- 
+ auv_data_tools::makedir(aggdir);
+
+  chmod(aggdir,   0777);
+
   auv_data_tools::makedir(uname);
 
   chmod(uname,   0777);
@@ -1328,15 +1332,15 @@ int main( int argc, char *argv[ ] )
   }
   if(!single_run){
     char conf_name[255];
-    sprintf(conf_name,"%s/surface.conf",cachedmeshdir);
+    sprintf(conf_name,"%s/surface.txt",cachedmeshdir);
      
     conf_ply_file=fopen(conf_name,"w");
       
     for(unsigned int i=0; i < tasks.size(); i++){
       if(tasks[i].valid)
 	fprintf(conf_ply_file,
-		"bmesh surface-%08d.ply 0.033 1\n"
-		,tasks[i].index); 
+		"surface-%s.ply 0.033 1\n"
+		,osgDB::getStrippedName(tasks[i].left_name).c_str());
     
     }
    
@@ -1383,8 +1387,8 @@ int main( int argc, char *argv[ ] )
       }
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n",basepath.c_str(),basepath.c_str(),cachedmeshdir);
-	fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 400 > vriplog.txt\n%s/vrip/bin/vripsurf auto.vri total-unclean.ply > vripsurflog.txt\n %s/tridecimator/tridecimator total-unclean.ply total.ply 50%% -By -H1500 -Q0.1 -S3\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
+	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n",aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir);
+	fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt 0.033 -rampscale 400 > $OUTDIR/vriplog.txt\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unclean.ply > $OUTDIR/vripsurflog.txt\n %s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total.ply 50%% -By -H1500 -Q0.1 -S3\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	system("./runvrip.sh");
@@ -1392,7 +1396,7 @@ int main( int argc, char *argv[ ] )
 	
 	FILE *dicefp=fopen("./dice.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
-	fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.conf $DICEDIR\n",
+	fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
        	basepath.c_str());
 	fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),dir_name.c_str());
 	if(!hardware_compress)

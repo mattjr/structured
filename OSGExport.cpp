@@ -237,7 +237,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name){
     else
       return  cacheCompressedImage(img,ddsname,512).get();
   }
-  //Should never get herer
+  //Should never get here
   return NULL;
 
 }
@@ -293,13 +293,14 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	if(vmcallback)
 	  vmcallback(++tex_count,mtgcm.size());
 	if(verbose)
-	  printf("\rLoading and Scaling Texture: %03d/%03d",++tex_count,mtgcm.size());
+	  printf("\rLoading Texture: %03d/%03d",++tex_count,mtgcm.size());
 	if(!ive_out)
 	  if(verbose)printf("\n");	 
 	fflush(stdout); 
 	
 	 
-	osg::ref_ptr<osg::Image> image=LoadResizeSave(filename,fname, (!ive_out),tex_size);
+	osg::ref_ptr<osg::Image> image=getCachedCompressedImage(filename);
+	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	if (image.valid()){	     
 	  // create state
 	  osg::StateSet* stateset = new osg::StateSet;
@@ -334,8 +335,8 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	  gc._texcoords = texcoordArray->begin();
 	  gc._geom->setTexCoordArray(0,texcoordArray);
 	  
-	  if(compress_tex && _hardware_compress && !do_atlas)
-	    compress(texture);
+	  //	  if(compress_tex && _hardware_compress && !do_atlas)
+	  //compress(texture);
 	  
 	 
 	  osg_tex_ptrs.push_back(texture);

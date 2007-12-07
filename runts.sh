@@ -45,7 +45,7 @@ find /mnt/shared/mesh-agg -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{prin
 
 echo -e "#!/bin/bash\nOUTDIR=\$PWD\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=\$VRIP_HOME/src/vrip/\nPATH=\$PATH:\$VRIP_HOME/bin:$BASEPATH/tridecimator\ncd $SUBVOLDIR\n" > runvrip.sh
 
-echo -e "$BASEPATH/vrip/bin/pvrip1 auto.vri \$OUTDIR/mesh-agg/total.ply surface.conf surface.conf  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $SUBVOLDIR -nocrunch -passtovrip -use_bigger_bbox\n" >> runvrip.sh
+echo -e "$BASEPATH/vrip/bin/pvrip1 auto.vri \$OUTDIR/mesh-agg/total.ply surface.conf surface.conf  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $SUBVOLDIR -nocrunch -passtovrip -use_bigger_bbox -dec\n" >> runvrip.sh
 chmod 0777  runvrip.sh 
 ./runvrip.sh
 

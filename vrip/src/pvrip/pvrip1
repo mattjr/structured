@@ -159,6 +159,9 @@ while ($currarg <= $#ARGV) {
     } elsif ($ARGV[$currarg] eq "-noclean") {
 	$DOCLEAN = 0;
 	$currarg++;
+    } elsif ($ARGV[$currarg] eq "-dec") {
+	$DODEC = 1;
+	$currarg++;
     } elsif ($ARGV[$currarg] eq "-merge") {
 	$DOMERGE = 1;
 	$currarg++;

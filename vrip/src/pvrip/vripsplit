@@ -238,25 +238,25 @@ if {$argc < 4}  {
     
     while {[gets $fileid inline] >= 0} {
 	if {[lindex $inline 0] == "bmesh"} {
-	    puts "Computing bounding box for [lindex $inline 1]...";
+	    #puts "Computing bounding box for [lindex $inline 1]...";
 	    set plyfile [lindex $inline 1];
 	    # Set bboxfile to be the corresponding bbox file
 	    regsub .ply $plyfile .bbox bboxfile;
 
 	    # Check if bbox file needs to be created or updated
 	    if {![file exists $bboxfile]} {
-		puts "bbox does not exist, creating...";
+		#puts "bbox does not exist, creating...";
 		confline2bbox $inline;
 	    } else {
 		set bboxmtime [file mtime $bboxfile];
 		set confmtime [file mtime $conffilename];
 		if {$confmtime > $bboxmtime  && $bboxesok == 0} {
-		    puts "bbox file is out of date, redoing....";
+		    #puts "bbox file is out of date, redoing....";
 		    confline2bbox $inline;
 		}
 	    }
 
-	    puts "Loading bboxfile: $bboxfile...";
+	    #puts "Loading bboxfile: $bboxfile...";
 	    set bboxfid [open $bboxfile "r"];
 	    gets $bboxfid minline;
 	    gets $bboxfid maxline;

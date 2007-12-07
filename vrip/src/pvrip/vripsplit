@@ -211,7 +211,7 @@ if {$argc < 4}  {
 	    exit -1;
 	}
     }
-
+    puts "Generating bboxes for all submeshes..."
     #
     # Read the .conf file, storing the bboxes for each bmesh
     # It checks dates.  If the bboxes are out of date, then

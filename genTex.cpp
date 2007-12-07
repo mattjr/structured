@@ -418,6 +418,11 @@ int main( int argc, char *argv[ ] )
 					 gts_edge_class(), t_vertex_class());
     bool res=read_ply(meshNames[i].c_str(),s,verbose);
     GNode *bboxTree=loadBBox(i,gts_trans_map);
+    if(!bboxTree){ 
+      fprintf(stderr,"Failed to load bboxtree\n");
+      exit(-1);
+    }
+     
     if(!res ){
       printf("Failed to load surface %s\n",
 	     meshNames[i].c_str());

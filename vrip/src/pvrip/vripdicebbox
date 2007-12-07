@@ -34,31 +34,22 @@ proc bbox_intersect {xmin1 ymin1 zmin1 xmax1 ymax1 zmax1 \
 }
 
 
-# Given a "bmesh x.ply tx ty tz q1 q2 q3 q4" line, this routine generates
-# a x.bbox file, which has two lines:
-#         minx miny minz
-#         maxx maxy maxz
+# Given a ply file and and xf
 #
-proc confline2bbox {confline} {
-    if {("bmesh" == [lindex $confline 0])} {
-	#set cmd "exec plyxform ";
-	#set cmd "$cmd -t [lindex $confline 2] [lindex $confline 3] [lindex $confline 4]";
-	#set q3 [lindex $confline 8];
-	#set q3 [expr -$q3];
-	#set cmd "$cmd -q [lindex $confline 5] [lindex $confline 6] [lindex $confline 7] $q3";
-	#set cmd "$cmd < [lindex $confline 1] | plybbox";
-	set cmd "exec plybbox [lindex $confline 1]";
-	catch {eval $cmd} msg;
-	scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
-	set plyname [lindex $confline 1];
-	# Set bboxname to be the corresponding bbox file
-	regsub .ply $plyname .bbox bboxname;
-	set bboxfid [open $bboxname "w+"];
-	puts $bboxfid "$minx $miny $minz";
-	puts $bboxfid "$maxx $maxy $maxz";
-
-	close $bboxfid;
-    }
+proc ply2bbox {plyname} {
+    regsub .ply $plyname .xf xfFile;
+    set cmd "exec plyxform -f $xfFile < $plyname | plybbox";
+    catch {eval $cmd} msg;
+    scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
+  
+    # Set bboxname to be the corresponding bbox file
+    regsub .ply $plyname .bbox bboxname;
+    set bboxfid [open $bboxname "w+"];
+    puts $bboxfid "$minx $miny $minz";
+    puts $bboxfid "$maxx $maxy $maxz";
+    
+    close $bboxfid;
+    
 }
 
 
@@ -199,54 +190,54 @@ if {$argc < 2}  {
     set fileid [open $conffilename "r"];
     
     while {[gets $fileid inline] >= 0} {
-	if {[lindex $inline 0] == "bmesh"} {
-	    if {[lindex $inline 3] == "1" } {
-	#	puts "Computing bounding box for [lindex $inline 1]...";
-		set plyfile [lindex $inline 1];
-		# Set bboxfile to be the corresponding bbox file
-		regsub .ply $plyfile .bbox bboxfile;
-		regsub .ply $plyfile .trans transfile;
-		# Check if bbox file needs to be created or updated
-		if {![file exists $transfile]} {
-		    puts "Cannot find trans file skipping";
-		    continue;
-		} else {
-		    set transfid [open $transfile "r"];
-		    gets $transfid imgname;
-		    gets $transfid transline;
-		    #trans($numMeshes,name) = $imgname;		    
-		    scan $imgname "%s" trans($numMeshes,name);		    
-		    set  trans($numMeshes,trans) $transline;
-		    close $transfid
-		}
-		
-		# Check if bbox file needs to be created or updated
-		if {![file exists $bboxfile]} {
-		#    puts "bbox does not exist, creating...";
-		    confline2bbox $inline;
-		} else {
-		    set bboxmtime [file mtime $bboxfile];
-		    set confmtime [file mtime $conffilename];
-		    if {$confmtime > $bboxmtime} {
-			#puts "bbox file is out of date, redoing....";
-			confline2bbox $inline;
-		    }
-		}
-		
-		#puts "Loading bboxfile: $bboxfile...";
-		set bboxfid [open $bboxfile "r"];
-		gets $bboxfid minline;
-		gets $bboxfid maxline;
-		scan $minline "%f %f %f" bbox($numMeshes,xmin) \
-		    bbox($numMeshes,ymin) bbox($numMeshes,zmin);
-		scan $maxline "%f %f %f" bbox($numMeshes,xmax) \
-		    bbox($numMeshes,ymax) bbox($numMeshes,zmax);
-		
-		close $bboxfid;
-		incr numMeshes;
+	if {[lindex $inline 2] == "1" } {
+	    #	puts "Computing bounding box for [lindex $inline 1]...";
+	    set plyfile [lindex $inline 0];
+	    # Set bboxfile to be the corresponding bbox file
+	    regsub .ply $plyfile .bbox bboxfile;
+	    regsub .ply $plyfile .xf xffile;
+	    regsub surface- $plyfile {}  imgname;
+	    regsub .ply $imgname .png  imgname;
+	    # Check if bbox file needs to be created or updated
+	    if {![file exists $xffile]} {
+		puts "Cannot find xf file skipping";
+		continue;
+	    } else {
+		set xffid [open $xffile "r"];
+		gets $xffid xfline;
+		set trans($numMeshes,name)  $imgname;		    
+		scan $imgname "%s" trans($numMeshes,name);		    
+		set  trans($numMeshes,trans) $xfline;
+		close $xffid
 	    }
+	    
+	    # Check if bbox file needs to be created or updated
+	    if {![file exists $bboxfile]} {
+		#    puts "bbox does not exist, creating...";
+		ply2bbox $plyfile;
+	    } else {
+		set bboxmtime [file mtime $bboxfile];
+		set confmtime [file mtime $conffilename];
+		if {$confmtime > $bboxmtime} {
+		    #puts "bbox file is out of date, redoing....";
+		    ply2bbox $plyfile;
+		}
+	    }
+	    
+	    #puts "Loading bboxfile: $bboxfile...";
+	    set bboxfid [open $bboxfile "r"];
+	    gets $bboxfid minline;
+	    gets $bboxfid maxline;
+	    scan $minline "%f %f %f" bbox($numMeshes,xmin) \
+		bbox($numMeshes,ymin) bbox($numMeshes,zmin);
+	    scan $maxline "%f %f %f" bbox($numMeshes,xmax) \
+		bbox($numMeshes,ymax) bbox($numMeshes,zmax);
+	    
+	    close $bboxfid;
+	    incr numMeshes;
 	}
     }
+
     close $fileid;
    
     puts "Number of input meshes: $numMeshes total diced: $numDiced";

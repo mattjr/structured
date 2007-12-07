@@ -233,7 +233,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name){
   }else{
     IplImage *img = cvLoadImage(name.c_str(),-1);
     if(!img)
-      printf("Load failed %s\n",name.c_str());
+      printf("In Cached Compressed Img Load failed %s.\n",name.c_str());
     else
       return  cacheCompressedImage(img,ddsname,512).get();
   }

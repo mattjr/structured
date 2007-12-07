@@ -96,7 +96,7 @@ static int single_run_start=0;
 static int single_run_stop=0;
 
 enum {END_FILE,NO_ADD,ADD_IMG};
-char subvoldir[255];
+char cachedmeshdir[255];
 static string deltaT_config_name;
 static string deltaT_dir;
 static bool hardware_compress=true;
@@ -113,6 +113,29 @@ void get_cov_mat(ifstream *cov_file,Matrix &mat){
 
 }
 
+bool FileExists(string strFilename) {
+  struct stat stFileInfo;
+  bool blnReturn;
+  int intStat;
+
+  // Attempt to get the file attributes
+  intStat = stat(strFilename.c_str(),&stFileInfo);
+  if(intStat == 0) {
+    // We were able to get the file attributes
+    // so the file obviously exists.
+    blnReturn = true;
+  } else {
+    // We were not able to get the file attributes.
+    // This may mean that we don't have permission to
+    // access the folder which contains this file. If you
+    // need to do that level of checking, lookup the
+    // return values of stat which will give you
+    // more details on why stat failed.
+    blnReturn = false;
+  }
+  
+  return(blnReturn);
+}
 gboolean image_count_verbose ( guint number, guint total)
 {
  
@@ -242,7 +265,7 @@ static bool parse_args( int argc, char *argv[ ] )
   stereo_config_file_name = "stereo.cfg";
   contents_file_name = "pose_file.data";
   dir_name = "img/";
-  strcpy(subvoldir,"mesh-agg/");
+  strcpy(cachedmeshdir,"cache-mesh/");
   int i=1;
   while( i < argc )
     {
@@ -362,10 +385,10 @@ static bool parse_args( int argc, char *argv[ ] )
 	  vrip_split = atoi( argv[i+1] );
 	  i+=2;
 	}
-      else if( strcmp( argv[i], "--subvoldir" ) == 0 )
+      else if( strcmp( argv[i], "--cachedmeshdir" ) == 0 )
 	{  
 	  if( i == argc-1 ) return false;
-	  strcpy(subvoldir , argv[i+1] );
+	  strcpy(cachedmeshdir , argv[i+1] );
 	  i+=2;
 	}
       else if( strcmp( argv[i], "--dicevol" ) == 0 )
@@ -467,6 +490,8 @@ static bool parse_args( int argc, char *argv[ ] )
     if(!have_contents_file_name )
       contents_file_name= base_dir+string("/")+contents_file_name;
     dir_name= base_dir+string("/")+dir_name;
+    strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
+
   }
 
   struct stat statinfo;
@@ -885,7 +910,29 @@ bool threadedStereo::runP(auv_image_names &name){
   unsigned int right_frame_id=frame_id++;
   string left_frame_name;
   string right_frame_name;
+  char filename[255];
+  char meshfilename[255];
   
+  FILE *fp;
+  sprintf(filename,"%s/surface-%s.xf",
+	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
+  fp = fopen(filename, "w" );
+  fprintf(fp,"%s\n",name.left_name.c_str());
+  for(int n=0; n< 4; n++){
+    for(int p=0; p<4; p++)
+      fprintf(fp,"%f ",name.m[n][p]);
+    fprintf(fp,"\n");
+  }
+  fclose(fp);
+
+  
+  sprintf(meshfilename,"%s/surface-%s.ply",
+	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
+
+  if(FileExists(meshfilename))
+    return true;
+  else
+    printf("Not cached creating\n");
   //
   // Load the images
   //
@@ -1018,20 +1065,21 @@ bool threadedStereo::runP(auv_image_names &name){
   */ 
   if(!localV->len)
     return false;
-  double mult=2.00;
+  double mult=0.00;
 
   GtsSurface *surf= auv_mesh_pts(localV,mult,0); 
 
-  Vector camera_pose(AUV_NUM_POSE_STATES);
-  get_camera_params(config_file,camera_pose);
-	 
-  get_sensor_to_world_trans(*name.veh_pose,camera_pose,name.m);
-  gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, name.m);
-	   
-	 
-  char filename[255];
+
+
 	 
   if(output_3ds){
+    Vector camera_pose(AUV_NUM_POSE_STATES);
+    get_camera_params(config_file,camera_pose);
+    
+    get_sensor_to_world_trans(*name.veh_pose,camera_pose,name.m);
+    gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, name.m);
+    
+
     map<int,string>textures;
     textures[0]=(name.dir+name.left_name);
     sprintf(filename,"mesh/surface-%08d.3ds",
@@ -1046,6 +1094,7 @@ bool threadedStereo::runP(auv_image_names &name){
     osgExp->convertModelOSG(surf,textures,filename,512,NULL,NULL);
     gts_matrix_destroy (invM);
   }
+
   if(output_ply_and_conf){
 	   
     GtsBBox *tmpBBox=gts_bbox_surface(gts_bbox_class(),surf);
@@ -1058,22 +1107,12 @@ bool threadedStereo::runP(auv_image_names &name){
 		 tmpBBox->z2);
     gts_object_destroy (GTS_OBJECT (tmpBBox));
 	   
-    FILE *fp;
-    sprintf(filename,"%s/surface-%08d.ply",
-	    subvoldir,name.index);
-    fp = fopen(filename, "w" );
+  
+    fp = fopen(meshfilename, "w" );
     auv_write_ply(surf, fp,have_cov_file,"test");
     fclose(fp);
 	  
-    sprintf(filename,"%s/surface-%08d.trans",
-	    subvoldir,name.index);
-    fp = fopen(filename, "w" );
-    fprintf(fp,"%s\n",name.left_name.c_str());
-    for(int n=0; n< 4; n++)
-      for(int p=0; p<4; p++)
-	fprintf(fp,"%f ",name.m[n][p]);
-    fprintf(fp,"\n");
-    fclose(fp);
+ 
 	  
   }
   //Destory Surf
@@ -1159,14 +1198,14 @@ int main( int argc, char *argv[ ] )
   ifstream      contents_file;
   Vector *camera_pose;
   const char *uname="mesh";
-  const char *uname2="mesh-agg";
+
  
   auv_data_tools::makedir(uname);
-  auv_data_tools::makedir(uname2);
+
   chmod(uname,   0777);
-  chmod(uname2,   0777);
-  auv_data_tools::makedir(subvoldir);
-  chmod(subvoldir,   0777);
+
+  auv_data_tools::makedir(cachedmeshdir);
+  chmod(cachedmeshdir,   0777);
   //
   // Open the contents file
   //
@@ -1288,7 +1327,7 @@ int main( int argc, char *argv[ ] )
   }
   if(!single_run){
     char conf_name[255];
-    sprintf(conf_name,"%s/surface.conf",subvoldir);
+    sprintf(conf_name,"%s/surface.conf",cachedmeshdir);
      
     conf_ply_file=fopen(conf_name,"w");
       
@@ -1304,7 +1343,7 @@ int main( int argc, char *argv[ ] )
       for(int i=0; i < (int)mb_ply_filenames.size(); i++){
 	string simpname =osgDB::getSimpleFileName(mb_ply_filenames[i]);
 	string inname=mb_ply_filenames[i];
-	string outname=(string(subvoldir)+string("/")+simpname);
+	string outname=(string(cachedmeshdir)+string("/")+simpname);
 	cout << "Copying " << inname << " to " << outname<<endl;
 	std::ifstream  IN (inname.c_str());
 	std::ofstream  OUT(outname.c_str()); 
@@ -1343,7 +1382,7 @@ int main( int argc, char *argv[ ] )
       }
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n",basepath.c_str(),basepath.c_str(),subvoldir);
+	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n",basepath.c_str(),basepath.c_str(),cachedmeshdir);
 	fprintf(conf_ply_file,"%s/vrip/bin/vripnew auto.vri surface.conf surface.conf 0.033 -rampscale 400 > vriplog.txt\n%s/vrip/bin/vripsurf auto.vri total-unclean.ply > vripsurflog.txt\n %s/tridecimator/tridecimator total-unclean.ply total.ply 50%% -By -H1500 -Q0.1 -S3\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);

@@ -910,7 +910,7 @@ bool threadedStereo::runP(auv_image_names &name){
     fprintf(fp,"\n");
   }
   fclose(fp);
-
+  chmod(filename,   0666);
   sprintf(texfilename,"%s/%s.dds",
 	  cachedtexdir,osgDB::getStrippedName(name.left_name).c_str());
  

@@ -942,11 +942,9 @@ bool threadedStereo::runP(auv_image_names &name){
     osgExp->cacheCompressedImage(color_frame,texfilename,512);
   }
 
-  if(!meshcached)
+  if(!meshcached){
       printf("Not cached creating\n");
-  else
-    return true;
-
+ 
   if(feature_depth_guess == AUV_NO_Z_GUESS)
     feature_depth_guess = name.alt;
   
@@ -1118,6 +1116,8 @@ bool threadedStereo::runP(auv_image_names &name){
   if(surf)
     gts_object_destroy (GTS_OBJECT (surf)); 
 	 
+ 
+  
   //
   // Pause between frames if requested.
   //
@@ -1125,16 +1125,7 @@ bool threadedStereo::runP(auv_image_names &name){
     cvWaitKey( 0 );
   else if( display_debug_images )
     cvWaitKey( 100 );
-	 
-	 
-  //
-  // Clean-up
-  //
-	 
-  cvReleaseImage( &left_frame );
-  cvReleaseImage( &right_frame );
-  cvReleaseImage( &color_frame);
-        
+  
   list<Feature*>::iterator fitr;
   for( fitr  = features.begin( ) ;
        fitr != features.end( ) ;
@@ -1142,6 +1133,18 @@ bool threadedStereo::runP(auv_image_names &name){
     {
       delete *fitr;
     }     
+  
+  }
+  
+  //
+  // Clean-up
+  //
+  
+  cvReleaseImage( &left_frame );
+  cvReleaseImage( &right_frame );
+  cvReleaseImage( &color_frame);
+        
+
   int progCount=doneCount.increment();
   image_count_verbose (progCount, totalTodoCount);
   // printf("\rStereo processing on image %u/%u complete.",progCount,totalTodoCount);

@@ -44,13 +44,14 @@ proc ply2bbox {plyname} {
   
     # Set bboxname to be the corresponding bbox file
     regsub .ply $plyname .bbox bboxname;
+    exec rm -f $bboxname 
     set bboxfid [open $bboxname "w+"];
     
     puts $bboxfid "$minx $miny $minz";
     puts $bboxfid "$maxx $maxy $maxz";
     
     close $bboxfid;
-    catch {exec chmod 666 $bboxname} msg; puts $msg
+    exec chmod 666 $bboxname 
 }
 
 #

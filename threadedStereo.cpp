@@ -904,6 +904,11 @@ bool threadedStereo::runP(auv_image_names &name){
   sprintf(filename,"%s/surface-%s.xf",
 	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
   fp = fopen(filename, "w" );
+  if(!fp){
+    fprintf(stderr,"Failed to open %s for writing\n",filename);
+    return false;
+  }
+    
   for(int n=0; n< 4; n++){
     for(int p=0; p<4; p++)
       fprintf(fp,"%f ",name.m[n][p]);

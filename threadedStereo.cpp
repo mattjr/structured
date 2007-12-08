@@ -923,8 +923,13 @@ bool threadedStereo::runP(auv_image_names &name){
   meshcached=FileExists(meshfilename);
   texcached=FileExists(texfilename);
   
-  if(meshcached && texcached)
-    return true;
+  if(meshcached && texcached){
+    
+  int progCount=doneCount.increment();
+  image_count_verbose (progCount, totalTodoCount);
+  return true;
+
+  }
   //
   // Load the images
   //
@@ -938,7 +943,7 @@ bool threadedStereo::runP(auv_image_names &name){
     } 
                          
   if(!texcached){
-    printf("Caching texture %s\n",texfilename);
+    printf("\nCaching texture %s\n",texfilename);
     osgExp->cacheCompressedImage(color_frame,texfilename,512);
   }
 

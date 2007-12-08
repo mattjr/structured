@@ -943,7 +943,7 @@ bool threadedStereo::runP(auv_image_names &name){
 			left_frame, right_frame,
 			color_frame))
     {
-      printf("Failed to get pair\n");
+      printf("Failed to get pair %s %s\n",name.left_name.c_str(),name.right_name.c_str());
       return false;
     } 
                          

@@ -106,6 +106,25 @@ proc confline2bbox {confline} {
     }
 }
 
+# Given a ply file and and xf
+#
+proc ply2bbox {plyname} {
+    regsub .ply $plyname .xf xfFile;
+    set cmd "exec plyxform -f $xfFile < $plyname | plybbox";
+    catch {eval $cmd} msg;
+    scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
+  
+    # Set bboxname to be the corresponding bbox file
+    regsub .ply $plyname .bbox bboxname;
+    exec rm -f $bboxname 
+    set bboxfid [open $bboxname "w+"];
+    
+    puts $bboxfid "$minx $miny $minz";
+    puts $bboxfid "$maxx $maxy $maxz";
+    
+    close $bboxfid;
+    exec chmod 666 $bboxname 
+}
 
 # Recurse through the subvols, dividing and figuring out which
 # scans intersect...
@@ -291,13 +310,13 @@ if {$argc < 4}  {
 	    # Check if bbox file needs to be created or updated
 	    if {![file exists $bboxfile]} {
 		#puts "bbox does not exist, creating...";
-		confline2bbox $inline;
+		ply2bbox $plyfile;
 	    } else {
 		set bboxmtime [file mtime $bboxfile];
 		set confmtime [file mtime $conffilename];
 		if {$confmtime > $bboxmtime  && $bboxesok == 0} {
 		    #puts "bbox file is out of date, redoing....";
-		    confline2bbox $inline;
+		    ply2bbox $plyfile;
 		}
 	    }
 	    

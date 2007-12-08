@@ -31,6 +31,7 @@ OPTIONS:
    -v      Verbose
 EOF
 }
+SKIPVRIP=
 SINGLEVRIP=
 while getopts "ht:s:p:v" OPTION
 do
@@ -43,7 +44,7 @@ do
              SINGLEVRIP=1
              ;;
          r)
-             SERVER=$OPTARG
+             SKIPVRIP=1
              ;;
          p)
              NUMPOSE=$OPTARG
@@ -60,38 +61,40 @@ done
 
 
 
-
-
-echo "Creating Stereo Meshes for $NUMPOSE frame pairs"
-if [ $SINGLEVRIP ] 
+if [ $SKIPVRIP ] 
 then
-# bash until loop
-    LAST=0
-    COUNT=0
-    SPLIT=500
 
-    rm -f tscmds
-    while [ $COUNT -lt $NUMPOSE ]; do
-	check=$(($COUNT % $SPLIT));   
-	if [ $check -eq 0 ]  && [ "$COUNT" -gt 0 ];then
-            echo "cd $OUTPUTLOC;$BASEPATH/threadedStereo $DATADIR --single-run $LAST $COUNT" >> tscmds
-	    LAST=$COUNT
+    echo "Creating Stereo Meshes for $NUMPOSE frame pairs"
+    if [ $SINGLEVRIP ] 
+    then
+# bash until loop
+	LAST=0
+	COUNT=0
+	SPLIT=500
+	
+	rm -f tscmds
+	while [ $COUNT -lt $NUMPOSE ]; do
+	    check=$(($COUNT % $SPLIT));   
+	    if [ $check -eq 0 ]  && [ "$COUNT" -gt 0 ];then
+		echo "cd $OUTPUTLOC;$BASEPATH/threadedStereo $DATADIR --single-run $LAST $COUNT" >> tscmds
+		LAST=$COUNT
+	    fi
+            let COUNT=COUNT+1
+	done
+	if [ $check -gt 0 ];then
+	    final=$COUNT
+	    echo "cd $OUTPUTLOC;$BASEPATH/threadedStereo $DATADIR --single-run $LAST $final" >> tscmds
 	fi
-        let COUNT=COUNT+1
-    done
-    if [ $check -gt 0 ];then
-	final=$COUNT
-	echo "cd $OUTPUTLOC;$BASEPATH/threadedStereo $DATADIR --single-run $LAST $final" >> tscmds
-    fi
-    $BASEPATH/vrip/bin/loadbalance ~/loadlimit tscmds -logdir /mnt/shared/log-ts/  -noxload
+	$BASEPATH/vrip/bin/loadbalance ~/loadlimit tscmds -logdir /mnt/shared/log-ts/  -noxload
     TARGET_DIR=/mnt/shared/mesh-agg
     for i in `ls $MBDIR/mb*.ply`; do
 	cp "$i" $TARGET_DIR/
 	echo  cp "$i" $TARGET_DIR/
     done
-else
-    echo "Single Vrip"
-    $BASEPATH/threadedStereo $1 -n $NUMPOSE -t 2
+    else
+	echo "Single Vrip"
+	$BASEPATH/threadedStereo $1 --single-run  0 $NUMPOSE -t 2
+    fi
 fi
 #bash tscmds
 find /mnt/shared/mesh-agg -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  " 0.033 1" }' > /mnt/shared/mesh-agg/surface.txt
@@ -99,7 +102,7 @@ find /mnt/shared/mesh-agg -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{prin
 
 echo -e "#!/bin/bash\nOUTDIR=\$PWD\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=\$VRIP_HOME/src/vrip/\nPATH=\$PATH:\$VRIP_HOME/bin:$BASEPATH/tridecimator\ncd $MESHCACHE\n" > runvrip.sh
 
-echo -e "$BASEPATH/vrip/bin/pvrip1 auto.vri \$OUTDIR/mesh-agg/total.ply surface.txt surface.txt  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $SUBVOLDIR -nocrunch -passtovrip -use_bigger_bbox -dec -meshcache $MESHCACHE\n" >> runvrip.sh
+echo -e "$BASEPATH/vrip/bin/pvrip1 \$OUTDIR/mesh-agg/auto.vri \$OUTDIR/mesh-agg/total.ply surface.txt surface.txt  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $SUBVOLDIR -nocrunch -passtovrip -use_bigger_bbox -dec -meshcache $MESHCACHE\n" >> runvrip.sh
 chmod 0777  runvrip.sh 
 ./runvrip.sh
 

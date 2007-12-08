@@ -120,6 +120,14 @@ while ($currarg <= $#ARGV) {
 	    print STDERR "Error: no subvoldir???\n\n";
 	    &printUsage();
 	}
+    }  elsif ($ARGV[$currarg] eq "-meshcache" ||
+	     $ARGV[$currarg] eq "-mc") {
+	$MESHCACHE = $ARGV[$currarg+1];
+	$currarg +=2;
+	if ($SUBVOLDIR eq "") {
+	    print STDERR "Error: no subvoldir???\n\n";
+	    &printUsage();
+	}
     } elsif ($ARGV[$currarg] eq "-rampscale" ||
 	     $ARGV[$currarg] eq "-rs") {
 	$RAMPSCALE = $ARGV[$currarg+1];
@@ -235,7 +243,7 @@ if ($PASSTOVRIPSURF ne "") {
 
 # Call vripsubvollist to actually generate the commands
 $cmd = "find $SUBVOLDIR | grep subvol | grep .conf | sort | ".
-    "/usr/bin/xargs vripsubvollist -subvoldir $SUBVOLDIR $CRUNCHSTR $RAMPSCALESTR $PASS_STR $RES > commands\n";
+    "/usr/bin/xargs vripsubvollist -subvoldir $SUBVOLDIR -meshcache $MESHCACHE $CRUNCHSTR $RAMPSCALESTR $PASS_STR $RES > commands\n";
 print "} $cmd";
 
 system $cmd;

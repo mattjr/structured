@@ -42,6 +42,9 @@ while (substr($ARGV[0], 0,1) eq "-") {
     elsif ($ARGV[0] eq "-subvoldir") {
 	$SUBVOLDIR = $ARGV[1];
 	splice(@ARGV, 0, 2);
+    }  elsif ($ARGV[0] eq "-meshcache") {
+	$MESHCACHE = $ARGV[1];
+	splice(@ARGV, 0, 2);
     } elsif ($ARGV[0] eq "-passtovrip") {
 	$PASSTOVRIP = $ARGV[1];
 	splice(@ARGV, 0, 2);
@@ -121,7 +124,7 @@ for ($n=1; $n <= $#ARGV; $n++) {
     $BASEDIR = "$ENV{'HOME'}/cvs/threadedStereo/vrip/bin";
     $VRIP_DIR = "$ENV{'HOME'}/cvs/threadedStereo/vrip/src/vrip";
 
-    print STDOUT "cd $SUBVOLDIR; set path = ($BASEDIR \$path); setenv VRIP_DIR '$VRIP_DIR'; $BASEDIR/vripnew $vri $conf $bbox $voxelsize $rampscalestr $PASSTOVRIP; ".
+    print STDOUT "cd $MESHCACHE; set path = ($BASEDIR \$path); setenv VRIP_DIR '$VRIP_DIR'; $BASEDIR/vripnew $vri $conf $bbox $voxelsize $rampscalestr $PASSTOVRIP; ".
 	"$BASEDIR/vripsurf -no_remove_slivers $vri $plyv $PASSTOVRIPSURF; ".
 	"$BASEDIR/plycull $bbox $plyv $ply $epsilon; ".
 	"$rm_plyv $crunchstr\n";

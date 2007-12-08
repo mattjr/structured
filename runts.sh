@@ -42,7 +42,7 @@ if [ $check -gt 0 ];then
     final=$COUNT
     echo "cd $OUTPUTLOC;$BASEPATH/threadedStereo $DATADIR --single-run $LAST $final" >> tscmds
 fi
-#~/cvs/threadedStereo/vrip/bin/loadbalance ~/loadlimit tscmds -logdir /mnt/shared/log-ts/  -noxload
+~/cvs/threadedStereo/vrip/bin/loadbalance ~/loadlimit tscmds -logdir /mnt/shared/log-ts/  -noxload
 TARGET_DIR=/mnt/shared/mesh-agg
 for i in `ls $MBDIR/mb*.ply`; do
     cp "$i" $TARGET_DIR/

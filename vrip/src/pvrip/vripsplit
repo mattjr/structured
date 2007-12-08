@@ -235,14 +235,59 @@ if {$argc < 4}  {
     }
     
     set fileid [open $conffilename "r"];
-    
+    set ext [file extension $conffilename]
+
     while {[gets $fileid inline] >= 0} {
-	if {[lindex $inline 0] == "bmesh"} {
+	if {$ext == ".conf"} {
+	    if {[lindex $inline 0] == "bmesh"} {
+		#puts "Computing bounding box for [lindex $inline 1]...";
+		set plyfile [lindex $inline 1];
+		# Set bboxfile to be the corresponding bbox file
+		regsub .ply $plyfile .bbox bboxfile;
+		
+		# Check if bbox file needs to be created or updated
+		if {![file exists $bboxfile]} {
+		    #puts "bbox does not exist, creating...";
+		    confline2bbox $inline;
+		} else {
+		    set bboxmtime [file mtime $bboxfile];
+		    set confmtime [file mtime $conffilename];
+		    if {$confmtime > $bboxmtime  && $bboxesok == 0} {
+			#puts "bbox file is out of date, redoing....";
+			confline2bbox $inline;
+		    }
+		}
+		
+		
+		#puts "Loading bboxfile: $bboxfile...";
+		set bboxfid [open $bboxfile "r"];
+		gets $bboxfid minline;
+		gets $bboxfid maxline;
+		scan $minline "%f %f %f" bbox($numMeshes,xmin) \
+		    bbox($numMeshes,ymin) bbox($numMeshes,zmin);
+		scan $maxline "%f %f %f" bbox($numMeshes,xmax) \
+		    bbox($numMeshes,ymax) bbox($numMeshes,zmax);
+		
+		close $bboxfid;
+		
+		set bmeshinfo($numMeshes,file) [lindex $inline 1];
+		set bmeshinfo($numMeshes,tx) [lindex $inline 2];
+		set bmeshinfo($numMeshes,ty) [lindex $inline 3];
+		set bmeshinfo($numMeshes,tz) [lindex $inline 4];
+		set bmeshinfo($numMeshes,q0) [lindex $inline 5];
+		set bmeshinfo($numMeshes,q1) [lindex $inline 6];
+		set bmeshinfo($numMeshes,q2) [lindex $inline 7];
+		set bmeshinfo($numMeshes,q3) [lindex $inline 8];
+		
+		incr numMeshes;
+	    }
+	} else {
+	    
 	    #puts "Computing bounding box for [lindex $inline 1]...";
-	    set plyfile [lindex $inline 1];
+	    set plyfile [lindex $inline 0];
 	    # Set bboxfile to be the corresponding bbox file
 	    regsub .ply $plyfile .bbox bboxfile;
-
+	    
 	    # Check if bbox file needs to be created or updated
 	    if {![file exists $bboxfile]} {
 		#puts "bbox does not exist, creating...";
@@ -255,7 +300,8 @@ if {$argc < 4}  {
 		    confline2bbox $inline;
 		}
 	    }
-
+	    
+	    
 	    #puts "Loading bboxfile: $bboxfile...";
 	    set bboxfid [open $bboxfile "r"];
 	    gets $bboxfid minline;
@@ -264,20 +310,19 @@ if {$argc < 4}  {
 		bbox($numMeshes,ymin) bbox($numMeshes,zmin);
 	    scan $maxline "%f %f %f" bbox($numMeshes,xmax) \
 		bbox($numMeshes,ymax) bbox($numMeshes,zmax);
-
+	    
 	    close $bboxfid;
-
-	    set bmeshinfo($numMeshes,file) [lindex $inline 1];
-	    set bmeshinfo($numMeshes,tx) [lindex $inline 2];
-	    set bmeshinfo($numMeshes,ty) [lindex $inline 3];
-	    set bmeshinfo($numMeshes,tz) [lindex $inline 4];
-	    set bmeshinfo($numMeshes,q0) [lindex $inline 5];
-	    set bmeshinfo($numMeshes,q1) [lindex $inline 6];
-	    set bmeshinfo($numMeshes,q2) [lindex $inline 7];
-	    set bmeshinfo($numMeshes,q3) [lindex $inline 8];
-
+	    
+	    set bmeshinfo($numMeshes,file) [lindex $inline 0];
+	    set bmeshinfo($numMeshes,res) [lindex $inline 1];
+	    set bmeshinfo($numMeshes,isimg) [lindex $inline 2];
+	
+	   
+	    
 	    incr numMeshes;
+	    
 	}
+   
     }
     close $fileid;
     puts "";
@@ -567,10 +612,16 @@ if {$argc < 4}  {
     # Precompute the meshlist lines, so we only need to figure out
     # which ones to paste into each conf file
     for {set i 0} {$i < $numMeshes} {incr i}  {
-	set meshlist($i) "bmesh $bmeshinfo($i,file)\
+	if {$ext == ".conf"} {	
+	    set meshlist($i) "bmesh $bmeshinfo($i,file)\
              $bmeshinfo($i,tx) $bmeshinfo($i,ty) $bmeshinfo($i,tz)\
              $bmeshinfo($i,q0) $bmeshinfo($i,q1)\
              $bmeshinfo($i,q2) $bmeshinfo($i,q3)";
+	} else {
+
+	    set meshlist($i) "bmesh $bmeshinfo($i,file)\
+             $bmeshinfo($i,res) $bmeshinfo($i,isimg)";
+	}
 	# This is the list of meshes we might possibly consider 
 	# at each recursive level of the traversal
 	# set indexlist($i) $i;

@@ -1,5 +1,4 @@
 #!/bin/bash
-COUNT=0
 LOGDIR="/mnt/shared/log-tex"
 BASEPATH=`dirname $0`
 SUBVOLDIR="/mnt/shared/mesh-agg"
@@ -17,38 +16,83 @@ mkdir -p $PWD/mesh-agg/
 mkdir -p $PWD/mesh/
 chown 0777  $PWD/mesh-agg/
 chown 0777  $PWD/mesh/
+usage()
+{
+cat << EOF
+usage: $0 options
 
-# bash until loop
-LAST=0
-if [ $# -gt 1 ] && [ $2 -ne 0 ]; then
-    NUMPOSE=$2
-fi
+This script run the test1 or test2 over a machine.
 
-if [ $# -gt 2 ]; then
-    SPLIT=$3
-fi
+OPTIONS:
+   -h      Show this message
+   -t      Test type, can be ‘test1′ or ‘test2′
+   -r      Server address
+   -p      Server root password
+   -v      Verbose
+EOF
+}
+SINGLEVRIP=
+while getopts "ht:s:p:v" OPTION
+do
+     case $OPTION in
+         h)
+             usage
+             exit 1
+             ;;
+         s)
+             SINGLEVRIP=1
+             ;;
+         r)
+             SERVER=$OPTARG
+             ;;
+         p)
+             NUMPOSE=$OPTARG
+             ;;
+         v)
+             VERBOSE=1
+             ;;
+         ?)
+             usage
+             exit
+             ;;
+     esac
+done
+
+
+
+
 
 echo "Creating Stereo Meshes for $NUMPOSE frame pairs"
-rm -f tscmds
-while [ $COUNT -lt $NUMPOSE ]; do
-check=$(($COUNT % $SPLIT));   
-    if [ $check -eq 0 ]  && [ "$COUNT" -gt 0 ];then
-        echo "cd $OUTPUTLOC;$BASEPATH/threadedStereo $DATADIR --single-run $LAST $COUNT" >> tscmds
-	LAST=$COUNT
-    fi
-        let COUNT=COUNT+1
-done
-if [ $check -gt 0 ];then
-    final=$COUNT
-    echo "cd $OUTPUTLOC;$BASEPATH/threadedStereo $DATADIR --single-run $LAST $final" >> tscmds
-fi
-~/cvs/threadedStereo/vrip/bin/loadbalance ~/loadlimit tscmds -logdir /mnt/shared/log-ts/  -noxload
-TARGET_DIR=/mnt/shared/mesh-agg
-for i in `ls $MBDIR/mb*.ply`; do
-    cp "$i" $TARGET_DIR/
-    echo  cp "$i" $TARGET_DIR/
-done
+if [ $SINGLEVRIP ] 
+then
+# bash until loop
+    LAST=0
+    COUNT=0
+    SPLIT=500
 
+    rm -f tscmds
+    while [ $COUNT -lt $NUMPOSE ]; do
+	check=$(($COUNT % $SPLIT));   
+	if [ $check -eq 0 ]  && [ "$COUNT" -gt 0 ];then
+            echo "cd $OUTPUTLOC;$BASEPATH/threadedStereo $DATADIR --single-run $LAST $COUNT" >> tscmds
+	    LAST=$COUNT
+	fi
+        let COUNT=COUNT+1
+    done
+    if [ $check -gt 0 ];then
+	final=$COUNT
+	echo "cd $OUTPUTLOC;$BASEPATH/threadedStereo $DATADIR --single-run $LAST $final" >> tscmds
+    fi
+    $BASEPATH/vrip/bin/loadbalance ~/loadlimit tscmds -logdir /mnt/shared/log-ts/  -noxload
+    TARGET_DIR=/mnt/shared/mesh-agg
+    for i in `ls $MBDIR/mb*.ply`; do
+	cp "$i" $TARGET_DIR/
+	echo  cp "$i" $TARGET_DIR/
+    done
+else
+    echo "Single Vrip"
+    $BASEPATH/threadedStereo $1 -n $NUMPOSE -t 2
+fi
 #bash tscmds
 find /mnt/shared/mesh-agg -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  " 0.033 1" }' > /mnt/shared/mesh-agg/surface.txt
 find /mnt/shared/mesh-agg -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  " 0.1 0" }' >> /mnt/shared/mesh-agg/surface.txt

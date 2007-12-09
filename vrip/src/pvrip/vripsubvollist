@@ -84,26 +84,26 @@ for ($n=1; $n <= $#ARGV; $n++) {
     for ($iscan = 0; $confline = <INCONF>; $iscan++) {
 
 	@words = split(' ', $confline);
-	$inply = "$words[1]";
+	$inply = "$words[0]";
 	
 	# A few checks for quick skipping...
-	if ($words[0] ne "bmesh") {
-	    #print STDERR "Warn: skipping non-bmesh line: $confline...\n";
-	    next;
-	}
-	$scale = $words[2];
+	#if ($words[0] ne "bmesh") {
+	#    #print STDERR "Warn: skipping non-bmesh line: $confline...\n";
+	#    next;
+	#}
+	$scale = $words[1];
 	$minscale = $scale if ($scale < $minscale);
 	
     }
     $voxelsize = 0.0+$minscale;
     $bbox = $conf;
-    $bbox =~ s/.conf/.bbox.ply/g;
+    $bbox =~ s/.txt/.bbox.ply/g;
     $vri = $conf;
-    $vri =~ s/.conf/.vri/g;
+    $vri =~ s/.txt/.vri/g;
     $plyv = $conf;
-    $plyv =~ s/.conf/_beyondbbox.ply/g;
+    $plyv =~ s/.txt/_beyondbbox.ply/g;
     $ply = $conf;
-    $ply =~ s/.conf/.ply/g;
+    $ply =~ s/.txt/.ply/g;
     # Generate the command.  Include "npri -h 250", which sets
     # its priority really low...
     if ($DOCRUNCH) {
@@ -122,9 +122,10 @@ for ($n=1; $n <= $#ARGV; $n++) {
     # Amount of safety in plyculling triangles
     $epsilon = 2.1 * $voxelsize;
     $BASEDIR = "$ENV{'HOME'}/cvs/threadedStereo/vrip/bin";
+    $TRIDEC = "$ENV{'HOME'}/cvs/threadedStereo/tridecimator/";
     $VRIP_DIR = "$ENV{'HOME'}/cvs/threadedStereo/vrip/src/vrip";
-
-    print STDOUT "cd $MESHCACHE; set path = ($BASEDIR \$path); setenv VRIP_DIR '$VRIP_DIR'; $BASEDIR/vripnew $vri $conf $bbox $voxelsize $rampscalestr $PASSTOVRIP; ".
+    
+    print STDOUT "cd $MESHCACHE; set path = ($BASEDIR $TRIDEC \$path); setenv VRIP_DIR '$VRIP_DIR'; $BASEDIR/vripnew $vri $conf $bbox $voxelsize $rampscalestr $PASSTOVRIP; ".
 	"$BASEDIR/vripsurf -no_remove_slivers $vri $plyv $PASSTOVRIPSURF; ".
 	"$BASEDIR/plycull $bbox $plyv $ply $epsilon; ".
 	"$rm_plyv $crunchstr\n";

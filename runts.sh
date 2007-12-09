@@ -1,21 +1,4 @@
 #!/bin/bash
-LOGDIR="/mnt/shared/log-tex"
-BASEPATH=`dirname $0`
-SUBVOLDIR="/mnt/shared/mesh-agg"
-MESHCACHE=$1/cache-mesh/
-SHAREBASE="/mnt/shared/"
-POSEFILE=$1/pose_est.data
-IMGDIR=$1/img/
-CACHEDIMGDIR=$1/cache-tex/
-STEREOCONFIG=$1/stereo.cfg
-DATADIR=$1
-MBDIR="."
-OUTPUTLOC="/mnt/shared/"
-NUMPOSE=$((`grep PR_ \$1 |wc -l $POSEFILE | awk '{ print $1 }'` - 1))
-mkdir -p $PWD/mesh-agg/
-mkdir -p $PWD/mesh/
-chown 0777  $PWD/mesh-agg/
-chown 0777  $PWD/mesh/
 usage()
 {
 cat << EOF
@@ -31,9 +14,10 @@ OPTIONS:
    -v      Verbose
 EOF
 }
-SKIPVRIP=
+SKIPVRIP=0
 SINGLEVRIP=
-while getopts "ht:s:p:v" OPTION
+NUMPOSE=
+while getopts "rh:s:p:v:d:" OPTION
 do
      case $OPTION in
          h)
@@ -51,6 +35,9 @@ do
              ;;
          v)
              VERBOSE=1
+	     ;;
+	 d)
+	     BASEDIR=$OPTARG
              ;;
          ?)
              usage
@@ -59,9 +46,30 @@ do
      esac
 done
 
+LOGDIR="/mnt/shared/log-tex"
+BASEPATH=`dirname $0`
+SUBVOLDIR="/mnt/shared/mesh-agg"
+MESHCACHE=$BASEDIR/cache-mesh/
+SHAREBASE="/mnt/shared/"
+POSEFILE=$BASEDIR/pose_est.data
+IMGDIR=$BASEDIR/img/
+CACHEDIMGDIR=$BASEDIR/cache-tex/
+STEREOCONFIG=$BASEDIR/stereo.cfg
+DATADIR=$BASEDIR
+MBDIR="."
+OUTPUTLOC="/mnt/shared/"
+if [ -z $NUMPOSE ]; then
+    NUMPOSE=$((`grep PR_ $POSEFILE |wc -l` - 1))
+fi
+if [ $PWD = "/mnt/shared" ]; then
+    echo "Clearing dirs"
+    rm -rf $PWD/mesh-agg/
+    rm -rf $PWD/mesh/
+fi
+mkdir -m777 -p $PWD/mesh-agg/
+mkdir -m777 -p $PWD/mesh/
 
-
-if [ $SKIPVRIP ] 
+if [ $SKIPVRIP -eq 0 ] 
 then
 
     echo "Creating Stereo Meshes for $NUMPOSE frame pairs"
@@ -93,12 +101,14 @@ then
     done
     else
 	echo "Single Vrip"
-	$BASEPATH/threadedStereo $1 --single-run  0 $NUMPOSE -t 2
+	$BASEPATH/threadedStereo $BASEDIR --single-run  0 $NUMPOSE -t 2
     fi
 fi
 #bash tscmds
-find /mnt/shared/mesh-agg -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  " 0.033 1" }' > /mnt/shared/mesh-agg/surface.txt
-find /mnt/shared/mesh-agg -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  " 0.1 0" }' >> /mnt/shared/mesh-agg/surface.txt
+echo "Creating $NUMPOSE meshes"
+head  -n $NUMPOSE $MESHCACHE/meshlist.txt > $MESHCACHE/surface.txt
+#find $MESHCACHE -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  " 0.033 1" }' > $MESHCACHE/surface.txt
+#find $MESHCACHE -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  " 0.1 0" }' >> $MESHCACHE/surface.txt
 
 echo -e "#!/bin/bash\nOUTDIR=\$PWD\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=\$VRIP_HOME/src/vrip/\nPATH=\$PATH:\$VRIP_HOME/bin:$BASEPATH/tridecimator\ncd $MESHCACHE\n" > runvrip.sh
 
@@ -112,8 +122,7 @@ SUBVOL=25;
 EPS=0.1
 echo -e "#!/bin/bash\necho 'Dicing...\\n'\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=\$VRIP_HOME/src/vrip/\nPATH=\$PATH:\$VRIP_HOME/bin\nDICEDIR=$SHAREBASE/mesh-agg/\nmkdir -p \$DICEDIR\ncd \$DICEDIR\n$BASEPATH/vrip/bin/plydice -writebbox range.txt -writebboxall bbtmp.txt -dice $SUBVOL $EPS diced total.ply | tee diced.txt\n" >  diced.sh
 
-	
-echo -e "rm -f gentexcmds\nNUMDICED=\$((\`wc -l diced.txt | awk '{ print \$1 }'\` - 1))\nfor i in \`seq 0 \$NUMDICED\`;\ndo\n\techo \"setenv DISPLAY :0.0;cd \$DICEDIR/..;$BASEPATH/genTex $STEREOCONFIG -f $IMGDIR --single-run \$i\" >> gentexcmds\ndone\n" >> diced.sh 
+ echo -e "rm -f gentexcmds\nNUMDICED=\$((\`wc -l diced.txt | awk '{ print \$1 }'\` - 1))\nfor i in \`seq 0 \$NUMDICED\`;\ndo\n\techo \"setenv DISPLAY :0.0;cd \$DICEDIR/..;$BASEPATH/genTex $STEREOCONFIG -f $CACHEDIMGDIR --single-run \$i\" >> gentexcmds\ndone\n" >> diced.sh 
 
 echo -e "cd $MESHCACHE\n$BASEPATH/vrip/bin/vripdicebbox surface.txt \$DICEDIR\n" >> diced.sh
 	

@@ -110,7 +110,7 @@ proc confline2bbox {confline} {
 #
 proc ply2bbox {plyname} {
     regsub .ply $plyname .xf xfFile;
-    set cmd "exec plyxform -f $xfFile < $plyname | plybbox";
+    set cmd "exec tridecimator  $plyname stdout 0 -f$xfFile -e10% | plybbox"
     catch {eval $cmd} msg;
     scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
   
@@ -265,6 +265,7 @@ if {$argc < 4}  {
 	exit;
     }
     set totalmeshes [wc-l $conffilename];
+    puts "Total meshes $totalmeshes"
     set fileid [open $conffilename "r"];
     set ext [file extension $conffilename]
 
@@ -387,6 +388,8 @@ if {$argc < 4}  {
 		    set bbox(global,zmin) $bbox($i,zmin)};
 		if {$bbox($i,zmax) > $bbox(global,zmax)} {
 		    set bbox(global,zmax) $bbox($i,zmax)};
+	    } else {
+		puts "$i bbbox missing"
 	    }
 	}
     } else {
@@ -550,7 +553,7 @@ if {$argc < 4}  {
     puts "Total dimensions: $xvox x $yvox x $zvox";
 
     set totaldivs [expr ceil($xvox*$yvox*$zvox / double($maxvoxels))];
-
+ 
     # Initial number of divisions
     set xdivs 1;
     set ydivs 1;
@@ -652,7 +655,7 @@ if {$argc < 4}  {
              $bmeshinfo($i,q2) $bmeshinfo($i,q3)";
 	} else {
 
-	    set meshlist($i) "bmesh $bmeshinfo($i,file)\
+	    set meshlist($i) "$bmeshinfo($i,file)\
              $bmeshinfo($i,res) $bmeshinfo($i,isimg)";
 	}
 	# This is the list of meshes we might possibly consider 
@@ -681,7 +684,7 @@ if {$argc < 4}  {
 						     [string length $svnum]]];
 		set svnumstr "$svnumstr$svnum";
 		set basename [file rootname $conffilename]_subvol$svnumstr;
-		set fileid [open "$subvoldir/$basename.conf" "w"];
+		set fileid [open "$subvoldir/$basename.txt" "w"];
 
 		# Put all the pre-computed bmesh lines in the conf file.
 		set myil $subindexlist($x,$y,$z);

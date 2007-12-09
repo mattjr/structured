@@ -754,27 +754,29 @@ proc newfromlist {listfile res} {
       set curmesh [lindex $line($index) 0] 
        # $line($index)
       set rootName [file root $curmesh]
-      set xfFile "${rootName}.xf"
-      if {[file exists $xfFile]} {
+       set xfFile "${rootName}.xf"
+       set bboxfile "${rootName}.bbox"
+       if {[file exists $bboxfile]} {
 #	 set cmd "exec plyxform -f $xfFile < $curmesh | plybbox"
-	  set cmd "exec tridecimator  $curmesh stdout 0 -f$xfFile -e10% | plybbox"
-	#  puts $cmd
+	   set bboxfid [open $bboxfile "r"];
+	   gets $bboxfid minline;
+	   gets $bboxfid maxline;
+	   scan $minline "%f %f %f" newMinx newMiny newMinz
+	     
+	   scan $maxline "%f %f %f" newMaxx newMaxy newMaxz
+	   
+	   close $bboxfid;
+	   
+	   set minx [min $minx $newMinx]
+	   set miny [min $miny $newMiny]
+	   set minz [min $minz $newMinz]
+	   
+	   set maxx [max $maxx $newMaxx]
+	   set maxy [max $maxy $newMaxy]
+	   set maxz [max $maxz $newMaxz]
       } else {
-	 set cmd "exec plybbox < $curmesh"
+	  puts "Cant find $index $curmesh or $xfFile"
       }
-
-      catch {eval $cmd} msg
-
-      scan $msg "%f %f %f %f %f %f" newMinx newMiny newMinz \
-      newMaxx newMaxy newMaxz	 
-
-      set minx [min $minx $newMinx]
-      set miny [min $miny $newMiny]
-      set minz [min $minz $newMinz]
-
-      set maxx [max $maxx $newMaxx]
-      set maxy [max $maxy $newMaxy]
-      set maxz [max $maxz $newMaxz]
    }
     
     set xlen [expr $maxx - $minx]

@@ -115,7 +115,7 @@ echo -e "#!/bin/bash\necho 'Dicing...\\n'\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP
 	
 echo -e "rm -f gentexcmds\nNUMDICED=\$((\`wc -l diced.txt | awk '{ print \$1 }'\` - 1))\nfor i in \`seq 0 \$NUMDICED\`;\ndo\n\techo \"setenv DISPLAY :0.0;cd \$DICEDIR/..;$BASEPATH/genTex $STEREOCONFIG -f $IMGDIR --single-run \$i\" >> gentexcmds\ndone\n" >> diced.sh 
 
-echo -e "cd $SUBVOLDIR\n$BASEPATH/vrip/bin/vripdicebbox surface.conf \$DICEDIR\n" >> diced.sh
+echo -e "cd $MESHCACHE\n$BASEPATH/vrip/bin/vripdicebbox surface.txt \$DICEDIR\n" >> diced.sh
 	
 echo -e "cd \$DICEDIR\n$BASEPATH/vrip/bin/loadbalance ~/loadlimit gentexcmds -logdir $LOGDIR\n" >> diced.sh
 chmod 0777 diced.sh 

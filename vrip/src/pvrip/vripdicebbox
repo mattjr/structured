@@ -179,12 +179,14 @@ if {$argc < 2}  {
 	set svnumstr "$dicedir/bbox-$svnumstr$i.txt";	
 	set bboxfid [open $svnumstr "w"];
 	for {set j 0} {$j < $numMeshes} {incr j}  {
-	    if {[bbox_intersect $dbbox($i,xmin) $dbbox($i,ymin)\
-		     $dbbox($i,zmin) \
-		     $dbbox($i,xmax) $dbbox($i,ymax) $dbbox($i,zmax) \
-		     $bbox($j,xmin) $bbox($j,ymin) $bbox($j,zmin) \
-		     $bbox($j,xmax) $bbox($j,ymax) $bbox($j,zmax)]} {
-		puts $bboxfid "$j $trans($j,name) $bbox($j,xmin) $bbox($j,ymin) $bbox($j,zmin) $bbox($j,xmax) $bbox($j,ymax) $bbox($j,zmax) $trans($j,trans)"
+	    if { [info exists dbbox($i,xmin)] && [info exists bbox($j,xmin)] } {	
+		if {[bbox_intersect $dbbox($i,xmin) $dbbox($i,ymin)\
+			 $dbbox($i,zmin) \
+			 $dbbox($i,xmax) $dbbox($i,ymax) $dbbox($i,zmax) \
+			 $bbox($j,xmin) $bbox($j,ymin) $bbox($j,zmin) \
+			 $bbox($j,xmax) $bbox($j,ymax) $bbox($j,zmax)]} {
+		    puts $bboxfid "$j $trans($j,name) $bbox($j,xmin) $bbox($j,ymin) $bbox($j,zmin) $bbox($j,xmax) $bbox($j,ymax) $bbox($j,zmax) $trans($j,trans)"
+		}
 	    }
 	
 	}

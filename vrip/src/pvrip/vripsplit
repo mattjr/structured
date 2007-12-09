@@ -161,12 +161,14 @@ proc sort_confs {xi yi zi xn yn zn il numMeshes} {
 
     for {set i 0} {$i < $numMeshes} {incr i}  {
 	set ili [lindex $il $i];
-	if {[bbox_intersect $xmin $ymin $zmin $xmax $ymax $zmax \
-	     $bbox($ili,xmin) $bbox($ili,ymin) $bbox($ili,zmin) \
-	     $bbox($ili,xmax) $bbox($ili,ymax) $bbox($ili,zmax)]} {
-		 lappend myil $ili;
-		 incr mynumMeshes;
-	     }
+	if {[info exists bbox($ili,xmin)]} {	
+	    if {[bbox_intersect $xmin $ymin $zmin $xmax $ymax $zmax \
+		     $bbox($ili,xmin) $bbox($ili,ymin) $bbox($ili,zmin) \
+		     $bbox($ili,xmax) $bbox($ili,ymax) $bbox($ili,zmax)]} {
+		lappend myil $ili;
+		incr mynumMeshes;
+	    }
+	}
     }
 
     # Don't -- want to define every subvol variable
@@ -202,6 +204,16 @@ proc sort_confs {xi yi zi xn yn zn il numMeshes} {
 	set subindexlist($xi,$yi,$zi) $myil;
     }
 }	
+proc wc-l files {
+      set n 0
+      foreach file $files {
+        if ![catch {set fp [open $file]}] {
+	     incr n [llength [split [read $fp [file size $file]] \n]]
+	     close $fp
+	}
+     }
+     set n
+ } ;# RS
 
 #
 # Main script
@@ -252,7 +264,7 @@ if {$argc < 4}  {
 	usage;
 	exit;
     }
-    
+    set totalmeshes [wc-l $conffilename];
     set fileid [open $conffilename "r"];
     set ext [file extension $conffilename]
 
@@ -302,7 +314,7 @@ if {$argc < 4}  {
 	    }
 	} else {
 	    
-	    #puts "Computing bounding box for [lindex $inline 1]...";
+	    puts -nonewline "\rComputing bounding box for $numMeshes/$totalmeshes";
 	    set plyfile [lindex $inline 0];
 	    # Set bboxfile to be the corresponding bbox file
 	    regsub .ply $plyfile .bbox bboxfile;
@@ -362,18 +374,20 @@ if {$argc < 4}  {
 	set bbox(global,zmax) $bbox(0,zmax);
 
 	for {set i 1} {$i < $numMeshes} {incr i}  {
-	    if {$bbox($i,xmin) < $bbox(global,xmin)} {
-		set bbox(global,xmin) $bbox($i,xmin)};
-	    if {$bbox($i,xmax) > $bbox(global,xmax)} {
-		set bbox(global,xmax) $bbox($i,xmax)};
-	    if {$bbox($i,ymin) < $bbox(global,ymin)} {
-		set bbox(global,ymin) $bbox($i,ymin)};
-	    if {$bbox($i,ymax) > $bbox(global,ymax)} {
-		set bbox(global,ymax) $bbox($i,ymax)};
-	    if {$bbox($i,zmin) < $bbox(global,zmin)} {
-		set bbox(global,zmin) $bbox($i,zmin)};
-	    if {$bbox($i,zmax) > $bbox(global,zmax)} {
-		set bbox(global,zmax) $bbox($i,zmax)};
+	    if {[info exists bbox($i,xmin)]} {
+		if {$bbox($i,xmin) < $bbox(global,xmin)} {
+		    set bbox(global,xmin) $bbox($i,xmin)};
+		if {$bbox($i,xmax) > $bbox(global,xmax)} {
+		    set bbox(global,xmax) $bbox($i,xmax)};
+		if {$bbox($i,ymin) < $bbox(global,ymin)} {
+		    set bbox(global,ymin) $bbox($i,ymin)};
+		if {$bbox($i,ymax) > $bbox(global,ymax)} {
+		    set bbox(global,ymax) $bbox($i,ymax)};
+		if {$bbox($i,zmin) < $bbox(global,zmin)} {
+		    set bbox(global,zmin) $bbox($i,zmin)};
+		if {$bbox($i,zmax) > $bbox(global,zmax)} {
+		    set bbox(global,zmax) $bbox($i,zmax)};
+	    }
 	}
     } else {
 	# Compute the bbox from the bbox file...

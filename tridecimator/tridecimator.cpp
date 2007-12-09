@@ -156,6 +156,7 @@ void Usage()
 	 "     -H#  Fill holes up to size[ range > 0]\n"
 	 "     -P       Before simplification, remove duplicate & unreferenced vertices\n"
 	 "     -F     FLip mesh\n"
+	 "     -f<xffile>     transform mesh by xffile\n"
 	 );
   exit(-1);
 }
@@ -168,13 +169,17 @@ int main(int argc ,char**argv){
   bool FlipMesh=false;
   bool QualityClean=false;
   float QualityCleanVal=0.3;
+  char *xfname=NULL;
   bool SizeClean=false;
   bool CleaningFlag=false;
   float minDiaSmallCC=100.0;
+  bool EdgeLenClean=true;
+  float EdgeLen=0;
   int MaxHoleSize=0;
   bool FillHoles=false;
   int TargetFaceNum=0;
   string tgtStr(argv[3]);
+  string edgelenthresh;
 
   MyTriEdgeCollapse::SetDefaultParams();
   TriEdgeCollapseQuadricParameter qparams=MyTriEdgeCollapse::Params();
@@ -185,8 +190,9 @@ int main(int argc ,char**argv){
       switch(argv[i][1]){ 
        case 'F' :   FlipMesh	= true;  printf("Flipping Mesh\n");    
 	  break;
-      case 'N' : if(argv[i][2]=='y') { qparams.NormalCheck	= true;  printf("Using Normal Deviation Checking\n");	}
-	else { qparams.NormalCheck	= false; printf("NOT Using Normal Deviation Checking\n");	}        break;		
+      case 'N' : if(argv[i][2]=='y') { qparams.NormalCheck	= true;  printf("Using Normal Deviation Checking\n");	}	else { qparams.NormalCheck	= false; printf("NOT Using Normal Deviation Checking\n");	}        break;	
+      case 'f' :	xfname =argv[i]+2;	           printf("Transforming with %s file\n",xfname); 	 break;	
+
       case 'O' : if(argv[i][2]=='y') { qparams.OptimalPlacement	= true;  printf("Using OptimalPlacement\n");	}
 	else { qparams.OptimalPlacement	= false; printf("NOT Using OptimalPlacement\n");	}        break;		
    
@@ -196,6 +202,7 @@ int main(int argc ,char**argv){
 	else { qparams.PreserveTopology	= false; printf("NOT Preserving Topology\n");	}        break;		
       case 'q' :	qparams.QualityThr	= atof(argv[i]+2);	           printf("Setting Quality Thr to %f\n",atof(argv[i]+2)); 	 break;			
       case 'n' :	qparams.NormalThrRad = math::ToRad(atof(argv[i]+2));  printf("Setting Normal Thr to %f deg\n",atof(argv[i]+2)); break;	
+      case 'e' :	edgelenthresh=string(argv[i]+2);  EdgeLenClean=true; printf("Cleaning edge len\n"); break;	
       case 'b' :	qparams.BoundaryWeight  = atof(argv[i]+2);			printf("Setting Boundary Weight to %f\n",atof(argv[i]+2)); break;		
       case 'P' :	CleaningFlag=true;  printf("Cleaning mesh before simplification\n",atof(argv[i]+2)); break;	
        
@@ -208,6 +215,29 @@ int main(int argc ,char**argv){
       }
     i++;
   }
+  Matrix44f matrix;
+  /* Read xf file if given... */
+  if (xfname) {
+    FILE *xf = fopen(xfname, "r");
+    if (xf == NULL) {
+      fprintf(stderr, "Error, couldn't open .xf file %s\n", xfname);
+      Usage();
+      exit(-1);
+    }
+    for (int i=0; i < 4; i++) {
+      float a,b,c,d;
+      fscanf(xf, "%f %f %f %f\n", &a, &b, &c, &d);
+      matrix.ElementAt(i,0)=a;
+      matrix.ElementAt(i,1)=b;
+      matrix.ElementAt(i,2)=c;
+      matrix.ElementAt(i,3)=d;
+      //xfmat.setElem(i,0,a);
+      //xfmat.setElem(i,1,b);
+      //xfmat.setElem(i,2,c);
+      //xfmat.setElem(i,3,d);
+    }
+    fclose(xf);
+  }
 
   int t1,t2,t3;
   MyTriEdgeCollapse::Params()=qparams;
@@ -218,10 +248,16 @@ int main(int argc ,char**argv){
     exit(-1);
   }
   printf("Mesh loaded Verts: %d Faces: %d \n",cm.vn,cm.fn);
+  tri::UpdateBounding<CMeshO>::Box(cm);
 
- 
-    
-    
+  if(EdgeLenClean){
+    if(edgelenthresh.substr(edgelenthresh.size()-1) == "%")
+      EdgeLen=  ( cm.bbox.Diag()* 0.01 *atoi(edgelenthresh.substr(0,edgelenthresh.size()-1).c_str()));
+    else
+      EdgeLen=atof(edgelenthresh.c_str());
+    printf("EdgeLen %f\n",EdgeLen);
+    tri::Clean<CMeshO>::RemoveFaceOutOfRangeEdgeSel<false>(cm,0,EdgeLen );
+  }
   tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);
   tri::UpdateBounding<CMeshO>::Box(cm);
   

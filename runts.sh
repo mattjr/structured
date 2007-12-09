@@ -107,6 +107,7 @@ fi
 #bash tscmds
 echo "Creating $NUMPOSE meshes"
 head  -n $NUMPOSE $MESHCACHE/meshlist.txt > $MESHCACHE/surface.txt
+chmod 0666 $MESHCACHE/surface.txt
 #find $MESHCACHE -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  " 0.033 1" }' > $MESHCACHE/surface.txt
 #find $MESHCACHE -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  " 0.1 0" }' >> $MESHCACHE/surface.txt
 
@@ -114,7 +115,7 @@ echo -e "#!/bin/bash\nOUTDIR=\$PWD\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=\$
 
 echo -e "$BASEPATH/vrip/bin/pvrip1 \$OUTDIR/mesh-agg/auto.vri \$OUTDIR/mesh-agg/total.ply surface.txt surface.txt  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $SUBVOLDIR -nocrunch -passtovrip -use_bigger_bbox -dec -meshcache $MESHCACHE\n" >> runvrip.sh
 chmod 0777  runvrip.sh 
-./runvrip.sh
+bash runvrip.sh
 
 
 
@@ -128,7 +129,7 @@ echo -e "cd $MESHCACHE\n$BASEPATH/vrip/bin/vripdicebbox surface.txt \$DICEDIR\n"
 	
 echo -e "cd \$DICEDIR\n$BASEPATH/vrip/bin/loadbalance ~/loadlimit gentexcmds -logdir $LOGDIR\n" >> diced.sh
 chmod 0777 diced.sh 
-./diced.sh
+bash diced.sh
 echo -e "#!/bin/bash\necho 'LODGen...'\ncd $OUTPUTLOC;$BASEPATH/lodgen \n" > lodgen.sh
 chmod 0777 lodgen.sh
-./lodgen.sh
+bash lodgen.sh

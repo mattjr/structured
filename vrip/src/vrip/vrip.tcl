@@ -144,10 +144,19 @@ proc bmesh args {
     global useNorm
 
     if {!$useNorm} {
-	eval vrip_rangescanrle  [lindex $args 0]
+	eval vrip_rangescanrle $args
     } else {
-	eval vrip_rangescannormrle [lindex $args 0]
+	eval vrip_rangescannormrle $args
     }
+    update_slice
+}
+
+proc bmeshxf args {
+    global useNorm
+
+    
+    eval vrip_rangescanxfrle  $args
+   
     update_slice
 }
 
@@ -747,13 +756,15 @@ proc newfromlist {listfile res} {
       set rootName [file root $curmesh]
       set xfFile "${rootName}.xf"
       if {[file exists $xfFile]} {
-	 set cmd "exec plyxform -f $xfFile < $curmesh | plybbox"
+#	 set cmd "exec plyxform -f $xfFile < $curmesh | plybbox"
+	  set cmd "exec tridecimator  $curmesh stdout 0 -f$xfFile -e10% | plybbox"
+	#  puts $cmd
       } else {
 	 set cmd "exec plybbox < $curmesh"
       }
 
       catch {eval $cmd} msg
-       puts $msg
+
       scan $msg "%f %f %f %f %f %f" newMinx newMiny newMinz \
       newMaxx newMaxy newMaxz	 
 
@@ -807,6 +818,16 @@ proc fillprep {} {
     vrip_param -use_tails 1 -fill_gaps 1 -fill_bg 0
     alias bmesh bmeshlin
 }
+proc wc-l files {
+      set n 0
+      foreach file $files {
+        if ![catch {set fp [open $file]}] {
+	     incr n [llength [split [read $fp [file size $file]] \n]]
+	     close $fp
+	}
+     }
+     set n
+ } ;# RS
 
 
 proc newFromConf {gridFile confFile boundMesh voxelSize} {
@@ -831,16 +852,33 @@ proc newFromConf {gridFile confFile boundMesh voxelSize} {
         source $confFile
     } else {
         set fileid [open $confFile r]
-	set numchars [gets $fileid filename]
+	set totalmeshes [wc-l $confFile];
+	set numchars [gets $fileid line]
 	puts $numchars
+	set filenum 0
+	set tmpname "/tmp/tmpmesh"
+	set tmpfilename [append tmpname "_" [pid] ".ply"]
+	puts $tmpfilename
 	while {$numchars > 0} {
-	    bmesh  [lindex $filename 0]
-	    set numchars [gets $fileid filename]
+	    set curmesh  [lindex $line 0]
+	    set rootName [file root $curmesh]
+	    set xfFile "${rootName}.xf"
+	    if {[file exists $xfFile]} {
+		set cmd "exec tridecimator  $curmesh $tmpfilename 0 -f$xfFile -e20%"
+	    } else {
+		puts "No xf found probably wrong"
+	    }
+	    catch {eval $cmd} msg
+	    #puts $msg
+	    bmeshxf $tmpfilename [lindex $line 1] [lindex $line 2]  $filenum  $totalmeshes
+	    set numchars [gets $fileid line]
+	    incr filenum
 	}
 	close $fileid
+	file delete  $tmpfilename
     }
 
-    puts "Writing to file ${gridFile}..."
+    puts "\nWriting to file ${gridFile}..."
     flush stdout
     writegrid $gridFile
 }

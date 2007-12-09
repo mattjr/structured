@@ -1402,7 +1402,7 @@ int main( int argc, char *argv[ ] )
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
 	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n",aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir);
-	fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt 0.033 -rampscale 400 > $OUTDIR/vriplog.txt\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unclean.ply > $OUTDIR/vripsurflog.txt\n %s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total.ply 50%% -By -H1500 -Q0.1 -S3\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
+	fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt 0.033 -rampscale 400 \n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unclean.ply > $OUTDIR/vripsurflog.txt\n %s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total.ply 50%% -By -H1500 -Q0.1 -S3\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	system("./runvrip.sh");

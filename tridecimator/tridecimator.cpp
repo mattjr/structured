@@ -189,29 +189,29 @@ int main(int argc ,char**argv){
   for(int i=4; i < argc;){
     if(argv[i][0]=='-')
       switch(argv[i][1]){ 
-       case 'F' :   FlipMesh	= true;  printf("Flipping Mesh\n");    
+       case 'F' :   FlipMesh	= true;  fprintf(stderr,"Flipping Mesh\n");    
 	  break;
-      case 'N' : if(argv[i][2]=='y') { qparams.NormalCheck	= true;  printf("Using Normal Deviation Checking\n");	}	else { qparams.NormalCheck	= false; printf("NOT Using Normal Deviation Checking\n");	}        break;	
-      case 'f' :	xfname =argv[i]+2;	           printf("Transforming with %s file\n",xfname); 	 break;	
+      case 'N' : if(argv[i][2]=='y') { qparams.NormalCheck	= true;  fprintf(stderr,"Using Normal Deviation Checking\n");	}	else { qparams.NormalCheck	= false; fprintf(stderr,"NOT Using Normal Deviation Checking\n");	}        break;	
+      case 'f' :	xfname =argv[i]+2;	           fprintf(stderr,"Transforming with %s file\n",xfname); 	 break;	
 
-      case 'O' : if(argv[i][2]=='y') { qparams.OptimalPlacement	= true;  printf("Using OptimalPlacement\n");	}
-	else { qparams.OptimalPlacement	= false; printf("NOT Using OptimalPlacement\n");	}        break;		
+      case 'O' : if(argv[i][2]=='y') { qparams.OptimalPlacement	= true;  fprintf(stderr,"Using OptimalPlacement\n");	}
+	else { qparams.OptimalPlacement	= false; fprintf(stderr,"NOT Using OptimalPlacement\n");	}        break;		
    
-      case 'B' : if(argv[i][2]=='y') { qparams.FastPreserveBoundary	= true;  printf("Preserving Boundary\n");	}
-	else { qparams.FastPreserveBoundary	= false; printf("NOT Preserving Boundary\n");	}        break;		
-      case 'T' : if(argv[i][2]=='y') { qparams.PreserveTopology	= true;  printf("Preserving Topology\n");	}
-	else { qparams.PreserveTopology	= false; printf("NOT Preserving Topology\n");	}        break;		
-      case 'q' :	qparams.QualityThr	= atof(argv[i]+2);	           printf("Setting Quality Thr to %f\n",atof(argv[i]+2)); 	 break;			
-      case 'n' :	qparams.NormalThrRad = math::ToRad(atof(argv[i]+2));  printf("Setting Normal Thr to %f deg\n",atof(argv[i]+2)); break;	
-      case 'e' :	edgelenthresh=string(argv[i]+2);  EdgeLenClean=true; printf("Cleaning edge len\n"); break;	
-      case 'b' :	qparams.BoundaryWeight  = atof(argv[i]+2);			printf("Setting Boundary Weight to %f\n",atof(argv[i]+2)); break;		
-      case 'P' :	CleaningFlag=true;  printf("Cleaning mesh before simplification\n",atof(argv[i]+2)); break;	
+      case 'B' : if(argv[i][2]=='y') { qparams.FastPreserveBoundary	= true;  fprintf(stderr,"Preserving Boundary\n");	}
+	else { qparams.FastPreserveBoundary	= false; fprintf(stderr,"NOT Preserving Boundary\n");	}        break;		
+      case 'T' : if(argv[i][2]=='y') { qparams.PreserveTopology	= true;  fprintf(stderr,"Preserving Topology\n");	}
+	else { qparams.PreserveTopology	= false; fprintf(stderr,"NOT Preserving Topology\n");	}        break;		
+      case 'q' :	qparams.QualityThr	= atof(argv[i]+2);	           fprintf(stderr,"Setting Quality Thr to %f\n",atof(argv[i]+2)); 	 break;			
+      case 'n' :	qparams.NormalThrRad = math::ToRad(atof(argv[i]+2));  fprintf(stderr,"Setting Normal Thr to %f deg\n",atof(argv[i]+2)); break;	
+      case 'e' :	edgelenthresh=string(argv[i]+2);  EdgeLenClean=true; fprintf(stderr,"Cleaning edge len\n"); break;	
+      case 'b' :	qparams.BoundaryWeight  = atof(argv[i]+2);			fprintf(stderr,"Setting Boundary Weight to %f\n",atof(argv[i]+2)); break;		
+      case 'P' :	CleaningFlag=true;  fprintf(stderr,"Cleaning mesh before simplification\n",atof(argv[i]+2)); break;	
        
-      case 'Q' :	QualityClean=true; QualityCleanVal=atof(argv[i]+2); printf("Cleaning with quality threshold of %f\n",atof(argv[i]+2)); break;	
-      case 'S' :	SizeClean=true; minDiaSmallCC=atof(argv[i]+2); printf("Cleaning with connected componet diameter threshold of %f\n",atof(argv[i]+2)); break;	
-      case 'H' :	FillHoles=true; MaxHoleSize=atoi(argv[i]+2); printf("Filling holes with a maximum size of %d\n",atoi(argv[i]+2)); break;	
+      case 'Q' :	QualityClean=true; QualityCleanVal=atof(argv[i]+2); fprintf(stderr,"Cleaning with quality threshold of %f\n",atof(argv[i]+2)); break;	
+      case 'S' :	SizeClean=true; minDiaSmallCC=atof(argv[i]+2); fprintf(stderr,"Cleaning with connected componet diameter threshold of %f\n",atof(argv[i]+2)); break;	
+      case 'H' :	FillHoles=true; MaxHoleSize=atoi(argv[i]+2); fprintf(stderr,"Filling holes with a maximum size of %d\n",atoi(argv[i]+2)); break;	
    
-      default  :  printf("Unknown option '%s'\n", argv[i]);
+      default  :  fprintf(stderr,"Unknown option '%s'\n", argv[i]);
 	exit(0);
       }
     i++;
@@ -245,7 +245,7 @@ int main(int argc ,char**argv){
 
   int err=vcg::tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1]);
   if(err) {
-    printf("Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::Importer<CMeshO>::ErrorMsg(err));
+    fprintf(stderr,"Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::Importer<CMeshO>::ErrorMsg(err));
     exit(-1);
   }
   if(xfname){
@@ -253,7 +253,7 @@ int main(int argc ,char**argv){
     vcg::tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);  
     tri::UpdateBounding<CMeshO>::Box(cm);
   }
-  printf("Mesh loaded Verts: %d Faces: %d \n",cm.vn,cm.fn);
+  fprintf(stderr,"Mesh loaded Verts: %d Faces: %d \n",cm.vn,cm.fn);
  
 
   if(EdgeLenClean){
@@ -261,7 +261,7 @@ int main(int argc ,char**argv){
       EdgeLen=  ( cm.bbox.Diag()* 0.01 *atoi(edgelenthresh.substr(0,edgelenthresh.size()-1).c_str()));
     else
       EdgeLen=atof(edgelenthresh.c_str());
-    printf("EdgeLen %f\n",EdgeLen);
+    fprintf(stderr,"EdgeLen %f\n",EdgeLen);
     tri::Clean<CMeshO>::RemoveFaceOutOfRangeEdgeSel<false>(cm,0,EdgeLen );
   }
   tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);
@@ -286,7 +286,7 @@ int main(int argc ,char**argv){
 	  (*fi).SetD();
 	  --cm.fn;
 	} 
-    printf("After Quality Clean Vertex: %d Faces: %d\n",cm.vn,cm.fn);
+    fprintf(stderr,"After Quality Clean Vertex: %d Faces: %d\n",cm.vn,cm.fn);
   }
  
 
@@ -297,7 +297,7 @@ int main(int argc ,char**argv){
     tri::UpdateTopology<CMeshO>::FaceFace(cm);
     tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
     RemoveSmallConnectedComponentsDiameter<CMeshO>(cm,minDiaSmallCC);
-    printf("After Size Clean Vertex: %d Faces: %d\n",cm.vn,cm.fn);
+    fprintf(stderr,"After Size Clean Vertex: %d Faces: %d\n",cm.vn,cm.fn);
   }
  
 
@@ -305,7 +305,7 @@ int main(int argc ,char**argv){
   int unref= tri::Clean<CMeshO>::RemoveUnreferencedVertex(cm);
   int deg= vcg::tri::Clean<CMeshO>::RemoveDegenerateFace(cm);
   
-  printf("Removed %i degenrate faces %i duplicate and %i unreferenced vertices from mesh\n",deg,dup,unref);
+  fprintf(stderr,"Removed %i degenrate faces %i duplicate and %i unreferenced vertices from mesh\n",deg,dup,unref);
  
   
   tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);
@@ -322,7 +322,7 @@ int main(int argc ,char**argv){
     TargetFaceNum=atoi(tgtStr.c_str());
   
   if(TargetFaceNum != 0){
-    printf("Reducing it to %i\n",TargetFaceNum);
+    fprintf(stderr,"Reducing it to %i\n",TargetFaceNum);
  
     math::Quadric<double> QZero;
     QZero.Zero();
@@ -336,7 +336,7 @@ int main(int argc ,char**argv){
 
     vcg::LocalOptimization<CMeshO> DeciSession(cm);
     t1=clock();	
-    printf("Initializing simplification\n");
+    fprintf(stderr,"Initializing simplification\n");
     DeciSession.Init<MyTriEdgeCollapse >();
     t2=clock();	
 
@@ -348,12 +348,12 @@ int main(int argc ,char**argv){
     int faceToDel=cm.fn-TargetFaceNum;
     while( DeciSession.DoOptimization() && cm.fn>TargetFaceNum )
       {
-	printf("Percent %2d%%\r",(100-100*(cm.fn-TargetFaceNum)/(faceToDel)));
+	fprintf(stderr,"Percent %2d%%\r",(100-100*(cm.fn-TargetFaceNum)/(faceToDel)));
 	fflush(stdout);
       };
     t3=clock();
     DeciSession.Finalize<MyTriEdgeCollapse >();
-    printf("Simplified Mesh Verts: %d Faces: %d Error %g \n",cm.vn,cm.fn,DeciSession.currMetric);
+    fprintf(stderr,"Simplified Mesh Verts: %d Faces: %d Error %g \n",cm.vn,cm.fn,DeciSession.currMetric);
  
  
   }
@@ -370,30 +370,33 @@ int main(int argc ,char**argv){
     tri::Hole<CMeshO>::EarCuttingIntersectionFill<tri::SelfIntersectionEar< CMeshO> >(cm,MaxHoleSize,false);
     assert(tri::Clean<CMeshO>::IsFFAdjacencyConsistent(cm));
     tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);	    
-   printf("After Hole filling Verts: %d Faces: %d\n",cm.vn,cm.fn);
+   fprintf(stderr,"After Hole filling Verts: %d Faces: %d\n",cm.vn,cm.fn);
   }
   if(FlipMesh)
     tri::Clean<CMeshO>::FlipMesh(cm);
   
-  printf("Completed in %.2f sec (%.2f init + %.2f proc)\n",(t3-t1)/(double)CLOCKS_PER_SEC,(t2-t1)/(double)CLOCKS_PER_SEC,(t3-t2)/(double)CLOCKS_PER_SEC);
+  fprintf(stderr,"Completed in %.2f sec (%.2f init + %.2f proc)\n",(t3-t1)/(double)CLOCKS_PER_SEC,(t2-t1)/(double)CLOCKS_PER_SEC,(t3-t2)/(double)CLOCKS_PER_SEC);
   string filename=string(argv[2]);
-  string format=filename.substr(filename.length()-3);
+  
 
-  if(format == "stl")	{
+  string format=filename.substr(filename.length()-3);
+if(filename == "stdout"){
+ vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,stdout);
+ }else if(format == "stl")	{
     int result = vcg::tri::io::ExporterSTL<CMeshO>::Save(cm,filename.c_str());
     if(result!=0){
-      printf("Saving Error %s for file %s\n", vcg::tri::io::ExporterSTL<CMeshO>::ErrorMsg(result),filename.c_str());
+      fprintf(stderr,"Saving Error %s for file %s\n", vcg::tri::io::ExporterSTL<CMeshO>::ErrorMsg(result),filename.c_str());
       return -1;
     }
    
   }else if(format == "ply")	{
     int result = vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,filename.c_str());
     if(result!=0){
-      printf("Saving Error %s for file %s\n", vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result),filename.c_str());
+      fprintf(stderr,"Saving Error %s for file %s\n", vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result),filename.c_str());
       return -1;
     }
   }else {
-    printf("Format %s unknown\n",format.c_str());
+    fprintf(stderr,"Format %s unknown\n",format.c_str());
     return -1;
   }
 

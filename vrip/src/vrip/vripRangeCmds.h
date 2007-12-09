@@ -37,3 +37,6 @@ int Vrip_RangeScanPerspCmd(ClientData, Tcl_Interp *interp,
 int Vrip_RangeScanNoTreeRLECmd(ClientData, Tcl_Interp *interp, 
 			    int argc, const char *argv[]);
 
+int
+Vrip_RangeScanXFRLECmd(ClientData, Tcl_Interp *interp, int argc,
+		       const char *argv[]);

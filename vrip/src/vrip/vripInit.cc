@@ -118,6 +118,8 @@ Vrip_Init(Tcl_Interp *interp)
 		      NULL, NULL);
     Tcl_CreateCommand(interp, "vrip_rangescanrle", Vrip_RangeScanRLECmd, 
 		      NULL, NULL);
+    Tcl_CreateCommand(interp, "vrip_rangescanxfrle", Vrip_RangeScanXFRLECmd, 
+		  NULL, NULL);
     Tcl_CreateCommand(interp, "vrip_rangescanrlenotree", Vrip_RangeScanNoTreeRLECmd, 
 		      NULL, NULL);
     Tcl_CreateCommand(interp, "vrip_rangescannormrle", Vrip_RangeScanNormRLECmd, 

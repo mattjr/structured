@@ -18,7 +18,7 @@ using namespace std;
 #include<vcg/simplex/vertexplus/component_ocf.h>
 #include<vcg/simplex/faceplus/component_ocf.h>
 #include <vcg/complex/trimesh/update/topology.h>
-
+#include <vcg/complex/trimesh/update/position.h>
 // io
 #include <wrap/io_trimesh/import.h>
 #include <wrap/io_trimesh/export_ply.h>
@@ -146,6 +146,7 @@ void Usage()
 	 "     -q# Quality threshold (range [0.0, 0.866],  default .3 )\n"
 	 "     -n# Normal threshold  (degree range [0,180] default 90)\n"
 	 "     -E# Minimal admitted quadric value (default 1e-15, must be >0)\n"
+	 "     -e [# or %] Clip faces with edges longer then # or % of bbox\n"
 	 "     -Q#  Use Quality filtering with val range [0.0, 1.0] (default no)\n"
 	 "     -N[y|n]  Use or not Normal Threshold (default no)\n"
 	 "     -A[y|n]  Use or not Area Weighted Quadrics (default yes)\n"
@@ -173,7 +174,7 @@ int main(int argc ,char**argv){
   bool SizeClean=false;
   bool CleaningFlag=false;
   float minDiaSmallCC=100.0;
-  bool EdgeLenClean=true;
+  bool EdgeLenClean=false;
   float EdgeLen=0;
   int MaxHoleSize=0;
   bool FillHoles=false;
@@ -247,8 +248,13 @@ int main(int argc ,char**argv){
     printf("Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::Importer<CMeshO>::ErrorMsg(err));
     exit(-1);
   }
+  if(xfname){
+    vcg::tri::UpdatePosition<CMeshO>::Matrix(cm, matrix);
+    vcg::tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);  
+    tri::UpdateBounding<CMeshO>::Box(cm);
+  }
   printf("Mesh loaded Verts: %d Faces: %d \n",cm.vn,cm.fn);
-  tri::UpdateBounding<CMeshO>::Box(cm);
+ 
 
   if(EdgeLenClean){
     if(edgelenthresh.substr(edgelenthresh.size()-1) == "%")

@@ -70,13 +70,17 @@ proc usage args {
 # Given a ply file and and xf
 #
 proc plytrans2bbox {plyname outname} {
-    regsub .ply $plyname .xf xfFile
-    regsub .ply $outname .xf outxf
+   
+    regsub .ply $outname .xf xfFile
 
     if { [file readable $xfFile] } {
-	set cmd "exec tridecimator  $plyname $outname 0 -f$xfFile -e10% "
+	set cmd "exec cp   $plyname  $outname "
+	#puts $cmd
+#	set cmd "cp $plyname $outname "
+#	puts $cmd
+	#set cmd "exec tridecimator  $plyname $outname 0 -f$xfFile -e10% "
 	catch {eval $cmd} msg;
-	file copy $xfFile $outxf
+	
 	set cmd "exec plybbox $outname"
 	catch {eval $cmd} msg;
 
@@ -84,7 +88,7 @@ proc plytrans2bbox {plyname outname} {
 	scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
 	
 	# Set bboxname to be the corresponding bbox file
-	regsub .ply $plyname .bbox bboxname;
+	regsub .ply $outname .bbox bboxname;
 	exec rm -f $bboxname 
 	set bboxfid [open $bboxname "w+"];
 	
@@ -94,7 +98,7 @@ proc plytrans2bbox {plyname outname} {
 	close $bboxfid;
 	exec chmod 666 $bboxname 
     } else {
-	puts "\n$plyname not found"
+	puts "\n$xfFile not found"
     }
 }
 

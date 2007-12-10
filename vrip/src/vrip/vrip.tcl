@@ -775,7 +775,7 @@ proc newfromlist {listfile res} {
 	   set maxy [max $maxy $newMaxy]
 	   set maxz [max $maxz $newMaxz]
       } else {
-	  puts "Cant find $index $curmesh or $xfFile"
+	  puts "Cant find $bboxfile $index $curmesh or $xfFile"
       }
    }
     

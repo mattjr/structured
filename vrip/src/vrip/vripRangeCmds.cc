@@ -573,8 +573,7 @@ Vrip_RangeScanRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[
 int
 Vrip_RangeScanXFRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[])
 {
-
-    if (  argc != 6 && argc != 9 ) {
+    if (argc != 2 && argc != 3 && argc != 6 && argc != 9 ) {
 	interp->result = "wrong number of args";
 	return TCL_ERROR;
     }
@@ -583,10 +582,8 @@ Vrip_RangeScanXFRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *arg
 	interp->result = "Grid not allocated.";
 	return TCL_ERROR;
     }
-    
-    if (!SuperQuiet)
-      printf("\rIntegrating mesh %s/%s...", argv[4],argv[5]);
-    
+    if(!SuperQuiet)
+    printf("\rIntegrating mesh %s/%s...", argv[4],argv[5]);
   
     initOccFunc();
 
@@ -605,10 +602,9 @@ Vrip_RangeScanXFRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *arg
 	mesh = readMeshFromPly(argv[1], FALSE, FALSE);
     }
 
-    if (mesh == NULL){
-      fprintf(stderr,"Couldn't Open Mesh %s\n",argv[1]);
-      return TCL_ERROR;
-    }
+    if (mesh == NULL)
+	return TCL_ERROR;
+
     //fprintf(stderr, "Not assigning confidence!!\n");
     if (!mesh->hasConfidence)
        doConfidence(mesh);
@@ -619,17 +615,30 @@ Vrip_RangeScanXFRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *arg
 
     start_time();
 
+    parse_transformation(mesh, interp, argc, argv);
+
+    Vec3f newdir;
     float angle;
-    
-    angle = 0;
-    
+    if (!mesh->isWarped)
+	angle = 0;
+    else if (mesh->isRightMirrorOpen)
+	angle = 30;
+    else
+	angle = -30;
 
     Vec3f dir(-sin(RAD(angle)), 0, -cos(RAD(angle)));
 
+    Matrix4f rot;
+    mesh->quat.toMatrix(rot);
+
+    rot.multVec(dir, newdir);
+
+    if (Verbose)
+	printf("View dir: [%f, %f, %f]\n", newdir.x, newdir.y, newdir.z);
     vec3f yuk;
-    yuk[0] = dir.x;
-    yuk[1] = dir.y;
-    yuk[2] = dir.z;
+    yuk[0] = newdir.x;
+    yuk[1] = newdir.y;
+    yuk[2] = newdir.z;
 
 
     OrthoShear *shear = computeShear(yuk);
@@ -712,6 +721,9 @@ Vrip_RangeScanXFRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *arg
     return TCL_OK;    
 }
 
+
+    
+  
 
 int
 Vrip_RangeScanEdgesRLECmd(ClientData, Tcl_Interp *interp, 

@@ -121,7 +121,7 @@ if {$argc < 2}  {
 	    regsub .ply $plyfile .bbox bboxfile;
 	    regsub .ply $plyfile .xf xffile;
 	    regsub surface- $plyfile {}  imgname;
-	    regsub "-tc.ply" $imgname .png  imgname;
+	    regsub {"-tc.ply"} $imgname .png  imgname;
 	    # Check if bbox file needs to be created or updated
 	    if {![file exists $xffile]} {
 		puts "Cannot find xf file skipping";

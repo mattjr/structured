@@ -119,7 +119,8 @@ if {$argc < 2}  {
 	    set plyfile [lindex $inline 0];
 	    # Set bboxfile to be the corresponding bbox file
 	    regsub .ply $plyfile .bbox bboxfile;
-	    regsub .ply $plyfile .xf xffile;
+	    regsub ".tc.ply" $plyfile .xf xffile;
+
 	    regsub surface- $plyfile {}  imgname;
 	    regsub ".tc.ply" $imgname .png  imgname;
 	    # Check if bbox file needs to be created or updated
@@ -138,7 +139,7 @@ if {$argc < 2}  {
 		set  trans($numMeshes,trans) $transline;
 		close $xffid
 	    }
-	    
+	    #puts $bboxfile
 	    # Check if bbox file needs to be created or updated
 	    if {![file exists $bboxfile]} {
 		#    puts "bbox does not exist, creating...";

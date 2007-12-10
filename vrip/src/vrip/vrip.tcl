@@ -738,7 +738,7 @@ proc newfromlist {listfile res} {
       set numchars [gets $fileid line($count)]
       incr count
    }
-
+   
    close $fileid
 
    set count [expr $count -1]
@@ -754,9 +754,9 @@ proc newfromlist {listfile res} {
       set curmesh [lindex $line($index) 0] 
        # $line($index)
       set rootName [file root $curmesh]
-       set xfFile "${rootName}.xf"
+       regsub ".tc.ply" $curmesh .xf xfFile
        set bboxfile "${rootName}.bbox"
-       if {[file exists $bboxfile]} {
+       if {[file exists $bboxfile] && [file exists $xfFile] } {
 #	 set cmd "exec plyxform -f $xfFile < $curmesh | plybbox"
 	   set bboxfid [open $bboxfile "r"];
 	   gets $bboxfid minline;
@@ -776,6 +776,20 @@ proc newfromlist {listfile res} {
 	   set maxz [max $maxz $newMaxz]
       } else {
 	  puts "Cant find $bboxfile $index $curmesh or $xfFile"
+	  
+	  set cmd "exec plybbox $curmesh"
+	  catch {eval $cmd} msg;
+	  
+	  
+	  scan $msg "%f %f %f %f %f %f" newMinx newMiny newMinz newMaxx newMaxy newMaxz;
+  
+	  set minx [min $minx $newMinx]
+	  set miny [min $miny $newMiny]
+	  set minz [min $minz $newMinz]
+	  
+	  set maxx [max $maxx $newMaxx]
+	  set maxy [max $maxy $newMaxy]
+	  set maxz [max $maxz $newMaxz]
       }
    }
     
@@ -862,7 +876,8 @@ proc newFromConf {gridFile confFile boundMesh voxelSize} {
 	while {$numchars > 0} {
 	    set curmesh  [lindex $line 0]
 	    #regsub .ply $curmesh .xf xfFile;
-	    bmeshxf $curmesh [lindex $line 1] [lindex $line 2]  $filenum  $totalmeshes
+	    bmesh $curmesh 
+	    #[lindex $line 1] [lindex $line 2]  $filenum  $totalmeshes
 	    set numchars [gets $fileid line]
 	    incr filenum
 	}

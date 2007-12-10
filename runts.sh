@@ -106,14 +106,11 @@ then
 fi
 #bash tscmds
 echo "Creating $NUMPOSE meshes"
-head  -n $NUMPOSE $MESHCACHE/meshlist.txt > $MESHCACHE/surface.txt
-chmod 0666 $MESHCACHE/surface.txt
-#find $MESHCACHE -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  " 0.033 1" }' > $MESHCACHE/surface.txt
-#find $MESHCACHE -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  " 0.1 0" }' >> $MESHCACHE/surface.txt
 
-echo -e "#!/bin/bash\nOUTDIR=\$PWD\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=\$VRIP_HOME/src/vrip/\nPATH=\$PATH:\$VRIP_HOME/bin:$BASEPATH/tridecimator\ncd $MESHCACHE\n" > runvrip.sh
+echo -e "#!/bin/bash\nOUTDIR=\$PWD\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=\$VRIP_HOME/src/vrip/\nPATH=\$PATH:\$VRIP_HOME/bin:$BASEPATH/tridecimator\ncd $MESHCACHE\n$BASEPATH/vrip/bin/vripxftrans meshlist.txt -subvoldir $SUBVOLDIR -n $NUMPOSE" > runvrip.sh
+echo -e "cd $SUBVOLDIR\nfind . -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print \$0  \" 0.033 1\" }' > surface.txt\nfind $SUBVOLDIR -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print \$0  \" 0.1 0\" }' >> surface.txt" >> runvrip.sh
 
-echo -e "$BASEPATH/vrip/bin/pvrip1 \$OUTDIR/mesh-agg/auto.vri \$OUTDIR/mesh-agg/total.ply surface.txt surface.txt  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $SUBVOLDIR -nocrunch -passtovrip -use_bigger_bbox -dec -meshcache $MESHCACHE\n" >> runvrip.sh
+echo -e "cd $SUBVOLDIR\n$BASEPATH/vrip/bin/pvrip1 \$OUTDIR/mesh-agg/auto.vri \$OUTDIR/mesh-agg/total.ply surface.txt surface.txt  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $SUBVOLDIR -nocrunch -passtovrip -use_bigger_bbox -dec -meshcache $SUBVOLDIR\n" >> runvrip.sh
 chmod 0777  runvrip.sh 
 bash runvrip.sh
 
@@ -125,7 +122,7 @@ echo -e "#!/bin/bash\necho 'Dicing...\\n'\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP
 
  echo -e "rm -f gentexcmds\nNUMDICED=\$((\`wc -l diced.txt | awk '{ print \$1 }'\` - 1))\nfor i in \`seq 0 \$NUMDICED\`;\ndo\n\techo \"setenv DISPLAY :0.0;cd \$DICEDIR/..;$BASEPATH/genTex $STEREOCONFIG -f $CACHEDIMGDIR --single-run \$i\" >> gentexcmds\ndone\n" >> diced.sh 
 
-echo -e "cd $MESHCACHE\n$BASEPATH/vrip/bin/vripdicebbox surface.txt \$DICEDIR\n" >> diced.sh
+echo -e "cd $SUBVOLDIR\n$BASEPATH/vrip/bin/vripdicebbox surface.txt \$DICEDIR\n" >> diced.sh
 	
 echo -e "cd \$DICEDIR\n$BASEPATH/vrip/bin/loadbalance ~/loadlimit gentexcmds -logdir $LOGDIR\n" >> diced.sh
 chmod 0777 diced.sh 

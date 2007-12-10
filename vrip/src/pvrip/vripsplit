@@ -109,8 +109,7 @@ proc confline2bbox {confline} {
 # Given a ply file and and xf
 #
 proc ply2bbox {plyname} {
-    regsub .ply $plyname .xf xfFile;
-    set cmd "exec tridecimator  $plyname stdout 0 -f$xfFile -e10% | plybbox"
+    set cmd "exec plybbox $plyname";
     catch {eval $cmd} msg;
     scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
   

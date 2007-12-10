@@ -1362,30 +1362,31 @@ osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
   const osg::BoundingSphere& bs = model->getBound();
   
   if (bs.valid()){
+    if(lod_file_names.size() >2){
+      printf("%s dist: %g - %g\n",lod_file_names[2].c_str(),min_pixel_size,midrange_pixel_size);
+      printf("\t%s dist: %g - %g\n",lod_file_names[1].c_str(),midrange_pixel_size,near_pixel_size);
+      
+      printf("\t%s dist: %g - %g\n",lod_file_names[0].c_str(),near_pixel_size,max_pixel_size);  
+      
+      osg::PagedLOD* pagedlod = new osg::PagedLOD;
+      pagedlod->setRangeMode(osg::LOD::PIXEL_SIZE_ON_SCREEN);
+      pagedlod->setDatabasePath("");
+      pagedlod->setCenter(bs.center());
+      pagedlod->setRadius(bs.radius());
+      pagedlod->setNumChildrenThatCannotBeExpired(0);
+      
+      pagedlod->setRange(0,min_pixel_size,midrange_pixel_size);
+      pagedlod->addChild(model);
+      
+      pagedlod->setRange(1,midrange_pixel_size,near_pixel_size);
+      pagedlod->setFileName(1,lod_file_names[1]);
+      
+      pagedlod->setRange(2,near_pixel_size,max_pixel_size);
+      pagedlod->setFileName(2,lod_file_names[0]);
     
-    printf("%s dist: %g - %g\n",lod_file_names[2].c_str(),min_pixel_size,midrange_pixel_size);
-    printf("\t%s dist: %g - %g\n",lod_file_names[1].c_str(),midrange_pixel_size,near_pixel_size);
-    
-    printf("\t%s dist: %g - %g\n",lod_file_names[0].c_str(),near_pixel_size,max_pixel_size);  
-    
-    osg::PagedLOD* pagedlod = new osg::PagedLOD;
-    pagedlod->setRangeMode(osg::LOD::PIXEL_SIZE_ON_SCREEN);
-    pagedlod->setDatabasePath("");
-    pagedlod->setCenter(bs.center());
-    pagedlod->setRadius(bs.radius());
-    pagedlod->setNumChildrenThatCannotBeExpired(0);
-    
-    pagedlod->setRange(0,min_pixel_size,midrange_pixel_size);
-    pagedlod->addChild(model);
-    
-    pagedlod->setRange(1,midrange_pixel_size,near_pixel_size);
-    pagedlod->setFileName(1,lod_file_names[1]);
- 
-    pagedlod->setRange(2,near_pixel_size,max_pixel_size);
-    pagedlod->setFileName(2,lod_file_names[0]);
    
-   
-    return pagedlod;
+      return pagedlod;
+    }
   }
   return NULL;
 }

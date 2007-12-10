@@ -145,16 +145,17 @@ int main( int argc, char *argv[ ] )
       char out_name[255];
       
       sprintf(out_name,"mesh/blended-%02d-lod%d.ive",i,j);
-      lodnames.push_back(osgDB::getSimpleFileName(string(out_name)).c_str());
-      if(j == (lodNum -1)){
-	osg::ref_ptr<osg::Group> node=	dynamic_cast<osg::Group*>(osgDB::readNodeFile(string(out_name)));
-	outNodes.push_back(node);
-	
+      if(FileExists(out_name)){
+	lodnames.push_back(osgDB::getSimpleFileName(string(out_name)).c_str());
+	if(j == (lodNum -1)){
+	  osg::ref_ptr<osg::Group> node=	dynamic_cast<osg::Group*>(osgDB::readNodeFile(string(out_name)));
+	  outNodes.push_back(node);
+	}
       }
       
     }
-    
-    outNames.push_back(lodnames);
+    if(outNodes.size())
+      outNames.push_back(lodnames);
     
   }
   

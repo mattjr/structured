@@ -42,6 +42,7 @@ PROGS = \
 	plyunshared \
 	plyusages \
 	plyxform \
+	vripxftrans\
 	plydice \
 	plymirror \
 	plyvolume \
@@ -100,9 +101,6 @@ ifeq ($(UNAME), Cygwin)
     ply2bin:
 	    cp ../src/plytools/ply2bin.exe .
 
-    ply2bboxcube:
-	    cp ../src/plytools/ply2bboxcube .
-
     ply2crunchset:
 	    cp ../src/plytools/ply2crunchset .
 
@@ -138,9 +136,6 @@ ifeq ($(UNAME), Cygwin)
 
     plyremove:
 	    cp ../src/plytools/plyremove.exe .
-
-    plys2set:
-	    cp ../src/plytools/plys2set .
 
     plysets2conf:
 	    cp ../src/plytools/plysets2conf .
@@ -255,12 +250,6 @@ else
     ply2bin:
 	    ln -s ../src/plytools/ply2bin ply2bin
 
-    ply2bboxcube:
-	    ln -s ../src/plytools/ply2bboxcube ply2bboxcube
-
-    ply2crunchset:
-	    ln -s ../src/plytools/ply2crunchset ply2crunchset
-
     ply2verts:
 	    ln -s ../src/plytools/ply2verts ply2verts
 
@@ -294,14 +283,8 @@ else
     plyremove:
 	    ln -s ../src/plytools/plyremove plyremove
 
-    plys2set:
-	    ln -s ../src/plytools/plys2set plys2set
-
     plysets2conf:
 	    ln -s ../src/plytools/plysets2conf plysets2conf
-
-    plysetlevel:
-	    ln -s ../src/plytools/plysetlevel plysetlevel
 
     plyshared:
 	    ln -s ../src/plytools/plyshared plyshared
@@ -320,6 +303,9 @@ else
 
     plyxform:
 	    ln -s ../src/plytools/plyxform plyxform
+
+    vripxftrans:
+	    ln -s ../src/pvrip/vripxftrans vripxftrans
 
     plydice:
 	    ln -s ../src/plytools/plydice plydice

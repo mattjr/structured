@@ -1,0 +1,211 @@
+#! /usr/bin/tclsh
+
+#
+# vripsplit.tcl -- David Koller (dk@cs.stanford.edu), 8/14/98
+#
+# This program is used for splitting up vrip jobs into smaller
+# subtasks.  The program reads a vrip .conf file, determines
+# an appropriate decomposition of the vrip volume, and outputs a
+# new .conf and a corresponding .bbox.ply file for each subvolume.
+#
+# See usage proc below for usage...
+#
+# where <max#voxels> is the maximum voxel size of the subvolumes,
+# and resolution is the same as the value given to vripnew.
+#
+# The bounding volumes output by this program do not overlap;
+# however, the program assumes that vrip will apply a 10 voxel
+# "border" when vripping the subvolumes, so the individual bmesh's
+# which intersect this border region are included in the appropriate
+# .conf files for the subvolumes.
+#
+# The global bounding box is expanded by BBOXOVERLAP voxels in each
+# dimension beyond the exact bounding box.
+#
+# Modifications
+# -------------
+# * Output .bbox files for each bmesh file to speed global bbox computation
+#   (lucasp, 8/26/98)
+# * Output subvol filenames padded to 4 digits (lucasp, 8/26/98)
+#
+# Known Assumptions/Limitations/Bugs
+# -----------------------
+# * Only "bmesh" commands are recognized from the .conf file
+# * Assumes that vrip will apply a 10 voxel "border" when vripping
+#   the subvolumes
+# * Assumes that vrip will not change the parity of the voxel
+#   dimensions of the subvolume
+#
+
+# The amount to make BBOXES overlap, in voxels, on the seams.
+# Note that it will actually increase the subvols by 2x this
+# amount in each dimension
+set BBOXOVERLAP 20;
+
+# default subvol dir
+set subvoldir ".";
+set bboxesok 0;
+
+proc usage args {
+    global subvoldir;
+    puts "";
+    puts "Usage: vripsplit scans.conf \[-subvoldir subvoldir\]";
+    puts "";
+    puts "Where:";
+    puts "      scans.conf   is the conf file containing all of the scans that you";
+    puts "                   wish to vrip";
+    puts "      bbox         is something that specifies the volume to vrip.  It";
+    puts "                   can be scans.conf, or some other conf/ply file.  It";
+    puts "                   will vrip a volume big enough to cover bbox.";
+    puts "      resolution   Is the voxel size";
+    puts "      max\#voxels  is the maximum number of voxels per chunk.";
+    puts "      subvoldir    is where it will put all the .conf and .bbox.ply";
+    puts "                   files for the subvolumes. Default: $subvoldir";
+    puts "";
+    exit -1;
+}
+
+
+
+# Given a ply file and and xf
+#
+proc plytrans2bbox {plyname outname} {
+    regsub .ply $plyname .xf xfFile
+    regsub .ply $outname .xf outxf
+
+    if { [file readable $xfFile] } {
+	set cmd "exec tridecimator  $plyname $outname 0 -f$xfFile -e10% "
+	catch {eval $cmd} msg;
+	file copy $xfFile $outxf
+	set cmd "exec plybbox $outname"
+	catch {eval $cmd} msg;
+
+
+	scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
+	
+	# Set bboxname to be the corresponding bbox file
+	regsub .ply $plyname .bbox bboxname;
+	exec rm -f $bboxname 
+	set bboxfid [open $bboxname "w+"];
+	
+	puts $bboxfid "$minx $miny $minz";
+	puts $bboxfid "$maxx $maxy $maxz";
+	
+	close $bboxfid;
+	exec chmod 666 $bboxname 
+    } else {
+	puts "\n$plyname not found"
+    }
+}
+
+proc wc-l files {
+      set n 0
+      foreach file $files {
+        if ![catch {set fp [open $file]}] {
+	     incr n [llength [split [read $fp [file size $file]] \n]]
+	     close $fp
+	}
+     }
+     set n
+ } ;# RS
+
+#
+# Main script
+#
+set meshcoff 0
+if {$argc < 1}  {
+    usage;
+    exit -1;
+} else {
+	puts $argc
+    # parse extra args first 
+    for {set i 1} {$i < $argc} {incr i}  {
+	set currarg [lindex $argv $i];
+	if {$currarg == "-subvoldir"} {
+	    if {$i+1 >= $argc} {
+		puts "Error: -subvoldir needs second arg.";
+		usage;
+		exit -1;
+	    }
+	    incr i;
+	    set subvoldir [lindex $argv $i];
+	} elseif {$currarg == "-n"} {
+	    if {$i+1 >= $argc} {
+		puts "Error: -n needs second arg.";
+		usage;
+		exit -1;
+	    }
+	    incr i;
+	    set meshcoff [lindex $argv $i];
+	} elseif {$currarg == "-bboxesok"} {
+	    set bboxesok 1;
+	} else {
+	    puts "Error: unhandled arg: $currarg";
+	    usage;
+	    exit -1;
+	}
+    }
+    puts "Generating bboxes for all submeshes..."
+    #
+    # Read the .conf file, storing the bboxes for each bmesh
+    # It checks dates.  If the bboxes are out of date, then
+    # it will recreate them.  Otherwise, it will read the
+    # bbox to get the bounds of the mesh.
+    #
+
+    set conffilename [lindex $argv 0];
+    set bboxfilename [lindex $argv 1];
+
+    
+    set numMeshes 0;
+
+    # Verify it exists
+    if { ! [file readable $conffilename] } {
+	puts "";
+	puts "Error: unable to open .conf file $conffilename";
+	usage;
+	exit;
+    }
+    if { $meshcoff > 0 } {
+	set totalmeshes $meshcoff
+    } else { 
+	set totalmeshes [wc-l $conffilename];
+    }
+    puts "Total meshes $totalmeshes"
+    set fileid [open $conffilename "r"];
+    set ext [file extension $conffilename]
+
+    while {[gets $fileid inline] >= 0 && $numMeshes < $totalmeshes } {
+	puts -nonewline "\rComputing bounding box for $numMeshes/$totalmeshes";
+	flush stdout
+	set plyfile [lindex $inline 0];
+	set newplyfile ""
+	append newplyfile $subvoldir "/" [ file tail $plyfile ] 
+	regsub .ply $newplyfile -tc.ply newplyfile;
+	# Set bboxfile to be the corresponding bbox file
+	regsub .ply $newplyfile .bbox bboxfile;
+	
+	# Check if bbox file needs to be created or updated
+	if {![file exists $bboxfile]} {
+	    #puts "bbox does not exist, creating...";
+	    plytrans2bbox $plyfile $newplyfile;
+	} else {
+	    set bboxmtime [file mtime $bboxfile];
+	    set confmtime [file mtime $conffilename];
+	    if {$confmtime > $bboxmtime  && $bboxesok == 0} {
+		#puts "bbox file is out of date, redoing....";
+		plytrans2bbox $plyfile $newplyfile;
+	    }
+	}
+	
+	
+	
+	
+	incr numMeshes;
+	
+    }
+    
+}
+
+close $fileid;
+puts "";

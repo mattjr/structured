@@ -858,26 +858,16 @@ proc newFromConf {gridFile confFile boundMesh voxelSize} {
 	set numchars [gets $fileid line]
 	puts $numchars
 	set filenum 0
-	set tmpname "/tmp/tmpmesh"
-	set tmpfilename [append tmpname "_" [pid] ".ply"]
-	puts $tmpfilename
+
 	while {$numchars > 0} {
 	    set curmesh  [lindex $line 0]
-	    set rootName [file root $curmesh]
-	    set xfFile "${rootName}.xf"
-	    if {[file exists $xfFile]} {
-		set cmd "exec tridecimator  $curmesh $tmpfilename 0 -f$xfFile -e20%"
-	    } else {
-		puts "No xf found probably wrong"
-	    }
-	    catch {eval $cmd} msg
-	    #puts $msg
-	    bmeshxf $tmpfilename [lindex $line 1] [lindex $line 2]  $filenum  $totalmeshes
+	    #regsub .ply $curmesh .xf xfFile;
+	    bmeshxf $curmesh [lindex $line 1] [lindex $line 2]  $filenum  $totalmeshes
 	    set numchars [gets $fileid line]
 	    incr filenum
 	}
 	close $fileid
-	file delete  $tmpfilename
+	
     }
 
     puts "\nWriting to file ${gridFile}..."

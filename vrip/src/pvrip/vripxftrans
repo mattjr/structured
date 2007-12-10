@@ -181,7 +181,7 @@ if {$argc < 1}  {
 	set plyfile [lindex $inline 0];
 	set newplyfile ""
 	append newplyfile $subvoldir "/" [ file tail $plyfile ] 
-	regsub .ply $newplyfile -tc.ply newplyfile;
+	regsub .ply $newplyfile .tc.ply newplyfile;
 	# Set bboxfile to be the corresponding bbox file
 	regsub .ply $newplyfile .bbox bboxfile;
 	

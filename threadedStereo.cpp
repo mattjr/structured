@@ -104,7 +104,7 @@ static bool hardware_compress=true;
 const char *uname="mesh";
 const char *aggdir="mesh-agg";
 bool dist_run=false;
-static string passtotridec;
+static string passtotridec="-e2.0";
 
 
 void print_uv_3dpts( list<Feature*>          &features,
@@ -1429,15 +1429,26 @@ int main( int argc, char *argv[ ] )
 	}else{
 	  fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt 0.033 -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unclean.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),basepath.c_str());
 	}
+	int lodlevels=3;
+	int reductionfactor[] = {50,20,25};
+	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total-lod0.ply %d%% -By -H1500 -Q0.1 -S3 -F\n%s/tridecimator/tridecimator $OUTDIR/total-lod0.ply $OUTDIR/total.stl 0\n%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total-unclean.stl 0 -F\n",basepath.c_str(),reductionfactor[0],basepath.c_str(),basepath.c_str());
+
+	for(int i=1; i < lodlevels; i++){
+	  fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-lod%d.ply  $OUTDIR/total-lod%d.ply %d%%\n",basepath.c_str(),i-1,i,reductionfactor[i]);
+	}
 	
-	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total.ply 50%% -By -H1500 -Q0.1 -S3 -F\n%s/tridecimator/tridecimator $OUTDIR/total.ply $OUTDIR/total.stl 0\n%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total-unclean.stl 0 -F\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
+	
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
        	system("./runvrip.sh");
       
 	
 	FILE *dicefp=fopen("./dice.sh","w+");
-	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydicegroup -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s " ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+	for(int i=0; i < lodlevels; i++){
+	  fprintf(dicefp,"total-lod%d.ply ",i);
+	}
+	fprintf(dicefp,"\n");
 	fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
 		basepath.c_str());
 	fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);

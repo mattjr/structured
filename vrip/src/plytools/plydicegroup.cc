@@ -122,6 +122,46 @@ transform()
 {
   int i;
   Vertex *vert;
+  Vec3f vec1, vec2;
+  Matrix4f mat, qmat;
+
+  quat.toMatrix(qmat);
+  mat.makeIdentity();
+  mat.scale(xscale, yscale, zscale);
+  mat.rotateX(rotx);
+  mat.rotateY(roty);
+  mat.rotateZ(rotz);
+  mat.multLeft(qmat);
+  mat.setTranslate(xtrans, ytrans, ztrans);
+  mat.multLeft(xfmat);
+  for(int k=0; k< fileCount; k++){
+    for (i = 0; i < nverts[k]; i++) {
+      vert = vlist[k][i];
+      vec1.setValue(vert->x, vert->y, vert->z);
+      mat.multVec(vec1, vec2);
+      vert->wx = vec2.x;
+      vert->wy = vec2.y;
+      vert->wz = vec2.z;
+      if(k==0){
+	// Also compute bbox
+	minx = MIN(minx, vert->wx);
+	miny = MIN(miny, vert->wy);
+	minz = MIN(minz, vert->wz);
+	maxx = MAX(maxx, vert->wx);
+	maxy = MAX(maxy, vert->wy);
+	maxz = MAX(maxz, vert->wz);
+      }
+    }
+  }
+  //fprintf(stderr, "BBOX: (%.2f %.2f %.2f) to (%.2f %.2f %2.f)\n",
+  // minx, miny, minz, maxx, maxy, maxz);
+}
+/*
+void
+transform()
+{
+  int i;
+  Vertex *vert;
 
 
 
@@ -137,7 +177,7 @@ transform()
     maxz = MAX(maxz, vert->wz);
   }
 }
-
+*/
 int
 main(int argc, char *argv[])
 {
@@ -369,6 +409,8 @@ clip_and_write_subvols(char *bboxall)
 	for(int i=0; i < fileCount; i++){
 	  int numverts = clip_to_bounds(i,svminx, svminy, svminz,
 					svmaxx, svmaxy, svmaxz);
+	  
+	    
 	  if (numverts > 0) {
 	    char fname[1000];
 	    if (outdir != NULL) {
@@ -387,7 +429,7 @@ clip_and_write_subvols(char *bboxall)
 	      if (out == NULL) {
 		fprintf(stderr, "Err: couldn't open fname... aborting.\n");
 		exit(-1);
-	    }
+	      }
 	      write_file(out,i);
 	      fclose(out);
 	    }
@@ -421,7 +463,8 @@ clip_to_bounds(int num,float svminx, float svminy, float svminz,
   // Set new id for all the vertices
   // -1 if outside volume...
   for (i=0; i < nverts[num]; i++) {
-    v = vlist[num][i];
+    v = (vlist[num])[i];
+    //if(num >0)   printf("%f %f %f\n",v->wx,v->wy,v->wz);
     if (v->wx >= svminx &&
 	v->wy >= svminy &&
 	v->wz >= svminz &&
@@ -436,7 +479,7 @@ clip_to_bounds(int num,float svminx, float svminy, float svminz,
   }
 
   // Abort right here if not at least 3 vertices...
-  // fprintf(stderr, "valid verts: %d\n", validverts);
+  //fprintf(stderr, "valid verts: %d\n", validverts[num]);
   if (validverts[num] < 3) return 0;
   
   for (i=0; i < nfaces[num]; i++) {
@@ -504,10 +547,10 @@ read_file(FILE *inFile,int num)
       vlist[num] = (Vertex **) malloc (sizeof (Vertex *) * num_elems);
       validvlist[num] = (Vertex **) malloc (sizeof (Vertex *) * num_elems);
       nverts[num] = num_elems;
-
+  
       // Allocate all the memory in one chunk, instead of piecewise later
       Vertex *varray = (Vertex *) malloc(sizeof(Vertex) * nverts[num]);
-      for (int k=0; k < nverts[num]; k++) vlist[num][k] = &(varray[k]);
+      for (int k=0; k < nverts[num]; k++) (vlist[num])[k] = &(varray[k]);
 	
 
       /* set up for getting vertex elements */
@@ -521,8 +564,9 @@ read_file(FILE *inFile,int num)
 
       /* grab all the vertex elements */
       for (j = 0; j < num_elems; j++) {
-        ply_get_element (ply, (void *) vlist[num][j]);
+        ply_get_element (ply, (void *) (vlist[num])[j]);
 	vlist[num][j]->index = j;
+	//printf("ff %f %f %f\n",vlist[num][j]->wx,vlist[num][j]->wy,vlist[num][j]->wz);
       }
     }
     else if (equal_strings ("face", elem_name)) {

@@ -17,7 +17,7 @@ typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 MyGraphicsContext *mgc=NULL;
 std::vector<GtsBBox *> bboxes_all;;
-int texMargin=0;//475;
+int texMargin=100;
 IplImage *doCvResize(osg::Image *img,int size){
   IplImage *in=cvCreateImageHeader(cvSize(img->s(),img->t()),IPL_DEPTH_8U,3);
   in->imageData=(char *)img->data();
@@ -1066,16 +1066,18 @@ int find_closet_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> 
     if(bestProjection == INT_MAX){
       minDist=DBL_MAX;
       for(int i =0; i < (int)bboxes_all.size(); i++){
-	int val= (int)bboxes_all[i]->bounded;
-	if(find_min_project_dist_bbox(v,back_trans[val],calib, dist) == TEX_MARGIN){
-	  if(dist < minDist){
-	    minDist=dist;
-	    bestProjection=val;
+	if(gts_bbox_point_is_inside(bboxes_all[i],&tc)){
+	  int val= (int)bboxes_all[i]->bounded;
+	  if(find_min_project_dist_bbox(v,back_trans[val],calib, dist) == TEX_MARGIN){
+	    if(dist < minDist){
+	      minDist=dist;
+	      bestProjection=val;
+	    }
 	  }
 	}
-      } 
+      }
     }
-     
+    
     return bestProjection;
   }
   
@@ -1234,7 +1236,8 @@ static void texcoord_foreach_face (T_Face * f,
 {
   
   int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
-					 data->bboxTree,data->camPosePts,data->back_trans,data->calib,1);
+					 data->bboxTree,data->camPosePts,
+					 data->back_trans,data->calib,1);
   if(indexClosest == INT_MAX){
     /*fprintf(errFP,"Failed traingle\n");
       gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
@@ -1243,17 +1246,16 @@ static void texcoord_foreach_face (T_Face * f,
       libpolyp::tex_add_verbose(data->count++,data->total,data->reject++);
     return;
   }
-  
-  
-  
+    
   if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size,texMargin))
     data->validCount++;
   else{
     printf("Index closest %d\n",indexClosest);
     find_closet_img_trans(&GTS_FACE(f)->triangle,
-			  data->bboxTree,data->camPosePts,data->back_trans,data->calib,0);
+			  data->bboxTree,data->camPosePts,
+			  data->back_trans,data->calib,0);
   }
-  // if(!data->bboxTree)
+ 
   if(data->verbose)
     tex_add_verbose(data->count++,data->total,data->reject);
 
@@ -1362,32 +1364,58 @@ osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
   float midrange_pixel_size=750;    
   float near_pixel_size=1500;
   float max_pixel_size=1e7;
+
+  float cut_off_distance = 25.0f;
+  float max_visible_distance = 125.0f;
+  float max_dist=1e7;
   const osg::BoundingSphere& bs = model->getBound();
-  
+  bool usePixelSize=false;
   if (bs.valid()){
     if(lod_file_names.size() >2){
-      printf("%s dist: %g - %g\n",lod_file_names[2].c_str(),min_pixel_size,midrange_pixel_size);
-      printf("\t%s dist: %g - %g\n",lod_file_names[1].c_str(),midrange_pixel_size,near_pixel_size);
-      
-      printf("\t%s dist: %g - %g\n",lod_file_names[0].c_str(),near_pixel_size,max_pixel_size);  
-      
       osg::PagedLOD* pagedlod = new osg::PagedLOD;
-      pagedlod->setRangeMode(osg::LOD::PIXEL_SIZE_ON_SCREEN);
-      pagedlod->setDatabasePath("");
-      pagedlod->setCenter(bs.center());
-      pagedlod->setRadius(bs.radius());
-      pagedlod->setNumChildrenThatCannotBeExpired(0);
       
-      pagedlod->setRange(0,min_pixel_size,midrange_pixel_size);
-      pagedlod->addChild(model);
+     
       
-      pagedlod->setRange(1,midrange_pixel_size,near_pixel_size);
-      pagedlod->setFileName(1,lod_file_names[1]);
-      
-      pagedlod->setRange(2,near_pixel_size,max_pixel_size);
-      pagedlod->setFileName(2,lod_file_names[0]);
-    
-   
+     
+      if(usePixelSize){
+	printf("%s dist: %g - %g\n",lod_file_names[2].c_str(),min_pixel_size,midrange_pixel_size);
+	printf("\t%s dist: %g - %g\n",lod_file_names[1].c_str(),midrange_pixel_size,near_pixel_size);
+	
+	printf("\t%s dist: %g - %g\n",lod_file_names[0].c_str(),near_pixel_size,max_pixel_size);  
+	
+	pagedlod->setRangeMode(osg::LOD::PIXEL_SIZE_ON_SCREEN);
+	pagedlod->setDatabasePath("");
+	pagedlod->setCenter(bs.center());
+	pagedlod->setRadius(bs.radius());
+	pagedlod->setNumChildrenThatCannotBeExpired(0);
+	
+	pagedlod->setRange(0,min_pixel_size,midrange_pixel_size);
+	pagedlod->addChild(model);
+	
+	pagedlod->setRange(1,midrange_pixel_size,near_pixel_size);
+	pagedlod->setFileName(1,lod_file_names[1]);
+	
+	pagedlod->setRange(2,near_pixel_size,max_pixel_size);
+	pagedlod->setFileName(2,lod_file_names[0]);
+	
+      }else{
+	
+	printf("%s dist: %g - %g\n\t%s dist: %g - %g\n\t%s dist: %g - %g\n",lod_file_names[0].c_str(),max_visible_distance,max_dist,lod_file_names[1].c_str(),cut_off_distance,max_visible_distance,lod_file_names[2].c_str(),0.0,cut_off_distance);  
+	pagedlod->setDatabasePath("");
+	pagedlod->setCenter(bs.center());
+	pagedlod->setRadius(bs.radius());
+	//  pagedlod->setNumChildrenThatCannotBeExpired(2);
+	
+	pagedlod->setRange(0,max_visible_distance,max_dist);
+	pagedlod->addChild(model);
+	
+	pagedlod->setRange(1,cut_off_distance,max_visible_distance);
+	pagedlod->setFileName(1,lod_file_names[1]);
+	
+	pagedlod->setRange(2,0.0f,cut_off_distance);
+	pagedlod->setFileName(2,lod_file_names[0]);
+	
+      }
       return pagedlod;
     }
   }
@@ -1400,7 +1428,8 @@ void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<strin
   for(int i=0; i < (int)nodes.size(); i++){
   
     osg::Node *tmp=create_paged_lod(nodes[i].get(),lodnames[i]);
-    total->addChild(tmp);
+    if(tmp)
+      total->addChild(tmp);
   }
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*total,"mesh/final.ive",osgDB::Registry::instance()->getOptions());
 

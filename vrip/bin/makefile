@@ -44,6 +44,7 @@ PROGS = \
 	plyxform \
 	vripxftrans\
 	plydice \
+	plydicegroup \
 	plymirror \
 	plyvolume \
 	plysubdiv \
@@ -309,6 +310,9 @@ else
 
     plydice:
 	    ln -s ../src/plytools/plydice plydice
+
+   plydicegroup:
+	    ln -s ../src/plytools/plydicegroup plydicegroup
 
     plymirror:
 	    ln -s ../src/plytools/plymirror plymirror

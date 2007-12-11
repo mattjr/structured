@@ -156,7 +156,7 @@ if {$argc < 2}  {
 		    ply2bbox $plyfile;
 		}
 	    }
-	    	puts $bboxfile
+	    	#puts $bboxfile
 	    #puts "Loading bboxfile: $bboxfile...";
 	    set bboxfid [open $bboxfile "r"];
 	    gets $bboxfid minline;

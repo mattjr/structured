@@ -43,7 +43,7 @@ TARGETS = \
 	plyarea      plycrunch	    plymirror \
 	plydice	     plyconfcrop    plysubtract \
 	plyplanecrop plysubdiv    plystrip       xyz2ply \
-	plyconfthresh
+	plyconfthresh plydicegroup
 
 SGICXXSRCS = iv2ply.cc ply2iv.cc
 
@@ -109,6 +109,9 @@ plyxform: plyxform.o
 
 plydice: plydice.o
 	$(CXX) -o $@ plydice.o $(LIBPATHS) -llinear $(LIBS)
+
+plydicegroup: plydicegroup.o
+	$(CXX) -o $@ plydicegroup.o $(LIBPATHS) -llinear $(LIBS)
 
 plymirror: plymirror.o
 	$(CXX) -o $@ plymirror.o $(LIBPATHS) -llinear $(LIBS)

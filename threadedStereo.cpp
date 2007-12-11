@@ -94,13 +94,19 @@ static string basepath;
 static bool single_run=false;
 static int single_run_start=0;
 static int single_run_stop=0;
-
+static int non_cached_meshes=0;
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[255];
 char cachedtexdir[255];
 static string deltaT_config_name;
 static string deltaT_dir;
 static bool hardware_compress=true;
+const char *uname="mesh";
+const char *aggdir="mesh-agg";
+bool dist_run=false;
+static string passtotridec;
+
+
 void print_uv_3dpts( list<Feature*>          &features,
 		     list<Stereo_Feature_Estimate> &feature_positions,
 		     unsigned int                   left_frame_id,
@@ -278,13 +284,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	}
       else if( strcmp( argv[i], "--genmb" ) == 0 )
 	{
-	  if( i == argc-2 ) return false;	
+	  // if( i == argc-2 ) return false;	
 	  gen_mb_ply=true;
 	  have_mb_ply=true;
 	  mb_ply_filenames.push_back(string("mb.ply")) ;
-	  deltaT_config_name=string( argv[i+1]) ;
-	  deltaT_dir=string( argv[i+2]) ;
-	  i+=3;
+
+	  i+=1;
 	}
       else if( strcmp( argv[i], "-z" ) == 0 )
 	{
@@ -307,6 +312,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	  i+=3;
 	  single_run=true;
 	  display_debug_images = false;
+	}
+      else if( strcmp( argv[i], "--passtotridec" ) == 0 )
+	{
+	  if( i == argc-1 ) return false;
+	  passtotridec=string(argv[i+1]);
+	  i+=2;
 	}
       else if( strcmp( argv[i], "-t" ) == 0 )
 	{
@@ -464,6 +475,8 @@ static bool parse_args( int argc, char *argv[ ] )
   }
 
   if(have_base_dir){
+    deltaT_config_name=base_dir+string("/")+"localiser.cfg";
+    deltaT_dir=base_dir+string("/")+"DT/";
     if(!have_stereo_config_file_name)
       stereo_config_file_name= base_dir+string("/")+stereo_config_file_name;
     if(!have_contents_file_name )
@@ -902,7 +915,7 @@ bool threadedStereo::runP(auv_image_names &name){
   
   FILE *fp;
   sprintf(filename,"%s/surface-%s.xf",
-	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
+	  aggdir,osgDB::getStrippedName(name.left_name).c_str());
   fp = fopen(filename, "w" );
   if(!fp){
     fprintf(stderr,"Failed to open %s for writing\n",filename);
@@ -924,7 +937,7 @@ bool threadedStereo::runP(auv_image_names &name){
   
   sprintf(meshfilename,"%s/surface-%s.ply",
 	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
-
+  
   meshcached=FileExists(meshfilename);
   texcached=FileExists(texfilename);
   
@@ -954,7 +967,8 @@ bool threadedStereo::runP(auv_image_names &name){
 
   if(!meshcached){
       printf("Not cached creating\n");
- 
+      non_cached_meshes++;
+
   if(feature_depth_guess == AUV_NO_Z_GUESS)
     feature_depth_guess = name.alt;
   
@@ -1209,8 +1223,7 @@ int main( int argc, char *argv[ ] )
   ifstream *cov_file;
   ifstream      contents_file;
   Vector *camera_pose;
-  const char *uname="mesh";
-  const char *aggdir="mesh-agg";
+  
 
  auv_data_tools::makedir(aggdir);
 
@@ -1344,36 +1357,26 @@ int main( int argc, char *argv[ ] )
 	tasks.erase(itr);
   }
   if(!single_run){
-    char conf_name[255];
-    sprintf(conf_name,"%s/surface.txt",cachedmeshdir);
- 
-    conf_ply_file=fopen(conf_name,"w");
-    chmod(conf_name,0666);
-    for(unsigned int i=0; i < tasks.size(); i++){
-      if(tasks[i].valid)
-	fprintf(conf_ply_file,
-		"surface-%s.ply 0.033 1\n"
-		,osgDB::getStrippedName(tasks[i].left_name).c_str());
     
-    }
+      char conf_name[255];
+      if(non_cached_meshes){    
+	sprintf(conf_name,"%s/meshlist.txt",cachedmeshdir);
+	
+	conf_ply_file=fopen(conf_name,"w");
+	chmod(conf_name,0666);
+	for(unsigned int i=0; i < tasks.size(); i++){
+	  if(tasks[i].valid)
+	    fprintf(conf_ply_file,
+		    "surface-%s.ply 0.033 1\n"
+		    ,osgDB::getStrippedName(tasks[i].left_name).c_str());
+	  
+	}
+	fclose(conf_ply_file);
+      }
  
 
-    if(!single_run && have_mb_ply){
-      for(int i=0; i < (int)mb_ply_filenames.size(); i++){
-	string simpname =osgDB::getSimpleFileName(mb_ply_filenames[i]);
-	string inname=mb_ply_filenames[i];
-	string outname=(string(cachedmeshdir)+string("/")+simpname);
-	cout << "Copying " << inname << " to " << outname<<endl;
-	std::ifstream  IN (inname.c_str());
-	std::ofstream  OUT(outname.c_str()); 
-	OUT << IN.rdbuf();
-	fprintf(conf_ply_file,
-		"bmesh %s .1 0\n"
-		,simpname.c_str()); 
-      }
-    }
-    if(!single_run)
-      fclose(conf_ply_file);
+  
+  
     
     if(output_uv_file)
       fclose(uv_fp);
@@ -1389,29 +1392,54 @@ int main( int argc, char *argv[ ] )
     }
     if(fpp2)
       fclose(fpp2);
-    if(conf_ply_file){
+    
+    {
       if(output_pts_cov)
 	fclose(pts_cov_fp);
       if(gen_mb_ply){
+	printf("Here\n");
 	FILE *genmbfp=fopen("genmb.sh","w");
-	fprintf(genmbfp,"#!/bin/bash\n%s/../seabed_localisation/bin/seabed_pipe --start %f --stop %f --mesh %s %s %s",basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),contents_file_name.c_str());
+	fprintf(genmbfp,"#!/bin/bash\ncd %s\n%s/../seabed_localisation/bin/process_deltaT --start %f --stop %f --mesh %s %s %s",aggdir,basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),contents_file_name.c_str());
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
 	system("./genmb.sh");
       }
+  
+      /* if(!single_run && have_mb_ply){
+	for(int i=0; i < (int)mb_ply_filenames.size(); i++){
+	  string simpname =osgDB::getSimpleFileName(mb_ply_filenames[i]);
+	  string inname=mb_ply_filenames[i];
+	  string outname=(string(aggdir)+string("/")+simpname);
+	  cout << "Copying " << inname << " to " << outname<<endl;
+	  std::ifstream  IN (inname.c_str());
+	  std::ofstream  OUT(outname.c_str()); 
+	  OUT << IN.rdbuf();
+	  fprintf(conf_ply_file,
+		  "bmesh %s .1 0\n"
+		  ,simpname.c_str()); 
+	}
+      }
+      */
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n",aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir);
-	fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt 0.033 -rampscale 400 \n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unclean.ply > $OUTDIR/vripsurflog.txt\n %s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total.ply 50%% -By -H1500 -Q0.1 -S3\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
+	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n%s/vrip/bin/vripxftrans meshlist.txt -subvoldir $OUTDIR/ -n %d -passtotridec %s\n",aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir,basepath.c_str(),stereo_pair_count,passtotridec.c_str());
+	fprintf(conf_ply_file,"cd $OUTDIR\nfind . -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.033 1\" }' | head -n %d > surface.txt\n#find $SUBVOLDIR -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.1 0\" }' >> surface.txt\ncat surface.txt| cut -f1 -d\" \" | xargs %s/vrip/bin/plymerge  > unblended.ply\n%s/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > mb-0000.xf\nauv_mesh_align unblended.ply mb-0000.ply\n%s/vrip/bin/plyxform -f mb-0000.xf  < mb-0000.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n",stereo_pair_count,basepath.c_str(),basepath.c_str(),basepath.c_str());
+	if(dist_run){
+	  fprintf(conf_ply_file,"cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total.ply surface.txt surface.txt  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -dec -meshcache $OUTDIR/\n",basepath.c_str());
+	}else{
+	  fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt 0.033 -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unclean.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),basepath.c_str());
+	}
+	
+	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total.ply 50%% -By -H1500 -Q0.1 -S3 -F\n%s/tridecimator/tridecimator $OUTDIR/total.ply $OUTDIR/total.stl 0\n%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total-unclean.stl 0 -F\n",basepath.c_str(),basepath.c_str(),basepath.c_str());
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
-	system("./runvrip.sh");
+       	system("./runvrip.sh");
       
 	
 	FILE *dicefp=fopen("./dice.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
-	fprintf(dicefp,"cd %s\n%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
-		cachedmeshdir,basepath.c_str());
+	fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
+		basepath.c_str());
 	fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
 	if(!hardware_compress)
 	  fprintf(dicefp,"--no-hardware-compress\n");

@@ -146,22 +146,25 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
      // printf("%f %f %f\n",GTS_VERTEX(v3)->p.x,GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.z);*/
 
  
-  (*gc._vertices++).set(GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.x,-GTS_VERTEX(v3)->p.z);
-  (*gc._vertices++).set(GTS_VERTEX(v2)->p.y,GTS_VERTEX(v2)->p.x,-GTS_VERTEX(v2)->p.z);
+  
+ 
   (*gc._vertices++).set(GTS_VERTEX(v1)->p.y,GTS_VERTEX(v1)->p.x,-GTS_VERTEX(v1)->p.z);
- 
- 
+  (*gc._vertices++).set(GTS_VERTEX(v2)->p.y,GTS_VERTEX(v2)->p.x,-GTS_VERTEX(v2)->p.z);
+  (*gc._vertices++).set(GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.x,-GTS_VERTEX(v3)->p.z);
 
   
   
   if (gc._texturesActive && f->material >= 0){
-    texLimits.expandBy(v3->u,1-v3->v,0.0);
-    texLimits.expandBy(v2->u,1-v2->v,0.0);
-    texLimits.expandBy(v1->u,1-v1->v,0.0);
-    (*gc._texcoords++).set(v3->u,1-v3->v); 
-    (*gc._texcoords++).set(v2->u,1-v2->v); 
-    (*gc._texcoords++).set(v1->u,1-v1->v);    
 
+
+    texLimits.expandBy(v1->u,1-v1->v,0.0);
+    texLimits.expandBy(v2->u,1-v2->v,0.0);
+    texLimits.expandBy(v3->u,1-v3->v,0.0);
+
+    
+    (*gc._texcoords++).set(v1->u,1-v1->v);    
+    (*gc._texcoords++).set(v2->u,1-v2->v); 
+    (*gc._texcoords++).set(v3->u,1-v3->v); 
   }
 
   if(gc._colorsActive){
@@ -173,13 +176,13 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
     float range=zrange[1]-zrange[0];
       
     float r,g,b,val;
-    val = ( GTS_VERTEX(v3)->p.z -zrange[0] )/range;    
+    val = ( GTS_VERTEX(v1)->p.z -zrange[0] )/range;    
     jet_color_map(val,r,g,b);
     (*gc._colors++).set(r,b,g,1.0);
     val = ( GTS_VERTEX(v2)->p.z -zrange[0] )/range;    
     jet_color_map(val,r,g,b);
     (*gc._colors++).set(r,b,g,1.0);
-    val = ( GTS_VERTEX(v1)->p.z -zrange[0] )/range;    
+    val = ( GTS_VERTEX(v3)->p.z -zrange[0] )/range;    
     jet_color_map(val,r,g,b);
     (*gc._colors++).set(r,b,g,1.0);
   }

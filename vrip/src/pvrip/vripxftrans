@@ -49,16 +49,13 @@ set bboxesok 0;
 proc usage args {
     global subvoldir;
     puts "";
-    puts "Usage: vripsplit scans.conf \[-subvoldir subvoldir\]";
+    puts "Usage: vripxftrans scans.txt \[-subvoldir subvoldir\]";
     puts "";
     puts "Where:";
-    puts "      scans.conf   is the conf file containing all of the scans that you";
+    puts "      scans.txt   is the conf file containing all of the scans that you";
     puts "                   wish to vrip";
-    puts "      bbox         is something that specifies the volume to vrip.  It";
+    puts "       -passtotridec <args> pass arguments to tridec";
     puts "                   can be scans.conf, or some other conf/ply file.  It";
-    puts "                   will vrip a volume big enough to cover bbox.";
-    puts "      resolution   Is the voxel size";
-    puts "      max\#voxels  is the maximum number of voxels per chunk.";
     puts "      subvoldir    is where it will put all the .conf and .bbox.ply";
     puts "                   files for the subvolumes. Default: $subvoldir";
     puts "";
@@ -69,7 +66,7 @@ proc usage args {
 
 # Given a ply file and and xf
 #
-proc plytrans2bbox {plyname outname} {
+proc plytrans2bbox {plyname outname passtotridec} {
    
     regsub ".tc.ply" $outname .xf xfFile
 
@@ -78,7 +75,7 @@ proc plytrans2bbox {plyname outname} {
 #	puts $cmd
 #	set cmd "cp $plyname $outname "
 #	puts $cmd
-	set cmd "exec tridecimator  $plyname $outname 0  -f$xfFile -e10% "
+	set cmd "exec tridecimator  $plyname $outname 0  -f$xfFile $passtotridec "
 	catch {eval $cmd} msg;
 	
 	set cmd "exec plybbox $outname"
@@ -133,6 +130,14 @@ if {$argc < 1}  {
 	    }
 	    incr i;
 	    set subvoldir [lindex $argv $i];
+	} elseif {$currarg == "-passtotridec"} {
+	    if {$i+1 >= $argc} {
+		puts "Error: -passtotridec needs second arg.";
+		usage;
+		exit -1;
+	    }
+	    incr i;
+	    set passtotridec [lindex $argv $i];
 	} elseif {$currarg == "-n"} {
 	    if {$i+1 >= $argc} {
 		puts "Error: -n needs second arg.";
@@ -178,7 +183,7 @@ if {$argc < 1}  {
     puts "Total meshes $totalmeshes"
     set fileid [open $conffilename "r"];
     set ext [file extension $conffilename]
-
+    puts $passtotridec
     while {[gets $fileid inline] >= 0 && $numMeshes < $totalmeshes } {
 	puts -nonewline "\rComputing bounding box for $numMeshes/$totalmeshes";
 	flush stdout
@@ -192,13 +197,13 @@ if {$argc < 1}  {
 	# Check if bbox file needs to be created or updated
 	if {![file exists $bboxfile]} {
 	    #puts "bbox does not exist, creating...";
-	    plytrans2bbox $plyfile $newplyfile;
+	    plytrans2bbox $plyfile $newplyfile $passtotridec;
 	} else {
 	    set bboxmtime [file mtime $bboxfile];
 	    set confmtime [file mtime $conffilename];
 	    if {$confmtime > $bboxmtime  && $bboxesok == 0} {
 		#puts "bbox file is out of date, redoing....";
-		plytrans2bbox $plyfile $newplyfile;
+		plytrans2bbox $plyfile $newplyfile $passtotridec;
 	    }
 	}
 	

@@ -37,8 +37,8 @@ proc bbox_intersect {xmin1 ymin1 zmin1 xmax1 ymax1 zmax1 \
 # Given a ply file and and xf
 #
 proc ply2bbox {plyname} {
-    regsub .ply $plyname .xf xfFile;
-    set cmd "exec plyxform -f $xfFile < $plyname | plybbox";
+  
+    set cmd "exec  plybbox $plyname";
     catch {eval $cmd} msg;
     scan $msg "%f %f %f %f %f %f" minx miny minz maxx maxy maxz;
   
@@ -141,8 +141,12 @@ if {$argc < 2}  {
 	    }
 	    #puts $bboxfile
 	    # Check if bbox file needs to be created or updated
-	    if {![file exists $bboxfile]} {
-		#    puts "bbox does not exist, creating...";
+	    if {![file exists $bboxfile] } {
+	        puts "bbox does not exist, creating...";
+		ply2bbox $plyfile;
+	    } elseif {  [file size $bboxfile] == 0 } {
+		puts "bbox $bboxfile size 0 recreating"
+		file delete -force $bboxfile
 		ply2bbox $plyfile;
 	    } else {
 		set bboxmtime [file mtime $bboxfile];
@@ -152,7 +156,7 @@ if {$argc < 2}  {
 		    ply2bbox $plyfile;
 		}
 	    }
-	    
+	    	puts $bboxfile
 	    #puts "Loading bboxfile: $bboxfile...";
 	    set bboxfid [open $bboxfile "r"];
 	    gets $bboxfid minline;

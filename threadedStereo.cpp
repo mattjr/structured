@@ -60,7 +60,7 @@ static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
 static int max_feature_count = 5000;
 static double eps=1e-1;
-static double subvol=25.0;
+static double subvol=40.0;
 static bool have_max_frame_count = false;
 static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
@@ -1423,32 +1423,47 @@ int main( int argc, char *argv[ ] )
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
 	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n%s/vrip/bin/vripxftrans meshlist.txt -subvoldir $OUTDIR/ -n %d -passtotridec %s\n",aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir,basepath.c_str(),stereo_pair_count,passtotridec.c_str());
-	fprintf(conf_ply_file,"cd $OUTDIR\nfind . -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.033 1\" }' | head -n %d > surface.txt\n#find $SUBVOLDIR -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.1 0\" }' >> surface.txt\ncat surface.txt| cut -f1 -d\" \" | xargs %s/vrip/bin/plymerge  > unblended.ply\n%s/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > mb-0000.xf\nauv_mesh_align unblended.ply mb-0000.ply\n%s/vrip/bin/plyxform -f mb-0000.xf  < mb-0000.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n",stereo_pair_count,basepath.c_str(),basepath.c_str(),basepath.c_str());
+	fprintf(conf_ply_file,"cd $OUTDIR\nfind . -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.033 1\" }' | head -n %d > surface.txt\n#find $SUBVOLDIR -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.1 0\" }' >> surface.txt\ncat surface.txt| cut -f1 -d\" \" | xargs %s/vrip/bin/plymerge  > unblended.ply\n%s/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n",stereo_pair_count,basepath.c_str(),basepath.c_str());
+	if(have_mb_ply)
+	  fprintf(conf_ply_file,"echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > mb-0000.xf\nauv_mesh_align unblended.ply mb-0000.ply\n%s/vrip/bin/plyxform -f mb-0000.xf  < mb-0000.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n",basepath.c_str());
 	if(dist_run){
 	  fprintf(conf_ply_file,"cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total.ply surface.txt surface.txt  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -dec -meshcache $OUTDIR/\n",basepath.c_str());
 	}else{
 	  fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt 0.033 -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unclean.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),basepath.c_str());
 	}
 	int lodlevels=3;
-	int reductionfactor[] = {50,20,25};
-	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total-lod0.ply %d%% -By -H1500 -Q0.1 -S3 -F\n%s/tridecimator/tridecimator $OUTDIR/total-lod0.ply $OUTDIR/total.stl 0\n%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total-unclean.stl 0 -F\n",basepath.c_str(),reductionfactor[0],basepath.c_str(),basepath.c_str());
+	int reductionfactor[] = {35,20,25};
+	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total.ply -By -H1500 -Q0.1 -S3 -F\n",basepath.c_str());
 
-	for(int i=1; i < lodlevels; i++){
-	  fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-lod%d.ply  $OUTDIR/total-lod%d.ply %d%%\n",basepath.c_str(),i-1,i,reductionfactor[i]);
-	}
-	
+		/*%s/tridecimator/tridecimator $OUTDIR/total.ply $OUTDIR/total-lod0.stl 0 -F\n%s/tridecimator/tridecimator $OUTDIR/total-lod0.ply $OUTDIR/total.stl 0\n%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total-unclean.stl 0 -F\n",basepath.c_str(),reductionfactor[0],basepath.c_str(),basepath.c_str());*/
+
 	
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
-       	system("./runvrip.sh");
+	//	system("./runvrip.sh");
       
 	
 	FILE *dicefp=fopen("./dice.sh","w+");
-	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydicegroup -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s " ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
-	for(int i=0; i < lodlevels; i++){
-	  fprintf(dicefp,"total-lod%d.ply ",i);
-	}
-	fprintf(dicefp,"\n");
+	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
+		"REDFACT=(35 20 25)\n"
+		"COUNT=1\n"
+		"cat diced.txt | while read MESHNAME; do\n"
+		"echo Simplifying $COUNT/$NUMDICED\n"
+		"\tfor f in `seq 0 2`\n"
+		"\tdo\n"
+		"\t\tif [ $f == 0 ]; then\n"
+		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$f.ply/g`\n"
+		"\t\telse\n"
+		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
+		"\t\tfi\n"
+		"\t\t%s/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}%% -By &> declog.txt\n"
+		"MESHNAME=$NEWNAME\n"
+		"\tdone\n"
+		"let COUNT=COUNT+1\n"
+		"done\n"
+		,basepath.c_str());
+		
 	fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
 		basepath.c_str());
 	fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);

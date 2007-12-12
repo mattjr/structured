@@ -373,8 +373,8 @@ int main( int argc, char *argv[ ] )
   }
     
   if(!have_dice){
-   
-    meshNames.push_back( "mesh-agg/out.ply");
+    fprintf(stderr,"No dice file\n");
+    return -1;
     
   }else{
     
@@ -408,30 +408,14 @@ int main( int argc, char *argv[ ] )
   
   int i;
   for( i=startRun; i < (int) totalMeshCount; i++){
-    
-   
-    if(verbose)
-      printf("Loading Surface %s ...\n",meshNames[i].c_str());
-  
-    GtsSurface *s = gts_surface_new(gts_surface_class(),
-					(GtsFaceClass *) t_face_class(),
-					 gts_edge_class(), t_vertex_class());
-    bool res=read_ply(meshNames[i].c_str(),s,verbose);
     GNode *bboxTree=loadBBox(i,gts_trans_map);
     if(!bboxTree){ 
       fprintf(stderr,"Failed to load bboxtree\n");
       exit(-1);
     }
      
-    if(!res ){
-      printf("Failed to load surface %s\n",
-	     meshNames[i].c_str());
-      exit(-1);
-    }
-    if(verbose)
-      printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(s),
-	     gts_surface_edge_number(s));
-    int initialEdges=gts_surface_edge_number(s);
+    
+    //int initialEdges=gts_surface_edge_number(s);
 
     int lodTexSize[]={max((int)(512*tex_scale),32),max((int)(256*tex_scale),32),max((int)(32*tex_scale),32)};
     float simpRatio[]={0.5,0.1,0.01};
@@ -442,10 +426,29 @@ int main( int argc, char *argv[ ] )
 
     for(int j=0; j < lodNum; j++){
        boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
-
-    
+       string str=meshNames[i];
+       char tmp[255];
+       sprintf(tmp,"-lod%d.ply",j);
+       int pos=str.find(".ply");
+       str.replace(pos, 4, string(tmp) );
+  
+       if(verbose)
+	 printf("Loading Surface %s ...\n",str.c_str());
+       
+       GtsSurface *surf = gts_surface_new(gts_surface_class(),
+				       (GtsFaceClass *) t_face_class(),
+					 gts_edge_class(), t_vertex_class());
+       bool res=read_ply(str.c_str(),surf,verbose);
        mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
-      GtsSurface *surf = gts_surface_new(gts_surface_class(),
+       if(!res ){
+      printf("Failed to load surface %s\n",
+	     meshNames[i].c_str());
+      exit(-1);
+    }
+    if(verbose)
+      printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(surf),
+	     gts_surface_edge_number(surf));
+       /* GtsSurface *surf = gts_surface_new(gts_surface_class(),
 					 (GtsFaceClass*)t_face_class(),
 					 gts_edge_class(), t_vertex_class());
       
@@ -464,7 +467,8 @@ int main( int argc, char *argv[ ] )
 	if(verbose)
 	  printf("Done\n");
 	gts_surface_copy(surf,s);
-      }
+	}*/
+       
       boost::xtime xt, xt2;
       long time;
       double secs;
@@ -516,8 +520,8 @@ int main( int argc, char *argv[ ] )
 	printf("Done Took %.2f secs\n",secs);
     }
     //Destory Surf
-    if(s)
-      gts_object_destroy (GTS_OBJECT (s)); 
+    //if(s)
+    //gts_object_destroy (GTS_OBJECT (s)); 
     outNames.push_back(lodnames);
     delete osgExp;
   }

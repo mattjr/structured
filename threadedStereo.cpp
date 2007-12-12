@@ -1422,10 +1422,11 @@ int main( int argc, char *argv[ ] )
       */
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n%s/vrip/bin/vripxftrans meshlist.txt -subvoldir $OUTDIR/ -n %d -passtotridec %s\n",aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir,basepath.c_str(),stereo_pair_count,passtotridec.c_str());
-	fprintf(conf_ply_file,"cd $OUTDIR\nfind . -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.033 1\" }' | head -n %d > surface.txt\n#find $SUBVOLDIR -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.1 0\" }' >> surface.txt\ncat surface.txt| cut -f1 -d\" \" | xargs %s/vrip/bin/plymerge  > unblended.ply\n%s/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n",stereo_pair_count,basepath.c_str(),basepath.c_str());
+	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n%s/vrip/bin/vripxftrans meshlist.txt -subvoldir $OUTDIR/ -n %d -passtotridec %s\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir,basepath.c_str(),stereo_pair_count,passtotridec.c_str());
+	fprintf(conf_ply_file,"cd $OUTDIR\nfind . -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.033 1\" }' | head -n %d > surface.txt\n#find $SUBVOLDIR -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.1 0\" }' >> surface.txt\n",stereo_pair_count);
 	if(have_mb_ply)
-	  fprintf(conf_ply_file,"echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > mb-0000.xf\nauv_mesh_align unblended.ply mb-0000.ply\n%s/vrip/bin/plyxform -f mb-0000.xf  < mb-0000.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n",basepath.c_str());
+	  fprintf(conf_ply_file,"cat surface.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > unblended.ply\n$BASEPATH/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n"
+"echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > mb-0000.xf\nauv_mesh_align unblended.ply mb-0000.ply\n$BASEPATH/vrip/bin/plyxform -f mb-0000.xf  < mb-0000.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n");
 	if(dist_run){
 	  fprintf(conf_ply_file,"cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total.ply surface.txt surface.txt  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -dec -meshcache $OUTDIR/\n",basepath.c_str());
 	}else{

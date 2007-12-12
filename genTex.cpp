@@ -409,11 +409,11 @@ int main( int argc, char *argv[ ] )
   int i;
   for( i=startRun; i < (int) totalMeshCount; i++){
     GNode *bboxTree=loadBBox(i,gts_trans_map);
-    if(!bboxTree){ 
+    /*if(!bboxTree){ 
       fprintf(stderr,"Failed to load bboxtree\n");
       exit(-1);
     }
-     
+    */
     
     //int initialEdges=gts_surface_edge_number(s);
 

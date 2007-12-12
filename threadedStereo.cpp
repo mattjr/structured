@@ -1440,7 +1440,7 @@ int main( int argc, char *argv[ ] )
 	
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
-	//	system("./runvrip.sh");
+       	system("./runvrip.sh");
       
 	
 	FILE *dicefp=fopen("./dice.sh","w+");

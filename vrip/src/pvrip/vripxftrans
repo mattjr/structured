@@ -70,7 +70,7 @@ proc plytrans2bbox {plyname outname passtotridec} {
    
     regsub ".tc.ply" $outname .xf xfFile
 
-    if { [file readable $xfFile] && [file readable $outname] } {
+    if { [file readable $xfFile] && [file readable $plyname] } {
 	#set cmd "exec plyxform -f $xfFile  < $plyname >  $outname "
 #	puts $cmd
 #	set cmd "cp $plyname $outname "

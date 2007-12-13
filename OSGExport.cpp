@@ -246,7 +246,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name){
 }
 
 
-osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback,float *zrange)
+osg::ref_ptr<osg::Group> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback,float *zrange)
 {
   
   MaterialToGeometryCollectionMap mtgcm;
@@ -350,8 +350,9 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
   if(verbose)
     printf("\n");
   gts_surface_foreach_face (s, (GtsFunc) add_face_mat_osg , data);
-  
-  osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+  osg::ref_ptr<osg::Group> group = new osg::Group;
+  osg::ref_ptr<osg::Geode> untextured = new osg::Geode;
+  osg::ref_ptr<osg::Geode> textured = new osg::Geode;
     
   // osgUtil::Tessellator tessellator;
     
@@ -368,14 +369,20 @@ osg::ref_ptr<osg::Geode> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
           //  tessellator.retessellatePolygons(*gc._geom);
         
 	  smoother.smooth(*gc._geom);
-            
-	  geode->addDrawable(gc._geom);
+	  if(gc._texturesActive)
+	    textured->addDrawable(gc._geom);
+	  else
+	    untextured->addDrawable(gc._geom);
+
 	  //  printf("Grilled Shrip %f %f %f %f\n",gc._texLimits.xMin(),
 	  //   gc._texLimits.xMax(),gc._texLimits.yMin(),gc._texLimits.yMax());
         }
 
     }
-  return geode;
+  group->addChild(textured.get());
+  group->addChild(untextured.get());
+  
+  return group;
 }
 
 
@@ -399,11 +406,11 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
  
   osg::ref_ptr<osg::Group> root_ptr = new osg::Group;
   ClippingMap cm;
-  osg::ref_ptr<osg::Geode> geode = convertGtsSurfListToGeometry(s,textures,&cm,tex_size,vmcallback,zrange);
+  osg::ref_ptr<osg::Group> group = convertGtsSurfListToGeometry(s,textures,&cm,tex_size,vmcallback,zrange);
   osg::Group * root = root_ptr.get();
 
-  geode->setName(out_name);
-  root->addChild(geode.get());
+  group->setName(out_name);
+  root->addChild(group.get());
 
 
   osgUtil::Optimizer optimzer;

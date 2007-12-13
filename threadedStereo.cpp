@@ -1449,34 +1449,60 @@ int main( int argc, char *argv[ ] )
 	}
 
 	
-	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unsimp.ply $OUTDIR/total.ply -By -H1500 -Q0.1 -S3 -F\n",basepath.c_str());
+	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unsimp.ply $OUTDIR/total.ply -Q0.1 -S3 -F\n",basepath.c_str());
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	if(!no_vrip)
 	  system("./runvrip.sh");
       
 	const char *texlogdir="/mnt/shared/log-tex";
+	const char *simplogdir="/mnt/shared/log-simp";
+
 	FILE *dicefp=fopen("./dice.sh","w+");
-	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
-	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(50 20 25)\n"
+	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" 
+		"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
+		"REDFACT=(0.0001 0.001 0.05)\n"
+		,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+	if(dist_run){
+	  fprintf(dicefp,"rm -f simpcmds\n"
+		  "cat diced.txt | while read MESHNAME; do\n"
+		  "SIMPCMD=\"cd $DICEDIR/\" \n"
+		  "\tfor f in `seq 0 2`\n"
+		  "\tdo\n"
+		  "\t\tif [ $f == 0 ]; then\n"
+		  "\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$f.ply/g`\n"
+		  "\t\telse\n"
+		  "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
+		  "\t\tfi\n"
+		  "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -By\"\n"
+		"MESHNAME=$NEWNAME\n"
+		"\tdone\n"
+		  "echo $SIMPCMD >> simpcmds\n"
+		  "done\n"
+		  "LOGDIR=%s\n"
+		  "cd $DICEDIR\n"
+		  "$BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n"
+		  ,simplogdir);
+	}else{
+	fprintf(dicefp,
+	
 		"COUNT=1\n"
 		"cat diced.txt | while read MESHNAME; do\n"
-		"echo Simplifying $COUNT/$NUMDICED\n"
 		"\tfor f in `seq 0 2`\n"
 		"\tdo\n"
+		"\t\techo -n  -e \"\\rSimplifying $COUNT/$NUMDICED $(($f +1 ))/3\"\n "
 		"\t\tif [ $f == 0 ]; then\n"
 		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$f.ply/g`\n"
 		"\t\telse\n"
 		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
 		"\t\tfi\n"
-		"\t\t%s/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}%% -By &> declog.txt\n"
+		"\t\t%s/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -By &> declog.txt\n"
 		"MESHNAME=$NEWNAME\n"
 		"\tdone\n"
 		"let COUNT=COUNT+1\n"
 		"done\n"
 		,basepath.c_str());
-		
+	}	
 	fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
 		basepath.c_str());
 	if(dist_run){
@@ -1502,7 +1528,7 @@ int main( int argc, char *argv[ ] )
 	fclose(dicefp);
 	if(!no_gen_tex)
 	  system("./dice.sh");
-	if(dist_run){
+	if(dist_run && !no_gen_tex){
 	  FILE *lodfp=fopen("lodgen.sh","w");
 	  fprintf(lodfp,"#!/bin/bash\n"
 		  "echo LODGen... \n"

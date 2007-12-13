@@ -318,8 +318,12 @@ int main(int argc ,char**argv){
   
   if(tgtStr.substr(tgtStr.size()-1) == "%")
     TargetFaceNum= (int) rint( cm.fn * 0.01 *atoi(tgtStr.substr(0,tgtStr.size()-1).c_str()));
-  else
-    TargetFaceNum=atoi(tgtStr.c_str());
+  else if(tgtStr.substr(tgtStr.size()-1) == "r"){
+    double res=atof(tgtStr.substr(0,tgtStr.size()-1).c_str());
+    TargetFaceNum= (int) rint(( cm.bbox.DimX() * cm.bbox.DimY()) / res);
+    fprintf(stderr,"Spacial Res %f faces %d currently %d\n", res,TargetFaceNum,cm.fn);
+  }else
+    TargetFaceNum=(int)rint(atof(tgtStr.c_str()));
   
   if(TargetFaceNum != 0){
     fprintf(stderr,"Reducing it to %i\n",TargetFaceNum);

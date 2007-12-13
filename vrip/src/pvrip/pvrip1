@@ -96,6 +96,7 @@ $SUBVOLDIR = "subvols_$$";
 $DOCRUNCH = 1;
 $DOCLEAN = 1;
 $DOMERGE = 1;
+$DODEC = 0;
 $BBOXESOKSTR = "";
 $RAMPSCALE = 2500 * $RES;
 $PASSTOVRIP = "";

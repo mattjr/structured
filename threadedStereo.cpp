@@ -1441,7 +1441,7 @@ int main( int argc, char *argv[ ] )
 	  fprintf(conf_ply_file,"cat surface.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > unblended.ply\n$BASEPATH/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n"
 "echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > mb-0000.xf\nauv_mesh_align unblended.ply mb-0000.ply\n$BASEPATH/vrip/bin/plyxform -f mb-0000.xf  < mb-0000.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n");
 	if(dist_run){
-	  fprintf(conf_ply_file,"cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply surface.txt surface.txt  0.033 100M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -meshcache $OUTDIR/\n",basepath.c_str());
+	  fprintf(conf_ply_file,"cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply surface.txt surface.txt  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -meshcache $OUTDIR/\n",basepath.c_str());
 	}else{
 	  fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt 0.033 -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),basepath.c_str());
 	}
@@ -1457,7 +1457,7 @@ int main( int argc, char *argv[ ] )
 	FILE *dicefp=fopen("./dice.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(35 20 25)\n"
+		"REDFACT=(50 20 25)\n"
 		"COUNT=1\n"
 		"cat diced.txt | while read MESHNAME; do\n"
 		"echo Simplifying $COUNT/$NUMDICED\n"
@@ -1479,7 +1479,7 @@ int main( int argc, char *argv[ ] )
 		basepath.c_str());
 	if(dist_run){
 	  fprintf(dicefp,"rm -f gentexcmds\n"
-		  "for i in `seq 0 $NUMDICED`;\n"
+		  "for i in `seq 0 $(($NUMDICED - 1))`;\n"
 		  "do\n"
 		  "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s -f %s --single-run $i\" >> gentexcmds\n"
 		  "done\n"

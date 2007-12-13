@@ -90,6 +90,8 @@ static FILE *conf_ply_file;
 static bool output_3ds=false;
 static char cov_file_name[255];
 static bool no_gen_tex=false;
+static bool no_vrip=false;
+
 static string basepath;
 static bool single_run=false;
 static int single_run_start=0;
@@ -344,6 +346,11 @@ static bool parse_args( int argc, char *argv[ ] )
 	  use_undistorted_images = true;
 	  i+=1;
 	}
+      else if( strcmp( argv[i], "--dist" ) == 0 )
+	{
+	  dist_run = true;
+	  i+=1;
+	}
       else if( strcmp( argv[i], "--ptscov" ) == 0 )
 	{
 	  output_pts_cov = true;
@@ -452,6 +459,12 @@ static bool parse_args( int argc, char *argv[ ] )
       else if(strcmp( argv[i], "--nogentex" ) == 0)
 	{
 	  no_gen_tex=true;
+
+	  i+=1;
+	}
+      else if(strcmp( argv[i], "--novrip" ) == 0)
+	{
+	  no_vrip=true;
 
 	  i+=1;
 	}
@@ -1428,24 +1441,21 @@ int main( int argc, char *argv[ ] )
 	  fprintf(conf_ply_file,"cat surface.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > unblended.ply\n$BASEPATH/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n"
 "echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > mb-0000.xf\nauv_mesh_align unblended.ply mb-0000.ply\n$BASEPATH/vrip/bin/plyxform -f mb-0000.xf  < mb-0000.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n");
 	if(dist_run){
-	  fprintf(conf_ply_file,"cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total.ply surface.txt surface.txt  0.033 1000M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -dec -meshcache $OUTDIR/\n",basepath.c_str());
+	  fprintf(conf_ply_file,"cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply surface.txt surface.txt  0.033 100M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -meshcache $OUTDIR/\n",basepath.c_str());
 	}else{
-	  fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt 0.033 -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unclean.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),basepath.c_str());
+	  fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt 0.033 -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),basepath.c_str());
 	}
-	int lodlevels=3;
-	int reductionfactor[] = {35,20,25};
-	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total.ply -By -H1500 -Q0.1 -S3 -F\n",basepath.c_str());
-
-		/*%s/tridecimator/tridecimator $OUTDIR/total.ply $OUTDIR/total-lod0.stl 0 -F\n%s/tridecimator/tridecimator $OUTDIR/total-lod0.ply $OUTDIR/total.stl 0\n%s/tridecimator/tridecimator $OUTDIR/total-unclean.ply $OUTDIR/total-unclean.stl 0 -F\n",basepath.c_str(),reductionfactor[0],basepath.c_str(),basepath.c_str());*/
 
 	
+	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unsimp.ply $OUTDIR/total.ply -By -H1500 -Q0.1 -S3 -F\n",basepath.c_str());
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
-       	system("./runvrip.sh");
+	if(!no_vrip)
+	  system("./runvrip.sh");
       
-	
+	const char *texlogdir="/mnt/shared/log-tex";
 	FILE *dicefp=fopen("./dice.sh","w+");
-	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" ,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
 		"REDFACT=(35 20 25)\n"
 		"COUNT=1\n"
@@ -1467,16 +1477,40 @@ int main( int argc, char *argv[ ] )
 		
 	fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
 		basepath.c_str());
-	fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
-	if(!hardware_compress)
-	  fprintf(dicefp,"--no-hardware-compress\n");
-	else
-	  fprintf(dicefp,"\n");
+	if(dist_run){
+	  fprintf(dicefp,"rm -f gentexcmds\n"
+		  "for i in `seq 0 $NUMDICED`;\n"
+		  "do\n"
+		  "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s -f %s --single-run $i\" >> gentexcmds\n"
+		  "done\n"
+		  "LOGDIR=%s\n"
+		  "cd $DICEDIR\n"
+		  "$BASEPATH/vrip/bin/loadbalance ~/loadlimit gentexcmds -logdir $LOGDIR\n"
+		  ,stereo_config_file_name.c_str(),cachedtexdir,texlogdir);
+	}else{  
+	  fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
+	  if(!hardware_compress)
+	    fprintf(dicefp,"--no-hardware-compress\n");
+	  else
+	    fprintf(dicefp,"\n");
+	  
+	}
 
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
 	if(!no_gen_tex)
 	  system("./dice.sh");
+	if(dist_run){
+	  FILE *lodfp=fopen("lodgen.sh","w");
+	  fprintf(lodfp,"#!/bin/bash\n"
+		  "echo LODGen... \n"
+		  "%s/lodgen\n",
+		  basepath.c_str());
+	 
+	  fchmod(fileno(lodfp),0777);
+	  fclose(lodfp);
+	  system("./lodgen.sh");
+	}
       }
     }
   }

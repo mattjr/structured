@@ -228,21 +228,52 @@ osg::ref_ptr<osg::Image>OSGExporter::cacheCompressedImage(IplImage *img,string n
   cvReleaseImage(&tex_img);
   return image;
 }
-osg::Image *OSGExporter::getCachedCompressedImage(string name){
+
+osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
+  IplImage *img=NULL;
   string ddsname=osgDB::getNameLessExtension(name);
   ddsname +=".dds";
-  if(FileExists(ddsname)){
-    return osgDB::readImageFile(ddsname);
-  }else{
-    IplImage *img = cvLoadImage(name.c_str(),-1);
-    if(!img)
-      printf("In Cached Compressed Img Load failed %s.\n",name.c_str());
-    else
-      return  cacheCompressedImage(img,ddsname,512).get();
-  }
-  //Should never get here
-  return NULL;
+  osg::Image *filecached=NULL;
+  osg::Image *retImage=new osg::Image;
+  if(compressed_img_cache.find(ddsname) == compressed_img_cache.end() || !compressed_img_cache[ddsname] ){
+  
+    if(FileExists(ddsname)){
+      filecached=osgDB::readImageFile(ddsname);
+    }else{
+      img = cvLoadImage(name.c_str(),-1);
+      if(!img){
+	printf("In Cached Compressed Img Load failed %s.\n",name.c_str());
+	return NULL;
+      }
+      else{
+	filecached=cacheCompressedImage(img,ddsname,size).get();
+      
+      }
+    }
+    
+    compressed_img_cache[ddsname]=filecached;
 
+  }else{  
+     filecached=compressed_img_cache[ddsname];
+  }
+
+  int resize=filecached->s();
+  unsigned int i=0;
+  for(i=0; i < filecached->getNumMipmapLevels()-1; i++){
+    if(resize <= size)
+      break;
+    resize >>= 1;
+  }
+
+  if(resize == 0)
+    resize=1;
+  
+  int datasize=filecached->getMipmapOffset(i+1)-filecached->getMipmapOffset(i);
+  unsigned char *newdata = new unsigned char[datasize];
+  memcpy(newdata,filecached->getMipmapData(i),datasize);
+  retImage->setImage(resize,resize,filecached->r(),filecached->getInternalTextureFormat() ,filecached->getPixelFormat(),filecached->getDataType(),newdata,osg::Image::USE_NEW_DELETE);
+  
+  return retImage;
 }
 
 
@@ -302,7 +333,7 @@ osg::ref_ptr<osg::Group> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	fflush(stdout); 
 	
 	 
-	osg::ref_ptr<osg::Image> image=getCachedCompressedImage(filename);
+	osg::ref_ptr<osg::Image> image=getCachedCompressedImage(filename,tex_size);
 	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	if (image.valid()){	     
 	  // create state

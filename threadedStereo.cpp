@@ -1461,8 +1461,13 @@ int main( int argc, char *argv[ ] )
 	FILE *dicefp=fopen("./dice.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" 
 		"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(0.0001 0.001 0.05)\n"
+		"REDFACT=(0.0001 0.001 0.01)\n"
 		,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
+	if(have_mb_ply)
+	  fprintf(dicefp,"BORDERFLAG=\n");
+	else
+	  fprintf(dicefp,"BORDERFLAG=\"-By\"\n");
+
 	if(dist_run){
 	  fprintf(dicefp,"rm -f simpcmds\n"
 		  "cat diced.txt | while read MESHNAME; do\n"
@@ -1474,14 +1479,14 @@ int main( int argc, char *argv[ ] )
 		  "\t\telse\n"
 		  "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
 		  "\t\tfi\n"
-		  "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -By\"\n"
+		  "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r $BORDERFLAG;chmod 0666 $NEWNAME\"\n"
 		"MESHNAME=$NEWNAME\n"
 		"\tdone\n"
 		  "echo $SIMPCMD >> simpcmds\n"
 		  "done\n"
 		  "LOGDIR=%s\n"
 		  "cd $DICEDIR\n"
-		  "$BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n"
+		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n"
 		  ,simplogdir);
 	}else{
 	fprintf(dicefp,
@@ -1513,7 +1518,7 @@ int main( int argc, char *argv[ ] )
 		  "done\n"
 		  "LOGDIR=%s\n"
 		  "cd $DICEDIR\n"
-		  "$BASEPATH/vrip/bin/loadbalance ~/loadlimit gentexcmds -logdir $LOGDIR\n"
+		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit gentexcmds -logdir $LOGDIR\n"
 		  ,stereo_config_file_name.c_str(),cachedtexdir,texlogdir);
 	}else{  
 	  fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);

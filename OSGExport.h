@@ -231,7 +231,8 @@ public:
   osg::ref_ptr< osg::Group>convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;
 ~OSGExporter();
  std::map<string,IplImage *> tex_image_cache;
-  osg::Image *getCachedCompressedImage(string name);
+  std::map<string,osg::Image *> compressed_img_cache;
+  osg::Image *getCachedCompressedImage(string name,int size);
   osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
 protected:
   osg::ref_ptr<osg::State> state;

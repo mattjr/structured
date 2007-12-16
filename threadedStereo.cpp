@@ -91,7 +91,7 @@ static bool output_3ds=false;
 static char cov_file_name[255];
 static bool no_gen_tex=false;
 static bool no_vrip=false;
-
+static double vrip_res=0.033;
 static string basepath;
 static bool single_run=false;
 static int single_run_start=0;
@@ -327,6 +327,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	  num_threads = atoi( argv[i+1] );
 	  i+=2;
 	}
+      else if( strcmp( argv[i], "--res" ) == 0 )
+	{
+	  if( i == argc-1 ) return false;
+	  vrip_res = atof( argv[i+1] );
+	  i+=2;
+	}
       else if( strcmp( argv[i], "--cov" ) == 0 )
 	{
 	  if( i == argc-1 ) return false;
@@ -551,7 +557,7 @@ cout << "     I suggest creating symlinks to those files allowing for varible co
   cout << "   --genmb               Generate MB mesh" << endl;
   cout << "   --split <num>         Split individual meshes passed to vrip at num" << endl;
   cout << "   --dicevol <vol>         Dice mesh to subvolume pieces of <vol> size" << endl;
-
+  cout << "   --res <resolution>      Vrip at resolution res default 0.033" << endl;
   cout << "   -p                      Pause after each frame." << endl;
   cout << "   --uv                    Output UV File." << endl;
   cout << "   --3ds                   Output 3ds Files." << endl;
@@ -1433,19 +1439,26 @@ int main( int argc, char *argv[ ] )
 	}
       }
       */
+      const char *texlogdir="/mnt/shared/log-tex";
+      const char *simplogdir="/mnt/shared/log-simp";
+      const char *vriplogdir="/mnt/shared/log-vrip";
+      
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
 	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n%s/vrip/bin/vripxftrans meshlist.txt -subvoldir $OUTDIR/ -n %d -passtotridec %s\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir,basepath.c_str(),stereo_pair_count,passtotridec.c_str());
+	fprintf(conf_ply_file,"VRIPLOGDIR=%s\n"
+	,vriplogdir);
 	fprintf(conf_ply_file,"cd $OUTDIR\nfind . -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.033 1\" }' | head -n %d > surface.txt\n#find $SUBVOLDIR -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.1 0\" }' >> surface.txt\n"
 		"find . -name 'mb-*.ply' | sort  > mbmeshes.txt\n",stereo_pair_count);
 	if(have_mb_ply)
 	  fprintf(conf_ply_file,"cat surface.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > unblended.ply\n$BASEPATH/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n"
-		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > mb-joined.ply\n"
-"echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > mb-joined.xf\nauv_mesh_align unblended.ply mb-joined.ply\n$BASEPATH/vrip/bin/plyxform -f mb-joined.xf  < mb-joined.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n");
+		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > joined-mb.ply\n"
+"echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\nauv_mesh_align unblended.ply joined-mb.ply\n$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n");
 	if(dist_run){
-	  fprintf(conf_ply_file,"cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply surface.txt surface.txt  0.033 700M ~/loadlimit -logdir /mnt/shared/log -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -meshcache $OUTDIR/\n",basepath.c_str());
+	  fprintf(conf_ply_file,	"find $VRIPLOGDIR -name 'loadbal*' | xargs rm\n"
+		  "cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply surface.txt surface.txt  %f 700M ~/loadlimit -logdir $VRIPLOGDIR -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -meshcache $OUTDIR/\n",basepath.c_str(),vrip_res);
 	}else{
-	  fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt 0.033 -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),basepath.c_str());
+	  fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt %f -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),vrip_res,basepath.c_str());
 	}
 
 	
@@ -1455,9 +1468,8 @@ int main( int argc, char *argv[ ] )
 	if(!no_vrip)
 	  system("./runvrip.sh");
       
-	const char *texlogdir="/mnt/shared/log-tex";
-	const char *simplogdir="/mnt/shared/log-simp";
 
+	
 	FILE *dicefp=fopen("./dice.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" 
 		"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
@@ -1469,7 +1481,10 @@ int main( int argc, char *argv[ ] )
 	  fprintf(dicefp,"BORDERFLAG=\"-By\"\n");
 
 	if(dist_run){
-	  fprintf(dicefp,"rm -f simpcmds\n"
+	  fprintf(dicefp, "LOGDIR=%s\n"
+		  "find $LOGDIR -name 'loadbal*' | xargs rm\n"
+		  "find $DICEDIR -name '*lod*' | xargs rm\n"
+		  "rm -f simpcmds\n"
 		  "cat diced.txt | while read MESHNAME; do\n"
 		  "SIMPCMD=\"cd $DICEDIR/\" \n"
 		  "\tfor f in `seq 0 2`\n"
@@ -1484,7 +1499,7 @@ int main( int argc, char *argv[ ] )
 		"\tdone\n"
 		  "echo $SIMPCMD >> simpcmds\n"
 		  "done\n"
-		  "LOGDIR=%s\n"
+		 
 		  "cd $DICEDIR\n"
 		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n"
 		  ,simplogdir);
@@ -1518,7 +1533,7 @@ int main( int argc, char *argv[ ] )
 		  "done\n"
 		  "LOGDIR=%s\n"
 		  "cd $DICEDIR\n"
-		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit gentexcmds -logdir $LOGDIR\n"
+		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit-hwcard gentexcmds -logdir $LOGDIR\n"
 		  ,stereo_config_file_name.c_str(),cachedtexdir,texlogdir);
 	}else{  
 	  fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);

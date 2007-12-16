@@ -74,6 +74,7 @@ static vector<string> mb_ply_filenames;
 static bool have_mb_ply=false;
 static bool have_cov_file=false;
 static string stereo_calib_file_name;
+static bool no_simp=false;
 static bool use_rect_images=false;
 static FILE *uv_fp;
 static ofstream file_name_list;
@@ -357,6 +358,11 @@ static bool parse_args( int argc, char *argv[ ] )
 	  dist_run = true;
 	  i+=1;
 	}
+      else if( strcmp( argv[i], "--nosimp" ) == 0 )
+	{
+	  no_simp = true;
+	  i+=1;
+	}
       else if( strcmp( argv[i], "--ptscov" ) == 0 )
 	{
 	  output_pts_cov = true;
@@ -565,7 +571,7 @@ cout << "     I suggest creating symlinks to those files allowing for varible co
   cout << "   --ptscov                Output pts and cov ." << endl;
   cout << "   --stereo-config              Specify diffrent stereo config" << endl;
  cout << "   --contents-file         Specify diffrent contents file ." << endl;
-
+ cout << "   --nosimp         Specify diffrent contents file ." << endl;
   cout << endl;
 }
 
@@ -1479,9 +1485,9 @@ int main( int argc, char *argv[ ] )
 	  fprintf(dicefp,"BORDERFLAG=\n");
 	else
 	  fprintf(dicefp,"BORDERFLAG=\"-By\"\n");
-
-	if(dist_run){
-	  fprintf(dicefp, "LOGDIR=%s\n"
+	if(!no_simp){
+	  if(dist_run){
+	    fprintf(dicefp, "LOGDIR=%s\n"
 		  "find $LOGDIR -name 'loadbal*' | xargs rm\n"
 		  "find $DICEDIR -name '*lod*' | xargs rm\n"
 		  "rm -f simpcmds\n"
@@ -1501,29 +1507,31 @@ int main( int argc, char *argv[ ] )
 		  "done\n"
 		 
 		  "cd $DICEDIR\n"
-		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n"
-		  ,simplogdir);
-	}else{
-	fprintf(dicefp,
-	
-		"COUNT=1\n"
-		"cat diced.txt | while read MESHNAME; do\n"
-		"\tfor f in `seq 0 2`\n"
-		"\tdo\n"
-		"\t\techo -n  -e \"\\rSimplifying $COUNT/$NUMDICED $(($f +1 ))/3\"\n "
-		"\t\tif [ $f == 0 ]; then\n"
-		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$f.ply/g`\n"
-		"\t\telse\n"
-		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
-		"\t\tfi\n"
-		"\t\t%s/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -By &> declog.txt\n"
-		"MESHNAME=$NEWNAME\n"
-		"\tdone\n"
-		"let COUNT=COUNT+1\n"
-		"done\n"
-		,basepath.c_str());
-	}	
-	fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
+		    "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n"
+		    ,simplogdir);
+	  }else{
+	    fprintf(dicefp,
+		    
+		    "COUNT=1\n"
+		    "cat diced.txt | while read MESHNAME; do\n"
+		    "\tfor f in `seq 0 2`\n"
+		    "\tdo\n"
+		    "\t\techo -n  -e \"\\rSimplifying $COUNT/$NUMDICED $(($f +1 ))/3\"\n "
+		    "\t\tif [ $f == 0 ]; then\n"
+		    "\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$f.ply/g`\n"
+		    "\t\telse\n"
+		    "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
+		    "\t\tfi\n"
+		    "\t\t%s/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -By &> declog.txt\n"
+		    "MESHNAME=$NEWNAME\n"
+		    "\tdone\n"
+		    "let COUNT=COUNT+1\n"
+		    "done\n"
+		    ,basepath.c_str());
+	  }	
+	}
+
+	  fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
 		basepath.c_str());
 	if(dist_run){
 	  fprintf(dicefp,"rm -f gentexcmds\n"
@@ -1538,9 +1546,11 @@ int main( int argc, char *argv[ ] )
 	}else{  
 	  fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
 	  if(!hardware_compress)
-	    fprintf(dicefp,"--no-hardware-compress\n");
-	  else
-	    fprintf(dicefp,"\n");
+	    fprintf(dicefp,"--no-hardware-compress ");
+	  if(no_simp)
+	    fprintf(dicefp,"--nosimp");
+	  
+	  fprintf(dicefp,"\n");
 	  
 	}
 

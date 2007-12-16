@@ -427,11 +427,12 @@ int main( int argc, char *argv[ ] )
     for(int j=0; j < lodNum; j++){
        boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
        string str=meshNames[i];
-       char tmp[255];
-       sprintf(tmp,"-lod%d.ply",j);
-       int pos=str.find(".ply");
-       str.replace(pos, 4, string(tmp) );
-  
+       if(!no_simp){
+	 char tmp[255];
+	 sprintf(tmp,"-lod%d.ply",j);
+	 int pos=str.find(".ply");
+	 str.replace(pos, 4, string(tmp) );
+       }
        if(verbose)
 	 printf("Loading Surface %s ...\n",str.c_str());
        

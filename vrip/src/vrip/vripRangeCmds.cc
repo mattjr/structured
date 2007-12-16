@@ -419,6 +419,161 @@ Vrip_RangeScanNoTreeRLECmd(ClientData, Tcl_Interp *interp, int argc, const char 
 
 
 int
+Vrip_RangeScanXFRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[])
+{
+ 
+    if (argc != 4  ) {
+	interp->result = "wrong number of args";
+	return TCL_ERROR;
+    }
+
+    if (backRLEGrid == NULL || frontRLEGrid == NULL) {
+	interp->result = "Grid not allocated.";
+	return TCL_ERROR;
+    }
+    
+    if (!SuperQuiet)
+      printf("Integrating mesh %s/%s...\r", argv[2],argv[3]);
+  
+    initOccFunc();
+
+    start_time();
+
+    if (!Quiet)
+	printf("Assiging confidences...\n");
+
+    fflush(stdout);
+
+    Mesh *mesh;
+    if (UseTails && FillGaps) {
+	mesh = readMeshFromPly(argv[1], TRUE, FALSE);
+    }
+    else  {
+	mesh = readMeshFromPly(argv[1], FALSE, FALSE);
+    }
+
+    if (mesh == NULL)
+	return TCL_ERROR;
+
+    //fprintf(stderr, "Not assigning confidence!!\n");
+    if (!mesh->hasConfidence)
+       doConfidence(mesh);
+
+    end_time();
+
+    TesselationTime = time_elapsed();
+
+    start_time();
+
+    // parse_transformation(mesh, interp, argc, argv);
+    /* argc == 2, no transformation */
+    parse_transformation(mesh, interp, 2, argv);
+
+    Vec3f newdir;
+    float angle;
+    if (!mesh->isWarped)
+	angle = 0;
+    else if (mesh->isRightMirrorOpen)
+	angle = 30;
+    else
+	angle = -30;
+
+    Vec3f dir(-sin(RAD(angle)), 0, -cos(RAD(angle)));
+
+    Matrix4f rot;
+    mesh->quat.toMatrix(rot);
+
+    rot.multVec(dir, newdir);
+
+    if (Verbose)
+	printf("View dir: [%f, %f, %f]\n", newdir.x, newdir.y, newdir.z);
+    vec3f yuk;
+    yuk[0] = newdir.x;
+    yuk[1] = newdir.y;
+    yuk[2] = newdir.z;
+
+
+    OrthoShear *shear = computeShear(yuk);
+
+    float sampleSpacing = sqrt(1 + shear->sx*shear->sx + shear->sy*shear->sy);
+
+    if (UseEdgeLength) {
+       MAX_DEPTH_DIFFERENCE = MaxEdgeLength/sampleSpacing;
+    } 
+    else {
+       MAX_DEPTH_DIFFERENCE = tan(acos(MinViewDot))*
+	  backRLEGrid->resolution/sampleSpacing;
+    }
+
+    configureGrid(&frontRLEGrid, &backRLEGrid, shear);
+
+    BBox3f *gbbox = getBBox(backRLEGrid);
+
+    prepareRender(mesh, shear, gbbox, backRLEGrid->resolution, 
+		  theDepthMap, FALSE);
+    softRenderConfidence(mesh);
+
+    updateRenderPhoto(theDepthMap);
+    Tcl_Eval(interp, "update");
+
+    if (UseTails) {
+	if (FillBackground) {
+	    fillBackground(theDepthMap);
+	} else if (DoSilhouette) {
+	   makeSilhouette(theDepthMap);
+	}
+    }
+
+    theDepthMap->tagCellsForResampling();
+    theDepthMap->fillTree(2);
+
+    end_time();
+
+    ResampleRangeTime = time_elapsed();
+
+    start_time();
+
+    if (UseTails) {
+	if (OneLineAtATime) {
+	    for (int zz = 0; zz < backRLEGrid->zdim; zz++) {
+		printf("\rProcessing slice %d of %d...", 
+		       zz+1, backRLEGrid->zdim);
+		fflush(stdout);
+		int somethingNew =
+		    scanConvertTreeDragTailsOneLine(backRLEGrid, frontRLEGrid, 
+						    shear, theDepthMap, zz);
+		if (somethingNew) {
+		    updatePhotoSlice();
+		    Tcl_Eval(interp, "update");
+		}
+		swapgrids();
+	    }
+	    printf("\n");
+	} else {
+	    scanConvertTreeDragTails(backRLEGrid, frontRLEGrid, shear, theDepthMap);
+	}
+    }
+    else {
+	//scanConvert(backRLEGrid, frontRLEGrid, shear, theDepthMap);
+	//scanConvertTree(backRLEGrid, frontRLEGrid, shear, theDepthMap);
+	scanConvertTreeFast(backRLEGrid, frontRLEGrid, shear, theDepthMap);
+    }
+
+    end_time();
+
+    MergeTime = time_elapsed();
+    //if (!SuperQuiet)
+      //printf("Time to process: %.2f sec\n", 
+      //      TesselationTime + ResampleRangeTime + MergeTime);
+
+    delete shear;
+    delete gbbox;
+    delete mesh;
+
+    return TCL_OK;    
+}
+
+int
 Vrip_RangeScanRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[])
 {
     if (argc != 2 && argc != 3 && argc != 6 && argc != 9 ) {
@@ -569,160 +724,6 @@ Vrip_RangeScanRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[
 
     return TCL_OK;    
 }
-
-int
-Vrip_RangeScanXFRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[])
-{
-    if (argc != 2 && argc != 3 && argc != 6 && argc != 9 ) {
-	interp->result = "wrong number of args";
-	return TCL_ERROR;
-    }
-
-    if (backRLEGrid == NULL || frontRLEGrid == NULL) {
-	interp->result = "Grid not allocated.";
-	return TCL_ERROR;
-    }
-    if(!SuperQuiet)
-    printf("\rIntegrating mesh %s/%s...", argv[4],argv[5]);
-  
-    initOccFunc();
-
-    start_time();
-
-    if (!Quiet)
-	printf("Assiging confidences...\n");
-
-    fflush(stdout);
-
-    Mesh *mesh;
-    if (UseTails && FillGaps) {
-	mesh = readMeshFromPly(argv[1], TRUE, FALSE);
-    }
-    else  {
-	mesh = readMeshFromPly(argv[1], FALSE, FALSE);
-    }
-
-    if (mesh == NULL)
-	return TCL_ERROR;
-
-    //fprintf(stderr, "Not assigning confidence!!\n");
-    if (!mesh->hasConfidence)
-       doConfidence(mesh);
-
-    end_time();
-
-    TesselationTime = time_elapsed();
-
-    start_time();
-
-    parse_transformation(mesh, interp, argc, argv);
-
-    Vec3f newdir;
-    float angle;
-    if (!mesh->isWarped)
-	angle = 0;
-    else if (mesh->isRightMirrorOpen)
-	angle = 30;
-    else
-	angle = -30;
-
-    Vec3f dir(-sin(RAD(angle)), 0, -cos(RAD(angle)));
-
-    Matrix4f rot;
-    mesh->quat.toMatrix(rot);
-
-    rot.multVec(dir, newdir);
-
-    if (Verbose)
-	printf("View dir: [%f, %f, %f]\n", newdir.x, newdir.y, newdir.z);
-    vec3f yuk;
-    yuk[0] = newdir.x;
-    yuk[1] = newdir.y;
-    yuk[2] = newdir.z;
-
-
-    OrthoShear *shear = computeShear(yuk);
-
-    float sampleSpacing = sqrt(1 + shear->sx*shear->sx + shear->sy*shear->sy);
-
-    if (UseEdgeLength) {
-       MAX_DEPTH_DIFFERENCE = MaxEdgeLength/sampleSpacing;
-    } 
-    else {
-       MAX_DEPTH_DIFFERENCE = tan(acos(MinViewDot))*
-	  backRLEGrid->resolution/sampleSpacing;
-    }
-
-    configureGrid(&frontRLEGrid, &backRLEGrid, shear);
-
-    BBox3f *gbbox = getBBox(backRLEGrid);
-
-    prepareRender(mesh, shear, gbbox, backRLEGrid->resolution, 
-		  theDepthMap, FALSE);
-    softRenderConfidence(mesh);
-
-    updateRenderPhoto(theDepthMap);
-    Tcl_Eval(interp, "update");
-
-    if (UseTails) {
-	if (FillBackground) {
-	    fillBackground(theDepthMap);
-	} else if (DoSilhouette) {
-	   makeSilhouette(theDepthMap);
-	}
-    }
-
-    theDepthMap->tagCellsForResampling();
-    theDepthMap->fillTree(2);
-
-    end_time();
-
-    ResampleRangeTime = time_elapsed();
-
-    start_time();
-
-    if (UseTails) {
-	if (OneLineAtATime) {
-	    for (int zz = 0; zz < backRLEGrid->zdim; zz++) {
-		printf("\rProcessing slice %d of %d...", 
-		       zz+1, backRLEGrid->zdim);
-		fflush(stdout);
-		int somethingNew =
-		    scanConvertTreeDragTailsOneLine(backRLEGrid, frontRLEGrid, 
-						    shear, theDepthMap, zz);
-		if (somethingNew) {
-		    updatePhotoSlice();
-		    Tcl_Eval(interp, "update");
-		}
-		swapgrids();
-	    }
-	    printf("\n");
-	} else {
-	    scanConvertTreeDragTails(backRLEGrid, frontRLEGrid, shear, theDepthMap);
-	}
-    }
-    else {
-	//scanConvert(backRLEGrid, frontRLEGrid, shear, theDepthMap);
-	//scanConvertTree(backRLEGrid, frontRLEGrid, shear, theDepthMap);
-	scanConvertTreeFast(backRLEGrid, frontRLEGrid, shear, theDepthMap);
-    }
-
-    end_time();
-
-    MergeTime = time_elapsed();
-    //if (!SuperQuiet)
-      //printf("Time to process: %.2f sec\n", 
-      //      TesselationTime + ResampleRangeTime + MergeTime);
-
-    delete shear;
-    delete gbbox;
-    delete mesh;
-
-    return TCL_OK;    
-}
-
-
-    
   
 
 int

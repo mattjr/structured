@@ -1464,7 +1464,7 @@ int main( int argc, char *argv[ ] )
 	  fprintf(conf_ply_file,	"find $VRIPLOGDIR -name 'loadbal*' | xargs rm\n"
 		  "cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply surface.txt surface.txt  %f 700M ~/loadlimit -logdir $VRIPLOGDIR -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -meshcache $OUTDIR/\n",basepath.c_str(),vrip_res);
 	}else{
-	  fprintf(conf_ply_file,"%s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt %f -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),vrip_res,basepath.c_str());
+	  fprintf(conf_ply_file,"/usr/bin/time -f \"Vrip took %%E\" %s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt %f -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),vrip_res,basepath.c_str());
 	}
 
 	

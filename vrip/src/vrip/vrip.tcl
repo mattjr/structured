@@ -876,8 +876,8 @@ proc newFromConf {gridFile confFile boundMesh voxelSize} {
 	while {$numchars > 0} {
 	    set curmesh  [lindex $line 0]
 	    #regsub .ply $curmesh .xf xfFile;
-	    bmesh $curmesh 
-	    #[lindex $line 1] [lindex $line 2]  $filenum  $totalmeshes
+	    bmeshxf $curmesh $filenum  $totalmeshes
+	    #[lindex $line 1] [lindex $line 2]  
 	    set numchars [gets $fileid line]
 	    incr filenum
 	}

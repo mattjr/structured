@@ -97,6 +97,7 @@ static string basepath;
 static bool single_run=false;
 static int single_run_start=0;
 static int single_run_stop=0;
+static bool dice_lod=false;
 static int non_cached_meshes=0;
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[255];
@@ -358,6 +359,11 @@ static bool parse_args( int argc, char *argv[ ] )
 	  dist_run = true;
 	  i+=1;
 	}
+  else if( strcmp( argv[i], "--dicelod" ) == 0 )
+	{
+	  dice_lod = true;
+	  i+=1;
+	}
       else if( strcmp( argv[i], "--nosimp" ) == 0 )
 	{
 	  no_simp = true;
@@ -569,6 +575,7 @@ cout << "     I suggest creating symlinks to those files allowing for varible co
   cout << "   --3ds                   Output 3ds Files." << endl;
   cout << "   --dense-features        Dense features ." << endl;
   cout << "   --ptscov                Output pts and cov ." << endl;
+  cout << "   --dicelod                Dice lods" << endl;
   cout << "   --stereo-config              Specify diffrent stereo config" << endl;
  cout << "   --contents-file         Specify diffrent contents file ." << endl;
  cout << "   --nosimp         Specify diffrent contents file ." << endl;
@@ -1465,6 +1472,10 @@ int main( int argc, char *argv[ ] )
 		  "cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply surface.txt surface.txt  %f 700M ~/loadlimit -logdir $VRIPLOGDIR -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -meshcache $OUTDIR/\n",basepath.c_str(),vrip_res);
 	}else{
 	  fprintf(conf_ply_file,"/usr/bin/time -f \"Vrip took %%E\" %s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt %f -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),vrip_res,basepath.c_str());
+	  if(dice_lod){
+	    fprintf(conf_ply_file,"/usr/bin/time -f \"Vrip took %%E\" %s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt %f -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp-lod1.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),0.2,basepath.c_str());
+	    fprintf(conf_ply_file,"/usr/bin/time -f \"Vrip took %%E\" %s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt %f -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp-lod2.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),0.33,basepath.c_str());
+	  }
 	}
 
 	
@@ -1477,13 +1488,18 @@ int main( int argc, char *argv[ ] )
 
 	
 	FILE *dicefp=fopen("./dice.sh","w+");
-	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n%s/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n" 
-		"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(0.0001 0.001 0.01)\n"
-		,basepath.c_str(),basepath.c_str(),subvol,eps,"diced");
-	if(have_mb_ply)
-	  fprintf(dicefp,"BORDERFLAG=\n");
+	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n",basepath.c_str());
+	if(!dice_lod)
+	  fprintf(dicefp,"$BASEPATH/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n",subvol,eps,"diced");			  
 	else
+	  fprintf(dicefp,"$BASEPATH/vrip/bin/plydicegroup -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s  total-unsimp.ply total-unsimp-lod1.ply total-unsimp-lod2.ply | tee diced.txt\n",subvol,eps,"diced");	
+	
+	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
+		"REDFACT=(0.01 0 0.1)\n");
+		
+	/*	if(have_mb_ply)
+	  fprintf(dicefp,"BORDERFLAG=\n");
+	  else*/
 	  fprintf(dicefp,"BORDERFLAG=\"-By\"\n");
 	if(!no_simp){
 	  if(dist_run){
@@ -1522,7 +1538,7 @@ int main( int argc, char *argv[ ] )
 		    "\t\telse\n"
 		    "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
 		    "\t\tfi\n"
-		    "\t\t%s/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -By &> declog.txt\n"
+		    "\t\t%s/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 &> declog-$f.txt\n"
 		    "MESHNAME=$NEWNAME\n"
 		    "\tdone\n"
 		    "let COUNT=COUNT+1\n"

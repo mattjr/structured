@@ -12,6 +12,7 @@ using namespace std;
 #include <vcg/simplex/edge/edge.h>
 #include <vcg/complex/trimesh/base.h>
 #include <vcg/complex/trimesh/hole.h>
+
 #include <vcg/math/quadric.h>
 #include <vcg/complex/trimesh/clean.h>
 #include<vcg/complex/trimesh/base.h>
@@ -23,7 +24,7 @@ using namespace std;
 #include <wrap/io_trimesh/import.h>
 #include <wrap/io_trimesh/export_ply.h>
 #include <wrap/io_trimesh/export_stl.h>
-
+#include <wrap/io_trimesh/export_vrml.h>
 // update
 #include <vcg/complex/trimesh/update/topology.h>
 #include <vcg/complex/trimesh/update/bounding.h>
@@ -242,8 +243,15 @@ int main(int argc ,char**argv){
 
   int t1,t2,t3;
   MyTriEdgeCollapse::Params()=qparams;
+  string fname(argv[1]);
+  string format=fname.substr(fname.length()-3);
+  int err;
+  if(format == "stl")
+    err=vcg::tri::io::ImporterSTL<CMeshO>::Open(cm,argv[1]);
+  else if(format == "ply")
+    err=vcg::tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1]);
 
-  int err=vcg::tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1]);
+
   if(err) {
     fprintf(stderr,"Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::Importer<CMeshO>::ErrorMsg(err));
     exit(-1);
@@ -320,7 +328,10 @@ int main(int argc ,char**argv){
     TargetFaceNum= (int) rint( cm.fn * 0.01 *atoi(tgtStr.substr(0,tgtStr.size()-1).c_str()));
   else if(tgtStr.substr(tgtStr.size()-1) == "r"){
     double res=atof(tgtStr.substr(0,tgtStr.size()-1).c_str());
-    TargetFaceNum= (int) rint(( cm.bbox.DimX() * cm.bbox.DimY()) / res);
+    if(res <= 0)
+      TargetFaceNum=0;
+    else
+      TargetFaceNum= (int) rint(( cm.bbox.DimX() * cm.bbox.DimY()) / res);
     fprintf(stderr,"Spacial Res %f faces %d currently %d\n", res,TargetFaceNum,cm.fn);
   }else
     TargetFaceNum=(int)rint(atof(tgtStr.c_str()));
@@ -383,7 +394,7 @@ int main(int argc ,char**argv){
   string filename=string(argv[2]);
   
 
-  string format=filename.substr(filename.length()-3);
+  format=filename.substr(filename.length()-3);
 if(filename == "stdout"){
  vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,stdout);
  }else if(format == "stl")	{
@@ -399,7 +410,14 @@ if(filename == "stdout"){
       fprintf(stderr,"Saving Error %s for file %s\n", vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result),filename.c_str());
       return -1;
     }
-  }else {
+ }else if(format == "wrl"){
+  int result = vcg::tri::io::ExporterWRL<CMeshO>::Save(cm,filename.c_str());
+    if(result!=0){
+      fprintf(stderr,"Saving Error %s for file %s\n", vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result),filename.c_str());
+      return -1;
+    }
+ }else{
+
     fprintf(stderr,"Format %s unknown\n",format.c_str());
     return -1;
   }

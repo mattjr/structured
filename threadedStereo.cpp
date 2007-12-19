@@ -1495,11 +1495,11 @@ int main( int argc, char *argv[ ] )
 	  fprintf(dicefp,"$BASEPATH/vrip/bin/plydicegroup -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s  total-unsimp.ply total-unsimp-lod1.ply total-unsimp-lod2.ply | tee diced.txt\n",subvol,eps,"diced");	
 	
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(0.005 0 0.05)\n");
+		"REDFACT=(0.005 0.01 0.05)\n");
 		
-	/*	if(have_mb_ply)
+       	if(have_mb_ply)
 	  fprintf(dicefp,"BORDERFLAG=\n");
-	  else*/
+	else
 	  fprintf(dicefp,"BORDERFLAG=\"-By\"\n");
 	if(!no_simp){
 	  if(dist_run){

@@ -236,7 +236,7 @@ public:
   osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
 protected:
   osg::ref_ptr<osg::State> state;
-  
+ 
   void compress(osg::Texture2D* texture2D);
   osg::Texture::InternalFormatMode internalFormatMode;
     MyGraphicsContext *context;

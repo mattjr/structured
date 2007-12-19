@@ -103,6 +103,7 @@ void OSGExporter::compress(osg::Texture2D* texture2D){
     texture2D->setUnRefImageDataAfterApply(unrefImageDataAfterApply);
 
     image->readImageFromCurrentTexture(state->getContextID(),true);
+ 
     texture2D->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
   }
 
@@ -257,6 +258,9 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
      filecached=compressed_img_cache[ddsname];
   }
 
+  if(filecached->s() == size && filecached->t() == size)
+    return filecached;
+
   int resize=filecached->s();
   unsigned int i=0;
   for(i=0; i < filecached->getNumMipmapLevels()-1; i++){
@@ -267,11 +271,29 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 
   if(resize == 0)
     resize=1;
-  
-  int datasize=filecached->getMipmapOffset(i+1)-filecached->getMipmapOffset(i);
+ 
+
+  int datasize=filecached->getTotalSizeInBytesIncludingMipmaps()-filecached->getMipmapOffset(i);
   unsigned char *newdata = new unsigned char[datasize];
   memcpy(newdata,filecached->getMipmapData(i),datasize);
   retImage->setImage(resize,resize,filecached->r(),filecached->getInternalTextureFormat() ,filecached->getPixelFormat(),filecached->getDataType(),newdata,osg::Image::USE_NEW_DELETE);
+  osg::Image::MipmapDataType mipmaps;
+  mipmaps=filecached->getMipmapLevels();
+ 
+  int newsize= mipmaps[i]-mipmaps[i-1];
+  int base=mipmaps[i];
+ 
+  std::vector<unsigned int>newmipmap;
+
+
+
+  for(int k=i; k < (int)mipmaps.size(); k++){
+    newmipmap.push_back(newsize+(mipmaps[k]-base));
+  }
+ 
+  retImage->setMipmapLevels(newmipmap);
+
+  
   
   return retImage;
 }
@@ -334,6 +356,7 @@ osg::ref_ptr<osg::Group> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	
 	 
 	osg::ref_ptr<osg::Image> image=getCachedCompressedImage(filename,tex_size);
+
 	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	if (image.valid()){	     
 	  // create state
@@ -370,7 +393,7 @@ osg::ref_ptr<osg::Group> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	  gc._geom->setTexCoordArray(0,texcoordArray);
 	  
 	  //	  if(compress_tex && _hardware_compress && !do_atlas)
-	  //compress(texture);
+	  //compress2(texture);
 	  
 	 
 	  osg_tex_ptrs.push_back(texture);

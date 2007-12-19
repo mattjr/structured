@@ -1479,7 +1479,7 @@ int main( int argc, char *argv[ ] )
 	}
 
 	
-	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unsimp.ply $OUTDIR/total.ply -Q0.1 -S3 -F\n",basepath.c_str());
+	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unsimp.ply $OUTDIR/total.ply -Q0.2 -F\n",basepath.c_str());
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	if(!no_vrip)
@@ -1516,7 +1516,7 @@ int main( int argc, char *argv[ ] )
 		  "\t\telse\n"
 		  "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
 		  "\t\tfi\n"
-		  "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r $BORDERFLAG;chmod 0666 $NEWNAME\"\n"
+		  "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r $BORDERFLAG -S3;chmod 0666 $NEWNAME\"\n"
 		"MESHNAME=$NEWNAME\n"
 		"\tdone\n"
 		  "echo $SIMPCMD >> simpcmds\n"

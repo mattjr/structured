@@ -509,10 +509,12 @@ int main( int argc, char *argv[ ] )
       char outtex[255];
       string outname_str(out_name);
       strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-t.ive")).c_str());
-      
-      texname.push_back(osgDB::getSimpleFileName(outtex));
+      if(FileExists(outtex))
+	texname.push_back(osgDB::getSimpleFileName(outtex));
+
       strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-u.ive")).c_str());
-      untexname.push_back(osgDB::getSimpleFileName(outtex));
+      if(FileExists(outtex))
+	untexname.push_back(osgDB::getSimpleFileName(outtex));
       if(j == (lodNum -1))
 	outNodes.push_back(node);
 
@@ -528,8 +530,10 @@ int main( int argc, char *argv[ ] )
     //Destory Surf
     //if(s)
     //gts_object_destroy (GTS_OBJECT (s)); 
-    lodnames.push_back(untexname);    
-    lodnames.push_back(texname);
+    if(untexname.size() == 3)
+      lodnames.push_back(untexname); 
+    if(texname.size() == 3)
+      lodnames.push_back(texname);
 
     outNames.push_back(lodnames);
     delete osgExp;

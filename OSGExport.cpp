@@ -1524,16 +1524,10 @@ void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector< vect
   for(int i=0; i < (int)nodes.size(); i++){
     osg::Node *tmp,*tmp2;
     tmp=tmp2=NULL;
-    if(nodes[i]->getNumChildren() > 0){
-      tmp=create_paged_lod(nodes[i]->getChild(0),lodnames[i][0]);
-    }
-    if(nodes[i]->getNumChildren() > 1)
-      tmp2=create_paged_lod(nodes[i]->getChild(1),lodnames[i][1]);
-    
-    if(tmp)
+    for(int j=0; j < (int)lodnames[i].size(); j++){
+      tmp=create_paged_lod(nodes[i]->getChild(j),lodnames[i][j]);
       total->addChild(tmp);
-    if(tmp2)
-      total->addChild(tmp2);
+    } 
   }
   CheckVisitor checkNodes;
   total->accept(checkNodes);

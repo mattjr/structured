@@ -172,7 +172,9 @@ int main( int argc, char *argv[ ] )
       
     }
     if(outNodes.size()){
-      lodnames.push_back(untexname);
+      if(untexname.size() == 3)
+	lodnames.push_back(untexname);
+      if(texname.size() == 3)
 	lodnames.push_back(texname);	
 
 	outNames.push_back(lodnames);

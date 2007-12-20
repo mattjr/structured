@@ -60,7 +60,7 @@ static string stereo_calib_file_name;
 static std::map<int,std::string> texture_file_names;
 static bool hardware_compress=true;
 static float tex_scale=1.0;
-
+static  char diceddir[255];
 extern std::vector<GtsBBox *> bboxes_all;
 
 //
@@ -69,7 +69,7 @@ extern std::vector<GtsBBox *> bboxes_all;
 static bool parse_args( int argc, char *argv[ ] )
 {
   bool have_stereo_config_file_name = false;
-  
+  strcpy(diceddir,"mesh-diced/");
    
   int i=1;
   while( i < argc )
@@ -137,6 +137,13 @@ static bool parse_args( int argc, char *argv[ ] )
 	  max_mesh_count = atoi( argv[i+1] );
 	  i+=2;
 	}
+      else if( strcmp( argv[i], "--dicedir" ) == 0 )
+	{
+	  if( i == argc-1 ) return false;
+	 
+	  strcpy(diceddir,argv[i+1] );
+	  i+=2;
+	}
       else if( strcmp( argv[i], "-t" ) == 0 )
       {
          if( i == argc-1 ) return false;
@@ -166,7 +173,7 @@ static bool parse_args( int argc, char *argv[ ] )
 GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
   char conf_name[255];
   
-  sprintf(conf_name,"mesh-agg/bbox-%08d.txt",num);
+  sprintf(conf_name,"%s/bbox-%08d.txt",diceddir,num);
   
   FILE *bboxfp = fopen(conf_name,"r");
   int count;
@@ -356,11 +363,14 @@ int main( int argc, char *argv[ ] )
  
   float zrange[2];
   std::map<int,GtsMatrix *> gts_trans_map;
-  FILE *fp =fopen("mesh-agg/range.txt","r");
+  char rangefname[255];
+  sprintf(rangefname,"%s/range.txt",diceddir);
+  FILE *fp =fopen(rangefname,"r");
   fscanf(fp,"%*f %*f %f\n%*f %*f %f\n",&(zrange[0]),&(zrange[1]));
   fclose(fp);
-
-  string dicefile("mesh-agg/diced.txt");
+  char dicefname[255];
+  sprintf(dicefname,"%s/diced.txt",diceddir);
+  string dicefile(dicefname);
   std::vector<string> meshNames;
   vector <std::vector<vector<string > >  > outNames;
   std::vector<osg::ref_ptr<osg::Group>  > outNodes;
@@ -386,7 +396,7 @@ int main( int argc, char *argv[ ] )
       if(eof != EOF){
 	if(verbose)
 	  printf("Diced files %s\n",tmp);
-	meshNames.push_back("mesh-agg/"+string(tmp));
+	meshNames.push_back(diceddir+string(tmp));
       }
     }
   }

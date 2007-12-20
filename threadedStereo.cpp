@@ -1490,13 +1490,13 @@ int main( int argc, char *argv[ ] )
 
 	
 	FILE *dicefp=fopen("./dice.sh","w+");
-	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-agg/\nmkdir -p $DICEDIR\ncd $DICEDIR\n",basepath.c_str());
+	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	if(!dice_lod)
-	  fprintf(dicefp,"$BASEPATH/vrip/bin/plydice -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s total.ply | tee diced.txt\n",subvol,eps,"diced");			  
+	  fprintf(dicefp,"$BASEPATH/vrip/bin/plydice -outdir $DICEDIR -writebboxall $DICEDIR/bbtmp.txt  -writebbox $DICEDIR/range.txt -dice %f %f %s total.ply |sed 's_.*/__' | tee $DICEDIR/diced.txt\n",subvol,eps,"diced");			  
 	else
-	  fprintf(dicefp,"$BASEPATH/vrip/bin/plydicegroup -writebboxall bbtmp.txt  -writebbox range.txt -dice %f %f %s  total-unsimp.ply total-unsimp-lod1.ply total-unsimp-lod2.ply | tee diced.txt\n",subvol,eps,"diced");	
+	  fprintf(dicefp,"$BASEPATH/vrip/bin/plydicegroup -outdir $DICEDIR -writebboxall $DICEDIR/bbtmp.txt  -writebbox $DICEDIR/range.txt -dice %f %f %s  total-unsimp.ply total-unsimp-lod1.ply total-unsimp-lod2.ply | sed 's_.*/__' | tee $DICEDIR/diced.txt\n",subvol,eps,"diced");	
 	
-	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
+	fprintf(dicefp,"cd $DICEDIR\nNUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
 		"REDFACT=(0.005 0.01 0.05)\n");
 		
        	if(have_mb_ply)
@@ -1545,11 +1545,12 @@ int main( int argc, char *argv[ ] )
 		    "\tdone\n"
 		    "let COUNT=COUNT+1\n"
 		    "done\n"
+		    "echo -e \"\nDone\" \n"
 		    ,basepath.c_str());
 	  }	
 	}
 
-	  fprintf(dicefp,"%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
+	  fprintf(dicefp,"cd $MESHAGG\n%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
 		basepath.c_str());
 	if(dist_run){
 	  fprintf(dicefp,"rm -f gentexcmds\n"

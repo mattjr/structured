@@ -105,7 +105,7 @@ int main( int argc, char *argv[ ] )
       print_usage( );
       exit( 1 );
     }
-  std::vector<vector<string > > outNames;
+  vector< std::vector<vector<string > > >outNames;
    std::vector<osg::ref_ptr<osg::Group>  > outNodes;
   if(!have_max_mesh_count){
     string dicefile("mesh-agg/diced.txt");
@@ -135,33 +135,54 @@ int main( int argc, char *argv[ ] )
     }
   }
 
- 
+  vector <string> texname,untexname;
 
   printf("Loading %d bbox files\n",max_mesh_count);
   for(int i=0; i <  (int)max_mesh_count; i++){
-    std::vector<string> lodnames;
+    vector <std::vector<string > > lodnames;
     for(int j=0; j < lodNum; j++){
       
       char out_name[255];
       
       sprintf(out_name,"mesh/blended-%02d-lod%d.ive",i,j);
-      if(FileExists(out_name)){
-	lodnames.push_back(osgDB::getSimpleFileName(string(out_name)).c_str());
+      char outtex[255];
+      char outuntex[255];
+      string outname_str(out_name);
+      strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-t.ive")).c_str());
+      
+      texname.push_back(osgDB::getSimpleFileName(outtex));
+      strcpy(outuntex,(outname_str.substr(0,outname_str.length()-4)+string("-u.ive")).c_str());
+      untexname.push_back(osgDB::getSimpleFileName(outuntex));
+      osg::Group * group=new osg::Group;
+      // if(FileExists(out_name)){
+      {
+
+
 	if(j == (lodNum -1)){
-	  osg::ref_ptr<osg::Group> node=	dynamic_cast<osg::Group*>(osgDB::readNodeFile(string(out_name)));
-	  outNodes.push_back(node);
+	  osg::Group *group1=dynamic_cast<osg::Group*>(osgDB::readNodeFile(string(outtex)));
+
+	    osg::Group *group2=dynamic_cast<osg::Group*>(osgDB::readNodeFile(string(outuntex)));
+	    if(group1->getNumChildren())
+	      group->addChild(group1->getChild(0));
+	    if(group2->getNumChildren())
+	      group->addChild(group2->getChild(0));
+	  outNodes.push_back(group);
 	}
       }
       
     }
-    if(outNodes.size())
-      outNames.push_back(lodnames);
+    if(outNodes.size()){
+      lodnames.push_back(untexname);
+	lodnames.push_back(texname);	
+
+	outNames.push_back(lodnames);
+    }
     
   }
   
   
  
-  //genPagedLod(outNodes,outNames);
+  genPagedLod(outNodes,outNames);
   
  
   return 0;

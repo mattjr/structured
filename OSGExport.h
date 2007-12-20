@@ -290,7 +290,23 @@ typedef std::map<int,string> MaterialToIDMap;
 void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads,int verbose=0);
 osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip=true,bool compress=false);
 
-void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<string> > lodnames);
+void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes,vector < vector< vector<string > > > lodnames);
 osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names);
-
+class CheckVisitor : public osg::NodeVisitor
+{
+public:
+    CheckVisitor():
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
+    {
+    }
+    
+    virtual void apply(osg::PagedLOD& plod)
+    {
+        std::cout<<"PagedLOD "<<plod.getName()<<"  numRanges = "<< plod.getNumRanges()<<"  numFiles = "<<plod.getNumFileNames()<<std::endl;
+        for(unsigned int i=0;i<plod.getNumFileNames();++i)
+        {
+            std::cout<<"  files = '"<<plod.getFileName(i)<<"'"<<std::endl;
+        }
+    }    
+};
 #endif

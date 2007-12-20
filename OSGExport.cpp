@@ -410,7 +410,8 @@ osg::ref_ptr<osg::Group> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
     
   // osgUtil::Tessellator tessellator;
     
-  // add everthing into the Geode.    
+  // add everthing into the Geode.   
+  
   osgUtil::SmoothingVisitor smoother;
   for(itr=mtgcm.begin();
       itr!=mtgcm.end();
@@ -425,17 +426,20 @@ osg::ref_ptr<osg::Group> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 	  smoother.smooth(*gc._geom);
 	  if(gc._texturesActive)
 	    textured->addDrawable(gc._geom);
-	  else
+	  else{
 	    untextured->addDrawable(gc._geom);
-
+	  }
 	  //  printf("Grilled Shrip %f %f %f %f\n",gc._texLimits.xMin(),
 	  //   gc._texLimits.xMax(),gc._texLimits.yMin(),gc._texLimits.yMax());
         }
 
     }
-  group->addChild(textured.get());
-  group->addChild(untextured.get());
-  
+
+  if(textured->getNumDrawables())
+    group->insertChild(0,textured.get());
+  if(untextured->getNumDrawables())
+    group->insertChild(1,untextured.get());
+
   return group;
 }
 
@@ -458,16 +462,17 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
     compress_tex=false;
   }    
  
-  osg::ref_ptr<osg::Group> root_ptr = new osg::Group;
+
   ClippingMap cm;
   osg::ref_ptr<osg::Group> group = convertGtsSurfListToGeometry(s,textures,&cm,tex_size,vmcallback,zrange);
-  osg::Group * root = root_ptr.get();
+  
+  osg::Group * root = group.get();
 
-  group->setName(out_name);
-  root->addChild(group.get());
+  root->setName(out_name);
+ 
 
 
-  osgUtil::Optimizer optimzer;
+  // osgUtil::Optimizer optimzer;
   /*
   if(do_atlas){
     if(verbose)
@@ -493,22 +498,52 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
     }
   }
   */
-  optimzer.optimize(root);
+  //optimzer.optimize(root);
+  osg::Group *tex=NULL;
+  osg::Group *untex =NULL;
+  if(root->getNumChildren() > 0){
+    tex= new osg::Group;
+    tex->addChild(root->getChild(0));
+  }  
+  
+  if(root->getNumChildren() > 1){
+    untex= new osg::Group;
+    untex->addChild(root->getChild(1));
+  }
+  osgDB::ReaderWriter::WriteResult result;
+  char outtex[255];
+  string outname_str(out_name);
+  if(tex){
+    strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-t.ive")).c_str());
+    
+  result = osgDB::Registry::instance()->writeNode(*tex,outtex,osgDB::Registry::instance()->getOptions());
+    if (result.success())	{
+      if(verbose)
+	osg::notify(osg::NOTICE)<<"Data written to '"<<outtex<<"'."<< std::endl;
+    }
+    else if  (result.message().empty()){
+      osg::notify(osg::NOTICE)<<"Warning: file write to '"<<outtex<<"' no supported."<< std::endl;
+      // root->getChild(0)=NULL;
+    }else
+      osg::notify(osg::NOTICE)<<"Writer output: "<< result.message()<<std::endl;
+  }  
 
- 
- 
-  osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*root,out_name,osgDB::Registry::instance()->getOptions());
-  if (result.success())	{
-    if(verbose)
-      osg::notify(osg::NOTICE)<<"Data written to '"<<out_name<<"'."<< std::endl;
-  }
-  else if  (result.message().empty()){
-    osg::notify(osg::NOTICE)<<"Warning: file write to '"<<out_name<<"' no supported."<< std::endl;
-    root=NULL;
+  if(untex){
+    strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-u.ive")).c_str());
+    
+    
+    result = osgDB::Registry::instance()->writeNode(*untex,outtex,osgDB::Registry::instance()->getOptions());
+    if (result.success())	{
+      if(verbose)
+	osg::notify(osg::NOTICE)<<"Data written to '"<<outtex<<"'."<< std::endl;
+    }
+    else if  (result.message().empty()){
+      osg::notify(osg::NOTICE)<<"Warning: file write to '"<<outtex<<"' no supported."<< std::endl;
+      // root->getChild(0)=NULL;
+    }
   }
   
-  
-  return root;
+  return group;
 
   /*  root->removeChild(0,1);
       geode=NULL;*/
@@ -1483,15 +1518,26 @@ osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
   return NULL;
 }
 
-void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector<string> > lodnames){
+void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector< vector<string> >  > lodnames){
   osg::Group *total=new osg::Group;
-  printf("Final Paged LOD Hierarchy\n");
+  printf("Final Paged LOD Hierarchy Total Num %d\n",nodes.size());
   for(int i=0; i < (int)nodes.size(); i++){
-  
-    osg::Node *tmp=create_paged_lod(nodes[i].get(),lodnames[i]);
+    osg::Node *tmp,*tmp2;
+    tmp=tmp2=NULL;
+    if(nodes[i]->getNumChildren() > 0){
+      tmp=create_paged_lod(nodes[i]->getChild(0),lodnames[i][0]);
+    }
+    if(nodes[i]->getNumChildren() > 1)
+      tmp2=create_paged_lod(nodes[i]->getChild(1),lodnames[i][1]);
+    
     if(tmp)
       total->addChild(tmp);
+    if(tmp2)
+      total->addChild(tmp2);
   }
+  CheckVisitor checkNodes;
+  total->accept(checkNodes);
+  
   osgDB::ReaderWriter::WriteResult result = osgDB::Registry::instance()->writeNode(*total,"mesh/final.ive",osgDB::Registry::instance()->getOptions());
 
  if (result.success())	{

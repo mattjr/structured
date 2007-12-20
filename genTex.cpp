@@ -362,7 +362,7 @@ int main( int argc, char *argv[ ] )
 
   string dicefile("mesh-agg/diced.txt");
   std::vector<string> meshNames;
-  std::vector<vector<string > > outNames;
+  vector <std::vector<vector<string > >  > outNames;
   std::vector<osg::ref_ptr<osg::Group>  > outNodes;
 
   struct stat BUF;
@@ -416,10 +416,10 @@ int main( int argc, char *argv[ ] )
     */
     
     //int initialEdges=gts_surface_edge_number(s);
-
+ vector <string> texname,untexname;
     int lodTexSize[]={max((int)(512*tex_scale),32),max((int)(256*tex_scale),32),max((int)(32*tex_scale),32)};
     float simpRatio[]={0.5,0.1,0.01};
-    std::vector<string> lodnames;
+    vector <std::vector<string > > lodnames;
     
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
 					num_threads,verbose,hardware_compress);    
@@ -506,8 +506,13 @@ int main( int argc, char *argv[ ] )
       
       osg::ref_ptr<osg::Group> node =osgExp->convertModelOSG(surf,texture_file_names,
 							     out_name,lodTexSize[j],texcallback,zrange);
+      char outtex[255];
+      string outname_str(out_name);
+      strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-t.ive")).c_str());
       
-      lodnames.push_back(osgDB::getSimpleFileName(string(out_name)).c_str());
+      texname.push_back(osgDB::getSimpleFileName(outtex));
+      strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-u.ive")).c_str());
+      untexname.push_back(osgDB::getSimpleFileName(outtex));
       if(j == (lodNum -1))
 	outNodes.push_back(node);
 
@@ -523,6 +528,9 @@ int main( int argc, char *argv[ ] )
     //Destory Surf
     //if(s)
     //gts_object_destroy (GTS_OBJECT (s)); 
+    lodnames.push_back(untexname);    
+    lodnames.push_back(texname);
+
     outNames.push_back(lodnames);
     delete osgExp;
   }

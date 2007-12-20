@@ -1431,7 +1431,9 @@ int main( int argc, char *argv[ ] )
       if(gen_mb_ply){
 	printf("Here\n");
 	FILE *genmbfp=fopen("genmb.sh","w");
-	fprintf(genmbfp,"#!/bin/bash\ncd %s\n%s/../seabed_localisation/bin/process_deltaT --start %f --stop %f --meshsplit 300 --mesh %s %s %s",aggdir,basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),contents_file_name.c_str());
+	fprintf(genmbfp,"#!/bin/bash\ncd %s\n"
+		"find . -name 'mb*.ply' | xargs rm -f\n"
+		"%s/../seabed_localisation/bin/process_deltaT --start %f --stop %f --meshsplit 300 --mesh %s %s %s",aggdir,basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),contents_file_name.c_str());
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
 	system("./genmb.sh");

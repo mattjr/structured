@@ -1390,7 +1390,7 @@ int main( int argc, char *argv[ ] )
     char conf_name[255];
     
     sprintf(conf_name,"%s/meshes.txt",aggdir);
-    printf("%s\n",conf_name);
+    
     
     conf_ply_file=fopen(conf_name,"w");
     if(!conf_ply_file){
@@ -1432,7 +1432,7 @@ int main( int argc, char *argv[ ] )
       if(output_pts_cov)
 	fclose(pts_cov_fp);
       if(gen_mb_ply){
-	printf("Here\n");
+
 	FILE *genmbfp=fopen("genmb.sh","w");
 	fprintf(genmbfp,"#!/bin/bash\ncd %s\n"
 		"find . -name 'mb*.ply' | xargs rm -f\n"

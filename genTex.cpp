@@ -518,7 +518,7 @@ std::vector<vector<string >   > outNames;
 	strcpy(ext,"ive");
       sprintf(out_name,"mesh/blended-%02d-lod%d.%s",i,j,ext);
       
-      osg::ref_ptr<osg::Group> node =osgExp->convertModelOSG(surf,texture_file_names,
+      osgExp->convertModelOSG(surf,texture_file_names,
 							     out_name,lodTexSize[j],texcallback,zrange);
       
      

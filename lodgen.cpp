@@ -105,10 +105,10 @@ int main( int argc, char *argv[ ] )
       print_usage( );
       exit( 1 );
     }
-  vector< std::vector<vector<string > > >outNames;
-   std::vector<osg::ref_ptr<osg::Group>  > outNodes;
+  std::vector<vector<string > > outNames;
+  std::vector<osg::ref_ptr<osg::Node>  > outNodes;
   if(!have_max_mesh_count){
-    string dicefile("mesh-agg/diced.txt");
+    string dicefile("mesh-diced/diced.txt");
     std::vector<string> meshNames;
  
     
@@ -116,7 +116,7 @@ int main( int argc, char *argv[ ] )
     bool have_dice=(stat(dicefile.c_str(),&BUF)!=-1);
     if(!have_dice){
       printf("Dice can't be found\n");
-    exit(0);
+      exit(0);
     
     }else{
       
@@ -127,63 +127,63 @@ int main( int argc, char *argv[ ] )
 	eof=fscanf(dicefp,"%s\n",tmp);
 	if(eof != EOF){
 	  printf("Diced files %s\n",tmp);
-	  meshNames.push_back("mesh-agg/"+string(tmp));
+	  meshNames.push_back("mesh-diced/"+string(tmp));
 	 
 	}
       }
-     max_mesh_count = meshNames.size();
+      max_mesh_count = meshNames.size();
     }
   }
 
-  vector <string> texname,untexname;
+  osg::Node * lod0Node[2];
 
   printf("Loading %d bbox files\n",max_mesh_count);
   for(int i=0; i <  (int)max_mesh_count; i++){
-    vector <std::vector<string > > lodnames;
-    for(int j=0; j < lodNum; j++){
-      
-      char out_name[255];
-      
-      sprintf(out_name,"mesh/blended-%02d-lod%d.ive",i,j);
-      char outtex[255];
-      char outuntex[255];
-      string outname_str(out_name);
-      strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-t.ive")).c_str());
-      
-      texname.push_back(osgDB::getSimpleFileName(outtex));
-      strcpy(outuntex,(outname_str.substr(0,outname_str.length()-4)+string("-u.ive")).c_str());
-      untexname.push_back(osgDB::getSimpleFileName(outuntex));
-      osg::Group * group=new osg::Group;
-      // if(FileExists(out_name)){
-      {
+  
+  
+    lod0Node[0]=NULL;
+    lod0Node[1]=NULL;   
+    char out_name[255];
+    sprintf(out_name,"mesh/blended-%02d-lod2-t.ive",i);
+    lod0Node[0]=   osgDB::readNodeFile(string(out_name));
+    sprintf(out_name,"mesh/blended-%02d-lod2-u.ive",i);
+    lod0Node[1]=osgDB::readNodeFile(string(out_name));
+  
+    sprintf(out_name,"mesh/blended-%02d-lod2-t.ive",i);
+ 
+  
+  
+    char text[2][255];
+    strcpy(text[0],"-t.ive");
+    strcpy(text[1],"-u.ive");
+  
+    for(int k=0; k <2; k++){
+      if(lod0Node[k]){  
+    
+	int filecount=0;
+	char out_name[255];
+	vector<string> setnames;
+	for(int  j=0; j < lodNum; j++){
+	  sprintf(out_name,"mesh/blended-%02d-lod%d%s",i,j,text[k]);
 
-
-	if(j == (lodNum -1)){
-	  osg::Group *group1=dynamic_cast<osg::Group*>(osgDB::readNodeFile(string(outtex)));
-
-	    osg::Group *group2=dynamic_cast<osg::Group*>(osgDB::readNodeFile(string(outuntex)));
-	    if(group1->getNumChildren())
-	      group->addChild(group1->getChild(0));
-	    if(group2->getNumChildren())
-	      group->addChild(group2->getChild(0));
-	  outNodes.push_back(group);
+	  if(FileExists(out_name)){
+	    setnames.push_back(osgDB::getSimpleFileName(out_name));
+	  }
+	}
+	if(setnames.size() != 3 || lod0Node[k] == NULL){
+	  if(i==0)
+	    printf("Textured ");
+	  else
+	    printf("UnTextured ");
+	  printf(" nodes for %d not found num found : %d\n",i,filecount);
+	}else{
+	  outNodes.push_back(lod0Node[k]);
+	  outNames.push_back(setnames);
 	}
       }
-      
     }
-    if(outNodes.size()){
-      if(untexname.size() == 3)
-	lodnames.push_back(untexname);
-      if(texname.size() == 3)
-	lodnames.push_back(texname);	
-
-	outNames.push_back(lodnames);
-    }
-    
   }
   
-  
- 
   genPagedLod(outNodes,outNames);
   
  

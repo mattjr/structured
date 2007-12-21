@@ -228,7 +228,7 @@ public:
     }
   }
   osg::Image *LoadResizeSave(string filename,string outname,bool save,int tex_size);
-  osg::ref_ptr< osg::Group>convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;
+  bool convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;
 ~OSGExporter();
  std::map<string,IplImage *> tex_image_cache;
   std::map<string,osg::Image *> compressed_img_cache;
@@ -290,7 +290,7 @@ typedef std::map<int,string> MaterialToIDMap;
 void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads,int verbose=0);
 osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip=true,bool compress=false);
 
-void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes,vector < vector< vector<string > > > lodnames);
+void genPagedLod(vector< osg::ref_ptr <osg::Node> > nodes, vector< vector<string > >  lodnames);
 osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names);
 class CheckVisitor : public osg::NodeVisitor
 {

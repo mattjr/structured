@@ -434,18 +434,18 @@ osg::ref_ptr<osg::Group> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
         }
 
     }
+ if(textured->getNumDrawables())
+     group->insertChild(0,textured.get());
+   if(untextured->getNumDrawables())
+     group->insertChild(1,untextured.get());
 
-  if(textured->getNumDrawables())
-    group->insertChild(0,textured.get());
-  if(untextured->getNumDrawables())
-    group->insertChild(1,untextured.get());
 
   return group;
 }
 
 
 
-osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback,float *zrange) {
+bool OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback,float *zrange) {
 
 
   
@@ -455,7 +455,7 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
   
   if(format=="3ds"){
     Export3DS(s,out_name,textures,tex_size,vmcallback);
-    return NULL;
+    return true;
   }else if(!ive_out && compress_tex){
     std::cout<<"Warning: compressing texture only supported when out";
     std::cout << "puting to .ive"<<std::endl;
@@ -464,11 +464,10 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
  
 
   ClippingMap cm;
-  osg::ref_ptr<osg::Group> group = convertGtsSurfListToGeometry(s,textures,&cm,tex_size,vmcallback,zrange);
+  osg::ref_ptr<osg::Group> group =convertGtsSurfListToGeometry(s,textures,&cm,tex_size,vmcallback,zrange);
   
   osg::Group * root = group.get();
 
-  root->setName(out_name);
  
 
 
@@ -499,17 +498,9 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
   }
   */
   //optimzer.optimize(root);
-  osg::Group *tex=NULL;
-  osg::Group *untex =NULL;
-  if(root->getNumChildren() > 0){
-    tex= new osg::Group;
-    tex->addChild(root->getChild(0));
-  }  
-  
-  if(root->getNumChildren() > 1){
-    untex= new osg::Group;
-    untex->addChild(root->getChild(1));
-  }
+  osg::Node *tex=root->getChild(0);
+  osg::Node *untex =root->getChild(1);
+ 
   osgDB::ReaderWriter::WriteResult result;
   char outtex[255];
   string outname_str(out_name);
@@ -543,7 +534,7 @@ osg::ref_ptr<osg::Group> OSGExporter::convertModelOSG(GtsSurface *s,std::map<int
     }
   }
   
-  return group;
+  return true;
 
   /*  root->removeChild(0,1);
       geode=NULL;*/
@@ -1470,9 +1461,6 @@ osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
     if(lod_file_names.size() >2){
       osg::PagedLOD* pagedlod = new osg::PagedLOD;
       
-     
-      
-     
       if(usePixelSize){
 	printf("%s dist: %g - %g\n",lod_file_names[2].c_str(),min_pixel_size,midrange_pixel_size);
 	printf("\t%s dist: %g - %g\n",lod_file_names[1].c_str(),midrange_pixel_size,near_pixel_size);
@@ -1518,17 +1506,18 @@ osg::Node *create_paged_lod(osg::Node * model,vector<string> lod_file_names){
   return NULL;
 }
 
-void genPagedLod(vector< osg::ref_ptr <osg::Group> > nodes, vector< vector< vector<string> >  > lodnames){
+void genPagedLod(vector< osg::ref_ptr <osg::Node> > nodes,  vector< vector<string> >  lodnames){
   osg::Group *total=new osg::Group;
   printf("Final Paged LOD Hierarchy Total Num %d\n",nodes.size());
   for(int i=0; i < (int)nodes.size(); i++){
-    osg::Node *tmp,*tmp2;
-    tmp=tmp2=NULL;
-    for(int j=0; j < (int)lodnames[i].size(); j++){
-      tmp=create_paged_lod(nodes[i]->getChild(j),lodnames[i][j]);
-      total->addChild(tmp);
+    osg::Node *tmp;
+    tmp=NULL;
+   
+    tmp=create_paged_lod(nodes[i].get(),lodnames[i]);
+      if(tmp)
+	total->addChild(tmp);
     } 
-  }
+
   CheckVisitor checkNodes;
   total->accept(checkNodes);
   

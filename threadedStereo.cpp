@@ -1577,7 +1577,7 @@ int main( int argc, char *argv[ ] )
 	fclose(dicefp);
 	if(!no_gen_tex)
 	  system("./dice.sh");
-	if(dist_run && !no_gen_tex){
+	if(!no_gen_tex){
 	  FILE *lodfp=fopen("lodgen.sh","w");
 	  fprintf(lodfp,"#!/bin/bash\n"
 		  "echo LODGen... \n"

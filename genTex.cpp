@@ -372,8 +372,8 @@ int main( int argc, char *argv[ ] )
   sprintf(dicefname,"%s/diced.txt",diceddir);
   string dicefile(dicefname);
   std::vector<string> meshNames;
-  vector <std::vector<vector<string > >  > outNames;
-  std::vector<osg::ref_ptr<osg::Group>  > outNodes;
+std::vector<vector<string >   > outNames;
+  std::vector<osg::ref_ptr<osg::Node>  > outNodes;
 
   struct stat BUF;
   bool have_dice=(stat(dicefile.c_str(),&BUF)!=-1);
@@ -426,13 +426,17 @@ int main( int argc, char *argv[ ] )
     */
     
     //int initialEdges=gts_surface_edge_number(s);
- vector <string> texname,untexname;
+
     int lodTexSize[]={max((int)(512*tex_scale),32),max((int)(256*tex_scale),32),max((int)(32*tex_scale),32)};
     float simpRatio[]={0.5,0.1,0.01};
-    vector <std::vector<string > > lodnames;
+   std::vector<string > lodnames;
     
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
 					num_threads,verbose,hardware_compress);    
+    osg::Node * lod0Node[2];
+    lod0Node[0]=NULL;
+    lod0Node[1]=NULL;
+    char out_name[255];
 
     for(int j=0; j < lodNum; j++){
        boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
@@ -505,7 +509,7 @@ int main( int argc, char *argv[ ] )
 	printf("Converting to model for export\n");
       
       boost::xtime_get(&xt, boost::TIME_UTC);
-      char out_name[255];
+      
       char ext[5];
   
       if(output_3ds)
@@ -516,18 +520,8 @@ int main( int argc, char *argv[ ] )
       
       osg::ref_ptr<osg::Group> node =osgExp->convertModelOSG(surf,texture_file_names,
 							     out_name,lodTexSize[j],texcallback,zrange);
-      char outtex[255];
-      string outname_str(out_name);
-      strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-t.ive")).c_str());
-      if(FileExists(outtex))
-	texname.push_back(osgDB::getSimpleFileName(outtex));
-
-      strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-u.ive")).c_str());
-      if(FileExists(outtex))
-	untexname.push_back(osgDB::getSimpleFileName(outtex));
-      if(j == (lodNum -1))
-	outNodes.push_back(node);
-
+      
+     
       boost::xtime_get(&xt2, boost::TIME_UTC);
       time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
       secs=time/1000.0;
@@ -537,22 +531,18 @@ int main( int argc, char *argv[ ] )
       if(verbose)
 	printf("Done Took %.2f secs\n",secs);
     }
+
+  
+ 
+    
     //Destory Surf
     //if(s)
     //gts_object_destroy (GTS_OBJECT (s)); 
-    if(untexname.size() == 3)
-      lodnames.push_back(untexname); 
-    if(texname.size() == 3)
-      lodnames.push_back(texname);
-
-    outNames.push_back(lodnames);
+ 
     delete osgExp;
   }
   mesh_count(i,totalMeshCount,lodNum,lodNum,0,0,0);
 
-  if(have_dice && lodNum > 1 && !single_run && !output_3ds){
-    genPagedLod(outNodes,outNames);
-  }
   // 
   // Clean-up
   //

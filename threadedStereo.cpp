@@ -964,9 +964,6 @@ bool threadedStereo::runP(auv_image_names &name){
   sprintf(texfilename,"%s/%s.dds",
 	  cachedtexdir,osgDB::getStrippedName(name.left_name).c_str());
  
-    
-
-  
   sprintf(meshfilename,"%s/surface-%s.ply",
 	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
   
@@ -1390,22 +1387,28 @@ int main( int argc, char *argv[ ] )
   }
   if(!single_run){
     
-      char conf_name[255];
-      if(non_cached_meshes){    
-	sprintf(conf_name,"%s/meshlist.txt",cachedmeshdir);
-	
-	conf_ply_file=fopen(conf_name,"w");
-	chmod(conf_name,0666);
-	for(unsigned int i=0; i < tasks.size(); i++){
-	  if(tasks[i].valid)
-	    fprintf(conf_ply_file,
-		    "surface-%s.ply 0.033 1\n"
-		    ,osgDB::getStrippedName(tasks[i].left_name).c_str());
-	  
-	}
-	fclose(conf_ply_file);
-      }
- 
+    char conf_name[255];
+    
+    sprintf(conf_name,"%s/meshes.txt",aggdir);
+    printf("%s\n",conf_name);
+    
+    conf_ply_file=fopen(conf_name,"w");
+    if(!conf_ply_file){
+      fprintf(stderr,"Can't open %s\n",conf_name);
+      exit(-1);
+    }
+      
+    chmod(conf_name,0666);
+    for(unsigned int i=0; i < tasks.size(); i++){
+      if(tasks[i].valid)
+	fprintf(conf_ply_file,
+		"surface-%s.ply 0.033 1\n"
+		,osgDB::getStrippedName(tasks[i].left_name).c_str());
+      
+      
+      
+    }
+    fclose(conf_ply_file);
 
   
   
@@ -1460,7 +1463,7 @@ int main( int argc, char *argv[ ] )
       
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n%s/vrip/bin/vripxftrans meshlist.txt -subvoldir $OUTDIR/ -n %d -passtotridec %s\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir,basepath.c_str(),stereo_pair_count,passtotridec.c_str());
+	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n%s/vrip/bin/vripxftrans $OUTDIR/meshes.txt -subvoldir $OUTDIR/ -n %d -passtotridec %s\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir,basepath.c_str(),stereo_pair_count,passtotridec.c_str());
 	fprintf(conf_ply_file,"VRIPLOGDIR=%s\n"
 	,vriplogdir);
 	fprintf(conf_ply_file,"cd $OUTDIR\nfind . -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.033 1\" }' | head -n %d > surface.txt\n#find $SUBVOLDIR -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.1 0\" }' >> surface.txt\n"

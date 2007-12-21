@@ -299,7 +299,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 }
 
 
-osg::ref_ptr<osg::Group> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback,float *zrange)
+bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,VerboseMeshFunc vmcallback,float *zrange)
 {
   
   MaterialToGeometryCollectionMap mtgcm;
@@ -404,10 +404,11 @@ osg::ref_ptr<osg::Group> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
   if(verbose)
     printf("\n");
   gts_surface_foreach_face (s, (GtsFunc) add_face_mat_osg , data);
-  osg::ref_ptr<osg::Group> group = new osg::Group;
+ 
   osg::ref_ptr<osg::Geode> untextured = new osg::Geode;
   osg::ref_ptr<osg::Geode> textured = new osg::Geode;
-    
+  
+  
   // osgUtil::Tessellator tessellator;
     
   // add everthing into the Geode.   
@@ -435,12 +436,16 @@ osg::ref_ptr<osg::Group> OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s
 
     }
  if(textured->getNumDrawables())
-     group->insertChild(0,textured.get());
-   if(untextured->getNumDrawables())
-     group->insertChild(1,untextured.get());
+  group[0]=textured.get();
+ else 
+   group[0]=NULL;
 
+ if(untextured->getNumDrawables() )
+   group[1]=untextured.get();
+ else
+   group[1]=NULL;
 
-  return group;
+  return true;
 }
 
 
@@ -464,9 +469,10 @@ bool OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,ch
  
 
   ClippingMap cm;
-  osg::ref_ptr<osg::Group> group =convertGtsSurfListToGeometry(s,textures,&cm,tex_size,vmcallback,zrange);
+  osg::ref_ptr<osg::Geode> group[2];
+  convertGtsSurfListToGeometry(s,textures,&cm,tex_size,group,vmcallback,zrange);
   
-  osg::Group * root = group.get();
+  
 
  
 
@@ -498,13 +504,13 @@ bool OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,ch
   }
   */
   //optimzer.optimize(root);
-  osg::Node *tex=root->getChild(0);
-  osg::Node *untex =root->getChild(1);
+  osg::Geode *tex=group[0].get();
+  osg::Geode *untex =group[1].get();
  
   osgDB::ReaderWriter::WriteResult result;
   char outtex[255];
   string outname_str(out_name);
-  if(tex){
+  if(tex && tex->getNumDrawables()){
     strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-t.ive")).c_str());
     
   result = osgDB::Registry::instance()->writeNode(*tex,outtex,osgDB::Registry::instance()->getOptions());
@@ -519,7 +525,7 @@ bool OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,ch
       osg::notify(osg::NOTICE)<<"Writer output: "<< result.message()<<std::endl;
   }  
 
-  if(untex){
+  if(untex && tex->getNumDrawables()){
     strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-u.ive")).c_str());
     
     

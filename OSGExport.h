@@ -242,7 +242,7 @@ protected:
     MyGraphicsContext *context;
   bool ive_out;
   
-  osg::ref_ptr<osg::Group> convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;  
+  bool convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size, osg::ref_ptr<osg::Geode >* group,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;  
   bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback=NULL);
   string prefixdir;
   bool tex_saved;

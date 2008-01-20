@@ -37,7 +37,7 @@ using namespace std;
 using namespace libplankton;
 using namespace libsnapper;
 
-
+static bool tex_array_blend=false;
 //
 // Command-line arguments
 //
@@ -94,6 +94,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--3ds" ) == 0 )
 	{
 	  output_3ds=true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--blend" ) == 0 )
+	{
+	  tex_array_blend=true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--no-compress-tex" ) == 0 )
@@ -432,7 +437,7 @@ std::vector<vector<string >   > outNames;
    std::vector<string > lodnames;
     
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
-					num_threads,verbose,hardware_compress);    
+					num_threads,verbose,hardware_compress,tex_array_blend);    
     osg::Node * lod0Node[2];
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;

@@ -237,6 +237,12 @@ static void add_face_all_osg (T_Face * f, gpointer * data){
     (*gc._texcoords++).set(v1->u,1-v1->v);    
     (*gc._texcoords++).set(v2->u,1-v2->v); 
     (*gc._texcoords++).set(v3->u,1-v3->v); 
+
+    (*gc._texcoordsArray[0]++).set(v1->u,1-v1->v,f->material);    
+    (*gc._texcoordsArray[0]++).set(v2->u,1-v2->v,f->material); 
+    (*gc._texcoordsArray[0]++).set(v3->u,1-v3->v,f->material); 
+    
+   
   }
 
   if(gc._colorsActive){
@@ -641,6 +647,11 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
 	osg::Vec2Array* texcoordArray = new osg::Vec2Array(gc._numPoints);
 	gc._texcoords = texcoordArray->begin();
 	gc._geom->setTexCoordArray(0,texcoordArray);
+
+	osg::Vec3Array* texcoordBlendArray =new osg::Vec3Array(gc._numPoints);
+	gc._texcoordsArray[0] = texcoordBlendArray->begin();
+	gc._geom->setTexCoordArray(1,texcoordBlendArray);
+
 	imgNum++;
       }
     }

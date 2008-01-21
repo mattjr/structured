@@ -109,7 +109,7 @@ const char *uname="mesh";
 const char *aggdir="mesh-agg";
 bool dist_run=false;
 static string passtotridec="-e2.0";
-
+static bool do_hw_blend=false;
 
 void print_uv_3dpts( list<Feature*>          &features,
 		     list<Stereo_Feature_Estimate> &feature_positions,
@@ -367,6 +367,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--nosimp" ) == 0 )
 	{
 	  no_simp = true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--blend" ) == 0 )
+	{
+	  do_hw_blend = true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--ptscov" ) == 0 )
@@ -1571,7 +1576,8 @@ int main( int argc, char *argv[ ] )
 	    fprintf(dicefp,"--no-hardware-compress ");
 	  if(no_simp)
 	    fprintf(dicefp,"--nosimp");
-	  
+	  if(do_hw_blend)
+	    fprintf(dicefp,"--blend");
 	  fprintf(dicefp,"\n");
 	  
 	}

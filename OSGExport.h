@@ -255,7 +255,7 @@ protected:
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
   
 };
-
+#define MAX_TEX_UNITS 8
 // collect all the data relavent to a particular osg::Geometry being created.
 struct GeometryCollection
 {
@@ -277,6 +277,7 @@ struct GeometryCollection
   osg::Vec4Array::iterator    _colors;
   bool                        _colorsActive;
   osg::Vec2Array::iterator    _texcoords;
+  osg::Vec3Array::iterator    _texcoordsArray[MAX_TEX_UNITS];
   int                         _coordCount;
   osg::Geometry*              _geom;
   osg::BoundingBox            _texLimits;

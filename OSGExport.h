@@ -277,7 +277,7 @@ struct GeometryCollection
   osg::Vec4Array::iterator    _colors;
   bool                        _colorsActive;
   osg::Vec2Array::iterator    _texcoords;
-  osg::Vec3Array::iterator    _texcoordsArray[MAX_TEX_UNITS];
+  osg::Vec3Array::iterator    _texcoordsArray[NUM_TEX_BLEND_COORDS];
   int                         _coordCount;
   osg::Geometry*              _geom;
   osg::BoundingBox            _texLimits;
@@ -289,7 +289,7 @@ enum {IVE_OUT,OSG_OUT,THREEDS_OUT};
 
 typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;
 typedef std::map<int,string> MaterialToIDMap;
-void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads,int verbose=0);
+void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads,int verbose=0,int blend=0);
 osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip=true,bool compress=false);
 
 void genPagedLod(vector< osg::ref_ptr <osg::Node> > nodes, vector< vector<string > >  lodnames);

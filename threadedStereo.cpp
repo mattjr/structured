@@ -1144,7 +1144,7 @@ bool threadedStereo::runP(auv_image_names &name){
     GtsMatrix *invM = gts_matrix_inverse(name.m);
     gts_trans[0]=(invM);
     gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
-		       NULL,tex_size,num_threads,0);
+		       NULL,tex_size,num_threads,0,0);
     std::vector<string> lodnames;
     osgExp->convertModelOSG(surf,textures,filename,512,NULL,NULL);
     gts_matrix_destroy (invM);

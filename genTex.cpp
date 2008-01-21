@@ -503,7 +503,7 @@ std::vector<vector<string >   > outNames;
 	boost::xtime_get(&xt, boost::TIME_UTC);
     
 	gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,
-			   lodTexSize[j],num_threads,verbose);
+			   lodTexSize[j],num_threads,verbose,tex_array_blend);
 	boost::xtime_get(&xt2, boost::TIME_UTC);
 	time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
 	secs=time/1000.0;

@@ -238,10 +238,12 @@ static void add_face_all_osg (T_Face * f, gpointer * data){
     (*gc._texcoords++).set(v2->u,1-v2->v); 
     (*gc._texcoords++).set(v3->u,1-v3->v); 
 
-    (*gc._texcoordsArray[0]++).set(v1->u,1-v1->v,f->material);    
-    (*gc._texcoordsArray[0]++).set(v2->u,1-v2->v,f->material); 
-    (*gc._texcoordsArray[0]++).set(v3->u,1-v3->v,f->material); 
-    
+    for(int i=0; i< 4; i++){
+      (*gc._texcoordsArray[i]++).set(v1->uB[i],1-v1->vB[i],f->materialB[i]);    
+      (*gc._texcoordsArray[i]++).set(v2->uB[i],1-v2->vB[i],f->materialB[i]); 
+      (*gc._texcoordsArray[i]++).set(v3->uB[i],1-v3->vB[i],f->materialB[i]); 
+    }
+  
    
   }
 
@@ -647,10 +649,11 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
 	osg::Vec2Array* texcoordArray = new osg::Vec2Array(gc._numPoints);
 	gc._texcoords = texcoordArray->begin();
 	gc._geom->setTexCoordArray(0,texcoordArray);
-
-	osg::Vec3Array* texcoordBlendArray =new osg::Vec3Array(gc._numPoints);
-	gc._texcoordsArray[0] = texcoordBlendArray->begin();
-	gc._geom->setTexCoordArray(1,texcoordBlendArray);
+	for(int i=0; i< NUM_TEX_BLEND_COORDS; i++){
+	  osg::Vec3Array* texcoordBlendArray =new osg::Vec3Array(gc._numPoints);
+	  gc._texcoordsArray[i] = texcoordBlendArray->begin();
+	  gc._geom->setTexCoordArray(i+1,texcoordBlendArray);
+	}
 
 	imgNum++;
       }
@@ -1433,7 +1436,74 @@ int find_closet_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> 
 
 }
 
+bool find_blend_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> camPosePts,std::map<int,GtsMatrix *> back_trans,Camera_Calib *calib,int *idx){
+  
+  
+  if(bboxTree==NULL)
+    return 0;
+ 
 
+  for(int i=0; i < NUM_TEX_BLEND_COORDS; i++)
+    idx[i]=INT_MAX;
+  
+  GSList * list ,*itr;
+  GtsVertex * v[3];
+  
+  gts_triangle_vertices(t,(GtsVertex **)& v[0], 
+			(GtsVertex **)&v[1], (GtsVertex **)&v[2]);
+  GtsPoint tc;
+  tc.x=(v[0]->p.x+v[1]->p.x+v[2]->p.x)/3.0;
+  tc.y=(v[0]->p.y+v[1]->p.y+v[2]->p.y)/3.0;
+  tc.z=(v[0]->p.z+v[1]->p.z+v[2]->p.z)/3.0;
+  
+  int bestProjection=INT_MAX;
+  
+  itr = list =  gts_bb_tree_point_closest_bboxes(bboxTree,&tc);
+  double minDist=DBL_MAX;
+  double dist=DBL_MAX;
+  std::vector<pair<gdouble,int> > dists;
+
+  while (itr) {
+    GtsBBox * bbox=GTS_BBOX (itr->data);
+    if(!gts_bbox_point_is_inside(bbox,&tc)){
+      itr = itr->next;
+      continue;
+    }     
+    int val= (int)bbox->bounded;
+    if(find_min_project_dist_bbox(v,back_trans[val],calib, dist) == TEX_VALID){
+      dists.push_back(make_pair(dist,val));
+    }
+  
+    itr = itr->next;
+  }
+  g_slist_free (list);   
+  if(dists.size()){
+    sort( dists.begin(), dists.end() );
+    for(int i=0; i< NUM_TEX_BLEND_COORDS; i++)
+      idx[i]=dists[i].second;
+   
+    return true;
+
+  }else{
+
+      minDist=DBL_MAX;
+      for(int i =0; i < (int)bboxes_all.size(); i++){
+	if(gts_bbox_point_is_inside(bboxes_all[i],&tc)){
+	  int val= (int)bboxes_all[i]->bounded;
+	  if(find_min_project_dist_bbox(v,back_trans[val],calib, dist) == TEX_MARGIN){
+	    if(dist < minDist){
+	      minDist=dist;
+	      bestProjection=val;
+	    }
+	  }
+	}
+      }
+      for(int i=0; i < NUM_TEX_BLEND_COORDS; i++)
+	idx[i]=bestProjection;
+  }
+ 
+  return true;
+}
 
 typedef struct _texGenData{
   GNode *bboxTree;
@@ -1608,6 +1678,35 @@ static void texcoord_foreach_face (T_Face * f,
     tex_add_verbose(data->count++,data->total,data->reject);
 
 }
+
+static void texcoord_blend_foreach_face (T_Face * f,
+				   texGenData *data)
+{
+  int idx[NUM_TEX_BLEND_COORDS];
+  bool found=find_blend_img_trans(&GTS_FACE(f)->triangle,
+					 data->bboxTree,data->camPosePts,
+					 data->back_trans,data->calib,idx);
+  
+  if(!found){
+    /*fprintf(errFP,"Failed traingle\n");
+      gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
+      fflush(errFP);*/
+    if(data->verbose)
+      libpolyp::tex_add_verbose(data->count++,data->total,data->reject++);
+    return;
+  }
+    
+  if(apply_blend_tex_to_tri(f,data->calib,data->back_trans,idx,data->tex_size,texMargin))
+    data->validCount++;
+  else{
+    //printf("Failed\n");
+  }
+ 
+  if(data->verbose)
+    tex_add_verbose(data->count++,data->total,data->reject);
+
+}
+
 static void findborder_foreach_face (T_Face * f,
 				     texGenData *data)
 {
@@ -1621,7 +1720,7 @@ static void findborder_foreach_face (T_Face * f,
   }
 }
 
-void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads,int verbose){
+void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads,int verbose,int blend){
   
   //errFP=fopen("err.txt","w");
   std::vector<GtsPoint> camPosePts;
@@ -1658,13 +1757,23 @@ void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatr
   tex_data.calib=calib;
   tex_data.verbose=verbose;
   tex_data.border_faces = &border_faces;
-  if(num_threads > 1)
-    threaded_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,
-				   &tex_data ,num_threads);
-  else
-    gts_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,&tex_data);
+  if(!blend){
+    
+    if(num_threads > 1)
+      threaded_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,
+				     &tex_data ,num_threads);
+    else
+      gts_surface_foreach_face (s, (GtsFunc)texcoord_foreach_face ,&tex_data);
+  }else {
+    if(num_threads > 1)
+      threaded_surface_foreach_face (s, (GtsFunc)texcoord_blend_foreach_face ,
+				     &tex_data ,num_threads);
+    else
+      gts_surface_foreach_face (s, (GtsFunc)texcoord_blend_foreach_face ,&tex_data);
+  }
+
   if(verbose)
-    printf("\nChecking weird border cases...\n");
+      printf("\nChecking weird border cases...\n");
   if(num_threads > 1)
     threaded_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,
 				   &tex_data ,num_threads);   
@@ -1675,10 +1784,19 @@ void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatr
   tex_data.total =border_faces.size();
   for(int i=0; i < (int) border_faces.size(); i++){
     T_Face *f2 = copy_face(border_faces[i],s);
-    int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,bboxTree,camPosePts,back_trans,calib,1);
-    if(apply_tex_to_tri(f2,calib,back_trans[idx],idx,tex_size,texMargin))
-      tex_data.validCount++;
-    
+
+    if(!blend){
+      int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,bboxTree,camPosePts,back_trans,calib,1);
+      if(apply_tex_to_tri(f2,calib,back_trans[idx],idx,tex_size,texMargin))
+	tex_data.validCount++;
+    }else{
+      int idx[NUM_TEX_BLEND_COORDS];
+      if(find_blend_img_trans(&GTS_FACE(f2)->triangle,bboxTree,camPosePts,back_trans,calib,idx))
+	if(apply_blend_tex_to_tri(f2,calib,back_trans,idx,tex_size,texMargin))
+	  tex_data.validCount++;
+    }
+
+
     gts_surface_remove_face(s,GTS_FACE(border_faces[i]));
     if(verbose)
       tex_add_verbose(tex_data.count++,tex_data.total,tex_data.reject);

@@ -5,7 +5,6 @@
 #include <osg/GraphicsContext>
 #include <osg/TexEnvCombine>
 #include <osgDB/WriteFile>
-#include <osg/Texture2DArray>
 #include <osgUtil/Simplifier>
 #include <cv.h>
 #include <glib.h>
@@ -351,7 +350,6 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 
   if(resize == 0)
     resize=1;
- 
 
   int datasize=filecached->getTotalSizeInBytesIncludingMipmaps()-filecached->getMipmapOffset(i);
   unsigned char *newdata = new unsigned char[datasize];
@@ -591,7 +589,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
     int num_valid_tex=0;
     int tex_count=0;
     map<int,string>::iterator itr;
-    osg::Texture2DArray* textureArray= new osg::Texture2DArray; 
+    osg::ref_ptr<osg::Texture2DArray> textureArray= new osg::Texture2DArray; 
     program = new osg::Program;
     program->setName( "microshader" );
     osg::Shader *lerp=new osg::Shader( osg::Shader::FRAGMENT);
@@ -606,15 +604,18 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
     }  
   
     textureArray->setTextureSize(tex_size,tex_size,num_valid_tex);
-    printf("Created tex array %d\n",num_valid_tex);
+    
     int imgNum=0;
 
     osg::StateSet* stateset = new osg::StateSet;
     stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
-  
+    
   
     stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
-    stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray);
+    stateset->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.5f, 0.0f) ));
+    stateset->addUniform( new osg::Uniform( "shaderOut", 1));
+
+    stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
   
   
     for(itr=textures.begin(); itr!=textures.end(); ++itr){
@@ -634,7 +635,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
 	
 	 
       osg::ref_ptr<osg::Image> image=getCachedCompressedImage(filename,tex_size);
-
+    
       //LoadResizeSave(filename,fname, (!ive_out),tex_size);
       if (image.valid()){	     
 	 
@@ -642,6 +643,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
 	
 	  
 	textureArray->setImage(imgNum,image.get());
+	textureArray->setUnRefImageDataAfterApply(false);
 	gc._texturesActive=true;
 	stateset->setDataVariance(osg::Object::STATIC);
 	   
@@ -655,7 +657,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
 	  gc._texcoordsArray[i] = texcoordBlendArray->begin();
 	  gc._geom->setTexCoordArray(i+1,texcoordBlendArray);
 	}
-
+	osg_tex_arr_ptrs.push_back(textureArray);
 	imgNum++;
       }
     }

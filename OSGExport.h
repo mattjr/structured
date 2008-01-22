@@ -17,6 +17,7 @@
 #include <osg/StateSet>
 #include <osg/Material>
 #include <osg/Texture2D>
+#include <osg/Texture2DArray>
 #include <osg/Texture3D>
 #include <osg/TexGen>
 #include <osg/TexMat>
@@ -253,6 +254,7 @@ protected:
   bool _hardware_compress;
   bool _tex_array_blend;
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
+  vector<osg::ref_ptr<osg::Texture2DArray> > osg_tex_arr_ptrs;
   
 };
 #define MAX_TEX_UNITS 8

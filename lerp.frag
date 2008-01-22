@@ -1,11 +1,12 @@
 #version 120
 #extension GL_EXT_gpu_shader4 : enable
-
+uniform vec3 weights;
+uniform int shaderOut;
 uniform sampler2DArray theTexture;
 vec4 grayV(vec4 total){
 return vec4(max(max(total.x,total.y),total.z),max(max(total.x,total.y),total.z),max(max(total.x,total.y),total.z),1.0);
 }
-vec4 blend(){
+vec4 err(){
      vec4 c[4];
 
       c[0]=texture2DArray(theTexture,gl_TexCoord[1].xyz);
@@ -13,17 +14,7 @@ vec4 blend(){
       c[2]=texture2DArray(theTexture,gl_TexCoord[3].xyz);
       c[3]=texture2DArray(theTexture,gl_TexCoord[4].xyz);
 
-     // if(c[1].xyz == vec3(0.0,0.0,0.0))
-      //  c[1]=c[0];
-      //if(c[2].xyz == vec3(0.0,0.0,0.0))
-     //  c[2]=c[0];
-    // if(c[3].xyz == vec3(0.0,0.0,0.0))
-      //  c[3]=c[0];
-
-    /*  c[1]=c[0];
-     c[2]=c[0];
-      c[3]=c[0];
-*/    
+   
       float blendA = 0.5;
       vec4 t1 = mix(c[0],c[1],blendA);
       vec4 t2 = mix(c[1],c[2],blendA);
@@ -39,7 +30,7 @@ vec4 blend(){
    return log2(std+1);
 }
 
-vec4 avg(){
+vec4 avgC(){
      vec4 c[4];
 
       c[0]=texture2DArray(theTexture,gl_TexCoord[1].xyz);
@@ -47,25 +38,17 @@ vec4 avg(){
       c[2]=texture2DArray(theTexture,gl_TexCoord[3].xyz);
       c[3]=texture2DArray(theTexture,gl_TexCoord[4].xyz);
 
-     // if(c[1].xyz == vec3(0.0,0.0,0.0))
-      //  c[1]=c[0];
-      //if(c[2].xyz == vec3(0.0,0.0,0.0))
-     //  c[2]=c[0];
-    // if(c[3].xyz == vec3(0.0,0.0,0.0))
-      //  c[3]=c[0];
-
-    /*  c[1]=c[0];
-     c[2]=c[0];
-      c[3]=c[0];
-*/    
       float blendA = 0.5;
       vec4 t1 = mix(c[0],c[1],blendA);
       vec4 t2 = mix(c[1],c[2],blendA);
 	
-    
+      vec4 avg= mix(t1,t2,blendA);	
+
+ 
    
-   return mix(t1,t2,blendA);
+   return avg;
 }
+
 
 vec4 distI(){
 
@@ -76,9 +59,9 @@ vec4 distI(){
 
 
 vec4 freqBlend(){
-     float hiCb=0.025;
+     float hiCb=weights.x;
      float mipmapL=3;
-     float lowCb=0.5;
+     float lowCb=weights.y;
      float rmax=0.70710678;
      float lowWSum=0.0;
      float hiWSum=0.0;
@@ -87,6 +70,7 @@ vec4 freqBlend(){
      vec4 outLow;
   
      for(int i=1;i<5; i++){
+
      float r = length(gl_TexCoord[i].xy - vec2(0.5,0.5));
      float numHi=exp(-((r/rmax)-hiCb)/hiCb);
      float hiW=numHi/(1+numHi);
@@ -106,13 +90,22 @@ vec4 freqBlend(){
     return outP;
 
 }
+vec4 pass(){
+     return  texture2DArray(theTexture,gl_TexCoord[1].xyz);
+}
 void main()
 {
+	vec4 color;
 
+	if(shaderOut == 1)
+  	 color= freqBlend();
+	 else if(shaderOut ==2)
+	 color=avgC();
+	 else if(shaderOut ==3)
+	 color=err();	
+	 else
+	 color=pass();
 
-       //	vec4 color=  texture2DArray(theTexture,gl_TexCoord[2].xyz);
-       	vec4 color= freqBlend();//distI();
-	
         gl_FragColor = color;
 } 
  

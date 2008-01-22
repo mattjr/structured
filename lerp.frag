@@ -7,7 +7,7 @@ uniform sampler2DArray theTexture;
 void main()
 {
 
-	vec3 coord = gl_TexCoord[1].xyz;
+	vec3 coord = gl_TexCoord[4].xyz;
 //	coord.z=2;	
 	
        	vec4 color=  texture2DArray(theTexture,coord);

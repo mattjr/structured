@@ -16,6 +16,7 @@
 using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
+FILE *ffp;
 MyGraphicsContext *mgc=NULL;
 std::vector<GtsBBox *> bboxes_all;;
 int texMargin=100;
@@ -226,22 +227,22 @@ static void add_face_all_osg (T_Face * f, gpointer * data){
 
   
   
-  if (gc._texturesActive && f->material >= 0){
+  if (gc._texturesActive ){
 
 
     texLimits.expandBy(v1->u,1-v1->v,0.0);
     texLimits.expandBy(v2->u,1-v2->v,0.0);
     texLimits.expandBy(v3->u,1-v3->v,0.0);
-
-    
-    (*gc._texcoords++).set(v1->u,1-v1->v);    
-    (*gc._texcoords++).set(v2->u,1-v2->v); 
-    (*gc._texcoords++).set(v3->u,1-v3->v); 
+    if( f->material >= 0){
+      (*gc._texcoords++).set(v1->u,1-v1->v);    
+      (*gc._texcoords++).set(v2->u,1-v2->v); 
+      (*gc._texcoords++).set(v3->u,1-v3->v); 
+    }
 
     for(int i=0; i< 4; i++){
-      (*gc._texcoordsArray[i]++).set(v1->uB[i],1-v1->vB[i],f->materialB[i]);    
-      (*gc._texcoordsArray[i]++).set(v2->uB[i],1-v2->vB[i],f->materialB[i]); 
-      (*gc._texcoordsArray[i]++).set(v3->uB[i],1-v3->vB[i],f->materialB[i]); 
+      (*gc._texcoordsArray[i]++).set(v1->uB[i], 1 - v1->vB[i],f->materialB[i]);
+      (*gc._texcoordsArray[i]++).set(v2->uB[i], 1 - v2->vB[i],f->materialB[i]); 
+      (*gc._texcoordsArray[i]++).set(v3->uB[i], 1 - v3->vB[i],f->materialB[i]); 
     }
   
    
@@ -708,7 +709,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
 bool OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback,float *zrange) {
 
 
-  
+ 
   string format = osgDB::getFileExtension(string(out_name));
   
   ive_out= (format=="ive");
@@ -730,8 +731,7 @@ bool OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,ch
   else
     convertGtsSurfListToGeometry(s,textures,&cm,tex_size,group,vmcallback,zrange);
   
-  
-
+ 
  
 
 
@@ -1656,6 +1656,7 @@ static void texcoord_foreach_face (T_Face * f,
   int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
 					 data->bboxTree,data->camPosePts,
 					 data->back_trans,data->calib,1);
+  fprintf(ffp,"%d\n",indexClosest);
   if(indexClosest == INT_MAX){
     /*fprintf(errFP,"Failed traingle\n");
       gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
@@ -1686,7 +1687,9 @@ static void texcoord_blend_foreach_face (T_Face * f,
   bool found=find_blend_img_trans(&GTS_FACE(f)->triangle,
 					 data->bboxTree,data->camPosePts,
 					 data->back_trans,data->calib,idx);
-  
+  for(int i=0; i <NUM_TEX_BLEND_COORDS; i++)
+  fprintf(ffp,"%d ",idx[i]);
+  fprintf(ffp,"\n");
   if(!found){
     /*fprintf(errFP,"Failed traingle\n");
       gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
@@ -1706,6 +1709,22 @@ static void texcoord_blend_foreach_face (T_Face * f,
     tex_add_verbose(data->count++,data->total,data->reject);
 
 }
+static void findborder_blend_foreach_face (T_Face * f,
+				     texGenData *data)
+{
+  GtsTriangle * t = &GTS_FACE(f)->triangle;
+  TVertex * v1,* v2,* v3; 
+  gts_triangle_vertices(t,(GtsVertex **)& v1, 
+			(GtsVertex **)&v2, (GtsVertex **)&v3);
+  for(int i=0; i < NUM_TEX_BLEND_COORDS; i++){
+    if(f->materialB[i] != v1->idB[i] || f->materialB[i] != v2->idB[i] || f->materialB[i] != v3->idB[i]){
+    boost::mutex::scoped_lock scoped_lock(bfMutex);
+    data->border_faces->push_back(f);
+    return;
+    }
+  }
+}
+
 
 static void findborder_foreach_face (T_Face * f,
 				     texGenData *data)
@@ -1721,6 +1740,7 @@ static void findborder_foreach_face (T_Face * f,
 }
 
 void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads,int verbose,int blend){
+    ffp=fopen("w.txt","w");
   
   //errFP=fopen("err.txt","w");
   std::vector<GtsPoint> camPosePts;
@@ -1771,15 +1791,27 @@ void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatr
     else
       gts_surface_foreach_face (s, (GtsFunc)texcoord_blend_foreach_face ,&tex_data);
   }
-
-  if(verbose)
+fclose(ffp);
+if(verbose)
       printf("\nChecking weird border cases...\n");
+ if(!blend){
+   if(num_threads > 1)
+     threaded_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,
+				    &tex_data ,num_threads);   
+   else
+     gts_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,&tex_data );
+  
+ }else{
+
   if(num_threads > 1)
-    threaded_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,
-				   &tex_data ,num_threads);   
-  else
-    gts_surface_foreach_face (s, (GtsFunc)findborder_foreach_face ,&tex_data );
-  tex_data.count=1;
+     threaded_surface_foreach_face (s, (GtsFunc)findborder_blend_foreach_face ,
+				    &tex_data ,num_threads);   
+   else
+     gts_surface_foreach_face (s, (GtsFunc)findborder_blend_foreach_face ,&tex_data );
+
+ }
+
+ tex_data.count=1;
   tex_data.reject=0;
   tex_data.total =border_faces.size();
   for(int i=0; i < (int) border_faces.size(); i++){
@@ -1804,7 +1836,7 @@ void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatr
   if(verbose)
     printf("\nValid tex %d\n", tex_data.validCount);
  
-  
+	   
   
 }
 

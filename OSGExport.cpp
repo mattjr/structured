@@ -612,7 +612,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
     
   
     stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
-    stateset->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.5f, 0.0f) ));
+    stateset->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.10f, 0.4f) ));
     stateset->addUniform( new osg::Uniform( "shaderOut", 1));
 
     stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());

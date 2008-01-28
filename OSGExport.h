@@ -1,6 +1,6 @@
 #ifndef OBJ_H
 #define OBJ_H
-
+#include "adt_cvutils.hpp"
 #include <string>
 #include <vector>
 #include <map>
@@ -50,6 +50,9 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include "auv_clipped_texture_atlas.hpp"
+#include "adt_hist.hpp"
+
+using namespace auv_data_tools;
 using namespace std;
 using namespace libsnapper;
 using namespace libpolyp;
@@ -203,60 +206,7 @@ public:
     int _tex_size;
 };
 #endif
-class OSGExporter 
-{
-public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend) {state=NULL;
-    do_atlas=false;
-    context=NULL;
-    internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
-    if(compress_tex && _hardware_compress){
-      
-      if(verbose)
-	printf("Compressing Textures\n");
-      if(!mgc)
-	mgc=new MyGraphicsContext();
-      context=mgc;
-      
-      if(!context){
-	printf("Can't use OPENGL without valid context");
-	exit(0);
-      }
 
-
-      internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION; 
-
-    }
-  }
-  osg::Image *LoadResizeSave(string filename,string outname,bool save,int tex_size);
-  bool convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;
-~OSGExporter();
- std::map<string,IplImage *> tex_image_cache;
-  std::map<string,osg::Image *> compressed_img_cache;
-  osg::Image *getCachedCompressedImage(string name,int size);
-  osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
-protected:
-  osg::ref_ptr<osg::State> state;
- 
-  void compress(osg::Texture2D* texture2D);
-  osg::Texture::InternalFormatMode internalFormatMode;
-    MyGraphicsContext *context;
-  bool ive_out;
-  bool convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,VerboseMeshFunc vmcallback,float *zrange);
-  bool convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size, osg::ref_ptr<osg::Geode >* group,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;  
-  bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback=NULL);
-  string prefixdir;
-  bool tex_saved;
-  bool compress_tex;
-  bool do_atlas;
-  int num_threads;
-  int verbose;
-  bool _hardware_compress;
-  bool _tex_array_blend;
-  vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
-  vector<osg::ref_ptr<osg::Texture2DArray> > osg_tex_arr_ptrs;
-  
-};
 #define MAX_TEX_UNITS 8
 // collect all the data relavent to a particular osg::Geometry being created.
 struct GeometryCollection
@@ -279,7 +229,8 @@ struct GeometryCollection
   osg::Vec4Array::iterator    _colors;
   bool                        _colorsActive;
   osg::Vec2Array::iterator    _texcoords;
-  osg::Vec3Array::iterator    _texcoordsArray[NUM_TEX_BLEND_COORDS];
+  osg::Vec2Array *    _texcoordArray;
+  osg::Vec3Array::iterator    _texcoordsTexArray[NUM_TEX_BLEND_COORDS];
   int                         _coordCount;
   osg::Geometry*              _geom;
   osg::BoundingBox            _texLimits;
@@ -287,10 +238,71 @@ struct GeometryCollection
 };
 enum {IVE_OUT,OSG_OUT,THREEDS_OUT};
 
-
-
 typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;
 typedef std::map<int,string> MaterialToIDMap;
+
+
+class OSGExporter 
+{
+public:
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend) {state=NULL;
+    do_atlas=false;
+    computeHists=true;
+    context=NULL;
+    //    internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
+    if(compress_tex && _hardware_compress){
+      
+      if(verbose)
+	printf("Compressing Textures\n");
+      if(!mgc)
+	mgc=new MyGraphicsContext();
+      context=mgc;
+      
+      if(!context){
+	printf("Can't use OPENGL without valid context");
+	exit(0);
+      }
+
+
+      //internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION; 
+
+    }
+  }
+  osg::Image *LoadResizeSave(string filename,string outname,bool save,int tex_size);
+  bool convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;
+~OSGExporter();
+ std::map<string,IplImage *> tex_image_cache;
+  std::map<string,osg::Image *> compressed_img_cache;
+  osg::Image *getCachedCompressedImage(string name,int size);
+  osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
+protected:
+  osg::ref_ptr<osg::State> state;
+  bool computeHists;
+  void compress(osg::Texture2D* texture2D,osg::Texture::InternalFormatMode internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION );
+  //osg::Texture::InternalFormatMode internalFormatMode;
+    MyGraphicsContext *context;
+  bool ive_out;
+  bool convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,VerboseMeshFunc vmcallback,float *zrange);
+  bool convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size, osg::ref_ptr<osg::Geode >* group,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;  
+  bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback=NULL);
+  string prefixdir;
+  bool tex_saved;
+  int _tex_size;
+  bool compress_tex;
+  bool do_atlas;
+  int num_threads;
+  int verbose;
+  bool _hardware_compress;
+  bool _tex_array_blend;
+  vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
+  vector<osg::ref_ptr<osg::Texture2DArray> > osg_tex_arr_ptrs;
+  map<int,osg::Texture *> osg_tex_map;
+
+  osg::TextureRectangle * getTextureHists( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures);
+};
+
+
+
 void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads,int verbose=0,int blend=0);
 osg::Image* Convert_OpenCV_TO_OSG_IMAGE(IplImage* cvImg,bool flip=true,bool compress=false);
 

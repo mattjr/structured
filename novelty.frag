@@ -11,14 +11,29 @@ vec3 jet_colormap(float val)
   return rgb;
 }
 
+uniform int shaderOut;
+uniform vec3 weights;
 
 void main()
 {
   
+
   vec4 infoC= texture2D(infoT,gl_TexCoord[0].xy);
   vec4 src= texture2D(rtex,gl_TexCoord[0].xy);
- 
-  gl_FragColor = vec4(jet_colormap(infoC.x),1);
+  vec4 color;
+  float nov=infoC.x;
+  if(shaderOut == 1)
+    color= src;
+  else if(shaderOut ==3)
+    color=vec4(jet_colormap(nov),1);
+  else if(shaderOut ==2){
+    if(nov > weights.z)
+      color=mix(vec4(0.0,1.0,0.0,1.0),src,0.6);
+    else
+      color=src;
+  }
+    
+  gl_FragColor = color;
 
 } 
  

@@ -18,7 +18,7 @@ typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 using namespace squish;
 FILE *ffp;
-IplImage *testImg=NULL;
+
 MyGraphicsContext *mgc=NULL;
 std::vector<GtsBBox *> bboxes_all;;
 int texMargin=100;
@@ -624,6 +624,12 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
      osg::Texture2D* texture2D = new osg::Texture2D(texI);
      compress(texture2D,osg::Texture::USE_S3TC_DXT1_COMPRESSION);
      gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_INFO,texture2D );
+     cvReleaseImage(&texInfo);
+     cvReleaseImage(&tmpG);
+     cvReleaseImage(&novelty_image);
+     cvReleaseImage(&med);
+     cvReleaseImage(&tmp);
+
    }
    
   
@@ -793,7 +799,9 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      gc._geom->getStateSet()->addUniform( new osg::Uniform("binsize",
 								    16.0f));
 	    }
-	    
+
+	    gc._geom->getStateSet()->addUniform( new osg::Uniform( "shaderOut", 1));
+	    gc._geom->getStateSet()->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.10f, 0.4f) ));
 	    gc._geom->getStateSet()->setAttributeAndModes( program,
 							   osg::StateAttribute::ON );
 	    

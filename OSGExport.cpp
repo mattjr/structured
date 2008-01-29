@@ -380,8 +380,9 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
   
   return retImage;
 }
-#define TEXUNIT_ARRAY        0
-#define TEXUNIT_HIST        1
+#define TEXUNIT_ARRAY       0
+#define TEXUNIT_HIST        2
+#define TEXUNIT_INFO        1
 
 bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
 {
@@ -452,11 +453,85 @@ void DecompressImageRGB( u8* rgb, int width, int height, void const* blocks, int
 	}
 }
 
-osg::TextureRectangle*  OSGExporter::getTextureHists( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures){
-   MaterialToGeometryCollectionMap::iterator itr;
-   
-   Hist_Calc histCalc(_tex_size,_tex_size,16,1);
+osg::TextureRectangle*  OSGExporter::getTextureHists(  CvHistogram *&finalhist){
 
+   
+   
+   //long double total=0;
+  
+   float *tmpV= new float[16*16*16];
+   osg::Image *dataImg= new osg::Image;
+   dataImg->allocateImage(64,64,1,GL_LUMINANCE,GL_UNSIGNED_BYTE);
+   //int count=0;
+   float min=FLT_MAX;
+   float max=FLT_MIN;
+   float *ptr=tmpV;
+   for(int i=0; i< 16; i++)
+     for(int j=0; j< 16; j++)
+       for(int k=0; k< 16; k++){
+	 float val=cvQueryHistValue_3D(finalhist,i,j,k);
+
+
+	 if(val == 0.0){
+	   *ptr=FLT_MIN;
+	   ptr++;
+	   continue;
+	 }
+	 float logV=(-log(val));
+	 if(logV< min)
+	   min=logV;
+
+	 if(logV> max)
+	   max=logV;
+
+	 *ptr=logV;
+	 ptr++;
+     
+	 
+	 /* cout << cvQueryHistValue_3D(finalhist,i,j,k) << " ";
+	    total +=cvQueryHistValue_3D(finalhist,i,j,k);*/
+       }
+   printf("Min %f\n",min);
+   printf("Max %f\n",max);
+   float range=max-min;
+   ptr=tmpV;
+   for(int i=0;i < 64; i++)
+     for(int j=0; j<64; j++){
+       if(*ptr==FLT_MIN){
+	 *ptr=0.0;
+	 ptr++;
+	 continue;
+       }
+      
+       *ptr = (*ptr-min)*(255.0/range);
+       //   printf("i: %d j: %d %f\n",i,j,*ptr); 
+       ptr++;
+     }
+     cout << endl;//"\nTotal " << total <<endl;*/
+  
+     unsigned char *imgPtr=(unsigned char *)dataImg->data();
+     ptr=tmpV;
+     for(int i=0;i < 64; i++){
+       for(int j=0; j<64; j++){
+	 *imgPtr=(int)(*ptr);
+   if(i ==1 && j==0 )
+     *imgPtr=255;
+	 //printf("i: %d j: %d %d\n",i,j,*imgPtr); 
+	 ptr++;
+	 imgPtr++;
+       }
+     }
+     
+  
+
+   osg::TextureRectangle* texture = new osg::TextureRectangle(dataImg);
+   return texture;
+
+}
+
+void OSGExporter::calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc){
+
+  MaterialToGeometryCollectionMap::iterator itr;
    for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
      GeometryCollection& gc = itr->second;
      if(!gc._texturesActive )
@@ -491,90 +566,67 @@ osg::TextureRectangle*  OSGExporter::getTextureHists( MaterialToGeometryCollecti
      }
     
      histCalc.calc_hist(tmp,mask,1/*BGR*/);
-     IplImage *novelty_image=NULL;
-     histCalc.get_novelty_img(novelty_image); 
-     //mcvNormalize((IplImage*)novelty_image, (IplImage*)novelty_image, 0, 255);
-     testImg=cvNewColor(novelty_image);
-     scaleJetImage( (IplImage*)novelty_image, (IplImage*)testImg);
-     osg::Texture *tex=osg_tex_map[itr->first];
-     IplImage *rgba=cvCreateImage(cvSize(tmp->width,tmp->height),
-				 IPL_DEPTH_8U,4);
-     cvCvtColor(tmp, rgba, CV_RGB2RGBA);
-     cvSetImageCOI(rgba,4);
-     cvCopy(histCalc.imageTex,rgba);
-     cvSetImageCOI(rgba,0);
-     osg::Image *imageWithG=Convert_OpenCV_TO_OSG_IMAGE(rgba,false);
-     osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(tex);
-     texture2D->setImage(imageWithG);
-     compress(texture2D,osg::Texture::USE_S3TC_DXT5_COMPRESSION);
+     if(gpuNovelty){
+       osg::Texture *tex=osg_tex_map[itr->first];
+       IplImage *rgba=cvCreateImage(cvSize(tmp->width,tmp->height),
+				    IPL_DEPTH_8U,4);
+       cvCvtColor(tmp, rgba, CV_RGB2RGBA);
+       cvSetImageCOI(rgba,4);
+       cvCopy(histCalc.imageTex,rgba);
+       cvSetImageCOI(rgba,0);
+       osg::Image *imageWithG=Convert_OpenCV_TO_OSG_IMAGE(rgba,false);
+       osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(tex);
+       texture2D->setImage(imageWithG);
+       compress(texture2D,osg::Texture::USE_S3TC_DXT5_COMPRESSION);
+     }
+     cvReleaseImage(&tmp);
+     cvReleaseImage(&mask);
    }
    
-   CvHistogram *finalhist=NULL;
-   //long double total=0;
-   histCalc.get_hist(finalhist);
-   float *tmpV= new float[16*16*16];
-   osg::Image *dataImg= new osg::Image;
-   dataImg->allocateImage(64,64,1,GL_LUMINANCE,GL_UNSIGNED_BYTE);
-   //int count=0;
-   float min=FLT_MAX;
-   float max=FLT_MIN;
-   float *ptr=tmpV;
-   for(int i=0; i< 16; i++)
-     for(int j=0; j< 16; j++)
-       for(int k=0; k< 16; k++){
-	 float val=cvQueryHistValue_3D(finalhist,i,j,k);
-	 if(val == 0.0){
-	   *ptr=FLT_MIN;
-	   ptr++;
-	   continue;
-	 }
-	 float logV=(-log(val));
-	 if(logV< min)
-	   min=logV;
-
-	 if(logV> max)
-	   max=logV;
-
-	 *ptr=logV;
-	 ptr++;
-     
-	 
-	 /* cout << cvQueryHistValue_3D(finalhist,i,j,k) << " ";
-	    total +=cvQueryHistValue_3D(finalhist,i,j,k);*/
-       }
-   printf("Min %f\n",min);
-   printf("Max %f\n",max);
-   float range=max-min;
-   ptr=tmpV;
-   for(int i=0;i < 64; i++)
-     for(int j=0; j<64; j++){
-       if(*ptr==FLT_MIN){
-	 *ptr=0.0;
-	 ptr++;
-	 continue;
-       }
-	 
-       *ptr = (*ptr-min)*(255.0/range);
-       //   printf("i: %d j: %d %f\n",i,j,*ptr); 
-       ptr++;
-     }
-     cout << endl;//"\nTotal " << total <<endl;*/
   
-     unsigned char *imgPtr=(unsigned char *)dataImg->data();
-     ptr=tmpV;
-     for(int i=0;i < 64; i++){
-       for(int j=0; j<64; j++){
-	 *imgPtr=(int)(*ptr);
-	 //printf("i: %d j: %d %d\n",i,j,*imgPtr); 
-	 ptr++;
-	 imgPtr++;
-       }
-     }
-     
-  
+}
 
-   osg::TextureRectangle* texture = new osg::TextureRectangle(dataImg);
-   return texture;
+void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc,CvHistogram *hist){
+
+  MaterialToGeometryCollectionMap::iterator itr;
+   for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
+     GeometryCollection& gc = itr->second;
+     if(!gc._texturesActive )
+       continue;
+     string name=textures[itr->first];
+      
+     osg::Image *img=compressed_img_cache[name];
+     if(!img){
+       printf("Image null in getTextureHists %s\n",name.c_str());
+       continue;
+     }
+     IplImage *tmp=cvCreateImage(cvSize(img->s(),img->t()),
+				 IPL_DEPTH_8U,3);
+     IplImage *med=cvNewGray(tmp);
+
+     DecompressImageRGB((unsigned char *)tmp->imageData,tmp->width,tmp->height,img->data(),squish::kDxt1);
+
+ 
+     IplImage *novelty_image=  histCalc.get_novelty_img(tmp,hist); 
+     //mcvNormalize((IplImage*)novelty_image, (IplImage*)novelty_image, 0, 255);
+     IplImage *texInfo=cvNewColor(novelty_image);
+     IplImage *tmpG=cvNewGray(novelty_image);
+     mcvNormalize((IplImage*)novelty_image, (IplImage*)novelty_image, 0, 255);
+     cvConvertScale(novelty_image,tmpG);
+     
+     cvSmooth(tmpG,med,CV_MEDIAN,9);
+     //   scaleJetImage( (IplImage*)novelty_image, (IplImage*)testImg);
+  
+     cvSetImageCOI(texInfo,1);
+     cvCopy(med,texInfo);
+     cvSetImageCOI(texInfo,0);
+     osg::Image *texI=Convert_OpenCV_TO_OSG_IMAGE(texInfo,false);
+     osg::Texture2D* texture2D = new osg::Texture2D(texI);
+     compress(texture2D,osg::Texture::USE_S3TC_DXT1_COMPRESSION);
+     gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_INFO,texture2D );
+   }
+   
+  
 }
 
 
@@ -691,17 +743,30 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     gts_surface_foreach_face (s, (GtsFunc) add_face_mat_osg , data);
     osg::ref_ptr<osg::Geode> untextured = new osg::Geode;
     osg::ref_ptr<osg::Geode> textured = new osg::Geode;
-    
-    // if(computeHists){
-      osg::Program* program=NULL;
+    osg::TextureRectangle* histTex=NULL;
+    osg::Program* program=NULL;
+
+    if(computeHists){
+     
       program = new osg::Program;
       program->setName( "microshader" );
       osg::Shader *novelty=new osg::Shader( osg::Shader::FRAGMENT);
-      loadShaderSource( novelty, "novelty.frag" );
+      if(gpuNovelty){
+	loadShaderSource( novelty, "novelty-live.frag" );
+      }else{
+	loadShaderSource( novelty, "novelty.frag" );
+      }
       program->addShader(  novelty );
-  
-      osg::TextureRectangle* histTex = getTextureHists(mtgcm,textures);
       
+      Hist_Calc histCalc(_tex_size,_tex_size,16,1);
+      CvHistogram *finalhist=NULL;    
+      calcHists(mtgcm,textures,histCalc);
+      histCalc.get_hist(finalhist);
+      if(gpuNovelty)
+	histTex= getTextureHists(finalhist);
+      else
+	addNoveltyTextures(mtgcm,textures,histCalc,finalhist);
+    }
   // osgUtil::Tessellator tessellator;
     
   // add everthing into the Geode.   
@@ -714,29 +779,38 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       GeometryCollection& gc = itr->second;
       if (gc._geom)
         {
-	  
+	  gc._geom->setUseDisplayList(false);
           //  tessellator.retessellatePolygons(*gc._geom);
         
 	  smoother.smooth(*gc._geom);
 	  if(gc._texturesActive){
 	    textured->addDrawable(gc._geom);
-	    gc._geom->getStateSet()->addUniform( new osg::Uniform("hist", TEXUNIT_HIST) );
-	    gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_HIST, histTex);
-	    gc._geom->getStateSet()->setAttributeAndModes( program, osg::StateAttribute::ON );
-	 
-	    gc._geom->getStateSet()->addUniform( new osg::Uniform("rtex",0));
-	    gc._geom->getStateSet()->addUniform( new osg::Uniform("infoT",3));
-	    gc._geom->getStateSet()->setTextureAttribute(3, new osg::Texture2D( Convert_OpenCV_TO_OSG_IMAGE(testImg,false)));
-   
+	    if(gpuNovelty){
+	      gc._geom->getStateSet()->addUniform(new osg::Uniform("hist", 
+								   TEXUNIT_HIST) );
+	      gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_HIST,
+							   histTex);
+	      gc._geom->getStateSet()->addUniform( new osg::Uniform("binsize",
+								    16.0f));
+	    }
+	    
+	    gc._geom->getStateSet()->setAttributeAndModes( program,
+							   osg::StateAttribute::ON );
+	    
+	    gc._geom->getStateSet()->addUniform(new osg::Uniform("rtex",0));
+	    gc._geom->getStateSet()->addUniform(new osg::Uniform("infoT",
+								 TEXUNIT_INFO));
+
+      
 	  }
 	  else{
 	    untextured->addDrawable(gc._geom);
 	  }
-	  //  printf("Grilled Shrip %f %f %f %f\n",gc._texLimits.xMin(),
-	  //   gc._texLimits.xMax(),gc._texLimits.yMin(),gc._texLimits.yMax());
+
         }
 
     }
+    
   
  if(textured->getNumDrawables())
   group[0]=textured.get();
@@ -882,7 +956,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
     // add everthing into the Geode.   
   
     osgUtil::SmoothingVisitor smoother;
- 
+   
     if (gc._geom){
     
       //  tessellator.retessellatePolygons(*gc._geom);
@@ -900,7 +974,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
   }
   
  
-  
+ 
   if(textured->getNumDrawables())
     group[0]=textured.get();
   else 

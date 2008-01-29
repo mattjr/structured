@@ -245,10 +245,11 @@ typedef std::map<int,string> MaterialToIDMap;
 class OSGExporter 
 {
 public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend) {state=NULL;
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),gpuNovelty(false),computeHists(true) {state=NULL;
     do_atlas=false;
-    computeHists=true;
+    
     context=NULL;
+  
     //    internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
     if(compress_tex && _hardware_compress){
       
@@ -263,6 +264,7 @@ public:
 	exit(0);
       }
 
+      
 
       //internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION; 
 
@@ -277,7 +279,7 @@ public:
   osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
 protected:
   osg::ref_ptr<osg::State> state;
-  bool computeHists;
+  
   void compress(osg::Texture2D* texture2D,osg::Texture::InternalFormatMode internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION );
   //osg::Texture::InternalFormatMode internalFormatMode;
     MyGraphicsContext *context;
@@ -294,11 +296,17 @@ protected:
   int verbose;
   bool _hardware_compress;
   bool _tex_array_blend;
+  bool gpuNovelty;
+  bool computeHists;
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
   vector<osg::ref_ptr<osg::Texture2DArray> > osg_tex_arr_ptrs;
   map<int,osg::Texture *> osg_tex_map;
 
-  osg::TextureRectangle * getTextureHists( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures);
+  osg::TextureRectangle * getTextureHists(  CvHistogram *&finalhist);
+  
+  void  calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc);
+  void addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc,CvHistogram *hist);
+  
 };
 
 

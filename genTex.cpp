@@ -32,7 +32,7 @@
 #include  <boost/thread/xtime.hpp> 
 #include "auv_mesh_utils.hpp"
 #include "auv_mesh_io.hpp"
-
+#include "Depth.h"
 using namespace std;
 using namespace libplankton;
 using namespace libsnapper;
@@ -433,7 +433,7 @@ std::vector<vector<string >   > outNames;
     //int initialEdges=gts_surface_edge_number(s);
 
     int lodTexSize[]={max((int)(512*tex_scale),32),max((int)(256*tex_scale),32),max((int)(32*tex_scale),32)};
-    float simpRatio[]={0.5,0.1,0.01};
+    //float simpRatio[]={0.5,0.1,0.01};
    std::vector<string > lodnames;
     
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
@@ -458,7 +458,15 @@ std::vector<vector<string >   > outNames;
        GtsSurface *surf = gts_surface_new(gts_surface_class(),
 				       (GtsFaceClass *) t_face_class(),
 					 gts_edge_class(), t_vertex_class());
-       bool res=read_ply(str.c_str(),surf,verbose);
+       TriMesh::verbose=verbose;
+       
+       TriMesh *mesh = TriMesh::read(str.c_str());
+	DepthStats ds(mesh);
+	vector<Plane3D> planes;
+	vector<TriMesh::BBox> bounds;
+	ds.getPlaneFits(planes,bounds,4,4);
+
+	bool res=convert_ply(mesh,surf,verbose);
        mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
        if(!res ){
       printf("Failed to load surface %s\n",
@@ -524,9 +532,10 @@ std::vector<vector<string >   > outNames;
       sprintf(out_name,"mesh/blended-%02d-lod%d.%s",i,j,ext);
       
       osgExp->convertModelOSG(surf,texture_file_names,
-							     out_name,lodTexSize[j],texcallback,zrange);
+			      out_name,lodTexSize[j],
+			      texcallback,zrange);
       
-     
+      
       boost::xtime_get(&xt2, boost::TIME_UTC);
       time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
       secs=time/1000.0;

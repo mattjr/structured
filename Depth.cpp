@@ -5,18 +5,21 @@ DepthStats::DepthStats(TriMesh *mesh):_mesh(mesh){
 }
 
 
-void DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<GtsBBox> &bounds,int widthSplits,int heightSplits){
+void DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,int widthSplits,int heightSplits){
   int nv = _mesh->vertices.size();
   _mesh->need_bbox();
   vec v=_mesh->bbox.size();
+  cout << v << endl;
+  cout << _mesh->bbox.min << " " << _mesh->bbox.max << endl;
+
   double xstep = v[0] /widthSplits;
   double ystep = v[1]/ heightSplits;
-  double stepmin[2];
-  double stepmax[2];
+  
  
 
   for(int wS=0; wS < widthSplits; wS++){
     for(int hS=0; hS <heightSplits; hS++){
+      TriMesh::BBox stepbbox;
      Plane3D plane3D,plane3D_2;
      RansacPlane m_RansacPlane;
      std::vector<bool> inliers;
@@ -28,16 +31,17 @@ void DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<GtsBBox> &bounds,i
      std::vector<Point3D> m_pPoints;
      std::vector<int> pointIndex;
      int count=0;
-     stepmin[0] = _mesh->bbox.min[0] + (xstep * wS);
-     stepmin[1]= _mesh->bbox.min[1] + (ystep * hS);
+     stepbbox.min[0] = _mesh->bbox.min[0] + (xstep * wS);
+     stepbbox.min[1]= _mesh->bbox.min[1] + (ystep * hS);
      
-     stepmax[0] = _mesh->bbox.min[0] + (xstep*(wS+1));
-     stepmax[1]= _mesh->bbox.min[1] + (ystep*(hS+1));
+     stepbbox.max[0] = _mesh->bbox.min[0] + (xstep*(wS+1));
+     stepbbox.max[1]= _mesh->bbox.min[1] + (ystep*(hS+1));
+     //   cout << stepbbox.min << stepbbox.max<< " " <<(xstep * wS) << " " <<(ystep * hS) <<  endl;
      for (int i = 0; i < nv; i++){
-       if (_mesh->vertices[i][0] >= stepmin[0] ||
-	   _mesh->vertices[i][0] <= stepmax[0] ||
-	   _mesh->vertices[i][1] >= stepmin[1] ||
-	   _mesh->vertices[i][1] <= stepmax[1] ){
+       if (_mesh->vertices[i][0] >= stepbbox.min[0] &&
+	   _mesh->vertices[i][0] <= stepbbox.max[0] &&
+	   _mesh->vertices[i][1] >= stepbbox.min[1] &&
+	   _mesh->vertices[i][1] <= stepbbox.max[1] ){
 	 Point3D pt(_mesh->vertices[i][0],
 		    _mesh->vertices[i][1],
 		    _mesh->vertices[i][2]);
@@ -67,14 +71,14 @@ void DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<GtsBBox> &bounds,i
        continue;
      }
      else {
-       //std::cout << "N# of inliers " << nInlierCount
-       //       << "  N# of points " << pointIndex.size()
-       //       << std::endl;
+       // std::cout << "N# of inliers " << nInlierCount
+       //     << "  N# of points " << pointIndex.size()
+       //     << std::endl;
      }
      
      //std::cout << "Plane Score " << dbModelScore << std::endl;
      
-     //plane3D.info();
+     plane3D.info();
      // --- Min Least Square  -------
      // -----------------------------
      m_RansacPlane.bestPlaneMinLeastSquares(pointIndex, plane3D_2);
@@ -95,6 +99,11 @@ void DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<GtsBBox> &bounds,i
        plane3D = plane3D_2;
        //std::cout << "--------------------------------MLQE" << std::endl;
      }
-   }
- }
+
+     
+     planes.push_back(plane3D);
+     bounds.push_back(stepbbox);
+     
+    }
+  }
 }

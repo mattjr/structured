@@ -8,7 +8,7 @@ class DepthStats{
 
 public:
   DepthStats(TriMesh *mesh);
-  void getPlaneFits(vector<Plane3D> &planes, vector<GtsBBox> &bounds,
+  void getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,
 		    int widthSplits,int heightSplits);
   TriMesh *_mesh;
 };

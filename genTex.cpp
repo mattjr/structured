@@ -464,7 +464,7 @@ std::vector<vector<string >   > outNames;
 	DepthStats ds(mesh);
 	vector<Plane3D> planes;
 	vector<TriMesh::BBox> bounds;
-	ds.getPlaneFits(planes,bounds,4,4);
+	ds.getPlaneFits(planes,bounds,16,4);
 
 	bool res=convert_ply(mesh,surf,verbose);
        mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
@@ -530,12 +530,22 @@ std::vector<vector<string >   > outNames;
       else
 	strcpy(ext,"ive");
       sprintf(out_name,"mesh/blended-%02d-lod%d.%s",i,j,ext);
+      osg::ref_ptr<osg::Geode> group[2];
+      ClippingMap cm;
+      if(!tex_array_blend)
+      osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
+					   lodTexSize[j],group,planes,bounds,
+						   texcallback,zrange);
+      else
+
+      osgExp->convertGtsSurfListToGeometryTexArray(surf,texture_file_names,&cm,
+						   lodTexSize[j],group,
+					      texcallback,zrange);
+
+
       
-      osgExp->convertModelOSG(surf,texture_file_names,
-			      out_name,lodTexSize[j],
-			      texcallback,zrange);
-      
-      
+      osgExp->outputModelOSG(out_name,group);
+
       boost::xtime_get(&xt2, boost::TIME_UTC);
       time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
       secs=time/1000.0;

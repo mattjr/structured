@@ -36,6 +36,9 @@ void DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bo
      
      stepbbox.max[0] = _mesh->bbox.min[0] + (xstep*(wS+1));
      stepbbox.max[1]= _mesh->bbox.min[1] + (ystep*(hS+1));
+     
+     stepbbox.min[2]= _mesh->bbox.min[2];
+     stepbbox.max[2]= _mesh->bbox.max[2];
      //   cout << stepbbox.min << stepbbox.max<< " " <<(xstep * wS) << " " <<(ystep * hS) <<  endl;
      for (int i = 0; i < nv; i++){
        if (_mesh->vertices[i][0] >= stepbbox.min[0] &&

@@ -36,6 +36,8 @@
 #include "PixelBufferCarbon.h"
 #include "auv_mesh.hpp"
 #include "auv_stereo_geometry.hpp"
+#include "auv_ransac_plane.hpp"
+
 #define USE_LIB3DS
 #ifdef USE_LIB3DS
 #include <lib3ds/file.h>
@@ -51,7 +53,8 @@
 #include <boost/function.hpp>
 #include "auv_clipped_texture_atlas.hpp"
 #include "adt_hist.hpp"
-
+#include "auv_mesh_io.hpp"
+#include "Depth.h"
 using namespace auv_data_tools;
 using namespace std;
 using namespace libsnapper;
@@ -245,7 +248,7 @@ typedef std::map<int,string> MaterialToIDMap;
 class OSGExporter 
 {
 public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),gpuNovelty(false),computeHists(true) {state=NULL;
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),gpuNovelty(false),computeHists(false) {state=NULL;
     do_atlas=false;
     
     context=NULL;
@@ -271,12 +274,16 @@ public:
     }
   }
   osg::Image *LoadResizeSave(string filename,string outname,bool save,int tex_size);
-  bool convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;
+  // bool convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;
+  bool outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *group);
 ~OSGExporter();
  std::map<string,IplImage *> tex_image_cache;
   std::map<string,osg::Image *> compressed_img_cache;
   osg::Image *getCachedCompressedImage(string name,int size);
   osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
+  bool convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,VerboseMeshFunc vmcallback,float *zrange);
+  bool convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size, osg::ref_ptr<osg::Geode >* group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;  
+  bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback=NULL);
 protected:
   osg::ref_ptr<osg::State> state;
   
@@ -284,9 +291,7 @@ protected:
   //osg::Texture::InternalFormatMode internalFormatMode;
     MyGraphicsContext *context;
   bool ive_out;
-  bool convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,VerboseMeshFunc vmcallback,float *zrange);
-  bool convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size, osg::ref_ptr<osg::Geode >* group,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;  
-  bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback=NULL);
+
   string prefixdir;
   bool tex_saved;
   int _tex_size;

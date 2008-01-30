@@ -4,9 +4,12 @@
 #include <osgUtil/Optimizer>
 #include <osg/GraphicsContext>
 #include <osg/TexEnvCombine>
+#include <osg/PolygonMode>
 #include <osg/TextureRectangle>
 #include <osgDB/WriteFile>
+#include <osg/Point>
 #include <osgUtil/Simplifier>
+#include <osg/ShapeDrawable>
 #include <cv.h>
 #include <glib.h>
 #include <highgui.h>
@@ -634,11 +637,140 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
    
   
 }
-
-
-bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,VerboseMeshFunc vmcallback,float *zrange)
+osg::Vec3Array* displayPlane(Plane3D m_BiggerPlane3D,Point3D center)
 {
+  /*  int nSize = m_pPoints->size();
+  Point3D* ppoint;
+ /
   
+  for (int i=0; i< nSize; i++) {
+    ppoint = &((*m_pPoints)[i]);
+    glColor3f(0.0,0.0,1.0);// blue points
+    glBegin(GL_POINTS);
+        if (ppoint->isGoodPoint())
+	  glVertex3f(ppoint->x(), ppoint->y(), ppoint->z());
+    glEnd();
+  }
+ 
+  
+  
+  float x,y,z;
+  float w = 5;
+  int nSize2=1000;*/
+  int type = -1;
+  double u0=fabs(m_BiggerPlane3D.u[0]);
+  double u1=fabs(m_BiggerPlane3D.u[1]);
+  double u2=fabs(m_BiggerPlane3D.u[2]);
+ 
+  if (u0>=u1 && u0>=u2)
+    type = 0;
+  else if (u1>=u0 && u1>=u2)
+    type = 1;
+  else if (u2>=u0 && u2>=u1)
+    type = 2;
+  else {
+    std::cout << " ERRROORORORORROROROROORORRORORORO"
+	      << std::endl;
+    return NULL;
+  }
+ 
+  double x_min=10e10, x_max=-10e10;
+  double y_min=10e10, y_max=-10e10;
+  double z_min=10e10, z_max=-10e10;
+ 
+  /*for (int i=0; i< nSize; i++) {
+    ppoint = &((*m_pPoints)[i]);
+    if (ppoint->isGoodPoint()) {
+      x = ppoint->x();
+      y = ppoint->y();
+      z = ppoint->z();
+ 
+      x_min = MIN(x_min,x);
+      y_min = MIN(y_min,y);
+      z_min = MIN(z_min,z);
+      x_max = MAX(x_max,x);
+      y_max = MAX(y_max,y);
+      z_max = MAX(z_max,z);
+    }
+  }
+  */
+  float margin=0.1;
+  
+  x_min=center[0]-margin;
+  y_min=center[1]-margin;
+  z_min=center[2]-margin;
+
+  x_max=center[0]+margin;
+  y_max=center[1]+margin;
+  z_max=center[2]+margin;
+
+ 
+  Point3D p1,p2,p3,p4;
+  double aux;
+  switch(type) {
+  case 0://x
+    aux = -(m_BiggerPlane3D.u[1]*y_min+m_BiggerPlane3D.u[2]*z_min+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[0];
+    p1.setCoord(aux,y_min,z_min);
+    aux = -(m_BiggerPlane3D.u[1]*y_max+m_BiggerPlane3D.u[2]*z_min+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[0];
+    p2.setCoord(aux,y_max,z_min);
+    aux = -(m_BiggerPlane3D.u[1]*y_max+m_BiggerPlane3D.u[2]*z_max+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[0];
+    p3.setCoord(aux,y_max,z_max);
+    aux = -(m_BiggerPlane3D.u[1]*y_min+m_BiggerPlane3D.u[2]*z_max+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[0];
+    p4.setCoord(aux,y_min,z_max);
+    break;
+  case 1:
+    aux = -(m_BiggerPlane3D.u[0]*x_min+m_BiggerPlane3D.u[2]*z_min+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[1];
+    p1.setCoord(x_min,aux,z_min);
+    aux = -(m_BiggerPlane3D.u[0]*x_max+m_BiggerPlane3D.u[2]*z_min+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[1];
+    p2.setCoord(x_max,aux,z_min);
+    aux = -(m_BiggerPlane3D.u[0]*x_max+m_BiggerPlane3D.u[2]*z_max+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[1];
+    p3.setCoord(x_max,aux,z_max);
+    aux = -(m_BiggerPlane3D.u[0]*x_min+m_BiggerPlane3D.u[2]*z_max+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[1];
+    p4.setCoord(x_min,aux,z_max);
+    break;
+  case 2:
+    aux = -(m_BiggerPlane3D.u[0]*x_min+m_BiggerPlane3D.u[1]*y_min+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[2];
+    p1.setCoord(x_min,y_min,aux);
+    aux = -(m_BiggerPlane3D.u[0]*x_max+m_BiggerPlane3D.u[1]*y_min+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[2];
+    p2.setCoord(x_max,y_min,aux);
+    aux = -(m_BiggerPlane3D.u[0]*x_max+m_BiggerPlane3D.u[1]*y_max+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[2];
+    p3.setCoord(x_max,y_max,aux);
+    aux = -(m_BiggerPlane3D.u[0]*x_min+m_BiggerPlane3D.u[1]*y_max+
+	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[2];
+    p4.setCoord(x_min,y_max,aux);
+    break;
+  }
+  osg::Vec3Array* vec =new osg::Vec3Array;
+  vec->push_back(osg::Vec3(p1.x(),
+			  p1.y(),
+			  p1.z()));
+  vec->push_back(osg::Vec3(p2.x(),
+			  p2.y(),
+			  p2.z()));
+  vec->push_back(osg::Vec3(p3.x(),
+			  p3.y(),
+			  p3.z()));
+  vec->push_back(osg::Vec3(p4.x(),
+			  p4.y(),
+			  p4.z()));
+  
+  return vec;
+}
+
+bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange)
+{
+   _tex_size=tex_size;
   MaterialToGeometryCollectionMap mtgcm;
   gpointer data[6];
   gint n=0;
@@ -818,7 +950,76 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
         }
 
     }
+   osg::StateSet* _stateset = new osg::StateSet;
+    osg::PolygonMode* _polygonmode = new osg::PolygonMode;
+    _polygonmode->setMode(osg::PolygonMode::FRONT_AND_BACK,
+			  osg::PolygonMode::LINE);
+    _stateset->setAttribute(_polygonmode);
+    _stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+
+  for(int i=0; i<(int)bounds.size(); i++){
+    osg::ref_ptr<osg::Box> b=new osg::Box(osg::Vec3(bounds[i].center()[1],
+				      bounds[i].center()[0],
+				      -bounds[i].center()[2]),
+			    bounds[i].size()[1],
+			    bounds[i].size()[0],
+			    bounds[i].size()[2]);
+ 
+  
+    osg::ShapeDrawable* _shapedrawable = new osg::ShapeDrawable;
+    _shapedrawable->setColor(osg::Vec4(1.0,0.0,0.0,0.80));
+    _shapedrawable->setShape(b.get());
+    _shapedrawable->setStateSet(_stateset); 
+    textured->addDrawable(_shapedrawable);
+    osg::Geometry* linesGeom = new osg::Geometry();
+    Plane3D p=planes[i];
+    float tmp = p.u[0];
+    p.u[0]=p.u[1];
+    p.u[1]=tmp;
+    p.u[2]=-p.u[2];
     
+    osg::Vec3Array* vertices = displayPlane(p,Point3D(bounds[i].center()[1],bounds[i].center()[0],-bounds[i].center()[2]));
+    /*
+    vertices->push_back(osg::Vec3(bounds[i].center()[1],
+				  bounds[i].center()[0],
+				  -bounds[i].center()[2]));
+    vertices->push_back(osg::Vec3(bounds[i].center()[1],
+				      bounds[i].center()[0],
+				      -bounds[i].center()[2])-
+			osg::Vec3(bounds[i].center()[1]-0.1*planes[i].u[1],
+				  bounds[i].center()[0]-0.1*planes[i].u[0],
+				  -bounds[i].center()[2]-0.1*planes[i].u[2]));
+
+			
+    */
+    // pass the created vertex array to the points geometry object.
+    linesGeom->setVertexArray(vertices);
+    
+    // set the colors as before, plus using the above
+    osg::Vec4Array* colors = new osg::Vec4Array;
+    colors->push_back(osg::Vec4(0.0f,1.0f,0.0f,1.0f));
+    linesGeom->setColorArray(colors);
+    linesGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
+    
+    
+    // set the normal in the same way color.
+    osg::Vec3Array* normals = new osg::Vec3Array;
+    normals->push_back(osg::Vec3(0.0f,-1.0f,0.0f));
+    linesGeom->setNormalArray(normals);
+    linesGeom->setNormalBinding(osg::Geometry::BIND_OVERALL);
+    
+    
+    // This time we simply use primitive, and hardwire the number of coords to use 
+    // since we know up front,
+    linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,4));
+    linesGeom->setStateSet(  _stateset); 
+    textured->addDrawable(linesGeom); 
+  }
+
+  
+  osg::Point* point = new osg::Point();
+  point->setSize( 4.0 );
+  textured->getOrCreateStateSet()->setAttribute( point, osg::StateAttribute::ON );
   
  if(textured->getNumDrawables())
   group[0]=textured.get();
@@ -835,7 +1036,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
 bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,VerboseMeshFunc vmcallback,float *zrange)
 {
-  
+   _tex_size=tex_size;
   GeometryCollection gc;
   gpointer data[5];
   gint n=0;
@@ -996,10 +1197,10 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
   return true;
 }
 
-bool OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,char *out_name,int tex_size,VerboseMeshFunc vmcallback,float *zrange) {
+bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *group) {
 
 
-  _tex_size=tex_size;
+  /*
   string format = osgDB::getFileExtension(string(out_name));
   
   ive_out= (format=="ive");
@@ -1013,7 +1214,7 @@ bool OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,ch
     compress_tex=false;
   }    
  
-
+  *
   ClippingMap cm;
   osg::ref_ptr<osg::Geode> group[2];
   if(_tex_array_blend)
@@ -1022,7 +1223,7 @@ bool OSGExporter::convertModelOSG(GtsSurface *s,std::map<int,string> textures,ch
     convertGtsSurfListToGeometry(s,textures,&cm,tex_size,group,vmcallback,zrange);
   
  
- 
+  */
 
 
   // osgUtil::Optimizer optimzer;

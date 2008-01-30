@@ -1,8 +1,10 @@
+#ifndef DEPTH_H
+#define DEPTH_H
 #include "OSGExport.h"
 #include "auv_ransac_plane.hpp"
 #include "TriMesh.h"
 using namespace std;
-
+using namespace libpolyp;
 using namespace auv_data_tools;
 class DepthStats{
 
@@ -12,3 +14,4 @@ public:
 		    int widthSplits,int heightSplits);
   TriMesh *_mesh;
 };
+#endif

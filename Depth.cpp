@@ -5,7 +5,7 @@ DepthStats::DepthStats(TriMesh *mesh):_mesh(mesh){
 
 }
 
-/*
+
 osg::Texture2D* newColorTexture2D(unsigned width, unsigned height, unsigned accuracy)
 {
   osg::Texture2D* texture2D = new osg::Texture2D;
@@ -31,14 +31,59 @@ osg::Texture2D* newColorTexture2D(unsigned width, unsigned height, unsigned accu
     for(unsigned x=0; x < width; x++){
      
       for(int i=0; i<4; i++)
-	data[(y*width*4) + (x*4) +i] = 0.1*y;
+	data[(y*width*4) + (x*4) +i] = 0.66666;;
 
     }
   image->setImage(width,height,1,GL_RGBA32F_ARB, GL_RGBA, GL_FLOAT, (unsigned char*)&data[0], osg::Image::USE_NEW_DELETE);
   texture2D->setImage(image);
   return texture2D;
 }
-*/
+
+ 
+osg::TextureRectangle* ass(unsigned width, unsigned height, unsigned accuracy)
+{
+  osg::TextureRectangle* textureRectangle = new osg::TextureRectangle;
+  
+  textureRectangle->setTextureSize(width, height);
+  if(accuracy == 32)
+    {
+      textureRectangle->setInternalFormat(GL_RGBA32F_ARB);
+      textureRectangle->setSourceFormat(GL_RGBA);
+    }
+  else if(accuracy == 8)
+    {
+      textureRectangle->setInternalFormat(GL_RGBA);
+    }
+  textureRectangle->setSourceType(GL_FLOAT);
+  
+
+  osg::Image* image = new osg::Image;
+  float* data = new float[width*height*4];
+  
+  for(unsigned y=0; y < height; y++)
+    for(unsigned x=0; x < width; x++){
+      /*    if(y==0){
+	for(int i=0; i<4; i++)
+	if(i==3)
+	  data[(y*width*4) + (x*4) +i] = 0.66600;
+	else
+	  data[(y*width*4) + (x*4) +i] = 0.33330;
+      }else{
+for(int i=0; i<4; i++)
+	if(i==3)
+	  data[(y*width*4) + (x*4) +i] = 0.111111;
+	else
+	  data[(y*width*4) + (x*4) +i] = 0.888888;
+	  }*/
+      for(int i=0; i<4; i++)
+	data[(y*width*4) + (x*4) +i] = -299.666f;
+
+    }
+  image->setImage(width,height,1,GL_RGB32F_ARB, GL_RGB, GL_FLOAT, (unsigned char*)&data[0], osg::Image::USE_NEW_DELETE);
+  textureRectangle->setImage(image);
+  return textureRectangle;
+}
+
 osg::TextureRectangle*  getPlaneTex( vector<Plane3D> planes,int size){
  
   
@@ -62,15 +107,9 @@ osg::TextureRectangle*  getPlaneTex( vector<Plane3D> planes,int size){
   int height=size;
   int width=size;
   bzero(data,height*width*sizeof(float));
-   for(unsigned y=0; y < height; y++)
-    for(unsigned x=0; x < width; x++){
-     
-      for(int i=0; i<4; i++)
-	data[(y*width*4) + (x*4) +i] = 0.1*y;
-
-    }
-   /*
+ 
   float *ptr=data;
+  int counter=0;
   for(int i=0; i< (int)planes.size(); i++){
     *ptr=planes[i].u[0];
     ptr++;
@@ -80,8 +119,11 @@ osg::TextureRectangle*  getPlaneTex( vector<Plane3D> planes,int size){
     ptr++;
     *ptr=planes[i].d0;
     ptr++;
+    cout << counter++ << "ss ";
+    
+    planes[i].info(); 
   }
-   */
+   
  image->setImage(size,size,1,GL_RGBA32F_ARB, GL_RGBA, GL_FLOAT, (unsigned char*)&data[0], osg::Image::USE_NEW_DELETE);
   textureRectangle->setImage(image);
   return textureRectangle;

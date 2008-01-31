@@ -174,10 +174,10 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
 
   if(gc._planeTexValid){
    
-    (*gc._texcoordsPlane++).set(v1->plane/planeTexSize, v1->plane % planeTexSize);    
+    (*gc._texcoordsPlane++).set(v1->plane %planeTexSize, v1->plane / planeTexSize);    
     
-    (*gc._texcoordsPlane++).set(v2->plane/planeTexSize, v2->plane % planeTexSize);    
-    (*gc._texcoordsPlane++).set(v3->plane/planeTexSize, v3->plane % planeTexSize);    
+    (*gc._texcoordsPlane++).set(v2->plane%planeTexSize, v2->plane / planeTexSize);    
+    (*gc._texcoordsPlane++).set(v3->plane%planeTexSize, v3->plane / planeTexSize);    
     //printf("plane: %d %d ",v1->plane/planeTexSize, v1->plane % planeTexSize);
     //printf(" %d %d ",v2->plane/planeTexSize, v2->plane % planeTexSize);
     //printf(" %d %d \n",v2->plane/planeTexSize, v2->plane % planeTexSize);
@@ -409,8 +409,8 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 }
 #define TEXUNIT_ARRAY       0
 #define TEXUNIT_HIST        2
-#define TEXUNIT_INFO        1
-#define TEXUNIT_PLANES       3
+#define TEXUNIT_INFO        3
+#define TEXUNIT_PLANES       1
 
 bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
 {
@@ -727,31 +727,37 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
 	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	if (image.valid()){	     
-	  // create state
+	// create state
 	  osg::StateSet* stateset = new osg::StateSet;
 	  // create texture
 	  osg::Texture2D* texture = new osg::Texture2D;
 	  // texture->setUnRefImageDataAfterApply( false );
 	  texture->setImage(image.get());
 	  //texture->setInternalFormatMode(internalFormatMode);
-
 	  stateset->setTextureAttributeAndModes(0,texture,
 						osg::StateAttribute::ON);
-	  osg::TexEnvCombine *te = new osg::TexEnvCombine;    
-	  // Modulate diffuse texture with vertex color.
-	  te->setCombine_RGB(osg::TexEnvCombine::REPLACE);
-	  te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
-	  te->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
-	  te->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
-	  te->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
-	  
-	  // Alpha doesn't matter.
-	  te->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
-	  te->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
-	  te->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+	  if(usePlaneDist){
+	    stateset->setMode(GL_BLEND,osg::StateAttribute::OFF);
+	    stateset->setMode(GL_ALPHA_TEST,osg::StateAttribute::OFF);
+	   
+	  }else{
 
-	  stateset->setTextureAttribute(0, te);
-
+	 
+	    osg::TexEnvCombine *te = new osg::TexEnvCombine;    
+	    // Modulate diffuse texture with vertex color.
+	    te->setCombine_RGB(osg::TexEnvCombine::REPLACE);
+	    te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
+	    te->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+	    te->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
+	    te->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+	    
+	    // Alpha doesn't matter.
+	    te->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
+	    te->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
+	    te->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+	    
+	    stateset->setTextureAttribute(0, te);
+	  }
 	  gc._texturesActive=true;
 	  stateset->setDataVariance(osg::Object::STATIC);
 	   
@@ -770,10 +776,10 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  //	  if(compress_tex && _hardware_compress && !do_atlas)
 	  //compress2(texture);
 	  
-	 
+	  	 
 	  osg_tex_ptrs.push_back(texture);
 	  osg_tex_map[itr->first]=texture;
-	}
+	  }
       }
     }
   }
@@ -796,12 +802,15 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       if(gpuNovelty){
 	loadShaderSource( novelty, "novelty-live.frag" );
       }else{
-	loadShaderSource( novelty, "novelty.frag" );
+	//loadShaderSource( novelty, "novelty.frag" );
+	loadShaderSource( novelty, "ass.frag" );
       }
-      loadShaderSource( distNovelty, "novelty.vert" );
+      //loadShaderSource( distNovelty, "novelty.vert" );
+      loadShaderSource( distNovelty, "ass.vert" );
+      
       program->addShader(  novelty );
        program->addShader( distNovelty );
-
+ 
       if(computeHists){
 	
 	Hist_Calc histCalc(_tex_size,_tex_size,16,1);
@@ -816,7 +825,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   // osgUtil::Tessellator tessellator;
     
   // add everthing into the Geode.   
-      osg::TextureRectangle* planeTex=	 getPlaneTex(planes,_planeTexSize);
+       osg::TextureRectangle* planeTex=	 getPlaneTex(planes,_planeTexSize);
+      //  osg::TextureRectangle* planeTex=ass(32,32,32);
       //osg::Texture2D *planeTex=newColorTexture2D(32,32,32);
       //  osg::TextureRectangle *planeTex=newColorTextureRectangle(8,8,32);
 
@@ -832,9 +842,9 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
           //  tessellator.retessellatePolygons(*gc._geom);
         
 	  smoother.smooth(*gc._geom);
-	  if(gc._texturesActive){
-	    textured->addDrawable(gc._geom);
-	    if(gpuNovelty){
+	    if(gc._texturesActive){
+	 
+	      if(gpuNovelty){
 	      gc._geom->getStateSet()->addUniform(new osg::Uniform("hist", 
 								   TEXUNIT_HIST) );
 	      gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_HIST,
@@ -843,22 +853,25 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 								    16.0f));
 	    }
 
-	    gc._geom->getStateSet()->addUniform( new osg::Uniform( "shaderOut", 1));
+	      gc._geom->getStateSet()->addUniform( new osg::Uniform( "shaderOut", 1));
 	    gc._geom->getStateSet()->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.10f, 0.4f) ));
-	    gc._geom->getStateSet()->setAttributeAndModes( program,
-							   osg::StateAttribute::ON );
+	
 	    
 	    gc._geom->getStateSet()->addUniform(new osg::Uniform("rtex",0));
 	    gc._geom->getStateSet()->addUniform(new osg::Uniform("infoT",
-								 TEXUNIT_INFO));
+	    						 TEXUNIT_INFO));
 
-	   gc._geom->getStateSet()->addUniform(new osg::Uniform("planes", 
-								 TEXUNIT_PLANES) );
-	   gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_PLANES,
-						planeTex);
+	     gc._geom->getStateSet()->addUniform(new osg::Uniform("planes", 
+	    						 TEXUNIT_PLANES) );
+	     gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_PLANES,
+							  planeTex);
+    gc._geom->getStateSet()->setAttributeAndModes( program,
+							   osg::StateAttribute::ON );
 
-      
-	  }
+    textured->addDrawable(gc._geom);
+    }
+	 
+	  
 	  else{
 	    untextured->addDrawable(gc._geom);
 	  }

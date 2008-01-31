@@ -10,6 +10,7 @@ using namespace auv_data_tools;
 osg::TextureRectangle*  getPlaneTex( vector<Plane3D> planes,int size);
 osg::Texture2D* newColorTexture2D(unsigned width, unsigned height, unsigned accuracy);
 osg::TextureRectangle* newColorTextureRectangle(unsigned width, unsigned height, unsigned accuracy);
+osg::TextureRectangle* ass(unsigned width, unsigned height, unsigned accuracy);
 osg::Vec3Array* displayPlane(Plane3D m_BiggerPlane3D,Point3D center);
 class DepthStats{
 

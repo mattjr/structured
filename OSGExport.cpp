@@ -21,6 +21,7 @@ typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 using namespace squish;
 FILE *ffp;
+osg::TextureRectangle*  tempFF;
 
 MyGraphicsContext *mgc=NULL;
 std::vector<GtsBBox *> bboxes_all;;
@@ -147,6 +148,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   ClippingMap *cm=(ClippingMap *)data[2];
   GeometryCollection& gc = (*mtgcm)[f->material];
   osg::BoundingBox &texLimits=(*cm)[osgDB::getSimpleFileName((*textures)[f->material])];
+  int planeTexSize=(int)data[7];
   osg::PrimitiveSet::Mode mode;
   
   mode = osg::PrimitiveSet::TRIANGLES;
@@ -170,8 +172,29 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   (*gc._vertices++).set(GTS_VERTEX(v2)->p.y,GTS_VERTEX(v2)->p.x,-GTS_VERTEX(v2)->p.z);
   (*gc._vertices++).set(GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.x,-GTS_VERTEX(v3)->p.z);
 
+  if(gc._planeTexValid){
+   
+    (*gc._texcoordsPlane++).set(v1->plane/planeTexSize, v1->plane % planeTexSize);    
+    
+    (*gc._texcoordsPlane++).set(v2->plane/planeTexSize, v2->plane % planeTexSize);    
+    (*gc._texcoordsPlane++).set(v3->plane/planeTexSize, v3->plane % planeTexSize);    
+    //printf("plane: %d %d ",v1->plane/planeTexSize, v1->plane % planeTexSize);
+    //printf(" %d %d ",v2->plane/planeTexSize, v2->plane % planeTexSize);
+    //printf(" %d %d \n",v2->plane/planeTexSize, v2->plane % planeTexSize);
   
+}
+  /* float tmp[4];
   
+  float *ptr=(float*)(tempFF->getImage()->data() +( tempFF->getImage()->getRowSizeInBytes () *(v1->plane/planeTexSize))+ (( v1->plane % planeTexSize) *4*4));
+    tmp[0]=*ptr;
+    ptr++;
+    tmp[1]=*ptr;
+    ptr++;
+    tmp[2]=*ptr;
+    ptr++;
+    tmp[3]=*ptr;
+    ptr++;
+    printf("%d : %f %f %f %f\n",((32*(v1->plane/planeTexSize))+ ( v1->plane % planeTexSize)), tmp[0],tmp[1],tmp[2],tmp[3]);*/
   if (gc._texturesActive && f->material >= 0){
 
 
@@ -183,6 +206,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
     (*gc._texcoords++).set(v1->u,1-v1->v);    
     (*gc._texcoords++).set(v2->u,1-v2->v); 
     (*gc._texcoords++).set(v3->u,1-v3->v); 
+
   }else
     gc._texturesActive=false;
 
@@ -386,6 +410,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 #define TEXUNIT_ARRAY       0
 #define TEXUNIT_HIST        2
 #define TEXUNIT_INFO        1
+#define TEXUNIT_PLANES       3
 
 bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
 {
@@ -637,150 +662,23 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
    
   
 }
-osg::Vec3Array* displayPlane(Plane3D m_BiggerPlane3D,Point3D center)
-{
-  /*  int nSize = m_pPoints->size();
-  Point3D* ppoint;
- /
-  
-  for (int i=0; i< nSize; i++) {
-    ppoint = &((*m_pPoints)[i]);
-    glColor3f(0.0,0.0,1.0);// blue points
-    glBegin(GL_POINTS);
-        if (ppoint->isGoodPoint())
-	  glVertex3f(ppoint->x(), ppoint->y(), ppoint->z());
-    glEnd();
-  }
- 
-  
-  
-  float x,y,z;
-  float w = 5;
-  int nSize2=1000;*/
-  int type = -1;
-  double u0=fabs(m_BiggerPlane3D.u[0]);
-  double u1=fabs(m_BiggerPlane3D.u[1]);
-  double u2=fabs(m_BiggerPlane3D.u[2]);
- 
-  if (u0>=u1 && u0>=u2)
-    type = 0;
-  else if (u1>=u0 && u1>=u2)
-    type = 1;
-  else if (u2>=u0 && u2>=u1)
-    type = 2;
-  else {
-    std::cout << " ERRROORORORORROROROROORORRORORORO"
-	      << std::endl;
-    return NULL;
-  }
- 
-  double x_min=10e10, x_max=-10e10;
-  double y_min=10e10, y_max=-10e10;
-  double z_min=10e10, z_max=-10e10;
- 
-  /*for (int i=0; i< nSize; i++) {
-    ppoint = &((*m_pPoints)[i]);
-    if (ppoint->isGoodPoint()) {
-      x = ppoint->x();
-      y = ppoint->y();
-      z = ppoint->z();
- 
-      x_min = MIN(x_min,x);
-      y_min = MIN(y_min,y);
-      z_min = MIN(z_min,z);
-      x_max = MAX(x_max,x);
-      y_max = MAX(y_max,y);
-      z_max = MAX(z_max,z);
-    }
-  }
-  */
-  float margin=0.1;
-  
-  x_min=center[0]-margin;
-  y_min=center[1]-margin;
-  z_min=center[2]-margin;
 
-  x_max=center[0]+margin;
-  y_max=center[1]+margin;
-  z_max=center[2]+margin;
-
- 
-  Point3D p1,p2,p3,p4;
-  double aux;
-  switch(type) {
-  case 0://x
-    aux = -(m_BiggerPlane3D.u[1]*y_min+m_BiggerPlane3D.u[2]*z_min+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[0];
-    p1.setCoord(aux,y_min,z_min);
-    aux = -(m_BiggerPlane3D.u[1]*y_max+m_BiggerPlane3D.u[2]*z_min+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[0];
-    p2.setCoord(aux,y_max,z_min);
-    aux = -(m_BiggerPlane3D.u[1]*y_max+m_BiggerPlane3D.u[2]*z_max+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[0];
-    p3.setCoord(aux,y_max,z_max);
-    aux = -(m_BiggerPlane3D.u[1]*y_min+m_BiggerPlane3D.u[2]*z_max+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[0];
-    p4.setCoord(aux,y_min,z_max);
-    break;
-  case 1:
-    aux = -(m_BiggerPlane3D.u[0]*x_min+m_BiggerPlane3D.u[2]*z_min+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[1];
-    p1.setCoord(x_min,aux,z_min);
-    aux = -(m_BiggerPlane3D.u[0]*x_max+m_BiggerPlane3D.u[2]*z_min+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[1];
-    p2.setCoord(x_max,aux,z_min);
-    aux = -(m_BiggerPlane3D.u[0]*x_max+m_BiggerPlane3D.u[2]*z_max+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[1];
-    p3.setCoord(x_max,aux,z_max);
-    aux = -(m_BiggerPlane3D.u[0]*x_min+m_BiggerPlane3D.u[2]*z_max+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[1];
-    p4.setCoord(x_min,aux,z_max);
-    break;
-  case 2:
-    aux = -(m_BiggerPlane3D.u[0]*x_min+m_BiggerPlane3D.u[1]*y_min+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[2];
-    p1.setCoord(x_min,y_min,aux);
-    aux = -(m_BiggerPlane3D.u[0]*x_max+m_BiggerPlane3D.u[1]*y_min+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[2];
-    p2.setCoord(x_max,y_min,aux);
-    aux = -(m_BiggerPlane3D.u[0]*x_max+m_BiggerPlane3D.u[1]*y_max+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[2];
-    p3.setCoord(x_max,y_max,aux);
-    aux = -(m_BiggerPlane3D.u[0]*x_min+m_BiggerPlane3D.u[1]*y_max+
-	    m_BiggerPlane3D.d0)/m_BiggerPlane3D.u[2];
-    p4.setCoord(x_min,y_max,aux);
-    break;
-  }
-  osg::Vec3Array* vec =new osg::Vec3Array;
-  vec->push_back(osg::Vec3(p1.x(),
-			  p1.y(),
-			  p1.z()));
-  vec->push_back(osg::Vec3(p2.x(),
-			  p2.y(),
-			  p2.z()));
-  vec->push_back(osg::Vec3(p3.x(),
-			  p3.y(),
-			  p3.z()));
-  vec->push_back(osg::Vec3(p4.x(),
-			  p4.y(),
-			  p4.z()));
-  
-  return vec;
-}
 
 bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange)
 {
    _tex_size=tex_size;
   MaterialToGeometryCollectionMap mtgcm;
-  gpointer data[6];
+  gpointer data[8];
   gint n=0;
   data[0]=&mtgcm;
   data[1] = &n;
   data[2]=cm;
   data[3]=&textures;
   data[4]=zrange;
+  data[6]=zrange;
+  data[7]=(void *)_planeTexSize;
   //data[5]=hists;
-
+  //tempFF=getPlaneTex(planes);
   gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
   MaterialToGeometryCollectionMap::iterator itr;
   int tex_count=0;
@@ -863,7 +761,12 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  gc._texcoords = texcoordArray->begin();
 	  gc._texcoordArray = texcoordArray;
 	  gc._geom->setTexCoordArray(0,texcoordArray);
-	  
+	  if(usePlaneDist){
+	    osg::Vec2Array* texcoordPlanes = new osg::Vec2Array(gc._numPoints);
+	    gc._texcoordsPlane = texcoordPlanes->begin();
+	    gc._geom->setTexCoordArray(TEXUNIT_PLANES,texcoordPlanes);
+	    gc._planeTexValid=true;
+	  }
 	  //	  if(compress_tex && _hardware_compress && !do_atlas)
 	  //compress2(texture);
 	  
@@ -884,32 +787,40 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     osg::TextureRectangle* histTex=NULL;
     osg::Program* program=NULL;
 
-    if(computeHists){
+   
      
       program = new osg::Program;
       program->setName( "microshader" );
       osg::Shader *novelty=new osg::Shader( osg::Shader::FRAGMENT);
+      osg::Shader *distNovelty=new osg::Shader( osg::Shader::VERTEX);
       if(gpuNovelty){
 	loadShaderSource( novelty, "novelty-live.frag" );
       }else{
 	loadShaderSource( novelty, "novelty.frag" );
       }
+      loadShaderSource( distNovelty, "novelty.vert" );
       program->addShader(  novelty );
-      
-      Hist_Calc histCalc(_tex_size,_tex_size,16,1);
-      CvHistogram *finalhist=NULL;    
-      calcHists(mtgcm,textures,histCalc);
-      histCalc.get_hist(finalhist);
-      if(gpuNovelty)
-	histTex= getTextureHists(finalhist);
-      else
-	addNoveltyTextures(mtgcm,textures,histCalc,finalhist);
-    }
+       program->addShader( distNovelty );
+
+      if(computeHists){
+	
+	Hist_Calc histCalc(_tex_size,_tex_size,16,1);
+	CvHistogram *finalhist=NULL;    
+	calcHists(mtgcm,textures,histCalc);
+	histCalc.get_hist(finalhist);
+	if(gpuNovelty)
+	  histTex= getTextureHists(finalhist);
+	else
+	  addNoveltyTextures(mtgcm,textures,histCalc,finalhist);
+      }
   // osgUtil::Tessellator tessellator;
     
   // add everthing into the Geode.   
-  
-  osgUtil::SmoothingVisitor smoother;
+      osg::TextureRectangle* planeTex=	 getPlaneTex(planes,_planeTexSize);
+      //osg::Texture2D *planeTex=newColorTexture2D(32,32,32);
+      //  osg::TextureRectangle *planeTex=newColorTextureRectangle(8,8,32);
+
+      osgUtil::SmoothingVisitor smoother;
   for(itr=mtgcm.begin();
       itr!=mtgcm.end();
       ++itr)
@@ -941,6 +852,11 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    gc._geom->getStateSet()->addUniform(new osg::Uniform("infoT",
 								 TEXUNIT_INFO));
 
+	   gc._geom->getStateSet()->addUniform(new osg::Uniform("planes", 
+								 TEXUNIT_PLANES) );
+	   gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_PLANES,
+						planeTex);
+
       
 	  }
 	  else{
@@ -950,15 +866,18 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
         }
 
     }
-   osg::StateSet* _stateset = new osg::StateSet;
-    osg::PolygonMode* _polygonmode = new osg::PolygonMode;
-    _polygonmode->setMode(osg::PolygonMode::FRONT_AND_BACK,
-			  osg::PolygonMode::LINE);
-    _stateset->setAttribute(_polygonmode);
-    _stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+  /*   osg::StateSet* _stateset = new osg::StateSet;
+   osg::PolygonMode* _polygonmode = new osg::PolygonMode;
+   _polygonmode->setMode(osg::PolygonMode::FRONT_AND_BACK,
+			 osg::PolygonMode::LINE);
+   _stateset->setAttribute(_polygonmode);
+   _stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+   
+   
+   
 
-  for(int i=0; i<(int)bounds.size(); i++){
-    osg::ref_ptr<osg::Box> b=new osg::Box(osg::Vec3(bounds[i].center()[1],
+   for(int i=0; i<(int)bounds.size(); i++){
+     osg::ref_ptr<osg::Box> b=new osg::Box(osg::Vec3(bounds[i].center()[1],
 				      bounds[i].center()[0],
 				      -bounds[i].center()[2]),
 			    bounds[i].size()[1],
@@ -978,20 +897,9 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     p.u[1]=tmp;
     p.u[2]=-p.u[2];
     
+   
     osg::Vec3Array* vertices = displayPlane(p,Point3D(bounds[i].center()[1],bounds[i].center()[0],-bounds[i].center()[2]));
-    /*
-    vertices->push_back(osg::Vec3(bounds[i].center()[1],
-				  bounds[i].center()[0],
-				  -bounds[i].center()[2]));
-    vertices->push_back(osg::Vec3(bounds[i].center()[1],
-				      bounds[i].center()[0],
-				      -bounds[i].center()[2])-
-			osg::Vec3(bounds[i].center()[1]-0.1*planes[i].u[1],
-				  bounds[i].center()[0]-0.1*planes[i].u[0],
-				  -bounds[i].center()[2]-0.1*planes[i].u[2]));
-
-			
-    */
+   
     // pass the created vertex array to the points geometry object.
     linesGeom->setVertexArray(vertices);
     
@@ -1012,15 +920,16 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     // This time we simply use primitive, and hardwire the number of coords to use 
     // since we know up front,
     linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,4));
-    linesGeom->setStateSet(  _stateset); 
+    linesGeom->setStateSet(_stateset); 
     textured->addDrawable(linesGeom); 
   }
 
-  
+  */
   osg::Point* point = new osg::Point();
   point->setSize( 4.0 );
   textured->getOrCreateStateSet()->setAttribute( point, osg::StateAttribute::ON );
-  
+
+
  if(textured->getNumDrawables())
   group[0]=textured.get();
  else 

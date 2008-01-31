@@ -234,8 +234,10 @@ struct GeometryCollection
   osg::Vec2Array::iterator    _texcoords;
   osg::Vec2Array *    _texcoordArray;
   osg::Vec3Array::iterator    _texcoordsTexArray[NUM_TEX_BLEND_COORDS];
+  osg::Vec2Array::iterator    _texcoordsPlane;
   int                         _coordCount;
   osg::Geometry*              _geom;
+  bool _planeTexValid;
   osg::BoundingBox            _texLimits;
 
 };
@@ -250,9 +252,9 @@ class OSGExporter
 public:
   OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),gpuNovelty(false),computeHists(false) {state=NULL;
     do_atlas=false;
-    
+    _planeTexSize=32;
     context=NULL;
-  
+    usePlaneDist=true;
     //    internalFormatMode=osg::Texture::USE_IMAGE_DATA_FORMAT;
     if(compress_tex && _hardware_compress){
       
@@ -291,7 +293,7 @@ protected:
   //osg::Texture::InternalFormatMode internalFormatMode;
     MyGraphicsContext *context;
   bool ive_out;
-
+  bool usePlaneDist;
   string prefixdir;
   bool tex_saved;
   int _tex_size;
@@ -311,9 +313,11 @@ protected:
   
   void  calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc);
   void addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc,CvHistogram *hist);
+
+
+  int _planeTexSize;
   
 };
-
 
 
 void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads,int verbose=0,int blend=0);

@@ -1,6 +1,9 @@
 #extension GL_ARB_texture_rectangle : enable
-
+#extension GL_EXT_gpu_shader4 : enable
+flat varying vec2 planeCoord;
+varying vec3 vpos;
 uniform sampler2D rtex;
+uniform sampler2DRect planes;
 uniform sampler2D infoT;
 vec3 jet_colormap(float val)
 {
@@ -16,8 +19,9 @@ uniform vec3 weights;
 
 void main()
 {
-  
-
+  vec4 tmp2=texture2DRect(planes,vec2(0,0));
+ vec4 tmp=texture2DRect(planes,planeCoord);
+  float l=tmp.w;
   vec4 infoC= texture2D(infoT,gl_TexCoord[0].xy);
   vec4 src= texture2D(rtex,gl_TexCoord[0].xy);
   vec4 color;
@@ -30,10 +34,10 @@ void main()
     if(nov > weights.z)
       color=mix(vec4(0.0,1.0,0.0,1.0),src,0.6);
     else
-      color=src;
+      color=src;//depth_color;
   }
-    
-  gl_FragColor = color;
+ 
+  gl_FragColor =color;
 
 } 
  

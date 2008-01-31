@@ -879,7 +879,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
         }
 
     }
-  /*   osg::StateSet* _stateset = new osg::StateSet;
+     osg::StateSet* _stateset = new osg::StateSet;
    osg::PolygonMode* _polygonmode = new osg::PolygonMode;
    _polygonmode->setMode(osg::PolygonMode::FRONT_AND_BACK,
 			 osg::PolygonMode::LINE);
@@ -937,7 +937,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     textured->addDrawable(linesGeom); 
   }
 
-  */
+  
   osg::Point* point = new osg::Point();
   point->setSize( 4.0 );
   textured->getOrCreateStateSet()->setAttribute( point, osg::StateAttribute::ON );

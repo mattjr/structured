@@ -20,7 +20,7 @@ vec4 planeDist(vec3 p,vec4 plane){
   
   float val=(u[1]*p.x+u[0]*p.y+(-u[2])*p.z+d0);
   //val=gl_Vertex.z;
-  return  vec4(jet_colormap(abs(val)),1.0);
+  return  vec4(jet_colormap(min(abs(val)*2,1.0)),1.0);
 
 
 }

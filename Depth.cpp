@@ -119,9 +119,6 @@ osg::TextureRectangle*  getPlaneTex( vector<Plane3D> planes,int size){
     ptr++;
     *ptr=planes[i].d0;
     ptr++;
-    cout << counter++ << "ss ";
-    
-    planes[i].info(); 
   }
    
  image->setImage(size,size,1,GL_RGBA32F_ARB, GL_RGBA, GL_FLOAT, (unsigned char*)&data[0], osg::Image::USE_NEW_DELETE);
@@ -327,7 +324,7 @@ vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::
 	 pointIndex.push_back(count++);
        }
      }
-     if(!pointIndex.size())
+     if(pointIndex.size() < 50)
        continue;
      // --- Ransac ---------
      // --------------------
@@ -350,14 +347,15 @@ vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::
      }
      else {
        // std::cout << "N# of inliers " << nInlierCount
-       //     << "  N# of points " << pointIndex.size()
-       //     << std::endl;
+       //   << "  N# of points " << pointIndex.size()
+       //   << std::endl;
      }
      
-     //std::cout << "Plane Score " << dbModelScore << std::endl;
+     // std::cout << "Plane Score " << dbModelScore << std::endl;
      
-     cout << planes.size() << " "; plane3D.info();
-    
+     //cout << planes.size() << " "; plane3D.info();
+     if(dbModelScore == 0)
+       continue;
      // --- Min Least Square  -------
      // -----------------------------
      m_RansacPlane.bestPlaneMinLeastSquares(pointIndex, plane3D_2);

@@ -802,11 +802,11 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       if(gpuNovelty){
 	loadShaderSource( novelty, "novelty-live.frag" );
       }else{
-	//loadShaderSource( novelty, "novelty.frag" );
-	loadShaderSource( novelty, "ass.frag" );
+	loadShaderSource( novelty, "novelty.frag" );
+	//	loadShaderSource( novelty, "ass.frag" );
       }
-      //loadShaderSource( distNovelty, "novelty.vert" );
-      loadShaderSource( distNovelty, "ass.vert" );
+      loadShaderSource( distNovelty, "novelty.vert" );
+      //loadShaderSource( distNovelty, "ass.vert" );
       
       program->addShader(  novelty );
        program->addShader( distNovelty );
@@ -822,16 +822,14 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	else
 	  addNoveltyTextures(mtgcm,textures,histCalc,finalhist);
       }
-  // osgUtil::Tessellator tessellator;
-    
-  // add everthing into the Geode.   
-       osg::TextureRectangle* planeTex=	 getPlaneTex(planes,_planeTexSize);
-      //  osg::TextureRectangle* planeTex=ass(32,32,32);
-      //osg::Texture2D *planeTex=newColorTexture2D(32,32,32);
-      //  osg::TextureRectangle *planeTex=newColorTextureRectangle(8,8,32);
-
+      
+      
+      // add everthing into the Geode.   
+      osg::TextureRectangle* planeTex=	 getPlaneTex(planes,_planeTexSize);
+      
+      
       osgUtil::SmoothingVisitor smoother;
-  for(itr=mtgcm.begin();
+      for(itr=mtgcm.begin();
       itr!=mtgcm.end();
       ++itr)
     {
@@ -854,7 +852,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    }
 
 	      gc._geom->getStateSet()->addUniform( new osg::Uniform( "shaderOut", 1));
-	    gc._geom->getStateSet()->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.10f, 0.4f) ));
+	    gc._geom->getStateSet()->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.50f, 0.4f) ));
 	
 	    
 	    gc._geom->getStateSet()->addUniform(new osg::Uniform("rtex",0));

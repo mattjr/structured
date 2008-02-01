@@ -464,7 +464,7 @@ std::vector<vector<string >   > outNames;
 	DepthStats ds(mesh);
 	vector<Plane3D> planes;
 	vector<TriMesh::BBox> bounds;
-	vector<int> *planeIdx=ds.getPlaneFits(planes,bounds,2,1);
+	vector<int> *planeIdx=ds.getPlaneFits(planes,bounds,8,4);
 
 	bool res=convert_ply(mesh,surf,verbose,planeIdx);
        mesh_count(i,totalMeshCount,j,lodNum,0,0,0);

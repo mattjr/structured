@@ -93,23 +93,16 @@ osg::TextureRectangle*  getPlaneTex( vector<Plane3D> planes,int size){
   }
    
   osg::TextureRectangle *textureRectangle=newColorTextureRectangle(size,size,32);
-  //printf("planes Size %d tex  size  %d x %d = %d\n",planes.size(),_planeTexSize,_planeTexSize,_planeTexSize*_planeTexSize);
+
   osg::Image* image = new osg::Image;
   float* data = new float[size*size*4];
-  /*
-  for(unsigned y=0; y < height; y++)
-    for(unsigned x=0; x < width; x++){
-      
-      for(int i=0; i<4; i++)
-	data[(y*width*4) + (x*4) +i] = -207.66666;
 
-	}*/
   int height=size;
   int width=size;
   bzero(data,height*width*sizeof(float));
  
   float *ptr=data;
-  int counter=0;
+
   for(int i=0; i< (int)planes.size(); i++){
     *ptr=planes[i].u[0];
     ptr++;
@@ -262,19 +255,28 @@ osg::Vec3Array* displayPlane(Plane3D m_BiggerPlane3D,Point3D center)
     break;
   }
   osg::Vec3Array* vec =new osg::Vec3Array;
-  vec->push_back(osg::Vec3(p1.x(),
-			  p1.y(),
-			  p1.z()));
-  vec->push_back(osg::Vec3(p2.x(),
-			  p2.y(),
-			  p2.z()));
-  vec->push_back(osg::Vec3(p3.x(),
-			  p3.y(),
-			  p3.z()));
-  vec->push_back(osg::Vec3(p4.x(),
-			  p4.y(),
-			  p4.z()));
-  
+  int div =10;
+  osg::Vec3 p1v(p1.x(),p1.y(),p1.z());
+  osg::Vec3 p2v(p2.x(),p2.y(),p2.z());
+  osg::Vec3 p3v(p3.x(),p3.y(),p3.z());
+  osg::Vec3 p4v(p4.x(),p4.y(),p4.z());
+
+#define lerp( a, b,t) ( a + ((b-a) * t)) 
+  for(int i=0; i < div; i++){
+    osg::Vec3 step1,step2;
+    step1=lerp(p1v,p2v,(i*(1.0/(div-1))));
+    step2=lerp(p4v,p3v,(i*(1.0/(div-1))));
+    vec->push_back(step1);
+    vec->push_back(step2);
+
+    step1=lerp(p2v,p3v,(i*(1.0/(div-1))));
+    step2=lerp(p1v,p4v,(i*(1.0/(div-1))));
+    vec->push_back(step1);
+    vec->push_back(step2);
+
+ 
+
+  }
   return vec;
 }
 vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,int widthSplits,int heightSplits){
@@ -288,6 +290,8 @@ vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::
   double ystep = v[1]/ heightSplits;
   vector<int> *planeIdx = new vector<int>;
   planeIdx->resize(nv);
+  for(int i=0; i < nv; i++)
+    (*planeIdx)[i]=-1;
 
   for(int wS=0; wS < widthSplits; wS++){
     for(int hS=0; hS <heightSplits; hS++){

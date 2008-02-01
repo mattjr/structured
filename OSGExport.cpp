@@ -173,28 +173,25 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   (*gc._vertices++).set(GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.x,-GTS_VERTEX(v3)->p.z);
 
   if(gc._planeTexValid){
-   
-    (*gc._texcoordsPlane++).set(v1->plane %planeTexSize, v1->plane / planeTexSize);    
+    if(v1->plane >= 0)
+      (*gc._texcoordsPlane++).set(v1->plane %planeTexSize, v1->plane / planeTexSize);    
+    else
+      (*gc._texcoordsPlane++).set(-1.0,-1.0);    
+
+ if(v2->plane >= 0)
+      (*gc._texcoordsPlane++).set(v2->plane %planeTexSize, v2->plane / planeTexSize);    
+    else
+      (*gc._texcoordsPlane++).set(-1.0,-1.0);    
+
+ if(v3->plane >= 0)
+      (*gc._texcoordsPlane++).set(v3->plane %planeTexSize, v3->plane / planeTexSize);    
+    else
+      (*gc._texcoordsPlane++).set(-1.0,-1.0);    
     
-    (*gc._texcoordsPlane++).set(v2->plane%planeTexSize, v2->plane / planeTexSize);    
-    (*gc._texcoordsPlane++).set(v3->plane%planeTexSize, v3->plane / planeTexSize);    
-    //printf("plane: %d %d ",v1->plane/planeTexSize, v1->plane % planeTexSize);
-    //printf(" %d %d ",v2->plane/planeTexSize, v2->plane % planeTexSize);
-    //printf(" %d %d \n",v2->plane/planeTexSize, v2->plane % planeTexSize);
+  
   
 }
-  /* float tmp[4];
-  
-  float *ptr=(float*)(tempFF->getImage()->data() +( tempFF->getImage()->getRowSizeInBytes () *(v1->plane/planeTexSize))+ (( v1->plane % planeTexSize) *4*4));
-    tmp[0]=*ptr;
-    ptr++;
-    tmp[1]=*ptr;
-    ptr++;
-    tmp[2]=*ptr;
-    ptr++;
-    tmp[3]=*ptr;
-    ptr++;
-    printf("%d : %f %f %f %f\n",((32*(v1->plane/planeTexSize))+ ( v1->plane % planeTexSize)), tmp[0],tmp[1],tmp[2],tmp[3]);*/
+ 
   if (gc._texturesActive && f->material >= 0){
 
 
@@ -930,7 +927,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     
     // This time we simply use primitive, and hardwire the number of coords to use 
     // since we know up front,
-    linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,4));
+    linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES,0,vertices->size()));
     linesGeom->setStateSet(_stateset); 
     textured->addDrawable(linesGeom); 
   }

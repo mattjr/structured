@@ -32,9 +32,11 @@ float planeDist(vec3 p,vec4 plane){
 
 void main()
 {
- 
-   vec4 plane=texelFetch2DRect(planes,planeCoord);
-   float dist= planeDist(vpos,plane);
+  float dist=0.0;
+  if(planeCoord.x >= 0 && planeCoord.y >= 0){
+    vec4 plane=texelFetch2DRect(planes,planeCoord);
+    dist = planeDist(vpos,plane);
+  }
    float nov=texture2D(infoT,gl_TexCoord[0].xy).x;
    vec4 src= texture2D(rtex,gl_TexCoord[0].xy);
 

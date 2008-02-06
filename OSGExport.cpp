@@ -1193,7 +1193,7 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
       osg::notify(osg::NOTICE)<<"Writer output: "<< result.message()<<std::endl;
   }  
 
-  if(untex && tex->getNumDrawables()){
+  if(untex && untex->getNumDrawables()){
     strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-u.ive")).c_str());
     
     

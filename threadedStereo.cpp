@@ -61,6 +61,7 @@ static double image_scale = 1.0;
 static int max_feature_count = 5000;
 static double eps=1e-1;
 static double subvol=40.0;
+static bool do_novelty=false;
 static bool have_max_frame_count = false;
 static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
@@ -372,6 +373,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--blend" ) == 0 )
 	{
 	  do_hw_blend = true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--novelty" ) == 0 )
+	{
+	  do_novelty = true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--ptscov" ) == 0 )
@@ -1580,6 +1586,8 @@ int main( int argc, char *argv[ ] )
 	    fprintf(dicefp,"--nosimp");
 	  if(do_hw_blend)
 	    fprintf(dicefp,"--blend");
+	  if(do_novelty)
+	    fprintf(dicefp,"--novelty");
 	  fprintf(dicefp,"\n");
 	  
 	}

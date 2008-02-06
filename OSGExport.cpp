@@ -874,69 +874,71 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
         }
 
     }
-     osg::StateSet* _stateset = new osg::StateSet;
-   osg::PolygonMode* _polygonmode = new osg::PolygonMode;
-   _polygonmode->setMode(osg::PolygonMode::FRONT_AND_BACK,
-			 osg::PolygonMode::LINE);
-   _stateset->setAttribute(_polygonmode);
-   _stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+      if(computeHists){
+	osg::StateSet* _stateset = new osg::StateSet;
+	osg::PolygonMode* _polygonmode = new osg::PolygonMode;
+	_polygonmode->setMode(osg::PolygonMode::FRONT_AND_BACK,
+			      osg::PolygonMode::LINE);
+	_stateset->setAttribute(_polygonmode);
+	_stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
    
-   
-   
-
-   for(int i=0; i<(int)bounds.size(); i++){
-     osg::ref_ptr<osg::Box> b=new osg::Box(osg::Vec3(bounds[i].center()[1],
-				      bounds[i].center()[0],
-				      -bounds[i].center()[2]),
-			    bounds[i].size()[1],
-			    bounds[i].size()[0],
-			    bounds[i].size()[2]);
- 
-  
-    osg::ShapeDrawable* _shapedrawable = new osg::ShapeDrawable;
-    _shapedrawable->setColor(osg::Vec4(1.0,0.0,0.0,0.80));
-    _shapedrawable->setShape(b.get());
-    _shapedrawable->setStateSet(_stateset); 
-    textured->addDrawable(_shapedrawable);
-    osg::Geometry* linesGeom = new osg::Geometry();
-    Plane3D p=planes[i];
-    float tmp = p.u[0];
-    p.u[0]=p.u[1];
-    p.u[1]=tmp;
-    p.u[2]=-p.u[2];
-    
-   
-    osg::Vec3Array* vertices = displayPlane(p,Point3D(bounds[i].center()[1],bounds[i].center()[0],-bounds[i].center()[2]));
-   
-    // pass the created vertex array to the points geometry object.
-    linesGeom->setVertexArray(vertices);
-    
-    // set the colors as before, plus using the above
-    osg::Vec4Array* colors = new osg::Vec4Array;
-    colors->push_back(osg::Vec4(0.0f,1.0f,0.0f,1.0f));
-    linesGeom->setColorArray(colors);
-    linesGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
-    
-    
-    // set the normal in the same way color.
-    osg::Vec3Array* normals = new osg::Vec3Array;
-    normals->push_back(osg::Vec3(0.0f,-1.0f,0.0f));
-    linesGeom->setNormalArray(normals);
-    linesGeom->setNormalBinding(osg::Geometry::BIND_OVERALL);
-    
-    
-    // This time we simply use primitive, and hardwire the number of coords to use 
+	
+	
+	
+	for(int i=0; i<(int)bounds.size(); i++){
+	  osg::ref_ptr<osg::Box> b=new osg::Box(osg::Vec3(bounds[i].center()[1],
+							  bounds[i].center()[0],
+							  -bounds[i].center()[2]),
+						bounds[i].size()[1],
+						bounds[i].size()[0],
+						bounds[i].size()[2]);
+	  
+	  
+	  osg::ShapeDrawable* _shapedrawable = new osg::ShapeDrawable;
+	  _shapedrawable->setColor(osg::Vec4(1.0,0.0,0.0,0.80));
+	  _shapedrawable->setShape(b.get());
+	  _shapedrawable->setStateSet(_stateset); 
+	  textured->addDrawable(_shapedrawable);
+	  osg::Geometry* linesGeom = new osg::Geometry();
+	  Plane3D p=planes[i];
+	  float tmp = p.u[0];
+	  p.u[0]=p.u[1];
+	  p.u[1]=tmp;
+	  p.u[2]=-p.u[2];
+	  
+	  
+	  osg::Vec3Array* vertices = displayPlane(p,Point3D(bounds[i].center()[1],bounds[i].center()[0],-bounds[i].center()[2]));
+	  
+	  // pass the created vertex array to the points geometry object.
+	  linesGeom->setVertexArray(vertices);
+	  
+	  // set the colors as before, plus using the above
+	  osg::Vec4Array* colors = new osg::Vec4Array;
+	  colors->push_back(osg::Vec4(0.0f,1.0f,0.0f,1.0f));
+	  linesGeom->setColorArray(colors);
+	  linesGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
+	  
+	  
+	  // set the normal in the same way color.
+	  osg::Vec3Array* normals = new osg::Vec3Array;
+	  normals->push_back(osg::Vec3(0.0f,-1.0f,0.0f));
+	  linesGeom->setNormalArray(normals);
+	  linesGeom->setNormalBinding(osg::Geometry::BIND_OVERALL);
+	  
+	  
+	  // This time we simply use primitive, and hardwire the number of coords to use 
     // since we know up front,
-    linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES,0,vertices->size()));
-    linesGeom->setStateSet(_stateset); 
-    textured->addDrawable(linesGeom); 
-  }
+	  linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES,0,vertices->size()));
+	  linesGeom->setStateSet(_stateset); 
+	  textured->addDrawable(linesGeom); 
+	}
+      
 
   
-  osg::Point* point = new osg::Point();
-  point->setSize( 4.0 );
-  textured->getOrCreateStateSet()->setAttribute( point, osg::StateAttribute::ON );
-
+	osg::Point* point = new osg::Point();
+	point->setSize( 4.0 );
+	textured->getOrCreateStateSet()->setAttribute( point, osg::StateAttribute::ON );
+      }
 
  if(textured->getNumDrawables())
   group[0]=textured.get();

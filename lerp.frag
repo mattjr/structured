@@ -71,8 +71,88 @@ vec4 freq3Blend(){
     for(int i=1;i<5; i++){
       float r = length(gl_TexCoord[i].xy - vec2(0.5,0.5));
       // float num=exp(-((r/rmax)-Cb[j])/Cb[j]);
+      //float num=exp(-5*((r-Cb[j])/(rmax*Cb[j])));
+      //float W=num/(1+num);
+      float W=exp(-r*10*16*Cb[j]);
+
+
+      if(j == 0)
+	outComp[j]+=((texture2DArray(theTexture,gl_TexCoord[i].xyz)-texture2DArrayLod(theTexture,gl_TexCoord[i].xyz,mipmapL[1]))*W);
+      else if (j==1)
+	outComp[j]+=((texture2DArrayLod(theTexture,gl_TexCoord[i].xyz,mipmapL[1])-texture2DArrayLod(theTexture,gl_TexCoord[i].xyz,mipmapL[2]))*W);
+      else if(j==2)
+	outComp[j]+=(texture2DArrayLod(theTexture,gl_TexCoord[i].xyz,mipmapL[2])*W);
+
+      WSum[j]+=W;
+    }
+  }
+  outComp[0]=outComp[0]/WSum[0];
+  outComp[1]=outComp[1]/WSum[1];
+  outComp[2]=outComp[2]/WSum[2];
+
+  outP = outComp[0]+outComp[1]+outComp[2];
+  return outP;
+
+}
+
+vec4 weightDebug1(){
+  vec3 Cb=weights;
+  vec3 mipmapL = vec3(0,2,4);
+  float rmax=0.70710678;
+  vec3 WSum =vec3(0.0,0.0,0.0);
+    
+  vec4 outP;
+  vec4 outComp[3];
+      int i=1;
+  int j=0;
+      float r = length(gl_TexCoord[i].xy - vec2(0.5,0.5));
+    
       float num=exp(-5*((r-Cb[j])/(rmax*Cb[j])));
       float W=num/(1+num);
+        W=exp(-r*10*16*Cb[j]);
+      //     float W=max((-16*r*weights[j])+1,0.001);
+
+ 
+      return vec4(W,0,0,1.0);
+}
+
+vec4 weightDebug2(){
+  vec3 Cb=weights;
+  vec3 mipmapL = vec3(0,2,4);
+  float rmax=0.70710678;
+  vec3 WSum =vec3(0.0,0.0,0.0);
+    
+  vec4 outP;
+  vec4 outComp[3];
+   
+  int j=0;
+  int i=2;
+    //for(int i=1;i<5; i++){
+      float r = length(gl_TexCoord[i].xy - vec2(0.5,0.5));
+   
+   float num=exp(-5*((r-Cb[j])/(rmax*Cb[j])));
+      float W=num/(1+num);
+ 
+      // float W=max((-16*r*weights[j])+1,0.001);
+
+        W=exp(-r*10*16*Cb[j]);
+      return vec4(W,0,0,1.0);
+}
+vec4 lin3Blend(){
+  vec3 Cb=weights;
+  vec3 mipmapL = vec3(0,2,4);
+  float rmax=0.70710678;
+  vec3 WSum =vec3(0.0,0.0,0.0);
+    
+  vec4 outP;
+  vec4 outComp[3];
+   
+  for(int j=0; j < 3; j++){
+    for(int i=1;i<5; i++){
+      float r = length(gl_TexCoord[i].xy - vec2(0.5,0.5));
+   
+ 
+      float W=max((-16*r*weights[j])+1,0.001);
 
       if(j == 0)
 	outComp[j]+=((texture2DArray(theTexture,gl_TexCoord[i].xyz)-texture2DArrayLod(theTexture,gl_TexCoord[i].xyz,mipmapL[1]))*W);
@@ -135,11 +215,11 @@ void main()
   if(shaderOut == 1)
     color= freqBlend();
   else if(shaderOut ==2)
-    color=avgC();
+    color=freq3Blend();//lin3Blend();
   else if(shaderOut ==3)
-    color=err();
+    color=weightDebug1();//err();
   else if(shaderOut ==4)
-    color=freq3Blend();	
+    color=weightDebug2();//freq3Blend();	
   else
     color=pass();
 

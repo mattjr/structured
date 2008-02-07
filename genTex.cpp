@@ -440,9 +440,14 @@ std::vector<vector<string >   > outNames;
     int lodTexSize[]={max((int)(512*tex_scale),32),max((int)(256*tex_scale),32),max((int)(32*tex_scale),32)};
     //float simpRatio[]={0.5,0.1,0.01};
    std::vector<string > lodnames;
-    
+   string path=string(argv[0]);
+   unsigned int loc=path.rfind("/");
+   
+   string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
+   basepath= osgDB::getRealPath (basepath) +"/";
+   
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
-					num_threads,verbose,hardware_compress,tex_array_blend,do_novelty);    
+					num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath);    
     osg::Node * lod0Node[2];
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;

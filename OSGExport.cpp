@@ -797,9 +797,9 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       osg::Shader *novelty=new osg::Shader( osg::Shader::FRAGMENT);
       osg::Shader *distNovelty=new osg::Shader( osg::Shader::VERTEX);
       if(gpuNovelty){
-	loadShaderSource( novelty, "novelty-live.frag" );
+	loadShaderSource( novelty, basedir+"novelty-live.frag" );
       }else{
-	loadShaderSource( novelty, "novelty.frag" );
+	loadShaderSource( novelty, basedir+"novelty.frag" );
 	//	loadShaderSource( novelty, "ass.frag" );
       }
       loadShaderSource( distNovelty, "novelty.vert" );
@@ -1001,7 +1001,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
     program = new osg::Program;
     program->setName( "microshader" );
     osg::Shader *lerp=new osg::Shader( osg::Shader::FRAGMENT);
-    loadShaderSource( lerp, "lerp.frag" );
+    loadShaderSource( lerp, basedir+"lerp.frag" );
     program->addShader(  lerp );
   
   

@@ -33,6 +33,7 @@
 #include "auv_stereo_keypoint_finder.hpp"
 #include "auv_mesh.hpp"
 #include "auv_mesh_io.hpp"
+#include "adt_image_norm.hpp"
 //#define WITH_LOGGING
 #include "auv_concurrency.hpp"
 #include <boost/function.hpp>
@@ -111,6 +112,12 @@ const char *aggdir="mesh-agg";
 bool dist_run=false;
 static string passtotridec="-e2.0";
 static bool do_hw_blend=false;
+// Image normalisation
+#define USE_IMAGE_NORMALISATION true
+#define NORMALISED_MEAN         128
+#define NORMALISED_VAR          400
+
+
 
 void print_uv_3dpts( list<Feature*>          &features,
 		     list<Stereo_Feature_Estimate> &feature_positions,
@@ -691,6 +698,15 @@ static bool get_stereo_pair( const string left_image_name,
       left_image = scaled_left;
       right_image = scaled_right;
     }
+ //
+   // Normalise the mean and variance of the pixel intensity values
+   //
+   if( USE_IMAGE_NORMALISATION )
+   {
+      normalise_image( NORMALISED_MEAN, NORMALISED_VAR, left_image  );
+      normalise_image( NORMALISED_MEAN, NORMALISED_VAR, right_image );
+      
+   }
 
   
   return true;
@@ -1513,7 +1529,7 @@ int main( int argc, char *argv[ ] )
 	
 	fprintf(dicefp,"cd $DICEDIR\nNUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
 		"REDFACT=(0.000 0.01 0.05)\n");
-		//"REDFACT=(0 0 0)\n");
+
 		
        	if(have_mb_ply)
 	  fprintf(dicefp,"BORDERFLAG=\n");

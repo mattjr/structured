@@ -1568,28 +1568,32 @@ int main( int argc, char *argv[ ] )
 
 	  fprintf(dicefp,"cd $MESHAGG\n%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
 		basepath.c_str());
-	if(dist_run){
+	  char argstr[255];
+	  strcpy(argstr,"");
+	  if(do_novelty)
+	    strcat(argstr,"--novelty ");
+	  if(do_hw_blend)
+	    strcat(argstr,"--blend ");
+	  if(!hardware_compress)
+	    strcat(argstr,"--no-hardware-compress ");
+	  if(no_simp)
+	    strcat(argstr,"--nosimp");
+	
+	  if(dist_run){
 	  fprintf(dicefp,"cd $DICEDIR\n"
 		  "rm -f gentexcmds\n"
 		  "for i in `seq 0 $(($NUMDICED - 1))`;\n"
 		  "do\n"
-		  "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s -f %s --single-run $i\" >> gentexcmds\n"
+		  "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s -f %s --single-run $i %s\" >> gentexcmds\n"
 		  "done\n"
 		  "LOGDIR=%s\n"
 		  "cd $DICEDIR\n"
 		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit-hwcard gentexcmds -logdir $LOGDIR\n"
-		  ,stereo_config_file_name.c_str(),cachedtexdir,texlogdir);
+		  ,stereo_config_file_name.c_str(),cachedtexdir,argstr,texlogdir);
 	}else{  
 	  fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
-	  if(!hardware_compress)
-	    fprintf(dicefp,"--no-hardware-compress ");
-	  if(no_simp)
-	    fprintf(dicefp,"--nosimp");
-	  if(do_hw_blend)
-	    fprintf(dicefp,"--blend");
-	  if(do_novelty)
-	    fprintf(dicefp,"--novelty");
-	  fprintf(dicefp,"\n");
+
+	  fprintf(dicefp,"%s \n",argstr);
 	  
 	}
 

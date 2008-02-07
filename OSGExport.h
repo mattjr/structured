@@ -288,7 +288,7 @@ public:
   bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback=NULL);
 protected:
   osg::ref_ptr<osg::State> state;
-  
+  std::vector<GtsBBox *> bboxes_all;;
   void compress(osg::Texture2D* texture2D,osg::Texture::InternalFormatMode internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION );
   //osg::Texture::InternalFormatMode internalFormatMode;
     MyGraphicsContext *context;
@@ -344,4 +344,5 @@ public:
         }
     }    
 };
+extern std::vector<GtsBBox *> bboxes_all;;
 #endif

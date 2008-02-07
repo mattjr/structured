@@ -21,7 +21,7 @@ typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 using namespace squish;
 FILE *ffp;
-osg::TextureRectangle*  tempFF;
+
 
 MyGraphicsContext *mgc=NULL;
 std::vector<GtsBBox *> bboxes_all;;
@@ -235,7 +235,7 @@ static void add_face_all_osg (T_Face * f, gpointer * data){
   float *zrange = (float *)data[4];
   map<int,string> *textures = (map<int,string> *)data[3];
   ClippingMap *cm=(ClippingMap *)data[2];
-
+  map<int,int> *texnum2arraynum=(map<int,int> *)data[5];
   osg::BoundingBox &texLimits=(*cm)[osgDB::getSimpleFileName((*textures)[f->material])];
   osg::PrimitiveSet::Mode mode;
   
@@ -268,11 +268,12 @@ static void add_face_all_osg (T_Face * f, gpointer * data){
     }
 
     for(int i=0; i< 4; i++){
-      (*gc._texcoordsTexArray[i]++).set(v1->uB[i], 1 - v1->vB[i],f->materialB[i]);
-      (*gc._texcoordsTexArray[i]++).set(v2->uB[i], 1 - v2->vB[i],f->materialB[i]); 
-      (*gc._texcoordsTexArray[i]++).set(v3->uB[i], 1 - v3->vB[i],f->materialB[i]); 
+      (*gc._texcoordsTexArray[i]++).set(v1->uB[i], 1 - v1->vB[i],(*texnum2arraynum)[f->materialB[i]]);
+      (*gc._texcoordsTexArray[i]++).set(v2->uB[i], 1 - v2->vB[i],(*texnum2arraynum)[f->materialB[i]]); 
+      (*gc._texcoordsTexArray[i]++).set(v3->uB[i], 1 - v3->vB[i],(*texnum2arraynum)[f->materialB[i]]); 
+      //   printf("%d ",f->materialB[i]);
     }
-  
+    //printf("\n");
    
   }
 
@@ -960,14 +961,15 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
 {
    _tex_size=tex_size;
   GeometryCollection gc;
-  gpointer data[5];
+  gpointer data[6];
+  map<int,int> texnum2arraynum;
   gint n=0;
   data[0]=&gc;
   data[1] = &n;
   data[2]=cm;
   data[3]=&textures;
   data[4]=zrange;
-
+  data[5]=&texnum2arraynum;
   gts_surface_foreach_face (s, (GtsFunc) bin_face_all_osg , data);
   
   osg::ref_ptr<osg::Geode> untextured = new osg::Geode;
@@ -1010,7 +1012,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
   
     for(itr=textures.begin(); itr!=textures.end(); ++itr){
       if (itr->first >= 0){
-	num_valid_tex++;
+	texnum2arraynum[itr->first]=	num_valid_tex++;
       }
     }  
   
@@ -1944,7 +1946,7 @@ bool find_blend_img_trans(GtsTriangle *t,GNode* bboxTree, std::vector<GtsPoint> 
       for(int i=0; i < NUM_TEX_BLEND_COORDS; i++)
 	idx[i]=bestProjection;
   }
- 
+  
   return true;
 }
 

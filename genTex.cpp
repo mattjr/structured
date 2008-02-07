@@ -548,6 +548,7 @@ std::vector<vector<string >   > outNames;
       sprintf(out_name,"mesh/blended-%02d-lod%d.%s",i,j,ext);
       osg::ref_ptr<osg::Geode> group[2];
       ClippingMap cm;
+    
       if(!tex_array_blend)
       osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
 					   lodTexSize[j],group,planes,bounds,
@@ -570,6 +571,7 @@ std::vector<vector<string >   > outNames;
 	gts_object_destroy (GTS_OBJECT (surf)); 
       if(verbose)
 	printf("Done Took %.2f secs\n",secs);
+     
     }
 
   
@@ -578,7 +580,7 @@ std::vector<vector<string >   > outNames;
     //Destory Surf
     //if(s)
     //gts_object_destroy (GTS_OBJECT (s)); 
- 
+    bboxes_all.clear();;
     delete osgExp;
   }
   mesh_count(i,totalMeshCount,lodNum,lodNum,0,0,0);

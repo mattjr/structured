@@ -63,6 +63,7 @@ static float tex_scale=1.0;
 static  char diceddir[255];
 extern std::vector<GtsBBox *> bboxes_all;
 static bool do_novelty=false;
+static bool usePlaneDist=false;
 //
 // Parse command line arguments into global variables
 //
@@ -94,6 +95,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--novelty" ) == 0 )
 	{
 	  do_novelty=true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--planedist" ) == 0 )
+	{
+	  usePlaneDist=true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--3ds" ) == 0 )
@@ -447,7 +453,7 @@ std::vector<vector<string >   > outNames;
    basepath= osgDB::getRealPath (basepath) +"/";
    
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
-					num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath);    
+					num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist);    
     osg::Node * lod0Node[2];
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;

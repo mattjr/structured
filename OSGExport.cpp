@@ -847,23 +847,24 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      gc._geom->getStateSet()->addUniform( new osg::Uniform("binsize",
 								    16.0f));
 	    }
-
-	      gc._geom->getStateSet()->addUniform( new osg::Uniform( "shaderOut", 1));
-	    gc._geom->getStateSet()->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.50f, 0.4f) ));
-	
-	    
-	    gc._geom->getStateSet()->addUniform(new osg::Uniform("rtex",0));
-	    gc._geom->getStateSet()->addUniform(new osg::Uniform("infoT",
-	    						 TEXUNIT_INFO));
-
-	     gc._geom->getStateSet()->addUniform(new osg::Uniform("planes", 
-	    						 TEXUNIT_PLANES) );
-	     gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_PLANES,
-							  planeTex);
-    gc._geom->getStateSet()->setAttributeAndModes( program,
-							   osg::StateAttribute::ON );
-
-    textured->addDrawable(gc._geom);
+	    if(usePlaneDist){
+		gc._geom->getStateSet()->addUniform( new osg::Uniform( "shaderOut", 1));
+		gc._geom->getStateSet()->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.50f, 0.4f) ));
+		
+		
+		gc._geom->getStateSet()->addUniform(new osg::Uniform("rtex",0));
+		gc._geom->getStateSet()->addUniform(new osg::Uniform("infoT",
+								     TEXUNIT_INFO));
+		
+		gc._geom->getStateSet()->addUniform(new osg::Uniform("planes", 
+								     TEXUNIT_PLANES) );
+		gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_PLANES,
+							     planeTex);
+		gc._geom->getStateSet()->setAttributeAndModes( program,
+							       osg::StateAttribute::ON );
+	      }
+	      
+	      textured->addDrawable(gc._geom);
     }
 	 
 	  

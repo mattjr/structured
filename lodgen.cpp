@@ -32,7 +32,7 @@
 #include  <boost/thread/xtime.hpp> 
 #include "auv_mesh_utils.hpp"
 #include "auv_mesh_io.hpp"
-
+#include "auv_lod.hpp"
 using namespace std;
 using namespace libplankton;
 using namespace libsnapper;

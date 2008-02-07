@@ -283,8 +283,8 @@ vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::
   int nv = _mesh->vertices.size();
   _mesh->need_bbox();
   vec v=_mesh->bbox.size();
-  cout << v << endl;
-  cout << _mesh->bbox.min << " " << _mesh->bbox.max << endl;
+  //cout << v << endl;
+  //cout << _mesh->bbox.min << " " << _mesh->bbox.max << endl;
 
   double xstep = v[0] /widthSplits;
   double ystep = v[1]/ heightSplits;

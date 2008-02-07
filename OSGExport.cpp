@@ -149,6 +149,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   GeometryCollection& gc = (*mtgcm)[f->material];
   osg::BoundingBox &texLimits=(*cm)[osgDB::getSimpleFileName((*textures)[f->material])];
   int planeTexSize=(int)data[7];
+  bool usePlaneDist=(int)data[8];
   osg::PrimitiveSet::Mode mode;
   
   mode = osg::PrimitiveSet::TRIANGLES;
@@ -172,7 +173,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   (*gc._vertices++).set(GTS_VERTEX(v2)->p.y,GTS_VERTEX(v2)->p.x,-GTS_VERTEX(v2)->p.z);
   (*gc._vertices++).set(GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.x,-GTS_VERTEX(v3)->p.z);
 
-  if(gc._planeTexValid){
+  if(gc._planeTexValid && usePlaneDist){
     if(v1->plane >= 0)
       (*gc._texcoordsPlane++).set(v1->plane %planeTexSize, v1->plane / planeTexSize);    
     else
@@ -665,7 +666,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 {
    _tex_size=tex_size;
   MaterialToGeometryCollectionMap mtgcm;
-  gpointer data[8];
+  gpointer data[9];
   gint n=0;
   data[0]=&mtgcm;
   data[1] = &n;
@@ -674,6 +675,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   data[4]=zrange;
   data[6]=zrange;
   data[7]=(void *)_planeTexSize;
+  data[8]=(void *)usePlaneDist;
   //data[5]=hists;
   //tempFF=getPlaneTex(planes);
   gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
@@ -875,7 +877,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
         }
 
     }
-      if(computeHists){
+      if(usePlaneDist){
 	osg::StateSet* _stateset = new osg::StateSet;
 	osg::PolygonMode* _polygonmode = new osg::PolygonMode;
 	_polygonmode->setMode(osg::PolygonMode::FRONT_AND_BACK,

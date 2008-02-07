@@ -1569,7 +1569,8 @@ int main( int argc, char *argv[ ] )
 	  fprintf(dicefp,"cd $MESHAGG\n%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
 		basepath.c_str());
 	if(dist_run){
-	  fprintf(dicefp,"rm -f gentexcmds\n"
+	  fprintf(dicefp,"cd $DICEDIR\n"
+		  "rm -f gentexcmds\n"
 		  "for i in `seq 0 $(($NUMDICED - 1))`;\n"
 		  "do\n"
 		  "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s -f %s --single-run $i\" >> gentexcmds\n"

@@ -199,7 +199,7 @@ GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
     char name[255];
     double x1,x2,y1,y2,z1,z2;
     GtsMatrix *mtmp=gts_matrix_identity(NULL);
-    int eof0, eof1,eof2,frame_count=0;
+    int eof0=1, eof1=1,eof2=1,frame_count=0;
     while (eof0 != EOF && eof1 != EOF && eof2 != EOF){
       
       eof0 = fscanf(bboxfp,"%d %s %lf %lf %lf %lf %lf %lf" ,&count, name,

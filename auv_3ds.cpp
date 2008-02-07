@@ -1,5 +1,15 @@
 #include "OSGExport.h"
+#define USE_LIB3DS
 #ifdef USE_LIB3DS
+#include <lib3ds/file.h>
+#include <lib3ds/mesh.h>
+#include <lib3ds/material.h>
+#include <lib3ds/light.h>
+#include <lib3ds/camera.h>
+#include <lib3ds/node.h>
+#include <lib3ds/matrix.h>
+#include <lib3ds/vector.h>
+
 /**
  * Create a camera and insert it into the file.
  *
@@ -144,8 +154,17 @@ void add_node(Lib3dsFile* file, Lib3dsMesh* mesh)
 
 
   lib3ds_file_insert_node(file, node);
+} 
+#endif
+
+bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback)
+
+#ifndef USE_LIB3DS
+{printf("Not using lib3ds code cannot output 3ds\n");
+  exit(0);
 }
-bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback){
+#else
+{
   char cTemp[512];
   Lib3dsFile *pFile = lib3ds_file_new();
   // std::vector <string> tex_names;
@@ -235,3 +254,4 @@ bool OSGExporter::Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> m
   return bResult;
 }
 #endif
+

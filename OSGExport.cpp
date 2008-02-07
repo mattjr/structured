@@ -802,7 +802,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	loadShaderSource( novelty, basedir+"novelty.frag" );
 	//	loadShaderSource( novelty, "ass.frag" );
       }
-      loadShaderSource( distNovelty, "novelty.vert" );
+      loadShaderSource( distNovelty, basedir+"novelty.vert" );
       //loadShaderSource( distNovelty, "ass.vert" );
       
       program->addShader(  novelty );

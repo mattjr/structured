@@ -217,7 +217,7 @@ void main()
   else if(shaderOut ==2)
     color=freq3Blend();//lin3Blend();
   else if(shaderOut ==3)
-    color=weightDebug1();//err();
+    color=gl_Color;
   else if(shaderOut ==4)
     color=weightDebug2();//freq3Blend();	
   else

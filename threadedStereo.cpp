@@ -27,17 +27,11 @@
 #include "auv_image_distortion.hpp"
 #include "auv_stereo_geometry.hpp"
 #include "adt_raw_file.hpp"
-#include "auv_mesh_utils.hpp"
 #include "auv_stereo_corner_finder.hpp"
 #include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
-#include "auv_mesh.hpp"
-#include "auv_mesh_io.hpp"
 #include "adt_image_norm.hpp"
-//#define WITH_LOGGING
 #include "auv_concurrency.hpp"
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
 #include "OSGExport.h"
 #include "keypoint.hpp"
 using namespace std;

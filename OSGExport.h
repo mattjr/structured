@@ -85,12 +85,12 @@ struct GeometryCollection
   osg::Geometry*              _geom;
   bool _planeTexValid;
   osg::BoundingBox            _texLimits;
-  map<int,bool> texIDs;
+
 
 };
 enum {IVE_OUT,OSG_OUT,THREEDS_OUT};
 
-typedef std::map<int,GeometryCollection *> MaterialToGeometryCollectionMap;
+typedef std::map<int,GeometryCollection* > MaterialToGeometryCollectionMap;
 typedef std::map<int,string> MaterialToIDMap;
 
 

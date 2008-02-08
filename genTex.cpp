@@ -549,16 +549,11 @@ std::vector<vector<string >   > outNames;
       osg::ref_ptr<osg::Geode> group[2];
       ClippingMap cm;
     
-      if(!tex_array_blend)
+     
       osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
 					   lodTexSize[j],group,planes,bounds,
 						   texcallback,zrange);
-      else
-
-      osgExp->convertGtsSurfListToGeometryTexArray(surf,texture_file_names,&cm,
-						   lodTexSize[j],group,
-					      texcallback,zrange);
-
+    
 
       
       osgExp->outputModelOSG(out_name,group);

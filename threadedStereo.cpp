@@ -1522,7 +1522,7 @@ int main( int argc, char *argv[ ] )
 	  fprintf(dicefp,"$BASEPATH/vrip/bin/plydicegroup -outdir $DICEDIR -writebboxall $DICEDIR/bbtmp.txt  -writebbox $DICEDIR/range.txt -dice %f %f %s  total-unsimp.ply total-unsimp-lod1.ply total-unsimp-lod2.ply | sed 's_.*/__' | tee $DICEDIR/diced.txt\n",subvol,eps,"diced");	
 	
 	fprintf(dicefp,"cd $DICEDIR\nNUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(0.000 0.01 0.05)\n");
+		"REDFACT=(0.001 0.01 0.05)\n");
 
 		
        	if(have_mb_ply)

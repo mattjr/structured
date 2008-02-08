@@ -195,13 +195,18 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
   string basename=osgDB::getSimpleFileName(name);
   string ddsname=osgDB::getNameLessExtension(name);
   ddsname +=".dds";
+  bool cachedLoaded=false;
   osg::Image *filecached=NULL;
   osg::Image *retImage=new osg::Image;
   if(compressed_img_cache.find(basename) == compressed_img_cache.end() || !compressed_img_cache[basename] ){
   
     if(FileExists(ddsname)){
       filecached=osgDB::readImageFile(ddsname);
-    }else{
+      if(filecached)
+	cachedLoaded=true;
+    }
+    
+    if(!cachedLoaded){
       img = cvLoadImage(name.c_str(),-1);
       if(!img){
 	printf("In Cached Compressed Img Load failed %s.\n",name.c_str());
@@ -212,15 +217,17 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
       
       }
     }
-     
+ 
     compressed_img_cache[basename]=filecached;
 
   }else{  
     filecached=compressed_img_cache[basename];
   }
 
-  if(filecached->s() == size && filecached->t() == size)
+  if(filecached && filecached->s() == size && filecached->t() == size)
     return filecached;
+  else
+    return NULL;
 
   int resize=filecached->s();
   unsigned int i=0;
@@ -750,185 +757,6 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
   return true;
 }
-#if 0
-
-bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,VerboseMeshFunc vmcallback,float *zrange)
-{
-   _tex_size=tex_size;
-   //GeometryCollection gc;
-   MaterialToGeometryCollectionMap mtgcm;
-  gpointer data[6];
-  map<int,int> texnum2arraynum;
-  gint n=0;
-  data[0]=&mtgcm;
-  data[1] = &n;
-  data[2]=cm;
-  data[3]=&textures;
-  data[4]=zrange;
-  data[5]=&texnum2arraynum;
-
- 
- 
-  /*  GeometryCollection *curGC=NULL;
-  for(int i=0; i < num_texture; i++){
-    if(i % numimgpertex == 0){
-      printf("Creating new gc %d\n",i);
-      curGC=new GeometryCollection;
-    }
-    mtgcm[i]=curGC;
-    }*/
-    
-  gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
-  
-  osg::ref_ptr<osg::Geode> untextured = new osg::Geode;
-  osg::ref_ptr<osg::Geode> textured = new osg::Geode;
-
-  if (gc._numPrimitives){
-      
-       
-    gc._geom = new osg::Geometry;
-       
-    osg::Vec3Array* vertArray = new osg::Vec3Array(gc._numPoints);
-    gc._vertices = vertArray->begin();
-    gc._geom->setVertexArray(vertArray);
-    
-    // set up color.
-    {
-      osg::Vec4Array* colorsArray = new osg::Vec4Array(gc._numPoints);
-	
-      
-      gc._colors=colorsArray->begin();                 
-      gc._colorsActive=true;
-      gc._geom->setColorArray(colorsArray);
-      
-      gc._geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    }
-    
-
-
-    osg::Program* program=NULL;
-    int num_valid_tex=0;
-    int tex_count=0;
- 
-    osg::ref_ptr<osg::Texture2DArray> textureArray= new osg::Texture2DArray; 
-    program = new osg::Program;
-    program->setName( "microshader" );
-    osg::Shader *lerp=new osg::Shader( osg::Shader::FRAGMENT);
-    loadShaderSource( lerp, basedir+"lerp.frag" );
-    program->addShader(  lerp );
-  
-     map<int,string>::iterator itr;
-    for(itr=textures.begin(); itr!=textures.end(); ++itr){
-      if (itr->first >= 0){
-	texnum2arraynum[itr->first]=	num_valid_tex++;
-      }
-    }  
-  
-    textureArray->setTextureSize(tex_size,tex_size,num_valid_tex);
-    
-    int imgNum=0;
-
-    osg::StateSet* stateset = new osg::StateSet;
-    stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
-    
-  
-    stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
-    stateset->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.10f, 0.4f) ));
-    stateset->addUniform( new osg::Uniform( "shaderOut", 1));
-
-    stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
-  
-  
-    for(itr=textures.begin(); itr!=textures.end(); ++itr){
-    
-      std::string filename=prefixdir+itr->second;
-      osg::notify(osg::INFO) << "ctex " << filename  << std::endl;
-      char fname[255];
-      sprintf(fname,"mesh/%s",itr->second.c_str());
-
-      if(vmcallback)
-	vmcallback(++tex_count,textures.size());
-      if(verbose)
-	printf("\rLoading Texture: %03d/%03d",++tex_count,textures.size());
-      if(!ive_out)
-	if(verbose)printf("\n");	 
-      fflush(stdout); 
-	
-	 
-      osg::ref_ptr<osg::Image> image=getCachedCompressedImage(filename,tex_size);
-    
-      //LoadResizeSave(filename,fname, (!ive_out),tex_size);
-      if (image.valid()){	     
-	 
-	// create state
-	
-	  
-	textureArray->setImage(imgNum,image.get());
-	textureArray->setUnRefImageDataAfterApply(false);
-	gc._texturesActive=true;
-	stateset->setDataVariance(osg::Object::STATIC);
-	   
-	gc._geom->setStateSet(stateset);
-	     
-	osg::Vec2Array* texcoordArray = new osg::Vec2Array(gc._numPoints);
-	gc._texcoords = texcoordArray->begin();
-	gc._geom->setTexCoordArray(0,texcoordArray);
-	for(int i=0; i< NUM_TEX_BLEND_COORDS; i++){
-	  osg::Vec3Array* texcoordBlendArray =new osg::Vec3Array(gc._numPoints);
-	  gc._texcoordsTexArray[i] = texcoordBlendArray->begin();
-	  gc._geom->setTexCoordArray(i+1,texcoordBlendArray);
-	}
-	osg_tex_arr_ptrs.push_back(textureArray);
-	imgNum++;
-      }
-    }
-  
-  
-  
-    if(verbose)
-      printf("\n");
-  
-    gts_surface_foreach_face (s, (GtsFunc) add_face_all_osg , data);
-  
-   
-  
-    // osgUtil::Tessellator tessellator;
-    
-    // add everthing into the Geode.   
-  
-    osgUtil::SmoothingVisitor smoother;
-   
-    if (gc._geom){
-    
-      //  tessellator.retessellatePolygons(*gc._geom);
-    
-      smoother.smooth(*gc._geom);
-      if(gc._texturesActive)
-	textured->addDrawable(gc._geom);
-      else{
-	untextured->addDrawable(gc._geom);
-      }
-      //  printf("Grilled Shrip %f %f %f %f\n",gc._texLimits.xMin(),
-      //   gc._texLimits.xMax(),gc._texLimits.yMin(),gc._texLimits.yMax());
-    }
-  
-  }
-  
- 
- 
-  if(textured->getNumDrawables())
-    group[0]=textured.get();
-  else 
-    group[0]=NULL;
-
-  if(untextured->getNumDrawables() )
-    group[1]=untextured.get();
-  else
-    group[1]=NULL;
-
-  return true;
-}
-#endif
 bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *group) {
 
   osg::Geode *tex=group[0].get();

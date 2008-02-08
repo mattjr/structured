@@ -199,7 +199,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
   osg::Image *filecached=NULL;
   osg::Image *retImage=new osg::Image;
   if(compressed_img_cache.find(basename) == compressed_img_cache.end() || !compressed_img_cache[basename] ){
-  
+    
     if(FileExists(ddsname)){
       filecached=osgDB::readImageFile(ddsname);
       if(filecached)
@@ -226,8 +226,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 
   if(filecached && filecached->s() == size && filecached->t() == size)
     return filecached;
-  else
-    return NULL;
+
 
   int resize=filecached->s();
   unsigned int i=0;
@@ -504,18 +503,18 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	osg::notify(osg::INFO) << "ctex " << filename  << std::endl;
 	char fname[255];
 	sprintf(fname,"mesh/%s",textures[tidx].c_str());
-	
+	++tex_count;
 	if(vmcallback)
-	  vmcallback(++tex_count,mtgcm.size());
+	  vmcallback(tex_count,mtgcm.size());
 	if(verbose)
-	  printf("\rLoading Texture: %03d/%03d",++tex_count,mtgcm.size());
+	  printf("\rLoading Texture: %03d/%03d",tex_count,mtgcm.size());
 	if(!ive_out)
 	  if(verbose)printf("\n");	 
 	fflush(stdout); 
 	
 	 
 	osg::ref_ptr<osg::Image> image=getCachedCompressedImage(filename,tex_size);
-
+	
 	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	if (image.valid()){	   
 

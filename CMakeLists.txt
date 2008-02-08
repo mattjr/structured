@@ -193,20 +193,21 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
 
 LINK_DIRECTORIES( ${OPENCV_LINK_DIR} ${GTS_LINK_DIR})
 
-LINK_LIBRARIES( ${OPENCV_LINK_FLAGS}
-                ${LAPACK_LIB}
- 		${OPENGL_LIBRARIES}
-                ${ULAPACK_LIB}
- 		${BOOST_THREAD_LIBRARY}
- 		${GTS_LINK_FLAGS}
+LINK_LIBRARIES(	${OSG_LIBRARY}
+		${OSGDB_LIBRARY}
+		${OSGUTIL_LIBRARY}
 		${LIBADT_LIBRARY}
-   		${LIBSNAPPER_LIBRARY}
+		-l3ds -lgts
+ 	
+	
+	
+	
+ 		
+   		
 		${LIBPOLYP_LIBRARY}
-                ${LIBPLANKTON_LIB}
-                ${LIBKEYPOINT_LIB}
-		${OSG_LIBRARY}
-		${OSGUTIL_LIBRARY} 
-		${OSGDB_LIBRARY} -l3ds)
+              
+          
+	)
 
 
 #-----------------------#
@@ -251,8 +252,10 @@ MESSAGE( "" )
 
 # Locations for the library and binary files
 SET( LIBRARY_OUTPUT_PATH     ${PROJECT_SOURCE_DIR}/lib )
-SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )
+SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/ )
+#needed to supress rdynamic which causes segfault
 
+SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 #SUBDIRS(src include tools )
 
 SET( SRCS OSGExport.cpp

@@ -89,6 +89,8 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   osg::BoundingBox &texLimits=(*cm)[osgDB::getSimpleFileName((*textures)[f->material])];
   int planeTexSize=(int)data[7];
   bool usePlaneDist=(int)data[8];
+  map<int,int> *texnum2arraynum=(map<int,int> *)data[9];
+
   osg::PrimitiveSet::Mode mode;
   
   mode = osg::PrimitiveSet::TRIANGLES;
@@ -123,17 +125,26 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   
 }
  
-  if (gc._texturesActive && f->material >= 0){
+  if (gc._texturesActive){// && f->material >= 0){
 
 
     texLimits.expandBy(v1->u,1-v1->v,0.0);
     texLimits.expandBy(v2->u,1-v2->v,0.0);
     texLimits.expandBy(v3->u,1-v3->v,0.0);
 
-    
-    (*gc._texcoords++).set(v1->u,1-v1->v);    
-    (*gc._texcoords++).set(v2->u,1-v2->v); 
-    (*gc._texcoords++).set(v3->u,1-v3->v); 
+    if(f->material >= 0){
+      (*gc._texcoords++).set(v1->u,1-v1->v);    
+      (*gc._texcoords++).set(v2->u,1-v2->v); 
+      (*gc._texcoords++).set(v3->u,1-v3->v); 
+    }
+    if(texnum2arraynum != NULL){
+      for(int i=0; i< 4; i++){
+	(*gc._texcoordsTexArray[i]++).set(v1->uB[i], 1 - v1->vB[i],(*texnum2arraynum)[f->materialB[i]]);
+	(*gc._texcoordsTexArray[i]++).set(v2->uB[i], 1 - v2->vB[i],(*texnum2arraynum)[f->materialB[i]]); 
+	(*gc._texcoordsTexArray[i]++).set(v3->uB[i], 1 - v3->vB[i],(*texnum2arraynum)[f->materialB[i]]); 
+	//   printf("%d ",f->materialB[i]);
+      }
+    }
 
   }else
     gc._texturesActive=false;
@@ -444,7 +455,11 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   data[6]=zrange;
   data[7]=(void *)_planeTexSize;
   data[8]=(void *)usePlaneDist;
-  data[9]=&texnum2arraynum;
+  if(_tex_array_blend)
+    data[9]=&texnum2arraynum;
+  else
+    data[9]=NULL;
+
   //data[5]=hists;
   //tempFF=getPlaneTex(planes);
  
@@ -464,7 +479,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   GeometryCollection *curGC=NULL;
   for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
     GeometryCollection& gc = *(itr->second);
-    if(count % numimgpertex == 0){
+    if(count % numimgpertex == 0 || count == 0){
       vector<int> ids;
       ids.push_back(itr->first);
       gcAndTexIds.push_back(make_pair(itr->second,ids));
@@ -530,6 +545,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	osg::Vec2Array* texcoordArray = new osg::Vec2Array(gc._numPoints);
 	gc._texcoords = texcoordArray->begin();
 	gc._geom->setTexCoordArray(0,texcoordArray);
+	gc._texturesActive=true;
 	for(int i=0; i< NUM_TEX_BLEND_COORDS; i++){
 	  osg::Vec3Array* texcoordBlendArray =new osg::Vec3Array(gc._numPoints);
 	  gc._texcoordsTexArray[i] = texcoordBlendArray->begin();
@@ -685,35 +701,36 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
           //  tessellator.retessellatePolygons(*gc._geom);
         
 	  smoother.smooth(*gc._geom);
-	    if(gc._texturesActive){
-	 
-	      if(gpuNovelty){
-	      gc._geom->getStateSet()->addUniform(new osg::Uniform("hist", 
-								   TEXUNIT_HIST) );
-	      gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_HIST,
-							   histTex);
-	      gc._geom->getStateSet()->addUniform( new osg::Uniform("binsize",
-								    16.0f));
-	    }
-	    if(usePlaneDist){
-		gc._geom->getStateSet()->addUniform( new osg::Uniform( "shaderOut", 1));
-		gc._geom->getStateSet()->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.50f, 0.4f) ));
-		
-		
-		gc._geom->getStateSet()->addUniform(new osg::Uniform("rtex",0));
-		gc._geom->getStateSet()->addUniform(new osg::Uniform("infoT",
-								     TEXUNIT_INFO));
-		
-		gc._geom->getStateSet()->addUniform(new osg::Uniform("planes", 
-								     TEXUNIT_PLANES) );
-		gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_PLANES,
-							     planeTex);
-		gc._geom->getStateSet()->setAttributeAndModes( program,
-							       osg::StateAttribute::ON );
-	      }
-	      
+	   if(gc._texturesActive ){
+	     if(_tex_array_blend){
+	       if(gpuNovelty){
+		 gc._geom->getStateSet()->addUniform(new osg::Uniform("hist", 
+								      TEXUNIT_HIST) );
+		 gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_HIST,
+							      histTex);
+		 gc._geom->getStateSet()->addUniform( new osg::Uniform("binsize",
+								       16.0f));
+	       }
+	       if(usePlaneDist){
+		 gc._geom->getStateSet()->addUniform( new osg::Uniform( "shaderOut", 1));
+		 gc._geom->getStateSet()->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.50f, 0.4f) ));
+		 
+		 
+		 gc._geom->getStateSet()->addUniform(new osg::Uniform("rtex",0));
+		 gc._geom->getStateSet()->addUniform(new osg::Uniform("infoT",
+								      TEXUNIT_INFO));
+		 
+		 gc._geom->getStateSet()->addUniform(new osg::Uniform("planes", 
+								      TEXUNIT_PLANES) );
+		 gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_PLANES,
+							      planeTex);
+		 gc._geom->getStateSet()->setAttributeAndModes( program,
+								osg::StateAttribute::ON );
+	       }
+	     }
+	       
 	      textured->addDrawable(gc._geom);
-    }
+	   }
 	 
 	  
 	  else{
@@ -801,6 +818,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
   return true;
 }
+#if 0
 
 bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,VerboseMeshFunc vmcallback,float *zrange)
 {
@@ -828,7 +846,6 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
     mtgcm[i]=curGC;
     }*/
     
-#if 0
   gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
   
   osg::ref_ptr<osg::Geode> untextured = new osg::Geode;
@@ -976,10 +993,10 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
     group[1]=untextured.get();
   else
     group[1]=NULL;
-#endif
+
   return true;
 }
-
+#endif
 bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *group) {
 
   osg::Geode *tex=group[0].get();

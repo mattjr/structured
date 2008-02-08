@@ -131,7 +131,7 @@ public:
   std::map<string,osg::Image *> compressed_img_cache;
   osg::Image *getCachedCompressedImage(string name,int size);
   osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
-  bool convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,VerboseMeshFunc vmcallback,float *zrange);
+
   bool convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size, osg::ref_ptr<osg::Geode >* group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL) ;  
   
   bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback=NULL);

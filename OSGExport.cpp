@@ -14,7 +14,7 @@
 #include <glib.h>
 #include <highgui.h>
 #include <boost/thread/thread.hpp>
-
+#include "novelty.h"
 #include <sys/stat.h>
 #include "auv_texture_utils.hpp"
 #include "auv_lod.hpp"
@@ -67,21 +67,13 @@ void OSGExporter::compress(osg::Texture2D* texture2D, osg::Texture::InternalForm
   MaterialToGeometryCollectionMap *mtgcm=(MaterialToGeometryCollectionMap *)data[0];
   //uint uiFace =  *((guint *) data[1]);
 
-  GeometryCollection& gc = (*mtgcm)[f->material];
+  GeometryCollection& gc = *(*mtgcm)[f->material];
   gc._numPoints += 3;
   gc._numPrimitives += 1;
-  if (f->material >= 0) 
+  if (f->material >= 0) {
     gc._numPrimitivesWithTexCoords += 1;
-
-  GUINT_TO_POINTER ((*((guint *) data[1]))++);
-}
-
-static void bin_face_all_osg (T_Face * f, gpointer * data){
-  GeometryCollection& gc = *(GeometryCollection *)data[0];
-  
-  gc._numPoints += 3;
-  gc._numPrimitives += 1;
-
+    gc.texIDs[f->material]=true;
+  }
   GUINT_TO_POINTER ((*((guint *) data[1]))++);
 }
 
@@ -92,7 +84,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   float *zrange = (float *)data[4];
   map<int,string> *textures = (map<int,string> *)data[3];
   ClippingMap *cm=(ClippingMap *)data[2];
-  GeometryCollection& gc = (*mtgcm)[f->material];
+  GeometryCollection& gc = *(*mtgcm)[f->material];
   osg::BoundingBox &texLimits=(*cm)[osgDB::getSimpleFileName((*textures)[f->material])];
   int planeTexSize=(int)data[7];
   bool usePlaneDist=(int)data[8];
@@ -327,87 +319,13 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 #define TEXUNIT_PLANES       1
 
 
-osg::TextureRectangle*  OSGExporter::getTextureHists(  CvHistogram *&finalhist){
 
-   
-   
-   //long double total=0;
-  
-   float *tmpV= new float[16*16*16];
-   osg::Image *dataImg= new osg::Image;
-   dataImg->allocateImage(64,64,1,GL_LUMINANCE,GL_UNSIGNED_BYTE);
-   //int count=0;
-   float min=FLT_MAX;
-   float max=FLT_MIN;
-   float *ptr=tmpV;
-   for(int i=0; i< 16; i++)
-     for(int j=0; j< 16; j++)
-       for(int k=0; k< 16; k++){
-	 float val=cvQueryHistValue_3D(finalhist,i,j,k);
-
-
-	 if(val == 0.0){
-	   *ptr=FLT_MIN;
-	   ptr++;
-	   continue;
-	 }
-	 float logV=(-log(val));
-	 if(logV< min)
-	   min=logV;
-
-	 if(logV> max)
-	   max=logV;
-
-	 *ptr=logV;
-	 ptr++;
-     
-	 
-	 /* cout << cvQueryHistValue_3D(finalhist,i,j,k) << " ";
-	    total +=cvQueryHistValue_3D(finalhist,i,j,k);*/
-       }
-   printf("Min %f\n",min);
-   printf("Max %f\n",max);
-   float range=max-min;
-   ptr=tmpV;
-   for(int i=0;i < 64; i++)
-     for(int j=0; j<64; j++){
-       if(*ptr==FLT_MIN){
-	 *ptr=0.0;
-	 ptr++;
-	 continue;
-       }
-      
-       *ptr = (*ptr-min)*(255.0/range);
-       //   printf("i: %d j: %d %f\n",i,j,*ptr); 
-       ptr++;
-     }
-     cout << endl;//"\nTotal " << total <<endl;*/
-  
-     unsigned char *imgPtr=(unsigned char *)dataImg->data();
-     ptr=tmpV;
-     for(int i=0;i < 64; i++){
-       for(int j=0; j<64; j++){
-	 *imgPtr=(int)(*ptr);
-   if(i ==1 && j==0 )
-     *imgPtr=255;
-	 //printf("i: %d j: %d %d\n",i,j,*imgPtr); 
-	 ptr++;
-	 imgPtr++;
-       }
-     }
-     
-  
-
-   osg::TextureRectangle* texture = new osg::TextureRectangle(dataImg);
-   return texture;
-
-}
 
 void OSGExporter::calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc){
 
   MaterialToGeometryCollectionMap::iterator itr;
    for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
-     GeometryCollection& gc = itr->second;
+     GeometryCollection& gc = *(itr->second);
      if(!gc._texturesActive )
        continue;
      string name=textures[itr->first];
@@ -464,7 +382,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 
   MaterialToGeometryCollectionMap::iterator itr;
    for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
-     GeometryCollection& gc = itr->second;
+     GeometryCollection& gc = *(itr->second);
      if(!gc._texturesActive )
        continue;
      string name=textures[itr->first];
@@ -526,11 +444,24 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   data[8]=(void *)usePlaneDist;
   //data[5]=hists;
   //tempFF=getPlaneTex(planes);
+  int num_texture=textures.size();
+  int numimgpertex=1;
+ 
+  GeometryCollection *curGC=NULL;
+  for(int i=0; i < num_texture; i++){
+    if(i % numimgpertex == 0){
+      printf("Creating new gc %d\n",i);
+      curGC=new GeometryCollection;
+    }
+    mtgcm[i]=curGC;
+  }
+
+  
   gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
   MaterialToGeometryCollectionMap::iterator itr;
   int tex_count=0;
   for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
-    GeometryCollection& gc = itr->second;
+    GeometryCollection& gc = *(itr->second);
     if (gc._numPrimitives){
       
        
@@ -551,15 +482,14 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	 
 	gc._geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
       }
-
+      map<int,bool>::iterator titr;
       // set up texture if needed.
-   
-      if (itr->first >= 0 &&  textures.count(itr->first) > 0){
+      for(titr=itr->second->texIDs.begin(); titr != itr->second->texIDs.end(); ++titr){
 	 
-	std::string filename=prefixdir+textures[itr->first];
+	std::string filename=prefixdir+textures[titr->first];
 	osg::notify(osg::INFO) << "ctex " << filename  << std::endl;
 	char fname[255];
-	sprintf(fname,"mesh/%s",textures[itr->first].c_str());
+	sprintf(fname,"mesh/%s",textures[titr->first].c_str());
 
 	if(vmcallback)
 	  vmcallback(++tex_count,mtgcm.size());
@@ -625,7 +555,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  
 	  	 
 	  osg_tex_ptrs.push_back(texture);
-	  osg_tex_map[itr->first]=texture;
+	  osg_tex_map[titr->first]=texture;
 	  }
       }
     }
@@ -680,7 +610,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       itr!=mtgcm.end();
       ++itr)
     {
-      GeometryCollection& gc = itr->second;
+      GeometryCollection& gc = *(itr->second);
       if (gc._geom)
         {
 	  gc._geom->setUseDisplayList(false);
@@ -807,17 +737,31 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,VerboseMeshFunc vmcallback,float *zrange)
 {
    _tex_size=tex_size;
-  GeometryCollection gc;
+   //GeometryCollection gc;
+   MaterialToGeometryCollectionMap mtgcm;
   gpointer data[6];
   map<int,int> texnum2arraynum;
   gint n=0;
-  data[0]=&gc;
+  data[0]=&mtgcm;
   data[1] = &n;
   data[2]=cm;
   data[3]=&textures;
   data[4]=zrange;
   data[5]=&texnum2arraynum;
-  gts_surface_foreach_face (s, (GtsFunc) bin_face_all_osg , data);
+
+  int num_texture=textures.size();
+  int numimgpertex=1;
+  GeometryCollection *curGC=NULL;
+  for(int i=0; i < num_texture; i++){
+    if(i % numimgpertex == 0){
+      printf("Creating new gc %d\n",i);
+      curGC=new GeometryCollection;
+    }
+    mtgcm[i]=curGC;
+  }
+    
+#if 0
+  gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
   
   osg::ref_ptr<osg::Geode> untextured = new osg::Geode;
   osg::ref_ptr<osg::Geode> textured = new osg::Geode;
@@ -848,7 +792,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
     osg::Program* program=NULL;
     int num_valid_tex=0;
     int tex_count=0;
-    map<int,string>::iterator itr;
+ 
     osg::ref_ptr<osg::Texture2DArray> textureArray= new osg::Texture2DArray; 
     program = new osg::Program;
     program->setName( "microshader" );
@@ -856,7 +800,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
     loadShaderSource( lerp, basedir+"lerp.frag" );
     program->addShader(  lerp );
   
-  
+     map<int,string>::iterator itr;
     for(itr=textures.begin(); itr!=textures.end(); ++itr){
       if (itr->first >= 0){
 	texnum2arraynum[itr->first]=	num_valid_tex++;
@@ -964,7 +908,7 @@ bool OSGExporter::convertGtsSurfListToGeometryTexArray(GtsSurface *s, map<int,st
     group[1]=untextured.get();
   else
     group[1]=NULL;
-
+#endif
   return true;
 }
 

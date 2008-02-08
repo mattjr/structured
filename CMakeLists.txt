@@ -256,11 +256,10 @@ SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )
 #SUBDIRS(src include tools )
 
 SET( SRCS OSGExport.cpp
-		PixelBufferCarbon.cpp
-		GraphicsWindowCarbon.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp
 		auv_3ds.cpp
+		novelty.cpp
 		)
 
 

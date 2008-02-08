@@ -85,11 +85,12 @@ struct GeometryCollection
   osg::Geometry*              _geom;
   bool _planeTexValid;
   osg::BoundingBox            _texLimits;
+  map<int,bool> texIDs;
 
 };
 enum {IVE_OUT,OSG_OUT,THREEDS_OUT};
 
-typedef std::map<int,GeometryCollection> MaterialToGeometryCollectionMap;
+typedef std::map<int,GeometryCollection *> MaterialToGeometryCollectionMap;
 typedef std::map<int,string> MaterialToIDMap;
 
 
@@ -161,7 +162,7 @@ protected:
   vector<osg::ref_ptr<osg::Texture2DArray> > osg_tex_arr_ptrs;
   map<int,osg::Texture *> osg_tex_map;
 
-  osg::TextureRectangle * getTextureHists(  CvHistogram *&finalhist);
+  
   
   void  calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc);
   void addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc,CvHistogram *hist);

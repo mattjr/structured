@@ -139,14 +139,14 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
     }
     if(texnum2arraynum != NULL){
       for(int i=0; i< 4; i++){
-	/*	(*gc._texcoordsTexArray[i]++).set(v1->uB[i], 1 - v1->vB[i],(*texnum2arraynum)[f->materialB[i]]);
+      	(*gc._texcoordsTexArray[i]++).set(v1->uB[i], 1 - v1->vB[i],(*texnum2arraynum)[f->materialB[i]]);
 	(*gc._texcoordsTexArray[i]++).set(v2->uB[i], 1 - v2->vB[i],(*texnum2arraynum)[f->materialB[i]]); 
 	(*gc._texcoordsTexArray[i]++).set(v3->uB[i], 1 - v3->vB[i],(*texnum2arraynum)[f->materialB[i]]); 
-	*/
+       
+	/*(*gc._texcoordsTexArray[i]++).set(0.2,0.25,0);
 	(*gc._texcoordsTexArray[i]++).set(0.2,0.25,0);
-	(*gc._texcoordsTexArray[i]++).set(0.2,0.25,0);
-	(*gc._texcoordsTexArray[i]++).set(0.2,0.25,0);
-	//   printf("%d ",f->materialB[i]);
+	(*gc._texcoordsTexArray[i]++).set(0.2,0.25,0);*/
+	//printf("%d ",f->materialB[i]);
       }
     }
 
@@ -475,7 +475,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	program->addShader(  lerp );
 	textureArray->setTextureSize(tex_size,tex_size,gcAndTexIds[i].second.size());
 	osg::StateSet* stateset = new osg::StateSet;
-	//	stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
+	stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
 	
 	
 	stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );

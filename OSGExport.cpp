@@ -448,7 +448,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       osg::Vec3Array* vertArray = new osg::Vec3Array(gc._numPoints);
       gc._vertices = vertArray->begin();
       gc._geom->setVertexArray(vertArray);
-       
+      gc._planeTexValid=false;
       // set up color.
       {
 	osg::Vec4Array* colorsArray = new osg::Vec4Array(gc._numPoints);

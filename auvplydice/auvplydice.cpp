@@ -19,7 +19,7 @@ Greg Turk, August 1994
 #include <math.h>
 #include <malloc.h>
 #include <ply.h>
-
+#include "stereo_cells.hpp"
 #include "Linear.h"
 
 /* user's vertex and face definitions for a polygonal object */
@@ -107,12 +107,14 @@ static Matrix4f xfmat;
 
 void usage(char *progname);
 void write_file(FILE *out);
-void clip_and_write_subvols(char *bboxall);
+
 void read_file(FILE *inFile);
 void transform();
 int  clip_to_bounds(float svminx, float svminy, float svminz, 
 		    float svmaxx, float svmaxy, float svmaxz);
 
+void
+clip_and_write_subvols(char *bboxall,std::vector<Cell_Data> cells);
 /******************************************************************************
 Transform a PLY file.
 ******************************************************************************/
@@ -127,6 +129,7 @@ main(int argc, char *argv[])
   FILE *inFile = stdin;
   char *writebboxname = NULL;
   char *writebboxnameall = NULL;
+  char *posefname = NULL;
   bool printbbox = FALSE;
 
   progname = argv[0];
@@ -153,6 +156,10 @@ main(int argc, char *argv[])
     } else if (equal_strings(s, "-writebbox")) {
       if (argc < 2) usage(progname);
       writebboxname = (*++argv);
+      argc -= 1;
+    } else if (equal_strings(s, "-posefile")) {
+      if (argc < 2) usage(progname);
+      posefname = (*++argv);
       argc -= 1;
     }else if (equal_strings(s, "-writebboxall")) {
       if (argc < 2) usage(progname);
@@ -233,6 +240,11 @@ main(int argc, char *argv[])
     }
   }
 
+  if(!posefname){
+    fprintf(stderr,"No pose file bailing\n");
+    exit(-1);
+  }
+    
   /* optional input file (if not, read stdin ) */
   if (argc > 0 && *argv[0] != '-') {
        inFile = fopen(argv[0], "r");
@@ -251,6 +263,11 @@ main(int argc, char *argv[])
      usage(progname);
      exit(-1);
   }
+  /*Load stereo poses */
+
+  std::vector<Stereo_Pose_Data> poses =load_stereo_pose_file(posefname);
+  std::vector<Cell_Data> cells =calc_cells(poses);
+
 
   /* Read xf file if given... */
   if (xfname) {
@@ -299,9 +316,9 @@ main(int argc, char *argv[])
     fclose(bbox);
   }
 
-  if (subvolSize > 0) {
-    clip_and_write_subvols(writebboxnameall);
-  }
+  // if (subvolSize > 0) {
+  clip_and_write_subvols(writebboxnameall,cells);
+    // }
   return(0);
 }
 
@@ -311,8 +328,9 @@ Assumes that transform has been called, so that bboxes are set....
 ******************************************************************************/
 
 void
-clip_and_write_subvols(char *bboxall)
+clip_and_write_subvols(char *bboxall,std::vector<Cell_Data> cells)
 {
+  printf("clipping\n");
   int x, y, z;
   int minxi, minyi, minzi, maxxi, maxyi, maxzi;
   float svminx, svminy, svminz;
@@ -320,31 +338,17 @@ clip_and_write_subvols(char *bboxall)
   FILE *fp;
   if(bboxall)
     fp=fopen(bboxall,"w");
-  minxi = int(floor((minx - epsilon) / subvolSize));
-  minyi = int(floor((miny - epsilon) / subvolSize));
-  minzi = int(floor((minz - epsilon) / subvolSize));
-  maxxi = int(floor((maxx + epsilon) / subvolSize));
-  maxyi = int(floor((maxy + epsilon) / subvolSize));
-  maxzi = int(floor((maxz + epsilon) / subvolSize));
-    
-  for (x = minxi; x <= maxxi; x++) {
-    for (y = minyi; y <= maxyi; y++) {
-      for (z = minzi; z <= maxzi; z++) {
-	svminx = x*subvolSize-epsilon;
-	svminy = y*subvolSize-epsilon;
-	svminz = z*subvolSize-epsilon;
-	svmaxx = (x+1)*subvolSize+epsilon;
-	svmaxy = (y+1)*subvolSize+epsilon;
-	svmaxz = (z+1)*subvolSize+epsilon;
-	
-	// Set bounds tighter if bounds exist?
-	svminx = MAX(svminx, cropminx-epsilon);
+ 
+  for (int i=0; i < cells.size(); i++){
+  
+    /*
+    svminx = cells[i].bounds
 	svminy = MAX(svminy, cropminy-epsilon);
 	svminz = MAX(svminz, cropminz-epsilon);
 	svmaxx = MIN(svmaxx, cropmaxx+epsilon);
 	svmaxy = MIN(svmaxy, cropmaxy+epsilon);
 	svmaxz = MIN(svmaxz, cropmaxz+epsilon);
-
+    */
 	int numverts = clip_to_bounds(svminx, svminy, svminz,
 				     svmaxx, svmaxy, svmaxz);
 	if (numverts > 0) {
@@ -370,8 +374,6 @@ clip_and_write_subvols(char *bboxall)
 	  }
 
 	}
-      }
-    }
   }
   if(bboxall)
     fclose(fp);
@@ -644,8 +646,8 @@ void
 usage(char *progname)
 {
   fprintf (stderr, "\n");
-  fprintf (stderr, "usage: %s [options] subvol_size epsilon [in.ply]\n", progname);
-  fprintf (stderr, "   or: %s [options] subvol_size epsilon < in.ply\n", progname);
+  fprintf (stderr, "usage: %s [options] -posefile <posefile name> subvol_size epsilon [in.ply]\n", progname);
+  fprintf (stderr, "   or: %s [options] -posefile <posefile name> subvol_size epsilon < in.ply\n", progname);
   fprintf (stderr, "\n");
   fprintf (stderr, "Options:\n");
   fprintf (stderr, "       -writebbox bboxname (writes mesh bbox to file)\n");

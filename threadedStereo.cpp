@@ -204,44 +204,7 @@ void print_uv_3dpts( list<Feature*>          &features,
   fprintf(uv_fp,"\n");
 }
 
-bool get_camera_params( Config_File *config_file, Vector &camera_pose ){
 
-  double tmp_pose[6];
-
-  if( config_file->get_value( "STEREO_POSE_X", tmp_pose[AUV_POSE_INDEX_X]) == 0 )
-    {
-      return false;
-    }
-  if( config_file->get_value( "STEREO_POSE_Y", tmp_pose[AUV_POSE_INDEX_Y]) == 0 )
-    {
-      return false;
-    }
-  if( config_file->get_value( "STEREO_POSE_Z", tmp_pose[AUV_POSE_INDEX_Z]) == 0 )
-    {
-      return false;
-    }
-  if( config_file->get_value( "STEREO_POSE_PHI", tmp_pose[AUV_POSE_INDEX_PHI]) == 0 )
-    {
-      return false;
-    }
-  if( config_file->get_value( "STEREO_POSE_THETA", tmp_pose[AUV_POSE_INDEX_THETA]) == 0 )
-    {
-      return false;
-    }
-  if( config_file->get_value( "STEREO_POSE_PSI", tmp_pose[AUV_POSE_INDEX_PSI]) == 0 )
-    {
-      return false;
-    }
-   
-  camera_pose[AUV_POSE_INDEX_X]=tmp_pose[AUV_POSE_INDEX_X];
-  camera_pose[AUV_POSE_INDEX_Y]=tmp_pose[AUV_POSE_INDEX_Y];
-  camera_pose[AUV_POSE_INDEX_Z]=tmp_pose[AUV_POSE_INDEX_Z];
-  camera_pose[AUV_POSE_INDEX_PHI]=tmp_pose[AUV_POSE_INDEX_PHI];
-  camera_pose[AUV_POSE_INDEX_THETA]=tmp_pose[AUV_POSE_INDEX_THETA];
-  camera_pose[AUV_POSE_INDEX_PSI]=tmp_pose[AUV_POSE_INDEX_PSI];
-
-  return true;
-}
 
 //
 // Parse command line arguments into global variables
@@ -712,8 +675,10 @@ typedef struct _auv_images_names{
   std::string dir;
   GtsMatrix *m;
   GtsBBox *bbox;
-  Vector *veh_pose;
+  Vector *cam_pose;
   double alt;
+  int crossover;
+  double prob;
   double timestamp;
   int index;
   bool valid;
@@ -815,7 +780,7 @@ private:
   Stereo_Calib *calib;
   Config_File *config_file; 
   Config_File *dense_config_file; 
-  Vector *camera_pose;
+  
   OSGExporter *osgExp;
 }threadedStereo;
 
@@ -899,7 +864,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
 			       )
 {
  
-  name.veh_pose = new Vector(AUV_NUM_POSE_STATES);
+  name.cam_pose = new Vector(AUV_NUM_POSE_STATES);
   name.m =gts_matrix_identity (NULL);
   name.bbox = gts_bbox_new(gts_bbox_class(),NULL,0,0,0,0,0,0);
   //
@@ -911,15 +876,18 @@ static int get_auv_image_name( const string  &contents_dir_name,
      
     readok =(contents_file >> index &&
 	     contents_file >> name.timestamp &&
+	     contents_file >>  (*name.cam_pose)[AUV_POSE_INDEX_X] &&
+	     contents_file >>   (*name.cam_pose)[AUV_POSE_INDEX_Y] &&
+	     contents_file >>   (*name.cam_pose)[AUV_POSE_INDEX_Z] &&
+	     contents_file >>   (*name.cam_pose)[AUV_POSE_INDEX_PHI] &&
+	     contents_file >>   (*name.cam_pose)[AUV_POSE_INDEX_THETA] &&
+	     contents_file >>   (*name.cam_pose)[AUV_POSE_INDEX_PSI] &&
 	     contents_file >> name.left_name &&
 	     contents_file >> name.right_name &&
-	     contents_file >>  (*name.veh_pose)[AUV_POSE_INDEX_X] &&
-	     contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_Y] &&
-	     contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_Z] &&
-	     contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PHI] &&
-	     contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_THETA] &&
-	     contents_file >>   (*name.veh_pose)[AUV_POSE_INDEX_PSI] &&
-	     contents_file >> name.alt );
+	     contents_file >> name.alt &&
+	     contents_file >> name.prob &&
+	     contents_file >> name.crossover 
+	     );
   
   }
   while (readok && (name.timestamp < start_time || (skip_counter++ < num_skip)));
@@ -934,12 +902,12 @@ static int get_auv_image_name( const string  &contents_dir_name,
   if(!single_run){
     fprintf(fpp,"%f %f %f %f %f %f %f %f\n",   
 	  name.timestamp,
-	  (*name.veh_pose)[AUV_POSE_INDEX_X],
-	  (*name.veh_pose)[AUV_POSE_INDEX_Y],
-	  (*name.veh_pose)[AUV_POSE_INDEX_Z],
-	  (*name.veh_pose)[AUV_POSE_INDEX_PHI],
-	  (*name.veh_pose)[AUV_POSE_INDEX_THETA],
-	  (*name.veh_pose)[AUV_POSE_INDEX_PSI],
+	  (*name.cam_pose)[AUV_POSE_INDEX_X],
+	  (*name.cam_pose)[AUV_POSE_INDEX_Y],
+	  (*name.cam_pose)[AUV_POSE_INDEX_Z],
+	  (*name.cam_pose)[AUV_POSE_INDEX_PHI],
+	  (*name.cam_pose)[AUV_POSE_INDEX_THETA],
+	  (*name.cam_pose)[AUV_POSE_INDEX_PSI],
 	  name.alt);
   }
     
@@ -961,10 +929,8 @@ bool threadedStereo::runP(auv_image_names &name){
   char texfilename[255];
   bool meshcached=false;
   bool texcached=false;
-  Vector camera_pose(AUV_NUM_POSE_STATES);
-  get_camera_params(config_file,camera_pose);
-  
-  get_sensor_to_world_trans(*name.veh_pose,camera_pose,name.m);
+    
+  fill_gts_matrix(*name.cam_pose,name.m);
   
   FILE *fp;
   sprintf(filename,"%s/surface-%s.xf",
@@ -1273,7 +1239,7 @@ int main( int argc, char *argv[ ] )
   //conf
   ifstream *cov_file;
   ifstream      contents_file;
-  Vector *camera_pose;
+  
   
 
  auv_data_tools::makedir(aggdir);
@@ -1330,8 +1296,7 @@ int main( int argc, char *argv[ ] )
     file_name_list.open("mesh/filenames.txt");
   }  
   //
-  camera_pose =new Vector(AUV_NUM_POSE_STATES);
-  get_camera_params(config_file,*camera_pose);
+ 
   Matrix *image_coord_covar;
   if(have_cov_file){
     image_coord_covar = new Matrix(4,4);
@@ -1522,7 +1487,7 @@ int main( int argc, char *argv[ ] )
 	  fprintf(dicefp,"$BASEPATH/vrip/bin/plydicegroup -outdir $DICEDIR -writebboxall $DICEDIR/bbtmp.txt  -writebbox $DICEDIR/range.txt -dice %f %f %s  total-unsimp.ply total-unsimp-lod1.ply total-unsimp-lod2.ply | sed 's_.*/__' | tee $DICEDIR/diced.txt\n",subvol,eps,"diced");	
 	
 	fprintf(dicefp,"cd $DICEDIR\nNUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(0.001 0.01 0.05)\n");
+		"REDFACT=(0.001 0.01 0.5)\n");
 
 		
        	if(have_mb_ply)
@@ -1634,7 +1599,7 @@ int main( int argc, char *argv[ ] )
   //  for(int i =0; i < (int)tasks.size(); i++)
   // delete tasks[i].veh_pose; 
   delete config_file;
-  delete camera_pose;
+  
 
   delete cov_file;
 

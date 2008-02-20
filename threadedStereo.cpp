@@ -105,7 +105,9 @@ static string deltaT_config_name;
 static string deltaT_dir;
 static bool hardware_compress=true;
 const char *uname="mesh";
+const char *dicedir="mesh-diced";
 const char *aggdir="mesh-agg";
+
 bool dist_run=false;
 static string passtotridec="-e2.0";
 static bool do_hw_blend=false;
@@ -574,7 +576,7 @@ void update_bbox (GtsPoint * p, GtsBBox * bb)
 void save_bbox_frame (GtsBBox * bb, FILE * fptr){
   g_return_if_fail (bb != NULL);
 
-  fprintf (fptr, "%g %g %g %g %g %g\n",
+  fprintf (fptr, "%g %g %g %g %g %g",
 	   bb->x1, bb->y1, bb->z1,
 	   bb->x2, bb->y2, bb->z2);
 
@@ -967,13 +969,27 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   if(meshcached && texcached){
     TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
+    
     xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
 	     name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
 	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
 	     name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);
     apply_xform(mesh,xf);
+    mesh->need_bbox();
     mesh->write(filename);
-  int progCount=doneCount.increment();
+    
+    name.mesh_name = osgDB::getSimpleFileName(filename);
+
+    gts_bbox_set(name.bbox,NULL,
+		 mesh->bbox.min[0],
+		 mesh->bbox.min[1],
+		 mesh->bbox.min[2],
+		 
+		 mesh->bbox.max[0],
+		 mesh->bbox.max[1],
+		 mesh->bbox.max[2]);
+
+    int progCount=doneCount.increment();
   image_count_verbose (progCount, totalTodoCount);
   
   return true;
@@ -1150,16 +1166,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 
   if(output_ply_and_conf){
 	   
-    GtsBBox *tmpBBox=gts_bbox_surface(gts_bbox_class(),surf);
-    gts_bbox_set(name.bbox,tmpBBox->bounded,
-		 tmpBBox->x1,
-		 tmpBBox->y1,
-		 tmpBBox->z1,
-		 tmpBBox->x2,
-		 tmpBBox->y2,
-		 tmpBBox->z2);
-    gts_object_destroy (GTS_OBJECT (tmpBBox));
-	   
+  
   
     FILE *fp = fopen(meshfilename, "w" );
     auv_write_ply(surf, fp,have_cov_file,"test");
@@ -1172,8 +1179,18 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
 	     name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);
     apply_xform(mesh,xf);
+    mesh->need_bbox();
+    gts_bbox_set(name.bbox,NULL,
+		 mesh->bbox.min[0],
+		 mesh->bbox.min[1],
+		 mesh->bbox.min[2],
+		 
+		 mesh->bbox.max[0],
+		 mesh->bbox.max[1],
+		 mesh->bbox.max[2]);
+
     mesh->write(filename);
-	  
+    name.mesh_name = osgDB::getSimpleFileName(filename);
   }
   //Destory Surf
   if(surf)
@@ -1267,6 +1284,10 @@ int main( int argc, char *argv[ ] )
  auv_data_tools::makedir(aggdir);
 
   chmod(aggdir,   0777);
+
+
+ auv_data_tools::makedir(dicedir);
+  chmod(dicedir,   0777);
 
   auv_data_tools::makedir(uname);
 
@@ -1419,10 +1440,40 @@ int main( int argc, char *argv[ ] )
     }
     fclose(conf_ply_file);
 
-  
+    FILE *vrip_seg_fp;
+    char vrip_seg_fname[255];
+    FILE *bboxfp;
+    FILE *vripcmds_fp=fopen("vripcmds","w");
+    if(!vripcmds_fp){
+      printf("Can't open vripcmds\n");
+      exit(-1);
+    }
+      
     std::vector<Cell_Data> cells=calc_cells(tasks);
-    for(int i=0; i <cells.size(); i++)
-      cout<<      cells[i].bounds.min_x <<" " <<cells[i].bounds.max_x << " "<<cells[i].bounds.min_y<< " " <<cells[i].bounds.max_y << " " <<cells[i].bounds.area()<<endl;
+    for(int i=0; i <(int)cells.size(); i++){
+      sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
+      sprintf(conf_name,"mesh-agg/bbox-%08d.txt",i);
+      vrip_seg_fp=fopen(vrip_seg_fname,"w");
+      bboxfp = fopen(conf_name,"w");
+      if(!vrip_seg_fp || !bboxfp){
+	printf("Unable to open %s\n",vrip_seg_fname);
+      }	
+      fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd $OUTDIR;$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-diced/diced-%08d.ply > vripsurflog.txt;cd ..\n",basepath.c_str(),i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i);
+      for(unsigned int j=0; j <cells[i].poses.size(); j++){
+	const Stereo_Pose_Data *pose=cells[i].poses[j];
+	//Vrip List
+	fprintf(vrip_seg_fp,"%s 0.033 1\n",pose->mesh_name.c_str());
+	//Gen Tex File bbox
+	fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
+	save_bbox_frame(pose->bbox,bboxfp);
+	for(int i=0; i < 4; i++)
+	  for(int j=0; j < 4; j++)
+	    fprintf(bboxfp," %lf",pose->m[i][j]);
+	fprintf(bboxfp,"\n");
+      }
+      fclose(vrip_seg_fp);
+      fclose(bboxfp);
+    }
     
     if(output_uv_file)
       fclose(uv_fp);

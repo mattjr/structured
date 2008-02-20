@@ -756,7 +756,8 @@ proc newfromlist {listfile res} {
       set rootName [file root $curmesh]
        regsub ".tc.ply" $curmesh .xf xfFile
        set bboxfile "${rootName}.bbox"
-       if {[file exists $bboxfile] && [file exists $xfFile] } {
+       if { 0 } { 
+	   #if  [file exists $bboxfile] && [file exists $xfFile] 
 #	 set cmd "exec plyxform -f $xfFile < $curmesh | plybbox"
 	   set bboxfid [open $bboxfile "r"];
 	   gets $bboxfid minline;
@@ -775,12 +776,12 @@ proc newfromlist {listfile res} {
 	   set maxy [max $maxy $newMaxy]
 	   set maxz [max $maxz $newMaxz]
       } else {
-	  puts "Cant find $bboxfile $index $curmesh or $xfFile"
+	 # puts "Cant find $bboxfile $index $curmesh or $xfFile"
 	  
 	  set cmd "exec plybbox $curmesh"
 	  catch {eval $cmd} msg;
 	  
-	  
+	  #puts $msg
 	  scan $msg "%f %f %f %f %f %f" newMinx newMiny newMinz newMaxx newMaxy newMaxz;
   
 	  set minx [min $minx $newMinx]

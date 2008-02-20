@@ -16,6 +16,7 @@ public:
   double time;
   double pose[6];
   std::string left_name;
+  std::string mesh_name;
   std::string right_name;
   std::string dir;
   double alt;

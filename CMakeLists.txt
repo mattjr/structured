@@ -266,6 +266,7 @@ SET( SRCS OSGExport.cpp
 		Depth.cpp
 		auv_3ds.cpp
 		novelty.cpp
+		stereo_cells.cpp
 		)
 
 

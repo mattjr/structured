@@ -34,6 +34,9 @@
 #include "auv_concurrency.hpp"
 #include "OSGExport.h"
 #include "keypoint.hpp"
+#include "XForm.h"
+#include "TriMesh_algo.h"
+#include "stereo_cells.hpp"
 using namespace std;
 using namespace libplankton;
 using namespace ulapack;
@@ -668,7 +671,8 @@ static bool get_stereo_pair( const string left_image_name,
   
   return true;
 }   
-typedef struct _auv_images_names{
+//typedef class Stereo_Pose_Data  auv_images_names ;
+/*{
   std::string left_name;
   std::string right_name;
   std::string mesh_name;
@@ -683,7 +687,7 @@ typedef struct _auv_images_names{
   int index;
   bool valid;
 }auv_image_names;
-
+				*/
 
 typedef class threadedStereo{
 public:
@@ -769,7 +773,7 @@ public:
       delete finder_dense;
     
   }
-  bool runP(auv_image_names &name);
+  bool runP(Stereo_Pose_Data &name);
 private:
 
   int frame_id;
@@ -790,7 +794,7 @@ private:
 
 // PC model related 
 
-typedef auv_image_names  Slice; // row index of matrix srcA...
+typedef Stereo_Pose_Data  Slice; // row index of matrix srcA...
 
 // convenient typedefs...
 typedef std::vector<Slice> Slices; 
@@ -860,11 +864,11 @@ struct Convolution : public Convolute
 
 static int get_auv_image_name( const string  &contents_dir_name,
 			       ifstream      &contents_file,
-			       auv_image_names &name
+			       Stereo_Pose_Data &name
 			       )
 {
  
-  name.cam_pose = new Vector(AUV_NUM_POSE_STATES);
+  //name.cam_pose = new Vector(AUV_NUM_POSE_STATES);
   name.m =gts_matrix_identity (NULL);
   name.bbox = gts_bbox_new(gts_bbox_class(),NULL,0,0,0,0,0,0);
   //
@@ -875,25 +879,25 @@ static int get_auv_image_name( const string  &contents_dir_name,
   do{
      
     readok =(contents_file >> index &&
-	     contents_file >> name.timestamp &&
-	     contents_file >>  (*name.cam_pose)[AUV_POSE_INDEX_X] &&
-	     contents_file >>   (*name.cam_pose)[AUV_POSE_INDEX_Y] &&
-	     contents_file >>   (*name.cam_pose)[AUV_POSE_INDEX_Z] &&
-	     contents_file >>   (*name.cam_pose)[AUV_POSE_INDEX_PHI] &&
-	     contents_file >>   (*name.cam_pose)[AUV_POSE_INDEX_THETA] &&
-	     contents_file >>   (*name.cam_pose)[AUV_POSE_INDEX_PSI] &&
+	     contents_file >> name.time &&
+	     contents_file >>  name.pose[AUV_POSE_INDEX_X] &&
+	     contents_file >>   name.pose[AUV_POSE_INDEX_Y] &&
+	     contents_file >>   name.pose[AUV_POSE_INDEX_Z] &&
+	     contents_file >>   name.pose[AUV_POSE_INDEX_PHI] &&
+	     contents_file >>   name.pose[AUV_POSE_INDEX_THETA] &&
+	     contents_file >>   name.pose[AUV_POSE_INDEX_PSI] &&
 	     contents_file >> name.left_name &&
 	     contents_file >> name.right_name &&
 	     contents_file >> name.alt &&
-	     contents_file >> name.prob &&
-	     contents_file >> name.crossover 
+	     contents_file >> name.radius &&
+	     contents_file >> name.overlap 
 	     );
   
   }
-  while (readok && (name.timestamp < start_time || (skip_counter++ < num_skip)));
+  while (readok && (name.time < start_time || (skip_counter++ < num_skip)));
   skip_counter=0;
    
-  if(!readok || name.timestamp >= stop_time) {
+  if(!readok || name.time >= stop_time) {
     // we've reached the end of the contents file
     return END_FILE;
   }      
@@ -901,13 +905,13 @@ static int get_auv_image_name( const string  &contents_dir_name,
     return NO_ADD;
   if(!single_run){
     fprintf(fpp,"%f %f %f %f %f %f %f %f\n",   
-	  name.timestamp,
-	  (*name.cam_pose)[AUV_POSE_INDEX_X],
-	  (*name.cam_pose)[AUV_POSE_INDEX_Y],
-	  (*name.cam_pose)[AUV_POSE_INDEX_Z],
-	  (*name.cam_pose)[AUV_POSE_INDEX_PHI],
-	  (*name.cam_pose)[AUV_POSE_INDEX_THETA],
-	  (*name.cam_pose)[AUV_POSE_INDEX_PSI],
+	  name.time,
+	  name.pose[AUV_POSE_INDEX_X],
+	  name.pose[AUV_POSE_INDEX_Y],
+	 name.pose[AUV_POSE_INDEX_Z],
+	  name.pose[AUV_POSE_INDEX_PHI],
+	  name.pose[AUV_POSE_INDEX_THETA],
+	  name.pose[AUV_POSE_INDEX_PSI],
 	  name.alt);
   }
     
@@ -916,7 +920,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
 }
 
    
-bool threadedStereo::runP(auv_image_names &name){
+bool threadedStereo::runP(Stereo_Pose_Data &name){
   IplImage *left_frame;
   IplImage *right_frame;
   IplImage *color_frame;
@@ -930,9 +934,9 @@ bool threadedStereo::runP(auv_image_names &name){
   bool meshcached=false;
   bool texcached=false;
     
-  fill_gts_matrix(*name.cam_pose,name.m);
+  fill_gts_matrix(name.pose,name.m);
   
-  FILE *fp;
+  /*  FILE *fp;
   sprintf(filename,"%s/surface-%s.xf",
 	  aggdir,osgDB::getStrippedName(name.left_name).c_str());
   fp = fopen(filename, "w" );
@@ -940,14 +944,15 @@ bool threadedStereo::runP(auv_image_names &name){
     fprintf(stderr,"Failed to open %s for writing\n",filename);
     return false;
   }
-    
+ 
   for(int n=0; n< 4; n++){
     for(int p=0; p<4; p++)
       fprintf(fp,"%f ",name.m[n][p]);
     fprintf(fp,"\n");
   }
-  fclose(fp);
-  chmod(filename,   0666);
+   fclose(fp);
+   chmod(filename,   0666);
+  */
   sprintf(texfilename,"%s/%s.dds",
 	  cachedtexdir,osgDB::getStrippedName(name.left_name).c_str());
  
@@ -956,11 +961,21 @@ bool threadedStereo::runP(auv_image_names &name){
   
   meshcached=FileExists(meshfilename);
   texcached=FileExists(texfilename);
+  sprintf(filename,"%s/surface-%s.tc.ply",
+	  aggdir,osgDB::getStrippedName(name.left_name).c_str());
   
   if(meshcached && texcached){
-    
+    TriMesh::verbose=0;
+    TriMesh *mesh = TriMesh::read(meshfilename);
+    xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
+	     name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
+	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
+	     name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);
+    apply_xform(mesh,xf);
+    mesh->write(filename);
   int progCount=doneCount.increment();
   image_count_verbose (progCount, totalTodoCount);
+  
   return true;
 
   }
@@ -1120,7 +1135,7 @@ bool threadedStereo::runP(auv_image_names &name){
     map<int,string>textures;
     textures[0]=(name.dir+name.left_name);
     sprintf(filename,"mesh/surface-%08d.3ds",
-	    name.index);
+	    name.id);
 	     
     std::map<int,GtsMatrix *> gts_trans;
     GtsMatrix *invM = gts_matrix_inverse(name.m);
@@ -1146,11 +1161,18 @@ bool threadedStereo::runP(auv_image_names &name){
     gts_object_destroy (GTS_OBJECT (tmpBBox));
 	   
   
-    fp = fopen(meshfilename, "w" );
+    FILE *fp = fopen(meshfilename, "w" );
     auv_write_ply(surf, fp,have_cov_file,"test");
     fclose(fp);
 	  
- 
+    TriMesh::verbose=0;
+    TriMesh *mesh = TriMesh::read(meshfilename);
+    xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
+	     name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
+	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
+	     name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);
+    apply_xform(mesh,xf);
+    mesh->write(filename);
 	  
   }
   //Destory Surf
@@ -1197,9 +1219,9 @@ bool threadedStereo::runP(auv_image_names &name){
 
 
 
-void runC(auv_image_names &name){
+void runC(Stereo_Pose_Data &name){
  
-  printf("%s Written Out to  %s\n",name.left_name.c_str(),name.mesh_name.c_str());
+  //printf("%s Written Out to  %s\n",name.left_name.c_str(),name.mesh_name.c_str());
 }
 
 
@@ -1319,12 +1341,12 @@ int main( int argc, char *argv[ ] )
   }
   int start_skip=0;
   while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
-    auv_image_names name;
+    Stereo_Pose_Data name;
     int ret=get_auv_image_name( dir_name, contents_file, name) ;
     if(ret == ADD_IMG ){
       if(start_skip++ < single_run_start)
 	continue;
-      name.index= single_run_start+stereo_pair_count++;
+      name.id= single_run_start+stereo_pair_count++;
       name.valid=true;
       tasks.push_back(name);
     }else if(ret == NO_ADD){
@@ -1332,8 +1354,8 @@ int main( int argc, char *argv[ ] )
     }else if(ret == END_FILE)
       break;
   }
-  start_time=tasks[0].timestamp;
-  stop_time=tasks[tasks.size()-1].timestamp;
+  start_time=tasks[0].time;
+  stop_time=tasks[tasks.size()-1].time;
   totalTodoCount=stereo_pair_count;
   boost::xtime xt, xt2;
   long time;
@@ -1398,7 +1420,9 @@ int main( int argc, char *argv[ ] )
     fclose(conf_ply_file);
 
   
-  
+    std::vector<Cell_Data> cells=calc_cells(tasks);
+    for(int i=0; i <cells.size(); i++)
+      cout<<      cells[i].bounds.min_x <<" " <<cells[i].bounds.max_x << " "<<cells[i].bounds.min_y<< " " <<cells[i].bounds.max_y << " " <<cells[i].bounds.area()<<endl;
     
     if(output_uv_file)
       fclose(uv_fp);
@@ -1450,13 +1474,15 @@ int main( int argc, char *argv[ ] )
       
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n%s/vrip/bin/vripxftrans $OUTDIR/meshes.txt -subvoldir $OUTDIR/ -n %d -passtotridec %s\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir,basepath.c_str(),stereo_pair_count,passtotridec.c_str());
+	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir);
+
+	//fprintf(conf_ply_file,	"%s/vrip/bin/vripxftrans $OUTDIR/meshes.txt -subvoldir $OUTDIR/ -n %d -passtotridec %s\n",basepath.c_str(),stereo_pair_count,passtotridec.c_str());
 	fprintf(conf_ply_file,"VRIPLOGDIR=%s\n"
 	,vriplogdir);
-	fprintf(conf_ply_file,"cd $OUTDIR\nfind . -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.033 1\" }' | head -n %d > surface.txt\n#find $SUBVOLDIR -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.1 0\" }' >> surface.txt\n"
-		"find . -name 'mb-*.ply' | sort  > mbmeshes.txt\n",stereo_pair_count);
+	//fprintf(conf_ply_file,"cd $OUTDIR\nfind . -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.033 1\" }' | head -n %d > surface.txt\n#find $SUBVOLDIR -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.1 0\" }' >> surface.txt\n"stereo_pair_count);
+	fprintf(conf_ply_file,"find . -name 'mb-*.ply' | sort  > mbmeshes.txt\n");
 	if(have_mb_ply)
-	  fprintf(conf_ply_file,"cat surface.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > unblended.ply\n$BASEPATH/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n"
+	  fprintf(conf_ply_file,"cat meshes.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > unblended.ply\n$BASEPATH/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n"
 		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > joined-mb.ply\n"
 "echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\nauv_mesh_align unblended.ply joined-mb.ply\n$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n");
 	if(dist_run){

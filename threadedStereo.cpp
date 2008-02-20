@@ -1452,7 +1452,7 @@ int main( int argc, char *argv[ ] )
     std::vector<Cell_Data> cells=calc_cells(tasks);
     for(int i=0; i <(int)cells.size(); i++){
       sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
-      sprintf(conf_name,"mesh-agg/bbox-%08d.txt",i);
+      sprintf(conf_name,"mesh-diced/bbox-%08d.txt",i);
       vrip_seg_fp=fopen(vrip_seg_fname,"w");
       bboxfp = fopen(conf_name,"w");
       if(!vrip_seg_fp || !bboxfp){
@@ -1525,30 +1525,29 @@ int main( int argc, char *argv[ ] )
       
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd %s/\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),cachedmeshdir);
-
-	//fprintf(conf_ply_file,	"%s/vrip/bin/vripxftrans $OUTDIR/meshes.txt -subvoldir $OUTDIR/ -n %d -passtotridec %s\n",basepath.c_str(),stereo_pair_count,passtotridec.c_str());
+	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
 	fprintf(conf_ply_file,"VRIPLOGDIR=%s\n"
 	,vriplogdir);
-	//fprintf(conf_ply_file,"cd $OUTDIR\nfind . -name 'surface-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.033 1\" }' | head -n %d > surface.txt\n#find $SUBVOLDIR -name 'mb-*.ply' | sort  |  sed 's_.*/__' | awk '{print $0  \" 0.1 0\" }' >> surface.txt\n"stereo_pair_count);
 	fprintf(conf_ply_file,"find . -name 'mb-*.ply' | sort  > mbmeshes.txt\n");
 	if(have_mb_ply)
 	  fprintf(conf_ply_file,"cat meshes.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > unblended.ply\n$BASEPATH/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n"
 		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > joined-mb.ply\n"
 "echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\nauv_mesh_align unblended.ply joined-mb.ply\n$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n");
 	if(dist_run){
-	  fprintf(conf_ply_file,	"find $VRIPLOGDIR -name 'loadbal*' | xargs rm\n"
-		  "cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply surface.txt surface.txt  %f 700M ~/loadlimit -logdir $VRIPLOGDIR -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -meshcache $OUTDIR/\n",basepath.c_str(),vrip_res);
+	  //	  fprintf(conf_ply_file,	"find $VRIPLOGDIR -name 'loadbal*' | xargs rm\n"
+	  //  "cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply surface.txt surface.txt  %f 700M ~/loadlimit -logdir $VRIPLOGDIR -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -meshcache $OUTDIR/\n",basepath.c_str(),vrip_res);
 	}else{
-	  fprintf(conf_ply_file,"/usr/bin/time -f \"Vrip took %%E\" %s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt %f -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),vrip_res,basepath.c_str());
-	  if(dice_lod){
+	  fprintf(conf_ply_file,"#/usr/bin/time -f \"Vrip took %%E\"\necho l; csh -f vripcmds; echo p\n");
+	 
+
+	  /* if(dice_lod){
 	    fprintf(conf_ply_file,"/usr/bin/time -f \"Vrip took %%E\" %s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt %f -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp-lod1.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),0.2,basepath.c_str());
 	    fprintf(conf_ply_file,"/usr/bin/time -f \"Vrip took %%E\" %s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt %f -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp-lod2.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),0.33,basepath.c_str());
-	  }
+	    }*/
 	}
 
 	
-	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unsimp.ply $OUTDIR/total.ply -Q0.2 -F\n",basepath.c_str());
+	//	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unsimp.ply $OUTDIR/total.ply -Q0.2 -F\n",basepath.c_str());
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	if(!no_vrip)

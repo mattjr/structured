@@ -1459,8 +1459,15 @@ int main( int argc, char *argv[ ] )
       if(!vrip_seg_fp || !bboxfp){
 	printf("Unable to open %s\n",vrip_seg_fname);
       }	
-      fprintf(diced_fp,"diced-%08d.ply\n",i);
-      fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd $OUTDIR;$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-diced/diced-%08d.ply > vripsurflog.txt;cd ..\n",basepath.c_str(),i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i);
+      fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
+      fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd $OUTDIR;$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-diced/diced-%08d.ply > vripsurflog.txt;plycullmaxx %f %f %f %f %f %f %f < ../mesh-diced/diced-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply; cd ..\n",basepath.c_str(),i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,
+	      cells[i].bounds.min_x,
+	      cells[i].bounds.min_y,
+	      FLT_MIN,
+	      cells[i].bounds.max_x,
+	      cells[i].bounds.max_y,
+	      FLT_MAX,
+	      eps,i,i);
       for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=cells[i].poses[j];
 	//Vrip List
@@ -1537,20 +1544,10 @@ int main( int argc, char *argv[ ] )
 		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > joined-mb.ply\n"
 "echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\nauv_mesh_align unblended.ply joined-mb.ply\n$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n");
 	if(dist_run){
-	  //	  fprintf(conf_ply_file,	"find $VRIPLOGDIR -name 'loadbal*' | xargs rm\n"
-	  //  "cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply surface.txt surface.txt  %f 700M ~/loadlimit -logdir $VRIPLOGDIR -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -meshcache $OUTDIR/\n",basepath.c_str(),vrip_res);
+
 	}else{
 	  fprintf(conf_ply_file,"#/usr/bin/time -f \"Vrip took %%E\"\n /bin/csh $PWD/vripcmds\n");
-	 
-
-	  /* if(dice_lod){
-	    fprintf(conf_ply_file,"/usr/bin/time -f \"Vrip took %%E\" %s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt %f -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp-lod1.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),0.2,basepath.c_str());
-	    fprintf(conf_ply_file,"/usr/bin/time -f \"Vrip took %%E\" %s/vrip/bin/vripnew $OUTDIR/auto.vri surface.txt surface.txt %f -rampscale 500\n%s/vrip/bin/vripsurf $OUTDIR/auto.vri $OUTDIR/total-unsimp-lod2.ply > $OUTDIR/vripsurflog.txt\n",basepath.c_str(),0.33,basepath.c_str());
-	    }*/
 	}
-
-	
-	//	fprintf(conf_ply_file,"%s/tridecimator/tridecimator $OUTDIR/total-unsimp.ply $OUTDIR/total.ply -Q0.2 -F\n",basepath.c_str());
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	if(!no_vrip)
@@ -1561,12 +1558,12 @@ int main( int argc, char *argv[ ] )
 	FILE *dicefp=fopen("./dice.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	//	if(!dice_lod)
-	  //  fprintf(dicefp,"$BASEPATH/vrip/bin/plydice -outdir $DICEDIR -writebboxall $DICEDIR/bbtmp.txt  -writebbox $DICEDIR/range.txt -dice %f %f %s total.ply |sed 's_.*/__' | tee $DICEDIR/diced.txt\n",subvol,eps,"diced");			  
+			  
 	//else
 	// fprintf(dicefp,"$BASEPATH/vrip/bin/plydicegroup -outdir $DICEDIR -writebboxall $DICEDIR/bbtmp.txt  -writebbox $DICEDIR/range.txt -dice %f %f %s  total-unsimp.ply total-unsimp-lod1.ply total-unsimp-lod2.ply | sed 's_.*/__' | tee $DICEDIR/diced.txt\n",subvol,eps,"diced");	
 	fprintf(dicefp,"cd $DICEDIR\ncat diced.txt | xargs plybbox > range.txt\n");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(0.001 0.01 0.5)\n");
+		"REDFACT=(0.01 0.1 0.55)\n");
 
 		
        	if(have_mb_ply)

@@ -1444,6 +1444,7 @@ int main( int argc, char *argv[ ] )
     char vrip_seg_fname[255];
     FILE *bboxfp;
     FILE *vripcmds_fp=fopen("vripcmds","w");
+    FILE *diced_fp=fopen("mesh-diced/diced.txt","w");
     if(!vripcmds_fp){
       printf("Can't open vripcmds\n");
       exit(-1);
@@ -1458,6 +1459,7 @@ int main( int argc, char *argv[ ] )
       if(!vrip_seg_fp || !bboxfp){
 	printf("Unable to open %s\n",vrip_seg_fname);
       }	
+      fprintf(diced_fp,"diced-%08d.ply\n",i);
       fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd $OUTDIR;$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-diced/diced-%08d.ply > vripsurflog.txt;cd ..\n",basepath.c_str(),i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i);
       for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=cells[i].poses[j];
@@ -1474,7 +1476,8 @@ int main( int argc, char *argv[ ] )
       fclose(vrip_seg_fp);
       fclose(bboxfp);
     }
-    
+    fclose(vripcmds_fp);
+    fclose(diced_fp);
     if(output_uv_file)
       fclose(uv_fp);
     if(output_3ds)
@@ -1537,7 +1540,7 @@ int main( int argc, char *argv[ ] )
 	  //	  fprintf(conf_ply_file,	"find $VRIPLOGDIR -name 'loadbal*' | xargs rm\n"
 	  //  "cd $OUTDIR\n%s/vrip/bin/pvrip1 $OUTDIR/auto.vri $OUTDIR/total-unsimp.ply surface.txt surface.txt  %f 700M ~/loadlimit -logdir $VRIPLOGDIR -rampscale 300 -subvoldir $OUTDIR/ -nocrunch -passtovrip -use_bigger_bbox -meshcache $OUTDIR/\n",basepath.c_str(),vrip_res);
 	}else{
-	  fprintf(conf_ply_file,"#/usr/bin/time -f \"Vrip took %%E\"\necho l; csh -f vripcmds; echo p\n");
+	  fprintf(conf_ply_file,"#/usr/bin/time -f \"Vrip took %%E\"\n /bin/csh $PWD/vripcmds\n");
 	 
 
 	  /* if(dice_lod){
@@ -1557,12 +1560,12 @@ int main( int argc, char *argv[ ] )
 	
 	FILE *dicefp=fopen("./dice.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
-	if(!dice_lod)
-	  fprintf(dicefp,"$BASEPATH/vrip/bin/plydice -outdir $DICEDIR -writebboxall $DICEDIR/bbtmp.txt  -writebbox $DICEDIR/range.txt -dice %f %f %s total.ply |sed 's_.*/__' | tee $DICEDIR/diced.txt\n",subvol,eps,"diced");			  
-	else
-	  fprintf(dicefp,"$BASEPATH/vrip/bin/plydicegroup -outdir $DICEDIR -writebboxall $DICEDIR/bbtmp.txt  -writebbox $DICEDIR/range.txt -dice %f %f %s  total-unsimp.ply total-unsimp-lod1.ply total-unsimp-lod2.ply | sed 's_.*/__' | tee $DICEDIR/diced.txt\n",subvol,eps,"diced");	
-	
-	fprintf(dicefp,"cd $DICEDIR\nNUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
+	//	if(!dice_lod)
+	  //  fprintf(dicefp,"$BASEPATH/vrip/bin/plydice -outdir $DICEDIR -writebboxall $DICEDIR/bbtmp.txt  -writebbox $DICEDIR/range.txt -dice %f %f %s total.ply |sed 's_.*/__' | tee $DICEDIR/diced.txt\n",subvol,eps,"diced");			  
+	//else
+	// fprintf(dicefp,"$BASEPATH/vrip/bin/plydicegroup -outdir $DICEDIR -writebboxall $DICEDIR/bbtmp.txt  -writebbox $DICEDIR/range.txt -dice %f %f %s  total-unsimp.ply total-unsimp-lod1.ply total-unsimp-lod2.ply | sed 's_.*/__' | tee $DICEDIR/diced.txt\n",subvol,eps,"diced");	
+	fprintf(dicefp,"cd $DICEDIR\ncat diced.txt | xargs plybbox > range.txt\n");
+	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
 		"REDFACT=(0.001 0.01 0.5)\n");
 
 		
@@ -1617,8 +1620,7 @@ int main( int argc, char *argv[ ] )
 	  }	
 	}
 
-	  fprintf(dicefp,"cd $MESHAGG\n%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",
-		basepath.c_str());
+	//fprintf(dicefp,"cd $MESHAGG\n%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",basepath.c_str());
 	  char argstr[255];
 	  strcpy(argstr,"");
 	  if(do_novelty)

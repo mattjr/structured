@@ -382,6 +382,10 @@ int main( int argc, char *argv[ ] )
   char rangefname[255];
   sprintf(rangefname,"%s/range.txt",diceddir);
   FILE *fp =fopen(rangefname,"r");
+  if(!fp){
+    fprintf(stderr,"No range.txt file Quitting\n");
+    exit(-1);
+  }
   fscanf(fp,"%*f %*f %f\n%*f %*f %f\n",&(zrange[0]),&(zrange[1]));
   fclose(fp);
   char dicefname[255];

@@ -1480,6 +1480,9 @@ int main( int argc, char *argv[ ] )
 
     std::vector<Cell_Data> cells=calc_cells(tasks);
     for(int i=0; i <(int)cells.size(); i++){
+      if(cells[i].poses.size() == 0)
+	continue;
+      
       sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
       sprintf(conf_name,"mesh-diced/bbox-%08d.txt",i);
       vrip_seg_fp=fopen(vrip_seg_fname,"w");

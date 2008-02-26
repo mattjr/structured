@@ -20,7 +20,7 @@
 
 #include <sys/time.h>
 #include <time.h>
-
+#include <unistd.h> 
 #include "cv.h"
 #include "highgui.h"
 #include "ulapack/eig.hpp"
@@ -1449,6 +1449,8 @@ int main( int argc, char *argv[ ] )
       printf("Can't open vripcmds\n");
       exit(-1);
     }
+    char cwd[255];
+    getcwd(cwd,255);
       
     std::vector<Cell_Data> cells=calc_cells(tasks);
     for(int i=0; i <(int)cells.size(); i++){
@@ -1460,7 +1462,7 @@ int main( int argc, char *argv[ ] )
 	printf("Unable to open %s\n",vrip_seg_fname);
       }	
       fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
-      fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd $OUTDIR;$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-diced/diced-%08d.ply > vripsurflog.txt;plycullmaxx %f %f %f %f %f %f %f < ../mesh-diced/diced-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply; cd ..\n",basepath.c_str(),i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,
+      fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-diced/diced-%08d.ply > vripsurflog.txt;plycullmaxx %f %f %f %f %f %f %f < ../mesh-diced/diced-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply; cd ..\n",basepath.c_str(),cwd,i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,
 	      cells[i].bounds.min_x,
 	      cells[i].bounds.min_y,
 	      FLT_MIN,
@@ -1544,7 +1546,7 @@ int main( int argc, char *argv[ ] )
 		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > joined-mb.ply\n"
 "echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\nauv_mesh_align unblended.ply joined-mb.ply\n$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n");
 	if(dist_run){
-
+	  fprintf(conf_ply_file,"time $BASEPATH/vrip/bin/loadbalance ~/loadlimit vripcmds -logdir $VRIPLOGDIR\n");
 	}else{
 	  fprintf(conf_ply_file,"#/usr/bin/time -f \"Vrip took %%E\"\n /bin/csh $PWD/vripcmds\n");
 	}
@@ -1557,19 +1559,11 @@ int main( int argc, char *argv[ ] )
 	
 	FILE *dicefp=fopen("./dice.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
-	//	if(!dice_lod)
-			  
-	//else
-	// fprintf(dicefp,"$BASEPATH/vrip/bin/plydicegroup -outdir $DICEDIR -writebboxall $DICEDIR/bbtmp.txt  -writebbox $DICEDIR/range.txt -dice %f %f %s  total-unsimp.ply total-unsimp-lod1.ply total-unsimp-lod2.ply | sed 's_.*/__' | tee $DICEDIR/diced.txt\n",subvol,eps,"diced");	
 	fprintf(dicefp,"cd $DICEDIR\ncat diced.txt | xargs plybbox > range.txt\n");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
 		"REDFACT=(0.01 0.1 0.55)\n");
-
-		
-       	if(have_mb_ply)
-	  fprintf(dicefp,"BORDERFLAG=\n");
-	else
-	  fprintf(dicefp,"BORDERFLAG=\"-By\"\n");
+	
+       
 	if(!no_simp){
 	  if(dist_run){
 	    fprintf(dicefp, "LOGDIR=%s\n"
@@ -1585,7 +1579,7 @@ int main( int argc, char *argv[ ] )
 		  "\t\telse\n"
 		  "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
 		  "\t\tfi\n"
-		  "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r $BORDERFLAG -S3;chmod 0666 $NEWNAME\"\n"
+		  "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0;chmod 0666 $NEWNAME\"\n"
 		"MESHNAME=$NEWNAME\n"
 		"\tdone\n"
 		  "echo $SIMPCMD >> simpcmds\n"
@@ -1617,7 +1611,7 @@ int main( int argc, char *argv[ ] )
 	  }	
 	}
 
-	//fprintf(dicefp,"cd $MESHAGG\n%s/vrip/bin/vripdicebbox surface.txt $DICEDIR\n",basepath.c_str());
+
 	  char argstr[255];
 	  strcpy(argstr,"");
 	  if(do_novelty)

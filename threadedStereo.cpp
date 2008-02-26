@@ -583,6 +583,28 @@ void save_bbox_frame (GtsBBox * bb, FILE * fptr){
 
 }
 
+// Remove edge longer then thresh
+void edge_len_thresh(TriMesh *mesh,double thresh)
+{
+	mesh->need_faces();
+	int numfaces = mesh->faces.size();
+
+
+	vector<bool> toremove(numfaces, false);
+	for (int i = 0; i < numfaces; i++) {
+		const point &v0 = mesh->vertices[mesh->faces[i][0]];
+		const point &v1 = mesh->vertices[mesh->faces[i][1]];
+		const point &v2 = mesh->vertices[mesh->faces[i][2]];
+		float d01 = dist2(v0, v1);
+		float d12 = dist2(v1, v2);
+		float d20 = dist2(v2, v0);
+		if (d01 > thresh || d12 > thresh || d20 > thresh)
+		  toremove[i] = true;
+	}
+	remove_faces(mesh, toremove);
+	remove_unused_vertices(mesh);
+}
+
 
 //
 // Load the next pair of images from the contents file
@@ -970,7 +992,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   if(meshcached && texcached){
     TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
-    
+    edge_len_thresh(mesh,2.0);
     xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
 	     name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
 	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],

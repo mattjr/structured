@@ -1444,7 +1444,7 @@ int main( int argc, char *argv[ ] )
     FILE *vrip_seg_fp;
     char vrip_seg_fname[255];
     FILE *bboxfp;
-    FILE *vripcmds_fp=fopen("vripcmds","w");
+    FILE *vripcmds_fp=fopen("mesh-agg/vripcmds","w");
     FILE *diced_fp=fopen("mesh-diced/diced.txt","w");
     if(!vripcmds_fp){
       printf("Can't open vripcmds\n");
@@ -1550,9 +1550,9 @@ int main( int argc, char *argv[ ] )
 		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > joined-mb.ply\n"
 "echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\nauv_mesh_align unblended.ply joined-mb.ply\n$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\ncd ..\n");
 	if(dist_run){
-	  fprintf(conf_ply_file,"time $BASEPATH/vrip/bin/loadbalance ~/loadlimit vripcmds -logdir $VRIPLOGDIR\n");
+	  fprintf(conf_ply_file,"time $BASEPATH/vrip/bin/loadbalance ~/loadlimit mesh-agg/vripcmds -logdir $VRIPLOGDIR\n");
 	}else{
-	  fprintf(conf_ply_file,"#/usr/bin/time -f \"Vrip took %%E\"\n /bin/csh $PWD/vripcmds\n");
+	  fprintf(conf_ply_file,"#/usr/bin/time -f \"Vrip took %%E\"\n /bin/csh mesh-agg/vripcmds\n");
 	}
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);

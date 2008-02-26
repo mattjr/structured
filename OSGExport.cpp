@@ -25,7 +25,7 @@ using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
 using namespace squish;
-FILE *ffp;
+
 
 
 MyGraphicsContext *mgc=NULL;
@@ -873,7 +873,7 @@ static void texcoord_foreach_face (T_Face * f,
   int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
 					 data->bboxTree,data->camPosePts,
 					 data->back_trans,data->calib,bboxes_all);
-  fprintf(ffp,"%d\n",indexClosest);
+  //fprintf(ffp,"%d\n",indexClosest);
   if(indexClosest == INT_MAX){
     /*fprintf(errFP,"Failed traingle\n");
       gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
@@ -905,8 +905,8 @@ static void texcoord_blend_foreach_face (T_Face * f,
 					 data->bboxTree,data->camPosePts,
 				  data->back_trans,data->calib,idx,bboxes_all);
   for(int i=0; i <NUM_TEX_BLEND_COORDS; i++)
-  fprintf(ffp,"%d ",idx[i]);
-  fprintf(ffp,"\n");
+    //fprintf(ffp,"%d ",idx[i]);
+    // fprintf(ffp,"\n");
   if(!found){
     /*fprintf(errFP,"Failed traingle\n");
       gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
@@ -957,7 +957,7 @@ static void findborder_foreach_face (T_Face * f,
 }
 
 void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads,int verbose,int blend){
-    ffp=fopen("w.txt","w");
+  //ffp=fopen("w.txt","w");
   
   //errFP=fopen("err.txt","w");
   std::vector<GtsPoint> camPosePts;
@@ -1008,7 +1008,7 @@ void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatr
     else
       gts_surface_foreach_face (s, (GtsFunc)texcoord_blend_foreach_face ,&tex_data);
   }
-fclose(ffp);
+  //fclose(ffp);
 if(verbose)
       printf("\nChecking weird border cases...\n");
  if(!blend){

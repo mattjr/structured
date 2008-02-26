@@ -107,7 +107,7 @@ static bool hardware_compress=true;
 const char *uname="mesh";
 const char *dicedir="mesh-diced";
 const char *aggdir="mesh-agg";
-
+static string deltaT_pose;
 bool dist_run=false;
 static string passtotridec="-e2.0";
 static bool do_hw_blend=false;
@@ -488,6 +488,7 @@ static bool parse_args( int argc, char *argv[ ] )
   if(have_base_dir){
     deltaT_config_name=base_dir+string("/")+"localiser.cfg";
     deltaT_dir=base_dir+string("/")+"DT/";
+    deltaT_pose=base_dir+string("/")+"deltat_pose_est.data";
     if(!have_stereo_config_file_name)
       stereo_config_file_name= base_dir+string("/")+stereo_config_file_name;
     if(!have_contents_file_name )
@@ -1432,7 +1433,7 @@ int main( int argc, char *argv[ ] )
     for(unsigned int i=0; i < tasks.size(); i++){
       if(tasks[i].valid)
 	fprintf(conf_ply_file,
-		"surface-%s.ply 0.033 1\n"
+		"surface-%s.tc.ply 0.033 1\n"
 		,osgDB::getStrippedName(tasks[i].left_name).c_str());
       
       
@@ -1482,6 +1483,9 @@ int main( int argc, char *argv[ ] )
 	    fprintf(bboxfp," %lf",pose->m[i][j]);
 	fprintf(bboxfp,"\n");
       }
+      if(have_mb_ply)
+	fprintf(vrip_seg_fp,"mb.ply  0.1 0\n");
+
       fclose(vrip_seg_fp);
       fclose(bboxfp);
     }
@@ -1510,7 +1514,7 @@ int main( int argc, char *argv[ ] )
 	FILE *genmbfp=fopen("genmb.sh","w");
 	fprintf(genmbfp,"#!/bin/bash\ncd %s\n"
 		"find . -name 'mb*.ply' | xargs rm -f\n"
-		"%s/../seabed_localisation/bin/process_deltaT --start %f --stop %f --meshsplit 300 --mesh %s %s %s",aggdir,basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),contents_file_name.c_str());
+		"%s/../seabed_localisation/bin/process_deltaT --start %f --stop %f --meshsplit 300 --mesh %s %s %s",aggdir,basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
 	system("./genmb.sh");
@@ -1537,14 +1541,14 @@ int main( int argc, char *argv[ ] )
       
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
+	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n cd mesh-agg/\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
 	fprintf(conf_ply_file,"VRIPLOGDIR=%s\n"
 	,vriplogdir);
 	fprintf(conf_ply_file,"find . -name 'mb-*.ply' | sort  > mbmeshes.txt\n");
 	if(have_mb_ply)
 	  fprintf(conf_ply_file,"cat meshes.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > unblended.ply\n$BASEPATH/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n"
 		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > joined-mb.ply\n"
-"echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\nauv_mesh_align unblended.ply joined-mb.ply\n$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\necho \"mb.ply  0.1 0\" >> surface.txt\n");
+"echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\nauv_mesh_align unblended.ply joined-mb.ply\n$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\ncd ..\n");
 	if(dist_run){
 	  fprintf(conf_ply_file,"time $BASEPATH/vrip/bin/loadbalance ~/loadlimit vripcmds -logdir $VRIPLOGDIR\n");
 	}else{

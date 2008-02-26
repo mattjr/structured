@@ -1466,7 +1466,7 @@ int main( int argc, char *argv[ ] )
 	printf("Unable to open %s\n",vrip_seg_fname);
       }	
       fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
-      fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-diced/diced-%08d.ply > vripsurflog.txt;plycullmaxx %f %f %f %f %f %f %f < ../mesh-diced/diced-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply; cd ..\n",basepath.c_str(),cwd,i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,
+      fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-diced/diced-%08d.ply > vripsurflog-%08d.txt;plycullmaxx %f %f %f %f %f %f %f < ../mesh-diced/diced-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply; cd ..\n",basepath.c_str(),cwd,i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,i,
 	      cells[i].bounds.min_x,
 	      cells[i].bounds.min_y,
 	      FLT_MIN,

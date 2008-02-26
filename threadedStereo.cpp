@@ -1592,60 +1592,46 @@ int main( int argc, char *argv[ ] )
       
 
 	
-	FILE *dicefp=fopen("./dice.sh","w+");
-	fprintf(dicefp,"#!/bin/bash\necho 'Dicing...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
+	FILE *dicefp=fopen("./simp.sh","w+");
+	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\ncat diced.txt | xargs plybbox > range.txt\n");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
 		"REDFACT=(0.01 0.1 0.55)\n");
 	
-       
-	if(!no_simp){
-	  if(dist_run){
-	    fprintf(dicefp, "LOGDIR=%s\n"
-		  "find $LOGDIR -name 'loadbal*' | xargs rm\n"
-		  "find $DICEDIR -name '*lod*' | xargs rm\n"
-		  "rm -f simpcmds\n"
-		  "cat diced.txt | while read MESHNAME; do\n"
-		  "SIMPCMD=\"cd $DICEDIR/\" \n"
-		  "\tfor f in `seq 0 2`\n"
-		  "\tdo\n"
-		  "\t\tif [ $f == 0 ]; then\n"
-		  "\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$f.ply/g`\n"
-		  "\t\telse\n"
-		  "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
-		  "\t\tfi\n"
-		  "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0;chmod 0666 $NEWNAME\"\n"
+     
+	fprintf(dicefp, "LOGDIR=%s\n"
+		"find $LOGDIR -name 'loadbal*' | xargs rm\n"
+		"find $DICEDIR -name '*lod*' | xargs rm\n"
+		"rm -f simpcmds\n"
+		"cat diced.txt | while read MESHNAME; do\n"
+		"SIMPCMD=\"cd $DICEDIR/\" \n"
+		"\tfor f in `seq 0 2`\n"
+		"\tdo\n"
+		"\t\tif [ $f == 0 ]; then\n"
+		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$f.ply/g`\n"
+		"\t\telse\n"
+		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
+		"\t\tfi\n"
+		"\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
 		"MESHNAME=$NEWNAME\n"
 		"\tdone\n"
-		  "echo $SIMPCMD >> simpcmds\n"
-		  "done\n"
-		 
-		  "cd $DICEDIR\n"
-		    "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n"
-		    ,simplogdir);
-	  }else{
-	    fprintf(dicefp,
-		    
-		    "COUNT=1\n"
-		    "cat diced.txt | while read MESHNAME; do\n"
-		    "\tfor f in `seq 0 2`\n"
-		    "\tdo\n"
-		    "\t\techo -n  -e \"\\rSimplifying $COUNT/$NUMDICED $(($f +1 ))/3\"\n "
-		    "\t\tif [ $f == 0 ]; then\n"
-		    "\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$f.ply/g`\n"
-		    "\t\telse\n"
-		    "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
-		    "\t\tfi\n"
-		    "\t\t%s/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 &> declog-$f.txt\n"
-		    "MESHNAME=$NEWNAME\n"
-		    "\tdone\n"
-		    "let COUNT=COUNT+1\n"
-		    "done\n"
-		    "echo -e \"\nDone\" \n"
-		    ,basepath.c_str());
-	  }	
+		"echo $SIMPCMD >> simpcmds\n"
+		"done\n",simplogdir);
+	
+	
+	if(dist_run){
+	  fprintf(dicefp,"cd $DICEDIR\n"
+		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n");
+	} else {
+	  fprintf(dicefp,"csh simpcmds\n");
 	}
-
+	  
+	fchmod(fileno(dicefp),0777);
+	fclose(dicefp);
+	if(!no_simp)
+	  system("./simp.sh");
+	dicefp=fopen("./gentex.sh","w+");
+	fprintf(dicefp,"#!/bin/bash\necho 'Simplifying...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 
 	  char argstr[255];
 	  strcpy(argstr,"");
@@ -1679,7 +1665,7 @@ int main( int argc, char *argv[ ] )
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
 	if(!no_gen_tex)
-	  system("./dice.sh");
+	  system("./gentex.sh");
 	if(!no_gen_tex){
 	  FILE *lodfp=fopen("lodgen.sh","w");
 	  fprintf(lodfp,"#!/bin/bash\n"

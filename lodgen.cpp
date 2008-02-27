@@ -108,7 +108,7 @@ int main( int argc, char *argv[ ] )
   std::vector<vector<string > > outNames;
   std::vector<osg::ref_ptr<osg::Node>  > outNodes;
   if(!have_max_mesh_count){
-    string dicefile("mesh-diced/diced.txt");
+    string dicefile("mesh-diced/valid.txt");
     std::vector<string> meshNames;
  
     

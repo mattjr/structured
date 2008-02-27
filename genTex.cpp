@@ -186,10 +186,10 @@ static bool parse_args( int argc, char *argv[ ] )
   return ( have_stereo_config_file_name);
 }
 
-GNode *loadBBox(int num,std::map<int,GtsMatrix *> &gts_trans_map){
+GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
   char conf_name[255];
   
-  sprintf(conf_name,"%s/bbox-%08d.txt",diceddir,num);
+  sprintf(conf_name,"%s/bbox-%s.txt",diceddir,str);
   
   FILE *bboxfp = fopen(conf_name,"r");
   int count;
@@ -438,7 +438,7 @@ std::vector<vector<string >   > outNames;
   
   int i;
   for( i=startRun; i < (int) totalMeshCount; i++){
-    GNode *bboxTree=loadBBox(i,gts_trans_map);
+    GNode *bboxTree=loadBBox(osgDB::getSimpleFileName(meshNames[i]).c_str(),gts_trans_map);
     /*if(!bboxTree){ 
       fprintf(stderr,"Failed to load bboxtree\n");
       exit(-1);

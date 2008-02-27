@@ -1484,7 +1484,7 @@ int main( int argc, char *argv[ ] )
 	continue;
       
       sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
-      sprintf(conf_name,"mesh-diced/bbox-%08d.txt",i);
+      sprintf(conf_name,"mesh-diced/bbox-clipped-diced-%08d.ply.txt",i);
       vrip_seg_fp=fopen(vrip_seg_fname,"w");
       bboxfp = fopen(conf_name,"w");
       if(!vrip_seg_fp || !bboxfp){
@@ -1596,7 +1596,7 @@ int main( int argc, char *argv[ ] )
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\ncat diced.txt | xargs plybbox > range.txt\n");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(0.01 0.1 0.55)\n");
+		"REDFACT=(0.01 0.1 0.5)\n");
 	
      
 	fprintf(dicefp, "LOGDIR=%s\n"

@@ -389,7 +389,7 @@ int main( int argc, char *argv[ ] )
   fscanf(fp,"%*f %*f %f\n%*f %*f %f\n",&(zrange[0]),&(zrange[1]));
   fclose(fp);
   char dicefname[255];
-  sprintf(dicefname,"%s/diced.txt",diceddir);
+  sprintf(dicefname,"%s/valid.txt",diceddir);
   string dicefile(dicefname);
   std::vector<string> meshNames;
 std::vector<vector<string >   > outNames;

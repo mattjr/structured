@@ -1600,10 +1600,16 @@ int main( int argc, char *argv[ ] )
 	
      
 	fprintf(dicefp, "LOGDIR=%s\n"
-		"find $LOGDIR -name 'loadbal*' | xargs rm\n"
-		"find $DICEDIR -name '*lod*' | xargs rm\n"
+		"if [[ -d $LOGDIR ]] ; then\n"
+		"find $LOGDIR -name 'loadbal*' | xargs rm &>/dev/null\nfi\n"
+		"if [[ -d $DICEDIR ]] ; then\n"
+		"find $DICEDIR -name '*lod*' | xargs rm &> /dev/null\nfi\n"
 		"rm -f simpcmds\n"
+		"rm -f valid.txt\n"
 		"cat diced.txt | while read MESHNAME; do\n"
+		"FACES=`plyhead $MESHNAME | grep face | cut -f 3 -d\" \"`\n"
+		"if [ $FACES == 0 ]; then\n continue;\n fi\n"
+		"echo $MESHNAME >> valid.txt\n"
 		"SIMPCMD=\"cd $DICEDIR/\" \n"
 		"\tfor f in `seq 0 2`\n"
 		"\tdo\n"
@@ -1646,6 +1652,7 @@ int main( int argc, char *argv[ ] )
 	
 	  if(dist_run){
 	  fprintf(dicefp,"cd $DICEDIR\n"
+		  "NUMDICED=`wc -l valid.txt |cut -f1 -d\" \" `\n"
 		  "rm -f gentexcmds\n"
 		  "for i in `seq 0 $(($NUMDICED - 1))`;\n"
 		  "do\n"

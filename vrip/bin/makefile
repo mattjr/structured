@@ -61,6 +61,7 @@ PROGS = \
 	permute \
 	plycull \
 	plycullmaxx \
+	plycullmaxx_inv \
 	plymerge \
 	pvrip1 \
 	pvrip2 \
@@ -364,6 +365,9 @@ else
 
     plycullmaxx:
 	    ln -s ../src/pvrip/plycullmaxx plycullmaxx
+
+    plycullmaxx_inv:
+	    ln -s ../src/pvrip/plycullmaxx_inv plycullmaxx_inv
 
     plymerge:
 	    ln -s ../src/pvrip/plymerge plymerge

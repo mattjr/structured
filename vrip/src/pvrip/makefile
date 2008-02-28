@@ -19,13 +19,16 @@
 CSRCS = \
 
 CXXSRCS = \
+plycullmaxx_inv.cc\
 	plycullmaxx.cc \
-	plymerge.cc
+	plymerge.cc \	
+	
 
 
 TARGETS = \
 	plycullmaxx \
-	plymerge
+	plymerge\
+	plycullmaxx_inv\
 
 # Targets to be built on SGI only (need SGI libraries)...
 SGICXXSRCS = matrix2quat.cc
@@ -42,6 +45,9 @@ matrix2quat: matrix2quat.o
 
 plycullmaxx: plycullmaxx.o
 	$(CXX) -o $@ plycullmaxx.o $(LIBPATHS) $(LIBS) 
+
+plycullmaxx_inv: plycullmaxx_inv.o
+	$(CXX) -o $@ plycullmaxx_inv.o $(LIBPATHS) $(LIBS) 
 
 plymerge: plymerge.o
 	$(CXX) -o $@ plymerge.o $(LIBPATHS) $(LIBS) 

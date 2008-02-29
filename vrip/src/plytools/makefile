@@ -21,14 +21,15 @@
 CSRCS = \
 	ply2verts.c  plycomps.c    plycrunch.c  plynormals.c \
 	plybbox.c    plyconvert.c  plyflip.c    plyremove.c \
-	plybound.c   plyhead.c     plyunshared.c
+	plybound.c   plyhead.c     plyunshared.c 
 
 CXXSRCS = \
 	plyarea.cc      plyxform.cc plyconfthresh.cc\
 	plyaddinfo.cc    plymirror.cc \
 	plystrip.cc      plyconfcrop.cc  plysubtract.cc \
 	plyshared.cc     plyvolume.cc	 plydice.cc \
-	plyplanecrop.cc xyz2ply.cc	 plysubdiv.cc
+	plyplanecrop.cc xyz2ply.cc	 plysubdiv.cc\
+	plyclipbboxes.cc
 
 PERLSRCS = \
 	plys2set	plysets2conf	plysetlevel \
@@ -43,7 +44,7 @@ TARGETS = \
 	plyarea      plycrunch	    plymirror \
 	plydice	     plyconfcrop    plysubtract \
 	plyplanecrop plysubdiv    plystrip       xyz2ply \
-	plyconfthresh plydicegroup
+	plyconfthresh plydicegroup plyclipbboxes
 
 SGICXXSRCS = iv2ply.cc ply2iv.cc
 
@@ -76,6 +77,9 @@ plyflip: plyflip.o
 
 plybbox: plybbox.o
 	$(CC) -o $@ plybbox.o $(LIBPATHS) $(LIBS)
+
+plyclipbboxes: plyclipbboxes.o
+	$(CXX) -o $@ plyclipbboxes.o $(LIBPATHS) $(LIBS)
 
 plynormals: plynormals.o
 	$(CC) -o $@ plynormals.o $(LIBPATHS) $(LIBS)

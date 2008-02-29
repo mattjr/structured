@@ -28,7 +28,7 @@ typedef struct Vertex {
     float diff_r, diff_g, diff_b;
   int index;
 } Vertex;
-void write_file(void);
+
 static char *elem_names[] = { 
   "vertex","face"
 };
@@ -36,6 +36,7 @@ typedef struct Face {
   unsigned char nverts;    /* number of vertex indices in list */
   int *verts;              /* vertex index list */
   //void *other_props;       /* other properties */
+  int valid;
 } Face;
 
 void
@@ -53,10 +54,10 @@ typedef struct BBox {
     float minx, miny, minz, maxx, maxy, maxz;
 } BBox;
 
-
+void write_file(BBox *bboxes,int num);
 PlyFile *readPlyFile(FILE *inFile, Vertex **pVerts, int *pNumVerts);
 void initbbox(BBox *b);
-void updatebbox(BBox *b, Vertex *verts, int numVerts);
+void updatebbox(BBox *b, Vertex *verts, int numVerts,float eps,bool usez);
 void printbbox(BBox *b);
 void printUsage();
 
@@ -89,22 +90,32 @@ main(int argc, char**argv)
    char *s;
    char *progname;
    FILE *inFile = NULL;
+   float eps=0.0;
+
   
- int   nummeshes=argc-2;
-   BBox bboxes[nummeshes];
+   bool usez=false;
    progname = argv[0];
    int count=0;
    /* parse -flags */
    while (--argc > 0 && (*++argv)[0]=='-') {
       for (s = argv[0]+1; *s; s++)
 	 switch (*s) {
+	 case 'z':
+	   usez=true;
+	   break;
+	 case 'e':
+	   if(argc < 1) printusage(progname);
+	   eps= atof (*++argv);
+	   argc-=1;
+	   break;
 	 default:
 	     printusage(progname);
 	     break;
 	 }
    }    
-   
-
+    int   nummeshes=argc-2;
+ BBox bboxes[nummeshes];
+ 
 
    /* optional input files (if not, read stdin ) */
    if (argc > 0) {
@@ -124,11 +135,12 @@ main(int argc, char**argv)
 	       exit(1);
 	   }
 	   initbbox(&bboxes[count]);
-	   updatebbox(&bboxes[count], verts, numVerts);
+	   updatebbox(&bboxes[count], verts, numVerts,eps,usez);
 	   //  clipfinalmesh(bboxes[count]);
 	   //updatebbox(&box, verts, numVerts);
-	   printbbox(&bboxes[count]);
+	   //printbbox(&bboxes[count]);
 	   count++;
+	   //fprintf(stderr,"%s",argv[0]);
        } 
    } else {
        readPlyFile(stdin, &verts, &numVerts);
@@ -140,17 +152,21 @@ main(int argc, char**argv)
        
        // updatebbox(&box, verts, numVerts);
    }
-   printf("Num verts %d\n",numVerts);
+   fprintf(stderr,"EPS %f\n",eps);
+   fprintf(stderr,"Num verts %d\n",numVerts);
+   argv++;
+
+   //  fprintf(stderr,"%s",argv[0]);
    inFile = fopen(argv[0], "r");
    read_file(inFile);
-   printf("Num verts %d\n",nfaces);
+   fprintf(stderr,"Num verts %d\n",nfaces);
    /* if (argc > 0) {
      fprintf(stderr, "Error: Unhandled arg: %s\n", argv[0]);
      printusage(progname);
      exit(-1);
      }*/
 
-   write_file();
+   write_file(bboxes,nummeshes);
   
    
    exit(0);
@@ -169,9 +185,37 @@ initbbox(BBox *b)
     b->maxz = -FLT_MAX;
 }
 
+int Keep_Face(float xmin, float ymin, float zmin,
+              float xmax, float ymax, float zmax, Face *face)
+{
+    float maxx;         // The maximum X-coord of the face
+    Vertex *maxvert;    // The vertex with maximum X-coord
+    int i;
+
+    if (face->nverts <= 0)
+        return 0;
+
+    maxvert = vlist[face->verts[0]];
+    maxx = maxvert->x;
+
+    for (i=1; i<face->nverts; ++i)
+	if (vlist[face->verts[i]]->x > maxx)  {
+            maxvert = vlist[face->verts[i]];
+	    maxx = maxvert->x;
+        }
+
+    if (maxvert->x > xmax) return 0;
+    if (maxvert->x < xmin) return 0;
+    if (maxvert->y > ymax) return 0;
+    if (maxvert->y < ymin) return 0;
+    if (maxvert->z > zmax) return 0;
+    if (maxvert->z < zmin) return 0;
+
+    return 1;
+}
 
 void
-updatebbox(BBox *b, Vertex *verts, int numVerts)
+updatebbox(BBox *b, Vertex *verts, int numVerts,float eps,bool usez)
 {
     int i;
 
@@ -183,7 +227,22 @@ updatebbox(BBox *b, Vertex *verts, int numVerts)
 	b->maxx = MAX(b->maxx, verts[i].x);
 	b->maxy = MAX(b->maxy, verts[i].y);
 	b->maxz = MAX(b->maxz, verts[i].z);	
+
+
+
     }
+	b->minx-=eps;
+	b->miny-=eps;
+	b->minz-=eps;
+
+
+	b->maxx+=eps;
+	b->maxy+=eps;
+	b->maxz+=eps;
+	if(!usez){
+	  b->minz=FLT_MIN;
+	  b->maxx=FLT_MAX;
+	}
 }
 
 
@@ -357,8 +416,8 @@ Ignore all the points (and corresponding faces) below
 the plane.
 ******************************************************************************/
 
-void
-write_file()
+
+void write_file(BBox *bboxes,int num)
 {
   int i,j,k;
   PlyFile *ply;
@@ -376,34 +435,40 @@ write_file()
   vert_count = 0;
   for (i = 0; i < nverts; i++) {
     // Set the index to either the index number, or -1...
-    if(1){ //  if (A*vlist[i]->x + B*vlist[i]->y + C*vlist[i]->z + D >= 0) {
+    if(1){ 
       vlist[i]->index = vert_count;
       vert_count++;
     } else {
       vlist[i]->index = -1;
     }
   }
-
+    for (i = 0; i < nfaces; i++) {
+      flist[i]->valid=false;
+    }
   // count the faces that are still valid
   face_count = 0;
+  
   for (i = 0; i < nfaces; i++) {
-    bool valid = (flist[i]->nverts > 0);
-    for (j = 0; j < flist[i]->nverts; j++) {
-      if (vlist[flist[i]->verts[j]]->index == -1) {
-	valid = false;
-	break;
+    for(int j=0; j < num; j++){
+      bool valid = Keep_Face(bboxes[j].minx,bboxes[j].miny,bboxes[j].minz,
+			     bboxes[j].maxx,bboxes[j].maxy,bboxes[j].maxz,flist[i]);
+      if(valid){
+	
+	flist[i]->valid=true;
       }
-    }
-    
+    }    
+  }
+
+  for(i = 0; i < nfaces; i++) {
     // If face not valid, set nverts to 0, so it won't
     // get written out later.
-    if (valid) {
+    if (flist[i]->valid) {
       face_count++;
     } else {
       flist[i]->nverts = 0;
     }
   }
-
+  fprintf(stderr,"valid face %d\n",face_count);
   /* describe what properties go into the vertex and face elements */
 
   ply_element_count (ply, "vertex", vert_count);

@@ -54,7 +54,7 @@ typedef struct BBox {
     float minx, miny, minz, maxx, maxy, maxz;
 } BBox;
 
-void write_file(BBox *bboxes,int num);
+void write_file(BBox *bboxes,int num,bool inv);
 PlyFile *readPlyFile(FILE *inFile, Vertex **pVerts, int *pNumVerts);
 void initbbox(BBox *b);
 void updatebbox(BBox *b, Vertex *verts, int numVerts,float eps,bool usez);
@@ -92,7 +92,7 @@ main(int argc, char**argv)
    FILE *inFile = NULL;
    float eps=0.0;
 
-  
+   bool inv=false;
    bool usez=false;
    progname = argv[0];
    int count=0;
@@ -107,6 +107,9 @@ main(int argc, char**argv)
 	   if(argc < 1) printusage(progname);
 	   eps= atof (*++argv);
 	   argc-=1;
+	   break;
+	 case 'i':
+	   inv=true;
 	   break;
 	 default:
 	     printusage(progname);
@@ -166,7 +169,7 @@ main(int argc, char**argv)
      exit(-1);
      }*/
 
-   write_file(bboxes,nummeshes);
+   write_file(bboxes,nummeshes,inv);
   
    
    exit(0);
@@ -241,7 +244,7 @@ updatebbox(BBox *b, Vertex *verts, int numVerts,float eps,bool usez)
 	b->maxz+=eps;
 	if(!usez){
 	  b->minz=FLT_MIN;
-	  b->maxx=FLT_MAX;
+	  b->maxz=FLT_MAX;
 	}
 }
 
@@ -417,7 +420,7 @@ the plane.
 ******************************************************************************/
 
 
-void write_file(BBox *bboxes,int num)
+void write_file(BBox *bboxes,int num,bool inv)
 {
   int i,j,k;
   PlyFile *ply;
@@ -425,7 +428,8 @@ void write_file(BBox *bboxes,int num)
   char *elem_name;
   int vert_count;
   int face_count;
-
+  if(inv)
+    fprintf(stderr,"Inverse!\n");
   /*** Write out the final PLY object ***/
 
 
@@ -443,7 +447,7 @@ void write_file(BBox *bboxes,int num)
     }
   }
     for (i = 0; i < nfaces; i++) {
-      flist[i]->valid=false;
+      flist[i]->valid=inv;
     }
   // count the faces that are still valid
   face_count = 0;
@@ -452,9 +456,13 @@ void write_file(BBox *bboxes,int num)
     for(int j=0; j < num; j++){
       bool valid = Keep_Face(bboxes[j].minx,bboxes[j].miny,bboxes[j].minz,
 			     bboxes[j].maxx,bboxes[j].maxy,bboxes[j].maxz,flist[i]);
+     
+     
       if(valid){
-	
-	flist[i]->valid=true;
+	if(inv)
+	  flist[i]->valid=false;
+	else
+	  flist[i]->valid=true;
       }
     }    
   }
@@ -514,3 +522,4 @@ void write_file(BBox *bboxes,int num)
   /* close the PLY file */
   ply_close (ply);
 }
+

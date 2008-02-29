@@ -191,28 +191,32 @@ initbbox(BBox *b)
 int Keep_Face(float xmin, float ymin, float zmin,
               float xmax, float ymax, float zmax, Face *face)
 {
-    float maxx;         // The maximum X-coord of the face
-    Vertex *maxvert;    // The vertex with maximum X-coord
+ 
+    Vertex *avgvert;    // The vertex with avgimum X-coord
     int i;
 
     if (face->nverts <= 0)
         return 0;
 
-    maxvert = vlist[face->verts[0]];
-    maxx = maxvert->x;
+    avgvert = vlist[face->verts[0]];
+  
 
-    for (i=1; i<face->nverts; ++i)
-	if (vlist[face->verts[i]]->x > maxx)  {
-            maxvert = vlist[face->verts[i]];
-	    maxx = maxvert->x;
-        }
-
-    if (maxvert->x > xmax) return 0;
-    if (maxvert->x < xmin) return 0;
-    if (maxvert->y > ymax) return 0;
-    if (maxvert->y < ymin) return 0;
-    if (maxvert->z > zmax) return 0;
-    if (maxvert->z < zmin) return 0;
+    for (i=1; i<face->nverts; ++i){
+      avgvert->x += vlist[face->verts[i]]->x;
+      avgvert->y += vlist[face->verts[i]]->y;
+      avgvert->z += vlist[face->verts[i]]->z;
+    }
+    
+    avgvert->x /= face->nverts;
+    avgvert->y /= face->nverts;
+    avgvert->z /= face->nverts;
+    
+    if (avgvert->x > xmax) return 0;
+    if (avgvert->x < xmin) return 0;
+    if (avgvert->y > ymax) return 0;
+    if (avgvert->y < ymin) return 0;
+    if (avgvert->z > zmax) return 0;
+    if (avgvert->z < zmin) return 0;
 
     return 1;
 }

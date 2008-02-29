@@ -70,6 +70,7 @@ PROGS = \
 	vripsubvollist \
 	plyclean \
 	plygridtomesh \
+	plyclipbboxes\
 	$(NULL)
 
 default: all
@@ -392,6 +393,9 @@ else
 
     plygridtomesh:
 	    ln -s ../src/vrip/plygridtomesh plygridtomesh
+
+    plyclipbboxes:
+	    ln -s ../src/plytools/plyclipbboxes plyclipbboxes
 
 endif
 

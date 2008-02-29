@@ -1497,7 +1497,19 @@ int main( int argc, char *argv[ ] )
 	sprintf(redirstr," ");
 
       fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
-      fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-diced/diced-%08d.ply %s ;plycullmaxx %f %f %f %f %f %f %f < ../mesh-diced/diced-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply; cd ..\n",basepath.c_str(),cwd,i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,redirstr,
+      fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
+
+  if(have_mb_ply){
+    fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/mb.ply > ../mesh-agg/clipped-mb-%08d.ply;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;  plyclipbboxes -i -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/inv-mb-%08d.ply; ", cells[i].bounds.min_x,
+	      cells[i].bounds.min_y,
+	      FLT_MIN,
+	      cells[i].bounds.max_x,
+	      cells[i].bounds.max_y,
+		FLT_MAX,
+	    eps,i,vrip_seg_fname,0.2,i,i,0.1,i,i);
+  }
+
+  fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply; cd ..\n",i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,redirstr,
 	      cells[i].bounds.min_x,
 	      cells[i].bounds.min_y,
 	      FLT_MIN,
@@ -1505,6 +1517,11 @@ int main( int argc, char *argv[ ] )
 	      cells[i].bounds.max_y,
 	      FLT_MAX,
 	      eps,i,i);
+    
+  
+
+   
+
       for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=cells[i].poses[j];
 	//Vrip List
@@ -1512,13 +1529,13 @@ int main( int argc, char *argv[ ] )
 	//Gen Tex File bbox
 	fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
 	save_bbox_frame(pose->bbox,bboxfp);
-	for(int i=0; i < 4; i++)
-	  for(int j=0; j < 4; j++)
-	    fprintf(bboxfp," %lf",pose->m[i][j]);
+	for(int k=0; k < 4; k++)
+	  for(int n=0; n < 4; n++)
+	    fprintf(bboxfp," %lf",pose->m[k][n]);
 	fprintf(bboxfp,"\n");
       }
       if(have_mb_ply)
-	fprintf(vrip_seg_fp,"mb.ply  0.1 0\n");
+	fprintf(vrip_seg_fp,"vis-mb-%08d.ply  0.1 0\n",i);
 
       fclose(vrip_seg_fp);
       fclose(bboxfp);
@@ -1548,7 +1565,8 @@ int main( int argc, char *argv[ ] )
 	FILE *genmbfp=fopen("genmb.sh","w");
 	fprintf(genmbfp,"#!/bin/bash\ncd %s\n"
 		"find . -name 'mb*.ply' | xargs rm -f\n"
-		"%s/../seabed_localisation/bin/process_deltaT --start %f --stop %f --meshsplit 300 --mesh %s %s %s",aggdir,basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
+		"%s/../seabed_localisation/bin/process_deltaT --start %f --stop %f --meshsplit 300 --mesh %s %s %s\n"
+		,aggdir,basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
 	system("./genmb.sh");

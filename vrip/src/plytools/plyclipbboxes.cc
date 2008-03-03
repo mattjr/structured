@@ -116,8 +116,8 @@ main(int argc, char**argv)
 	     break;
 	 }
    }    
-    int   nummeshes=argc-2;
- BBox bboxes[nummeshes];
+   int   nummeshes=argc-1;
+   BBox bboxes[nummeshes];
  
 
    /* optional input files (if not, read stdin ) */
@@ -143,7 +143,7 @@ main(int argc, char**argv)
 	   //updatebbox(&box, verts, numVerts);
 	   //printbbox(&bboxes[count]);
 	   count++;
-	   //fprintf(stderr,"%s",argv[0]);
+	   //fprintf(stderr,"bb %s",argv[0]);
        } 
    } else {
        readPlyFile(stdin, &verts, &numVerts);
@@ -157,9 +157,9 @@ main(int argc, char**argv)
    }
    fprintf(stderr,"EPS %f\n",eps);
    fprintf(stderr,"Num verts %d\n",numVerts);
-   argv++;
+ 
 
-   //  fprintf(stderr,"%s",argv[0]);
+   //   fprintf(stderr,"sss %s",argv[0]);
    inFile = fopen(argv[0], "r");
    read_file(inFile);
    fprintf(stderr,"Num verts %d\n",nfaces);

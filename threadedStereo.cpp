@@ -1500,16 +1500,16 @@ int main( int argc, char *argv[ ] )
       fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
 
   if(have_mb_ply){
-    fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/mb.ply > ../mesh-agg/clipped-mb-%08d.ply;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;  plyclipbboxes -i -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/inv-mb-%08d.ply; ", cells[i].bounds.min_x,
+    fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/mb.ply > ../mesh-agg/clipped-mb-%08d.ply;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;", cells[i].bounds.min_x,
 	      cells[i].bounds.min_y,
 	      FLT_MIN,
 	      cells[i].bounds.max_x,
 	      cells[i].bounds.max_y,
 		FLT_MAX,
-	    eps,i,vrip_seg_fname,0.2,i,i,0.1,i,i);
+	    eps,i,vrip_seg_fname,1.0,i,i);
   }
 
-  fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply; cd ..\n",i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,redirstr,
+  fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,redirstr,
 	      cells[i].bounds.min_x,
 	      cells[i].bounds.min_y,
 	      FLT_MIN,
@@ -1518,7 +1518,11 @@ int main( int argc, char *argv[ ] )
 	      FLT_MAX,
 	      eps,i,i);
     
-  
+  /* if(have_mb_ply){
+    fprintf(vripcmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply; plymerge ../mesh-diced/nomb-diced-%08d.ply ../mesh-agg/inv-mb-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",i,i,i,i,i);
+    
+    }*/
+  fprintf(vripcmds_fp,"cd ..\n");
 
    
 
@@ -1565,8 +1569,18 @@ int main( int argc, char *argv[ ] )
 	FILE *genmbfp=fopen("genmb.sh","w");
 	fprintf(genmbfp,"#!/bin/bash\ncd %s\n"
 		"find . -name 'mb*.ply' | xargs rm -f\n"
-		"%s/../seabed_localisation/bin/process_deltaT --start %f --stop %f --meshsplit 300 --mesh %s %s %s\n"
-		,aggdir,basepath.c_str(),start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
+		"%s/../seabed_localisation/bin/copy_deltaT %s %s %s\n"
+		,aggdir,basepath.c_str(),
+		//--start %f --stop %fstart_time,stop_time,
+deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
+	fprintf(genmbfp,"ls -1 | grep .gsf$ > tmplist\n"
+		"mbdatalist -F-1 -I tmplist > formattedlist\n"
+		"mbdatalist -F-1 -I formattedlist -N\n"
+		"mbm_grid -Iformattedlist  -C3 -E1.0/1.0/m\n"
+		"./formattedlist_mbgrid.cmd\n"
+		"grd2xyz -S formattedlist.grd  -bo > tmp.xyz\n"
+		"%s/../seabed_localisation/bin/mbstomesh %s tmp.xyz\n",
+		basepath.c_str(),deltaT_config_name.c_str());
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
 	system("./genmb.sh");
@@ -1596,11 +1610,11 @@ int main( int argc, char *argv[ ] )
 	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n cd mesh-agg/\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
 	fprintf(conf_ply_file,"VRIPLOGDIR=%s\n"
 	,vriplogdir);
-	fprintf(conf_ply_file,"find . -name 'mb-*.ply' | sort  > mbmeshes.txt\n");
+	fprintf(conf_ply_file,"find . -name 'mb*.ply' | sort  > mbmeshes.txt\n");
 	if(have_mb_ply)
 	  fprintf(conf_ply_file,"cat meshes.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > unblended.ply\n$BASEPATH/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n"
 		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > joined-mb.ply\n"
-"echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\nauv_mesh_align unblended.ply joined-mb.ply\n$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\n");
+"echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\n#auv_mesh_align unblended.ply joined-mb.ply\n#$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\n");
 
 	fprintf(conf_ply_file,"cd ..\n");
 
@@ -1608,6 +1622,21 @@ int main( int argc, char *argv[ ] )
 	  fprintf(conf_ply_file,"time $BASEPATH/vrip/bin/loadbalance ~/loadlimit mesh-agg/vripcmds -logdir $VRIPLOGDIR\n");
 	}else{
 	  fprintf(conf_ply_file,"#/usr/bin/time -f \"Vrip took %%E\"\n /bin/csh mesh-agg/vripcmds\n");
+	}
+	if(have_mb_ply){
+	  fprintf(conf_ply_file,"cd mesh-agg\n");
+	  for(int i=0; i <(int)cells.size(); i++){
+	    if(i==0){
+	      fprintf(conf_ply_file,"plysubtract mb.ply vis-mb-%08d.ply > inv-mb-%08d.ply\n",i,i); 
+	    }else{
+	      fprintf(conf_ply_file,"plysubtract inv-mb-%08d.ply vis-mb-%08d.ply > inv-mb-%08d.ply\n",i-1,i,i); 
+	    }
+	  }
+	
+	  fprintf(conf_ply_file,"cp inv-mb-%08d.ply ../mesh-diced/inv-mb.ply\n"
+		  "cd ../mesh-diced\n",cells.size()-1);
+	  for(int k=0; k < 3; k++)
+	    fprintf(conf_ply_file,"cp inv-mb.ply inv-mb-lod%d.ply\n",k);
 	}
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
@@ -1618,7 +1647,7 @@ int main( int argc, char *argv[ ] )
 	
 	FILE *dicefp=fopen("./simp.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
-	fprintf(dicefp,"cd $DICEDIR\ncat diced.txt | xargs plybbox > range.txt\n");
+	fprintf(dicefp,"cd $DICEDIR\n");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
 		"REDFACT=(0.01 0.1 0.5)\n");
 	
@@ -1655,7 +1684,10 @@ int main( int argc, char *argv[ ] )
 	} else {
 	  fprintf(dicefp,"csh simpcmds\n");
 	}
-	  
+	if(have_mb_ply)
+	  fprintf(dicefp,"echo inv-mb.ply >> valid.txt\n");
+
+	fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
 	if(!no_simp)

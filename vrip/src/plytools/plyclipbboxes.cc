@@ -27,6 +27,7 @@ typedef struct Vertex {
     float x, y, z;
     float diff_r, diff_g, diff_b;
   int index;
+  int valid;
 } Vertex;
 
 static char *elem_names[] = { 
@@ -188,6 +189,21 @@ initbbox(BBox *b)
     b->maxz = -FLT_MAX;
 }
 
+int Keep_Vertex(float xmin, float ymin, float zmin,
+              float xmax, float ymax, float zmax, Vertex *vert)
+{
+ 
+   
+    
+    if (vert->x > xmax) return 0;
+    if (vert->x < xmin) return 0;
+    if (vert->y > ymax) return 0;
+    if (vert->y < ymin) return 0;
+    if (vert->z > zmax) return 0;
+    if (vert->z < zmin) return 0;
+
+    return 1;
+}
 int Keep_Face(float xmin, float ymin, float zmin,
               float xmax, float ymax, float zmax, Face *face)
 {
@@ -220,7 +236,6 @@ int Keep_Face(float xmin, float ymin, float zmin,
 
     return 1;
 }
-
 void
 updatebbox(BBox *b, Vertex *verts, int numVerts,float eps,bool usez)
 {
@@ -441,45 +456,54 @@ void write_file(BBox *bboxes,int num,bool inv)
 
   // count the vertices that are above the plane
   vert_count = 0;
+
+  for (i = 0; i < nverts; i++) 
+    vlist[i]->valid=inv;
+  
+  for (i = 0; i < nverts; i++) {
+    for(int j=0; j < num; j++){
+      bool valid = Keep_Vertex(bboxes[j].minx,bboxes[j].miny,bboxes[j].minz,
+                            bboxes[j].maxx,bboxes[j].maxy,bboxes[j].maxz,vlist[i]);
+      if(valid){
+	if(inv)
+	  vlist[i]->valid=false;
+	else
+	  vlist[i]->valid=true;
+	break;
+      }
+    }
+  }
+  
   for (i = 0; i < nverts; i++) {
     // Set the index to either the index number, or -1...
-    if(1){ 
+    if (vlist[i]->valid) {
       vlist[i]->index = vert_count;
       vert_count++;
     } else {
       vlist[i]->index = -1;
     }
   }
-    for (i = 0; i < nfaces; i++) {
-      flist[i]->valid=inv;
-    }
+
   // count the faces that are still valid
   face_count = 0;
-  
   for (i = 0; i < nfaces; i++) {
-    for(int j=0; j < num; j++){
-      bool valid = Keep_Face(bboxes[j].minx,bboxes[j].miny,bboxes[j].minz,
-			     bboxes[j].maxx,bboxes[j].maxy,bboxes[j].maxz,flist[i]);
-     
-     
-      if(valid){
-	if(inv)
-	  flist[i]->valid=false;
-	else
-	  flist[i]->valid=true;
+    bool valid = (flist[i]->nverts > 0);
+    for (j = 0; j < flist[i]->nverts; j++) {
+      if (vlist[flist[i]->verts[j]]->index == -1) {
+	valid = false;
+	break;
       }
-    }    
-  }
-
-  for(i = 0; i < nfaces; i++) {
+    }
+    
     // If face not valid, set nverts to 0, so it won't
     // get written out later.
-    if (flist[i]->valid) {
+    if (valid) {
       face_count++;
     } else {
       flist[i]->nverts = 0;
     }
   }
+
   fprintf(stderr,"valid face %d\n",face_count);
   /* describe what properties go into the vertex and face elements */
 

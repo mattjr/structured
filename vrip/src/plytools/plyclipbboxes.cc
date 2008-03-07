@@ -109,9 +109,9 @@ main(int argc, char**argv)
 	   eps= atof (*++argv);
 	   argc-=1;
 	   break;
-	 case 'i':
+	   /* case 'i':
 	   inv=true;
-	   break;
+	   break;*/
 	 default:
 	     printusage(progname);
 	     break;
@@ -458,17 +458,14 @@ void write_file(BBox *bboxes,int num,bool inv)
   vert_count = 0;
 
   for (i = 0; i < nverts; i++) 
-    vlist[i]->valid=inv;
+    vlist[i]->valid=false;
   
   for (i = 0; i < nverts; i++) {
     for(int j=0; j < num; j++){
       bool valid = Keep_Vertex(bboxes[j].minx,bboxes[j].miny,bboxes[j].minz,
                             bboxes[j].maxx,bboxes[j].maxy,bboxes[j].maxz,vlist[i]);
       if(valid){
-	if(inv)
-	  vlist[i]->valid=false;
-	else
-	  vlist[i]->valid=true;
+	vlist[i]->valid=true;
 	break;
       }
     }

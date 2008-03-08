@@ -118,7 +118,7 @@ static float tolerance = 0.0001;   /* what constitutes "near" */
 #define TABLE_SIZE19 400123123
 #define TABLE_SIZE20 800123119
 
-
+bool NO_Z=false;
 
 
 typedef struct Hash_Table {	/* uniform spatial subdivision, with hash */
@@ -131,6 +131,7 @@ typedef struct Hash_Table {	/* uniform spatial subdivision, with hash */
 
 Hash_Table *init_table(int, float);
 void add_to_hash (Vertex *, Hash_Table *, float);
+void add_to_hash_noz (Vertex *, Hash_Table *, float);
 void usage(char *progname);
 void write_file(PlyObject &o);
 void read_file(FILE *inFile, PlyObject &o);
@@ -169,6 +170,10 @@ main(int argc, char *argv[])
           break;
         case 'i':
 	  DO_INTERSECTION = true;
+	  break;
+      case 'z':
+	NO_Z = true;
+	printf("No Z\n");
 	  break;
         default:
           usage (progname);
@@ -384,11 +389,21 @@ subtract_vertices(PlyObject &A, PlyObject &B)
 
   /* place all vertices in the hash table, and in the process */
   /* learn which ones should be shared */
+  
+  for (i = 0; i < A.nverts; i++){
+    if(NO_Z)
+      add_to_hash_noz (A.vlist[i], table, squared_dist);
+    else 
+      add_to_hash (A.vlist[i], table, squared_dist);      
+  }  
+  
+  for (i = 0; i < B.nverts; i++){
+    if(NO_Z)
+      add_to_hash_noz (B.vlist[i], table, squared_dist);
+    else
+      add_to_hash (B.vlist[i], table, squared_dist);
+  }
 
-  for (i = 0; i < A.nverts; i++)
-    add_to_hash (A.vlist[i], table, squared_dist);
-  for (i = 0; i < B.nverts; i++)
-    add_to_hash (B.vlist[i], table, squared_dist);
 
   // For each triangle in A, see if it has a match in B
   for (i = 0; i < A.nfaces; i++) {
@@ -415,6 +430,81 @@ Entry:
   table   - hash table to add to
   sq_dist - squared value of distance tolerance
 ******************************************************************************/
+
+void 
+add_to_hash_noz(Vertex *vert, Hash_Table *table, float sq_dist)
+{
+  int index;
+  int a,b,c;
+  int aa,bb,cc;
+  float scale;
+  Vertex *ptr;
+  float dx,dy,dz;
+  float sq;
+  float min_dist;
+  Vertex *min_ptr;
+
+  /* determine which cell the position lies within */
+
+  scale = table->scale;
+  aa = int (floor (vert->x * scale));
+  bb = int (floor (vert->y * scale));
+ 
+
+  /* examine vertices in table to see if we're very close */
+
+  min_dist = 1e20;
+  min_ptr = NULL;
+
+  /* look at nine cells, centered at cell containing location */
+  // Do this only for points in B.  A just gets added.
+  if (!(vert->isA)) {
+    for (a = aa-1; a <= aa+1; a++) {
+      for (b = bb-1; b <= bb+1; b++) {
+
+
+	  /* compute position in hash table */
+	  index = (a * PR1 + b * PR2) % table->num_entries;
+	  if (index < 0)
+	    index += table->num_entries;
+
+	  /* examine all points hashed to this cell */
+	  for (ptr = table->verts[index]; ptr != NULL; ptr = ptr->next) {
+	    if (ptr->isA) {
+	      /* distance (squared) to this point */
+	      dx = ptr->x - vert->x;
+	      dy = ptr->y - vert->y;
+	
+	      sq = dx*dx + dy*dy;
+
+	      /* maybe we've found new closest point */
+	      if (sq <= min_dist) {
+		min_dist = sq;
+		min_ptr = ptr;
+	      }
+	    }
+	  }
+	}	
+      }
+  }
+  
+
+  /* If we found a match, have new vertex point to the matching vertex. */
+  /* If we didn't find a match, add new vertex to the table. */
+
+  if (min_ptr && min_dist < sq_dist) {  /* match */
+    vert->closest = min_ptr;
+    min_ptr->closest = vert;
+  }
+  else {          /* no match */
+    index = (aa * PR1 + bb * PR2 ) % table->num_entries;
+    if (index < 0)
+      index += table->num_entries;
+    vert->next = table->verts[index];
+    table->verts[index] = vert;
+    vert->closest = NULL;
+  }
+}
 
 void 
 add_to_hash(Vertex *vert, Hash_Table *table, float sq_dist)
@@ -490,8 +580,6 @@ add_to_hash(Vertex *vert, Hash_Table *table, float sq_dist)
     vert->closest = NULL;
   }
 }
-
-
 /******************************************************************************
 Initialize a uniform spatial subdivision table.  This structure divides
 3-space into cubical cells and deposits points into their appropriate

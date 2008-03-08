@@ -1567,10 +1567,10 @@ int main( int argc, char *argv[ ] )
       if(gen_mb_ply){
 
 	FILE *genmbfp=fopen("genmb.sh","w");
-	fprintf(genmbfp,"#!/bin/bash\ncd %s\n"
+	fprintf(genmbfp,"#!/bin/bash\nPATH=$PATH:%s/tridecimator\ncd %s\n"
 		"find . -name 'mb*.ply' | xargs rm -f\n"
-		"%s/../seabed_localisation/bin/copy_deltaT %s %s %s\n"
-		,aggdir,basepath.c_str(),
+		"%s/../seabed_localisation/bin/copy_deltaT %s %s %s\n",
+	basepath.c_str()	,aggdir,basepath.c_str(),
 		//--start %f --stop %fstart_time,stop_time,
 deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	fprintf(genmbfp,"ls -1 | grep .gsf$ > tmplist\n"
@@ -1579,7 +1579,12 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 		"mbm_grid -Iformattedlist  -C3 -E1.0/1.0/m\n"
 		"./formattedlist_mbgrid.cmd\n"
 		"grd2xyz -S formattedlist.grd  -bo > tmp.xyz\n"
-		"%s/../seabed_localisation/bin/mbstomesh %s tmp.xyz\n",
+		"%s/../seabed_localisation/bin/mbstomesh %s tmp.xyz\n"
+		"mbm_grdtiff -I formattedlist.grd -W1/1 -G5 -A0.25/280/15  -Q -V\n"
+		"./formattedlist.grd_tiff.cmd\n"
+		"tridecimator mb.ply mb-tmp.ply 0 -e500%%\n"
+		"mv mb.ply mb-uncleaned.ply\n"
+		"mv mb-tmp.ply mb.ply\n",
 		basepath.c_str(),deltaT_config_name.c_str());
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
@@ -1625,17 +1630,29 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	}
 	if(have_mb_ply){
 	  fprintf(conf_ply_file,"cd mesh-agg\n");
-	  for(int i=0; i <(int)cells.size(); i++){
-	    if(i==0){
-	      fprintf(conf_ply_file,"plysubtract mb.ply sub-mb-%08d.ply > inv-mb-%08d.ply\n",i,i); 
-	    }else{
-	      fprintf(conf_ply_file,"plysubtract inv-mb-%08d.ply sub-mb-%08d.ply > inv-mb-%08d.ply\n",i-1,i,i); 
-	    }
-	  }
-	
-	  fprintf(conf_ply_file,"cp inv-mb-%08d.ply ../mesh-diced/inv-mb.ply\n",cells.size()-1);
-	 
+	  fprintf(conf_ply_file,"if [ -e sub-mb-%08d.ply ]; then\n"
+		  "\tplysubtract mb.ply sub-mb-%08d.ply > inv-mb-%08d.ply\n"
+		  "else\n"
+		  "\tcp  mb.ply inv-mb-%08d.ply\n"
+		  "fi\n",0,0,0,0); 
+	  fprintf(conf_ply_file,"for f in `seq 1 %d`\n"
+		  "do\n"
+		  "i=`printf \"%%08d\\n\" \"$f\"`\n"
+		  "ilast=`printf \"%%08d\n\" \"$(($f - 1 ))\"`\n"
+		  "if [ -e sub-mb-$i.ply ]; then\n"
+		  "\tplysubtract inv-mb-$ilast.ply sub-mb-$i.ply > inv-mb-$i.ply;\n"
+		  "else\n"
+		  "\tcp inv-mb-$ilast.ply  inv-mb-$i.ply\n" 
+		  "fi\n"
+		  "done\n"
+		  "tridecimator inv-mb-$i.ply ../mesh-diced/inv-mb.ply 0 -F\n",cells.size()-1);
+
+	    
 	}
+	
+
+	 
+      
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	if(!no_vrip)
@@ -1666,10 +1683,12 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 		"\tdo\n"
 		"\t\tif [ $f == 0 ]; then\n"
 		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$f.ply/g`\n"
+		"FLIPCMD=\"-F\"\n"
 		"\t\telse\n"
+		"FLIPCMD="
 		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
 		"\t\tfi\n"
-		"\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
+		"\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 $FLIPCMD >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
 		"MESHNAME=$NEWNAME\n"
 		"\tdone\n"
 		"echo $SIMPCMD >> simpcmds\n"

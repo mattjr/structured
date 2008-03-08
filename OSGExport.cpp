@@ -872,7 +872,7 @@ static void texcoord_foreach_face (T_Face * f,
   
   int indexClosest=find_closet_img_trans(&GTS_FACE(f)->triangle,
 					 data->bboxTree,data->camPosePts,
-					 data->back_trans,data->calib,bboxes_all);
+					 data->back_trans,data->calib,bboxes_all,data->margin);
   //fprintf(ffp,"%d\n",indexClosest);
   if(indexClosest == INT_MAX){
     /*fprintf(errFP,"Failed traingle\n");
@@ -883,13 +883,13 @@ static void texcoord_foreach_face (T_Face * f,
     return;
   }
     
-  if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size,texMargin))
+  if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size,data->margin))
     data->validCount++;
   else{
     printf("Index closest %d\n",indexClosest);
     find_closet_img_trans(&GTS_FACE(f)->triangle,
 			  data->bboxTree,data->camPosePts,
-			  data->back_trans,data->calib,bboxes_all);
+			  data->back_trans,data->calib,bboxes_all,data->margin);
   }
  
   if(data->verbose)
@@ -903,7 +903,7 @@ static void texcoord_blend_foreach_face (T_Face * f,
   int idx[NUM_TEX_BLEND_COORDS];
   bool found=find_blend_img_trans(&GTS_FACE(f)->triangle,
 					 data->bboxTree,data->camPosePts,
-				  data->back_trans,data->calib,idx,bboxes_all);
+				  data->back_trans,data->calib,idx,bboxes_all,data->margin);
   for(int i=0; i <NUM_TEX_BLEND_COORDS; i++)
     //fprintf(ffp,"%d ",idx[i]);
     // fprintf(ffp,"\n");
@@ -916,7 +916,7 @@ static void texcoord_blend_foreach_face (T_Face * f,
     return;
   }
     
-  if(apply_blend_tex_to_tri(f,data->calib,data->back_trans,idx,data->tex_size,texMargin))
+  if(apply_blend_tex_to_tri(f,data->calib,data->back_trans,idx,data->tex_size,data->margin))
     data->validCount++;
   else{
     //printf("Failed\n");
@@ -956,7 +956,7 @@ static void findborder_foreach_face (T_Face * f,
   }
 }
 
-void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads,int verbose,int blend){
+void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads,int verbose,int blend,int margin){
   //ffp=fopen("w.txt","w");
   
   //errFP=fopen("err.txt","w");
@@ -983,7 +983,7 @@ void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatr
   texGenData tex_data;
   tex_data.bboxTree=bboxTree;
   tex_data.camPosePts =camPosePts;
-  
+  tex_data.margin=margin;
   
   tex_data.back_trans=back_trans;
   tex_data.validCount=0;
@@ -1035,13 +1035,13 @@ if(verbose)
     T_Face *f2 = copy_face(border_faces[i],s);
 
     if(!blend){
-      int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,bboxTree,camPosePts,back_trans,calib,bboxes_all);
-      if(apply_tex_to_tri(f2,calib,back_trans[idx],idx,tex_size,texMargin))
+      int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,bboxTree,camPosePts,back_trans,calib,bboxes_all,margin);
+      if(apply_tex_to_tri(f2,calib,back_trans[idx],idx,tex_size,margin))
 	tex_data.validCount++;
     }else{
       int idx[NUM_TEX_BLEND_COORDS];
-      if(find_blend_img_trans(&GTS_FACE(f2)->triangle,bboxTree,camPosePts,back_trans,calib,idx,bboxes_all))
-	if(apply_blend_tex_to_tri(f2,calib,back_trans,idx,tex_size,texMargin))
+      if(find_blend_img_trans(&GTS_FACE(f2)->triangle,bboxTree,camPosePts,back_trans,calib,idx,bboxes_all,margin))
+	if(apply_blend_tex_to_tri(f2,calib,back_trans,idx,tex_size,margin))
 	  tex_data.validCount++;
     }
 

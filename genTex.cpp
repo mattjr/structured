@@ -449,7 +449,8 @@ std::vector<vector<string >   > outNames;
 
     int lodTexSize[]={max((int)(512*tex_scale),32),max((int)(256*tex_scale),32),max((int)(32*tex_scale),32)};
     //float simpRatio[]={0.5,0.1,0.01};
-   std::vector<string > lodnames;
+    int margins[]={10,100,500};
+    std::vector<string > lodnames;
    string path=string(argv[0]);
    unsigned int loc=path.rfind("/");
    
@@ -531,7 +532,7 @@ std::vector<vector<string >   > outNames;
 	boost::xtime_get(&xt, boost::TIME_UTC);
     
 	gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,
-			   lodTexSize[j],num_threads,verbose,tex_array_blend);
+			   lodTexSize[j],num_threads,verbose,tex_array_blend,margins[j]);
 	boost::xtime_get(&xt2, boost::TIME_UTC);
 	time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
 	secs=time/1000.0;

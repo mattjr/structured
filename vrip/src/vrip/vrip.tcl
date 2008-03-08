@@ -811,7 +811,8 @@ proc newfromlist {listfile res} {
     if {$conservativeBbox} {
        set xdim [expr int($xlen/$res*$conservativeBboxFactor)]
        set ydim [expr int($ylen/$res*$conservativeBboxFactor)]
-       set zdim [expr int($zlen/$res*$conservativeBboxFactor)]       
+       set zdim [expr int($zlen/$res*$conservativeBboxFactor)]
+	puts "Conservative"
     } else {
        set xdim [expr int($xlen/$res) + 10]
        set ydim [expr int($ylen/$res) + 10]

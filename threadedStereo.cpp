@@ -57,7 +57,7 @@ static bool use_undistorted_images = false;
 static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
 static int max_feature_count = 5000;
-static double eps=1e-1;
+static double eps=1.0;
 static double subvol=40.0;
 static bool do_novelty=false;
 static bool have_max_frame_count = false;
@@ -1500,13 +1500,13 @@ int main( int argc, char *argv[ ] )
       fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
 
   if(have_mb_ply){
-    fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/mb.ply > ../mesh-agg/clipped-mb-%08d.ply;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;", cells[i].bounds.min_x,
+    fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/mb.ply > ../mesh-agg/clipped-mb-%08d.ply;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/sub-mb-%08d.ply;", cells[i].bounds.min_x,
 	      cells[i].bounds.min_y,
 	      FLT_MIN,
 	      cells[i].bounds.max_x,
 	      cells[i].bounds.max_y,
 		FLT_MAX,
-	    eps,i,vrip_seg_fname,1.0,i,i);
+	    eps,i,vrip_seg_fname,2.0,i,i,1.0,i,i);
   }
 
   fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,redirstr,
@@ -1627,16 +1627,14 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	  fprintf(conf_ply_file,"cd mesh-agg\n");
 	  for(int i=0; i <(int)cells.size(); i++){
 	    if(i==0){
-	      fprintf(conf_ply_file,"plysubtract mb.ply vis-mb-%08d.ply > inv-mb-%08d.ply\n",i,i); 
+	      fprintf(conf_ply_file,"plysubtract mb.ply sub-mb-%08d.ply > inv-mb-%08d.ply\n",i,i); 
 	    }else{
-	      fprintf(conf_ply_file,"plysubtract inv-mb-%08d.ply vis-mb-%08d.ply > inv-mb-%08d.ply\n",i-1,i,i); 
+	      fprintf(conf_ply_file,"plysubtract inv-mb-%08d.ply sub-mb-%08d.ply > inv-mb-%08d.ply\n",i-1,i,i); 
 	    }
 	  }
 	
-	  fprintf(conf_ply_file,"cp inv-mb-%08d.ply ../mesh-diced/inv-mb.ply\n"
-		  "cd ../mesh-diced\n",cells.size()-1);
-	  for(int k=0; k < 3; k++)
-	    fprintf(conf_ply_file,"cp inv-mb.ply inv-mb-lod%d.ply\n",k);
+	  fprintf(conf_ply_file,"cp inv-mb-%08d.ply ../mesh-diced/inv-mb.ply\n",cells.size()-1);
+	 
 	}
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
@@ -1684,9 +1682,11 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	} else {
 	  fprintf(dicefp,"csh simpcmds\n");
 	}
-	if(have_mb_ply)
+	if(have_mb_ply){
 	  fprintf(dicefp,"echo inv-mb.ply >> valid.txt\n");
-
+	  for(int k=0; k < 3; k++)
+	    fprintf(dicefp,"cp inv-mb.ply inv-mb-lod%d.ply\n",k);
+	}
 	fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);

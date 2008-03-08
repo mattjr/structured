@@ -156,14 +156,14 @@ main(int argc, char**argv)
        
        // updatebbox(&box, verts, numVerts);
    }
-   fprintf(stderr,"EPS %f\n",eps);
-   fprintf(stderr,"Num verts %d\n",numVerts);
+   //   fprintf(stderr,"EPS %f\n",eps);
+   //fprintf(stderr,"Num verts %d\n",numVerts);
  
 
    //   fprintf(stderr,"sss %s",argv[0]);
    inFile = fopen(argv[0], "r");
    read_file(inFile);
-   fprintf(stderr,"Num verts %d\n",nfaces);
+   // fprintf(stderr,"Num verts %d\n",nfaces);
    /* if (argc > 0) {
      fprintf(stderr, "Error: Unhandled arg: %s\n", argv[0]);
      printusage(progname);
@@ -501,7 +501,7 @@ void write_file(BBox *bboxes,int num,bool inv)
     }
   }
 
-  fprintf(stderr,"valid face %d\n",face_count);
+  //fprintf(stderr,"valid face %d\n",face_count);
   /* describe what properties go into the vertex and face elements */
 
   ply_element_count (ply, "vertex", vert_count);

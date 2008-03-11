@@ -234,7 +234,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
       
       }
     }
- 
+    filecached->setFileName(basename);
     compressed_img_cache[basename]=filecached;
 
   }else{  
@@ -276,7 +276,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
  
   retImage->setMipmapLevels(newmipmap);
 
-  
+  retImage->setFileName(basename);
   
   return retImage;
 }

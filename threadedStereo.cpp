@@ -1724,7 +1724,11 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	    strcat(argstr,"--no-hardware-compress ");
 	  if(no_simp)
 	    strcat(argstr,"--nosimp");
-	
+	  if(have_mb_ply){
+	    char tp[255];
+	    sprintf(tp,"--nonvis %d\n",cells.size());
+	    strcat(argstr,tp);
+	  }
 	  if(dist_run){
 	  fprintf(dicefp,"cd $DICEDIR\n"
 		  "NUMDICED=`wc -l valid.txt |cut -f1 -d\" \" `\n"
@@ -1738,7 +1742,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit-hwcard gentexcmds -logdir $LOGDIR\n"
 		  ,stereo_config_file_name.c_str(),cachedtexdir,argstr,texlogdir);
 	}else{  
-	  fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
+	    fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
 
 	  fprintf(dicefp,"%s \n",argstr);
 	  

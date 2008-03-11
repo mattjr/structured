@@ -9,6 +9,7 @@
 #include <osgDB/WriteFile>
 #include <osg/Point>
 #include <osgUtil/Simplifier>
+#include <osg/PolygonOffset>
 #include <osg/ShapeDrawable>
 #include <cv.h>
 #include <glib.h>
@@ -160,17 +161,29 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
       (*gc._colors++).set(0.5,0.5,0.5,0.0);
     }
     float range=zrange[1]-zrange[0];
-      
-    float r,g,b,val;
-    val = ( GTS_VERTEX(v1)->p.z -zrange[0] )/range;    
-    jet_color_map(val,r,g,b);
-    (*gc._colors++).set(r,b,g,1.0);
+   
+    Lut_Vec color;
+    float val;// r,g,b,val;
+    Colors::eColorMap map=Colors::eRainbowMap;
+    val = ( GTS_VERTEX(v1)->p.z -zrange[0] )/range;   
+    color=GlobalColors()->Get(map, val); 
+    (*gc._colors++).set(color[0],color[1],color[2],1.0);
+    //  jet_color_map(val,r,g,b);
+    //(*gc._colors++).set(r,b,g,1.0);
+   
     val = ( GTS_VERTEX(v2)->p.z -zrange[0] )/range;    
-    jet_color_map(val,r,g,b);
-    (*gc._colors++).set(r,b,g,1.0);
+    color=GlobalColors()->Get(map, val); 
+    (*gc._colors++).set(color[0],color[1],color[2],1.0);
+    //jet_color_map(val,r,g,b);
+    // (*gc._colors++).set(r,b,g,1.0);
+   
     val = ( GTS_VERTEX(v3)->p.z -zrange[0] )/range;    
-    jet_color_map(val,r,g,b);
-    (*gc._colors++).set(r,b,g,1.0);
+    color=GlobalColors()->Get(map, val); 
+    (*gc._colors++).set(color[0],color[1],color[2],1.0);
+    //jet_color_map(val,r,g,b);
+    //  (*gc._colors++).set(r,b,g,1.0);
+    
+    
   }
 }
 
@@ -459,6 +472,9 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	gc._geom->setColorArray(colorsArray);
 	 
 	gc._geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+
+	
+
       }
       
       if(!_tex_array_blend && gcAndTexIds[i].second.size() > 1){
@@ -501,7 +517,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       // set up texture if needed.
       for(int j=0; j < (int)gcAndTexIds[i].second.size(); j++){
 	int tidx=gcAndTexIds[i].second[j];
-	if(tidx < 0 &&  textures.count(tidx) <= 0)
+	if(tidx < 0 ||  textures.count(tidx) <= 0)
 	  continue;
 	std::string filename=prefixdir+textures[tidx];
 	osg::notify(osg::INFO) << "ctex " << filename  << std::endl;
@@ -678,6 +694,43 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	 
 	  
 	  else{
+	    osg::StateSet *utstateset = gc._geom->getOrCreateStateSet();
+	    osg::Material* material = new osg::Material;
+	    
+	    osg::Vec4 specular( 0.18, 0.18, 0.18, 0.18 );
+	    specular *= 1.5;
+	    float mat_shininess = 64.0f ;
+	    osg::Vec4 ambient (0.02, 0.02, 0.05, 0.05 );
+	    
+	    osg::Vec4 light0_ambient( 0, 0, 0, 0 );
+	    osg::Vec4 diffuse( 0.8, 0.8, 0.8, 0.85 );
+	    
+	    osg::Vec4 light1_diffuse( -0.01, -0.01, -0.03, -0.03 );
+	    osg::Vec4 light0_specular( 0.85, 0.85, 0.85, 0.85 );
+	    material->setAmbient(osg::Material::FRONT_AND_BACK,ambient);
+	    
+	    material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
+	    material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
+	    material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
+	    
+	    utstateset->setAttribute(material);
+	    if(applyNonVisMat){
+	      //   fprintf(stderr,"Apply non vis\n");
+	  
+
+	    float factor = 2.0f;
+	    float units = 1.0f;
+	    
+	    osg::ref_ptr<osg::PolygonOffset> polygon_offset = new 
+	      osg::PolygonOffset;
+	    polygon_offset->setFactor(factor);
+	    polygon_offset->setUnits(units);
+	    utstateset->setAttribute(polygon_offset.get(), osg::StateAttribute::ON | 
+				   osg::StateAttribute::OVERRIDE);
+	    utstateset->setMode(GL_POLYGON_OFFSET_FILL, osg::StateAttribute::ON | 
+			      osg::StateAttribute::OVERRIDE);
+
+	    }
 	    untextured->addDrawable(gc._geom);
 	  }
 
@@ -685,6 +738,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
     }
       if(usePlaneDist){
+
 	osg::StateSet* _stateset = new osg::StateSet;
 	osg::PolygonMode* _polygonmode = new osg::PolygonMode;
 	_polygonmode->setMode(osg::PolygonMode::FRONT_AND_BACK,
@@ -696,6 +750,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	
 	
 	for(int i=0; i<(int)bounds.size(); i++){
+
 	  osg::ref_ptr<osg::Box> b=new osg::Box(osg::Vec3(bounds[i].center()[1],
 							  bounds[i].center()[0],
 							  -bounds[i].center()[2]),

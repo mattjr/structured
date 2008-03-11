@@ -44,6 +44,7 @@
 #include "auv_mesh_io.hpp"
 #include "Depth.h"
 #include "auv_texture_utils.hpp"
+#include "auv_lut.hpp"
 using namespace auv_data_tools;
 using namespace std;
 using namespace libsnapper;
@@ -97,7 +98,7 @@ typedef std::map<int,string> MaterialToIDMap;
 class OSGExporter 
 {
 public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false,bool do_novelty=false,string basedir="",bool usePlaneDist=false): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),gpuNovelty(false),computeHists(do_novelty),basedir(basedir),usePlaneDist(usePlaneDist) {state=NULL;
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=false,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false,bool do_novelty=false,string basedir="",bool usePlaneDist=false,bool applyNonVisMat=false): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),gpuNovelty(false),computeHists(do_novelty),basedir(basedir),usePlaneDist(usePlaneDist) ,applyNonVisMat(applyNonVisMat) {state=NULL;
     do_atlas=false;
     _planeTexSize=32;
     context=NULL;
@@ -158,6 +159,7 @@ protected:
   bool computeHists;
   string basedir;
   bool usePlaneDist;
+  bool applyNonVisMat;
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
   vector<osg::ref_ptr<osg::Texture2DArray> > osg_tex_arr_ptrs;
   map<int,osg::Texture *> osg_tex_map;

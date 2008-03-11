@@ -41,6 +41,7 @@ static bool tex_array_blend=false;
 //
 // Command-line arguments
 //
+static bool applyNonVisMat=false;
 static string stereo_config_file_name;
 static string contents_file_name;
 static string dir_name;
@@ -51,7 +52,7 @@ static bool have_max_mesh_count = false;
 static unsigned int max_mesh_count;
 static int num_threads=1;
 static bool display_debug_images = true;
-
+static int nonvisidx=0;
 static bool compress_textures = true;
 static bool single_run=false;
 static int single_run_index=0;
@@ -126,6 +127,13 @@ static bool parse_args( int argc, char *argv[ ] )
 	{
 	  verbose=true;
 	  i+=1;
+	}
+      else if( strcmp( argv[i], "--nonvis" ) == 0 )
+	{
+	  applyNonVisMat=true;
+	  if( i == argc-1 ) return false;
+	  nonvisidx=atoi( argv[i+1] );
+	  i+=2;
 	}
       else if( strcmp( argv[i], "--single-run" ) == 0 )
 	{
@@ -227,7 +235,7 @@ GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
       bboxTree=gts_bb_tree_new(bboxes);
     return bboxTree;
   }
-    printf("No bbox file bailing...\n");
+  //printf("No bbox file bailing...\n");
     return NULL;
 
 
@@ -457,8 +465,8 @@ std::vector<vector<string >   > outNames;
    string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
    basepath= osgDB::getRealPath (basepath) +"/";
    
-    OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
-					num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist);    
+   OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
+				       num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx));    
     osg::Node * lod0Node[2];
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;
@@ -485,7 +493,7 @@ std::vector<vector<string >   > outNames;
 	DepthStats ds(mesh);
 	vector<Plane3D> planes;
 	vector<TriMesh::BBox> bounds;
-	vector<int> *planeIdx=ds.getPlaneFits(planes,bounds,8,4);
+	vector<int> *planeIdx=ds.getPlaneFits(planes,bounds,2,4);
 
 	bool res=convert_ply(mesh,surf,verbose,planeIdx);
        mesh_count(i,totalMeshCount,j,lodNum,0,0,0);

@@ -1717,16 +1717,16 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	  char argstr[255];
 	  strcpy(argstr,"");
 	  if(do_novelty)
-	    strcat(argstr,"--novelty ");
+	    strcat(argstr," --novelty ");
 	  if(do_hw_blend)
-	    strcat(argstr,"--blend ");
+	    strcat(argstr," --blend ");
 	  if(!hardware_compress)
-	    strcat(argstr,"--no-hardware-compress ");
+	    strcat(argstr," --no-hardware-compress ");
 	  if(no_simp)
-	    strcat(argstr,"--nosimp");
+	    strcat(argstr," --nosimp ");
 	  if(have_mb_ply){
 	    char tp[255];
-	    sprintf(tp,"--nonvis %d ",cells.size());
+	    sprintf(tp," --nonvis %d ",cells.size());
 	    strcat(argstr,tp);
 	  }
 	  if(dist_run){

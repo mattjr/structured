@@ -1726,7 +1726,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	    strcat(argstr,"--nosimp");
 	  if(have_mb_ply){
 	    char tp[255];
-	    sprintf(tp,"--nonvis %d",cells.size());
+	    sprintf(tp,"--nonvis %d ",cells.size());
 	    strcat(argstr,tp);
 	  }
 	  if(dist_run){

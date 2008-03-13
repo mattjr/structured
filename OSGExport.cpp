@@ -1080,11 +1080,11 @@ if(verbose)
 				    &tex_data ,num_threads);   
    else
      gts_surface_foreach_face (s, (GtsFunc)findborder_blend_foreach_face ,&tex_data );
-
+ 
  }
 
  tex_data.count=1;
-  tex_data.reject=0;
+ tex_data.reject=0;
   tex_data.total =border_faces.size();
   for(int i=0; i < (int) border_faces.size(); i++){
     T_Face *f2 = copy_face(border_faces[i],s);

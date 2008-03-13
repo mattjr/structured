@@ -84,10 +84,10 @@ sub printUsage {
 
 # Timesteps, in seconds. This is how often it checks to see if it
 # should spawn a new process.
-$TIMEINTERVAL = 6.0;
+$TIMEINTERVAL = 0.5;#6.0;
 # Amount to decay PENDING each time step.
 # This decay compensates for uptime's 1-min lag.
-$STEPDECAY = 0.8;
+$STEPDECAY = 0.133;#0.8;
 
 # Option defaults
 $DOXLOAD = 0;

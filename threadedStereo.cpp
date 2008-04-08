@@ -1649,7 +1649,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	  fprintf(conf_ply_file,"for f in `seq 1 %ld`\n"
 		  "do\n"
 		  "i=`printf \"%%08d\\n\" \"$f\"`\n"
-		  "ilast=`printf \"%%08d\n\" \"$(($f - 1 ))\"`\n"
+		  "ilast=`printf \"%%08d\" \"$(($f - 1 ))\"`\n"
 		  "if [ -e sub-mb-$i.ply ]; then\n"
 		  "\tplysubtract inv-mb-$ilast.ply sub-mb-$i.ply > inv-mb-$i.ply;\n"
 		  "else\n"

@@ -16,7 +16,7 @@ PROJECT(libpolyp)
 INCLUDE( ${CMAKE_ROOT}/Modules/CheckIncludeFileCXX.cmake )
 INCLUDE( ${CMAKE_ROOT}/Modules/CheckLibraryExists.cmake )
 INCLUDE( ${CMAKE_ROOT}/Modules/UsePkgConfig.cmake )
-INCLUDE( FindOSG.cmake )
+INCLUDE( ${CMAKE_ROOT}/Modules/FindOSG.cmake )
 
 #--------------------------------#
 # Enforce an out-of-source build #
@@ -86,13 +86,19 @@ FIND_PACKAGE(Boost)
 IF( NOT Boost_FOUND )
    MESSAGE( FATAL_ERROR  "ERROR - Can't find boost" )
 ENDIF( NOT Boost_FOUND )      
-
+SET( CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR} )
 # boost threads
 CHECK_INCLUDE_FILE_CXX( "boost/thread.hpp" HAVE_BOOST_THREAD )
 IF( NOT HAVE_BOOST_THREAD )
    MESSAGE( FATAL_ERROR  "ERROR - Can't find boost threads" )
-ENDIF( NOT HAVE_BOOST_THREAD )      
+ENDIF( NOT HAVE_BOOST_THREAD )    
+
+IF(APPLE)
+SET( BOOST_THREAD_LIBRARY boost_thread-mt )
+else(APPLE)
 SET( BOOST_THREAD_LIBRARY boost_thread )
+ENDIF(APPLE)
+
 
 # OpenGL and GLU
 FIND_PACKAGE( OpenGL )
@@ -119,12 +125,8 @@ SET( LAPACK_LIB lapack )
 
 
 # OpenCV
-PKGCONFIG("opencv" OPENCV_INCLUDE_DIR OPENCV_LINK_DIR OPENCV_LINK_FLAGS OPENCV_CFLAGS )
-IF( NOT OPENCV_INCLUDE_DIR )
-   MESSAGE( FATAL_ERROR  "ERROR - Can't find OpenCV" )
-ENDIF( NOT OPENCV_INCLUDE_DIR )      
-# Strict aliasing causes lots of warnings with OpenCV and g++-4.1
-ADD_DEFINITIONS( "-fno-strict-aliasing" )
+INCLUDE(${CMAKE_ROOT}/Modules/FindOpencv.cmake ) 
+
   
 # Gts
 PKGCONFIG("gts" GTS_INCLUDE_DIR GTS_LINK_DIR GTS_LINK_FLAGS GTS_CFLAGS )
@@ -158,9 +160,10 @@ IF( USE_LIBKEYPOINT )
    SET( CMAKE_REQUIRED_FLAGS "-I ${OPENCV_INCLUDE_DIR} ${OPENCV_LINK_FLAGS}" )
    CHECK_INCLUDE_FILE_CXX( "keypoint.hpp" HAVE_LIBKEYPOINT "-I ${LIBKEYPOINT_INCLUDE_DIR}" )
    IF( NOT HAVE_LIBKEYPOINT )
-      MESSAGE( FATAL_ERROR  "ERROR - Can't find libkeypoint" )
+#      MESSAGE( FATAL_ERROR  "ERROR - Can't find libkeypoint" )
    ENDIF( NOT HAVE_LIBKEYPOINT )      
 ENDIF( USE_LIBKEYPOINT )
+
 # libsnapper 
 SET( LIBSNAPPER_INC ${LIBSNAPPER_PREFIX}/include/libsnapper )
 SET( LIBSNAPPER_LIBRARY snapper )
@@ -198,16 +201,13 @@ LINK_LIBRARIES(	${OSG_LIBRARY}
 		${OSGUTIL_LIBRARY}
 		${OSGVIEWER_LIBRARY}
 		${LIBADT_LIBRARY}
-		-l3ds -lgts
- 	
-	
-	
-	
- 		
-   		
+		${OPENCV_LIBRARY}
+		${BOOST_THREAD_LIBRARY}
+		${LIBPLANKTON_LIBRARY}	
+		${LIBSNAPPER_LIBRARY}
+		${GTS_LINK_FLAGS}
+		-l3ds    		
 		${LIBPOLYP_LIBRARY}
-              
-          
 	)
 
 
@@ -269,11 +269,11 @@ SET( SRCS OSGExport.cpp
 		stereo_cells.cpp
 		)
 
-
+ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} )
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp )
 ADD_EXECUTABLE( genTex genTex.cpp )
 ADD_EXECUTABLE( lodgen lodgen.cpp )
-TARGET_LINK_LIBRARIES( threadedStereo ts )
-TARGET_LINK_LIBRARIES( genTex ts )
+TARGET_LINK_LIBRARIES( threadedStereo ts plankton )
+TARGET_LINK_LIBRARIES( genTex ts plankton)
 TARGET_LINK_LIBRARIES( lodgen ts )

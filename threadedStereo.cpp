@@ -65,6 +65,7 @@ static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
 static bool output_pts_cov=false;
 static bool use_sift_features = false;
+static bool sing_gen_tex=true;
 static bool use_surf_features = false;
 static bool use_ncc = false;
 static int skip_counter=0;
@@ -327,6 +328,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--dist" ) == 0 )
 	{
 	  dist_run = true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--threaded-gentex" ) == 0 )
+	{
+	  sing_gen_tex = false;
 	  i+=1;
 	}
   else if( strcmp( argv[i], "--dicelod" ) == 0 )
@@ -1394,9 +1400,14 @@ int main( int argc, char *argv[ ] )
       name.valid=true;
       tasks.push_back(name);
     }else if(ret == NO_ADD){
+      printf("Noadd\n");
       continue;
     }else if(ret == END_FILE)
       break;
+  }
+  if(tasks.size() <= 0){
+    fprintf(stderr,"No tasks loaded check %s\n",contents_file_name.c_str());
+    exit(-1);
   }
   start_time=tasks[0].time;
   stop_time=tasks[tasks.size()-1].time;
@@ -1635,7 +1646,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 		  "else\n"
 		  "\tcp  mb.ply inv-mb-%08d.ply\n"
 		  "fi\n",0,0,0,0); 
-	  fprintf(conf_ply_file,"for f in `seq 1 %d`\n"
+	  fprintf(conf_ply_file,"for f in `seq 1 %ld`\n"
 		  "do\n"
 		  "i=`printf \"%%08d\\n\" \"$f\"`\n"
 		  "ilast=`printf \"%%08d\n\" \"$(($f - 1 ))\"`\n"
@@ -1664,7 +1675,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\n");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(0.01 0.1 0.25)\n");
+		"REDFACT=(0.01 0.2 3.0)\n");
 	
      
 	fprintf(dicefp, "LOGDIR=%s\n"
@@ -1699,7 +1710,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	  fprintf(dicefp,"cd $DICEDIR\n"
 		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n");
 	} else {
-	  fprintf(dicefp,"csh simpcmds\n");
+	  fprintf(dicefp,"time %s/runtp.py simpcmds\n",basepath.c_str());
 	}
 	if(have_mb_ply){
 	  fprintf(dicefp,"echo inv-mb.ply >> valid.txt\n");
@@ -1726,27 +1737,34 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	    strcat(argstr," --nosimp ");
 	  if(have_mb_ply){
 	    char tp[255];
-	    sprintf(tp," --nonvis %d ",cells.size());
+	    sprintf(tp," --nonvis %d ",(int)cells.size());
 	    strcat(argstr,tp);
 	  }
-	  if(dist_run){
-	  fprintf(dicefp,"cd $DICEDIR\n"
-		  "NUMDICED=`wc -l valid.txt |cut -f1 -d\" \" `\n"
-		  "rm -f gentexcmds\n"
-		  "for i in `seq 0 $(($NUMDICED - 1))`;\n"
-		  "do\n"
-		  "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s -f %s --single-run $i %s\" >> gentexcmds\n"
-		  "done\n"
-		  "LOGDIR=%s\n"
-		  "cd $DICEDIR\n"
-		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit-hwcard gentexcmds -logdir $LOGDIR\n"
-		  ,stereo_config_file_name.c_str(),cachedtexdir,argstr,texlogdir);
-	}else{  
-	    fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
-
-	  fprintf(dicefp,"%s \n",argstr);
 	  
-	}
+	  if(!sing_gen_tex){
+	    fprintf(dicefp,"cd $DICEDIR\n"
+		    "NUMDICED=`wc -l valid.txt |cut -f1 -d\" \" `\n"
+		    "rm -f gentexcmds\n"
+		    "for i in `seq 0 $(($NUMDICED - 1))`;\n"
+		    "do\n"
+		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s -f %s --single-run $i %s\" >> gentexcmds\n"
+		    "done\n"
+		    "LOGDIR=%s\n"
+		    "cd $DICEDIR\n"
+		    ,stereo_config_file_name.c_str(),cachedtexdir,argstr,texlogdir);
+	    if(dist_run)
+	      fprintf(dicefp,
+		      "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit-hwcard gentexcmds -logdir $LOGDIR\n");
+		
+	    else
+	      fprintf(dicefp,"time %s/runtp.py gentexcmds\n",basepath.c_str());
+	    
+	  }else{  
+	    fprintf(dicefp,"cd $RUNDIR\n%s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
+	    
+	    fprintf(dicefp,"%s \n",argstr);
+	    
+	  }
 
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);

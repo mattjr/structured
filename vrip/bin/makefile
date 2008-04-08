@@ -91,7 +91,7 @@ depend:
 install: clobber depend all
 
 # Get OS uname
-UNAME := $(shell uname -o)
+UNAME := $(shell uname)
 
 ifeq ($(UNAME), Cygwin)
 

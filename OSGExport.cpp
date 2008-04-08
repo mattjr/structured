@@ -42,8 +42,8 @@ void OSGExporter::compress(osg::Texture2D* texture2D, osg::Texture::InternalForm
   
   osg::ref_ptr<osg::Image> image = texture2D->getImage();
   if (image.valid() && 
-      (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) &&
-      (image->s()>=32 && image->t()>=32)){
+      (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) ){//&&
+      //     (image->s()>=32 && image->t()>=32)){
     //internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION;
     texture2D->setInternalFormatMode(internalFormatMode);
     

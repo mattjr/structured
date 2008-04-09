@@ -330,9 +330,16 @@ int main(int argc ,char**argv){
     double res=atof(tgtStr.substr(0,tgtStr.size()-1).c_str());
     if(res <= 0)
       TargetFaceNum=0;
-    else
-      TargetFaceNum= (int) rint(( cm.bbox.DimX() * cm.bbox.DimY()) / res);
-    fprintf(stderr,"Spacial Res %f faces %d currently %d\n", res,TargetFaceNum,cm.fn);
+    else{
+      CMeshO::FaceIterator fi;
+	double totalA;	
+        for(fi=cm.face.begin(); fi!=cm.face.end();++fi){
+	  double area=DoubleArea<CFaceO>(*fi);
+	  totalA+=area;
+	}
+      TargetFaceNum= (int) rint(( totalA) / res);
+      fprintf(stderr,"Spacial Res %f faces %d currently %d\n", res,TargetFaceNum,cm.fn);
+    }
   }else
     TargetFaceNum=(int)rint(atof(tgtStr.c_str()));
   

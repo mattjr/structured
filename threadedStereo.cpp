@@ -1669,13 +1669,17 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	if(!no_vrip)
 	  system("./runvrip.sh");
       
+	float simp_mult=1.0;
 
-	
+	if(have_mb_ply)
+	  simp_mult=1.0;
+	else
+	  simp_mult=2.0;
 	FILE *dicefp=fopen("./simp.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\n");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(0.01 0.2 3.0)\n");
+		"REDFACT=(0.01 %f %f)\n",0.1*simp_mult,0.5*simp_mult);
 	
      
 	fprintf(dicefp, "LOGDIR=%s\n"
@@ -1713,9 +1717,10 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	  fprintf(dicefp,"time %s/runtp.py simpcmds\n",basepath.c_str());
 	}
 	if(have_mb_ply){
+	  float mbres[3]={0,0,0};
 	  fprintf(dicefp,"echo inv-mb.ply >> valid.txt\n");
 	  for(int k=0; k < 3; k++)
-	    fprintf(dicefp,"cp inv-mb.ply inv-mb-lod%d.ply\n",k);
+	    fprintf(dicefp,"%s/tridecimator/tridecimator inv-mb.ply inv-mb-lod%d.ply %fr\n",basepath.c_str(),k,mbres[k]);
 	}
 	fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");
 	fchmod(fileno(dicefp),0777);

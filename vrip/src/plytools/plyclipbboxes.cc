@@ -133,6 +133,7 @@ main(int argc, char**argv)
 	   argv ++;
 
 	   readPlyFile(inFile, &verts, &numVerts);
+	   fclose(inFile);
 
 	   if (verts == NULL) {
 	       fprintf(stderr, "Obtained no vertices from %s.\n", argv[0]);

@@ -527,7 +527,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	if(vmcallback)
 	  vmcallback(tex_count,mtgcm.size());
 	if(verbose)
-	  printf("\rLoading Texture: %03d/%03d",tex_count,mtgcm.size());
+	  printf("\rLoading Texture: %03d/%03d",tex_count,(int)mtgcm.size());
 	if(!ive_out)
 	  if(verbose)printf("\n");	 
 	fflush(stdout); 
@@ -712,11 +712,12 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
 	    material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
 	    material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
-	    
+	     if(!applyNonVisMat){
+	       
 	    utstateset->setAttribute(material);
-	    if(applyNonVisMat){
-	      //   fprintf(stderr,"Apply non vis\n");
-	  
+	     }else {
+	       //  fprintf(stderr,"Apply non vis\n");
+	       //  utstateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
 
 	    float factor = 2.0f;
 	    float units = 1.0f;
@@ -730,7 +731,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    utstateset->setMode(GL_POLYGON_OFFSET_FILL, osg::StateAttribute::ON | 
 			      osg::StateAttribute::OVERRIDE);
 
-	    }
+	     }
 	    untextured->addDrawable(gc._geom);
 	  }
 
@@ -1018,7 +1019,7 @@ void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatr
   std::vector<GtsPoint> camPosePts;
   GtsPoint transP;
   if(verbose)
-    printf("Size %d\n",back_trans.size());
+    printf("Size %d\n",(int)back_trans.size());
   map<int,GtsMatrix *>::iterator iter;
   for(  iter=back_trans.begin();  iter != back_trans.end(); iter++){
   

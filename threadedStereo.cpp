@@ -1637,7 +1637,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	if(dist_run){
 	  fprintf(conf_ply_file,"time $BASEPATH/vrip/bin/loadbalance ~/loadlimit mesh-agg/vripcmds -logdir $VRIPLOGDIR\n");
 	}else{
-	  fprintf(conf_ply_file,"#/usr/bin/time -f \"Vrip took %%E\"\n /bin/csh mesh-agg/vripcmds\n");
+	  fprintf(conf_ply_file,"#/usr/bin/time -f \"Vrip took %%E\"\n  %s/runtp.py mesh-agg/vripcmds\n",basepath.c_str());
 	}
 	if(have_mb_ply){
 	  fprintf(conf_ply_file,"cd mesh-agg\n");

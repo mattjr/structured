@@ -10,7 +10,7 @@ pool = Pool(3)
 @threadpool(pool)
 def runcmd_threadpool(cm,i,total):
     print 'Process %d/%d complete.' % (i , 0)
-    cmd= 'csh -c \"%s\"' % cm[:-1]
+    cmd= 'csh -c \'%s\'' % cm[:-1]
     commands.getstatusoutput(cmd)
     #sleep(random())
     #pbar.update(i)    

@@ -1346,6 +1346,10 @@ int main( int argc, char *argv[ ] )
 
   chmod(uname,   0777);
 
+  auv_data_tools::makedir("mesh-pos");
+
+  chmod("mesh-pos",   0777);
+
   auv_data_tools::makedir(cachedmeshdir);
   chmod(cachedmeshdir,   0777);
   auv_data_tools::makedir(cachedtexdir);
@@ -1693,7 +1697,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	  fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-pos/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
 	  
 	  
-	  fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-pos/pos_rec.ply > ../mesh-pos/diced-%08d.ply\n",//#set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/sub-mb-%08d.ply;",
+	  fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-pos/pos_rec.ply > ../mesh-pos/clipped-diced-%08d.ply\n",//#set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/sub-mb-%08d.ply;",
 		  cells[i].bounds.min_x,
 		  cells[i].bounds.min_y,
 		  FLT_MIN,
@@ -1719,16 +1723,21 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	  fclose(vrip_seg_fp);
 	  fclose(bboxfp);
 	}
-	
+	fclose(diced_fp);
+
 	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n cd mesh-pos/\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
+	fprintf(conf_ply_file,"csh poscmds\n");
 	fprintf(conf_ply_file,"plysubtractlist pos_rec.ply ");
 
-	for (int k=0; k < cells.size(); k++)
+	for (int k=0; k < (int)cells.size(); k++)
 	  fprintf(conf_ply_file," diced-%08d.ply",k);
 	fprintf(conf_ply_file," > inv-mb.ply\n");
-	fprintf(conf_ply_file,"echo inv-mb.ply >> valid.txt\n");
+	fprintf(conf_ply_file,"echo inv-mb.ply >> diced.txt\n");
+	fprintf(conf_ply_file,"cp diced.txt valid.txt\n");
+	fprintf(conf_ply_file,"cat valid.txt | xargs plybbox > range.txt\n");
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
+	system("./dicepos.sh");
     
       }
 

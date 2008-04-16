@@ -712,26 +712,26 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
 	    material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
 	    material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
-	     if(!applyNonVisMat){
+	    //if(!applyNonVisMat){
 	       
 	       utstateset->setAttribute(material);
-	     }else {
+	       // }else {
 
- 
+	       if(applyNonVisMat){
 	       osg::PolygonOffset* polyoffset = new osg::PolygonOffset;
 	       polyoffset->setFactor(-1.0f);
 	       polyoffset->setUnits(-1.0f);
-	       osg::PolygonMode* polymode = new osg::PolygonMode;
-	       polymode->setMode(osg::PolygonMode::FRONT_AND_BACK,osg::PolygonMode::LINE);
+	       //    osg::PolygonMode* polymode = new osg::PolygonMode;
+	       //polymode->setMode(osg::PolygonMode::FRONT_AND_BACK,osg::PolygonMode::LINE);
 	       utstateset->setAttributeAndModes(polyoffset,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
-	       utstateset->setAttributeAndModes(polymode,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
+	       //utstateset->setAttributeAndModes(polymode,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
 	       
-
+	       /*
 	       osg::Material* material = new osg::Material;
 	       utstateset->setAttributeAndModes(material,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
 	       utstateset->setMode(GL_LIGHTING,osg::StateAttribute::OVERRIDE|osg::StateAttribute::OFF);
-	         fprintf(stderr,"Apply non vis\n");
-	       
+	       //fprintf(stderr,"Apply non vis\n");
+	       */
 
 	     }
 	    untextured->addDrawable(gc._geom);

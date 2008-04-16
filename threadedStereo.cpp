@@ -56,6 +56,7 @@ static bool output_uv_file=false;
 static bool use_undistorted_images = false;
 static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
+static bool use_poisson_recon=false;
 static int max_feature_count = 5000;
 static double eps=1.0;
 static double subvol=40.0;
@@ -81,7 +82,7 @@ static ofstream file_name_list;
 static string base_dir;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 static int num_threads=1;
-static FILE *fpp,*fpp2;
+static FILE *fpp,*fpp2,*pos_fp;
 static bool use_dense_feature=false;
 //StereoMatching* stereo;
 //StereoImage simage;
@@ -323,6 +324,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "-u" ) == 0 )
 	{
 	  use_undistorted_images = true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--pos" ) == 0 )
+	{
+	  use_poisson_recon = true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--dist" ) == 0 )
@@ -1005,8 +1011,23 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	     name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);
     apply_xform(mesh,xf);
     mesh->need_bbox();
+
     mesh->write(filename);
-    
+
+    if(use_poisson_recon){ 
+      faceflip(mesh);
+      mesh->need_normals();
+      int nv = mesh->vertices.size();
+      float buf[6];
+      for (int i = 0; i < nv; i++) {
+	for(int j=0; j<3; j++)
+	  buf[j]=(float)mesh->vertices[i][j];
+	
+	for(int j=0; j<3; j++)
+	  buf[j+3]=(float)mesh->normals[i][j];
+	fwrite(buf,sizeof(float),6,pos_fp);
+      }
+    }
     name.mesh_name = osgDB::getSimpleFileName(filename);
 
     gts_bbox_set(name.bbox,NULL,
@@ -1366,7 +1387,16 @@ int main( int argc, char *argv[ ] )
     const char *uname="mesh";
     auv_data_tools::makedir(uname); 
     file_name_list.open("mesh/filenames.txt");
-  }  
+  }
+  
+  if(use_poisson_recon){
+    pos_fp=fopen("mesh-agg/pos_pts.bnpts","wb");
+    if(!pos_fp){      
+      fprintf(stderr,"Can't open mesh-agg/pos_pts.bnpts\n");
+      exit(-1);    
+    }
+  }
+ 
   //
  
   Matrix *image_coord_covar;
@@ -1474,6 +1504,9 @@ int main( int argc, char *argv[ ] )
     }
     fclose(conf_ply_file);
 
+    if(use_poisson_recon){
+      fclose(pos_fp);
+    }
     FILE *vrip_seg_fp;
     char vrip_seg_fname[255];
     FILE *bboxfp;
@@ -1620,7 +1653,20 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
       const char *texlogdir="/mnt/shared/log-tex";
       const char *simplogdir="/mnt/shared/log-simp";
       const char *vriplogdir="/mnt/shared/log-vrip";
-      
+      if(use_poisson_recon){
+	conf_ply_file=fopen("./runpos.sh","w+"); 
+	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\n"
+		"VRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\n"
+		"PATH=$PATH:$VRIP_HOME/bin:%s/tridecimator:%s/poisson/\n"
+		"cd mesh-agg/\n",
+		basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),
+		basepath.c_str());
+	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_pts.bnpts --solverDivide %d --samplesPerNode %f --verbose --out pos_rec.ply\n",8,8,1.0);
+	fchmod(fileno(conf_ply_file),0777);
+	fclose(conf_ply_file);
+
+      }
+
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
 	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n cd mesh-agg/\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());

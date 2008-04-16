@@ -7,10 +7,6 @@
 using namespace std;
 
 // stuff to define the mesh
-#include <vcg/simplex/vertexplus/base.h>
-#include <vcg/simplex/faceplus/base.h>
-#include <vcg/simplex/edge/edge.h>
-#include <vcg/complex/trimesh/base.h>
 #include <vcg/complex/trimesh/hole.h>
 
 #include <vcg/math/quadric.h>
@@ -24,92 +20,21 @@ using namespace std;
 #include <wrap/io_trimesh/import.h>
 #include <wrap/io_trimesh/export_ply.h>
 #include <wrap/io_trimesh/export_stl.h>
-#include <wrap/io_trimesh/export_vrml.h>
-// update
+
 #include <vcg/complex/trimesh/update/topology.h>
 #include <vcg/complex/trimesh/update/bounding.h>
 #include <vcg/complex/trimesh/update/normal.h>
 
-// local optimization
-#include <vcg/complex/local_optimization.h>
-#include <vcg/complex/local_optimization/tri_edge_collapse_quadric.h>
 
 #include "remove_small_cc.h"
-
+#include "meshmodel.h"
 using namespace vcg;
 using namespace tri;
-class CEdge;   
-class CFaceO;
-class CVertexO;
-
-//Vert Mem Occupancy  --- 44b ---
-
-class CVertexO  : public VertexSimp2< CVertexO, CEdge, CFaceO, 
-				      vert::Coord3f,     /* 12b */ 
-				      vert::BitFlags,    /*  4b */
-				      vert::Normal3f,    /* 12b */
-				      vert::Qualityf,    /*  4b */
-				      vert::VFAdj,       /*  4b */
-				      vert::Mark,        /*  4b */
-				      vert::Color4b      /*  4b */
-				      >{ 
-};
-
-  
-class CEdge : public Edge<CEdge,CVertexO> {
-public:
-  inline CEdge() {};
-  inline CEdge( CVertexO * v0, CVertexO * v1):Edge<CEdge,CVertexO>(v0,v1){};
-  static inline CEdge OrderedEdge(VertexType* v0,VertexType* v1){
-    if(v0<v1) return CEdge(v0,v1);
-    else return CEdge(v1,v0);
-  }
-
-  //inline CEdge( Edge<CEdge,CVertexO> &e):Edge<CEdge,CVertexO>(e){};
-};
-
-//Face Mem Occupancy  --- 32b ---
-
-class CFaceO    : public FaceSimp2<  CVertexO, CEdge, CFaceO,  
-				     face::InfoOcf,              /* 4b */
-				     face::VertexRef,            /*12b */
-				     face::BitFlags,             /* 4b */
-				     face::Normal3f,             /*12b */
-				     face::MarkOcf,              /* 0b */
-				     face::Color4bOcf,           /* 0b */
-				     face::FFAdjOcf,             /* 0b */
-				     face::VFAdjOcf,             /* 0b */
-				     face::WedgeTexturefOcf      /* 0b */
-				     > {};
-
-class CMeshO    : public vcg::tri::TriMesh< vector<CVertexO>, face::vector_ocf<CFaceO> > {
-public :
-  int sfn; //The number of selected faces.
-};
-typedef	SimpleTempData<CMeshO::VertContainer, math::Quadric<double> > QuadricTemp;
-
-
-class QHelper
-{
-public:
-  QHelper(){};
-  static void Init(){};
-  static math::Quadric<double> &Qd(CVertexO &v) {return TD()[v];}
-  static math::Quadric<double> &Qd(CVertexO *v) {return TD()[*v];}
-  static CVertexO::ScalarType W(CVertexO * /*v*/) {return 1.0;};
-  static CVertexO::ScalarType W(CVertexO & /*v*/) {return 1.0;};
-  static void Merge(CVertexO & /*v_dest*/, CVertexO const & /*v_del*/){};
-  static QuadricTemp* &TDp() {static QuadricTemp *td; return td;}
-  static QuadricTemp &TD() {return *TDp();}
-};
-
-
-class MyTriEdgeCollapse: public vcg::tri::TriEdgeCollapseQuadric< CMeshO, MyTriEdgeCollapse, QHelper > {
-public:
-  typedef  vcg::tri::TriEdgeCollapseQuadric< CMeshO,  MyTriEdgeCollapse, QHelper> TECQ;
-  typedef  CMeshO::VertexType::EdgeType EdgeType;
-  inline MyTriEdgeCollapse(  const EdgeType &p, int i) :TECQ(p,i){}
-};
+void QuadricSimplification(CMeshO &m,int  TargetFaceNum, float QualityThr, 
+		bool PreserveBoundary, 
+		bool PreserveNormal,
+		bool OptimalPlacement,
+			   bool Selected);
 
 /**********************************************************
 Mesh Classes for Quadric Edge collapse based simplification
@@ -183,16 +108,16 @@ int main(int argc ,char**argv){
   string tgtStr(argv[3]);
   string edgelenthresh;
 
-  MyTriEdgeCollapse::SetDefaultParams();
-  TriEdgeCollapseQuadricParameter qparams=MyTriEdgeCollapse::Params();
+  // MyTriEdgeCollapse::SetDefaultParams();
+  //TriEdgeCollapseQuadricParameter qparams=MyTriEdgeCollapse::Params();
 
   // parse command line.
   for(int i=4; i < argc;){
     if(argv[i][0]=='-')
-      switch(argv[i][1]){ 
+      /*switch(argv[i][1]){ 
        case 'F' :   FlipMesh	= true;  fprintf(stderr,"Flipping Mesh\n");    
 	  break;
-      case 'N' : if(argv[i][2]=='y') { qparams.NormalCheck	= true;  fprintf(stderr,"Using Normal Deviation Checking\n");	}	else { qparams.NormalCheck	= false; fprintf(stderr,"NOT Using Normal Deviation Checking\n");	}        break;	
+      case 'N' : if(argv[i][2]=='y') { qparams.NormalCheck	= true; 	qparams.NormalThrRad = M_PI/4.0;  fprintf(stderr,"Using Normal Deviation Checking\n");	}	else { qparams.NormalCheck	= false; fprintf(stderr,"NOT Using Normal Deviation Checking\n");	}        break;	
       case 'f' :	xfname =argv[i]+2;	           fprintf(stderr,"Transforming with %s file\n",xfname); 	 break;	
 
       case 'O' : if(argv[i][2]=='y') { qparams.OptimalPlacement	= true;  fprintf(stderr,"Using OptimalPlacement\n");	}
@@ -214,7 +139,7 @@ int main(int argc ,char**argv){
    
       default  :  fprintf(stderr,"Unknown option '%s'\n", argv[i]);
 	exit(0);
-      }
+	}*/
     i++;
   }
   Matrix44f matrix;
@@ -240,9 +165,9 @@ int main(int argc ,char**argv){
     }
     fclose(xf);
   }
-
+ 
   int t1,t2,t3;
-  MyTriEdgeCollapse::Params()=qparams;
+  //MyTriEdgeCollapse::Params()=qparams;
   string fname(argv[1]);
   string format=fname.substr(fname.length()-3);
   int err;
@@ -250,8 +175,20 @@ int main(int argc ,char**argv){
     err=vcg::tri::io::ImporterSTL<CMeshO>::Open(cm,argv[1]);
   else if(format == "ply")
     err=vcg::tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1]);
+ cm.face.EnableFFAdjacency();
+ cm.face.EnableMark();
+	cm.vert.EnableMark();
+	  vcg::tri::UpdateTopology<CMeshO>::FaceFace(cm);
+  
+	cm.vert.EnableVFAdjacency();
+    cm.face.EnableVFAdjacency();
 
+	  vcg::tri::UpdateTopology<CMeshO>::VertexFace(cm);
 
+  //vcg::tri::UpdateTopology<CMeshO>::FaceFace(cm);
+  // vcg::tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
+  //vcg::tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);
+  printf("Herer\n");
   if(err) {
     fprintf(stderr,"Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::Importer<CMeshO>::ErrorMsg(err));
     exit(-1);
@@ -272,12 +209,13 @@ int main(int argc ,char**argv){
     fprintf(stderr,"EdgeLen %f\n",EdgeLen);
     tri::Clean<CMeshO>::RemoveFaceOutOfRangeEdgeSel<false>(cm,0,EdgeLen );
   }
+
   tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);
   tri::UpdateBounding<CMeshO>::Box(cm);
   
 
-
   
+    
   
   if(QualityClean){
     CMeshO::VertexIterator vi;
@@ -314,13 +252,18 @@ int main(int argc ,char**argv){
   int deg= vcg::tri::Clean<CMeshO>::RemoveDegenerateFace(cm);
   
   fprintf(stderr,"Removed %i degenrate faces %i duplicate and %i unreferenced vertices from mesh\n",deg,dup,unref);
- 
+     if ( ! tri::Clean<CMeshO>::IsTwoManifoldFace(cm) ) {
   
+       printf("freak out\n");
+    }
+
+  printf("Here\n");
+  /*
   tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);
   tri::UpdateBounding<CMeshO>::Box(cm);
   
  
-  cm.face.EnableVFAdjacency();
+ 
   tri::UpdateTopology<CMeshO>::VertexFace(cm);	
   tri::UpdateFlags<CMeshO>::FaceBorderFromNone(cm);
   
@@ -340,13 +283,14 @@ int main(int argc ,char**argv){
       TargetFaceNum= (int) rint(( totalA) / res);
       fprintf(stderr,"Spacial Res %f faces %d currently %d\n", res,TargetFaceNum,cm.fn);
     }
-  }else
+    }else*/
     TargetFaceNum=(int)rint(atof(tgtStr.c_str()));
   
   if(TargetFaceNum != 0){
     fprintf(stderr,"Reducing it to %i\n",TargetFaceNum);
  
-    math::Quadric<double> QZero;
+    QuadricSimplification(cm,TargetFaceNum,0.3,false,false,true,false);
+  } /* math::Quadric<double> QZero;
     QZero.Zero();
     QuadricTemp TD(cm.vert);
     QHelper::TDp()=&TD;
@@ -377,10 +321,8 @@ int main(int argc ,char**argv){
     DeciSession.Finalize<MyTriEdgeCollapse >();
     fprintf(stderr,"Simplified Mesh Verts: %d Faces: %d Error %g \n",cm.vn,cm.fn,DeciSession.currMetric);
  
- 
-  }
-  
- 
+   }
+    */
   if(FillHoles){
     cm.face.EnableFFAdjacency();
     cm.face.EnableMark();
@@ -402,28 +344,28 @@ int main(int argc ,char**argv){
   
 
   format=filename.substr(filename.length()-3);
-if(filename == "stdout"){
- vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,stdout);
- }else if(format == "stl")	{
+  vcg::tri::io::PlyInfo pi;
+
+
+  if(format == "stl")	{
     int result = vcg::tri::io::ExporterSTL<CMeshO>::Save(cm,filename.c_str());
     if(result!=0){
-      fprintf(stderr,"Saving Error %s for file %s\n", vcg::tri::io::ExporterSTL<CMeshO>::ErrorMsg(result),filename.c_str());
+      fprintf(stderr,"Saving Error %s for file %s\n", vcg::tri::io::ExporterSTL<CMeshO>::ErrorMsg(result),filename.c_str(),true);
       return -1;
     }
    
   }else if(format == "ply")	{
-    int result = vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,filename.c_str());
+  int result = vcg::tri::io::ExporterPLY<CMeshO>::Save(cm,filename.c_str(),pi.mask);
     if(result!=0){
       fprintf(stderr,"Saving Error %s for file %s\n", vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result),filename.c_str());
       return -1;
     }
- }else if(format == "wrl"){
-  int result = vcg::tri::io::ExporterWRL<CMeshO>::Save(cm,filename.c_str());
-    if(result!=0){
-      fprintf(stderr,"Saving Error %s for file %s\n", vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result),filename.c_str());
-      return -1;
-    }
- }else{
+  }else if(format == "wrl"){
+  //int result = vcg::tri::io::ExporterWRL<CMeshO>::Save(cm,filename.c_str());
+  //if(result!=0){
+  //  fprintf(stderr,"Saving Error %s for file %s\n", vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result),filename.c_str());
+  //  return -1;
+  }else{
 
     fprintf(stderr,"Format %s unknown\n",format.c_str());
     return -1;

@@ -714,22 +714,24 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
 	     if(!applyNonVisMat){
 	       
-	    utstateset->setAttribute(material);
+	       utstateset->setAttribute(material);
 	     }else {
-	       //  fprintf(stderr,"Apply non vis\n");
-	       //  utstateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
 
-	    float factor = 2.0f;
-	    float units = 1.0f;
-	    
-	    osg::ref_ptr<osg::PolygonOffset> polygon_offset = new 
-	      osg::PolygonOffset;
-	    polygon_offset->setFactor(factor);
-	    polygon_offset->setUnits(units);
-	    utstateset->setAttribute(polygon_offset.get(), osg::StateAttribute::ON | 
-				   osg::StateAttribute::OVERRIDE);
-	    utstateset->setMode(GL_POLYGON_OFFSET_FILL, osg::StateAttribute::ON | 
-			      osg::StateAttribute::OVERRIDE);
+ 
+	       osg::PolygonOffset* polyoffset = new osg::PolygonOffset;
+	       polyoffset->setFactor(-1.0f);
+	       polyoffset->setUnits(-1.0f);
+	       osg::PolygonMode* polymode = new osg::PolygonMode;
+	       polymode->setMode(osg::PolygonMode::FRONT_AND_BACK,osg::PolygonMode::LINE);
+	       utstateset->setAttributeAndModes(polyoffset,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
+	       utstateset->setAttributeAndModes(polymode,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
+	       
+
+	       osg::Material* material = new osg::Material;
+	       utstateset->setAttributeAndModes(material,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
+	       utstateset->setMode(GL_LIGHTING,osg::StateAttribute::OVERRIDE|osg::StateAttribute::OFF);
+	         fprintf(stderr,"Apply non vis\n");
+	       
 
 	     }
 	    untextured->addDrawable(gc._geom);

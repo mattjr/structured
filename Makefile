@@ -48,7 +48,7 @@ setup:
 	   cmake ..; \
 	fi
 
-SUBDIRS =  vrip tridecimator
+SUBDIRS =  vrip tridecimator poisson
 
 .PHONY: subdirs $(SUBDIRS)
 

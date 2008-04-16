@@ -46,7 +46,7 @@ static bool have_max_mesh_count = false;
 static unsigned int max_mesh_count;
 
 static int lodNum=3;
-
+char dicedir[255];
 //
 // Parse command line arguments into global variables
 //
@@ -63,6 +63,13 @@ static bool parse_args( int argc, char *argv[ ] )
           if( i == argc-1 ) return false;
           have_max_mesh_count = true;
           max_mesh_count = atoi( argv[i+1] );
+          i+=2;
+        }
+      
+      if( strcmp( argv[i], "--dicedir" ) == 0 )
+        {
+          if( i == argc-1 ) return false;
+	  strcpy(dicedir, argv[i+1]);
           i+=2;
         }
     
@@ -108,7 +115,9 @@ int main( int argc, char *argv[ ] )
   std::vector<vector<string > > outNames;
   std::vector<osg::ref_ptr<osg::Node>  > outNodes;
   if(!have_max_mesh_count){
-    string dicefile("mesh-diced/valid.txt");
+    char tmp[255];
+    sprintf(tmp,"%s/valid.txt",dicedir);
+    string dicefile(tmp);
     std::vector<string> meshNames;
  
     

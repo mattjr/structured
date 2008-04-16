@@ -1724,13 +1724,14 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	  fclose(bboxfp);
 	}
 	fclose(diced_fp);
+	fclose(vripcmds_fp);
 
-	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n cd mesh-pos/\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
-	fprintf(conf_ply_file,"csh poscmds\n");
+	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd mesh-pos/\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
+	fprintf(conf_ply_file,"%s/runtp.py poscmds\n",basepath.c_str());
 	fprintf(conf_ply_file,"plysubtractlist pos_rec.ply ");
 
 	for (int k=0; k < (int)cells.size(); k++)
-	  fprintf(conf_ply_file," diced-%08d.ply",k);
+	  fprintf(conf_ply_file," clipped-diced-%08d.ply",k);
 	fprintf(conf_ply_file," > inv-mb.ply\n");
 	fprintf(conf_ply_file,"echo inv-mb.ply >> diced.txt\n");
 	fprintf(conf_ply_file,"cp diced.txt valid.txt\n");
@@ -1847,6 +1848,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	fclose(dicefp);
 	if(!no_simp)
 	  system("./simp.sh");
+	
 	dicefp=fopen("./gentex.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 
@@ -1895,12 +1897,67 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	fclose(dicefp);
 	if(!no_gen_tex)
 	  system("./gentex.sh");
-	if(!no_gen_tex){
+	if(use_poisson_recon){
+	  dicefp=fopen("./posgentex.sh","w+");
+	  fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
+	  
+	  char argstr[255];
+	  strcpy(argstr,"");
+	  if(do_novelty)
+	    strcat(argstr," --novelty ");
+	  if(do_hw_blend)
+	    strcat(argstr," --blend ");
+	  if(!hardware_compress)
+	    strcat(argstr," --no-hardware-compress ");
+	  if(no_simp)
+	    strcat(argstr," --nosimp ");
+	  if(have_mb_ply){
+	    char tp[255];
+	    sprintf(tp," --nonvis %d ",(int)cells.size());
+	    strcat(argstr,tp);
+	  }
+	  
+	  if(!sing_gen_tex){
+	    fprintf(dicefp,"cd $DICEDIR\n"
+		    "NUMDICED=`wc -l valid.txt |cut -f1 -d\" \" `\n"
+		    "rm -f gentexcmds\n"
+		    "for i in `echo {0..$(($NUMDICED - 1))}`;\n"
+		    "do\n"
+		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex --dicedir mesh-pos/ %s -f %s --single-run $i %s\" >> gentexcmds\n"
+		    "done\n"
+		    "LOGDIR=%s\n"
+		    "cd $DICEDIR\n"
+		    ,stereo_config_file_name.c_str(),cachedtexdir,argstr,texlogdir);
+	    if(dist_run)
+	      fprintf(dicefp,
+		      "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit-hwcard gentexcmds -logdir $LOGDIR\n");
+	    
+	    else
+	      fprintf(dicefp,"time %s/runtp.py gentexcmds\n",basepath.c_str());
+	    
+	  }else{  
+	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex --dicedir mesh-pos/ %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
+	    
+	    fprintf(dicefp,"%s \n",argstr);
+	    
+	  }
+	  
+	  fchmod(fileno(dicefp),0777);
+	  fclose(dicefp);
+	  
+	  system("./posgentex.sh");
+	}
+	if(!no_gen_tex || use_poisson_recon){
 	  FILE *lodfp=fopen("lodgen.sh","w");
+	  char ar[255];
+	  if(use_poisson_recon)
+	    strcpy(ar,"--dicedir mesh-pos/");
+	  else
+	    strcpy(ar," ");
 	  fprintf(lodfp,"#!/bin/bash\n"
 		  "echo LODGen... \n"
-		  "%s/lodgen\n",
-		  basepath.c_str());
+		  "%s/lodgen %s\n",
+		  basepath.c_str(),ar);
 	 
 	  fchmod(fileno(lodfp),0777);
 	  fclose(lodfp);

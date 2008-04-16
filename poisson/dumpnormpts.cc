@@ -8,8 +8,10 @@ int main(int argc, char **argv){
   if (argc < 3)
     usage(argv[0]);
 
-  if(argc == 4)
+  if(argc == 4){
     flip=true;
+    fprintf(stderr, "Flipping!\n");
+  }
   TriMesh *mesh = TriMesh::read(argv[1]);
   if (!mesh) {
     fprintf(stderr, "Couldn't read file %s\n", argv[1]);

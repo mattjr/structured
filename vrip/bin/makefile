@@ -71,6 +71,7 @@ PROGS = \
 	plyclean \
 	plygridtomesh \
 	plyclipbboxes\
+	plysubtractlist\
 	$(NULL)
 
 default: all
@@ -294,6 +295,9 @@ else
 
     plysubtract:
 	    ln -s ../src/plytools/plysubtract plysubtract
+
+    plysubtractlist:
+	    ln -s ../src/plytools/plysubtractlist plysubtractlist
 
     plystrip:
 	    ln -s ../src/plytools/plystrip plystrip

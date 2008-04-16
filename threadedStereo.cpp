@@ -1661,10 +1661,15 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 		"cd mesh-agg/\n",
 		basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),
 		basepath.c_str());
+	if(have_mb_ply)
+	  fprintf(conf_ply_file,"%s/poisson/dumpnormpts ../%s mb.bnpts\n"
+		  "cat mb.npts >> pos_pts.bnpts\n",basepath.c_str(),
+		  mb_ply_filenames[0].c_str());
+
 	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_pts.bnpts --solverDivide %d --samplesPerNode %f --verbose --out pos_rec.ply\n",8,8,1.0);
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
-
+	system("./runpos.sh");
       }
 
       if(!single_run){

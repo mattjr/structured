@@ -1,4 +1,5 @@
 #include "TriMesh.h"
+#include "TriMesh_algo.h"
 void usage(char *str){
   printf("%s : input.ply output.bnpts [-flip]\n");
   exit(-1);
@@ -22,6 +23,8 @@ int main(int argc, char **argv){
     fprintf(stderr,"Can't open %s\n",argv[2]);
     exit(-1);
   }
+  if(flip)
+    faceflip(mesh);
 
   mesh->need_normals();
   int nv = mesh->vertices.size();

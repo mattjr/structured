@@ -1020,9 +1020,12 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       int nv = mesh->vertices.size();
       float buf[6];
       for (int i = 0; i < nv; i++) {
-	for(int j=0; j<3; j++)
-	  buf[j]=(float)mesh->vertices[i][j];
-	
+	for(int j=0; j<3; j++){
+	  if(j==2)
+	    buf[j]=(float)mesh->vertices[i][j];
+	  else
+	    buf[j]=(float)mesh->vertices[i][j];
+	}
 	for(int j=0; j<3; j++)
 	  buf[j+3]=(float)mesh->normals[i][j];
 	fwrite(buf,sizeof(float),6,pos_fp);
@@ -1662,9 +1665,9 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 		basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),
 		basepath.c_str());
 	if(have_mb_ply)
-	  fprintf(conf_ply_file,"%s/poisson/dumpnormpts ../%s mb.bnpts\n"
+	  fprintf(conf_ply_file,"%s/poisson/dumpnormpts %s mb.bnpts -flip\n"
 		  "cat mb.bnpts >> pos_pts.bnpts\n",basepath.c_str(),
-		  mb_ply_filenames[0].c_str());
+		  osgDB::getSimpleFileName( mb_ply_filenames[0]).c_str());
 
 	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_pts.bnpts --solverDivide %d --samplesPerNode %f --verbose --out pos_rec.ply\n",10,8,1.0);
 	fchmod(fileno(conf_ply_file),0777);

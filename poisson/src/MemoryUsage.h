@@ -86,7 +86,8 @@ class MemoryInfo
  public:
   static size_t Usage(void)
   {
-		FILE* f = fopen("/proc/self/stat","rb");
+#if LINUX_PROC_MEM	
+	FILE* f = fopen("/Proc/self/stat","rb");
 		
 		int d;
 		long ld;
@@ -147,7 +148,10 @@ policy %lu (since kernel 2.5.19)
 */
 		return vm;
 	}
-
+#else
+ 	return (size_t)sbrk(0);
+}
+#endif
 };
 
 #endif

@@ -36,6 +36,7 @@
 #include "keypoint.hpp"
 #include "XForm.h"
 #include "TriMesh_algo.h"
+#include "ShellCmd.h"
 #include "stereo_cells.hpp"
 using namespace std;
 using namespace libplankton;
@@ -1529,6 +1530,21 @@ int main( int argc, char *argv[ ] )
     else
       strcpy(cwd,"/mnt/shared/");
 
+
+    const char *texlogdir="/mnt/shared/log-tex";
+    const char *simplogdir="/mnt/shared/log-simp";
+    const char *pos_simp_log_dir="/mnt/shared/log-possimp";
+    const char *vriplogdir="/mnt/shared/log-vrip";
+    
+    float simp_mult=1.0;
+    
+    if(have_mb_ply)
+      simp_mult=1.0;
+    else
+      simp_mult=2.0;
+    
+    ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,dist_run);
+
     std::vector<Cell_Data> cells=calc_cells(tasks);
     for(int i=0; i <(int)cells.size(); i++){
       if(cells[i].poses.size() == 0)
@@ -1657,9 +1673,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	}
       }
       */
-      const char *texlogdir="/mnt/shared/log-tex";
-      const char *simplogdir="/mnt/shared/log-simp";
-      const char *vriplogdir="/mnt/shared/log-vrip";
+      
       if(use_poisson_recon){
 	conf_ply_file=fopen("./runpos.sh","w+"); 
 	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\n"
@@ -1734,12 +1748,10 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	  fprintf(conf_ply_file," clipped-diced-%08d.ply",k);
 	fprintf(conf_ply_file," > inv-mb.ply\n");
 	fprintf(conf_ply_file,"echo inv-mb.ply >> diced.txt\n");
-	fprintf(conf_ply_file,"cp diced.txt valid.txt\n");
-	fprintf(conf_ply_file,"cat valid.txt | xargs plybbox > range.txt\n");
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	system("./dicepos.sh");
-    
+	shellcm.pos_simp_cmd(use_poisson_recon);
       }
 
       if(!single_run){
@@ -1790,12 +1802,6 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	if(!no_vrip)
 	  system("./runvrip.sh");
       
-	float simp_mult=1.0;
-
-	if(have_mb_ply)
-	  simp_mult=1.0;
-	else
-	  simp_mult=2.0;
 	FILE *dicefp=fopen("./simp.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\n");
@@ -1936,7 +1942,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	      fprintf(dicefp,"time %s/runtp.py gentexcmds\n",basepath.c_str());
 	    
 	  }else{  
-	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex --dicedir mesh-pos/ %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
+	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex --dicedir mesh-pos/ --margins 10 10 10 %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
 	    
 	    fprintf(dicefp,"%s \n",argstr);
 	    

@@ -221,6 +221,7 @@ main(int argc, char *argv[])
   subtract_vertices(A, B);
   fprintf(stderr,"%d\n",count);
 	count++;
+	fclose(inB);
       }
     }
 

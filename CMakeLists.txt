@@ -273,7 +273,7 @@ SET( SRCS OSGExport.cpp
 
 ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} )
-ADD_EXECUTABLE( threadedStereo threadedStereo.cpp )
+ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
 ADD_EXECUTABLE( genTex genTex.cpp )
 ADD_EXECUTABLE( lodgen lodgen.cpp )
 TARGET_LINK_LIBRARIES( threadedStereo ts plankton )

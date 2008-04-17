@@ -65,6 +65,7 @@ static  char diceddir[255];
 extern std::vector<GtsBBox *> bboxes_all;
 static bool do_novelty=false;
 static bool usePlaneDist=false;
+int margins[]={10,500,INT_MAX};
 //
 // Parse command line arguments into global variables
 //
@@ -87,6 +88,14 @@ static bool parse_args( int argc, char *argv[ ] )
 	  if( i == argc-1 ) return false;
 	  dir_name=string( argv[i+1]) ;
 	  i+=2;
+	}
+      else if( strcmp( argv[i], "--margins" ) == 0 )
+	{
+	  if( i == argc-3 ) return false;
+	  margins[0]=atoi( argv[i+1]);
+	  margins[1]=atoi( argv[i+2]);
+	  margins[2]=atoi( argv[i+3]);
+	  i+=4;
 	}
       else if( strcmp( argv[i], "--nosimp" ) == 0 )
 	{
@@ -457,7 +466,7 @@ std::vector<vector<string >   > outNames;
 
     int lodTexSize[]={max((int)(512*tex_scale),4),max((int)(256*tex_scale),4),max((int)(8*tex_scale),8)};
     //float simpRatio[]={0.5,0.1,0.01};
-    int margins[]={10,500,INT_MAX};//50000};
+    
     std::vector<string > lodnames;
    string path=string(argv[0]);
    unsigned int loc=path.rfind("/");

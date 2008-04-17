@@ -258,7 +258,7 @@ int main(int argc ,char**argv){
     }
 
   printf("Here\n");
-  /*
+  
   tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);
   tri::UpdateBounding<CMeshO>::Box(cm);
   
@@ -283,7 +283,7 @@ int main(int argc ,char**argv){
       TargetFaceNum= (int) rint(( totalA) / res);
       fprintf(stderr,"Spacial Res %f faces %d currently %d\n", res,TargetFaceNum,cm.fn);
     }
-    }else*/
+    }else
     TargetFaceNum=(int)rint(atof(tgtStr.c_str()));
   
   if(TargetFaceNum != 0){

@@ -207,6 +207,14 @@ osg::ref_ptr<osg::Image>OSGExporter::cacheCompressedImage(IplImage *img,string n
   return image;
 }
 
+osg::Image *decompressImage(osg::Image *img){
+
+  IplImage *tmp=cvCreateImage(cvSize(img->s(),img->t()),IPL_DEPTH_8U,3);
+  DecompressImageRGB((unsigned char *)tmp->imageData,tmp->width,tmp->height,img->data(),squish::kDxt1);
+  osg::Image *image_full= Convert_OpenCV_TO_OSG_IMAGE(tmp,false);
+  return image_full;
+}
+
 osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
   IplImage *img=NULL;
   string basename=osgDB::getSimpleFileName(name);
@@ -241,8 +249,14 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
     filecached=compressed_img_cache[basename];
   }
 
-  if(filecached && filecached->s() == size && filecached->t() == size)
+  if(filecached && filecached->s() == size && filecached->t() == size){
+
+    if(!compress_tex)
+      return decompressImage(filecached);
+   
     return filecached;
+  
+}
 
 
   int resize=filecached->s();
@@ -276,9 +290,13 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
  
   retImage->setMipmapLevels(newmipmap);
 
+
   retImage->setFileName(basename);
   
-  return retImage;
+  if(!compress_tex)
+    return decompressImage(retImage);
+  else
+    return retImage;
 }
 #define TEXUNIT_ARRAY       0
 #define TEXUNIT_HIST        2
@@ -820,11 +838,124 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
   return true;
 }
+
+class CompressTexturesVisitor : public osg::NodeVisitor
+{
+public:
+
+    CompressTexturesVisitor(osg::Texture::InternalFormatMode internalFormatMode):
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        _internalFormatMode(internalFormatMode) {}
+
+    virtual void apply(osg::Node& node)
+    {
+        if (node.getStateSet()) apply(*node.getStateSet());
+        traverse(node);
+    }
+    
+    virtual void apply(osg::Geode& node)
+    {
+        if (node.getStateSet()) apply(*node.getStateSet());
+        
+        for(unsigned int i=0;i<node.getNumDrawables();++i)
+        {
+            osg::Drawable* drawable = node.getDrawable(i);
+            if (drawable && drawable->getStateSet()) apply(*drawable->getStateSet());
+        }
+        
+        traverse(node);
+    }
+    
+    virtual void apply(osg::StateSet& stateset)
+    {
+        // search for the existance of any texture object attributes
+        for(unsigned int i=0;i<stateset.getTextureAttributeList().size();++i)
+        {
+            osg::Texture* texture = dynamic_cast<osg::Texture*>(stateset.getTextureAttribute(i,osg::StateAttribute::TEXTURE));
+            if (texture)
+            {
+                _textureSet.insert(texture);
+            }
+        }
+    }
+    
+    void compress()
+    {
+     osg::notify(osg::NOTICE)<<"Compress TEXTURE Visitor Compressing"<<std::endl;
+     MyGraphicsContext context;
+        if (!context.valid())
+        {
+            osg::notify(osg::NOTICE)<<"Error: Unable to create graphis context - cannot run compression"<<std::endl;
+            return;
+        }
+
+        osg::ref_ptr<osg::State> state = new osg::State;
+
+        for(TextureSet::iterator itr=_textureSet.begin();
+            itr!=_textureSet.end();
+            ++itr)
+        {
+            osg::Texture* texture = const_cast<osg::Texture*>(itr->get());
+            
+            osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(texture);
+            osg::Texture3D* texture3D = dynamic_cast<osg::Texture3D*>(texture);
+            
+            osg::ref_ptr<osg::Image> image = texture2D ? texture2D->getImage() : (texture3D ? texture3D->getImage() : 0);
+            if (image.valid() && 
+                (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) &&
+                (image->s()>=32 && image->t()>=32))
+            {
+                texture->setInternalFormatMode(_internalFormatMode);
+                
+                // need to disable the unref after apply, other the image could go out of scope.
+                bool unrefImageDataAfterApply = texture->getUnRefImageDataAfterApply();
+                texture->setUnRefImageDataAfterApply(false);
+                
+                // get OpenGL driver to create texture from image.
+                texture->apply(*state);
+
+                // restore the original setting
+                texture->setUnRefImageDataAfterApply(unrefImageDataAfterApply);
+
+                image->readImageFromCurrentTexture(0,true);
+
+                texture->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+            }
+        }
+    }
+    
+    typedef std::set< osg::ref_ptr<osg::Texture> > TextureSet;
+    TextureSet                          _textureSet;
+    osg::Texture::InternalFormatMode    _internalFormatMode;
+    
+};
+
+
 bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *group) {
 
   osg::Geode *tex=group[0].get();
   osg::Geode *untex =group[1].get();
+
  
+  
+  if(!compress_tex && tex){
+    if(verbose)
+      printf("Texture Atlas Creation\n"); 
+    osgUtil::Optimizer optimizer;
+    osgUtil::Optimizer::TextureAtlasVisitor ctav(&optimizer);
+    osgUtil::Optimizer::TextureAtlasBuilder &tb=ctav.getTextureAtlasBuilder();
+    tb.setMargin(0);
+    tb.setMaximumAtlasSize(2048,2048);
+    tex->accept(ctav);
+    ctav.optimize();
+    int options=0;
+    options |= osgUtil::Optimizer::DEFAULT_OPTIMIZATIONS;
+    options |=osgUtil::Optimizer::TEXTURE_ATLAS_BUILDER;
+    optimizer.optimize(tex,options);
+    CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT5_COMPRESSION);
+    tex->accept(ctv);
+    ctv.compress();
+  }
   osgDB::ReaderWriter::WriteResult result;
   char outtex[255];
   string outname_str(out_name);

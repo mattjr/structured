@@ -1543,7 +1543,7 @@ int main( int argc, char *argv[ ] )
     else
       simp_mult=2.0;
     
-    ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,dist_run);
+    ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,dist_run,cwd,aggdir,have_mb_ply);
 
     std::vector<Cell_Data> cells=calc_cells(tasks);
     for(int i=0; i <(int)cells.size(); i++){
@@ -1687,71 +1687,17 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 		  "cat mb.bnpts >> pos_pts.bnpts\n",basepath.c_str(),
 		  osgDB::getSimpleFileName( mb_ply_filenames[0]).c_str());
 
-	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_pts.bnpts --solverDivide %d --samplesPerNode %f --verbose --out ../mesh-pos/pos_rec.ply\n",10,8,1.0);
+	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_pts.bnpts --solverDivide %d --samplesPerNode %f --verbose --out ../mesh-pos/pos_raw.ply\n",11,6,8.0);
+	fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec.ply 0 -e15.0\n");
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	system("./runpos.sh");
 
-	conf_ply_file=fopen("./dicepos.sh","w+"); 
-	vripcmds_fp=fopen("mesh-pos/poscmds","w");
-	diced_fp=fopen("mesh-pos/diced.txt","w");
+
 	
-	for(int i=0; i <(int)cells.size(); i++){
-	  if(cells[i].poses.size() == 0)
-	    continue;
-	  
-	  sprintf(vrip_seg_fname,"mesh-pos/vripseg-%08d.txt",i);
-	  sprintf(conf_name,"mesh-pos/bbox-clipped-diced-%08d.ply.txt",i);
-	  vrip_seg_fp=fopen(vrip_seg_fname,"w");
-	  bboxfp = fopen(conf_name,"w");
-	  if(!vrip_seg_fp || !bboxfp){
-	    printf("Unable to open %s\n",vrip_seg_fname);
-	  }	
-	  fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
-	  fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-pos/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
-	  
-	  
-	  fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-pos/pos_rec.ply > ../mesh-pos/clipped-diced-%08d.ply\n",//#set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/sub-mb-%08d.ply;",
-		  cells[i].bounds.min_x,
-		  cells[i].bounds.min_y,
-		  FLT_MIN,
-		  cells[i].bounds.max_x,
-		  cells[i].bounds.max_y,
-		  FLT_MAX,
-		  eps,i);//vrip_seg_fname,2.0,i,i,1.0,i,i);
-	  for(unsigned int j=0; j <cells[i].poses.size(); j++){
-	    const Stereo_Pose_Data *pose=cells[i].poses[j];
-	    //Vrip List
-	    fprintf(vrip_seg_fp,"%s 0.033 1\n",pose->mesh_name.c_str());
-	    //Gen Tex File bbox
-	    fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
-	    save_bbox_frame(pose->bbox,bboxfp);
-	    for(int k=0; k < 4; k++)
-	      for(int n=0; n < 4; n++)
-		fprintf(bboxfp," %lf",pose->m[k][n]);
-	    fprintf(bboxfp,"\n");
-	  }
-	  if(have_mb_ply)
-	    fprintf(vrip_seg_fp,"vis-mb-%08d.ply  0.1 0\n",i);
-	  
-	  fclose(vrip_seg_fp);
-	  fclose(bboxfp);
-	}
-	fclose(diced_fp);
-	fclose(vripcmds_fp);
-
-	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd mesh-pos/\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
-	fprintf(conf_ply_file,"%s/runtp.py poscmds\n",basepath.c_str());
-	fprintf(conf_ply_file,"plysubtractlist pos_rec.ply ");
-
-	for (int k=0; k < (int)cells.size(); k++)
-	  fprintf(conf_ply_file," clipped-diced-%08d.ply",k);
-	fprintf(conf_ply_file," > inv-mb.ply\n");
-	fprintf(conf_ply_file,"echo inv-mb.ply >> diced.txt\n");
-	fchmod(fileno(conf_ply_file),0777);
-	fclose(conf_ply_file);
-	system("./dicepos.sh");
+	shellcm.pos_dice(cells,eps);
 	shellcm.pos_simp_cmd(use_poisson_recon);
+	
       }
 
       if(!single_run){
@@ -1915,8 +1861,6 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	    strcat(argstr," --blend ");
 	  if(!hardware_compress)
 	    strcat(argstr," --no-hardware-compress ");
-	  if(no_simp)
-	    strcat(argstr," --nosimp ");
 	  if(have_mb_ply){
 	    char tp[255];
 	    sprintf(tp," --nonvis %d ",(int)cells.size());
@@ -1942,7 +1886,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 	      fprintf(dicefp,"time %s/runtp.py gentexcmds\n",basepath.c_str());
 	    
 	  }else{  
-	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex --dicedir mesh-pos/ --margins 10 10 10 %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
+	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex --dicedir mesh-pos/ --margins 10 10 1000000000000000 %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
 	    
 	    fprintf(dicefp,"%s \n",argstr);
 	    

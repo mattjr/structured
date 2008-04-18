@@ -464,7 +464,7 @@ std::vector<vector<string >   > outNames;
     
     //int initialEdges=gts_surface_edge_number(s);
 
-    int lodTexSize[]={max((int)(512*tex_scale),4),max((int)(256*tex_scale),4),max((int)(8*tex_scale),8)};
+    int lodTexSize[]={max((int)(512*tex_scale),4),max((int)(256*tex_scale),4),max((int)(4*tex_scale),4)};
     //float simpRatio[]={0.5,0.1,0.01};
     
     std::vector<string > lodnames;

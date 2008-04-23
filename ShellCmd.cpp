@@ -21,15 +21,20 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 	  fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
 	  fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-pos/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath,cwd);
 	  
-	  
-	  fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-pos/pos_rec.ply > ../mesh-pos/clipped-diced-%08d.ply\n",//#set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/sub-mb-%08d.ply;",
+	  for(int j=0; j <3; j++)
+	    fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-pos/pos_rec-lod%d.ply > ../mesh-pos/clipped-diced-%08d-lod%d.ply;",//#set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/sub-mb-%08d.ply;",
+
 		  cells[i].bounds.min_x,
 		  cells[i].bounds.min_y,
 		  FLT_MIN,
 		  cells[i].bounds.max_x,
 		  cells[i].bounds.max_y,
 		  FLT_MAX,
-		  eps,i);//vrip_seg_fname,2.0,i,i,1.0,i,i);
+		  eps,j,i,j);//vrip_seg_fname,2.0,i,i,1.0,i,i);
+  
+	  fprintf(vripcmds_fp,"\n");
+
+
 	  for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	    const Stereo_Pose_Data *pose=cells[i].poses[j];
 	    //Vrip List
@@ -62,23 +67,48 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 	// fprintf(conf_ply_file," clipped-diced-%08d.ply",k);
 		//	fprintf(conf_ply_file," > inv-mb.ply\n");
 
-	fprintf(conf_ply_file,"if [ -e clipped-diced-%08d.ply ]; then\n"
-		"\tplysubtract pos_rec.ply clipped-diced-%08d.ply > inv-mb-%08d.ply\n"
+		fprintf(conf_ply_file,"for k in `echo {0..2}`\n"
+			"do\n"
+			"if [ -e clipped-diced-%08d-lod$k.ply ]; then\n"
+		"\tplysubtract pos_rec-lod$k.ply clipped-diced-%08d-lod$k.ply > inv-mb-%08d-lod$k.ply\n"
 		"else\n"
-		"\tcp  pos_rec.ply inv-mb-%08d.ply\n"
+		"\tcp  pos_rec-lod$k.ply inv-mb-%08d-lod$k.ply\n"
 		"fi\n",0,0,0,0); 
 
   fprintf(conf_ply_file,"for f in `echo {1..%ld}`\n"
 		  "do\n"
 		  "i=`printf \"%%08d\\n\" \"$f\"`\n"
 		  "ilast=`printf \"%%08d\" \"$(($f - 1 ))\"`\n"
-		  "if [ -e clipped-diced-$i.ply ]; then\n"
-		  "\tplysubtract inv-mb-$ilast.ply clipped-diced-$i.ply > inv-mb-$i.ply;\n"
+		  "if [ -e clipped-diced-$i-lod$k.ply ]; then\n"
+		  "\tplysubtract inv-mb-$ilast-lod$k.ply clipped-diced-$i-lod$k.ply > inv-mb-$i-lod$k.ply;\n"
 		  "else\n"
-		  "\tcp inv-mb-$ilast.ply  inv-mb-$i.ply\n" 
+		  "\tcp inv-mb-$ilast-lod$k.ply  inv-mb-$i-lod$k.ply\n" 
 		  "fi\n"
 		  "done\n"
-		  "tridecimator inv-mb-$i.ply ../mesh-pos/inv-mb.ply 0 -F\n",cells.size()-1);
+		  "tridecimator inv-mb-$i-lod$k.ply ../mesh-pos/inv-mb-lod$k.ply 0 \n"
+	  // "tridecimator ../mesh-pos/inv-mb.ply ../mesh-pos/inv-mb-lod$f.ply 0 \n"
+	  //"tridecimator ../mesh-pos/inv-mb.ply ../mesh-pos/inv-mb-lod1.ply 0\n"
+	  //"tridecimator ../mesh-pos/inv-mb.ply ../mesh-pos/inv-mb-lod2.ply 0\n"
+	
+	/*	fprintf(conf_ply_file,"for f in `echo {0..2}`\n"
+		"do\n"
+		"\tVISLIST=`cat diced.txt | grep diced| sed s/.ply/-lod$f.ply/g`\n"
+		"\tplymerge $VISLIST > merged-lod$f.ply\n"
+		"\tplysubtract -i 0.1 pos_rec-lod$f.ply merged-lod$f.ply > inv-mb-lod$f.ply;\n"
+	"done\n"	*/
+	  "done\n"
+		"cd ../mesh-pos/\n"
+		"rm -f valid.txt\n"
+	  "cat diced.txt |   while read MESHNAME; do\n"
+	  "REALNAME=`echo $MESHNAME | sed s/.ply/-lod0.ply/g` \n"	 
+	  "FACES=`plyhead $REALNAME | grep \"element face\" | cut -f 3 -d\" \"`\n"
+
+	  "if [ $FACES == 0 ]; then\n continue;\n fi\n"
+	  "echo $MESHNAME >> valid.txt\n"
+	  "done\n"
+	  "cat valid.txt |  sed s/.ply/-lod0.ply/g |xargs plybbox > range.txt\n"
+	  ,cells.size()-1);
+
 
 
 
@@ -87,6 +117,60 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	system("./dicepos.sh");
+}
+
+void ShellCmd::pos_simp_cmd2(bool run){
+  
+  FILE *dicefp=fopen("./pos_simp.sh","w+");
+  fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-pos/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath);
+  fprintf(dicefp,"cd $DICEDIR\n");
+  fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
+	  "REDFACT=(0.01 %f %f)\n",0.1,.40);
+  if(dist_run){
+  
+    fprintf(dicefp, "LOGDIR=%s\n"
+	    "if [[ -d $LOGDIR ]] ; then\n"
+	    "find $LOGDIR -name 'loadbal*' | xargs rm &>/dev/null\nfi\n"
+	    "if [[ -d $DICEDIR ]] ; then\n"
+	    "find $DICEDIR -name '*lod*' | xargs rm &> /dev/null\nfi\n",pos_simp_log_dir);
+  }
+    fprintf(dicefp, 
+	    "rm -f simpcmds\n"
+	    "rm -f valid.txt\n"
+	  "cat diced.txt | while read MESHNAME; do\n"
+	  "FACES=`plyhead $MESHNAME | grep \"element face\" | cut -f 3 -d\" \"`\n"
+	    "if [ $FACES == 0 ]; then\n continue;\n fi\n"
+	    "echo $MESHNAME >> valid.txt\n"
+	    "SIMPCMD=\"cd $DICEDIR/\" \n"
+	    "\tfor k in `echo {0..2}`\n"
+	    "\tdo\n"
+	    "\t\tif [ $f == 0 ]; then\n"
+	    "\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$f.ply/g`\n"
+	  "FLIPCMD=\"-F\"\n"
+	  "\t\telse\n"
+	  "FLIPCMD="
+	  "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
+	  "\t\tfi\n"
+	  "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 $FLIPCMD >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
+	  "MESHNAME=$NEWNAME\n"
+	  "\tdone\n"
+	  "echo $SIMPCMD >> simpcmds\n"
+	  "done\n");
+  
+  
+  if(dist_run){
+    fprintf(dicefp,"cd $DICEDIR\n"
+	    "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n");
+  } else {
+    fprintf(dicefp,"time %s/runtp.py simpcmds\n",basepath);
+  }
+
+  fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");
+  fchmod(fileno(dicefp),0777);
+  fclose(dicefp);
+  if(run)
+    system("./pos_simp.sh");
+  
 }
 void ShellCmd::pos_simp_cmd(bool run){
   
@@ -101,7 +185,8 @@ void ShellCmd::pos_simp_cmd(bool run){
 	    "if [[ -d $LOGDIR ]] ; then\n"
 	    "find $LOGDIR -name 'loadbal*' | xargs rm &>/dev/null\nfi\n"
 	    "if [[ -d $DICEDIR ]] ; then\n"
-	    "find $DICEDIR -name '*lod*' | xargs rm &> /dev/null\nfi\n",pos_simp_log_dir);
+	    "find $DICEDIR -name '*lod*' | xargs rm &> /dev/null\nfi\n",
+	    pos_simp_log_dir);
   }
     fprintf(dicefp, 
 	    "rm -f simpcmds\n"
@@ -141,3 +226,4 @@ void ShellCmd::pos_simp_cmd(bool run){
     system("./pos_simp.sh");
   
 }
+

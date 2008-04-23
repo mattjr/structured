@@ -11,6 +11,7 @@ public:
   void pos_dice(vector<Cell_Data>cells,float eps);
 
   void pos_simp_cmd(bool run);
+ void pos_simp_cmd2(bool run);
   const char *basepath;
   float simp_mult;
   const char *pos_simp_log_dir;

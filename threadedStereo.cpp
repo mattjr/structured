@@ -1635,11 +1635,17 @@ int main( int argc, char *argv[ ] )
 
 	FILE *genmbfp=fopen("genmb.sh","w");
 	fprintf(genmbfp,"#!/bin/bash\nPATH=$PATH:%s/tridecimator\ncd %s\n"
+		"if [ -e %s/mb.ply ]; then\n"
+		"cp %s/mb.ply %s/mesh-agg/ \n"
+		"exit 0;\n"
+		"fi\n"
 		"find . -name 'mb*.ply' | xargs rm -f\n"
 		"%s/../seabed_localisation/bin/copy_deltaT %s %s %s\n",
-	basepath.c_str()	,aggdir,basepath.c_str(),
+		basepath.c_str(),
+		aggdir,deltaT_dir.c_str(),deltaT_dir.c_str(),basepath.c_str(),basepath.c_str(),
 		//--start %f --stop %fstart_time,stop_time,
-deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
+		deltaT_config_name.c_str(),deltaT_dir.c_str(),
+		deltaT_pose.c_str());
 	fprintf(genmbfp,"ls -1 | grep .gsf$ > tmplist\n"
 		"mbdatalist -F-1 -I tmplist > formattedlist\n"
 		"mbdatalist -F-1 -I formattedlist -N\n"
@@ -1651,8 +1657,10 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 		"./formattedlist.grd_tiff.cmd\n"
 		"tridecimator mb.ply mb-tmp.ply 0 -e500%%\n"
 		"mv mb.ply mb-uncleaned.ply\n"
-		"mv mb-tmp.ply mb.ply\n",
-		basepath.c_str(),deltaT_config_name.c_str());
+		"mv mb-tmp.ply mb.ply\n"
+		"cp mb.ply %s/ \n",
+		basepath.c_str(),deltaT_config_name.c_str(),
+		deltaT_dir.c_str());
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
 	system("./genmb.sh");
@@ -1684,11 +1692,16 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 		basepath.c_str());
 	if(have_mb_ply)
 	  fprintf(conf_ply_file,"%s/poisson/dumpnormpts %s mb.bnpts -flip\n"
-		  "cat mb.bnpts >> pos_pts.bnpts\n",basepath.c_str(),
+		  "cat pos_pts.bnpts > pos_out.bnpts\n"
+		  "cat mb.bnpts >> pos_out.bnpts\n",basepath.c_str(),
 		  osgDB::getSimpleFileName( mb_ply_filenames[0]).c_str());
 
-	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_pts.bnpts --solverDivide %d --samplesPerNode %f --verbose --out ../mesh-pos/pos_raw.ply\n",11,6,8.0);
-	fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec.ply 0 -e15.0\n");
+	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --out ../mesh-pos/pos_rec-lod2.ply\n",8,6,1.0);
+	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --out ../mesh-pos/pos_raw.ply\n",11,6,8.0);
+
+
+		fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod0.ply 0 -e15.0\n");
+	fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod1.ply 0 -e15.0\n");
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	system("./runpos.sh");
@@ -1696,7 +1709,7 @@ deltaT_config_name.c_str(),deltaT_dir.c_str(),deltaT_pose.c_str());
 
 	
 	shellcm.pos_dice(cells,eps);
-	shellcm.pos_simp_cmd(use_poisson_recon);
+	//shellcm.pos_simp_cmd(use_poisson_recon);
 	
       }
 

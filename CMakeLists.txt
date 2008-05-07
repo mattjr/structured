@@ -180,7 +180,7 @@ SET( LIBADT_LIBRARY adt )
 # Compiler setup        #
 #-----------------------#
 ADD_DEFINITIONS( ${GTS_CFLAGS} )
-ADD_DEFINITIONS( "-Wall" )
+ADD_DEFINITIONS( "-Wall -fasm-blocks" )
 
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${OPENCV_INCLUDE_DIR}

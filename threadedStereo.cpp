@@ -31,6 +31,7 @@
 #include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
 #include "adt_image_norm.hpp"
+#include "auv_stereo_dense.hpp"
 #include "auv_concurrency.hpp"
 #include "OSGExport.h"
 #include "keypoint.hpp"
@@ -100,6 +101,7 @@ static bool single_run=false;
 static int single_run_start=0;
 static int single_run_stop=0;
 static bool dice_lod=false;
+static bool use_dense_stereo=false;
 static int non_cached_meshes=0;
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[255];
@@ -273,6 +275,11 @@ static bool parse_args( int argc, char *argv[ ] )
 	  if( i == argc-1 ) return false;
 	  feature_depth_guess = atof( argv[i+1] );
 	  i+=2;
+	}
+      else if( strcmp( argv[i], "--ds" ) == 0 )
+	{
+	  use_dense_stereo=true;
+	  i+=1;
 	}
       else if( strcmp( argv[i], "-s" ) == 0 )
 	{
@@ -799,7 +806,10 @@ public:
       }
      
     osgExp=new OSGExporter(dir_name,false,true,tex_size);    
-   
+    sdense= new Stereo_Dense(*config_file,
+			     0.5,
+			     calib  );
+    
   }
 
   ~threadedStereo(){
@@ -818,6 +828,7 @@ private:
   Matrix *image_coord_covar;
   Stereo_Feature_Finder *finder;
   Stereo_Feature_Finder *finder_dense;
+  Stereo_Dense *sdense;
   int tex_size;
   Stereo_Calib *calib;
   Config_File *config_file; 
@@ -1069,63 +1080,67 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   if(!meshcached){
       printf("Not cached creating\n");
       non_cached_meshes++;
-
+      
   if(feature_depth_guess == AUV_NO_Z_GUESS)
     feature_depth_guess = name.alt;
+
+  list<Stereo_Feature_Estimate> feature_positions;
+  GPtrArray *localV=NULL;  
+    list<Feature *> features;
+  if(!use_dense_stereo){
+    //
+    // Find the features
+    //
   
-  //
-  // Find the features
-  //
-  
-  list<Feature *> features;
-  finder->find( left_frame,
-		right_frame,
-		left_frame_id,
-		right_frame_id,
-		max_feature_count,
-		features,
-		feature_depth_guess );
-  if(use_dense_feature) 
-    finder_dense->find( left_frame,
-			right_frame,
+    finder->find( left_frame,
+		  right_frame,
+		  left_frame_id,
+		  right_frame_id,
+		  max_feature_count,
+		  features,
+		  feature_depth_guess );
+    if(use_dense_feature) 
+      finder_dense->find( left_frame,
+			  right_frame,
+			  left_frame_id,
+			  right_frame_id,
+			  max_feature_count,
+			  features,
+			  feature_depth_guess );
+    
+    
+    //
+    // Triangulate the features if requested
+    //
+    
+    
+    
+    Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
+    
+    
+    
+    /*Matrix pose_cov(4,4);
+      get_cov_mat(cov_file,pose_cov);
+    */
+    //cout << "Cov " << pose_cov << "Pose "<< veh_pose<<endl;
+    
+    stereo_triangulate( *calib,
+			ref_frame,
+			features,
 			left_frame_id,
 			right_frame_id,
-			max_feature_count,
-			features,
-			feature_depth_guess );
-      
-            
-  //
-  // Triangulate the features if requested
-  //
+			NULL,//image_coord_covar,
+			feature_positions );
+    
+    //   static ofstream out_file( triangulation_file_name.c_str( ) );
+  
 
-     
-
-  Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
-       
- 
-
-  /*Matrix pose_cov(4,4);
-    get_cov_mat(cov_file,pose_cov);
-  */
-  //cout << "Cov " << pose_cov << "Pose "<< veh_pose<<endl;
-  list<Stereo_Feature_Estimate> feature_positions;
-  stereo_triangulate( *calib,
-		      ref_frame,
-		      features,
-		      left_frame_id,
-		      right_frame_id,
-		      NULL,//image_coord_covar,
-		      feature_positions );
-      
-  //   static ofstream out_file( triangulation_file_name.c_str( ) );
-      
   static Vector stereo1_nav( AUV_NUM_POSE_STATES );
   // Estimates of the stereo poses in the navigation frame
       
       
   list<Stereo_Feature_Estimate>::iterator litr;
-  GPtrArray *localV = g_ptr_array_new ();
+  localV = g_ptr_array_new ();
   GtsRange r;
   gts_range_init(&r);
   TVertex *vert;
@@ -1187,12 +1202,30 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	 jet_color_map(val,v->r,v->g,v->b);
 	 }
 	 }
-  */ 
-  if(!localV->len)
-    return false;
-  double mult=0.00;
+  */
+  }else{ 
+    StereoImage *si=  sdense->dense_stereo(left_frame,right_frame);
+    std::vector<libplankton::Vector> points;   
+    sdense->get_points(si,points);
+    localV = g_ptr_array_new ();
+    TVertex *vert;
+    for(int i=0; i<points.size(); i++){
+      // if(points[i](2) < 8.0 || points[i](2) > -0.25)
+      //continue;
+      
+      vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+				       points[i](0),points[i](1),points[i](2));
+      g_ptr_array_add(localV,GTS_VERTEX(vert));
+    } 
 
-  GtsSurface *surf= auv_mesh_pts(localV,mult,0); 
+  }
+  
+  printf("Valid %d\n",localV->len);
+  if(!localV->len)
+      return false;
+    double mult=0.00;
+
+    GtsSurface *surf= auv_mesh_pts(localV,mult,0); 
 
 
 

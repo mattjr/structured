@@ -54,6 +54,7 @@ static FILE *pts_cov_fp;
 static string stereo_config_file_name;
 static string contents_file_name;
 static string dir_name;
+static bool use_cached=true;
 static bool output_uv_file=false;
 static bool use_undistorted_images = false;
 static bool pause_after_each_frame = false;
@@ -362,6 +363,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--blend" ) == 0 )
 	{
 	  do_hw_blend = true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--no_cached" ) == 0 )
+	{
+	  use_cached = false;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--novelty" ) == 0 )
@@ -1012,8 +1018,14 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   texcached=FileExists(texfilename);
   sprintf(filename,"%s/surface-%s.tc.ply",
 	  aggdir,osgDB::getStrippedName(name.left_name).c_str());
-  
-  if(meshcached && texcached){
+
+  if(!use_cached){
+    printf("Redoing cache\n");
+    meshcached=false;
+    texcached=false;
+  }
+
+  if(meshcached && texcached ){
     TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
     edge_len_thresh(mesh,2.0);
@@ -1210,8 +1222,9 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     localV = g_ptr_array_new ();
     TVertex *vert;
     for(int i=0; i<points.size(); i++){
-      // if(points[i](2) < 8.0 || points[i](2) > -0.25)
-      //continue;
+      // printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
+      if(points[i](2) > 4.0 || points[i](2) < 0.25)
+      continue;
       
       vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
 				       points[i](0),points[i](1),points[i](2));
@@ -1865,7 +1878,8 @@ int main( int argc, char *argv[ ] )
 	    sprintf(tp," --nonvis %d ",(int)cells.size());
 	    strcat(argstr,tp);
 	  }
-	  
+	  if(no_simp)
+	    fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");
 	  if(!sing_gen_tex){
 	    fprintf(dicefp,"cd $DICEDIR\n"
 		    "NUMDICED=`wc -l valid.txt |cut -f1 -d\" \" `\n"

@@ -83,6 +83,7 @@ static bool use_rect_images=false;
 static FILE *uv_fp;
 static ofstream file_name_list;
 static string base_dir;
+static bool no_depth=false;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 static int num_threads=1;
 static FILE *fpp,*fpp2,*pos_fp;
@@ -282,6 +283,11 @@ static bool parse_args( int argc, char *argv[ ] )
 	  use_dense_stereo=true;
 	  i+=1;
 	}
+      else if( strcmp( argv[i], "--no-depth" ) == 0 )
+	{
+	  no_depth=true;
+	  i+=1;
+	}
       else if( strcmp( argv[i], "-s" ) == 0 )
 	{
 	  if( i == argc-1 ) return false;
@@ -459,6 +465,7 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--3ds" ) == 0 )
 	{
 	  output_3ds=true;
+	  no_gen_tex=true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
@@ -644,7 +651,7 @@ static bool get_stereo_pair( const string left_image_name,
                       
 			   
 {
- 
+  color_image=NULL;
   //
   // Load the images (-1 for unchanged grey/rgb)
   //
@@ -690,6 +697,8 @@ static bool get_stereo_pair( const string left_image_name,
       cvReleaseImage( &temp );
     }
 
+  if(color_image == NULL)
+      color_image = cvLoadImage( complete_left_name.c_str( ), 1 );
   //
   // Scale images if required
   // 
@@ -1093,7 +1102,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       printf("Not cached creating\n");
       non_cached_meshes++;
       
-  if(feature_depth_guess == AUV_NO_Z_GUESS)
+  if(feature_depth_guess == AUV_NO_Z_GUESS && !no_depth)
     feature_depth_guess = name.alt;
 
   list<Stereo_Feature_Estimate> feature_positions;
@@ -1221,7 +1230,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     sdense->get_points(si,points);
     localV = g_ptr_array_new ();
     TVertex *vert;
-    for(int i=0; i<points.size(); i++){
+    for(int i=0; i<(int)points.size(); i++){
       // printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
       if(points[i](2) > 4.0 || points[i](2) < 0.25)
       continue;
@@ -1259,7 +1268,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
 		       NULL,tex_size,num_threads,0,0);
     std::vector<string> lodnames;
-    
+ 
     osgExp->Export3DS(surf,filename,textures,512,NULL);
     gts_matrix_destroy (invM);
   }
@@ -1271,7 +1280,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     FILE *fp = fopen(meshfilename, "w" );
     auv_write_ply(surf, fp,have_cov_file,"test");
     fclose(fp);
-	  
+    
     TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
     xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
@@ -1289,8 +1298,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 		 mesh->bbox.max[1],
 		 mesh->bbox.max[2]);
 
-    mesh->write(filename);
-    name.mesh_name = osgDB::getSimpleFileName(filename);
+    mesh->write(meshfilename);
+    name.mesh_name = osgDB::getSimpleFileName(meshfilename);
   }
   //Destory Surf
   if(surf)

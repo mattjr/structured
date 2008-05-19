@@ -191,8 +191,10 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
 osg::ref_ptr<osg::Image>OSGExporter::cacheCompressedImage(IplImage *img,string name,int tex_size){
   string ddsname=osgDB::getNameLessExtension(name);
   ddsname +=".dds";
+
   IplImage *tex_img=cvCreateImage(cvSize(tex_size,tex_size),
 				  IPL_DEPTH_8U,3);
+
   if(img && tex_img)
     cvResize(img,tex_img);
   else
@@ -1004,7 +1006,7 @@ osg::Image *OSGExporter::LoadResizeSave(string filename,string outname,bool save
   IplImage *fullimg=NULL;
   bool cached=false;
   if(tex_image_cache.find(filename) == tex_image_cache.end() || !tex_image_cache[filename] ){
-    fullimg=cvLoadImage(filename.c_str(),-1);
+    fullimg=cvLoadImage(filename.c_str(),1);
    
   }
   else{

@@ -105,6 +105,7 @@ static int single_run_stop=0;
 static bool dice_lod=false;
 static bool use_dense_stereo=false;
 static int non_cached_meshes=0;
+static bool no_merge=false;
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[255];
 char cachedtexdir[255];
@@ -496,6 +497,12 @@ static bool parse_args( int argc, char *argv[ ] )
       else if(strcmp( argv[i], "--novrip" ) == 0)
 	{
 	  no_vrip=true;
+
+	  i+=1;
+	}
+      else if(strcmp( argv[i], "--nomerge" ) == 0)
+	{
+	  no_merge=true;
 
 	  i+=1;
 	}
@@ -1044,7 +1051,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	     name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);
     apply_xform(mesh,xf);
     mesh->need_bbox();
-
+  
     mesh->write(filename);
 
     if(use_poisson_recon){ 
@@ -1225,14 +1232,15 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	 }
   */
   }else{ 
-    StereoImage *si=  sdense->dense_stereo(left_frame,right_frame);
+   
+    sdense->dense_stereo(left_frame,right_frame);
     std::vector<libplankton::Vector> points;   
-    sdense->get_points(si,points);
+    sdense->get_points(points);
     localV = g_ptr_array_new ();
     TVertex *vert;
     for(int i=0; i<(int)points.size(); i++){
       // printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
-      if(points[i](2) > 4.0 || points[i](2) < 0.25)
+      if(points[i](2) > 4.0 || points[i](2) < 0.55)
       continue;
       
       vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
@@ -1297,9 +1305,10 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 		 mesh->bbox.max[0],
 		 mesh->bbox.max[1],
 		 mesh->bbox.max[2]);
-
-    mesh->write(meshfilename);
-    name.mesh_name = osgDB::getSimpleFileName(meshfilename);
+    sprintf(filename,"%s/surface-%s.tc.ply",
+	    aggdir,osgDB::getStrippedName(name.left_name).c_str());
+    mesh->write(filename);
+    name.mesh_name = osgDB::getSimpleFileName(filename);
   }
   //Destory Surf
   if(surf)
@@ -1630,8 +1639,12 @@ int main( int argc, char *argv[ ] )
 		FLT_MAX,
 	    eps,i,vrip_seg_fname,2.0,i,i,1.0,i,i);
   }
+  if(!no_merge)
+    fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,redirstr);
+  else
+    fprintf(vripcmds_fp,"cat ../%s | cut -f1 -d\" \" | xargs $BASEDIR/vrip/bin/plymerge > ../mesh-agg/seg-%08d.ply;",vrip_seg_fname,i);
 
-  fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,redirstr,
+  fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",
 	      cells[i].bounds.min_x,
 	      cells[i].bounds.min_y,
 	      FLT_MIN,
@@ -1870,7 +1883,7 @@ int main( int argc, char *argv[ ] )
 	  system("./simp.sh");
 	
 	dicefp=fopen("./gentex.sh","w+");
-	fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
+	fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $DICEDIR\n",basepath.c_str());
 
 	  char argstr[255];
 	  strcpy(argstr,"");
@@ -1888,7 +1901,7 @@ int main( int argc, char *argv[ ] )
 	    strcat(argstr,tp);
 	  }
 	  if(no_simp)
-	    fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");
+	    fprintf(dicefp,"cat diced.txt | xargs plybbox > range.txt;cp diced.txt valid.txt\n");
 	  if(!sing_gen_tex){
 	    fprintf(dicefp,"cd $DICEDIR\n"
 		    "NUMDICED=`wc -l valid.txt |cut -f1 -d\" \" `\n"
@@ -1972,7 +1985,7 @@ int main( int argc, char *argv[ ] )
 	  if(use_poisson_recon)
 	    strcpy(ar,"--dicedir mesh-pos/");
 	  else
-	    strcpy(ar," ");
+	    strcpy(ar,"--dicedir mesh-diced/");
 	  fprintf(lodfp,"#!/bin/bash\n"
 		  "echo LODGen... \n"
 		  "%s/lodgen %s\n",

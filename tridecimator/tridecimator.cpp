@@ -20,6 +20,8 @@ using namespace std;
 #include <wrap/io_trimesh/import.h>
 #include <wrap/io_trimesh/export_ply.h>
 #include <wrap/io_trimesh/export_stl.h>
+#include <wrap/io_trimesh/export_vrml.h>
+
 
 #include <vcg/complex/trimesh/update/topology.h>
 #include <vcg/complex/trimesh/update/bounding.h>
@@ -28,8 +30,10 @@ using namespace std;
 
 #include "remove_small_cc.h"
 #include "meshmodel.h"
+
 using namespace vcg;
 using namespace tri;
+
 void QuadricSimplification(CMeshO &m,int  TargetFaceNum, float QualityThr, 
 		bool PreserveBoundary, 
 		bool PreserveNormal,
@@ -178,6 +182,7 @@ int main(int argc ,char**argv){
     err=vcg::tri::io::ImporterSTL<CMeshO>::Open(cm,argv[1]);
   else if(format == "ply")
     err=vcg::tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1]);
+
  cm.face.EnableFFAdjacency();
  cm.face.EnableMark();
 	cm.vert.EnableMark();
@@ -364,10 +369,11 @@ int main(int argc ,char**argv){
       return -1;
     }
   }else if(format == "wrl"){
-  //int result = vcg::tri::io::ExporterWRL<CMeshO>::Save(cm,filename.c_str());
-  //if(result!=0){
-  //  fprintf(stderr,"Saving Error %s for file %s\n", vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result),filename.c_str());
-  //  return -1;
+    int result = vcg::tri::io::ExporterWRL<CMeshO>::Save(cm,filename.c_str(),pi.mask);
+    if(result!=0){
+      fprintf(stderr,"Saving Error %s for file %s\n", vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result),filename.c_str());
+      return -1;
+    }
   }else{
 
     fprintf(stderr,"Format %s unknown\n",format.c_str());

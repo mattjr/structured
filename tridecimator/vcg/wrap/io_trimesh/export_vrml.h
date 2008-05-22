@@ -23,6 +23,9 @@
 /****************************************************************************
 History
 $Log: not supported by cvs2svn $
+Revision 1.1.1.1  2008-04-16 08:07:58  m.roberson
+reimport vcg update
+
 Revision 1.9  2008/02/27 23:35:56  cignoni
 removed useless include
 
@@ -293,11 +296,11 @@ namespace vcg {
 		int capability = 0;
 
 		//vert
-		capability |= MeshModel::IOM_VERTCOLOR;
+		capability |=  vcg::tri::io::Mask::IOM_VERTCOLOR;
 		
 		//wedg
-		capability |= MeshModel::IOM_WEDGTEXCOORD;
-		capability |= MeshModel::IOM_WEDGCOLOR;
+		capability |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
+		capability |= vcg::tri::io::Mask::IOM_WEDGCOLOR;
 
 		return capability;
 	}

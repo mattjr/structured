@@ -1077,7 +1077,7 @@ static void texcoord_foreach_face (T_Face * f,
   if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size,data->margin))
     data->validCount++;
   else{
-    printf("Index closest %d\n",indexClosest);
+    //printf("Index closest %d\n",indexClosest);
     find_closet_img_trans(&GTS_FACE(f)->triangle,
 			  data->bboxTree,data->camPosePts,
 			  data->back_trans,data->calib,bboxes_all,data->margin);

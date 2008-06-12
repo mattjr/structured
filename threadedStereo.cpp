@@ -1371,6 +1371,8 @@ void runC(Stereo_Pose_Data &name){
 
 int main( int argc, char *argv[ ] )
 {
+  printf(" argc, argv\n" );
+
   //
   // Parse command line arguments
   //

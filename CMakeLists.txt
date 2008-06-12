@@ -125,7 +125,7 @@ SET( LAPACK_LIB lapack )
 
 
 # OpenCV
-INCLUDE(${CMAKE_ROOT}/Modules/FindOpencv.cmake ) 
+INCLUDE(${CMAKE_ROOT}/Modules/FindOpenCV.cmake ) 
 
   
 # Gts
@@ -180,7 +180,7 @@ SET( LIBADT_LIBRARY adt )
 # Compiler setup        #
 #-----------------------#
 ADD_DEFINITIONS( ${GTS_CFLAGS} )
-ADD_DEFINITIONS( "-Wall -fasm-blocks" )
+ADD_DEFINITIONS( "-Wall " )
 
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${OPENCV_INCLUDE_DIR}

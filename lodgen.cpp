@@ -119,7 +119,7 @@ int main( int argc, char *argv[ ] )
     sprintf(tmp,"%s/valid.txt",dicedir);
     string dicefile(tmp);
     std::vector<string> meshNames;
- 
+    cout << tmp <<endl;
     
     struct stat BUF;
     bool have_dice=(stat(dicefile.c_str(),&BUF)!=-1);

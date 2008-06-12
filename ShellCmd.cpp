@@ -61,21 +61,22 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 	fclose(vripcmds_fp);
 
 	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\ncd mesh-pos/\n",basepath,aggdir,basepath,basepath);
+	fprintf(conf_ply_file,"cp diced.txt valid.txt\n");
 	fprintf(conf_ply_file,"%s/runtp.py poscmds\n",basepath);
 	//	fprintf(conf_ply_file,"plysubtractlist pos_rec.ply ");
 	//	for (int k=0; k < (int)cells.size(); k++)
 	// fprintf(conf_ply_file," clipped-diced-%08d.ply",k);
 		//	fprintf(conf_ply_file," > inv-mb.ply\n");
-
-		fprintf(conf_ply_file,"for k in `echo {0..2}`\n"
-			"do\n"
-			"if [ -e clipped-diced-%08d-lod$k.ply ]; then\n"
-		"\tplysubtract pos_rec-lod$k.ply clipped-diced-%08d-lod$k.ply > inv-mb-%08d-lod$k.ply\n"
-		"else\n"
-		"\tcp  pos_rec-lod$k.ply inv-mb-%08d-lod$k.ply\n"
-		"fi\n",0,0,0,0); 
-
-  fprintf(conf_ply_file,"for f in `echo {1..%ld}`\n"
+	if(have_mb_ply){
+	  fprintf(conf_ply_file,"for k in `echo {0..2}`\n"
+		  "do\n"
+		  "if [ -e clipped-diced-%08d-lod$k.ply ]; then\n"
+		  "\tplysubtract pos_rec-lod$k.ply clipped-diced-%08d-lod$k.ply > inv-mb-%08d-lod$k.ply\n"
+		  "else\n"
+		  "\tcp  pos_rec-lod$k.ply inv-mb-%08d-lod$k.ply\n"
+		  "fi\n",0,0,0,0); 
+	  
+	  fprintf(conf_ply_file,"for f in `echo {1..%ld}`\n"
 		  "do\n"
 		  "i=`printf \"%%08d\\n\" \"$f\"`\n"
 		  "ilast=`printf \"%%08d\" \"$(($f - 1 ))\"`\n"
@@ -106,13 +107,14 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 	  "if [ $FACES == 0 ]; then\n continue;\n fi\n"
 	  "echo $MESHNAME >> valid.txt\n"
 	  "done\n"
-	  "cat valid.txt |  sed s/.ply/-lod0.ply/g |xargs plybbox > range.txt\n"
+	  
 	  ,cells.size()-1);
+	
+	}
 
 
 
-
-
+	fprintf(conf_ply_file,"cat valid.txt |  sed s/.ply/-lod0.ply/g |xargs plybbox > range.txt\n");
 
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);

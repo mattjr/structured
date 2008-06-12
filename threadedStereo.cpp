@@ -59,7 +59,7 @@ static bool output_uv_file=false;
 static bool use_undistorted_images = false;
 static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
-static bool use_poisson_recon=false;
+static bool use_poisson_recon=true;
 static int max_feature_count = 5000;
 static double eps=1.0;
 static double subvol=40.0;
@@ -78,7 +78,7 @@ static vector<string> mb_ply_filenames;
 static bool have_mb_ply=false;
 static bool have_cov_file=false;
 static string stereo_calib_file_name;
-static bool no_simp=false;
+static bool no_simp=true;
 static bool use_rect_images=false;
 static FILE *uv_fp;
 static ofstream file_name_list;
@@ -111,6 +111,7 @@ char cachedmeshdir[255];
 char cachedtexdir[255];
 static string deltaT_config_name;
 static string deltaT_dir;
+static bool use_vrip_recon=false;
 static bool hardware_compress=true;
 const char *uname="mesh";
 const char *dicedir="mesh-diced";
@@ -342,9 +343,10 @@ static bool parse_args( int argc, char *argv[ ] )
 	  use_undistorted_images = true;
 	  i+=1;
 	}
-      else if( strcmp( argv[i], "--pos" ) == 0 )
+      else if( strcmp( argv[i], "--vrip" ) == 0 )
 	{
-	  use_poisson_recon = true;
+	  use_vrip_recon = true;
+	  no_simp = false;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--dist" ) == 0 )
@@ -828,10 +830,11 @@ public:
       }
      
     osgExp=new OSGExporter(dir_name,false,true,tex_size);    
+#ifdef USE_DENSE_STEREO
     sdense= new Stereo_Dense(*config_file,
 			     0.5,
 			     calib  );
-    
+#endif
   }
 
   ~threadedStereo(){
@@ -850,7 +853,9 @@ private:
   Matrix *image_coord_covar;
   Stereo_Feature_Finder *finder;
   Stereo_Feature_Finder *finder_dense;
+#ifdef USE_DENSE_STEREO
   Stereo_Dense *sdense;
+#endif
   int tex_size;
   Stereo_Calib *calib;
   Config_File *config_file; 
@@ -1232,21 +1237,25 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	 }
   */
   }else{ 
-   
+#ifdef USE_DENSE_STEREO   
     sdense->dense_stereo(left_frame,right_frame);
     std::vector<libplankton::Vector> points;   
     sdense->get_points(points);
     localV = g_ptr_array_new ();
     TVertex *vert;
-    for(int i=0; i<(int)points.size(); i++){
+    for(int i=0; i<(int)points.size(); i+=4){
       // printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
-      if(points[i](2) > 4.0 || points[i](2) < 0.55)
+      if(points[i](2) > 4.0 )//|| points[i](2) < 0.55)
       continue;
       
       vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
 				       points[i](0),points[i](1),points[i](2));
       g_ptr_array_add(localV,GTS_VERTEX(vert));
     } 
+#else 
+    fprintf(stderr,"Dense support not compiled\n");
+    exit(0);
+#endif
 
   }
   
@@ -1584,6 +1593,7 @@ int main( int argc, char *argv[ ] )
     FILE *bboxfp;
     FILE *vripcmds_fp=fopen("mesh-agg/vripcmds","w");
     FILE *diced_fp=fopen("mesh-diced/diced.txt","w");
+
     if(!vripcmds_fp){
       printf("Can't open vripcmds\n");
       exit(-1);
@@ -1758,9 +1768,10 @@ int main( int argc, char *argv[ ] )
 		"cd mesh-agg/\n",
 		basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),
 		basepath.c_str());
+	fprintf(conf_ply_file, "cat pos_pts.bnpts > pos_out.bnpts\n");
+
 	if(have_mb_ply)
 	  fprintf(conf_ply_file,"%s/poisson/dumpnormpts %s mb.bnpts -flip\n"
-		  "cat pos_pts.bnpts > pos_out.bnpts\n"
 		  "cat mb.bnpts >> pos_out.bnpts\n",basepath.c_str(),
 		  osgDB::getSimpleFileName( mb_ply_filenames[0]).c_str());
 
@@ -1881,8 +1892,8 @@ int main( int argc, char *argv[ ] )
 	fclose(dicefp);
 	if(!no_simp)
 	  system("./simp.sh");
-	
-	dicefp=fopen("./gentex.sh","w+");
+	if(use_vrip_recon){
+	  dicefp=fopen("./gentex.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $DICEDIR\n",basepath.c_str());
 
 	  char argstr[255];
@@ -1894,7 +1905,7 @@ int main( int argc, char *argv[ ] )
 	  if(!hardware_compress)
 	    strcat(argstr," --no-hardware-compress ");
 	  if(no_simp)
-	    strcat(argstr," --nosimp ");
+	    strcat(argstr," --nosimp");
 	  if(have_mb_ply){
 	    char tp[255];
 	    sprintf(tp," --nonvis %d ",(int)cells.size());
@@ -1931,6 +1942,7 @@ int main( int argc, char *argv[ ] )
 	fclose(dicefp);
 	if(!no_gen_tex)
 	  system("./gentex.sh");
+	}
 	if(use_poisson_recon){
 	  dicefp=fopen("./posgentex.sh","w+");
 	  fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());

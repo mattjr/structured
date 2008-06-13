@@ -134,6 +134,19 @@ IF( NOT GTS_INCLUDE_DIR )
    MESSAGE( FATAL_ERROR  "ERROR - Can't find Gts" )
 ENDIF( NOT GTS_INCLUDE_DIR )      
 MESSAGE( ${GTS_INCLUDE_DIR} )
+
+
+# FIXME: the --export-dynamic in the GTS linker flags is causing threadedStereo
+#        to segfault. I don't know why this isn't working. For now I'm just
+#        reproducing the linker flags without the --export-dynamic.
+
+MESSAGE( "WARNING - Performing dodgy update of GTKS cflags to prevent --export-dynamic" )
+MESSAGE( "Original GTS_LINK_FLAGS = ${GTS_LINK_FLAGS}" )
+SET( GTS_LINK_FLAGS "-pthread -lgts -lgthread-2.0 -lrt -lgmodule-2.0 -ldl -lglib-2.0" )
+MESSAGE( "Modified GTS_LINK_FLAGS = ${GTS_LINK_FLAGS}" )
+
+
+
 # ulapack 
 SET( ULAPACK_INCLUDE_DIR ${ULAPACK_PREFIX}/include/ulapack )
 CHECK_INCLUDE_FILE_CXX( "${ULAPACK_INCLUDE_DIR}/matrix_types.hpp" HAVE_ULAPACK )
@@ -260,6 +273,7 @@ SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/ )
 ####
 SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 ###
+
 
 #SUBDIRS(src include tools )
 

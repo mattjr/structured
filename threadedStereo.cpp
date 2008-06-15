@@ -1839,7 +1839,7 @@ int main( int argc, char *argv[ ] )
       
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
-	if(!no_vrip)
+	if(!no_vrip && use_vrip_recon)
 	  system("./runvrip.sh");
       
 	FILE *dicefp=fopen("./simp.sh","w+");

@@ -1,58 +1,52 @@
-#
-# The Makefile calls cmake and make to perform an out-of-source build in the 
-# directory specified by the BUILD_DIR variable. If the directory does not
-# exist it is created.
-#
+# /********************************************************************************************
+# * File:		Makefile
+# * Author:		$LastChangedBy: matthew $
+# * Revision:	$Revision: 1.2 $
+# * Last Updated:	$LastChangedDate: 2006-11-10 15:03:28 -0500 (Fri, 10 Nov 2006) $
+# ********************************************************************************************/
 
-BUILD_DIR = build
+TARGET=PoissonRecon
+SOURCE=CmdLineParser.cpp Factor.cpp Geometry.cpp MarchingCubes.cpp ply.cpp plyfile.cpp Time.cpp MultiGridOctest.cpp
 
-all: subdirs setup
-	@make -j 12 -C $(BUILD_DIR) all
+CFLAGS += -fpermissive
+LFLAGS +=
 
-install: setup
-	@make -C $(BUILD_DIR) install
+CFLAGS_DEBUG = -DDEBUG -g3
+LFLAGS_DEBUG =
 
-clean: setup      
-	@make -C $(BUILD_DIR) clean
+CFLAGS_RELEASE = -O3 -DRELEASE -funroll-loops -ffast-math
+LFLAGS_RELEASE = -O3 
 
-debug: setup
-	@cd $(BUILD_DIR); \
-	cmake .. -DCMAKE_BUILD_TYPE=Debug
-	make
+SRC = src/
+BIN = ./
+INCLUDE = /usr/local/include/
 
-release: setup
-	@cd $(BUILD_DIR); \
-	cmake .. -DCMAKE_BUILD_TYPE=Release
-	make 
+CC=gcc
+CXX=g++
 
-test: setup
-	@cd $(BUILD_DIR); \
-	ctest -D Experimental 
+OBJECTS=$(addprefix $(BIN), $(addsuffix .o, $(basename $(SOURCE))))
 
-# Catch all for other targets - will be passed to BUILD_DIR
-%: setup
-	@make -C $(BUILD_DIR) $@
+all: CFLAGS += $(CFLAGS_DEBUG)
+all: LFLAGS += $(LFLAGS_DEBUG)
+all: $(BIN)$(TARGET)
+all: dumpnormpts
 
-setup:
-        # Clean up if someone has run cmake . for an in-source build
-	rm -f CMakeCache.txt  
+release: CFLAGS += $(CFLAGS_RELEASE)
+release: LFLAGS += $(LFLAGS_RELEASE)
+release: $(BIN)$(TARGET)
 
-        # Make a directory for an out-of-source build
-	@if test -e $(BUILD_DIR) ; \
-	then \
-	   echo "$(BUILD_DIR) already exists"; \
-	else \
-	   echo "$(BUILD_DIR) does not exist - creating it now"; \
-	   mkdir -p $(BUILD_DIR); \
-	   cd $(BUILD_DIR); \
-	   cmake ..; \
-	fi
+clean:
+	rm -f $(BIN)$(TARGET)
+	rm -f $(OBJECTS)
 
-SUBDIRS = 
-.PHONY: subdirs $(SUBDIRS)
+$(BIN)$(TARGET): $(OBJECTS)
+	$(CXX) -o $@ $(OBJECTS) $(LFLAGS)
 
-subdirs: $(SUBDIRS)
+$(BIN)%.o: $(SRC)%.c
+	$(CC) -c -o $@ $(CFLAGS) -I$(INCLUDE) $<
 
-$(SUBDIRS):
-	$(MAKE) -C $@
+$(BIN)%.o: $(SRC)%.cpp
+	$(CXX) -c -o $@ $(CFLAGS) -I$(INCLUDE) $<
 
+dumpnormpts:
+	$(CXX) -o $(BIN)dumpnormpts $(CFLAGS) -I$(INCLUDE)/libpolyp dumpnormpts.cc -lpolyp

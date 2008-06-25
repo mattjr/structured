@@ -64,6 +64,7 @@ static int max_feature_count = 5000;
 static double eps=1.0;
 static double subvol=40.0;
 static bool do_novelty=false;
+static double dense_scale=1.0;
 static bool have_max_frame_count = false;
 static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
@@ -125,7 +126,9 @@ static bool do_hw_blend=false;
 #define NORMALISED_MEAN         128
 #define NORMALISED_VAR          400
 
-
+#ifdef USE_DENSE_STEREO
+  Stereo_Dense *sdense=NULL;
+#endif
 
 void print_uv_3dpts( list<Feature*>          &features,
 		     list<Stereo_Feature_Estimate> &feature_positions,
@@ -792,7 +795,11 @@ public:
     config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
     config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
     config_file->set_value( "MESH_TEX_SIZE", tex_size );
-     
+    config_file->get_value( "SD_SCALE", dense_scale);
+
+
+
+
     if( use_sift_features )
       config_file->set_value( "SKF_KEYPOINT_TYPE", "SIFT" );
     else if( use_surf_features )   
@@ -830,11 +837,7 @@ public:
       }
      
     osgExp=new OSGExporter(dir_name,false,true,tex_size);    
-#ifdef USE_DENSE_STEREO
-    sdense= new Stereo_Dense(*config_file,
-			     0.5,
-			     calib  );
-#endif
+
   }
 
   ~threadedStereo(){
@@ -853,9 +856,7 @@ private:
   Matrix *image_coord_covar;
   Stereo_Feature_Finder *finder;
   Stereo_Feature_Finder *finder_dense;
-#ifdef USE_DENSE_STEREO
-  Stereo_Dense *sdense;
-#endif
+
   int tex_size;
   Stereo_Calib *calib;
   Config_File *config_file; 
@@ -1005,12 +1006,21 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   string left_frame_name;
   string right_frame_name;
   char filename[255];
-  char meshfilename[255];
-  char texfilename[255];
+  char meshfilename[1024];
+  char texfilename[1024];
   bool meshcached=false;
   bool texcached=false;
-    
+  printf("here ~!!!!!\n");
   fill_gts_matrix(name.pose,name.m);
+
+#ifdef USE_DENSE_STEREO
+  if(!sdense){
+    sdense= new Stereo_Dense(*config_file,
+			     dense_scale ,
+			     calib  );
+    printf("Dense Scale %f\n",dense_scale);
+  }
+#endif
   
   /*  FILE *fp;
   sprintf(filename,"%s/surface-%s.xf",
@@ -1034,9 +1044,11 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
  
   sprintf(meshfilename,"%s/surface-%s.ply",
 	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
-  
-  meshcached=FileExists(meshfilename);
-  texcached=FileExists(texfilename);
+  string mn(meshfilename);
+  string tn(texfilename);
+
+  meshcached=FileExists(mn);
+  texcached=FileExists(tn);
   sprintf(filename,"%s/surface-%s.tc.ply",
 	  aggdir,osgDB::getStrippedName(name.left_name).c_str());
 
@@ -1576,19 +1588,27 @@ int main( int argc, char *argv[ ] )
     }
       
     chmod(conf_name,0666);
+    printf("Task Size %d\n");
+    int valid=0;
     for(unsigned int i=0; i < tasks.size(); i++){
-      if(tasks[i].valid)
+      if(tasks[i].valid){
 	fprintf(conf_ply_file,
 		"surface-%s.tc.ply 0.033 1\n"
 		,osgDB::getStrippedName(tasks[i].left_name).c_str());
-      
-      
+	valid++;
+      }
       
     }
+ 
     fclose(conf_ply_file);
 
     if(use_poisson_recon){
       fclose(pos_fp);
+    }
+
+    if(valid <= 0){
+     fprintf(stderr,"No valid meshes bailing\n");
+     exit(-1);
     }
     FILE *vrip_seg_fp;
     char vrip_seg_fname[255];
@@ -1762,7 +1782,7 @@ int main( int argc, char *argv[ ] )
       }
       */
       
-      if(use_poisson_recon){
+      if(use_poisson_recon && !no_merge){
 	conf_ply_file=fopen("./runpos.sh","w+"); 
 	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\n"
 		"VRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\n"

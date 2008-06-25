@@ -1010,11 +1010,11 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   char texfilename[1024];
   bool meshcached=false;
   bool texcached=false;
-  printf("here ~!!!!!\n");
+  
   fill_gts_matrix(name.pose,name.m);
 
 #ifdef USE_DENSE_STEREO
-  if(!sdense){
+  if(!sdense && use_dense_stereo){
     sdense= new Stereo_Dense(*config_file,
 			     dense_scale ,
 			     calib  );
@@ -1044,22 +1044,245 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
  
   sprintf(meshfilename,"%s/surface-%s.ply",
 	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
-  string mn(meshfilename);
-  string tn(texfilename);
 
-  meshcached=FileExists(mn);
-  texcached=FileExists(tn);
-  sprintf(filename,"%s/surface-%s.tc.ply",
-	  aggdir,osgDB::getStrippedName(name.left_name).c_str());
-
+ 
   if(!use_cached){
     printf("Redoing cache\n");
     meshcached=false;
     texcached=false;
+  }else{
+   meshcached=FileExists(meshfilename);
+   texcached=FileExists(texfilename);
+ }
+ 
+ sprintf(filename,"%s/surface-%s.tc.ply",
+	  aggdir,osgDB::getStrippedName(name.left_name).c_str());
+
+ 
+  GtsSurface *surf=NULL;
+  if(!meshcached || !texcached ){
+  
+
+  
+    //
+    // Load the images
+    //
+    
+    if( !get_stereo_pair( name.left_name,name.right_name,name.dir,
+			  left_frame, right_frame,
+			  color_frame))
+      {
+	printf("Failed to get pair %s %s\n",name.left_name.c_str(),name.right_name.c_str());
+	return false;
+      } 
+    
+    if(!texcached){
+      printf("\nCaching texture %s\n",texfilename);
+      osgExp->cacheCompressedImage(color_frame,texfilename,512);
+    }
+    
+    if(!meshcached){
+      printf("Not cached creating\n");
+      non_cached_meshes++;
+      
+      if(feature_depth_guess == AUV_NO_Z_GUESS && !no_depth)
+	feature_depth_guess = name.alt;
+      
+      list<Stereo_Feature_Estimate> feature_positions;
+      GPtrArray *localV=NULL;  
+      list<Feature *> features;
+      if(!use_dense_stereo){
+	//
+	// Find the features
+	//
+	
+	finder->find( left_frame,
+		      right_frame,
+		      left_frame_id,
+		      right_frame_id,
+		      max_feature_count,
+		      features,
+		      feature_depth_guess );
+	if(use_dense_feature) 
+	  finder_dense->find( left_frame,
+			      right_frame,
+			      left_frame_id,
+			      right_frame_id,
+			      max_feature_count,
+			      features,
+			  feature_depth_guess );
+	
+	
+	//
+	// Triangulate the features if requested
+	//
+	
+	
+	
+	Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
+	
+    
+	
+	/*Matrix pose_cov(4,4);
+	  get_cov_mat(cov_file,pose_cov);
+	*/
+	//cout << "Cov " << pose_cov << "Pose "<< veh_pose<<endl;
+	
+	stereo_triangulate( *calib,
+			    ref_frame,
+			    features,
+			    left_frame_id,
+			    right_frame_id,
+			    NULL,//image_coord_covar,
+			    feature_positions );
+    
+	//   static ofstream out_file( triangulation_file_name.c_str( ) );
+	
+	
+	static Vector stereo1_nav( AUV_NUM_POSE_STATES );
+	// Estimates of the stereo poses in the navigation frame
+	
+	
+	list<Stereo_Feature_Estimate>::iterator litr;
+	localV = g_ptr_array_new ();
+	GtsRange r;
+	gts_range_init(&r);
+	TVertex *vert;
+	for( litr  = feature_positions.begin( ) ;
+	     litr != feature_positions.end( ) ;
+	     litr++ )
+	  {
+	    // if(litr->x[2] > 8.0 || litr->x[2] < 0.25)
+	    //continue;
+	    //  if(name.alt > 5.0 || name.alt < 0.75)
+	    //litr->x[2]=name.alt;
+	    vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+					     litr->x[0],litr->x[1],litr->x[2]);
+	    // printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
+	    
+	    //double confidence=1.0;
+	    Vector max_eig_v(3);
+	    /*  if(have_cov_file){
+		
+		Matrix eig_vecs( litr->P );
+		Vector eig_vals(3);
+		int work_size = eig_sym_get_work_size( eig_vecs, eig_vals );
+	  
+		Vector work( work_size );
+		eig_sym_inplace( eig_vecs, eig_vals, work );
+	   
+		double maxE=DBL_MIN;
+		int maxEidx=0;
+		for(int i=0; i < 3; i++){
+		if(eig_vals[i] > maxE){
+		maxE=eig_vals[i];
+		maxEidx=i;
+		}
+		}
+	  
+		for(int i=0; i<3; i++)
+		max_eig_v(i)=eig_vecs(i,maxEidx);
+	    
+		confidence= 2*sqrt(maxE);
+		max_eig_v = max_eig_v / sum(max_eig_v);
+		//    cout << "  eig_ max: " << max_eig_v << endl;
+	  
+		
+		}
+		vert->confidence=confidence;
+		vert->ex=max_eig_v(0);
+		vert->ey=max_eig_v(1);
+		vert->ez=max_eig_v(2);
+		gts_range_add_value(&r,vert->confidence);*/
+	    g_ptr_array_add(localV,GTS_VERTEX(vert));
+	    
+	    
+	  }
+	list<Feature*>::iterator fitr;
+	for( fitr  = features.begin( ) ;
+	     fitr != features.end( ) ;
+	     fitr++ )
+	  {
+	    delete *fitr;
+	  }     
+  
+      
+      
+      /*	 gts_range_update(&r);
+	 for(unsigned int i=0; i < localV->len; i++){
+	 TVertex *v=(TVertex *) g_ptr_array_index(localV,i);
+	 if(have_cov_file){
+	 float val= (v->confidence -r.min) /(r.max-r.min);
+	 jet_color_map(val,v->r,v->g,v->b);
+	 }
+	 }
+	*/
+      }else{ 
+#ifdef USE_DENSE_STEREO   
+	sdense->dense_stereo(left_frame,right_frame);
+	std::vector<libplankton::Vector> points;   
+	sdense->get_points(points);
+	localV = g_ptr_array_new ();
+	TVertex *vert;
+	for(int i=0; i<(int)points.size(); i+=4){
+	  //printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
+	  if(points[i](2) > 4.0 )
+	    continue;
+	  
+	  vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+					   points[i](0),points[i](1),
+					   points[i](2));
+	  g_ptr_array_add(localV,GTS_VERTEX(vert));
+	} 
+#else 
+	fprintf(stderr,"Dense support not compiled\n");
+	exit(0);
+#endif
+	
+      }
+    
+      
+      printf("Valid %d\n",localV->len);
+      if(!localV->len)
+	return false;
+      double mult=0.00;
+      
+      surf = auv_mesh_pts(localV,mult,0); 
+    }
   }
 
-  if(meshcached && texcached ){
-    TriMesh::verbose=0;
+  if(output_3ds){
+
+    gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, name.m);
+    
+
+    map<int,string>textures;
+    textures[0]=(name.dir+name.left_name);
+    sprintf(filename,"mesh/surface-%08d.3ds",
+	    name.id);
+	     
+    std::map<int,GtsMatrix *> gts_trans;
+    GtsMatrix *invM = gts_matrix_inverse(name.m);
+    gts_trans[0]=(invM);
+    gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
+		       NULL,tex_size,num_threads,0,0);
+    std::vector<string> lodnames;
+ 
+    osgExp->Export3DS(surf,filename,textures,512,NULL);
+    gts_matrix_destroy (invM);
+  }
+
+  if(output_ply_and_conf){
+	   
+  
+    printf("Mesh file name %s\n",meshfilename);
+    FILE *fp = fopen(meshfilename, "w" );
+    auv_write_ply(surf, fp,have_cov_file,"test");
+    fflush(fp);   
+    fclose(fp);
+   
+    
+  TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
     edge_len_thresh(mesh,2.0);
     xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
@@ -1102,235 +1325,10 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     int progCount=doneCount.increment();
   image_count_verbose (progCount, totalTodoCount);
   
-  return true;
-
-  }
-  //
-  // Load the images
-  //
-    
-  if( !get_stereo_pair( name.left_name,name.right_name,name.dir,
-			left_frame, right_frame,
-			color_frame))
-    {
-      printf("Failed to get pair %s %s\n",name.left_name.c_str(),name.right_name.c_str());
-      return false;
-    } 
-                         
-  if(!texcached){
-    printf("\nCaching texture %s\n",texfilename);
-    osgExp->cacheCompressedImage(color_frame,texfilename,512);
-  }
-
-  if(!meshcached){
-      printf("Not cached creating\n");
-      non_cached_meshes++;
-      
-  if(feature_depth_guess == AUV_NO_Z_GUESS && !no_depth)
-    feature_depth_guess = name.alt;
-
-  list<Stereo_Feature_Estimate> feature_positions;
-  GPtrArray *localV=NULL;  
-    list<Feature *> features;
-  if(!use_dense_stereo){
-    //
-    // Find the features
-    //
-  
-    finder->find( left_frame,
-		  right_frame,
-		  left_frame_id,
-		  right_frame_id,
-		  max_feature_count,
-		  features,
-		  feature_depth_guess );
-    if(use_dense_feature) 
-      finder_dense->find( left_frame,
-			  right_frame,
-			  left_frame_id,
-			  right_frame_id,
-			  max_feature_count,
-			  features,
-			  feature_depth_guess );
-    
-    
-    //
-    // Triangulate the features if requested
-    //
-    
-    
-    
-    Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
-    
-    
-    
-    /*Matrix pose_cov(4,4);
-      get_cov_mat(cov_file,pose_cov);
-    */
-    //cout << "Cov " << pose_cov << "Pose "<< veh_pose<<endl;
-    
-    stereo_triangulate( *calib,
-			ref_frame,
-			features,
-			left_frame_id,
-			right_frame_id,
-			NULL,//image_coord_covar,
-			feature_positions );
-    
-    //   static ofstream out_file( triangulation_file_name.c_str( ) );
-  
-
-  static Vector stereo1_nav( AUV_NUM_POSE_STATES );
-  // Estimates of the stereo poses in the navigation frame
-      
-      
-  list<Stereo_Feature_Estimate>::iterator litr;
-  localV = g_ptr_array_new ();
-  GtsRange r;
-  gts_range_init(&r);
-  TVertex *vert;
-  for( litr  = feature_positions.begin( ) ;
-       litr != feature_positions.end( ) ;
-       litr++ )
-    {
-      // if(litr->x[2] > 8.0 || litr->x[2] < 0.25)
-      //continue;
-      //  if(name.alt > 5.0 || name.alt < 0.75)
-      //litr->x[2]=name.alt;
-      vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
-				       litr->x[0],litr->x[1],litr->x[2]);
-      // printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
-   
-      //double confidence=1.0;
-      Vector max_eig_v(3);
-      /*  if(have_cov_file){
-	    
-	  Matrix eig_vecs( litr->P );
-	  Vector eig_vals(3);
-	  int work_size = eig_sym_get_work_size( eig_vecs, eig_vals );
-	    
-	  Vector work( work_size );
-	  eig_sym_inplace( eig_vecs, eig_vals, work );
-	   
-	  double maxE=DBL_MIN;
-	  int maxEidx=0;
-	  for(int i=0; i < 3; i++){
-	  if(eig_vals[i] > maxE){
-	  maxE=eig_vals[i];
-	  maxEidx=i;
-	  }
-	  }
-	    
-	  for(int i=0; i<3; i++)
-	  max_eig_v(i)=eig_vecs(i,maxEidx);
-	    
-	  confidence= 2*sqrt(maxE);
-	  max_eig_v = max_eig_v / sum(max_eig_v);
-	  //    cout << "  eig_ max: " << max_eig_v << endl;
-	    
-	    
-	  }
-	  vert->confidence=confidence;
-	  vert->ex=max_eig_v(0);
-	  vert->ey=max_eig_v(1);
-	  vert->ez=max_eig_v(2);
-	  gts_range_add_value(&r,vert->confidence);*/
-      g_ptr_array_add(localV,GTS_VERTEX(vert));
-	 
-	  
-    }
-  /*	 gts_range_update(&r);
-	 for(unsigned int i=0; i < localV->len; i++){
-	 TVertex *v=(TVertex *) g_ptr_array_index(localV,i);
-	 if(have_cov_file){
-	 float val= (v->confidence -r.min) /(r.max-r.min);
-	 jet_color_map(val,v->r,v->g,v->b);
-	 }
-	 }
-  */
-  }else{ 
-#ifdef USE_DENSE_STEREO   
-    sdense->dense_stereo(left_frame,right_frame);
-    std::vector<libplankton::Vector> points;   
-    sdense->get_points(points);
-    localV = g_ptr_array_new ();
-    TVertex *vert;
-    for(int i=0; i<(int)points.size(); i+=4){
-      // printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
-      if(points[i](2) > 4.0 )//|| points[i](2) < 0.55)
-      continue;
-      
-      vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
-				       points[i](0),points[i](1),points[i](2));
-      g_ptr_array_add(localV,GTS_VERTEX(vert));
-    } 
-#else 
-    fprintf(stderr,"Dense support not compiled\n");
-    exit(0);
-#endif
-
-  }
-  
-  printf("Valid %d\n",localV->len);
-  if(!localV->len)
-      return false;
-    double mult=0.00;
-
-    GtsSurface *surf= auv_mesh_pts(localV,mult,0); 
-
-
-
-	 
-  if(output_3ds){
-
-    gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, name.m);
-    
-
-    map<int,string>textures;
-    textures[0]=(name.dir+name.left_name);
-    sprintf(filename,"mesh/surface-%08d.3ds",
-	    name.id);
-	     
-    std::map<int,GtsMatrix *> gts_trans;
-    GtsMatrix *invM = gts_matrix_inverse(name.m);
-    gts_trans[0]=(invM);
-    gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
-		       NULL,tex_size,num_threads,0,0);
-    std::vector<string> lodnames;
  
-    osgExp->Export3DS(surf,filename,textures,512,NULL);
-    gts_matrix_destroy (invM);
   }
+  
 
-  if(output_ply_and_conf){
-	   
-  
-  
-    FILE *fp = fopen(meshfilename, "w" );
-    auv_write_ply(surf, fp,have_cov_file,"test");
-    fclose(fp);
-    
-    TriMesh::verbose=0;
-    TriMesh *mesh = TriMesh::read(meshfilename);
-    xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
-	     name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
-	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
-	     name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);
-    apply_xform(mesh,xf);
-    mesh->need_bbox();
-    gts_bbox_set(name.bbox,NULL,
-		 mesh->bbox.min[0],
-		 mesh->bbox.min[1],
-		 mesh->bbox.min[2],
-		 
-		 mesh->bbox.max[0],
-		 mesh->bbox.max[1],
-		 mesh->bbox.max[2]);
-    sprintf(filename,"%s/surface-%s.tc.ply",
-	    aggdir,osgDB::getStrippedName(name.left_name).c_str());
-    mesh->write(filename);
-    name.mesh_name = osgDB::getSimpleFileName(filename);
-  }
   //Destory Surf
   if(surf)
     gts_object_destroy (GTS_OBJECT (surf)); 
@@ -1345,15 +1343,9 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   else if( display_debug_images )
     cvWaitKey( 100 );
   
-  list<Feature*>::iterator fitr;
-  for( fitr  = features.begin( ) ;
-       fitr != features.end( ) ;
-       fitr++ )
-    {
-      delete *fitr;
-    }     
+
   
-  }
+
   
   //
   // Clean-up
@@ -1588,7 +1580,7 @@ int main( int argc, char *argv[ ] )
     }
       
     chmod(conf_name,0666);
-    printf("Task Size %d\n");
+  
     int valid=0;
     for(unsigned int i=0; i < tasks.size(); i++){
       if(tasks[i].valid){
@@ -1962,7 +1954,7 @@ int main( int argc, char *argv[ ] )
 
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
-	if(!no_gen_tex)
+	if(!no_gen_tex && !no_merge)
 	  system("./gentex.sh");
 	}
 	if(use_poisson_recon){
@@ -2010,8 +2002,8 @@ int main( int argc, char *argv[ ] )
 	  
 	  fchmod(fileno(dicefp),0777);
 	  fclose(dicefp);
-	  
-	  system("./posgentex.sh");
+	  if(!no_gen_tex && !no_merge)
+	    system("./posgentex.sh");
 	}
 	if(!no_gen_tex || use_poisson_recon){
 	  FILE *lodfp=fopen("lodgen.sh","w");
@@ -2027,7 +2019,8 @@ int main( int argc, char *argv[ ] )
 	 
 	  fchmod(fileno(lodfp),0777);
 	  fclose(lodfp);
-	  system("./lodgen.sh");
+	  if(!no_gen_tex && !no_merge)
+	    system("./lodgen.sh");
 	}
       }
     }

@@ -1224,7 +1224,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	sdense->get_points(points);
 	localV = g_ptr_array_new ();
 	TVertex *vert;
-	for(int i=0; i<(int)points.size(); i+=4){
+	for(int i=0; i<(int)points.size(); i++){
 	  //printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
 	  if(points[i](2) > 4.0 )
 	    continue;
@@ -1375,7 +1375,6 @@ void runC(Stereo_Pose_Data &name){
 
 int main( int argc, char *argv[ ] )
 {
-  printf(" argc, argv\n" );
 
   //
   // Parse command line arguments

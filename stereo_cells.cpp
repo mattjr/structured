@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <cstdlib>
 
 #include "stereo_cells.hpp"
 

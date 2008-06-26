@@ -24,6 +24,9 @@
   History
 
 $Log: not supported by cvs2svn $
+Revision 1.1.1.1  2008-04-16 08:07:51  m.roberson
+reimport vcg update
+
 Revision 1.28  2008/04/04 10:26:11  cignoni
 Cleaned up names, now Kg() gives back Gaussian Curvature (k1*k2), while Kh() gives back Mean Curvature 1/2(k1+k2)
 
@@ -119,6 +122,7 @@ First working version!
 #ifndef __VCG_VERTEX_PLUS_COMPONENT
 #define __VCG_VERTEX_PLUS_COMPONENT
 #include <vector>
+#include <string>
 #include <vcg/space/point3.h>
 #include <vcg/space/texcoord2.h>
 #include <vcg/space/color4.h>
@@ -419,7 +423,7 @@ struct CurvatureDirType{
 
 template <class TT> class EmptyCurvatureDir: public TT {
 public:
-  typedef CurvatureDirType<float> CurvatureDirType;
+  //typedef CurvatureDirType<float> CurvatureDirType;
 
 	Point3f &PD1(){static Point3f dummy(0,0,0); return dummy;}
 	Point3f &PD2(){static Point3f dummy(0,0,0); return dummy;}

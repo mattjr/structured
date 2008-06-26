@@ -16,10 +16,14 @@ Sean Anderson, February 1999
 
 #include <Linear.h>
 
-#include <vector.h>
+#include <vector>
 
 //#include "plyio.h"
 
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::vector;
 
 typedef Vec3f PlyVertex;
 

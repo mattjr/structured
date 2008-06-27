@@ -118,6 +118,7 @@ const char *uname="mesh";
 const char *dicedir="mesh-diced";
 const char *aggdir="mesh-agg";
 static string deltaT_pose;
+static string dense_method;
 bool dist_run=false;
 static string passtotridec="-e2.0";
 static bool do_hw_blend=false;
@@ -235,7 +236,7 @@ static bool parse_args( int argc, char *argv[ ] )
   stereo_config_file_name = "stereo.cfg";
   contents_file_name = "pose_file.data";
   dir_name = "img/";
-  strcpy(cachedmeshdir,"cache-mesh/");
+
   strcpy(cachedtexdir,"cache-tex/");
   int i=1;
   while( i < argc )
@@ -529,6 +530,12 @@ static bool parse_args( int argc, char *argv[ ] )
     cerr << "Must do ply or 3ds output\n";
     return false;
   }
+  
+  strcpy(cachedmeshdir,"cache-mesh");
+  if(use_dense_stereo)
+    sprintf(cachedmeshdir,"%s-dense/",cachedmeshdir);
+  else
+    sprintf(cachedmeshdir,"%s-feat/",cachedmeshdir);
 
   if(have_base_dir){
     deltaT_config_name=base_dir+string("/")+"localiser.cfg";
@@ -541,7 +548,7 @@ static bool parse_args( int argc, char *argv[ ] )
     dir_name= base_dir+string("/")+dir_name;
     strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
     strcpy(cachedtexdir,string(base_dir+string("/")+cachedtexdir).c_str());
-
+    printf("Herere %s %s\n",cachedmeshdir,base_dir.c_str());
   }
 
   struct stat statinfo;
@@ -796,7 +803,7 @@ public:
     config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
     config_file->set_value( "MESH_TEX_SIZE", tex_size );
     config_file->get_value( "SD_SCALE", dense_scale);
-
+    config_file->get_value( "SD_METHOD", dense_method);
 
 
 
@@ -1041,11 +1048,16 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   */
   sprintf(texfilename,"%s/%s.dds",
 	  cachedtexdir,osgDB::getStrippedName(name.left_name).c_str());
- 
-  sprintf(meshfilename,"%s/surface-%s.ply",
-	  cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
+  if(use_dense_stereo)
+    sprintf(meshfilename,"%s/surface-%s-%s.ply",
+	    cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str(),
+	    dense_method.c_str());
+  else
+    sprintf(meshfilename,"%s/surface-%s.ply",
+	    cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
 
- 
+  printf("Alien %s\n",meshfilename);
+
   if(!use_cached){
     printf("Redoing cache\n");
     meshcached=false;

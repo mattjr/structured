@@ -1056,7 +1056,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     sprintf(meshfilename,"%s/surface-%s.ply",
 	    cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
 
-  printf("Alien %s\n",meshfilename);
+  printf("Mesh cached check %s\n",meshfilename);
 
   if(!use_cached){
     printf("Redoing cache\n");
@@ -1261,6 +1261,14 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       
       surf = auv_mesh_pts(localV,mult,0); 
     }
+    
+   
+    FILE *fp = fopen(meshfilename, "w" );
+    auv_write_ply(surf, fp,have_cov_file,"test");
+    fflush(fp);   
+    fclose(fp);
+  //Destory Surf
+ 
   }
 
   if(output_3ds){
@@ -1284,15 +1292,11 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     gts_matrix_destroy (invM);
   }
 
+  if(surf)
+    gts_object_destroy (GTS_OBJECT (surf)); 
+  
   if(output_ply_and_conf){
 	   
-  
-    printf("Mesh file name %s\n",meshfilename);
-    FILE *fp = fopen(meshfilename, "w" );
-    auv_write_ply(surf, fp,have_cov_file,"test");
-    fflush(fp);   
-    fclose(fp);
-   
     
   TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
@@ -1341,33 +1345,25 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   }
   
 
-  //Destory Surf
-  if(surf)
-    gts_object_destroy (GTS_OBJECT (surf)); 
+
 	 
- 
-  
-  //
-  // Pause between frames if requested.
-  //
-  if( display_debug_images && pause_after_each_frame )
-    cvWaitKey( 0 );
-  else if( display_debug_images )
-    cvWaitKey( 100 );
-  
-
-  
-
-  
-  //
-  // Clean-up
-  //
-  
-  cvReleaseImage( &left_frame );
-  cvReleaseImage( &right_frame );
-  cvReleaseImage( &color_frame);
-        
-
+  if(!meshcached){
+    
+    // Pause between frames if requested.
+    //
+    if( display_debug_images && pause_after_each_frame )
+      cvWaitKey( 0 );
+    else if( display_debug_images )
+      cvWaitKey( 100 );
+    //
+    // Clean-up
+    //
+    
+    cvReleaseImage( &left_frame );
+    cvReleaseImage( &right_frame );
+    cvReleaseImage( &color_frame);
+    
+  }
   int progCount=doneCount.increment();
   image_count_verbose (progCount, totalTodoCount);
   // printf("\rStereo processing on image %u/%u complete.",progCount,totalTodoCount);
@@ -1815,7 +1811,23 @@ int main( int argc, char *argv[ ] )
 	shellcm.pos_dice(cells,eps);
 	//shellcm.pos_simp_cmd(use_poisson_recon);
 	
+      }else{
+		conf_ply_file=fopen("./runpos.sh","w+"); 
+	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\n"
+		"VRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\n"
+		"PATH=$PATH:$VRIP_HOME/bin:%s/tridecimator:%s/poisson/\n"
+		"cd mesh-agg/\n",
+		basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),
+		basepath.c_str());
+	fprintf(conf_ply_file,"cat meshes.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > ../mesh-pos/pos_rec-lod0.ply\n");
+	fprintf(conf_ply_file,"cp ../mesh-pos/pos_rec-lod0.ply ../mesh-pos/pos_rec-lod1.ply\n");
+	fprintf(conf_ply_file,"cp ../mesh-pos/pos_rec-lod0.ply ../mesh-pos/pos_rec-lod2.ply\n");
+	fchmod(fileno(conf_ply_file),0777);
+	fclose(conf_ply_file);
+	system("./runpos.sh");
+	shellcm.pos_dice(cells,eps);
       }
+      
 
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
@@ -1965,7 +1977,7 @@ int main( int argc, char *argv[ ] )
 
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
-	if(!no_gen_tex && !no_merge)
+	if(!no_gen_tex)
 	  system("./gentex.sh");
 	}
 	if(use_poisson_recon){
@@ -2013,7 +2025,7 @@ int main( int argc, char *argv[ ] )
 	  
 	  fchmod(fileno(dicefp),0777);
 	  fclose(dicefp);
-	  if(!no_gen_tex && !no_merge)
+	  if(!no_gen_tex)
 	    system("./posgentex.sh");
 	}
 	if(!no_gen_tex || use_poisson_recon){
@@ -2030,7 +2042,7 @@ int main( int argc, char *argv[ ] )
 	 
 	  fchmod(fileno(lodfp),0777);
 	  fclose(lodfp);
-	  if(!no_gen_tex && !no_merge)
+	  if(!no_gen_tex)
 	    system("./lodgen.sh");
 	}
       }

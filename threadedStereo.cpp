@@ -118,7 +118,7 @@ const char *uname="mesh";
 const char *dicedir="mesh-diced";
 const char *aggdir="mesh-agg";
 static string deltaT_pose;
-static string dense_method;
+static string dense_method="";
 bool dist_run=false;
 static string passtotridec="-e2.0";
 static bool do_hw_blend=false;
@@ -288,6 +288,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	{
 	  use_dense_stereo=true;
 	  i+=1;
+	}
+      else if( strcmp( argv[i], "--dense-method" ) == 0 )
+	{
+	  if( i == argc-1 ) return false;
+	  dense_method=argv[i+1];
+	  i+=2;
 	}
       else if( strcmp( argv[i], "--no-depth" ) == 0 )
 	{
@@ -803,8 +809,11 @@ public:
     config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
     config_file->set_value( "MESH_TEX_SIZE", tex_size );
     config_file->get_value( "SD_SCALE", dense_scale);
-    config_file->get_value( "SD_METHOD", dense_method);
-
+    if(dense_method == "")
+      config_file->get_value( "SD_METHOD", dense_method);
+    else
+      config_file->set_value( "SD_METHOD", dense_method);
+      
 
 
     if( use_sift_features )

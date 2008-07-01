@@ -122,7 +122,8 @@ int main(int argc ,char**argv){
  case 'e' :	edgelenthresh=string(argv[i]+2);  EdgeLenClean=true; fprintf(stderr,"Cleaning edge len\n"); break;
 
 
-	 case 'F' :   FlipMesh	= true;  fprintf(stderr,"Flipping Mesh\n");    
+	 case 'F' :   FlipMesh	= true;  fprintf(stderr,"Flipping Mesh\n"); 
+  case 'S' :	SizeClean=true; minDiaSmallCC=atof(argv[i]+2); fprintf(stderr,"Cleaning with connected componet diameter threshold of %f\n",atof(argv[i]+2)); break;	   
 	  break;
 	  /*      case 'N' : if(argv[i][2]=='y') { qparams.NormalCheck	= true; 	qparams.NormalThrRad = M_PI/4.0;  fprintf(stderr,"Using Normal Deviation Checking\n");	}	else { qparams.NormalCheck	= false; fprintf(stderr,"NOT Using Normal Deviation Checking\n");	}        break;	
       case 'f' :	xfname =argv[i]+2;	           fprintf(stderr,"Transforming with %s file\n",xfname); 	 break;	
@@ -141,9 +142,10 @@ int main(int argc ,char**argv){
       case 'P' :	CleaningFlag=true;  fprintf(stderr,"Cleaning mesh before simplification\n",atof(argv[i]+2)); break;	
        
       case 'Q' :	QualityClean=true; QualityCleanVal=atof(argv[i]+2); fprintf(stderr,"Cleaning with quality threshold of %f\n",atof(argv[i]+2)); break;	
-      case 'S' :	SizeClean=true; minDiaSmallCC=atof(argv[i]+2); fprintf(stderr,"Cleaning with connected componet diameter threshold of %f\n",atof(argv[i]+2)); break;	
+    
       case 'H' :	FillHoles=true; MaxHoleSize=atoi(argv[i]+2); fprintf(stderr,"Filling holes with a maximum size of %d\n",atoi(argv[i]+2)); break;	
 	*/
+
 	    default  :  fprintf(stderr,"Unknown option '%s'\n", argv[i]);
 	      //exit(0);
 	}

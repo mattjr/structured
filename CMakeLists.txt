@@ -222,6 +222,7 @@ LINK_LIBRARIES(	${OSG_LIBRARY}
 		${LIBSNAPPER_LIBRARY}
 		${GTS_LINK_FLAGS}
 		-l3ds    		
+		-lgfortran
 		${LIBPOLYP_LIBRARY}
 	)
 

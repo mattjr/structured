@@ -63,6 +63,7 @@ static bool use_poisson_recon=true;
 static int max_feature_count = 5000;
 static double eps=1.0;
 static double subvol=40.0;
+static bool run_pos=true;
 static bool do_novelty=false;
 static double dense_scale=1.0;
 static bool have_max_frame_count = false;
@@ -355,6 +356,7 @@ static bool parse_args( int argc, char *argv[ ] )
 	}
       else if( strcmp( argv[i], "--vrip" ) == 0 )
 	{
+	  run_pos=false;
 	  use_vrip_recon = true;
 	  no_simp = false;
 	  i+=1;
@@ -1065,7 +1067,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     sprintf(meshfilename,"%s/surface-%s.ply",
 	    cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
 
-  printf("Mesh cached check %s\n",meshfilename);
+  //printf("Mesh cached check %s\n",meshfilename);
 
   if(!use_cached){
     printf("Redoing cache\n");
@@ -1813,7 +1815,8 @@ int main( int argc, char *argv[ ] )
 	fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod1.ply 0 -e15.0\n");
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
-	system("./runpos.sh");
+	if(run_pos)
+	  system("./runpos.sh");
 
 
 	
@@ -1833,14 +1836,16 @@ int main( int argc, char *argv[ ] )
 	fprintf(conf_ply_file,"cp ../mesh-pos/pos_rec-lod0.ply ../mesh-pos/pos_rec-lod2.ply\n");
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
-	system("./runpos.sh");
-	shellcm.pos_dice(cells,eps);
+	if(run_pos){
+	  system("./runpos.sh");
+	  shellcm.pos_dice(cells,eps);
+	}
       }
       
 
       if(!single_run){
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n cd mesh-agg/\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
+	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n cd mesh-agg/\necho -e 'Vriping...\\n'\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
 	fprintf(conf_ply_file,"VRIPLOGDIR=%s\n"
 	,vriplogdir);
 	fprintf(conf_ply_file,"find . -name 'mb*.ply' | sort  > mbmeshes.txt\n");
@@ -2034,13 +2039,13 @@ int main( int argc, char *argv[ ] )
 	  
 	  fchmod(fileno(dicefp),0777);
 	  fclose(dicefp);
-	  if(!no_gen_tex)
+	  if(!no_gen_tex && run_pos)
 	    system("./posgentex.sh");
 	}
 	if(!no_gen_tex || use_poisson_recon){
 	  FILE *lodfp=fopen("lodgen.sh","w");
 	  char ar[255];
-	  if(use_poisson_recon)
+	  if(run_pos)
 	    strcpy(ar,"--dicedir mesh-pos/");
 	  else
 	    strcpy(ar,"--dicedir mesh-diced/");
@@ -2051,7 +2056,7 @@ int main( int argc, char *argv[ ] )
 	 
 	  fchmod(fileno(lodfp),0777);
 	  fclose(lodfp);
-	  if(!no_gen_tex)
+	  if(!no_gen_tex )
 	    system("./lodgen.sh");
 	}
       }

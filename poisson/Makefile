@@ -1,7 +1,7 @@
 # /********************************************************************************************
 # * File:		Makefile
 # * Author:		$LastChangedBy: matthew $
-# * Revision:	$Revision: 1.3 $
+# * Revision:	$Revision: 1.4 $
 # * Last Updated:	$LastChangedDate: 2006-11-10 15:03:28 -0500 (Fri, 10 Nov 2006) $
 # ********************************************************************************************/
 
@@ -49,4 +49,4 @@ $(BIN)%.o: $(SRC)%.cpp
 	$(CXX) -c -o $@ $(CFLAGS) -I$(INCLUDE) $<
 
 dumpnormpts:
-	$(CXX) -o $(BIN)dumpnormpts $(CFLAGS) -I$(INCLUDE)/libpolyp dumpnormpts.cc -lpolyp -lgfortran
+	$(CXX) -o $(BIN)dumpnormpts $(CFLAGS) -I$(INCLUDE)/libpolyp dumpnormpts.cc -lpolyp

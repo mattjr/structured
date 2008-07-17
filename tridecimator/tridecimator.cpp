@@ -198,7 +198,7 @@ int main(int argc ,char**argv){
   //vcg::tri::UpdateTopology<CMeshO>::FaceFace(cm);
   // vcg::tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
   //vcg::tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);
-  printf("Herer\n");
+  
   if(err) {
     fprintf(stderr,"Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::Importer<CMeshO>::ErrorMsg(err));
     exit(-1);
@@ -261,7 +261,7 @@ int main(int argc ,char**argv){
   int unref= tri::Clean<CMeshO>::RemoveUnreferencedVertex(cm);
   int deg= vcg::tri::Clean<CMeshO>::RemoveDegenerateFace(cm);
   
-  fprintf(stderr,"Removed %i degenrate faces %i duplicate and %i unreferenced vertices from mesh\n",deg,dup,unref);
+  fprintf(stderr,"Removed %i degen faces %i dup and %i unref vert\n",deg,dup,unref);
      if ( ! tri::Clean<CMeshO>::IsTwoManifoldFace(cm) ) {
   
        printf("freak out\n");
@@ -349,7 +349,7 @@ int main(int argc ,char**argv){
   if(FlipMesh)
     tri::Clean<CMeshO>::FlipMesh(cm);
   
-  fprintf(stderr,"Completed in %.2f sec (%.2f init + %.2f proc)\n",(t3-t1)/(double)CLOCKS_PER_SEC,(t2-t1)/(double)CLOCKS_PER_SEC,(t3-t2)/(double)CLOCKS_PER_SEC);
+  //fprintf(stderr,"Completed in %.2f sec (%.2f init + %.2f proc)\n",(t3-t1)/(double)CLOCKS_PER_SEC,(t2-t1)/(double)CLOCKS_PER_SEC,(t3-t2)/(double)CLOCKS_PER_SEC);
   string filename=string(argv[2]);
   
 

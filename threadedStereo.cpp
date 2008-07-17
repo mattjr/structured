@@ -524,7 +524,7 @@ static bool parse_args( int argc, char *argv[ ] )
 	{
 
 	  base_dir = argv[i];
-	  cout <<"Basedir " <<base_dir << endl;
+	  //cout <<"Basedir " <<base_dir << endl;
 	  have_base_dir = true;
 	  i++;
 	}
@@ -556,7 +556,7 @@ static bool parse_args( int argc, char *argv[ ] )
     dir_name= base_dir+string("/")+dir_name;
     strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
     strcpy(cachedtexdir,string(base_dir+string("/")+cachedtexdir).c_str());
-    printf("Herere %s %s\n",cachedmeshdir,base_dir.c_str());
+    //printf("Herere %s %s\n",cachedmeshdir,base_dir.c_str());
   }
 
   struct stat statinfo;
@@ -1100,7 +1100,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       } 
     
     if(!texcached){
-      printf("\nCaching texture %s\n",texfilename);
+      //      printf("\nCaching texture %s\n",texfilename);
       osgExp->cacheCompressedImage(color_frame,texfilename,512);
     }
     
@@ -1408,7 +1408,7 @@ int main( int argc, char *argv[ ] )
    
   string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
   basepath= osgDB::getRealPath (basepath);
-  cout << "Binary Path " <<basepath <<endl;
+  //cout << "Binary Path " <<basepath <<endl;
  
   //
   // Open the config file

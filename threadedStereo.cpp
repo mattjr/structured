@@ -1095,6 +1095,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 			  color_frame))
       {
 	printf("Failed to get pair %s %s\n",name.left_name.c_str(),name.right_name.c_str());
+	int progCount=doneCount.increment();
+	image_count_verbose (progCount, totalTodoCount);
 	return false;
       } 
     
@@ -1265,8 +1267,11 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     
       
       printf("Valid %d\n",localV->len);
-      if(!localV->len)
+      if(!localV->len){
+	int progCount=doneCount.increment();
+	image_count_verbose (progCount, totalTodoCount);
 	return false;
+      }
       double mult=0.00;
       
       surf = auv_mesh_pts(localV,mult,0); 
@@ -1365,10 +1370,6 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 		 mesh->bbox.max[1],
 		 mesh->bbox.max[2]);
 
-    int progCount=doneCount.increment();
-  image_count_verbose (progCount, totalTodoCount);
-  
- 
   }
   
 
@@ -1391,6 +1392,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     cvReleaseImage( &color_frame);
     
   }
+
   int progCount=doneCount.increment();
   image_count_verbose (progCount, totalTodoCount);
   // printf("\rStereo processing on image %u/%u complete.",progCount,totalTodoCount);

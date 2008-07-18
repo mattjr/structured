@@ -1106,7 +1106,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     }
     
     if(!meshcached){
-      printf("Not cached creating\n");
+    
+      //printf("Not cached creating\n");
       non_cached_meshes++;
       
       if(feature_depth_guess == AUV_NO_Z_GUESS && !no_depth)
@@ -1266,7 +1267,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       }
     
       
-      printf("Valid %d\n",localV->len);
+      //printf("Valid %d\n",localV->len);
       if(!localV->len){
 	int progCount=doneCount.increment();
 	image_count_verbose (progCount, totalTodoCount);

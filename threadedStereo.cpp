@@ -480,7 +480,6 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--3ds" ) == 0 )
 	{
 	  output_3ds=true;
-	  no_gen_tex=true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
@@ -1282,14 +1281,21 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
  
   }
 
-  if(output_3ds){
 
+  if(output_3ds){
+    char fname_3ds[255];
+    surf=  gts_surface_new(gts_surface_class(),
+			     (GtsFaceClass *)t_face_class(), 
+			     gts_edge_class(), t_vertex_class());
+    TriMesh *mesh = TriMesh::read(meshfilename);
+    convert_ply(  mesh ,surf,0);
+    printf("%x \n" ,surf);
     gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, name.m);
     
 
     map<int,string>textures;
     textures[0]=(name.dir+name.left_name);
-    sprintf(filename,"mesh/surface-%08d.3ds",
+    sprintf(fname_3ds,"mesh/surface-%08d.3ds",
 	    name.id);
 	     
     std::map<int,GtsMatrix *> gts_trans;
@@ -1299,7 +1305,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 		       NULL,tex_size,num_threads,0,0);
     std::vector<string> lodnames;
  
-    osgExp->Export3DS(surf,filename,textures,512,NULL);
+    osgExp->Export3DS(surf,fname_3ds,textures,512,NULL);
     gts_matrix_destroy (invM);
   }
 
@@ -1307,9 +1313,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     gts_object_destroy (GTS_OBJECT (surf)); 
   
   if(output_ply_and_conf){
-	   
-    
-  TriMesh::verbose=0;
+    TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
     edge_len_thresh(mesh,2.0);
     xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
@@ -1318,7 +1322,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	     name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);
     apply_xform(mesh,xf);
     mesh->need_bbox();
-  
+    
     mesh->write(filename);
 
     if(use_poisson_recon){ 

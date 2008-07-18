@@ -115,13 +115,17 @@ IF( NOT OSG_FOUND )
 ENDIF( NOT OSG_FOUND )
 
 # lapack
-SET( LAPACK_LIB lapack )
-
-# This check seems to fail when using ccache?
-#CHECK_LIBRARY_EXISTS( lapack dpotrf_ " " HAVE_LAPACK )
-#IF( NOT HAVE_LAPACK )
-#   MESSAGE( FATAL_ERROR  "ERROR - Can't find lapack" )
-#ENDIF( NOT HAVE_LAPACK )      
+IF( APPLE )
+   SET( LAPACK_LIB lapack )
+ELSE( APPLE )
+   # On linux, we may or may not need to link to gfortran
+   CHECK_LIBRARY_EXISTS( gfortran _gfortran_set_std "" HAVE_GFORTRAN )
+   IF( HAVE_GFORTRAN )
+      SET( LAPACK_LIB lapack gfortran )
+   ELSE( HAVE_GFORTRAN )
+      SET( LAPACK_LIB lapack )
+   ENDIF( HAVE_GFORTRAN )
+ENDIF( APPLE )
 
 
 # OpenCV
@@ -221,6 +225,7 @@ LINK_LIBRARIES(	${OSG_LIBRARY}
 		${LIBPLANKTON_LIBRARY}	
 		${LIBSNAPPER_LIBRARY}
 		${GTS_LINK_FLAGS}
+		${LAPACK_LIB}
 		-l3ds    		
 		${LIBPOLYP_LIBRARY}
 	)

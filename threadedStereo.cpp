@@ -1289,9 +1289,12 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 			     gts_edge_class(), t_vertex_class());
     TriMesh *mesh = TriMesh::read(meshfilename);
     convert_ply(  mesh ,surf,0);
-    printf("%x \n" ,surf);
+   
+
+
     gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, name.m);
-    
+
+   
 
     map<int,string>textures;
     textures[0]=(name.dir+name.left_name);
@@ -1303,6 +1306,14 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     gts_trans[0]=(invM);
     gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
 		       NULL,tex_size,num_threads,0,0);
+
+  GtsVector v;
+    v[0]=-1;
+    v[1]=0;    
+    v[2]=0;
+    GtsMatrix *rot= gts_matrix_rotate(NULL,v,M_PI);
+    gts_surface_foreach_vertex (surf, (GtsFunc) gts_point_transform, rot);
+
     std::vector<string> lodnames;
  
     osgExp->Export3DS(surf,fname_3ds,textures,512,NULL);

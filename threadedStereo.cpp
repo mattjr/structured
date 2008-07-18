@@ -1287,6 +1287,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     surf=  gts_surface_new(gts_surface_class(),
 			     (GtsFaceClass *)t_face_class(), 
 			     gts_edge_class(), t_vertex_class());
+    TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
     convert_ply(  mesh ,surf,0);
    

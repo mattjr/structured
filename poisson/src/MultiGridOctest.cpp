@@ -96,7 +96,7 @@ void ShowUsage(char* ex)
 	printf("\t[--depth <maximum reconstruction depth>]\n");
 	printf("\t\t Running at depth d corresponds to solving on a 2^d x 2^d x 2^d\n");
 	printf("\t\t voxel grid.\n");
-
+	printf("\t[--mintridepth <min depth to extrack tris>]\n");
 	printf("\t[--scale <scale factor>]\n");
 	printf("\t\t Specifies the factor of the bounding cube that the input\n");
 	printf("\t\t samples should fit into.\n");
@@ -127,19 +127,19 @@ int Execute(int argc,char* argv[])
 	cmdLineString In,Out;
 	cmdLineReadable Binary,Verbose,NoResetSamples,NoClipTree,Confidence;
 	cmdLineInt Depth(8),SolverDivide(8),IsoDivide(8),Refine(3);
-	cmdLineInt KernelDepth;
+	cmdLineInt KernelDepth,minTriDepthP;
 	cmdLineFloat SamplesPerNode(1.0f),Scale(1.25f);
 	char* paramNames[]=
 	{
 		"in","depth","out","refine","noResetSamples","noClipTree",
 		"binary","solverDivide","isoDivide","scale","verbose",
-		"kernelDepth","samplesPerNode","confidence"
+		"kernelDepth","samplesPerNode","confidence","mintridepth"
 	};
 	cmdLineReadable* params[]=
 	{
 		&In,&Depth,&Out,&Refine,&NoResetSamples,&NoClipTree,
 		&Binary,&SolverDivide,&IsoDivide,&Scale,&Verbose,
-		&KernelDepth,&SamplesPerNode,&Confidence
+		&KernelDepth,&SamplesPerNode,&Confidence,&minTriDepthP
 	};
 	int paramNum=sizeof(paramNames)/sizeof(char*);
 	int commentNum=0;
@@ -169,7 +169,10 @@ int Execute(int argc,char* argv[])
 	if(NoResetSamples.set)	{DumpOutput2(comments[commentNum++],"\t--noResetSamples\n");}
 	if(NoClipTree.set)		{DumpOutput2(comments[commentNum++],"\t--noClipTree\n");}
 	if(Confidence.set)		{DumpOutput2(comments[commentNum++],"\t--confidence\n");}
-
+	if(minTriDepthP.set){
+	  minTriDepth=minTriDepthP.value;
+	  DumpOutput2(comments[commentNum++],"\t--mintridepth %d\n",minTriDepthP.value);
+	}
 	double t;
 	double tt=Time();
 	Point3D<float> center;

@@ -1825,9 +1825,14 @@ int main( int argc, char *argv[ ] )
 	  fprintf(conf_ply_file,"%s/poisson/dumpnormpts %s mb.bnpts -flip\n"
 		  "cat mb.bnpts >> pos_out.bnpts\n",basepath.c_str(),
 		  osgDB::getSimpleFileName( mb_ply_filenames[0]).c_str());
+	int mintridepth;
+	if(have_mb_ply)
+	  mintridepth=7;
+	else
+	  mintridepth=8;
 
-	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --out ../mesh-pos/pos_rec-lod2.ply\n",8,6,1.0);
-	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --out ../mesh-pos/pos_raw.ply\n",11,6,8.0);
+	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --mintridepth %d --out ../mesh-pos/pos_rec-lod2.ply\n",8,6,1.0,mintridepth-2);
+	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --mintridepth %d --out ../mesh-pos/pos_raw.ply\n",11,6,4.0,mintridepth);
 
 
 		fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod0.ply 0 -e15.0\n");

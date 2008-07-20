@@ -39,7 +39,7 @@ DAMAGE.
 
 const Real EPSILON=Real(1e-6);
 const Real ROUND_EPS=Real(1e-5);
-
+int minTriDepth=-1;
 
 /////////////////////
 // SortedTreeNodes //
@@ -1086,7 +1086,8 @@ void Octree<Degree>::GetMCIsoTriangles(const Real& isoValue,CoredMeshData* mesh,
 	// Now get the iso-surfaces, running from finest nodes to coarsest in order to allow for edge propogation from
 	// finer faces to coarser ones.
 	temp=tree.nextLeaf();
-	while(temp){
+	
+	while(temp){	
 		GetMCIsoTriangles(temp,mesh,roots,NULL,NULL,0,0);
 		temp=tree.nextLeaf(temp);
 	}
@@ -1134,6 +1135,7 @@ void Octree<Degree>::GetMCIsoTriangles(const Real& isoValue,const int& subdivide
 
 		temp=sNodes.treeNodes[i]->nextLeaf();
 		while(temp){
+		if(temp->depth() >minTriDepth)
 			GetMCIsoTriangles(temp,mesh,boundaryRoots,interiorRoots,interiorPoints,offSet,sDepth);
 			temp=sNodes.treeNodes[i]->nextLeaf(temp);
 		}
@@ -1142,10 +1144,15 @@ void Octree<Degree>::GetMCIsoTriangles(const Real& isoValue,const int& subdivide
 		offSet=mesh->outOfCorePointCount();
 	}
 	delete boundaryNormalHash;
-
+	int c=0;
 	temp=tree.nextLeaf();
 	while(temp){
-		if(temp->depth()<sDepth){GetMCIsoTriangles(temp,mesh,boundaryRoots,NULL,NULL,0,0);}
+		if(temp->depth()<sDepth){
+			if(temp->depth() >minTriDepth)	
+	    			GetMCIsoTriangles(temp,mesh,boundaryRoots,
+				NULL,NULL,0,0);
+	    }
+		
 		temp=tree.nextLeaf(temp);
 	}
 }

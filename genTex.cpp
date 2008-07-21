@@ -499,6 +499,10 @@ std::vector<vector<string >   > outNames;
        TriMesh::verbose=verbose;
        
        TriMesh *mesh = TriMesh::read(str.c_str());
+       if(!mesh){
+	 fprintf(stderr,"Empty mesh skipping\n");
+	 continue;
+       }
 	DepthStats ds(mesh);
 	vector<Plane3D> planes;
 	vector<TriMesh::BBox> bounds;
@@ -507,7 +511,7 @@ std::vector<vector<string >   > outNames;
 	bool res=convert_ply(mesh,surf,verbose,planeIdx);
        mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
        if(!res ){
-      printf("Failed to load surface %s\n",
+	 printf("Failed to load surface %s\n",
 	     meshNames[i].c_str());
       exit(-1);
     }

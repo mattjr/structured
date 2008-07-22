@@ -100,6 +100,7 @@ static char cov_file_name[255];
 static bool no_gen_tex=false;
 static bool no_vrip=false;
 static double vrip_res=0.033;
+static bool regen_tex=false;
 static string basepath;
 static bool single_run=false;
 static int single_run_start=0;
@@ -409,6 +410,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "-d" ) == 0 )
 	{
 	  display_debug_images = false;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--regen" ) == 0 )
+	{
+	  regen_tex = true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "-p" ) == 0 )
@@ -997,16 +1003,17 @@ static int get_auv_image_name( const string  &contents_dir_name,
   }      
   if (name.left_name == "DeltaT" || name.right_name == "DeltaT")
     return NO_ADD;
+
+  fill_gts_matrix(name.pose,name.m);
   if(!single_run){
-    fprintf(fpp,"%f %f %f %f %f %f %f %f\n",   
-	  name.time,
-	  name.pose[AUV_POSE_INDEX_X],
-	  name.pose[AUV_POSE_INDEX_Y],
-	 name.pose[AUV_POSE_INDEX_Z],
-	  name.pose[AUV_POSE_INDEX_PHI],
-	  name.pose[AUV_POSE_INDEX_THETA],
-	  name.pose[AUV_POSE_INDEX_PSI],
-	  name.alt);
+    fprintf(fpp,"%f",   
+	    name.time);
+    for(int i=0; i< 4; i++){
+      for(int j=0; j < 4; j++){
+	fprintf(fpp," %f",name.m[i][j]);
+      }
+    }
+    fprintf(fpp,"\n");
   }
     
   return ADD_IMG;
@@ -1028,7 +1035,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   bool meshcached=false;
   bool texcached=false;
   
-  fill_gts_matrix(name.pose,name.m);
+  
 
 #ifdef USE_DENSE_STEREO
   if(!sdense && use_dense_stereo){
@@ -2083,6 +2090,29 @@ int main( int argc, char *argv[ ] )
 	  if(!no_gen_tex )
 	    system("./lodgen.sh");
 	}
+	
+	{
+	  char dicedir[255];
+	  if(run_pos)
+	    strcpy(dicedir,"mesh-pos/");
+	  else
+	    strcpy(dicedir,"mesh-diced/");
+
+	  FILE *rgfp=fopen("regen.sh","w");
+	  fprintf(dicefp,"#!/bin/bash\necho 'Regen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\n",basepath.c_str());
+	  fprintf(rgfp,"mkdir -p regen-tex\n"
+		  "cd regen-tex\n"
+		  "$BASEPATH/osgretex -pathfile ../mesh/campath.txt ../mesh/final.ive\n"
+		  "cd $RUNDIR\ntime %s/genTex --regen --dicedir %s --margins 10 10 1000000000000000 %s -f %s\n"
+		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",basepath.c_str(),
+		  dicedir,
+		  stereo_config_file_name.c_str(),"regen-tex/",dicedir);
+	  
+	  fchmod(fileno(rgfp),0777);
+	  fclose (rgfp);
+	  if(regen_tex)
+	    system("./regen.sh"); 
+	}
       }
     }
   }
@@ -2099,9 +2129,8 @@ int main( int argc, char *argv[ ] )
 
   delete cov_file;
 
+
 }
-
-
 
 
 

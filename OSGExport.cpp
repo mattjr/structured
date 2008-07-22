@@ -102,9 +102,12 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   gts_triangle_vertices(&GTS_FACE(f)->triangle,(GtsVertex **)& v1, 
 			(GtsVertex **)&v2, (GtsVertex **)&v3);
 
-  (*gc._vertices++).set(GTS_VERTEX(v1)->p.y,GTS_VERTEX(v1)->p.x,-GTS_VERTEX(v1)->p.z);
+  /* (*gc._vertices++).set(GTS_VERTEX(v1)->p.y,GTS_VERTEX(v1)->p.x,-GTS_VERTEX(v1)->p.z);
   (*gc._vertices++).set(GTS_VERTEX(v2)->p.y,GTS_VERTEX(v2)->p.x,-GTS_VERTEX(v2)->p.z);
-  (*gc._vertices++).set(GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.x,-GTS_VERTEX(v3)->p.z);
+  (*gc._vertices++).set(GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.x,-GTS_VERTEX(v3)->p.z);*/
+ (*gc._vertices++).set(GTS_VERTEX(v1)->p.x,GTS_VERTEX(v1)->p.y,GTS_VERTEX(v1)->p.z);
+  (*gc._vertices++).set(GTS_VERTEX(v2)->p.x,GTS_VERTEX(v2)->p.y,GTS_VERTEX(v2)->p.z);
+  (*gc._vertices++).set(GTS_VERTEX(v3)->p.x,GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.z);
 
   if(gc._planeTexValid){
     if(v1->plane >= 0)
@@ -222,7 +225,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
   string basename=osgDB::getSimpleFileName(name);
   string ddsname=osgDB::getNameLessExtension(name);
   ddsname +=".dds";
-	bool cachedLoaded=false;
+  bool cachedLoaded=false;
   osg::Image *filecached=NULL;
   osg::Image *retImage=new osg::Image;
   if(compressed_img_cache.find(basename) == compressed_img_cache.end() || !compressed_img_cache[basename] ){
@@ -240,8 +243,9 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 	return NULL;
       }
       else{
-	filecached=cacheCompressedImage(img,ddsname,size).get();
-      
+	osg::ref_ptr<osg::Image> comp_img=cacheCompressedImage(img,ddsname,size).get();
+	filecached=comp_img.get();
+	comp_img->ref();
       }
     }
     filecached->setFileName(basename);

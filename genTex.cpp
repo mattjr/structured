@@ -66,6 +66,7 @@ extern std::vector<GtsBBox *> bboxes_all;
 static bool do_novelty=false;
 static bool usePlaneDist=false;
 int margins[]={10,500,INT_MAX};
+static bool use_regen_tex=false;
 //
 // Parse command line arguments into global variables
 //
@@ -143,6 +144,11 @@ static bool parse_args( int argc, char *argv[ ] )
 	  if( i == argc-1 ) return false;
 	  nonvisidx=atoi( argv[i+1] );
 	  i+=2;
+	}
+      else if( strcmp( argv[i], "--regen" ) == 0 )
+	{
+	  use_regen_tex=true;
+	  i++;
 	}
       else if( strcmp( argv[i], "--single-run" ) == 0 )
 	{
@@ -228,9 +234,13 @@ GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
 	 eof1 = fscanf(bboxfp," %lf",&mtmp[i][j]);
      eof2 = fscanf(bboxfp,"\n");
       
-     
-      
-      texture_file_names[count]=(name);
+     char tmp[255];
+     if(use_regen_tex){
+       sprintf(tmp,"regen-tex-%04d.png",count);
+       texture_file_names[count]=tmp;
+     }else
+       texture_file_names[count]=(name);
+
       GtsBBox *bbox= gts_bbox_new(gts_bbox_class(),NULL,x1,y1,z1,x2,y2,z2);
       bbox->bounded=(void *)count;
       bboxes= g_slist_prepend (bboxes,bbox);
@@ -319,6 +329,8 @@ static void print_usage( void )
   cout << "    --lods <num>       Num of lods to output" << endl;
   cout << "    -f <imagedir> Image dir prefix" << endl;
   cout << "    -t <num_threads> Num threads" << endl;
+  cout << "    --regen Use regen tex" << endl;
+  
   cout << endl;
 }
 
@@ -388,9 +400,13 @@ int main( int argc, char *argv[ ] )
 
  
 
-
-  auv_data_tools::makedir("mesh");
-  chmod("mesh",   0777);
+  char mdir[255];
+  if(use_regen_tex)
+    strcpy(mdir,"mesh-blend");
+  else
+    strcpy(mdir,"mesh");
+  auv_data_tools::makedir(mdir);
+  chmod(mdir,   0777);
   if(num_threads > 1)
     g_thread_init (NULL);
  
@@ -464,7 +480,7 @@ std::vector<vector<string >   > outNames;
     
     //int initialEdges=gts_surface_edge_number(s);
 
-    int lodTexSize[]={max((int)(512*tex_scale),4),max((int)(256*tex_scale),4),max((int)(4*tex_scale),4)};
+    int lodTexSize[]={max((int)(512*tex_scale),4),max((int)(256*tex_scale),4),max((int)(16*tex_scale),4)};
     //float simpRatio[]={0.5,0.1,0.01};
     
     std::vector<string > lodnames;
@@ -571,7 +587,7 @@ std::vector<vector<string >   > outNames;
 	strcpy(ext,"3ds");
       else
 	strcpy(ext,"ive");
-      sprintf(out_name,"mesh/blended-%02d-lod%d.%s",i,j,ext);
+      sprintf(out_name,"%s/blended-%02d-lod%d.%s",mdir,i,j,ext);
       osg::ref_ptr<osg::Geode> group[2];
       ClippingMap cm;
     

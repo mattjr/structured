@@ -47,13 +47,15 @@ static unsigned int max_mesh_count;
 
 static int lodNum=3;
 char dicedir[255];
+char mdir[255];
+
 //
 // Parse command line arguments into global variables
 //
 static bool parse_args( int argc, char *argv[ ] )
 {
 
-  
+  strcpy(mdir,"mesh");
    
   int i=1;
   while( i < argc )
@@ -70,6 +72,12 @@ static bool parse_args( int argc, char *argv[ ] )
         {
           if( i == argc-1 ) return false;
 	  strcpy(dicedir, argv[i+1]);
+          i+=2;
+        }
+      if( strcmp( argv[i], "--mdir" ) == 0 )
+        {
+          if( i == argc-1 ) return false;
+	  strcpy(mdir, argv[i+1]);
           i+=2;
         }
     
@@ -153,12 +161,12 @@ int main( int argc, char *argv[ ] )
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;   
     char out_name[255];
-    sprintf(out_name,"mesh/blended-%02d-lod2-t.ive",i);
+    sprintf(out_name,"%s/blended-%02d-lod2-t.ive",mdir,i);
     lod0Node[0]=   osgDB::readNodeFile(string(out_name));
-    sprintf(out_name,"mesh/blended-%02d-lod2-u.ive",i);
+    sprintf(out_name,"%s/blended-%02d-lod2-u.ive",mdir,i);
     lod0Node[1]=osgDB::readNodeFile(string(out_name));
   
-    sprintf(out_name,"mesh/blended-%02d-lod2-t.ive",i);
+    sprintf(out_name,"%s/blended-%02d-lod2-t.ive",mdir,i);
  
   
   
@@ -173,7 +181,7 @@ int main( int argc, char *argv[ ] )
 	char out_name[255];
 	vector<string> setnames;
 	for(int  j=0; j < lodNum; j++){
-	  sprintf(out_name,"mesh/blended-%02d-lod%d%s",i,j,text[k]);
+	  sprintf(out_name,"%s/blended-%02d-lod%d%s",mdir,i,j,text[k]);
 
 	  if(FileExists(out_name)){
 	    setnames.push_back(osgDB::getSimpleFileName(out_name));
@@ -193,7 +201,7 @@ int main( int argc, char *argv[ ] )
     }
   }
   
-  genPagedLod(outNodes,outNames);
+  genPagedLod(outNodes,outNames,mdir);
   
  
   return 0;

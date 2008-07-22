@@ -1846,12 +1846,11 @@ int main( int argc, char *argv[ ] )
 	fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod1.ply 0 -e15.0\n");
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
-	if(run_pos)
+	if(run_pos){
 	  system("./runpos.sh");
+	  shellcm.pos_dice(cells,eps);
+	}
 
-
-	
-	shellcm.pos_dice(cells,eps);
 	//shellcm.pos_simp_cmd(use_poisson_recon);
 	
       }else{
@@ -2100,13 +2099,14 @@ int main( int argc, char *argv[ ] )
 
 	  FILE *rgfp=fopen("regen.sh","w");
 	  fprintf(dicefp,"#!/bin/bash\necho 'Regen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\n",basepath.c_str());
-	  fprintf(rgfp,"mkdir -p regen-tex\n"
-		  "cd regen-tex\n"
+	  fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
+		  "chmod 777 mesh-regen-tex\n"
+		  "cd mesh-regen-tex\n"
 		  "$BASEPATH/osgretex -pathfile ../mesh/campath.txt ../mesh/final.ive\n"
 		  "cd $RUNDIR\ntime %s/genTex --regen --dicedir %s --margins 10 10 1000000000000000 %s -f %s\n"
 		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",basepath.c_str(),
 		  dicedir,
-		  stereo_config_file_name.c_str(),"regen-tex/",dicedir);
+		  stereo_config_file_name.c_str(),"mesh-regen-tex/",dicedir);
 	  
 	  fchmod(fileno(rgfp),0777);
 	  fclose (rgfp);

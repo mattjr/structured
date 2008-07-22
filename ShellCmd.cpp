@@ -1,6 +1,6 @@
 #include "ShellCmd.h"
 
-void ShellCmd::pos_dice(vector<Cell_Data>cells,float eps){
+void ShellCmd::pos_dice(vector<Cell_Data>cells,float eps,bool run){
 FILE *	conf_ply_file=fopen("./dicepos.sh","w+"); 
 FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 	FILE *	diced_fp=fopen("mesh-pos/diced.txt","w");
@@ -118,7 +118,8 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
-	system("./dicepos.sh");
+	if(run)
+	  system("./dicepos.sh");
 }
 
 void ShellCmd::pos_simp_cmd2(bool run){

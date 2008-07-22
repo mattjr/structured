@@ -1848,9 +1848,8 @@ int main( int argc, char *argv[ ] )
 	fclose(conf_ply_file);
 	if(run_pos){
 	  system("./runpos.sh");
-	  shellcm.pos_dice(cells,eps);
 	}
-
+	shellcm.pos_dice(cells,eps,run_pos);
 	//shellcm.pos_simp_cmd(use_poisson_recon);
 	
       }else{

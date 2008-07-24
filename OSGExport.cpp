@@ -445,7 +445,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
  
   int numimgpertex;
   if(_tex_array_blend)
-    numimgpertex=11;
+    numimgpertex=150;
   else
     numimgpertex=1;
   int overlap=max(1,(int)(numimgpertex * 0.1));
@@ -458,6 +458,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   int count=0;
   bool first=true;
   GeometryCollection *curGC=NULL;
+  
   for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
     GeometryCollection& gc = *(itr->second);
     if(count % numimgpertex == 0 || first){

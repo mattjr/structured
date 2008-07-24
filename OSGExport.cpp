@@ -448,7 +448,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     numimgpertex=11;
   else
     numimgpertex=1;
-  
+  int overlap=max(1,(int)(numimgpertex * 0.1));
   
   gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
   MaterialToGeometryCollectionMap::iterator itr;
@@ -456,13 +456,14 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   vector<pair<GeometryCollection *,vector<int> > > gcAndTexIds;
 
   int count=0;
- 
+  bool first=true;
   GeometryCollection *curGC=NULL;
   for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
     GeometryCollection& gc = *(itr->second);
-    if(count % numimgpertex == 0 || count == 0){
+    if(count % numimgpertex == 0 || first){
       vector<int> ids;
-      ids.push_back(itr->first);
+      if(itr->first >= 0)
+	ids.push_back(itr->first);
       gcAndTexIds.push_back(make_pair(itr->second,ids));
       curGC=itr->second;
     }
@@ -470,10 +471,12 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       gcAndTexIds.back().first->_numPoints += gc._numPoints;
       gcAndTexIds.back().first->_numPrimitives += gc._numPrimitives;
       gcAndTexIds.back().first->_numPrimitivesWithTexCoords += gc._numPrimitivesWithTexCoords;
-      gcAndTexIds.back().second.push_back(itr->first);
+      if(itr->first >= 0)
+	gcAndTexIds.back().second.push_back(itr->first);
       itr->second=curGC;
     }
     count++;
+    first=false;
   }
   
 
@@ -539,9 +542,10 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  gc._geom->setTexCoordArray(i+1,texcoordBlendArray);
 	}
 	gc._geom->setStateSet(stateset);
-	printf("New GC size %d i = %d \n",gcAndTexIds[gci].second.size(),gci);
+	//printf("New GC size %d i = %d \n",gcAndTexIds[gci].second.size(),gci);
 	for(int g=0; g< (int)gcAndTexIds[gci].second.size(); g++)
-	  printf("Dude %d\n",gcAndTexIds[gci].second[g]);
+	  //  printf("Dude %d\n",gcAndTexIds[gci].second[g]); 
+	  ;
       }
 
       int imgNum=0;
@@ -549,7 +553,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       for(int j=0; j < (int)gcAndTexIds[gci].second.size(); j++){
 	int tidx=gcAndTexIds[gci].second[j];
 	if(tidx < 0 ||  textures.count(tidx) <= 0){
-	  tidx=0;
+	  printf("Really should never get here !!!!!\n");
 	}
 
 	std::string filename=prefixdir+textures[tidx];
@@ -558,9 +562,9 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	sprintf(fname,"mesh/%s",textures[tidx].c_str());
 	++tex_count;
 	if(vmcallback)
-	  vmcallback(tex_count,mtgcm.size());
+	  vmcallback(tex_count,mtgcm.size()-1);
 	if(verbose)
-	  printf("\rLoading Texture: %03d/%03d",tex_count,(int)mtgcm.size());
+	  printf("\rLoading Texture: %03d/%03d",tex_count,(int)mtgcm.size()-1);
 	if(!ive_out)
 	  if(verbose)printf("\n");	 
 	fflush(stdout); 

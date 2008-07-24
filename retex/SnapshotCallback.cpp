@@ -2,7 +2,7 @@
 
 using namespace auv_data_tools;
 
-SnapImageDrawCallback::SnapImageDrawCallback(std::vector<osg::Matrixd> passedM,osgDB::DatabasePager *dp,osgViewer::Viewer *viewer,osg::Node *root) :_dp(dp),_viewer(viewer),_root(root),_passedM(passedM){
+SnapImageDrawCallback::SnapImageDrawCallback(std::vector<osg::Matrixd> passedM,std::vector<bbox> bboxes,osgDB::DatabasePager *dp,osgViewer::Viewer *viewer,osg::Node *root) :_dp(dp),_viewer(viewer),_root(root),_passedM(passedM),_bboxes(bboxes){
   _snapImageOnNextFrame=false;
   takeSnapTile=false;
   tileBuffer=NULL;
@@ -23,6 +23,7 @@ SnapImageDrawCallback::SnapImageDrawCallback(std::vector<osg::Matrixd> passedM,o
   _root->accept(cmplsv);
   depthFP=NULL;
   getDepth=false;
+  bboxfp=fopen("re-bbox.txt","w");
   // if(batch)
   // setSnapImageOnNextFrame(snapRes);
 }
@@ -128,9 +129,38 @@ bool SnapImageDrawCallback:: getSnapImageOnNextFrame() const {
     }
     mod_view=osg::Matrixd::rotate(M_PI,1,0,0)*_passedM[_index++];
     _viewer->getCameraManipulator()->setByMatrix(mod_view);
-						//    self->setViewMatrix(mod_view);
-    //std::cout << mod_view <<std::endl;
-    //myGluPerspective(fov,aspectRatio, zNear, zFar,self);
+
+    /*
+    //0.336517 -0.137927 2.08631,
+    osg::Vec3 worldPt(-18.8754, -3.25458 ,64.7271);
+   
+    osg::Matrix invP;
+    invP=invP.inverse(_passedM[_index-1]);
+    //  std::cout << invP <<std::endl;
+    osg::Vec3 p1=worldPt*invP;
+    std::cout << p1 <<" get on my level\n";
+    double v1X,v1Y;
+    libplankton::Vector sp1(4);
+    sp1[0]=p1[0];
+    sp1[1]=p1[1];
+    sp1[2]=p1[2];
+    sp1[3]=1;
+    libsnapper::Stereo_Calib *calib = new libsnapper::Stereo_Calib( "s.calib" );
+    calib->left_calib.ccx /= 2.0;
+    calib->left_calib.ccy /= 2.0;
+    calib->left_calib.fcx /= 2.0;
+    calib->left_calib.fcy /= 2.0;
+    
+ libsnapper::camera_frame_to_undist_pixel_coords(calib->left_calib,sp1[0],sp1[1],sp1[2],v1X,v1Y);
+
+
+    std::cout <<"Comapre " << v1X << " " << v1Y << " local  "<< std::endl;
+    // exit(0);
+//    osg::Matrix inverseVPW;
+  //  inverseVPW.invert(VPW);
+     
+    //osg::Vec3d world = windowPt * inverseVPW;*/
+    
     premove=UPDATE;
     
   }else if(premove == UPDATE){
@@ -147,6 +177,17 @@ bool SnapImageDrawCallback:: getSnapImageOnNextFrame() const {
       return;
     }
   }else if(premove==SAVE){
+    /*
+ osg::Matrix VPW = camera.getViewMatrix() *
+      camera.getProjectionMatrix() *
+      camera.getViewport()->computeWindowMatrix();
+    //0.336517 -0.137927 2.08631,
+    osg::Vec3 worldPt(-18.8754, -3.25458 ,64.7271);
+    osg::Vec3 window = worldPt * VPW;
+
+    std::cout <<"World Pt " << worldPt << " " << "window " << window <<std::endl;
+ sleep(1);
+ exit(0);*/
     //   printf("Save\n");
     int x,y,width,height;
     const osg::Viewport *vp=camera.getViewport();
@@ -323,9 +364,24 @@ void SnapImageDrawCallback::pasteTile() const {
       tileCol=0;
       cvResize(snapBuffer,texImage);
       cvSaveImage(_filename.c_str(),texImage);
-      printf("Saved %s\n",_filename.c_str());
+      const int count=_index-1;
+      //write_pose_mat(count);
+
+      char tmp[255];
+      sprintf(tmp,"regen-tex-%04d.png",count);
+      fprintf(bboxfp,"%d %s %lf %lf %lf %lf %lf %lf" ,count, tmp,
+	      _bboxes[count].x1,_bboxes[count].y1,_bboxes[count].z1,
+	      _bboxes[count].x2,_bboxes[count].y2,_bboxes[count].z2);
+      for(int i=0; i < 4; i++)
+	for(int j=0; j < 4; j++)
+	  fprintf(bboxfp," %lf", _passedM[count](j,i));
+      fprintf(bboxfp,"\n");
+
+
+      //printf("Saved %s\n",_filename.c_str());
       premove=MOVE;
       if( _index == (int)_passedM.size()){
+	fclose(bboxfp);
 	_viewer->setDone(true);
 	takeSnapTile=false;
       }
@@ -415,4 +471,3 @@ bool SnapImageDrawCallback::getClosestZValue(int x,int y,float &z) const
       return false;
   }
 }
-

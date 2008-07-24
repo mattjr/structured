@@ -142,6 +142,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
       (*gc._texcoords++).set(v3->u,1-v3->v); 
     }
     if(texnum2arraynum != NULL){
+      
       for(int i=0; i< 4; i++){
       	(*gc._texcoordsTexArray[i]++).set(v1->uB[i], 1 - v1->vB[i],(*texnum2arraynum)[f->materialB[i]]);
 	(*gc._texcoordsTexArray[i]++).set(v2->uB[i], 1 - v2->vB[i],(*texnum2arraynum)[f->materialB[i]]); 
@@ -444,7 +445,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
  
   int numimgpertex;
   if(_tex_array_blend)
-    numimgpertex=50;
+    numimgpertex=11;
   else
     numimgpertex=1;
   
@@ -455,6 +456,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   vector<pair<GeometryCollection *,vector<int> > > gcAndTexIds;
 
   int count=0;
+ 
   GeometryCollection *curGC=NULL;
   for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
     GeometryCollection& gc = *(itr->second);
@@ -473,10 +475,13 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     }
     count++;
   }
+  
+
+
   int tex_count=0;
 
-  for(int i=0; i< (int)gcAndTexIds.size(); i++){
-    GeometryCollection& gc = (*gcAndTexIds[i].first);
+  for(int gci=0; gci< (int)gcAndTexIds.size(); gci++){
+    GeometryCollection& gc = (*gcAndTexIds[gci].first);
     if (gc._numPrimitives){
       
        
@@ -501,7 +506,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
       }
       
-      if(!_tex_array_blend && gcAndTexIds[i].second.size() > 1){
+      if(!_tex_array_blend && gcAndTexIds[gci].second.size() > 1){
 	fprintf(stderr,"Error blending off yet more then one texture per geometry\n");
       }
       osg::ref_ptr<osg::Texture2DArray> textureArray;
@@ -513,7 +518,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	osg::Shader *lerp=new osg::Shader( osg::Shader::FRAGMENT);
 	loadShaderSource( lerp, basedir+"lerp.frag" );
 	program->addShader(  lerp );
-	textureArray->setTextureSize(tex_size,tex_size,gcAndTexIds[i].second.size());
+	textureArray->setTextureSize(tex_size,tex_size,gcAndTexIds[gci].second.size());
 	osg::StateSet* stateset = new osg::StateSet;
 	stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
 	
@@ -534,15 +539,19 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  gc._geom->setTexCoordArray(i+1,texcoordBlendArray);
 	}
 	gc._geom->setStateSet(stateset);
-	printf("New GC\n");
+	printf("New GC size %d i = %d \n",gcAndTexIds[gci].second.size(),gci);
+	for(int g=0; g< (int)gcAndTexIds[gci].second.size(); g++)
+	  printf("Dude %d\n",gcAndTexIds[gci].second[g]);
       }
 
       int imgNum=0;
       // set up texture if needed.
-      for(int j=0; j < (int)gcAndTexIds[i].second.size(); j++){
-	int tidx=gcAndTexIds[i].second[j];
-	if(tidx < 0 ||  textures.count(tidx) <= 0)
-	  continue;
+      for(int j=0; j < (int)gcAndTexIds[gci].second.size(); j++){
+	int tidx=gcAndTexIds[gci].second[j];
+	if(tidx < 0 ||  textures.count(tidx) <= 0){
+	  tidx=0;
+	}
+
 	std::string filename=prefixdir+textures[tidx];
 	osg::notify(osg::INFO) << "ctex " << filename  << std::endl;
 	char fname[255];
@@ -558,6 +567,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	
 	 
 	osg::ref_ptr<osg::Image> image=getCachedCompressedImage(filename,tex_size);
+
 	
 	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	if (image.valid()){	   
@@ -1078,7 +1088,7 @@ static void texcoord_foreach_face (T_Face * f,
     return;
   }
     
-  if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size,data->margin))
+  if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size,data->margin,data->use_dist_coords))
     data->validCount++;
   else{
     //printf("Index closest %d\n",indexClosest);
@@ -1151,7 +1161,7 @@ static void findborder_foreach_face (T_Face * f,
   }
 }
 
-void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads,int verbose,int blend,int margin){
+void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode * bboxTree,int tex_size, int num_threads,int verbose,int blend,int margin,bool use_dist_coords){
   //ffp=fopen("w.txt","w");
   
   //errFP=fopen("err.txt","w");
@@ -1179,7 +1189,7 @@ void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatr
   tex_data.bboxTree=bboxTree;
   tex_data.camPosePts =camPosePts;
   tex_data.margin=margin;
-  
+  tex_data.use_dist_coords=use_dist_coords;
   tex_data.back_trans=back_trans;
   tex_data.validCount=0;
   tex_data.tex_size=tex_size;
@@ -1231,7 +1241,7 @@ if(verbose)
 
     if(!blend){
       int idx=find_closet_img_trans(&GTS_FACE(f2)->triangle,bboxTree,camPosePts,back_trans,calib,bboxes_all,margin);
-      if(apply_tex_to_tri(f2,calib,back_trans[idx],idx,tex_size,margin))
+      if(apply_tex_to_tri(f2,calib,back_trans[idx],idx,tex_size,margin,use_dist_coords))
 	tex_data.validCount++;
     }else{
       int idx[NUM_TEX_BLEND_COORDS];

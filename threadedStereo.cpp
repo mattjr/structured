@@ -1005,16 +1005,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
     return NO_ADD;
 
   fill_gts_matrix(name.pose,name.m);
-  if(!single_run){
-    fprintf(fpp,"%f",   
-	    name.time);
-    for(int i=0; i< 4; i++){
-      for(int j=0; j < 4; j++){
-	fprintf(fpp," %f",name.m[i][j]);
-      }
-    }
-    fprintf(fpp,"\n");
-  }
+
     
   return ADD_IMG;
          
@@ -1609,7 +1600,23 @@ int main( int argc, char *argv[ ] )
     for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++)
       if(!itr->valid)
 	tasks.erase(itr);
+
   }
+  for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++){
+    Slice name=(*itr);
+    fprintf(fpp,"%f",   
+	    name.time);
+    fprintf(fpp,"%f %f %f %f %f %f",name.bbox->x1,name.bbox->y1,name.bbox->z1,
+	    name.bbox->x2,name.bbox->y2,name.bbox->z2);
+    
+    for(int i=0; i< 4; i++){
+      for(int j=0; j < 4; j++){
+	fprintf(fpp," %f",name.m[i][j]);
+      }
+    }
+    fprintf(fpp,"\n");
+  }
+
   if(!single_run){
     
     char conf_name[255];
@@ -2101,10 +2108,10 @@ int main( int argc, char *argv[ ] )
 	  fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
 		  "chmod 777 mesh-regen-tex\n"
 		  "cd mesh-regen-tex\n"
-		  "$BASEPATH/osgretex -pathfile ../mesh/campath.txt ../mesh/final.ive\n"
-		  "cd $RUNDIR\ntime %s/genTex --regen --dicedir %s --margins 10 10 1000000000000000 %s -f %s\n"
-		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",basepath.c_str(),
-		  dicedir,
+		  "$BASEPATH/osgretex -pathfile ../mesh/campath.txt -config %s ../mesh/final.ive\n"
+		  "cd $RUNDIR\ntime $BASEPATH/genTex --regen --dicedir %s --margins 10 10 1000000000000000 %s -f %s\n"
+		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",
+		  stereo_config_file_name.c_str(), dicedir,
 		  stereo_config_file_name.c_str(),"mesh-regen-tex/",dicedir);
 	  
 	  fchmod(fileno(rgfp),0777);

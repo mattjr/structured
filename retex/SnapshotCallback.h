@@ -36,10 +36,7 @@
 #include <osgGA/MatrixManipulator>
 #include "adt_dataio.hpp"
 #include "adt_cvutils.hpp"
-extern bool movieMaking;
-
-extern bool movieSetup;
-extern int movieCount;
+#include "Path.h"
 class ChangeMetricPagedLODSubgraphsVistor : public osg::NodeVisitor
 {
 public:
@@ -93,7 +90,7 @@ class SnapImageDrawCallback : public osg::CameraNode::DrawCallback
  {
  public:
 
-   SnapImageDrawCallback(std::vector<osg::Matrixd> passedM,osgDB::DatabasePager *dp=NULL,osgViewer::Viewer *viewer=NULL,osg::Node *root=NULL);
+   SnapImageDrawCallback(std::vector<osg::Matrixd> passedM,std::vector<bbox> bboxes,osgDB::DatabasePager *dp=NULL,osgViewer::Viewer *viewer=NULL,osg::Node *root=NULL);
  
    void setSnapImageOnNextFrame(int resolution);
    bool getSnapImageOnNextFrame() const;
@@ -121,7 +118,7 @@ class SnapImageDrawCallback : public osg::CameraNode::DrawCallback
    double _expDelay;
    FILE *depthFP;
    
-   
+
 mutable   bool use_png;
    mutable bool imgAllocated;
    mutable osg::Node *_root;
@@ -135,6 +132,8 @@ mutable   bool use_png;
    mutable std::vector<osg::Matrixd> _passedM;
    mutable int _index;
    mutable osg::Matrix mod_view;
+   mutable FILE *bboxfp;
+   mutable std::vector<bbox> _bboxes;
 };
 
 

@@ -14,6 +14,11 @@
 #include <osg/MatrixTransform>
 #include <osgViewer/Viewer>
 #include <osgViewer/ViewerEventHandlers>
+#include "libsnapper/auv_stereo_geometry.hpp"
+#include "libsnapper/auv_image_distortion.hpp"
+#include "libsnapper/auv_camera_geometry.hpp"
+#include "libsnapper/auv_stereo_calib.hpp"
+#include "auv_config_file.hpp"
 
 
 #include <iostream>
@@ -22,7 +27,8 @@
 #include "Path.h"
 
 using namespace std;
-
+using namespace libplankton;
+using namespace libsnapper;
 SnapImageDrawCallback* snapImageDrawCallback;
 
 void argConvGLcpara2( double cparam[3][4], int width, int height, double gnear, double gfar, double m[16] );
@@ -30,10 +36,58 @@ void argConvGLcpara2( double cparam[3][4], int width, int height, double gnear, 
 int main(int argc, char** argv)
 {
   string p;
+  string config_file_name("stereo.cfg");
   bool aa;
+  double scale=2.0;
+
   // use an ArgumentParser object to manage the program arguments.
   osg::ArgumentParser arguments(&argc,argv);
   arguments.read("-pathfile",p);
+  arguments.read("-scale",scale);
+
+  arguments.read("-config",config_file_name);
+  //
+  // Figure out the directory that contains the config file 
+  //
+  string config_dir_name;
+  int slash_pos = config_file_name.rfind( "/" );
+  if( slash_pos != -1 )
+    config_dir_name = config_file_name.substr( 0, slash_pos+1 );
+
+ Config_File *config_file;
+  try
+    {
+      config_file = new Config_File( config_file_name );
+    }
+  catch( string error )
+    {
+      cerr << "ERROR - " << error << endl;
+      exit( 1 );
+    }
+
+  //
+  // Load the stereo camera calibration 
+  //
+  Stereo_Calib *calib = NULL;
+  bool have_stereo_calib = false;
+  string stereo_calib_file_name;
+
+  if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) )
+    {
+      stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
+      try
+	{
+	  calib = new Stereo_Calib( stereo_calib_file_name );
+	}
+      catch( string error )
+	{
+	  cerr << "ERROR - " << error << endl;
+	  exit( 1 );
+	}
+      have_stereo_calib = true;
+    }      
+
+
   aa=arguments.read("-aa");
   if(aa){
     printf("AntiAliasing enabled\n");
@@ -58,8 +112,8 @@ int main(int argc, char** argv)
   osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
   traits->x =  0;
   traits->y =  0;
-  traits->width = 680;
-  traits->height = 512;
+  traits->width = calib->left_calib.width/scale;
+  traits->height = calib->left_calib.height/scale;
   traits->windowDecoration = true;
   traits->doubleBuffer = true;
   traits->sharedContext = 0;
@@ -75,18 +129,21 @@ int main(int argc, char** argv)
   camera->setDrawBuffer(buffer);
   camera->setReadBuffer(buffer);
   
-  double cparam[3][4] = {{1714.139241/2.0, 0.000000, -687.347717/2.0, 0.0000 },
-			 {0,	 1713.360969/2.0, -499.609809/2.0 ,	0},
+  double cparam[3][4] = {{calib->left_calib.fcx/scale, 0.000000, -calib->left_calib.ccx/scale, 0.0000 },
+			 {0,	 -calib->left_calib.fcy/scale, -calib->left_calib.ccy/scale ,	0},
 			 {0,		0,		-1,		0}};
+
   double intrinsic[16];
   
-  argConvGLcpara2( cparam, 680, 512, 0.1, 2000, intrinsic );
+  argConvGLcpara2( cparam, calib->left_calib.width/scale, calib->left_calib.height/scale, 0.1, 1000, intrinsic );
+
   camera->setProjectionMatrix(osg::Matrix(intrinsic));
   camera->setClearColor(osg::Vec4(0.0,0.0,0.0,0.0));
   PathLoader *pLoad = new PathLoader();
 
- 
-   std::vector<osg::Matrixd> cameraPath=  pLoad->createPath(p.c_str());
+ std::vector<bbox> bboxes;
+ std::vector<osg::Matrixd> cameraPath;
+ pLoad->createPath(p.c_str(),cameraPath,bboxes);
 
 
  
@@ -137,7 +194,7 @@ int main(int argc, char** argv)
   
 
     osgDB::DatabasePager *dp=viewer.getScene()->getDatabasePager();
-    snapImageDrawCallback = new SnapImageDrawCallback(cameraPath,dp,&viewer,loadedModel.get()); 
+    snapImageDrawCallback = new SnapImageDrawCallback(cameraPath,bboxes,dp,&viewer,loadedModel.get()); 
     
     viewer.getCamera()->setPostDrawCallback(snapImageDrawCallback);
     // optimize the scene graph, remove redundant nodes and state etc.

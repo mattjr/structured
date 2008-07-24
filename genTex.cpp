@@ -67,6 +67,7 @@ static bool do_novelty=false;
 static bool usePlaneDist=false;
 int margins[]={10,500,INT_MAX};
 static bool use_regen_tex=false;
+static bool use_dist_coords=true;
 //
 // Parse command line arguments into global variables
 //
@@ -148,6 +149,7 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--regen" ) == 0 )
 	{
 	  use_regen_tex=true;
+	  use_dist_coords=false;
 	  i++;
 	}
       else if( strcmp( argv[i], "--single-run" ) == 0 )
@@ -211,8 +213,11 @@ static bool parse_args( int argc, char *argv[ ] )
 
 GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
   char conf_name[255];
-  
-  sprintf(conf_name,"%s/bbox-%s.txt",diceddir,str);
+    if(use_regen_tex)
+      sprintf(conf_name,"mesh-regen-tex/re-bbox.txt");
+      // sprintf(conf_name,"mesh-regen-tex/re-bbox-%s.txt",str);
+    else
+      sprintf(conf_name,"%s/bbox-%s.txt",diceddir,str);
   
   FILE *bboxfp = fopen(conf_name,"r");
   int count;
@@ -234,12 +239,8 @@ GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
 	 eof1 = fscanf(bboxfp," %lf",&mtmp[i][j]);
      eof2 = fscanf(bboxfp,"\n");
       
-     char tmp[255];
-     if(use_regen_tex){
-       sprintf(tmp,"regen-tex-%04d.png",count);
-       texture_file_names[count]=tmp;
-     }else
-       texture_file_names[count]=(name);
+   
+     texture_file_names[count]=(name);
 
       GtsBBox *bbox= gts_bbox_new(gts_bbox_class(),NULL,x1,y1,z1,x2,y2,z2);
       bbox->bounded=(void *)count;
@@ -336,6 +337,7 @@ static void print_usage( void )
 
 int main( int argc, char *argv[ ] )
 {
+
   //
   // Parse command line arguments
   //
@@ -569,7 +571,7 @@ std::vector<vector<string >   > outNames;
 	boost::xtime_get(&xt, boost::TIME_UTC);
     
 	gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,
-			   lodTexSize[j],num_threads,verbose,tex_array_blend,margins[j]);
+			   lodTexSize[j],num_threads,verbose,tex_array_blend,margins[j],use_dist_coords);
 	boost::xtime_get(&xt2, boost::TIME_UTC);
 	time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
 	secs=time/1000.0;

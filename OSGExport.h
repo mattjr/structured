@@ -86,6 +86,7 @@ struct GeometryCollection
   osg::Geometry*              _geom;
   bool _planeTexValid;
   osg::BoundingBox            _texLimits;
+ 
 
 
 };
@@ -175,7 +176,7 @@ protected:
 };
 
 
-void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads,int verbose=0,int blend=0,int margin=0);
+void gen_mesh_tex_coord(GtsSurface *s ,Camera_Calib *calib, std::map<int,GtsMatrix *> back_trans,GNode *bboxTree,int tex_size,int num_threads,int verbose=0,int blend=0,int margin=0,bool use_dist_coords=true);
 
 void bin_face_mat_osg (T_Face * f, gpointer * data);
 

@@ -1691,6 +1691,7 @@ int main( int argc, char *argv[ ] )
       
       sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
       sprintf(conf_name,"mesh-diced/bbox-clipped-diced-%08d.ply.txt",i);
+
       vrip_seg_fp=fopen(vrip_seg_fname,"w");
       bboxfp = fopen(conf_name,"w");
       if(!vrip_seg_fp || !bboxfp){
@@ -1934,6 +1935,14 @@ int main( int argc, char *argv[ ] )
 		"REDFACT=(0.01 %f %f)\n",0.1*simp_mult,0.5*simp_mult);
 	
      
+	//	fprintf(conf_ply_file,//"if [ -e clipped-diced-%08d.ply ]; then\n"
+		//	"\tplysubtract mb.ply sub-mb-%08d.ply > inv-mb-%08d.ply\n"
+		//"else\n"
+		//"\tcp  mb.ply inv-mb-%08d.ply\n"
+		//"fi\n",0,0,0,0); 
+
+	
+
 	fprintf(dicefp, "LOGDIR=%s\n"
 		"if [[ -d $LOGDIR ]] ; then\n"
 		"find $LOGDIR -name 'loadbal*' | xargs rm &>/dev/null\nfi\n"
@@ -1975,6 +1984,20 @@ int main( int argc, char *argv[ ] )
 	    fprintf(dicefp,"%s/tridecimator/tridecimator inv-mb.ply inv-mb-lod%d.ply %fr\n",basepath.c_str(),k,mbres[k]);
 	}
 	fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");
+	/*	fprintf(conf_ply_file,"for f in `echo {1..%d}`\n"
+		"do\n"
+		"i=`printf \"%%08d\\n\" \"$f\"`\n"
+		"ilast=`printf \"%%08d\" \"$(($f - 1 ))\"`\n"
+		"if [ -e clipped-diced-$i.ply ]; then\n"
+		"\tplysubtract -t 0.4 clipped-diced-$ilast-lod0.ply clipped-diced-$i-lod0.ply > cd-$ilast-lod0.ply;\n"
+		"mv   clipped-diced-$ilast-lod0.ply unsub-clipped-diced-$ilast-lod0.ply\n"
+		"cp  cd-$ilast-lod0.ply  clipped-diced-$ilast-lod0.ply\n"
+		"else\n"
+		"\tcp clipped-diced-$ilast-lod0.ply  cd-$ilast-lod0.ply\n" 
+		"fi\n"
+		"done\n",cells.size());
+	*/
+
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
 	if(!no_simp)
@@ -1998,8 +2021,10 @@ int main( int argc, char *argv[ ] )
 	    sprintf(tp," --nonvis %d ",(int)cells.size());
 	    strcat(argstr,tp);
 	  }
+
 	  if(no_simp)
 	    fprintf(dicefp,"cat diced.txt | xargs plybbox > range.txt;cp diced.txt valid.txt\n");
+
 	  if(!sing_gen_tex){
 	    fprintf(dicefp,"cd $DICEDIR\n"
 		    "NUMDICED=`wc -l valid.txt |cut -f1 -d\" \" `\n"

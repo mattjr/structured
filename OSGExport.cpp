@@ -448,7 +448,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     numimgpertex=150;
   else
     numimgpertex=1;
-  int overlap=max(1,(int)(numimgpertex * 0.1));
+  //int overlap=max(1,(int)(numimgpertex * 0.1));
   
   gts_surface_foreach_face (s, (GtsFunc) bin_face_mat_osg , data);
   MaterialToGeometryCollectionMap::iterator itr;

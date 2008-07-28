@@ -66,9 +66,13 @@ vec4 freq3Blend(){
     
   vec4 outP;
   vec4 outComp[3];
-   
+  bool validPix=false;
   for(int j=0; j < 3; j++){
     for(int i=1;i<5; i++){
+      //If no valid texture at this pixel don't blend it
+      if(gl_TexCoord[i].z < 0)
+	continue;
+      validPix=true;
       float r = length(gl_TexCoord[i].xy - vec2(0.5,0.5));
       // float num=exp(-((r/rmax)-Cb[j])/Cb[j]);
       //float num=exp(-5*((r-Cb[j])/(rmax*Cb[j])));
@@ -86,6 +90,10 @@ vec4 freq3Blend(){
       WSum[j]+=W;
     }
   }
+  //No valid texture at all put color
+  if(!validPix)
+    return gl_Color;
+
   outComp[0]=outComp[0]/WSum[0];
   outComp[1]=outComp[1]/WSum[1];
   outComp[2]=outComp[2]/WSum[2];
@@ -183,7 +191,31 @@ vec4 freqBlend(){
   vec4 outP;
   vec4 outHi;
   vec4 outLow;
+ 
+  /* for(int i=1; i <5; i++){
+    if(gl_TexCoord[i].x < 0.1 && gl_TexCoord[i].y > .99)
+      return avg();
+      }*/
+  /*   bool validColor[4];
+   bool allgood=true;
+   int firstgood=-1;
+   for(int i=1; i <5; i++){
+     if(gl_TexCoord[i].x < 0.1 && gl_TexCoord[i].y > .99){
+       validColor[i-1]=false;
+       allgood=false;
+     }else{
+       validColor[i-1]=true;
+       firstgood=i-1;
+     }
+   }
+   if(firstgood == -1)
+    return gl_Color;
+   if(!allgood)
+     return texture2DArray(theTexture,gl_TexCoord[firstgood].xyz);
   
+  */
+  
+      
   for(int i=1;i<5; i++){
 
     float r = length(gl_TexCoord[i].xy - vec2(0.5,0.5));
@@ -206,22 +238,47 @@ vec4 freqBlend(){
 
 }
 vec4 pass(){
-  return  texture2DArray(theTexture,gl_TexCoord[1].xyz);
+  // vec4 color=vec4(gl_TexCoord[1].x,gl_TexCoord[1].y,0,0); //texture2DArray(theTexture,gl_TexCoord[1].xyz);
+  if(gl_TexCoord[1].x < 0.1 && gl_TexCoord[1].y > .99)
+  return vec4(0.0,0.0,1.0,0.0);
+else 
+  return vec4(1,0,0,0);
+  // else return gl_Color;//color;
+  //return color;
 }
+vec4 tt(int i){
+  if(gl_TexCoord[i].z < 0 )
+    return   vec4(1.0,0,0,1.0);
+else
+return   texture2DArray(theTexture,gl_TexCoord[i].xyz);
+}
+
 void main()
 {
   vec4 color;
-
+  
   if(shaderOut == 1)
     color= freqBlend();
   else if(shaderOut ==2)
-    color=freq3Blend();//lin3Blend();
+    color=freq3Blend();
   else if(shaderOut ==3)
     color=gl_Color;
   else if(shaderOut ==4)
-    color=weightDebug2();//freq3Blend();	
+    color=weightDebug2();	
   else
     color=pass();
+  
+
+  /* if(shaderOut == 1)
+   color= freq3Blend();	//tt(1);
+  else if(shaderOut ==2)
+    color=tt(2);//lin3Blend();
+  else if(shaderOut ==3)
+    color=tt(3);
+  else if(shaderOut ==4)
+    color=tt(4);//freq3Blend();	
+  else
+  color=tt(5);*/
 
   gl_FragColor = color;
 } 

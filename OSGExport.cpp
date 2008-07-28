@@ -144,14 +144,16 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
     if(texnum2arraynum != NULL){
       
       for(int i=0; i< 4; i++){
-      	(*gc._texcoordsTexArray[i]++).set(v1->uB[i], 1 - v1->vB[i],(*texnum2arraynum)[f->materialB[i]]);
-	(*gc._texcoordsTexArray[i]++).set(v2->uB[i], 1 - v2->vB[i],(*texnum2arraynum)[f->materialB[i]]); 
-	(*gc._texcoordsTexArray[i]++).set(v3->uB[i], 1 - v3->vB[i],(*texnum2arraynum)[f->materialB[i]]); 
-       
-	/*(*gc._texcoordsTexArray[i]++).set(0.2,0.25,0);
-	(*gc._texcoordsTexArray[i]++).set(0.2,0.25,0);
-	(*gc._texcoordsTexArray[i]++).set(0.2,0.25,0);*/
-	//printf("%d ",f->materialB[i]);
+	if(f->materialB[i] == -1){
+	  (*gc._texcoordsTexArray[i]++).set(-1,-1,-1); 
+	  (*gc._texcoordsTexArray[i]++).set(-1,-1,-1); 
+	  (*gc._texcoordsTexArray[i]++).set(-1,-1,-1); 
+	  
+	}else{
+	  (*gc._texcoordsTexArray[i]++).set(v1->uB[i], 1 - v1->vB[i],(*texnum2arraynum)[f->materialB[i]]);
+	  (*gc._texcoordsTexArray[i]++).set(v2->uB[i], 1 - v2->vB[i],(*texnum2arraynum)[f->materialB[i]]); 
+	  (*gc._texcoordsTexArray[i]++).set(v3->uB[i], 1 - v3->vB[i],(*texnum2arraynum)[f->materialB[i]]); 
+	}
       }
     }
 
@@ -169,7 +171,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
     Lut_Vec color;
     float val;// r,g,b,val;
     Colors::eColorMap map=Colors::eRainbowMap;
-    val = ( GTS_VERTEX(v1)->p.z -zrange[0] )/range;   
+    val = ( GTS_VERTEX(v1)->p.z -zrange[0] )/range;  
     color=GlobalColors()->Get(map, val); 
     (*gc._colors++).set(color[0],color[1],color[2],1.0);
     //  jet_color_map(val,r,g,b);
@@ -528,8 +530,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	
 	
 	stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
-	stateset->addUniform( new osg::Uniform( "weights", osg::Vec3(0.025f, 0.10f, 0.4f) ));
-	stateset->addUniform( new osg::Uniform( "shaderOut", 1));
+	stateset->addUniform( new osg::Uniform( "weights", osg::Vec3(0.640f, 0.370f, 0.770f) ));
+	stateset->addUniform( new osg::Uniform( "shaderOut", 2));
 	
 	stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
 	stateset->setDataVariance(osg::Object::STATIC);

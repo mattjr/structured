@@ -114,7 +114,7 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 
 
 
-	fprintf(conf_ply_file,"cat valid.txt |  sed s/.ply/-lod0.ply/g |xargs plybbox > range.txt\n");
+	fprintf(conf_ply_file,"plybbox pos_rec-lod2.ply > range.txt\n");
 
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);

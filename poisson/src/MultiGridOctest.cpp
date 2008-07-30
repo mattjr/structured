@@ -169,7 +169,7 @@ int Execute(int argc,char* argv[])
 	if(NoResetSamples.set)	{DumpOutput2(comments[commentNum++],"\t--noResetSamples\n");}
 	if(NoClipTree.set)		{DumpOutput2(comments[commentNum++],"\t--noClipTree\n");}
 	if(Confidence.set)		{DumpOutput2(comments[commentNum++],"\t--confidence\n");}
-	if(minTriDepthP.set){
+	if(minTriDepthP.set && minTriDepthP.value > 0){
 	  minTriDepth=minTriDepthP.value;
 	  DumpOutput2(comments[commentNum++],"\t--mintridepth %d\n",minTriDepthP.value);
 	}

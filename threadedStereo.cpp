@@ -1842,7 +1842,7 @@ int main( int argc, char *argv[ ] )
 		  osgDB::getSimpleFileName( mb_ply_filenames[0]).c_str());
 	int mintridepth;
 	if(have_mb_ply)
-	  mintridepth=7;
+	  mintridepth=0;
 	else
 	  mintridepth=8;
 

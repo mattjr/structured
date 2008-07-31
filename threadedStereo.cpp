@@ -122,6 +122,7 @@ const char *aggdir="mesh-agg";
 static string deltaT_pose;
 static string dense_method="";
 bool dist_run=false;
+static bool mono_cam=false;
 static string passtotridec="-e2.0";
 static bool do_hw_blend=false;
 // Image normalisation
@@ -460,6 +461,11 @@ static bool parse_args( int argc, char *argv[ ] )
 	  use_sift_features = true;
 	  i+=1;
 	}
+      else if( strcmp( argv[i], "--mono" ) == 0 )
+	{
+	  mono_cam = true;
+	  i+=1;
+	}
       else if( strcmp( argv[i], "--dense-features" ) == 0 )
 	{
 	  use_dense_feature = true;
@@ -522,7 +528,9 @@ static bool parse_args( int argc, char *argv[ ] )
       else if(strcmp( argv[i], "--nomerge" ) == 0)
 	{
 	  no_merge=true;
-
+	  run_pos=false;
+	  use_vrip_recon = true;
+	  no_simp = false;
 	  i+=1;
 	}
       else if(!have_base_dir)
@@ -1013,29 +1021,27 @@ static int get_auv_image_name( const string  &contents_dir_name,
 
 static int get_mono_image_name( const string  &contents_dir_name,
 			       ifstream      &contents_file,
-			       Stereo_Pose_Data &name
+				Mono_Image_Name  &name
 			       )
 {
  
-  //name.cam_pose = new Vector(AUV_NUM_POSE_STATES);
-  name.m =gts_matrix_identity (NULL);
-  name.bbox = gts_bbox_new(gts_bbox_class(),NULL,0,0,0,0,0,0);
+  name.pose=new Vector(AUV_NUM_POSE_STATES);
   //
   // Try to read timestamp and file names
   //
   bool readok;
   int index;
   do{
-     
+   
     readok =(contents_file >> index &&
 	     contents_file >> name.time &&
-	     contents_file >>  name.pose[AUV_POSE_INDEX_X] &&
-	     contents_file >>   name.pose[AUV_POSE_INDEX_Y] &&
-	     contents_file >>   name.pose[AUV_POSE_INDEX_Z] &&
-	     contents_file >>   name.pose[AUV_POSE_INDEX_PHI] &&
-	     contents_file >>   name.pose[AUV_POSE_INDEX_THETA] &&
-	     contents_file >>   name.pose[AUV_POSE_INDEX_PSI] &&
-	     contents_file >> name.left_name);
+	     contents_file >> (*name.pose)(AUV_POSE_INDEX_X) &&
+	     contents_file >> (*name.pose)(AUV_POSE_INDEX_Y) &&
+	     contents_file >> (*name.pose)(AUV_POSE_INDEX_Z) &&
+	     contents_file >> (*name.pose)(AUV_POSE_INDEX_PHI) &&
+	     contents_file >> (*name.pose)(AUV_POSE_INDEX_THETA) &&
+	     contents_file >> (*name.pose)(AUV_POSE_INDEX_PSI) &&
+	     contents_file >> name.img_name);
   
   }
   while (readok && (name.time < start_time || (skip_counter++ < num_skip)));
@@ -1045,19 +1051,9 @@ static int get_mono_image_name( const string  &contents_dir_name,
     // we've reached the end of the contents file
     return END_FILE;
   }      
-  if (name.left_name == "DeltaT" || name.right_name == "DeltaT")
+  if (name.img_name == "DeltaT")
     return NO_ADD;
-  if(!single_run){
-    fprintf(fpp,"%f %f %f %f %f %f %f %f\n",   
-	  name.time,
-	  name.pose[AUV_POSE_INDEX_X],
-	  name.pose[AUV_POSE_INDEX_Y],
-	 name.pose[AUV_POSE_INDEX_Z],
-	  name.pose[AUV_POSE_INDEX_PHI],
-	  name.pose[AUV_POSE_INDEX_THETA],
-	  name.pose[AUV_POSE_INDEX_PSI],
-	  name.alt);
-  }
+
     
   return ADD_IMG;
          
@@ -1079,6 +1075,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   bool texcached=false;
   
   
+  if(mono_cam)
+    calib=name.calib;
 
 #ifdef USE_DENSE_STEREO
   if(!sdense && use_dense_stereo){
@@ -1160,7 +1158,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       //printf("Not cached creating\n");
       non_cached_meshes++;
       
-      if(feature_depth_guess == AUV_NO_Z_GUESS && !no_depth)
+      if(feature_depth_guess == AUV_NO_Z_GUESS && !no_depth&& name.alt >0.0)
 	feature_depth_guess = name.alt;
       
       list<Stereo_Feature_Estimate> feature_positions;
@@ -1170,7 +1168,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	//
 	// Find the features
 	//
-	
+       
 	finder->find( left_frame,
 		      right_frame,
 		      left_frame_id,
@@ -1233,7 +1231,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	    //litr->x[2]=name.alt;
 	    vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
 					     litr->x[0],litr->x[1],litr->x[2]);
-	    // printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
+	    //printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
 	    
 	    //double confidence=1.0;
 	    Vector max_eig_v(3);
@@ -1383,7 +1381,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   if(output_ply_and_conf){
     TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
-    edge_len_thresh(mesh,2.0);
+    if(!mono_cam)
+      edge_len_thresh(mesh,2.0);
     xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
 	     name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
 	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
@@ -1459,9 +1458,32 @@ void runC(Stereo_Pose_Data &name){
  
   //printf("%s Written Out to  %s\n",name.left_name.c_str(),name.mesh_name.c_str());
 }
-bool gen_stereo_from_mono(Slices &tasks,std::vector<Mono_Image_Name> mono_names){
-
-
+bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks,Camera_Calib *cam_calib){
+  
+  for(int i=0; i <(int) mono_names.size(); i+=4){
+    Stereo_Pose_Data name;
+    name.time=mono_names[i].time;
+    //name.index=mono_names[i].index;
+    name.pose[AUV_POSE_INDEX_X] = (*mono_names[i].pose)(AUV_POSE_INDEX_X);
+    name.pose[AUV_POSE_INDEX_Y] = (*mono_names[i].pose)(AUV_POSE_INDEX_Y);
+    name.pose[AUV_POSE_INDEX_Z] = (*mono_names[i].pose)(AUV_POSE_INDEX_Z);
+    name.pose[AUV_POSE_INDEX_PHI] = (*mono_names[i].pose)(AUV_POSE_INDEX_PHI);
+    name.pose[AUV_POSE_INDEX_THETA]=(*mono_names[i].pose)(AUV_POSE_INDEX_THETA);
+    name.pose[AUV_POSE_INDEX_PSI] = (*mono_names[i].pose)(AUV_POSE_INDEX_PSI);
+    name.m =gts_matrix_identity (NULL);
+    name.bbox = gts_bbox_new(gts_bbox_class(),NULL,0,0,0,0,0,0);
+    name.left_name=mono_names[i].img_name;
+    name.right_name=mono_names[i+1].img_name;
+    name.calib=new Stereo_Calib(*cam_calib,*mono_names[i].pose,*mono_names[i+1].pose);
+    name.overlap=false;
+    name.valid=true;
+    name.radius=5;
+    name.alt=-1.0;
+    tasks.push_back(name);
+    
+  }
+    
+  return true;
 }
 
 int main( int argc, char *argv[ ] )
@@ -1601,24 +1623,43 @@ int main( int argc, char *argv[ ] )
   int start_skip=0;
   if(mono_cam){
     std::vector<Mono_Image_Name> mono_names;
-    while( !have_max_frame_count || stereo_pair_count < max_frame_count*mono_sep ){
+    while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
       
-      Stereo_Pose_Data mono;
+      Mono_Image_Name mono;
       int ret=get_mono_image_name( dir_name, contents_file, mono) ;
       if(ret == ADD_IMG ){
 	if(start_skip++ < single_run_start)
 	  continue;
-	name.id= single_run_start+stereo_pair_count++;
-	name.valid=true;
-	mono_names.push_back(name);
+	mono.id= single_run_start+stereo_pair_count++;
+	mono.valid=true;
+	mono_names.push_back(mono);
       }else if(ret == NO_ADD){
 	printf("Noadd\n");
 	continue;
       }else if(ret == END_FILE)
 	break;
     }
+     
+    string config_dir_name;
+    Stereo_Calib *calib;
+    int slash_pos = stereo_config_file_name.rfind( "/" );
+    if( slash_pos != -1 )
+      config_dir_name = stereo_config_file_name.substr( 0, slash_pos+1 );
     
-    gen_stereo_from_mono(mono_names,tasks);
+    config_file= new Config_File(stereo_config_file_name.c_str());
+  
+    if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) ){
+      stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
+      try {
+	calib = new Stereo_Calib( stereo_calib_file_name );
+      }
+      catch( string error ) {
+	cerr << "ERROR - " << error << endl;
+	exit( 1 );
+      }
+
+    }
+    gen_stereo_from_mono(mono_names,tasks,&calib->left_calib);
     
     
   }else{
@@ -1991,7 +2032,7 @@ int main( int argc, char *argv[ ] )
 		  "else\n"
 		  "\tcp  mb.ply inv-mb-%08d.ply\n"
 		  "fi\n",0,0,0,0); 
-	  fprintf(conf_ply_file,"for f in `echo {1..%ld}`\n"
+	  fprintf(conf_ply_file,"for f in `echo {1..%d}`\n"
 		  "do\n"
 		  "i=`printf \"%%08d\\n\" \"$f\"`\n"
 		  "ilast=`printf \"%%08d\" \"$(($f - 1 ))\"`\n"

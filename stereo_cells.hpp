@@ -37,7 +37,7 @@ class Mono_Image_Name
 public:
   unsigned int id;
   double time;
-  double pose[6];
+  libplankton::Vector *pose;
   std::string img_name;
   bool valid;
 };

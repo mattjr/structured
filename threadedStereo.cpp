@@ -1011,6 +1011,58 @@ static int get_auv_image_name( const string  &contents_dir_name,
          
 }
 
+static int get_mono_image_name( const string  &contents_dir_name,
+			       ifstream      &contents_file,
+			       Stereo_Pose_Data &name
+			       )
+{
+ 
+  //name.cam_pose = new Vector(AUV_NUM_POSE_STATES);
+  name.m =gts_matrix_identity (NULL);
+  name.bbox = gts_bbox_new(gts_bbox_class(),NULL,0,0,0,0,0,0);
+  //
+  // Try to read timestamp and file names
+  //
+  bool readok;
+  int index;
+  do{
+     
+    readok =(contents_file >> index &&
+	     contents_file >> name.time &&
+	     contents_file >>  name.pose[AUV_POSE_INDEX_X] &&
+	     contents_file >>   name.pose[AUV_POSE_INDEX_Y] &&
+	     contents_file >>   name.pose[AUV_POSE_INDEX_Z] &&
+	     contents_file >>   name.pose[AUV_POSE_INDEX_PHI] &&
+	     contents_file >>   name.pose[AUV_POSE_INDEX_THETA] &&
+	     contents_file >>   name.pose[AUV_POSE_INDEX_PSI] &&
+	     contents_file >> name.left_name);
+  
+  }
+  while (readok && (name.time < start_time || (skip_counter++ < num_skip)));
+  skip_counter=0;
+   
+  if(!readok || name.time >= stop_time) {
+    // we've reached the end of the contents file
+    return END_FILE;
+  }      
+  if (name.left_name == "DeltaT" || name.right_name == "DeltaT")
+    return NO_ADD;
+  if(!single_run){
+    fprintf(fpp,"%f %f %f %f %f %f %f %f\n",   
+	  name.time,
+	  name.pose[AUV_POSE_INDEX_X],
+	  name.pose[AUV_POSE_INDEX_Y],
+	 name.pose[AUV_POSE_INDEX_Z],
+	  name.pose[AUV_POSE_INDEX_PHI],
+	  name.pose[AUV_POSE_INDEX_THETA],
+	  name.pose[AUV_POSE_INDEX_PSI],
+	  name.alt);
+  }
+    
+  return ADD_IMG;
+         
+}
+
    
 bool threadedStereo::runP(Stereo_Pose_Data &name){
   IplImage *left_frame;
@@ -1407,7 +1459,10 @@ void runC(Stereo_Pose_Data &name){
  
   //printf("%s Written Out to  %s\n",name.left_name.c_str(),name.mesh_name.c_str());
 }
+bool gen_stereo_from_mono(Slices &tasks,std::vector<Mono_Image_Name> mono_names){
 
+
+}
 
 int main( int argc, char *argv[ ] )
 {
@@ -1541,22 +1596,53 @@ int main( int argc, char *argv[ ] )
       max_frame_count = single_run_stop-single_run_start;
     printf("Single run %d %d\n",single_run_start,single_run_start+max_frame_count-1);
   }
+
+
   int start_skip=0;
-  while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
-    Stereo_Pose_Data name;
-    int ret=get_auv_image_name( dir_name, contents_file, name) ;
-    if(ret == ADD_IMG ){
-      if(start_skip++ < single_run_start)
+  if(mono_cam){
+    std::vector<Mono_Image_Name> mono_names;
+    while( !have_max_frame_count || stereo_pair_count < max_frame_count*mono_sep ){
+      
+      Stereo_Pose_Data mono;
+      int ret=get_mono_image_name( dir_name, contents_file, mono) ;
+      if(ret == ADD_IMG ){
+	if(start_skip++ < single_run_start)
+	  continue;
+	name.id= single_run_start+stereo_pair_count++;
+	name.valid=true;
+	mono_names.push_back(name);
+      }else if(ret == NO_ADD){
+	printf("Noadd\n");
 	continue;
-      name.id= single_run_start+stereo_pair_count++;
-      name.valid=true;
-      tasks.push_back(name);
-    }else if(ret == NO_ADD){
-      printf("Noadd\n");
-      continue;
-    }else if(ret == END_FILE)
-      break;
+      }else if(ret == END_FILE)
+	break;
+    }
+    
+    gen_stereo_from_mono(mono_names,tasks);
+    
+    
+  }else{
+    while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
+      
+      Stereo_Pose_Data name;
+      int ret=get_auv_image_name( dir_name, contents_file, name) ;
+      
+      
+      if(ret == ADD_IMG ){
+	if(start_skip++ < single_run_start)
+	  continue;
+	name.id= single_run_start+stereo_pair_count++;
+	name.valid=true;
+	tasks.push_back(name);
+      }else if(ret == NO_ADD){
+	printf("Noadd\n");
+	continue;
+      }else if(ret == END_FILE)
+	break;
+    }
   }
+
+
   if(tasks.size() <= 0){
     fprintf(stderr,"No tasks loaded check %s\n",contents_file_name.c_str());
     exit(-1);

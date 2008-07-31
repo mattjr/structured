@@ -8,6 +8,8 @@
 
 #include <string>
 #include <vector>
+#include "auv_stereo_calib.hpp"
+using namespace libsnapper;
 #include "gts.h"
 class Stereo_Pose_Data
 {
@@ -24,7 +26,20 @@ public:
   bool overlap;
   bool valid;
   GtsMatrix *m;
+  //For mono camera
+  Stereo_Calib *calib;
   GtsBBox *bbox;
+};
+
+
+class Mono_Image_Name
+{
+public:
+  unsigned int id;
+  double time;
+  double pose[6];
+  std::string img_name;
+  bool valid;
 };
 
 

@@ -27,7 +27,7 @@
 #include "auv_stereo_corner_finder.hpp"
 #include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
-#include "adt_raw_file.hpp"
+#include "adt_file_utils.hpp"
 #include "OSGExport.h"
 #include  <boost/thread/xtime.hpp> 
 #include "auv_mesh_utils.hpp"

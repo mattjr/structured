@@ -26,7 +26,7 @@
 #include "ulapack/eig.hpp"
 #include "auv_image_distortion.hpp"
 #include "auv_stereo_geometry.hpp"
-#include "adt_raw_file.hpp"
+#include "adt_file_utils.hpp"
 #include "auv_stereo_corner_finder.hpp"
 #include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"

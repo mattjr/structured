@@ -113,6 +113,7 @@ static bool no_merge=false;
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[255];
 char cachedtexdir[255];
+static bool no_pos_clip=true;
 static string deltaT_config_name;
 static string deltaT_dir;
 static bool use_vrip_recon=false;
@@ -277,6 +278,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	  have_mb_ply=true;
 	  for(i++; i < argc && argv[i][0] != '-'; i++)
 	    mb_ply_filenames.push_back(string( argv[i])) ;
+	
+	}
+      else if( strcmp( argv[i], "--posclip" ) == 0 )
+	{
+	  no_pos_clip=false;
+	  i+=1;
 	
 	}
       else if( strcmp( argv[i], "--genmb" ) == 0 )
@@ -2013,7 +2020,7 @@ int main( int argc, char *argv[ ] )
 	  mintridepth=0;
 	else
 	  mintridepth=8;
-	if(mono_cam){
+	if(mono_cam || no_pos_clip){
 	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose  --out ../mesh-pos/pos_rec-lod2.ply\n",8,6,1.0);
 	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose  --out ../mesh-pos/pos_raw.ply\n",11,6,4.0);
 	}else{

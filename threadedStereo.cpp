@@ -108,6 +108,7 @@ static int single_run_stop=0;
 static bool dice_lod=false;
 static bool use_dense_stereo=false;
 static int non_cached_meshes=0;
+static double edgethresh=2.0;
 static bool no_merge=false;
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[255];
@@ -248,6 +249,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	{
 	  if( i == argc-1 ) return false;
 	  image_scale = strtod( argv[i+1], NULL );
+	  i+=2;
+	}
+      else if( strcmp( argv[i], "--edgethresh" ) == 0 )
+	{
+	  if( i == argc-1 ) return false;
+	  edgethresh = strtod( argv[i+1], NULL );
 	  i+=2;
 	}
       else if( strcmp( argv[i], "-m" ) == 0 )
@@ -672,6 +679,38 @@ void edge_len_thresh(TriMesh *mesh,double thresh)
 		float d12 = dist2(v1, v2);
 		float d20 = dist2(v2, v0);
 		if (d01 > thresh || d12 > thresh || d20 > thresh)
+		  toremove[i] = true;
+	}
+	remove_faces(mesh, toremove);
+	remove_unused_vertices(mesh);
+}
+
+// Remove edge longer then thresh
+void edge_len_thresh_percent(TriMesh *mesh,double thresh)
+{
+   double sum=0.0;
+	mesh->need_faces();
+	int numfaces = mesh->faces.size();
+	for (int i = 0; i < numfaces; i++) {
+		const point &v0 = mesh->vertices[mesh->faces[i][0]];
+		const point &v1 = mesh->vertices[mesh->faces[i][1]];
+		const point &v2 = mesh->vertices[mesh->faces[i][2]];
+		sum+= dist2(v0, v1);
+		sum += dist2(v1, v2);
+		sum+= dist2(v2, v0);
+	}
+	sum/=numfaces;
+	double threshlen=sum * thresh;
+	//printf("Avg len %f Thresh %f\n",sum,threshlen);
+	vector<bool> toremove(numfaces, false);
+	for (int i = 0; i < numfaces; i++) {
+		const point &v0 = mesh->vertices[mesh->faces[i][0]];
+		const point &v1 = mesh->vertices[mesh->faces[i][1]];
+		const point &v2 = mesh->vertices[mesh->faces[i][2]];
+		float d01 = dist2(v0, v1);
+		float d12 = dist2(v1, v2);
+		float d20 = dist2(v2, v0);
+		if (d01 > threshlen || d12 > threshlen || d20 > threshlen)
 		  toremove[i] = true;
 	}
 	remove_faces(mesh, toremove);
@@ -1381,12 +1420,13 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   if(output_ply_and_conf){
     TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
-    if(!mono_cam)
-      edge_len_thresh(mesh,2.0);
-    xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
+    edge_len_thresh(mesh,edgethresh);
+    
+   xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
 	     name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
 	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
 	     name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);
+  
     apply_xform(mesh,xf);
     mesh->need_bbox();
     
@@ -1479,6 +1519,7 @@ bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks
     name.valid=true;
     name.radius=5;
     name.alt=-1.0;
+    fill_gts_matrix(name.pose,name.m);
     tasks.push_back(name);
     
   }
@@ -1763,8 +1804,8 @@ int main( int argc, char *argv[ ] )
     for(unsigned int i=0; i < tasks.size(); i++){
       if(tasks[i].valid){
 	fprintf(conf_ply_file,
-		"surface-%s.tc.ply 0.033 1\n"
-		,osgDB::getStrippedName(tasks[i].left_name).c_str());
+		"surface-%s.tc.ply %f 1\n"
+		,osgDB::getStrippedName(tasks[i].left_name).c_str(),vrip_res);
 	valid++;
       }
       
@@ -1867,7 +1908,7 @@ int main( int argc, char *argv[ ] )
       for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=cells[i].poses[j];
 	//Vrip List
-	fprintf(vrip_seg_fp,"%s 0.033 1\n",pose->mesh_name.c_str());
+	fprintf(vrip_seg_fp,"%s %f 1\n",pose->mesh_name.c_str(),vrip_res);
 	//Gen Tex File bbox
 	fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
 	save_bbox_frame(pose->bbox,bboxfp);
@@ -1972,10 +2013,13 @@ int main( int argc, char *argv[ ] )
 	  mintridepth=0;
 	else
 	  mintridepth=8;
-
-	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --mintridepth %d --out ../mesh-pos/pos_rec-lod2.ply\n",8,6,1.0,mintridepth-2);
-	fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --mintridepth %d --out ../mesh-pos/pos_raw.ply\n",11,6,4.0,mintridepth);
-
+	if(mono_cam){
+	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose  --out ../mesh-pos/pos_rec-lod2.ply\n",8,6,1.0);
+	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose  --out ../mesh-pos/pos_raw.ply\n",11,6,4.0);
+	}else{
+	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --mintridepth %d --out ../mesh-pos/pos_rec-lod2.ply\n",8,6,1.0,mintridepth-2);
+	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --mintridepth %d --out ../mesh-pos/pos_raw.ply\n",11,6,4.0,mintridepth);
+	}
 
 		fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod0.ply 0 -e15.0\n");
 	fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod1.ply 0 -e15.0\n");

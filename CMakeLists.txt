@@ -16,7 +16,10 @@ PROJECT(libpolyp)
 INCLUDE( ${CMAKE_ROOT}/Modules/CheckIncludeFileCXX.cmake )
 INCLUDE( ${CMAKE_ROOT}/Modules/CheckLibraryExists.cmake )
 INCLUDE( ${CMAKE_ROOT}/Modules/UsePkgConfig.cmake )
-INCLUDE( ${CMAKE_ROOT}/Modules/FindOSG.cmake )
+
+INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOSG.cmake )
+INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOpenCV.cmake ) 
+INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindLapack.cmake ) 
 
 #--------------------------------#
 # Enforce an out-of-source build #
@@ -115,21 +118,9 @@ IF( NOT OSG_FOUND )
 ENDIF( NOT OSG_FOUND )
 
 # lapack
-IF( APPLE )
-   SET( LAPACK_LIB lapack )
-ELSE( APPLE )
-   # On linux, we may or may not need to link to gfortran
-   CHECK_LIBRARY_EXISTS( gfortran _gfortran_set_std "" HAVE_GFORTRAN )
-   IF( HAVE_GFORTRAN )
-      SET( LAPACK_LIB lapack gfortran )
-   ELSE( HAVE_GFORTRAN )
-      SET( LAPACK_LIB lapack )
-   ENDIF( HAVE_GFORTRAN )
-ENDIF( APPLE )
-
-
-# OpenCV
-INCLUDE(${CMAKE_ROOT}/Modules/FindOpenCV.cmake ) 
+IF( NOT LAPACK_FOUND )
+   MESSAGE( FATAL_ERROR  "ERROR - Can't find lapack" )
+ENDIF( NOT LAPACK_FOUND )
 
   
 # Gts
@@ -225,7 +216,7 @@ LINK_LIBRARIES(	${OSG_LIBRARY}
 		${LIBPLANKTON_LIBRARY}	
 		${LIBSNAPPER_LIBRARY}
 		${GTS_LINK_FLAGS}
-		${LAPACK_LIB}
+		${LAPACK_LIBRARY}
 		-l3ds    		
 		${LIBPOLYP_LIBRARY}
 	)

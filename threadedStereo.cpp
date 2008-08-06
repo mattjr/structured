@@ -76,6 +76,7 @@ static bool use_surf_features = false;
 static bool use_ncc = false;
 static int skip_counter=0;
 static int num_skip=0;
+static bool use_proj_tex=false;
 static vector<string> mb_ply_filenames;
 static bool have_mb_ply=false;
 static bool have_cov_file=false;
@@ -368,6 +369,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "-u" ) == 0 )
 	{
 	  use_undistorted_images = true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--projtex" ) == 0 )
+	{
+	  use_proj_tex= true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--vrip" ) == 0 )
@@ -2110,8 +2116,8 @@ int main( int argc, char *argv[ ] )
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\n");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(0.01 %f %f)\n",0.1*simp_mult,0.5*simp_mult);
-	
+		"REDFACT=(0.005 %f %f)\n",0.1*simp_mult,0.5*simp_mult);
+	 
      
 	//	fprintf(conf_ply_file,//"if [ -e clipped-diced-%08d.ply ]; then\n"
 		//	"\tplysubtract mb.ply sub-mb-%08d.ply > inv-mb-%08d.ply\n"
@@ -2270,7 +2276,7 @@ int main( int argc, char *argv[ ] )
 	      fprintf(dicefp,"time %s/runtp.py gentexcmds\n",basepath.c_str());
 	    
 	  }else{  
-	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex --dicedir mesh-pos/ --margins 0 0 1000000000000000 %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
+	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex --dicedir mesh-pos/ --margins 10 10 1000000000000000 %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
 	    
 	    fprintf(dicefp,"%s \n",argstr);
 	    

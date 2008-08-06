@@ -66,6 +66,7 @@ extern std::vector<GtsBBox *> bboxes_all;
 static bool do_novelty=false;
 static bool usePlaneDist=false;
 int margins[]={10,500,INT_MAX};
+static bool use_proj_tex=false;
 static bool use_regen_tex=false;
 static bool use_dist_coords=true;
 //
@@ -102,6 +103,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--nosimp" ) == 0 )
 	{
 	  no_simp=true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--projtex" ) == 0 )
+	{
+	  use_proj_tex=true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--novelty" ) == 0 )
@@ -493,7 +499,7 @@ std::vector<vector<string >   > outNames;
    basepath= osgDB::getRealPath (basepath) +"/";
    
    OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
-				       num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx));    
+				       num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex);    
     osg::Node * lod0Node[2];
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;
@@ -592,11 +598,26 @@ std::vector<vector<string >   > outNames;
       sprintf(out_name,"%s/blended-%02d-lod%d.%s",mdir,i,j,ext);
       osg::ref_ptr<osg::Geode> group[2];
       ClippingMap cm;
-    
-     
+      std::map<int,GtsMatrix *>::iterator iter;
+      std::map<int,osg::Matrixd> *camMatrices=NULL;
+      if(use_proj_tex){
+	camMatrices= new  std::map<int,osg::Matrixd>;
+	for(iter=gts_trans_map.begin(); iter!=gts_trans_map.end(); iter++){
+	GtsMatrix *m=iter->second;
+	osg::Matrixd osgm;
+	for(int i=0; i < 4; i++){
+	  for(int j=0; j <4; j++){
+	    osgm(j,i)=m[i][j];
+	  }
+	}
+	(*camMatrices)[iter->first]=osgm;
+	
+      }
+      }
+
       osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
 					   lodTexSize[j],group,planes,bounds,
-						   texcallback,zrange);
+					   texcallback,zrange,camMatrices);
     
 
       

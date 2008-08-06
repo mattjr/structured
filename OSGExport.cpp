@@ -422,7 +422,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 }
 
 
-bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange)
+bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices)
 {
    _tex_size=tex_size;
    map<int,int> texnum2arraynum;
@@ -574,7 +574,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	
 	 
 	osg::ref_ptr<osg::Image> image=getCachedCompressedImage(filename,tex_size);
-
+	int baseTexUnit=0;
 	
 	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	if (image.valid()){	   
@@ -595,7 +595,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    // texture->setUnRefImageDataAfterApply( false );
 	    texture->setImage(image.get());
 	    //texture->setInternalFormatMode(internalFormatMode);
-	    stateset->setTextureAttributeAndModes(0,texture,
+	    stateset->setTextureAttributeAndModes(baseTexUnit,texture,
 						  osg::StateAttribute::ON);
 	    if(computeHists){
 	      stateset->setMode(GL_BLEND,osg::StateAttribute::OFF);
@@ -618,6 +618,35 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      te->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
 	      
 	      stateset->setTextureAttribute(0, te);
+	    }
+	    if(use_proj_tex){
+	      printf("Using proj texture\n");
+	      texture->setWrap(osg::Texture::WRAP_S,
+			       osg::Texture::CLAMP_TO_BORDER);
+	      texture->setWrap(osg::Texture::WRAP_T,
+			       osg::Texture::CLAMP_TO_BORDER);
+	      texture->setWrap(osg::Texture::WRAP_R,
+			       osg::Texture::CLAMP_TO_BORDER);
+
+	      // set up tex gens
+	      stateset->setTextureMode(baseTexUnit, 
+				       GL_TEXTURE_GEN_S, 
+				       osg::StateAttribute::ON);
+	      stateset->setTextureMode(baseTexUnit,
+				       GL_TEXTURE_GEN_T,
+				       osg::StateAttribute::ON);
+	      stateset->setTextureMode(baseTexUnit, GL_TEXTURE_GEN_R,
+				       osg::StateAttribute::ON);
+	      stateset->setTextureMode(baseTexUnit, GL_TEXTURE_GEN_Q,
+				       osg::StateAttribute::ON);
+
+	      osg::TexGen* texgen = new osg::TexGen();
+	      texgen->setMode(osg::TexGen::EYE_LINEAR);
+	      texgen->setPlanesFromMatrix((*camMatrices)[tidx]*osg::Matrixd::scale(0.5,0.5,0.5));
+	      stateset->setTextureAttributeAndModes(baseTexUnit,texgen,
+						    osg::StateAttribute::ON);
+
+    
 	    }
 	    gc._texturesActive=true;
 	    stateset->setDataVariance(osg::Object::STATIC);
@@ -701,6 +730,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
         
 	  smoother.smooth(*gc._geom);
 	   if(gc._texturesActive ){
+
 	   
 	       if(gpuNovelty){
 		 gc._geom->getStateSet()->addUniform(new osg::Uniform("hist", 

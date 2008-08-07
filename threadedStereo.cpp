@@ -75,6 +75,7 @@ static bool sing_gen_tex=true;
 static bool use_surf_features = false;
 static bool use_ncc = false;
 static int skip_counter=0;
+static double vrip_ramp=500.0;
 static int num_skip=0;
 static bool use_proj_tex=false;
 static vector<string> mb_ply_filenames;
@@ -90,6 +91,8 @@ static bool no_depth=false;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 static int num_threads=1;
 static FILE *fpp,*fpp2,*pos_fp;
+static bool even_split=false;
+static double cell_scale=1.0;
 static bool use_dense_feature=false;
 //StereoMatching* stereo;
 //StereoImage simage;
@@ -99,6 +102,7 @@ static FILE *conf_ply_file;
 static bool output_3ds=false;
 static char cov_file_name[255];
 static bool no_gen_tex=false;
+static int mono_skip=2;
 static bool no_vrip=false;
 static double vrip_res=0.033;
 static bool regen_tex=false;
@@ -281,6 +285,16 @@ static bool parse_args( int argc, char *argv[ ] )
 	    mb_ply_filenames.push_back(string( argv[i])) ;
 	
 	}
+      else if( strcmp( argv[i], "--monoskip" ) == 0 )
+	{
+	
+	  if( i == argc-1 ) return false;
+	
+	  mono_skip = atoi( argv[i+1] );
+	  i+=2;
+
+	
+	}
       else if( strcmp( argv[i], "--posclip" ) == 0 )
 	{
 	  no_pos_clip=false;
@@ -376,12 +390,31 @@ static bool parse_args( int argc, char *argv[ ] )
 	  use_proj_tex= true;
 	  i+=1;
 	}
+      else if( strcmp( argv[i], "--evensplit" ) == 0 )
+	{
+	 even_split= true;
+	  i+=1;
+	}
+      else if( strcmp( argv[i], "--cellscale" ) == 0 )
+	{
+	  if( i == argc-1 ) return false;
+	  cell_scale = atof( argv[i+1] );
+	  i+=2;
+
+	}
       else if( strcmp( argv[i], "--vrip" ) == 0 )
 	{
 	  run_pos=false;
 	  use_vrip_recon = true;
 	  no_simp = false;
 	  i+=1;
+	}
+      else if( strcmp( argv[i], "--vrip-ramp" ) == 0 )
+	{
+	  if( i == argc-1 ) return false;
+	  vrip_ramp = atof( argv[i+1] );
+	  i+=2;
+
 	}
       else if( strcmp( argv[i], "--dist" ) == 0 )
 	{
@@ -1512,8 +1545,8 @@ void runC(Stereo_Pose_Data &name){
   //printf("%s Written Out to  %s\n",name.left_name.c_str(),name.mesh_name.c_str());
 }
 bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks,Camera_Calib *cam_calib){
-  
-  for(int i=0; i <(int) mono_names.size(); i+=4){
+  int stereo_pair_id=0;
+  for(int i=0; i <(int) mono_names.size()-mono_skip; i+=3){
     Stereo_Pose_Data name;
     name.time=mono_names[i].time;
     //name.index=mono_names[i].index;
@@ -1526,12 +1559,13 @@ bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks
     name.m =gts_matrix_identity (NULL);
     name.bbox = gts_bbox_new(gts_bbox_class(),NULL,0,0,0,0,0,0);
     name.left_name=mono_names[i].img_name;
-    name.right_name=mono_names[i+1].img_name;
-    name.calib=new Stereo_Calib(*cam_calib,*mono_names[i].pose,*mono_names[i+1].pose);
+    name.right_name=mono_names[i+mono_skip].img_name;
+    name.calib=new Stereo_Calib(*cam_calib,*mono_names[i].pose,*mono_names[i+mono_skip].pose);
     name.overlap=false;
     name.valid=true;
     name.radius=5;
     name.alt=-1.0;
+    name.id=stereo_pair_id++;
     fill_gts_matrix(name.pose,name.m);
     tasks.push_back(name);
     
@@ -1864,8 +1898,12 @@ int main( int argc, char *argv[ ] )
       simp_mult=2.0;
     
     ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,dist_run,cwd,aggdir,have_mb_ply);
+    std::vector<Cell_Data> cells;
+    if(even_split)
+      cells=calc_cells(tasks,EVEN_SPLIT,cell_scale);
+    else
+      cells=calc_cells(tasks,AUV_SPLIT,cell_scale);
 
-    std::vector<Cell_Data> cells=calc_cells(tasks);
     for(int i=0; i <(int)cells.size(); i++){
       if(cells[i].poses.size() == 0)
 	continue;
@@ -1897,7 +1935,7 @@ int main( int argc, char *argv[ ] )
 	    eps,i,vrip_seg_fname,2.0,i,i,1.0,i,i);
   }
   if(!no_merge)
-    fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale 500;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,i,i,redirstr);
+    fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,vrip_ramp,i,i,redirstr);
   else
     fprintf(vripcmds_fp,"cat ../%s | cut -f1 -d\" \" | xargs $BASEDIR/vrip/bin/plymerge > ../mesh-agg/seg-%08d.ply;",vrip_seg_fname,i);
 

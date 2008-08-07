@@ -224,7 +224,7 @@ GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
       // sprintf(conf_name,"mesh-regen-tex/re-bbox-%s.txt",str);
     else
       sprintf(conf_name,"%s/bbox-%s.txt",diceddir,str);
-  
+
   FILE *bboxfp = fopen(conf_name,"r");
   int count;
   GNode *bboxTree=NULL;
@@ -254,6 +254,7 @@ GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
       bboxes_all.push_back(bbox);
       gts_trans_map[count]=gts_matrix_inverse(mtmp);
       frame_count++;
+    
     }
     gts_matrix_destroy(mtmp);
     fclose(bboxfp);
@@ -485,7 +486,7 @@ std::vector<vector<string >   > outNames;
       exit(-1);
     }
     */
-    
+   
     //int initialEdges=gts_surface_edge_number(s);
 
     int lodTexSize[]={max((int)(512*tex_scale),4),max((int)(256*tex_scale),4),max((int)(16*tex_scale),4)};

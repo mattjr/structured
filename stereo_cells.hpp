@@ -51,7 +51,7 @@ public:
    
    void set( double min_x, double max_x, double min_y, double max_y );
 
-   double area( void );
+   double area( void ) const;
     
    double min_x;
    double max_x;
@@ -60,6 +60,7 @@ public:
 };
 
 
+enum{AUV_SPLIT,EVEN_SPLIT};
 
 class Cell_Data
 {
@@ -82,7 +83,7 @@ public:
 
 std::vector<Stereo_Pose_Data> load_stereo_pose_file( const std::string &file_name );
 
-std::vector<Cell_Data> calc_cells( const std::vector<Stereo_Pose_Data> &poses ); 
+std::vector<Cell_Data> calc_cells( const std::vector<Stereo_Pose_Data> &poses ,int method,double cell_scale=1.0); 
 
 
 

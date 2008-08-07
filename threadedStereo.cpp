@@ -1546,8 +1546,8 @@ void runC(Stereo_Pose_Data &name){
  
   //printf("%s Written Out to  %s\n",name.left_name.c_str(),name.mesh_name.c_str());
 }
-bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks,Camera_Calib *cam_calib){
-  int stereo_pair_id=0;
+bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks,Camera_Calib *cam_calib,unsigned int &stereo_pair_count){
+
   for(int i=0; i <(int) mono_names.size()-mono_skip; i+=3){
     Stereo_Pose_Data name;
     name.time=mono_names[i].time;
@@ -1567,7 +1567,7 @@ bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks
     name.valid=true;
     name.radius=5;
     name.alt=-1.0;
-    name.id=stereo_pair_id++;
+    name.id=stereo_pair_count++;
     fill_gts_matrix(name.pose,name.m);
     tasks.push_back(name);
     
@@ -1709,18 +1709,18 @@ int main( int argc, char *argv[ ] )
     printf("Single run %d %d\n",single_run_start,single_run_start+max_frame_count-1);
   }
 
-
+  unsigned int mono_img_count=0;
   int start_skip=0;
   if(mono_cam){
     std::vector<Mono_Image_Name> mono_names;
-    while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
+    while( !have_max_frame_count || mono_img_count < max_frame_count*(mono_skip+1) ){
       
       Mono_Image_Name mono;
       int ret=get_mono_image_name( dir_name, contents_file, mono) ;
       if(ret == ADD_IMG ){
 	if(start_skip++ < single_run_start)
 	  continue;
-	mono.id= single_run_start+stereo_pair_count++;
+	mono.id= single_run_start+mono_img_count++;
 	mono.valid=true;
 	mono_names.push_back(mono);
       }else if(ret == NO_ADD){
@@ -1749,7 +1749,7 @@ int main( int argc, char *argv[ ] )
       }
 
     }
-    gen_stereo_from_mono(mono_names,tasks,&calib->left_calib);
+    gen_stereo_from_mono(mono_names,tasks,&calib->left_calib,stereo_pair_count);
     
     
   }else{
@@ -1780,7 +1780,9 @@ int main( int argc, char *argv[ ] )
   }
   start_time=tasks[0].time;
   stop_time=tasks[tasks.size()-1].time;
+  
   totalTodoCount=stereo_pair_count;
+ 
   boost::xtime xt, xt2;
   long time;
   // consumer pool model...

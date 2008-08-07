@@ -56,6 +56,7 @@ static string contents_file_name;
 static string dir_name;
 static bool use_cached=true;
 static bool output_uv_file=false;
+static bool further_clean=false;
 static bool use_undistorted_images = false;
 static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
@@ -517,6 +518,7 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--mono" ) == 0 )
 	{
 	  mono_cam = true;
+	  further_clean=true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--dense-features" ) == 0 )
@@ -2164,7 +2166,11 @@ int main( int argc, char *argv[ ] )
 		//"fi\n",0,0,0,0); 
 
 	
-
+	char simpargstr[255];
+	if(further_clean)
+	  sprintf(simpargstr," -H200 -S100 ");
+	else
+	  sprintf(simpargstr," ");
 	fprintf(dicefp, "LOGDIR=%s\n"
 		"if [[ -d $LOGDIR ]] ; then\n"
 		"find $LOGDIR -name 'loadbal*' | xargs rm &>/dev/null\nfi\n"
@@ -2186,11 +2192,11 @@ int main( int argc, char *argv[ ] )
 		"FLIPCMD="
 		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
 		"\t\tfi\n"
-		"\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 $FLIPCMD >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
+		"\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
 		"MESHNAME=$NEWNAME\n"
 		"\tdone\n"
 		"echo $SIMPCMD >> simpcmds\n"
-		"done\n",simplogdir);
+		"done\n",simplogdir,simpargstr);
 	
 	
 	if(dist_run){

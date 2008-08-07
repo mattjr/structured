@@ -69,6 +69,7 @@ int margins[]={10,500,INT_MAX};
 static bool use_proj_tex=false;
 static bool use_regen_tex=false;
 static bool use_dist_coords=true;
+   int lodTexSize[3];
 //
 // Parse command line arguments into global variables
 //
@@ -377,12 +378,21 @@ int main( int argc, char *argv[ ] )
       cerr << "ERROR - " << error << endl;
       exit( 1 );
     }
+
+  lodTexSize[0]=max((int)(512*tex_scale),4);
+  lodTexSize[1]=max((int)(256*tex_scale),4);
+  lodTexSize[2]=max((int)(16*tex_scale),4);
+
   config_file->set_value( "SKF_SHOW_DEBUG_IMAGES"    , display_debug_images );
   config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"    , display_debug_images );
   config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
 
   
+  config_file->get_value( "TS_TEX_SIZE_LOD0", lodTexSize[0] );
 
+  config_file->get_value( "TS_TEX_SIZE_LOD1", lodTexSize[1] );
+  
+  config_file->get_value( "TS_TEX_SIZE_LOD2", lodTexSize[2] );
 
   //
   // Load the stereo camera calibration 
@@ -489,7 +499,7 @@ std::vector<vector<string >   > outNames;
    
     //int initialEdges=gts_surface_edge_number(s);
 
-    int lodTexSize[]={max((int)(512*tex_scale),4),max((int)(256*tex_scale),4),max((int)(16*tex_scale),4)};
+ 
     //float simpRatio[]={0.5,0.1,0.01};
     
     std::vector<string > lodnames;

@@ -143,9 +143,9 @@ int main(int argc ,char**argv){
        
       case 'Q' :	QualityClean=true; QualityCleanVal=atof(argv[i]+2); fprintf(stderr,"Cleaning with quality threshold of %f\n",atof(argv[i]+2)); break;	
     
-      case 'H' :	FillHoles=true; MaxHoleSize=atoi(argv[i]+2); fprintf(stderr,"Filling holes with a maximum size of %d\n",atoi(argv[i]+2)); break;	
+    	
 	*/
-
+  case 'H' :	FillHoles=true; MaxHoleSize=atoi(argv[i]+2); fprintf(stderr,"Filling holes with a maximum size of %d\n",atoi(argv[i]+2)); break;
 	    default  :  fprintf(stderr,"Unknown option '%s'\n", argv[i]);
 	      //exit(0);
 	}

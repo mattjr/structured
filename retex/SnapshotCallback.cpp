@@ -1,5 +1,7 @@
 #include "SnapshotCallback.h"
 
+#include "highgui.h"
+
 using namespace auv_data_tools;
 
 SnapImageDrawCallback::SnapImageDrawCallback(std::vector<osg::Matrixd> passedM,std::vector<bbox> bboxes,osgDB::DatabasePager *dp,osgViewer::Viewer *viewer,osg::Node *root) :_dp(dp),_viewer(viewer),_root(root),_passedM(passedM),_bboxes(bboxes){

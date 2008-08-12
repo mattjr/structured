@@ -378,21 +378,23 @@ int main( int argc, char *argv[ ] )
       cerr << "ERROR - " << error << endl;
       exit( 1 );
     }
-
-  lodTexSize[0]=max((int)(512*tex_scale),4);
-  lodTexSize[1]=max((int)(256*tex_scale),4);
-  lodTexSize[2]=max((int)(16*tex_scale),4);
-
-  config_file->set_value( "SKF_SHOW_DEBUG_IMAGES"    , display_debug_images );
-  config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"    , display_debug_images );
-  config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
-
-  
   config_file->get_value( "TS_TEX_SIZE_LOD0", lodTexSize[0] );
 
   config_file->get_value( "TS_TEX_SIZE_LOD1", lodTexSize[1] );
   
   config_file->get_value( "TS_TEX_SIZE_LOD2", lodTexSize[2] );
+  if(lodTexSize[0] == 0 ||lodTexSize[0] == 0|| lodTexSize[0] == 0 ){
+    fprintf(stderr,"Can't have tex size of zero setting to default\n");
+    lodTexSize[0]=max((int)(512*tex_scale),4);
+    lodTexSize[1]=max((int)(256*tex_scale),4);
+    lodTexSize[2]=max((int)(16*tex_scale),4);
+  }
+  config_file->set_value( "SKF_SHOW_DEBUG_IMAGES"    , display_debug_images );
+  config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"    , display_debug_images );
+  config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
+
+  
+
 
   //
   // Load the stereo camera calibration 

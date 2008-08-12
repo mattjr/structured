@@ -194,6 +194,8 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${OPENCV_INCLUDE_DIR}
 		     ${OPENGL_INCLUDE_DIR}
  		     ${GTS_INCLUDE_DIR}
+		     "tridecimator/vcg"
+		     "tridecimator/"
                      ${ULAPACK_INCLUDE_DIR}
 		     ${LIBADT_INCLUDE_DIR}
   		     ${LIBSNAPPER_INC}
@@ -279,6 +281,7 @@ SET( SRCS OSGExport.cpp
 		auv_3ds.cpp
 		novelty.cpp
 		stereo_cells.cpp
+		tridecimator/plylib.cpp
 		)
 
 ADD_DEFINITIONS( "-g")

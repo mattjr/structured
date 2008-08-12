@@ -256,13 +256,13 @@ int main(int argc ,char**argv){
     fprintf(stderr,"After Size Clean Vertex: %d Faces: %d\n",cm.vn,cm.fn);
   }
  
-
+  
   int dup= tri::Clean<CMeshO>::RemoveDuplicateVertex(cm);
   int unref= tri::Clean<CMeshO>::RemoveUnreferencedVertex(cm);
   int deg= vcg::tri::Clean<CMeshO>::RemoveDegenerateFace(cm);
   
-  fprintf(stderr,"Removed %i degen faces %i dup and %i unref vert\n",deg,dup,unref);
-     if ( ! tri::Clean<CMeshO>::IsTwoManifoldFace(cm) ) {
+   fprintf(stderr,"Removed %i degen faces %i dup and %i unref vert\n",deg,dup,unref);
+    if ( ! tri::Clean<CMeshO>::IsTwoManifoldFace(cm) ) {
   
        printf("freak out\n");
     }

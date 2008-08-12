@@ -17,7 +17,18 @@
 #include <fstream>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <vcg/complex/trimesh/hole.h>
 
+#include <vcg/math/quadric.h>
+#include <vcg/complex/trimesh/clean.h>
+#include<vcg/complex/trimesh/base.h>
+#include<vcg/simplex/vertexplus/component_ocf.h>
+#include<vcg/simplex/faceplus/component_ocf.h>
+#include <vcg/complex/trimesh/update/topology.h>
+#include <vcg/complex/trimesh/update/position.h>
+#include<vcg/complex/trimesh/base.h>
+#include <wrap/io_trimesh/import.h>
+#include <wrap/io_trimesh/export_ply.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h> 
@@ -34,15 +45,19 @@
 #include "auv_stereo_dense.hpp"
 #include "auv_concurrency.hpp"
 #include "OSGExport.h"
+#include "tridecimator/remove_small_cc.h"
 #include "keypoint.hpp"
 #include "XForm.h"
 #include "TriMesh_algo.h"
 #include "ShellCmd.h"
 #include "stereo_cells.hpp"
+#include "tridecimator/meshmodel.h"
 using namespace std;
 using namespace libplankton;
 using namespace ulapack;
 using namespace libsnapper;
+
+
 static int meshNum;
 static double start_time = 0.0;
 static double stop_time = numeric_limits<double>::max();
@@ -814,14 +829,14 @@ static bool get_stereo_pair( const string left_image_name,
       //  cvReleaseImage( &temp );
     }
 
-  if( left_image->nChannels == 3 )
+  if( right_image->nChannels == 3 )
     {
       color_image=right_image;
       IplImage *grey_right = cvCreateImage( cvGetSize(right_image), IPL_DEPTH_8U, 1 );
       cvCvtColor( right_image, grey_right, CV_BGR2GRAY );
-      IplImage *temp = right_image;
+      //   IplImage *temp = right_image;
       right_image = grey_right;
-      cvReleaseImage( &temp );
+      // cvReleaseImage( &temp );
     }
 
   if(color_image == NULL)
@@ -1204,7 +1219,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   //printf("Mesh cached check %s\n",meshfilename);
 
   if(!use_cached){
-    printf("Redoing cache\n");
+ 
+    //     printf("Redoing cache\n");
     meshcached=false;
     texcached=false;
   }else{
@@ -1470,7 +1486,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     TriMesh *mesh = TriMesh::read(meshfilename);
     edge_len_thresh(mesh,edgethresh);
     
-   xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
+    xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
 	     name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
 	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
 	     name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);
@@ -1481,21 +1497,59 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     mesh->write(filename);
 
     if(use_poisson_recon){ 
-      faceflip(mesh);
-      mesh->need_normals();
-      int nv = mesh->vertices.size();
-      float buf[6];
+  
+	CMeshO cm;
+	int err=vcg::tri::io::ImporterPLY<CMeshO>::Open(cm,filename);
+	if(mono_cam){
+	  cm.face.EnableFFAdjacency();
+	  cm.face.EnableMark();
+	  vcg::tri::UpdateTopology<CMeshO>::FaceFace(cm);
+	  vcg::tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
+	
+	  vcg::RemoveSmallConnectedComponentsDiameter<CMeshO>(cm,10.0);
+	  int dup= vcg::tri::Clean<CMeshO>::RemoveDuplicateVertex(cm);
+	  int unref= vcg::tri::Clean<CMeshO>::RemoveUnreferencedVertex(cm);
+	  int deg= vcg::tri::Clean<CMeshO>::RemoveDegenerateFace(cm);
+	}
+	  /* faceflip(mesh);
+	     mesh->need_normals();
+	     int nv = mesh->vertices.size();*/
+	  float buf[6];
+	  vcg::tri::Clean<CMeshO>::FlipMesh(cm);
+	  vcg::tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);
+   
+      CMeshO::VertexIterator vi;
+      for(vi=cm.vert.begin();vi!=cm.vert.end();++vi){
+
+
+	buf[0]=(*vi).P()[0];
+	buf[1]=(*vi).P()[1];
+	buf[2]=(*vi).P()[2];
+
+	buf[3]=(*vi).N()[0];
+	buf[4]=(*vi).N()[1];
+	buf[5]=(*vi).N()[2];
+      	fwrite(buf,sizeof(float),6,pos_fp);
+      } 
+     
+      //for(fi=cm.face.begin(); fi!=cm.face.end();++fi){
+/*
       for (int i = 0; i < nv; i++) {
 	for(int j=0; j<3; j++){
-	  if(j==2)
+	  if(j==2){
+	   
 	    buf[j]=(float)mesh->vertices[i][j];
-	  else
+	  }else{
 	    buf[j]=(float)mesh->vertices[i][j];
+	  }
+	  printf("%f ",buf[j]);
 	}
+	printf("\n");
+
 	for(int j=0; j<3; j++)
-	  buf[j+3]=(float)mesh->normals[i][j];
-	fwrite(buf,sizeof(float),6,pos_fp);
-      }
+	buf[j+3]=(float)mesh->normals[i][j];*/
+
+	// }
     }
     name.mesh_name = osgDB::getSimpleFileName(filename);
 
@@ -2068,7 +2122,7 @@ int main( int argc, char *argv[ ] )
 	  mintridepth=0;
 	else
 	  mintridepth=8;
-	if(mono_cam || no_pos_clip){
+	if( no_pos_clip){
 	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose  --out ../mesh-pos/pos_rec-lod2.ply\n",8,6,1.0);
 	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose  --out ../mesh-pos/pos_raw.ply\n",11,6,4.0);
 	}else{

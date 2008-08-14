@@ -988,9 +988,18 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
 
   osg::Geode *tex=group[0].get();
   osg::Geode *untex =group[1].get();
+  osg::Matrix trans(   osg::Matrix::rotate(osg::inDegrees(-90.0f),
+		                           1.0f,0.0f,0.0f)*
+		       osg::Matrix::rotate(osg::inDegrees(-90.0f),0.0f,
+					   1.0f,0.0f));
 
- 
+
+  osg::MatrixTransform* positioned1 = new osg::MatrixTransform(trans);
+
   
+  osg::MatrixTransform* positioned2= new osg::MatrixTransform(trans);
+
+   
   if(!compress_tex && tex){
     if(verbose)
       printf("Texture Atlas Creation\n"); 
@@ -1013,9 +1022,10 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
   char outtex[255];
   string outname_str(out_name);
   if(tex && tex->getNumDrawables()){
+    positioned1->addChild(tex);
     strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-t.ive")).c_str());
     
-    result = osgDB::Registry::instance()->writeNode(*tex,outtex,osgDB::Registry::instance()->getOptions());
+    result = osgDB::Registry::instance()->writeNode(*positioned1,outtex,osgDB::Registry::instance()->getOptions());
     if (result.success())	{
       if(verbose)
 	osg::notify(osg::NOTICE)<<"Data written to '"<<outtex<<"'."<< std::endl;
@@ -1028,10 +1038,11 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
   }  
 
   if(untex && untex->getNumDrawables()){
+    positioned2->addChild(untex);
     strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-u.ive")).c_str());
     
     
-    result = osgDB::Registry::instance()->writeNode(*untex,outtex,osgDB::Registry::instance()->getOptions());
+    result = osgDB::Registry::instance()->writeNode(*positioned2,outtex,osgDB::Registry::instance()->getOptions());
     if (result.success())	{
       if(verbose)
 	osg::notify(osg::NOTICE)<<"Data written to '"<<outtex<<"'."<< std::endl;

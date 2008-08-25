@@ -102,7 +102,9 @@ vec4 freq3Blend(){
   return outP;
 
 }
-
+vec4 imDebug1(){
+  return ((texture2DArray(theTexture,gl_TexCoord[1].xyz)-texture2DArrayLod(theTexture,gl_TexCoord[1].xyz,1)));
+}
 vec4 weightDebug1(){
   vec3 Cb=weights;
   vec3 mipmapL = vec3(0,2,4);
@@ -239,10 +241,10 @@ vec4 freqBlend(){
 }
 vec4 pass(){
   // vec4 color=vec4(gl_TexCoord[1].x,gl_TexCoord[1].y,0,0); //texture2DArray(theTexture,gl_TexCoord[1].xyz);
-  if(gl_TexCoord[1].x < 0.1 && gl_TexCoord[1].y > .99)
-  return vec4(0.0,0.0,1.0,0.0);
-else 
-  return vec4(1,0,0,0);
+  ///  if(gl_TexCoord[1].x < 0.1 && gl_TexCoord[1].y > .99)
+  //return vec4(0.0,0.0,1.0,0.0);
+  //else 
+  return   texture2DArray(theTexture,gl_TexCoord[1].xyz);
   // else return gl_Color;//color;
   //return color;
 }
@@ -264,7 +266,7 @@ void main()
   else if(shaderOut ==3)
     color=gl_Color;
   else if(shaderOut ==4)
-    color=weightDebug2();	
+    color=imDebug1();	
   else
     color=pass();
   

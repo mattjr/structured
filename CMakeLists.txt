@@ -279,6 +279,7 @@ SET( SRCS OSGExport.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp
 		auv_3ds.cpp
+		Clean.cpp
 		novelty.cpp
 		stereo_cells.cpp
 		tridecimator/plylib.cpp

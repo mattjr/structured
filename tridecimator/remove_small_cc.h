@@ -24,6 +24,9 @@
   History
 
  $Log: not supported by cvs2svn $
+ Revision 1.1  2007-12-06 05:00:00  m.roberson
+ decimator chanes
+
  Revision 1.1  2006/11/07 09:09:28  cignoni
  First Working release, moved in from epoch svn
 
@@ -34,9 +37,10 @@
 #ifndef __VCGLIB__REMOVE_SMALL_CC
 #define __VCGLIB__REMOVE_SMALL_CC
 
+#include <vector>
 #include <vcg/space/point3.h>
 #include <vcg/complex/trimesh/clean.h>
-
+using namespace std;
 namespace vcg
 {
 template<class MeshType>
@@ -48,13 +52,13 @@ void RemoveSmallConnectedComponentsSize(MeshType &m, int maxCCSize)
       tri::ConnectedIterator<MeshType> ci;
       for(unsigned int i=0;i<CCV.size();++i)
       {
-        vector<typename MeshType::FacePointer> FPV;
+        std::vector<typename MeshType::FacePointer> FPV;
         if(CCV[i].first<maxCCSize)
         {
           for(ci.start(m,CCV[i].second);!ci.completed();++ci)
             FPV.push_back(*ci);
           
-          typename vector<typename MeshType::FacePointer>::iterator fpvi;
+	    typename std::vector<typename MeshType::FacePointer>::iterator fpvi;
           for(fpvi=FPV.begin(); fpvi!=FPV.end(); ++fpvi)
             (**fpvi).SetD();
           m.fn-=FPV.size();

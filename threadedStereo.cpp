@@ -17,18 +17,9 @@
 #include <fstream>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <vcg/complex/trimesh/hole.h>
 
-#include <vcg/math/quadric.h>
-#include <vcg/complex/trimesh/clean.h>
-#include<vcg/complex/trimesh/base.h>
-#include<vcg/simplex/vertexplus/component_ocf.h>
-#include<vcg/simplex/faceplus/component_ocf.h>
-#include <vcg/complex/trimesh/update/topology.h>
-#include <vcg/complex/trimesh/update/position.h>
-#include<vcg/complex/trimesh/base.h>
-#include <wrap/io_trimesh/import.h>
-#include <wrap/io_trimesh/export_ply.h>
+#include "auv_args.hpp"
+#include "Clean.h"
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h> 
@@ -45,13 +36,11 @@
 #include "auv_stereo_dense.hpp"
 #include "auv_concurrency.hpp"
 #include "OSGExport.h"
-#include "tridecimator/remove_small_cc.h"
 #include "keypoint.hpp"
 #include "XForm.h"
 #include "TriMesh_algo.h"
 #include "ShellCmd.h"
 #include "stereo_cells.hpp"
-#include "tridecimator/meshmodel.h"
 using namespace std;
 using namespace libplankton;
 using namespace ulapack;
@@ -142,6 +131,7 @@ static bool hardware_compress=true;
 const char *uname="mesh";
 const char *dicedir="mesh-diced";
 const char *aggdir="mesh-agg";
+static string recon_config_file_name;
 static string deltaT_pose;
 static string dense_method="";
 bool dist_run=false;
@@ -152,9 +142,14 @@ static bool do_hw_blend=false;
 #define USE_IMAGE_NORMALISATION true
 #define NORMALISED_MEAN         128
 #define NORMALISED_VAR          400
-
+static Stereo_Calib *calib;
+ static Config_File *config_file; 
+ static Config_File *recon_config_file; 
+static int texmargin[3];
+  static Config_File *dense_config_file; 
+static  int tex_size;
 #ifdef USE_DENSE_STEREO
-  Stereo_Dense *sdense=NULL;
+Stereo_Dense *sdense=NULL;
 #endif
 
 void print_uv_3dpts( list<Feature*>          &features,
@@ -255,394 +250,309 @@ void print_uv_3dpts( list<Feature*>          &features,
 //
 static bool parse_args( int argc, char *argv[ ] )
 {
-  bool have_stereo_config_file_name = false;
-  bool have_contents_file_name = false;
-  bool have_base_dir=false;
-
+  libplankton::ArgumentParser argp(&argc,argv);
+  if(argp.isOption(argp[1])){
+    fprintf(stderr,"First arg must be base dir");
+    exit(-1);
+  }
+  base_dir=argp[1];
+  recon_config_file_name = "recon.cfg";
   stereo_config_file_name = "stereo.cfg";
   contents_file_name = "pose_file.data";
+
   dir_name = "img/";
-
   strcpy(cachedtexdir,"cache-tex/");
-  int i=1;
-  while( i < argc )
-    {
-      if( strcmp( argv[i], "-r" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  image_scale = strtod( argv[i+1], NULL );
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--edgethresh" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  edgethresh = strtod( argv[i+1], NULL );
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "-m" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  max_feature_count = atoi( argv[i+1] );
-	  i+=2;
-	}  
-      else if( strcmp( argv[i], "-f" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  dir_name=string( argv[i+1]) ;
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--mbfile" ) == 0 )
-	{
-	
-	  if( i == argc-1 ) return false;
-	
-	  have_mb_ply=true;
-	  for(i++; i < argc && argv[i][0] != '-'; i++)
-	    mb_ply_filenames.push_back(string( argv[i])) ;
-	
-	}
-      else if( strcmp( argv[i], "--monoskip" ) == 0 )
-	{
-	
-	  if( i == argc-1 ) return false;
-	
-	  mono_skip = atoi( argv[i+1] );
-	  i+=2;
 
-	
-	}
-      else if( strcmp( argv[i], "--posclip" ) == 0 )
-	{
-	  no_pos_clip=false;
-	  i+=1;
-	
-	}
-      else if( strcmp( argv[i], "--genmb" ) == 0 )
-	{
-	  // if( i == argc-2 ) return false;	
-	  gen_mb_ply=true;
-	  have_mb_ply=true;
-	  mb_ply_filenames.push_back(string("mb.ply")) ;
 
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "-z" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  feature_depth_guess = atof( argv[i+1] );
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--ds" ) == 0 )
-	{
-	  use_dense_stereo=true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--dense-method" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  dense_method=argv[i+1];
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--no-depth" ) == 0 )
-	{
-	  no_depth=true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "-s" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  num_skip = atoi( argv[i+1] );
-	  skip_counter=num_skip;
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--single-run" ) == 0 )
-	{
-	  if( i == argc-2 ) return false;
-	  single_run_start = atoi( argv[i+1] );
-	  single_run_stop = atoi( argv[i+2] );
-	  i+=3;
-	  single_run=true;
-	  display_debug_images = false;
-	}
-      else if( strcmp( argv[i], "--passtotridec" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  passtotridec=string(argv[i+1]);
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "-t" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  num_threads = atoi( argv[i+1] );
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--res" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  vrip_res = atof( argv[i+1] );
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--cov" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  strcpy(cov_file_name, argv[i+1] );
-	  have_cov_file=true;
-	  i+=2;
-	}  
-      else if( strcmp( argv[i], "-n" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  have_max_frame_count = true;
-	  max_frame_count = atoi( argv[i+1] );
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "-u" ) == 0 )
-	{
-	  use_undistorted_images = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--projtex" ) == 0 )
-	{
-	  use_proj_tex= true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--evensplit" ) == 0 )
-	{
-	 even_split= true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--cellscale" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  cell_scale = atof( argv[i+1] );
-	  i+=2;
+  argp.read("--stereo-config",stereo_config_file_name);
+  argp.read("--poses",contents_file_name );
 
-	}
-      else if( strcmp( argv[i], "--vrip" ) == 0 )
-	{
-	  run_pos=false;
-	  use_vrip_recon = true;
-	  no_simp = false;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--vrip-ramp" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  vrip_ramp = atof( argv[i+1] );
-	  i+=2;
-
-	}
-      else if( strcmp( argv[i], "--dist" ) == 0 )
-	{
-	  dist_run = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--threaded-gentex" ) == 0 )
-	{
-	  sing_gen_tex = false;
-	  i+=1;
-	}
-  else if( strcmp( argv[i], "--dicelod" ) == 0 )
-	{
-	  dice_lod = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--nosimp" ) == 0 )
-	{
-	  no_simp = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--blend" ) == 0 )
-	{
-	  do_hw_blend = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--no_cached" ) == 0 )
-	{
-	  use_cached = false;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--novelty" ) == 0 )
-	{
-	  do_novelty = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--ptscov" ) == 0 )
-	{
-	  output_pts_cov = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "-y" ) == 0 )
-	{
-	  use_rect_images = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "-d" ) == 0 )
-	{
-	  display_debug_images = false;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--regen" ) == 0 )
-	{
-	  regen_tex = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "-p" ) == 0 )
-	{
-	  pause_after_each_frame = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "-c" ) == 0 )
-	{
-	  use_ncc = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--split" ) == 0 )
-	{  
-	  if( i == argc-1 ) return false;
-	  vrip_split = atoi( argv[i+1] );
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--cachedmeshdir" ) == 0 )
-	{  
-	  if( i == argc-1 ) return false;
-	  strcpy(cachedmeshdir , argv[i+1] );
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--dicevol" ) == 0 )
-	{  
-	  if( i == argc-1 ) return false;
-	  subvol = atof( argv[i+1] );
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
-	{  
-	  hardware_compress=false;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--uv" ) == 0 )
-	{
-	  output_uv_file = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--sift" ) == 0 )
-	{
-	  use_sift_features = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--mono" ) == 0 )
-	{
-	  mono_cam = true;
-	  further_clean=true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--dense-features" ) == 0 )
-	{
-	  use_dense_feature = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--surf" ) == 0 )
-	{
-	  use_surf_features = true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--start" ) == 0 )
-	{	
-	  if( i == argc-1 ) return false;
-	  start_time = strtod( argv[i+1], NULL );
-	  printf("start time %f\n",start_time);
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--stop" ) == 0 )
-	{
-	  if( i == argc-1 ) return false;
-	  stop_time = strtod( argv[i+1], NULL );
-	  i+=2;
-	}
-      else if( strcmp( argv[i], "--3ds" ) == 0 )
-	{
-	  output_3ds=true;
-	  i+=1;
-	}
-      else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
-	{
-	  output_3ds=true;
-	  i+=1;
-	}
-      else if(strcmp( argv[i], "--stereo-config" ) == 0)
-	{
-	  if( i == argc-1 ) return false;
-	  stereo_config_file_name = argv[i+1];
-	  have_stereo_config_file_name = true;
-	  i+=2;
-	}
-      else if(strcmp( argv[i], "--contents-file" ) == 0)
-	{
-	  if( i == argc-1 ) return false;
-	  contents_file_name = argv[i+1];
-	  have_contents_file_name = true;
-	  i+=2;
-	}
-      else if(strcmp( argv[i], "--nogentex" ) == 0)
-	{
-	  no_gen_tex=true;
-
-	  i+=1;
-	}
-      else if(strcmp( argv[i], "--novrip" ) == 0)
-	{
-	  no_vrip=true;
-
-	  i+=1;
-	}
-      else if(strcmp( argv[i], "--nomerge" ) == 0)
-	{
-	  no_merge=true;
-	  run_pos=false;
-	  use_vrip_recon = true;
-	  no_simp = false;
-	  i+=1;
-	}
-      else if(!have_base_dir)
-	{
-
-	  base_dir = argv[i];
-	  //cout <<"Basedir " <<base_dir << endl;
-	  have_base_dir = true;
-	  i++;
-	}
-      else
-	{
-	  cerr << "Error - unknown parameter: " << argv[i] << endl;
-	  return false;
-	}
+  deltaT_config_name=base_dir+string("/")+"localiser.cfg";
+  deltaT_dir=base_dir+string("/")+"DT/";
+  deltaT_pose=base_dir+string("/")+"deltat_pose_est.data";
+  stereo_config_file_name= base_dir+string("/")+stereo_config_file_name;
+  recon_config_file_name= base_dir+string("/")+recon_config_file_name;
+  contents_file_name= base_dir+string("/")+contents_file_name;
+  dir_name= base_dir+string("/")+dir_name;
+ 
+  // cout <<dir_name<<endl;
+  // Create the stereo feature finder
+  //
+  //
+  // Figure out the directory that contains the config file 
+  //
+  try {
+    recon_config_file= new Config_File(recon_config_file_name.c_str());
+  }   catch( string error ) {
+     cerr << "ERROR - " << error << endl;
+     exit( 1 );
+   }
+  string config_dir_name;
+  int slash_pos = stereo_config_file_name.rfind( "/" );
+  if( slash_pos != -1 )
+    config_dir_name = stereo_config_file_name.substr( 0, slash_pos+1 );
+   try {
+     config_file= new Config_File(stereo_config_file_name.c_str());
+   }   catch( string error ) {
+     cerr << "ERROR - " << error << endl;
+     exit( 1 );
+   }
+   
+  if(use_dense_feature)
+    dense_config_file= new Config_File("semi-dense.cfg");
+  
+  if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) ){
+    stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
+    try {
+      calib = new Stereo_Calib( stereo_calib_file_name );
     }
+      catch( string error ) {
+	cerr << "ERROR - " << error << endl;
+	exit( 1 );
+      }
+    
+  }
+
+
+  config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
+  config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
+  config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
+  config_file->set_value( "MESH_TEX_SIZE", tex_size );
+  config_file->get_value( "SD_SCALE", dense_scale);
+  if(dense_method == "")
+    config_file->get_value( "SD_METHOD", dense_method);
+  else
+    config_file->set_value( "SD_METHOD", dense_method);
+  
+  
+  
+  if( use_sift_features )
+    config_file->set_value( "SKF_KEYPOINT_TYPE", "SIFT" );
+    else if( use_surf_features )   
+      config_file->set_value( "SKF_KEYPOINT_TYPE", "SURF" );
+  
+
+  string mbfile;
+
+   
+  argp.read("-r",image_scale);	  
+  argp.read( "--edgethresh" ,edgethresh);
+  argp.read("-m", max_feature_count );
+  argp.read("-f",dir_name);
+  have_mb_ply=argp.read("--mbfile",mbfile);
+  if(have_mb_ply)
+    mb_ply_filenames.push_back(mbfile) ;
+      
+  argp.read( "--monoskip" ,mono_skip);
+
+  no_pos_clip=(!argp.read(  "--posclip"));
+
+  if(argp.read("--genmb")){
+    gen_mb_ply=true;
+    have_mb_ply=true;
+    mb_ply_filenames.push_back(string("mb.ply")) ;
+  }
+  argp.read("-z",feature_depth_guess );
+  use_dense_stereo=argp.read("--ds" );
+      
+  argp.read("--dense-method",dense_method);
+  no_depth=argp.read("--no-depth" );
+      
+  argp.read("-s" ,num_skip);
+
+  single_run= argp.read( "--single-run",single_run_start, single_run_stop );
+  if(single_run)
+    display_debug_images = false;
+     
+  argp.read("--passtotridec" ,passtotridec);
+  argp.read( "-t" ,num_threads);
+  argp.read( "--res",vrip_res );
+  string cov_file;
+  if(argp.read("--cov" ,cov_file))
+    have_cov_file=true;
+  if(argp.read( "-n",max_frame_count))
+    have_max_frame_count = true;
+  use_undistorted_images = argp.read("-u" );
+  use_proj_tex=argp.read("--projtex");
+  even_split= argp.read("--evensplit" );
+  argp.read("--cellscale",cell_scale );
+
+  if(argp.read("--vrip") ){
+    run_pos=false;
+    use_vrip_recon = true;
+    no_simp = false;
+  }
+  argp.read("--vrip-ramp",vrip_ramp );
+  dist_run=argp.read("--dist" );
+  sing_gen_tex =  (!argp.read("--threaded-gentex"));
+  dice_lod=argp.read("--dicelod" );
+
+  no_simp=argp.read( "--nosimp" );
+
+  do_hw_blend=argp.read("--blend" );
+
+  use_cached=(!argp.read("--no_cached" ));
+
+  /* else if( strcmp( argv[i], "--novelty" ) == 0 )
+     {
+     do_novelty = true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "--ptscov" ) == 0 )
+     {
+     output_pts_cov = true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "-y" ) == 0 )
+     {
+     use_rect_images = true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "-d" ) == 0 )
+     {
+     display_debug_images = false;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "--regen" ) == 0 )
+     {
+     regen_tex = true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "-p" ) == 0 )
+     {
+     pause_after_each_frame = true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "-c" ) == 0 )
+     {
+     use_ncc = true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "--split" ) == 0 )
+     {  
+     if( i == argc-1 ) return false;
+     vrip_split = atoi( argv[i+1] );
+     i+=2;
+     }
+     else if( strcmp( argv[i], "--cachedmeshdir" ) == 0 )
+     {  
+     if( i == argc-1 ) return false;
+     strcpy(cachedmeshdir , argv[i+1] );
+     i+=2;
+     }
+     else if( strcmp( argv[i], "--dicevol" ) == 0 )
+     {  
+     if( i == argc-1 ) return false;
+     subvol = atof( argv[i+1] );
+     i+=2;
+     }
+     else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
+     {  
+     hardware_compress=false;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "--uv" ) == 0 )
+     {
+     output_uv_file = true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "--sift" ) == 0 )
+     {
+     use_sift_features = true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "--mono" ) == 0 )
+     {
+     mono_cam = true;
+     further_clean=true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "--dense-features" ) == 0 )
+     {
+     use_dense_feature = true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "--surf" ) == 0 )
+     {
+     use_surf_features = true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "--start" ) == 0 )
+     {	
+     if( i == argc-1 ) return false;
+     start_time = strtod( argv[i+1], NULL );
+     printf("start time %f\n",start_time);
+     i+=2;
+     }
+     else if( strcmp( argv[i], "--stop" ) == 0 )
+     {
+     if( i == argc-1 ) return false;
+     stop_time = strtod( argv[i+1], NULL );
+     i+=2;
+     }
+     else if( strcmp( argv[i], "--3ds" ) == 0 )
+     {
+     output_3ds=true;
+     i+=1;
+     }
+     else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
+     {
+     output_3ds=true;
+     i+=1;
+     }
+    
+   
+     else if(strcmp( argv[i], "--nogentex" ) == 0)
+     {
+     no_gen_tex=true;
+
+     i+=1;
+     }
+     else if(strcmp( argv[i], "--novrip" ) == 0)
+     {
+     no_vrip=true;
+
+     i+=1;
+     }
+     else if(strcmp( argv[i], "--nomerge" ) == 0)
+     {
+     no_merge=true;
+     run_pos=false;
+     use_vrip_recon = true;
+     no_simp = false;
+     i+=1;
+     }
+     else if(!have_base_dir)
+     {
+
+     base_dir = argv[i];
+     //cout <<"Basedir " <<base_dir << endl;
+     have_base_dir = true;
+     i++;
+     }
+     else
+     {
+     cerr << "Error - unknown parameter: " << argv[i] << endl;
+     return false;
+     }
+     }*/
+
   if(!output_3ds && !output_ply_and_conf){
     cerr << "Must do ply or 3ds output\n";
     return false;
   }
   
+
   strcpy(cachedmeshdir,"cache-mesh");
   if(use_dense_stereo)
     sprintf(cachedmeshdir,"%s-dense/",cachedmeshdir);
   else
     sprintf(cachedmeshdir,"%s-feat/",cachedmeshdir);
 
-  if(have_base_dir){
-    deltaT_config_name=base_dir+string("/")+"localiser.cfg";
-    deltaT_dir=base_dir+string("/")+"DT/";
-    deltaT_pose=base_dir+string("/")+"deltat_pose_est.data";
-    if(!have_stereo_config_file_name)
-      stereo_config_file_name= base_dir+string("/")+stereo_config_file_name;
-    if(!have_contents_file_name )
-      contents_file_name= base_dir+string("/")+contents_file_name;
-    dir_name= base_dir+string("/")+dir_name;
-    strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
-    strcpy(cachedtexdir,string(base_dir+string("/")+cachedtexdir).c_str());
-    //printf("Herere %s %s\n",cachedmeshdir,base_dir.c_str());
-  }
+  strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
+  strcpy(cachedtexdir,string(base_dir+string("/")+cachedtexdir).c_str());
 
-  struct stat statinfo;
+  /* struct stat statinfo;
   if(stat(stereo_config_file_name.c_str(), &statinfo) < 0 ){
     have_stereo_config_file_name = false;
     cerr << "Don't have stereo config " << stereo_config_file_name << endl;
@@ -651,9 +561,9 @@ static bool parse_args( int argc, char *argv[ ] )
     have_stereo_config_file_name = true;
   if(stat(contents_file_name.c_str(), &statinfo) < 0 ){
     have_contents_file_name = false;
-      cerr << "Don't have contents " << contents_file_name << endl;
+    cerr << "Don't have contents " << contents_file_name << endl;
   }else 
-    have_contents_file_name = true;
+  have_contents_file_name = true;*/
 #ifndef HAVE_LIBKEYPOINT
   if( use_sift_features || use_surf_features )
     {
@@ -661,8 +571,12 @@ static bool parse_args( int argc, char *argv[ ] )
       return false;
     }
 #endif
-  
-  return (have_contents_file_name && have_stereo_config_file_name);
+  if (argp.errors())
+    {
+      argp.writeErrorMessages(std::cout);
+      return false;
+    }
+  return true;
 }
    
 //
@@ -675,7 +589,7 @@ static void print_usage( void )
   cout << "   <basedir> allows you to choose one directory under which the program "<<endl;
 
   cout << "   will look for stereo.cfg pose_file.data and dir img for images"<< endl;
-cout << "     I suggest creating symlinks to those files allowing for varible configuration."<< endl;
+  cout << "     I suggest creating symlinks to those files allowing for varible configuration."<< endl;
   cout << "OPTIONS:" << endl;
   cout << "   -r <texture size>       Final texture output size." << endl;
   cout << "   -m <max_feature_count>  Set the maximum number of features to be found." << endl;
@@ -701,8 +615,8 @@ cout << "     I suggest creating symlinks to those files allowing for varible co
   cout << "   --ptscov                Output pts and cov ." << endl;
   cout << "   --dicelod                Dice lods" << endl;
   cout << "   --stereo-config              Specify diffrent stereo config" << endl;
- cout << "   --contents-file         Specify diffrent contents file ." << endl;
- cout << "   --nosimp         Specify diffrent contents file ." << endl;
+  cout << "   --contents-file         Specify diffrent contents file ." << endl;
+  cout << "   --nosimp         Specify diffrent contents file ." << endl;
   cout << endl;
 }
 
@@ -729,55 +643,55 @@ void save_bbox_frame (GtsBBox * bb, FILE * fptr){
 // Remove edge longer then thresh
 void edge_len_thresh(TriMesh *mesh,double thresh)
 {
-	mesh->need_faces();
-	int numfaces = mesh->faces.size();
+  mesh->need_faces();
+  int numfaces = mesh->faces.size();
 
 
-	vector<bool> toremove(numfaces, false);
-	for (int i = 0; i < numfaces; i++) {
-		const point &v0 = mesh->vertices[mesh->faces[i][0]];
-		const point &v1 = mesh->vertices[mesh->faces[i][1]];
-		const point &v2 = mesh->vertices[mesh->faces[i][2]];
-		float d01 = dist2(v0, v1);
-		float d12 = dist2(v1, v2);
-		float d20 = dist2(v2, v0);
-		if (d01 > thresh || d12 > thresh || d20 > thresh)
-		  toremove[i] = true;
-	}
-	remove_faces(mesh, toremove);
-	remove_unused_vertices(mesh);
+  vector<bool> toremove(numfaces, false);
+  for (int i = 0; i < numfaces; i++) {
+    const point &v0 = mesh->vertices[mesh->faces[i][0]];
+    const point &v1 = mesh->vertices[mesh->faces[i][1]];
+    const point &v2 = mesh->vertices[mesh->faces[i][2]];
+    float d01 = dist2(v0, v1);
+    float d12 = dist2(v1, v2);
+    float d20 = dist2(v2, v0);
+    if (d01 > thresh || d12 > thresh || d20 > thresh)
+      toremove[i] = true;
+  }
+  remove_faces(mesh, toremove);
+  remove_unused_vertices(mesh);
 }
 
 // Remove edge longer then thresh
 void edge_len_thresh_percent(TriMesh *mesh,double thresh)
 {
-   double sum=0.0;
-	mesh->need_faces();
-	int numfaces = mesh->faces.size();
-	for (int i = 0; i < numfaces; i++) {
-		const point &v0 = mesh->vertices[mesh->faces[i][0]];
-		const point &v1 = mesh->vertices[mesh->faces[i][1]];
-		const point &v2 = mesh->vertices[mesh->faces[i][2]];
-		sum+= dist2(v0, v1);
-		sum += dist2(v1, v2);
-		sum+= dist2(v2, v0);
-	}
-	sum/=numfaces;
-	double threshlen=sum * thresh;
-	//printf("Avg len %f Thresh %f\n",sum,threshlen);
-	vector<bool> toremove(numfaces, false);
-	for (int i = 0; i < numfaces; i++) {
-		const point &v0 = mesh->vertices[mesh->faces[i][0]];
-		const point &v1 = mesh->vertices[mesh->faces[i][1]];
-		const point &v2 = mesh->vertices[mesh->faces[i][2]];
-		float d01 = dist2(v0, v1);
-		float d12 = dist2(v1, v2);
-		float d20 = dist2(v2, v0);
-		if (d01 > threshlen || d12 > threshlen || d20 > threshlen)
-		  toremove[i] = true;
-	}
-	remove_faces(mesh, toremove);
-	remove_unused_vertices(mesh);
+  double sum=0.0;
+  mesh->need_faces();
+  int numfaces = mesh->faces.size();
+  for (int i = 0; i < numfaces; i++) {
+    const point &v0 = mesh->vertices[mesh->faces[i][0]];
+    const point &v1 = mesh->vertices[mesh->faces[i][1]];
+    const point &v2 = mesh->vertices[mesh->faces[i][2]];
+    sum+= dist2(v0, v1);
+    sum += dist2(v1, v2);
+    sum+= dist2(v2, v0);
+  }
+  sum/=numfaces;
+  double threshlen=sum * thresh;
+  //printf("Avg len %f Thresh %f\n",sum,threshlen);
+  vector<bool> toremove(numfaces, false);
+  for (int i = 0; i < numfaces; i++) {
+    const point &v0 = mesh->vertices[mesh->faces[i][0]];
+    const point &v1 = mesh->vertices[mesh->faces[i][1]];
+    const point &v2 = mesh->vertices[mesh->faces[i][2]];
+    float d01 = dist2(v0, v1);
+    float d12 = dist2(v1, v2);
+    float d20 = dist2(v2, v0);
+    if (d01 > threshlen || d12 > threshlen || d20 > threshlen)
+      toremove[i] = true;
+  }
+  remove_faces(mesh, toremove);
+  remove_unused_vertices(mesh);
 }
 
 
@@ -840,7 +754,7 @@ static bool get_stereo_pair( const string left_image_name,
     }
 
   if(color_image == NULL)
-      color_image = cvLoadImage( complete_left_name.c_str( ), 1 );
+    color_image = cvLoadImage( complete_left_name.c_str( ), 1 );
   //
   // Scale images if required
   // 
@@ -860,15 +774,15 @@ static bool get_stereo_pair( const string left_image_name,
       left_image = scaled_left;
       right_image = scaled_right;
     }
- //
-   // Normalise the mean and variance of the pixel intensity values
-   //
-   if( USE_IMAGE_NORMALISATION )
-   {
+  //
+  // Normalise the mean and variance of the pixel intensity values
+  //
+  if( USE_IMAGE_NORMALISATION )
+    {
       normalise_image( NORMALISED_MEAN, NORMALISED_VAR, left_image  );
       normalise_image( NORMALISED_MEAN, NORMALISED_VAR, right_image );
       
-   }
+    }
 
   
   return true;
@@ -888,55 +802,15 @@ static bool get_stereo_pair( const string left_image_name,
   double timestamp;
   int index;
   bool valid;
-}auv_image_names;
-				*/
+  }auv_image_names;
+*/
 
 typedef class threadedStereo{
 public:
   threadedStereo(const string config_file_name, const string dense_config_file_name ){
     frame_id=0;
     tex_size=512;
-    // Create the stereo feature finder
-    //
-    //
-    // Figure out the directory that contains the config file 
-    //
-    string config_dir_name;
-    int slash_pos = config_file_name.rfind( "/" );
-    if( slash_pos != -1 )
-      config_dir_name = config_file_name.substr( 0, slash_pos+1 );
-    
-    config_file= new Config_File(config_file_name.c_str());
-    if(use_dense_feature)
-      dense_config_file= new Config_File(dense_config_file_name.c_str());
-     
-    if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) ){
-      stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
-      try {
-	calib = new Stereo_Calib( stereo_calib_file_name );
-      }
-      catch( string error ) {
-	cerr << "ERROR - " << error << endl;
-	exit( 1 );
-      }
-
-    }
-    config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
-    config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
-    config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
-    config_file->set_value( "MESH_TEX_SIZE", tex_size );
-    config_file->get_value( "SD_SCALE", dense_scale);
-    if(dense_method == "")
-      config_file->get_value( "SD_METHOD", dense_method);
-    else
-      config_file->set_value( "SD_METHOD", dense_method);
-      
-
-
-    if( use_sift_features )
-      config_file->set_value( "SKF_KEYPOINT_TYPE", "SIFT" );
-    else if( use_surf_features )   
-      config_file->set_value( "SKF_KEYPOINT_TYPE", "SURF" );
+  
     finder = NULL;
     finder_dense = NULL;
     if( use_sift_features || use_surf_features ){
@@ -990,10 +864,8 @@ private:
   Stereo_Feature_Finder *finder;
   Stereo_Feature_Finder *finder_dense;
 
-  int tex_size;
-  Stereo_Calib *calib;
-  Config_File *config_file; 
-  Config_File *dense_config_file; 
+ 
+ 
   
   OSGExporter *osgExp;
 }threadedStereo;
@@ -1122,9 +994,9 @@ static int get_auv_image_name( const string  &contents_dir_name,
 }
 
 static int get_mono_image_name( const string  &contents_dir_name,
-			       ifstream      &contents_file,
+				ifstream      &contents_file,
 				Mono_Image_Name  &name
-			       )
+				)
 {
  
   name.pose=new Vector(AUV_NUM_POSE_STATES);
@@ -1190,21 +1062,21 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 #endif
   
   /*  FILE *fp;
-  sprintf(filename,"%s/surface-%s.xf",
-	  aggdir,osgDB::getStrippedName(name.left_name).c_str());
-  fp = fopen(filename, "w" );
-  if(!fp){
-    fprintf(stderr,"Failed to open %s for writing\n",filename);
-    return false;
-  }
+      sprintf(filename,"%s/surface-%s.xf",
+      aggdir,osgDB::getStrippedName(name.left_name).c_str());
+      fp = fopen(filename, "w" );
+      if(!fp){
+      fprintf(stderr,"Failed to open %s for writing\n",filename);
+      return false;
+      }
  
-  for(int n=0; n< 4; n++){
-    for(int p=0; p<4; p++)
+      for(int n=0; n< 4; n++){
+      for(int p=0; p<4; p++)
       fprintf(fp,"%f ",name.m[n][p]);
-    fprintf(fp,"\n");
-  }
-   fclose(fp);
-   chmod(filename,   0666);
+      fprintf(fp,"\n");
+      }
+      fclose(fp);
+      chmod(filename,   0666);
   */
   sprintf(texfilename,"%s/%s.dds",
 	  cachedtexdir,osgDB::getStrippedName(name.left_name).c_str());
@@ -1224,11 +1096,11 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     meshcached=false;
     texcached=false;
   }else{
-   meshcached=FileExists(meshfilename);
-   texcached=FileExists(texfilename);
- }
+    meshcached=FileExists(meshfilename);
+    texcached=FileExists(texfilename);
+  }
  
- sprintf(filename,"%s/surface-%s.tc.ply",
+  sprintf(filename,"%s/surface-%s.tc.ply",
 	  aggdir,osgDB::getStrippedName(name.left_name).c_str());
 
  
@@ -1286,7 +1158,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 			      right_frame_id,
 			      max_feature_count,
 			      features,
-			  feature_depth_guess );
+			      feature_depth_guess );
 	
 	
 	//
@@ -1384,14 +1256,14 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   
       
       
-      /*	 gts_range_update(&r);
-	 for(unsigned int i=0; i < localV->len; i++){
-	 TVertex *v=(TVertex *) g_ptr_array_index(localV,i);
-	 if(have_cov_file){
-	 float val= (v->confidence -r.min) /(r.max-r.min);
-	 jet_color_map(val,v->r,v->g,v->b);
-	 }
-	 }
+	/*	 gts_range_update(&r);
+		 for(unsigned int i=0; i < localV->len; i++){
+		 TVertex *v=(TVertex *) g_ptr_array_index(localV,i);
+		 if(have_cov_file){
+		 float val= (v->confidence -r.min) /(r.max-r.min);
+		 jet_color_map(val,v->r,v->g,v->b);
+		 }
+		 }
 	*/
       }else{ 
 #ifdef USE_DENSE_STEREO   
@@ -1434,7 +1306,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     auv_write_ply(surf, fp,have_cov_file,"test");
     fflush(fp);   
     fclose(fp);
-  //Destory Surf
+    //Destory Surf
  
   }
 
@@ -1442,8 +1314,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   if(output_3ds){
     char fname_3ds[255];
     surf=  gts_surface_new(gts_surface_class(),
-			     (GtsFaceClass *)t_face_class(), 
-			     gts_edge_class(), t_vertex_class());
+			   (GtsFaceClass *)t_face_class(), 
+			   gts_edge_class(), t_vertex_class());
     TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
     convert_ply(  mesh ,surf,0);
@@ -1465,7 +1337,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans,
 		       NULL,tex_size,num_threads,0,0);
 
-  GtsVector v;
+    GtsVector v;
     v[0]=-1;
     v[1]=0;    
     v[2]=0;
@@ -1496,62 +1368,29 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     
     mesh->write(filename);
 
-    if(use_poisson_recon){ 
-  
-	CMeshO cm;
-	int err=vcg::tri::io::ImporterPLY<CMeshO>::Open(cm,filename);
-	if(mono_cam){
-	  cm.face.EnableFFAdjacency();
-	  cm.face.EnableMark();
-	  vcg::tri::UpdateTopology<CMeshO>::FaceFace(cm);
-	  vcg::tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
-	
-	  vcg::RemoveSmallConnectedComponentsDiameter<CMeshO>(cm,10.0);
-	  int dup= vcg::tri::Clean<CMeshO>::RemoveDuplicateVertex(cm);
-	  int unref= vcg::tri::Clean<CMeshO>::RemoveUnreferencedVertex(cm);
-	  int deg= vcg::tri::Clean<CMeshO>::RemoveDegenerateFace(cm);
-	}
-	  /* faceflip(mesh);
-	     mesh->need_normals();
-	     int nv = mesh->vertices.size();*/
-	  float buf[6];
-	  vcg::tri::Clean<CMeshO>::FlipMesh(cm);
-	  vcg::tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);
-   
-      CMeshO::VertexIterator vi;
-      for(vi=cm.vert.begin();vi!=cm.vert.end();++vi){
-
-
-	buf[0]=(*vi).P()[0];
-	buf[1]=(*vi).P()[1];
-	buf[2]=(*vi).P()[2];
-
-	buf[3]=(*vi).N()[0];
-	buf[4]=(*vi).N()[1];
-	buf[5]=(*vi).N()[2];
-      	fwrite(buf,sizeof(float),6,pos_fp);
-      } 
+    if(use_poisson_recon)
+      
      
       //for(fi=cm.face.begin(); fi!=cm.face.end();++fi){
-/*
-      for (int i = 0; i < nv; i++) {
+      /*
+	for (int i = 0; i < nv; i++) {
 	for(int j=0; j<3; j++){
-	  if(j==2){
+	if(j==2){
 	   
-	    buf[j]=(float)mesh->vertices[i][j];
-	  }else{
-	    buf[j]=(float)mesh->vertices[i][j];
-	  }
-	  printf("%f ",buf[j]);
+	buf[j]=(float)mesh->vertices[i][j];
+	}else{
+	buf[j]=(float)mesh->vertices[i][j];
+	}
+	printf("%f ",buf[j]);
 	}
 	printf("\n");
 
 	for(int j=0; j<3; j++)
 	buf[j+3]=(float)mesh->normals[i][j];*/
 
-	// }
-    }
-    name.mesh_name = osgDB::getSimpleFileName(filename);
+      // }
+    
+      name.mesh_name = osgDB::getSimpleFileName(filename);
 
     gts_bbox_set(name.bbox,NULL,
 		 mesh->bbox.min[0],
@@ -1670,12 +1509,12 @@ int main( int argc, char *argv[ ] )
   
   
 
- auv_data_tools::makedir(aggdir);
+  auv_data_tools::makedir(aggdir);
 
   chmod(aggdir,   0777);
 
 
- auv_data_tools::makedir(dicedir);
+  auv_data_tools::makedir(dicedir);
   chmod(dicedir,   0777);
 
   auv_data_tools::makedir(uname);
@@ -1923,8 +1762,8 @@ int main( int argc, char *argv[ ] )
     }
 
     if(valid <= 0){
-     fprintf(stderr,"No valid meshes bailing\n");
-     exit(-1);
+      fprintf(stderr,"No valid meshes bailing\n");
+      exit(-1);
     }
     FILE *vrip_seg_fp;
     char vrip_seg_fname[255];
@@ -1983,21 +1822,21 @@ int main( int argc, char *argv[ ] )
       fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
       fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
 
-  if(have_mb_ply){
-    fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/mb.ply > ../mesh-agg/clipped-mb-%08d.ply;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/sub-mb-%08d.ply;", cells[i].bounds.min_x,
-	      cells[i].bounds.min_y,
-	      FLT_MIN,
-	      cells[i].bounds.max_x,
-	      cells[i].bounds.max_y,
+      if(have_mb_ply){
+	fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/mb.ply > ../mesh-agg/clipped-mb-%08d.ply;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/sub-mb-%08d.ply;", cells[i].bounds.min_x,
+		cells[i].bounds.min_y,
+		FLT_MIN,
+		cells[i].bounds.max_x,
+		cells[i].bounds.max_y,
 		FLT_MAX,
-	    eps,i,vrip_seg_fname,2.0,i,i,1.0,i,i);
-  }
-  if(!no_merge)
-    fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,vrip_ramp,i,i,redirstr);
-  else
-    fprintf(vripcmds_fp,"cat ../%s | cut -f1 -d\" \" | xargs $BASEDIR/vrip/bin/plymerge > ../mesh-agg/seg-%08d.ply;",vrip_seg_fname,i);
+		eps,i,vrip_seg_fname,2.0,i,i,1.0,i,i);
+      }
+      if(!no_merge)
+	fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,vrip_ramp,i,i,redirstr);
+      else
+	fprintf(vripcmds_fp,"cat ../%s | cut -f1 -d\" \" | xargs $BASEDIR/vrip/bin/plymerge > ../mesh-agg/seg-%08d.ply;",vrip_seg_fname,i);
 
-  fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",
+      fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",
 	      cells[i].bounds.min_x,
 	      cells[i].bounds.min_y,
 	      FLT_MIN,
@@ -2006,11 +1845,11 @@ int main( int argc, char *argv[ ] )
 	      FLT_MAX,
 	      eps,i,i);
     
-  /* if(have_mb_ply){
-    fprintf(vripcmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply; plymerge ../mesh-diced/nomb-diced-%08d.ply ../mesh-agg/inv-mb-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",i,i,i,i,i);
+      /* if(have_mb_ply){
+	 fprintf(vripcmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply; plymerge ../mesh-diced/nomb-diced-%08d.ply ../mesh-agg/inv-mb-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",i,i,i,i,i);
     
-    }*/
-  fprintf(vripcmds_fp,"cd ..\n");
+	 }*/
+      fprintf(vripcmds_fp,"cd ..\n");
 
    
 
@@ -2088,19 +1927,19 @@ int main( int argc, char *argv[ ] )
       }
   
       /* if(!single_run && have_mb_ply){
-	for(int i=0; i < (int)mb_ply_filenames.size(); i++){
-	  string simpname =osgDB::getSimpleFileName(mb_ply_filenames[i]);
-	  string inname=mb_ply_filenames[i];
-	  string outname=(string(aggdir)+string("/")+simpname);
-	  cout << "Copying " << inname << " to " << outname<<endl;
-	  std::ifstream  IN (inname.c_str());
-	  std::ofstream  OUT(outname.c_str()); 
-	  OUT << IN.rdbuf();
-	  fprintf(conf_ply_file,
-		  "bmesh %s .1 0\n"
-		  ,simpname.c_str()); 
-	}
-      }
+	 for(int i=0; i < (int)mb_ply_filenames.size(); i++){
+	 string simpname =osgDB::getSimpleFileName(mb_ply_filenames[i]);
+	 string inname=mb_ply_filenames[i];
+	 string outname=(string(aggdir)+string("/")+simpname);
+	 cout << "Copying " << inname << " to " << outname<<endl;
+	 std::ifstream  IN (inname.c_str());
+	 std::ofstream  OUT(outname.c_str()); 
+	 OUT << IN.rdbuf();
+	 fprintf(conf_ply_file,
+	 "bmesh %s .1 0\n"
+	 ,simpname.c_str()); 
+	 }
+	 }
       */
       
       if(use_poisson_recon && !no_merge){
@@ -2130,7 +1969,7 @@ int main( int argc, char *argv[ ] )
 	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --mintridepth %d --out ../mesh-pos/pos_raw.ply\n",11,6,4.0,mintridepth);
 	}
 
-		fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod0.ply 0 -e15.0\n");
+	fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod0.ply 0 -e15.0\n");
 	fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod1.ply 0 -e15.0\n");
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
@@ -2141,7 +1980,7 @@ int main( int argc, char *argv[ ] )
 	//shellcm.pos_simp_cmd(use_poisson_recon);
 	
       }else{
-		conf_ply_file=fopen("./runpos.sh","w+"); 
+	conf_ply_file=fopen("./runpos.sh","w+"); 
 	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\n"
 		"VRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\n"
 		"PATH=$PATH:$VRIP_HOME/bin:%s/tridecimator:%s/poisson/\n"
@@ -2164,12 +2003,12 @@ int main( int argc, char *argv[ ] )
 	conf_ply_file=fopen("./runvrip.sh","w+"); 
 	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n cd mesh-agg/\necho -e 'Vriping...\\n'\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
 	fprintf(conf_ply_file,"VRIPLOGDIR=%s\n"
-	,vriplogdir);
+		,vriplogdir);
 	fprintf(conf_ply_file,"find . -name 'mb*.ply' | sort  > mbmeshes.txt\n");
 	if(have_mb_ply)
 	  fprintf(conf_ply_file,"cat meshes.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > unblended.ply\n$BASEPATH/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n"
 		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > joined-mb.ply\n"
-"echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\n#auv_mesh_align unblended.ply joined-mb.ply\n#$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\n");
+		  "echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\n#auv_mesh_align unblended.ply joined-mb.ply\n#$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\n");
 
 	fprintf(conf_ply_file,"cd ..\n");
 
@@ -2216,10 +2055,10 @@ int main( int argc, char *argv[ ] )
 	 
      
 	//	fprintf(conf_ply_file,//"if [ -e clipped-diced-%08d.ply ]; then\n"
-		//	"\tplysubtract mb.ply sub-mb-%08d.ply > inv-mb-%08d.ply\n"
-		//"else\n"
-		//"\tcp  mb.ply inv-mb-%08d.ply\n"
-		//"fi\n",0,0,0,0); 
+	//	"\tplysubtract mb.ply sub-mb-%08d.ply > inv-mb-%08d.ply\n"
+	//"else\n"
+	//"\tcp  mb.ply inv-mb-%08d.ply\n"
+	//"fi\n",0,0,0,0); 
 
 	
 	char simpargstr[255];
@@ -2288,7 +2127,7 @@ int main( int argc, char *argv[ ] )
 	  system("./simp.sh");
 	if(use_vrip_recon){
 	  dicefp=fopen("./gentex.sh","w+");
-	fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $DICEDIR\n",basepath.c_str());
+	  fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $DICEDIR\n",basepath.c_str());
 
 	  char argstr[255];
 	  strcpy(argstr,"");
@@ -2328,16 +2167,16 @@ int main( int argc, char *argv[ ] )
 	      fprintf(dicefp,"time %s/runtp.py gentexcmds\n",basepath.c_str());
 	    
 	  }else{  
-	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
+	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex %s %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),recon_config_file_name.c_str(),cachedtexdir);
 	    
 	    fprintf(dicefp,"%s \n",argstr);
 	    
 	  }
 
-	fchmod(fileno(dicefp),0777);
-	fclose(dicefp);
-	if(!no_gen_tex)
-	  system("./gentex.sh");
+	  fchmod(fileno(dicefp),0777);
+	  fclose(dicefp);
+	  if(!no_gen_tex)
+	    system("./gentex.sh");
 	}
 	if(use_poisson_recon){
 	  dicefp=fopen("./posgentex.sh","w+");
@@ -2376,7 +2215,7 @@ int main( int argc, char *argv[ ] )
 	      fprintf(dicefp,"time %s/runtp.py gentexcmds\n",basepath.c_str());
 	    
 	  }else{  
-	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex --dicedir mesh-pos/ --margins 10 10 1000000000000000 %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),cachedtexdir);
+	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex --dicedir mesh-pos/ --margins %d %d %d %s -f %s ",basepath.c_str(),texmargin[0],texmargin[1],texmargin[2],stereo_config_file_name.c_str(),cachedtexdir);
 	    
 	    fprintf(dicefp,"%s \n",argstr);
 	    

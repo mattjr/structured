@@ -43,6 +43,8 @@ static bool tex_array_blend=false;
 //
 static bool applyNonVisMat=false;
 static string stereo_config_file_name;
+static string recon_config_file_name;
+
 static string contents_file_name;
 static string dir_name;
 static int verbose=false;
@@ -76,6 +78,7 @@ static bool use_dist_coords=true;
 static bool parse_args( int argc, char *argv[ ] )
 {
   bool have_stereo_config_file_name = false;
+  bool have_recon_config_file_name = false;
   strcpy(diceddir,"mesh-diced/");
    
   int i=1;
@@ -202,6 +205,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	{
 	  stereo_config_file_name = argv[i];
 	  have_stereo_config_file_name = true;
+	  i++;
+	}
+      else if( !have_recon_config_file_name )
+	{
+	  recon_config_file_name = argv[i];
+	  have_recon_config_file_name = true;
 	  i++;
 	}
    
@@ -368,7 +377,7 @@ int main( int argc, char *argv[ ] )
   // Open the config file
   // Ensure the option to display the feature finding debug images is on.
   //
-  Config_File *config_file;
+  Config_File *config_file,*recon_config_file;
   try
     {
       config_file = new Config_File( stereo_config_file_name );
@@ -378,17 +387,34 @@ int main( int argc, char *argv[ ] )
       cerr << "ERROR - " << error << endl;
       exit( 1 );
     }
-  config_file->get_value( "TS_TEX_SIZE_LOD0", lodTexSize[0] );
 
-  config_file->get_value( "TS_TEX_SIZE_LOD1", lodTexSize[1] );
+  try {
+    recon_config_file= new Config_File(recon_config_file_name.c_str());
+  }   catch( string error ) {
+     cerr << "ERROR - " << error << endl;
+     exit( 1 );
+   }
+
+  recon_config_file->get_value( "TEX_SIZE_LOD0", lodTexSize[0] );
+
+  recon_config_file->get_value( "TEX_SIZE_LOD1", lodTexSize[1] );
   
-  config_file->get_value( "TS_TEX_SIZE_LOD2", lodTexSize[2] );
+  recon_config_file->get_value( "TEX_SIZE_LOD2", lodTexSize[2] );
+  
   if(lodTexSize[0] == 0 ||lodTexSize[0] == 0|| lodTexSize[0] == 0 ){
     fprintf(stderr,"Can't have tex size of zero setting to default\n");
     lodTexSize[0]=max((int)(512*tex_scale),4);
     lodTexSize[1]=max((int)(256*tex_scale),4);
     lodTexSize[2]=max((int)(16*tex_scale),4);
   }
+
+
+
+  recon_config_file->set_value( "TEX_MARGIN_LOD0" , margins[0] );
+  recon_config_file->set_value( "TEX_MARGIN_LOD1" , margins[1] );
+  recon_config_file->set_value( "TEX_MARGIN_LOD2" , margins[2] );
+
+
   config_file->set_value( "SKF_SHOW_DEBUG_IMAGES"    , display_debug_images );
   config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"    , display_debug_images );
   config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );

@@ -53,7 +53,7 @@ static double stop_time = numeric_limits<double>::max();
 //
 // Command-line arguments
 //
-static int vrip_split=250;
+static int vrip_split;
 static FILE *pts_cov_fp;
 static string stereo_config_file_name;
 static string contents_file_name;
@@ -65,12 +65,12 @@ static bool use_undistorted_images = false;
 static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
 static bool use_poisson_recon=true;
-static int max_feature_count = 5000;
+static int max_feature_count;
 static double eps=1.0;
-static double subvol=40.0;
+static double subvol;
 static bool run_pos=true;
 static bool do_novelty=false;
-static double dense_scale=1.0;
+static double dense_scale;
 static bool have_max_frame_count = false;
 static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
@@ -80,7 +80,7 @@ static bool sing_gen_tex=true;
 static bool use_surf_features = false;
 static bool use_ncc = false;
 static int skip_counter=0;
-static double vrip_ramp=500.0;
+static double vrip_ramp;
 static int num_skip=0;
 static bool use_proj_tex=false;
 static vector<string> mb_ply_filenames;
@@ -88,7 +88,7 @@ static bool have_mb_ply=false;
 static bool have_cov_file=false;
 static string stereo_calib_file_name;
 static bool no_simp=true;
-static bool use_rect_images=false;
+
 static FILE *uv_fp;
 static ofstream file_name_list;
 static string base_dir;
@@ -109,7 +109,7 @@ static char cov_file_name[255];
 static bool no_gen_tex=false;
 static int mono_skip=2;
 static bool no_vrip=false;
-static double vrip_res=0.033;
+static double vrip_res;
 static bool regen_tex=false;
 static string basepath;
 static bool single_run=false;
@@ -118,7 +118,7 @@ static int single_run_stop=0;
 static bool dice_lod=false;
 static bool use_dense_stereo=false;
 static int non_cached_meshes=0;
-static double edgethresh=2.0;
+static double edgethresh;
 static bool no_merge=false;
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[255];
@@ -136,12 +136,12 @@ static string deltaT_pose;
 static string dense_method="";
 bool dist_run=false;
 static bool mono_cam=false;
-static string passtotridec="-e2.0";
+
 static bool do_hw_blend=false;
 // Image normalisation
 #define USE_IMAGE_NORMALISATION true
-#define NORMALISED_MEAN         128
-#define NORMALISED_VAR          400
+int normalised_mean;
+int normalised_var;
 static Stereo_Calib *calib;
  static Config_File *config_file; 
  static Config_File *recon_config_file; 
@@ -318,19 +318,22 @@ static bool parse_args( int argc, char *argv[ ] )
   config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
   config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
   config_file->set_value( "MESH_TEX_SIZE", tex_size );
-  config_file->get_value( "SD_SCALE", dense_scale);
-  if(dense_method == "")
-    config_file->get_value( "SD_METHOD", dense_method);
-  else
-    config_file->set_value( "SD_METHOD", dense_method);
+  config_file->get_value( "SD_SCALE", dense_scale,1.0);
+ 
   
   
+
+
+  recon_config_file->get_value("VRIP_SUBVOL",subvol,40.0);
+  recon_config_file->get_value("MAX_FEAT_COUNT",max_feature_count,5000);
+  recon_config_file->get_value("VRIP_RAMP",vrip_ramp,500.0);
+  recon_config_file->get_value("EDGE_THRESH",edgethresh,2.0);
+  recon_config_file->get_value("VRIP_SPLIT",vrip_split,250);
+  recon_config_file->get_value("VRIP_RES",vrip_res,0.033);
+  recon_config_file->get_value("NORMALISED_VAR",normalised_var,400);
+  recon_config_file->get_value("NORMALISED_MEAN",normalised_mean,128);
   
-  if( use_sift_features )
-    config_file->set_value( "SKF_KEYPOINT_TYPE", "SIFT" );
-    else if( use_surf_features )   
-      config_file->set_value( "SKF_KEYPOINT_TYPE", "SURF" );
-  
+
 
   string mbfile;
 
@@ -364,7 +367,7 @@ static bool parse_args( int argc, char *argv[ ] )
   if(single_run)
     display_debug_images = false;
      
-  argp.read("--passtotridec" ,passtotridec);
+  
   argp.read( "-t" ,num_threads);
   argp.read( "--res",vrip_res );
   string cov_file;
@@ -392,156 +395,49 @@ static bool parse_args( int argc, char *argv[ ] )
   do_hw_blend=argp.read("--blend" );
 
   use_cached=(!argp.read("--no_cached" ));
+  do_novelty=argp.read("--novelty");
+  output_pts_cov=argp.read("--ptscov");
+  display_debug_images = !argp.read("-d");
+  regen_tex=argp.read("--regen");
+  pause_after_each_frame = argp.read("-p");
+  use_ncc=argp.read("-c");
+  argp.read("--split",vrip_split);
 
-  /* else if( strcmp( argv[i], "--novelty" ) == 0 )
-     {
-     do_novelty = true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "--ptscov" ) == 0 )
-     {
-     output_pts_cov = true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "-y" ) == 0 )
-     {
-     use_rect_images = true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "-d" ) == 0 )
-     {
-     display_debug_images = false;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "--regen" ) == 0 )
-     {
-     regen_tex = true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "-p" ) == 0 )
-     {
-     pause_after_each_frame = true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "-c" ) == 0 )
-     {
-     use_ncc = true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "--split" ) == 0 )
-     {  
-     if( i == argc-1 ) return false;
-     vrip_split = atoi( argv[i+1] );
-     i+=2;
-     }
-     else if( strcmp( argv[i], "--cachedmeshdir" ) == 0 )
-     {  
-     if( i == argc-1 ) return false;
-     strcpy(cachedmeshdir , argv[i+1] );
-     i+=2;
-     }
-     else if( strcmp( argv[i], "--dicevol" ) == 0 )
-     {  
-     if( i == argc-1 ) return false;
-     subvol = atof( argv[i+1] );
-     i+=2;
-     }
-     else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
-     {  
-     hardware_compress=false;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "--uv" ) == 0 )
-     {
-     output_uv_file = true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "--sift" ) == 0 )
-     {
-     use_sift_features = true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "--mono" ) == 0 )
-     {
-     mono_cam = true;
-     further_clean=true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "--dense-features" ) == 0 )
-     {
-     use_dense_feature = true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "--surf" ) == 0 )
-     {
-     use_surf_features = true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "--start" ) == 0 )
-     {	
-     if( i == argc-1 ) return false;
-     start_time = strtod( argv[i+1], NULL );
-     printf("start time %f\n",start_time);
-     i+=2;
-     }
-     else if( strcmp( argv[i], "--stop" ) == 0 )
-     {
-     if( i == argc-1 ) return false;
-     stop_time = strtod( argv[i+1], NULL );
-     i+=2;
-     }
-     else if( strcmp( argv[i], "--3ds" ) == 0 )
-     {
-     output_3ds=true;
-     i+=1;
-     }
-     else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
-     {
-     output_3ds=true;
-     i+=1;
-     }
-    
-   
-     else if(strcmp( argv[i], "--nogentex" ) == 0)
-     {
-     no_gen_tex=true;
-
-     i+=1;
-     }
-     else if(strcmp( argv[i], "--novrip" ) == 0)
-     {
-     no_vrip=true;
-
-     i+=1;
-     }
-     else if(strcmp( argv[i], "--nomerge" ) == 0)
-     {
-     no_merge=true;
-     run_pos=false;
-     use_vrip_recon = true;
-     no_simp = false;
-     i+=1;
-     }
-     else if(!have_base_dir)
-     {
-
-     base_dir = argv[i];
-     //cout <<"Basedir " <<base_dir << endl;
-     have_base_dir = true;
-     i++;
-     }
-     else
-     {
-     cerr << "Error - unknown parameter: " << argv[i] << endl;
-     return false;
-     }
-     }*/
+  argp.read("--dicevol",subvol);
+  hardware_compress =   !argp.read("--no-hardware-compress");
+     
+  output_uv_file=argp.read("--uv" ) ;
+  use_sift_features=argp.read("--sift");
+  mono_cam=further_clean=argp.read("--mono");
+  use_dense_feature = argp.read("--dense-features");
+  use_surf_features = argp.read("--surf");
+  argp.read("--start",start_time);
+  argp.read("--stop",stop_time);
+  output_3ds=  argp.read("--3ds");
+  no_gen_tex=argp.read("--nogentex");
+  no_vrip=argp.read("--novrip");
+  no_merge=argp.read("--nomerge");
+  if(no_merge){
+    run_pos = false;
+    use_vrip_recon=true;
+    no_simp=false;
+  }
 
   if(!output_3ds && !output_ply_and_conf){
     cerr << "Must do ply or 3ds output\n";
     return false;
   }
   
+ if(dense_method == "")
+    config_file->get_value( "SD_METHOD", dense_method);
+  else
+    config_file->set_value( "SD_METHOD", dense_method);
+
+  
+  if( use_sift_features )
+    config_file->set_value( "SKF_KEYPOINT_TYPE", "SIFT" );
+    else if( use_surf_features )   
+      config_file->set_value( "SKF_KEYPOINT_TYPE", "SURF" );
 
   strcpy(cachedmeshdir,"cache-mesh");
   if(use_dense_stereo)
@@ -552,18 +448,7 @@ static bool parse_args( int argc, char *argv[ ] )
   strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
   strcpy(cachedtexdir,string(base_dir+string("/")+cachedtexdir).c_str());
 
-  /* struct stat statinfo;
-  if(stat(stereo_config_file_name.c_str(), &statinfo) < 0 ){
-    have_stereo_config_file_name = false;
-    cerr << "Don't have stereo config " << stereo_config_file_name << endl;
 
-  }else
-    have_stereo_config_file_name = true;
-  if(stat(contents_file_name.c_str(), &statinfo) < 0 ){
-    have_contents_file_name = false;
-    cerr << "Don't have contents " << contents_file_name << endl;
-  }else 
-  have_contents_file_name = true;*/
 #ifndef HAVE_LIBKEYPOINT
   if( use_sift_features || use_surf_features )
     {
@@ -779,8 +664,8 @@ static bool get_stereo_pair( const string left_image_name,
   //
   if( USE_IMAGE_NORMALISATION )
     {
-      normalise_image( NORMALISED_MEAN, NORMALISED_VAR, left_image  );
-      normalise_image( NORMALISED_MEAN, NORMALISED_VAR, right_image );
+      normalise_image( normalised_mean, normalised_var, left_image  );
+      normalise_image( normalised_mean, normalised_var, right_image );
       
     }
 

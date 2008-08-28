@@ -73,7 +73,8 @@ static bool use_proj_tex=false;
 static bool use_regen_tex=false;
 static bool no_tex=false;
 static bool use_dist_coords=true;
-   int lodTexSize[3];
+int lodTexSize[3];
+int lodStart=0;
 //
 // Parse command line arguments into global variables
 //
@@ -181,6 +182,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	  single_run_index = atoi( argv[i+1] );
 	  i+=2;
 	  single_run=true;
+	}
+      else if( strcmp( argv[i], "--lod-start" ) == 0 )
+	{
+	  if( i == argc-1 ) return false;
+	  lodStart= atoi( argv[i+1] );
+	  i+=2;
 	}
       else if( strcmp( argv[i], "--lods" ) == 0 )
 	{
@@ -409,18 +416,15 @@ int main( int argc, char *argv[ ] )
      exit( 1 );
    }
 
-  recon_config_file->get_value( "TEX_SIZE_LOD0", lodTexSize[0] );
+  recon_config_file->get_value( "TEX_SIZE_LOD0", lodTexSize[0],
+				max((int)(512*tex_scale),4) );
 
-  recon_config_file->get_value( "TEX_SIZE_LOD1", lodTexSize[1] );
+  recon_config_file->get_value( "TEX_SIZE_LOD1", lodTexSize[1],
+				max((int)(256*tex_scale),4) );
   
-  recon_config_file->get_value( "TEX_SIZE_LOD2", lodTexSize[2] );
+  recon_config_file->get_value( "TEX_SIZE_LOD2", lodTexSize[2] ,
+				max((int)(16*tex_scale),4));
   
-  if(lodTexSize[0] == 0 ||lodTexSize[0] == 0|| lodTexSize[0] == 0 ){
-    fprintf(stderr,"Can't have tex size of zero setting to default\n");
-    lodTexSize[0]=max((int)(512*tex_scale),4);
-    lodTexSize[1]=max((int)(256*tex_scale),4);
-    lodTexSize[2]=max((int)(16*tex_scale),4);
-  }
 
 
 
@@ -564,7 +568,7 @@ std::vector<vector<string >   > outNames;
     lod0Node[1]=NULL;
     char out_name[255];
 
-    for(int j=2; j < lodNum; j++){
+    for(int j=lodStart; j < lodNum; j++){
        boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
        string str=meshNames[i];
        if(!no_simp){

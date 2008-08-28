@@ -312,7 +312,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
     compressed_img_cache[basename]=filecached.get();
 
   }else{  
-    filecached=compressed_img_cache[basename];
+    filecached=compressed_img_cache[basename].get();
   }
   
   // printf("filecached refs %d\n",filecached->referenceCount());

@@ -265,11 +265,16 @@ osg::ref_ptr<osg::Image>OSGExporter::cacheCompressedImage(IplImage *img,string n
   return image;
 }
 
-osg::ref_ptr<osg::Image >decompressImage(osg::Image *img){
-
+osg::ref_ptr<osg::Image >OSGExporter::decompressImage(osg::ref_ptr<osg::Image > img_ptr){
+  osg::Image *img=img_ptr.get();
   IplImage *tmp=cvCreateImage(cvSize(img->s(),img->t()),IPL_DEPTH_8U,3);
+  decompressed_ptrs.push_back(tmp);
   DecompressImageRGB((unsigned char *)tmp->imageData,tmp->width,tmp->height,img->data(),squish::kDxt1);
   osg::ref_ptr< osg::Image >image_full= Convert_OpenCV_TO_OSG_IMAGE(tmp,false);
+  image_full->ref();
+  img_ptr->unref();
+  img_ptr->unref();
+
   return image_full;
 }
 
@@ -279,14 +284,16 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
   string ddsname=osgDB::getNameLessExtension(name);
   ddsname +=".dds";
   bool cachedLoaded=false;
-  osg::Image *filecached=NULL;
-  osg::Image *retImage=new osg::Image;
+  osg::ref_ptr<osg::Image>filecached;
+  osg::ref_ptr<osg::Image>retImage=new osg::Image;
   if(compressed_img_cache.find(basename) == compressed_img_cache.end() || !compressed_img_cache[basename] ){
     
     if(FileExists(ddsname)){
       filecached=osgDB::readImageFile(ddsname);
-      if(filecached)
+      if(filecached.valid()){
 	cachedLoaded=true;
+	filecached->ref();
+      }
     }
     
     if(!cachedLoaded){
@@ -302,19 +309,20 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
       }
     }
     filecached->setFileName(basename);
-    compressed_img_cache[basename]=filecached;
+    compressed_img_cache[basename]=filecached.get();
 
   }else{  
     filecached=compressed_img_cache[basename];
   }
-
-  if(filecached && filecached->s() == size && filecached->t() == size){
+  
+  // printf("filecached refs %d\n",filecached->referenceCount());
+  if(filecached.valid() && filecached->s() == size && filecached->t() == size){
 
     if(!compress_tex || do_atlas){
       osg::Image *ret=decompressImage(filecached).get();
       return ret;
     }
-    return filecached;
+    return filecached.get();
   
 }
 
@@ -355,10 +363,11 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
   
   if(!compress_tex || do_atlas){
     osg::Image *ret=decompressImage(retImage).get();
+  
     return ret;
   }
   else
-    return retImage;
+    return retImage.get();
 }
 #define TEXUNIT_ARRAY       0
 #define TEXUNIT_HIST        2
@@ -377,7 +386,7 @@ void OSGExporter::calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,str
        continue;
      string name=textures[itr->first];
       
-     osg::Image *img=compressed_img_cache[name];
+     osg::Image *img=compressed_img_cache[name].get();
      if(!img){
        printf("Image null in getTextureHists %s\n",name.c_str());
        continue;
@@ -434,7 +443,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
        continue;
      string name=textures[itr->first];
       
-     osg::Image *img=compressed_img_cache[name];
+     osg::Image *img=compressed_img_cache[name].get();
      if(!img){
        printf("Image null in getTextureHists %s\n",name.c_str());
        continue;
@@ -1017,6 +1026,7 @@ public:
                 
                 // need to disable the unref after apply, other the image could go out of scope.
                 bool unrefImageDataAfterApply = texture->getUnRefImageDataAfterApply();
+		
                 texture->setUnRefImageDataAfterApply(false);
                 
                 // get OpenGL driver to create texture from image.
@@ -1055,7 +1065,7 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
   osg::MatrixTransform* positioned2= new osg::MatrixTransform(trans);
 
    
-if(do_atlas && tex){
+  if(do_atlas && tex){
  
     if(verbose)
       printf("Texture Atlas Creation\n"); 
@@ -1070,6 +1080,7 @@ if(do_atlas && tex){
     options |= osgUtil::Optimizer::DEFAULT_OPTIMIZATIONS;
     options |=osgUtil::Optimizer::TEXTURE_ATLAS_BUILDER;
     optimizer.optimize(tex,options);
+ 
     if(compress_tex){
       CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT1_COMPRESSION);
       tex->accept(ctv);
@@ -1371,12 +1382,24 @@ if(verbose)
 }
 
 OSGExporter::~OSGExporter(){
-  map<string, IplImage *>::const_iterator itr;
-  for(itr = tex_image_cache.begin(); itr != tex_image_cache.end(); ++itr){
-    IplImage *tmp=(*itr).second;
-    cvReleaseImage(&tmp); 
+  {
+    map<string, IplImage *>::const_iterator itr;
+    for(itr = tex_image_cache.begin(); itr != tex_image_cache.end(); ++itr){
+      IplImage *tmp=(*itr).second;
+      cvReleaseImage(&tmp); 
+    }
+    tex_image_cache.clear();
   }
-  tex_image_cache.clear();
+  for(unsigned int i=0; i<decompressed_ptrs.size(); i++){
+    cvReleaseImage(&decompressed_ptrs[i]);
+  }
+  
+  decompressed_ptrs.clear();
+ {
+   std::map<string,osg::ref_ptr<osg::Image> >::const_iterator itr;
+   for(itr = compressed_img_cache.begin(); itr != compressed_img_cache.end(); ++itr)
+     itr->second->unref();
+ }
 }
 
 

@@ -130,7 +130,7 @@ public:
 ~OSGExporter();
 
   std::map<string,IplImage *> tex_image_cache;
-  std::map<string,osg::Image *> compressed_img_cache;
+  std::map<string,osg::ref_ptr<osg::Image> > compressed_img_cache;
   osg::Image *getCachedCompressedImage(string name,int size);
   osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
 
@@ -166,8 +166,8 @@ protected:
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
   vector<osg::ref_ptr<osg::Texture2DArray> > osg_tex_arr_ptrs;
   map<int,osg::Texture *> osg_tex_map;
-
-  
+  std::vector<IplImage *> decompressed_ptrs;
+  osg::ref_ptr<osg::Image > decompressImage(osg::ref_ptr<osg::Image> img_ptr);
   
   void  calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc);
   void addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc,CvHistogram *hist);

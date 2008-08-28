@@ -329,6 +329,14 @@ static bool parse_args( int argc, char *argv[ ] )
   recon_config_file->get_value("VRIP_RAMP",vrip_ramp,500.0);
   recon_config_file->get_value("EDGE_THRESH",edgethresh,2.0);
   recon_config_file->get_value("VRIP_SPLIT",vrip_split,250);
+  string split_method;
+  recon_config_file->get_value("SPLIT_METHOD",split_method,"cost");
+  if(split_method == "even"){
+    even_split=true;
+  }
+  recon_config_file->get_value("SPLIT_CELL_SCALE",cell_scale,1.0);
+
+
   recon_config_file->get_value("VRIP_RES",vrip_res,0.033);
   recon_config_file->get_value("NORMALISED_VAR",normalised_var,400);
   recon_config_file->get_value("NORMALISED_MEAN",normalised_mean,128);

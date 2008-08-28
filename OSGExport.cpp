@@ -265,11 +265,11 @@ osg::ref_ptr<osg::Image>OSGExporter::cacheCompressedImage(IplImage *img,string n
   return image;
 }
 
-osg::Image *decompressImage(osg::Image *img){
+osg::ref_ptr<osg::Image >decompressImage(osg::Image *img){
 
   IplImage *tmp=cvCreateImage(cvSize(img->s(),img->t()),IPL_DEPTH_8U,3);
   DecompressImageRGB((unsigned char *)tmp->imageData,tmp->width,tmp->height,img->data(),squish::kDxt1);
-  osg::Image *image_full= Convert_OpenCV_TO_OSG_IMAGE(tmp,false);
+  osg::ref_ptr< osg::Image >image_full= Convert_OpenCV_TO_OSG_IMAGE(tmp,false);
   return image_full;
 }
 
@@ -310,9 +310,10 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 
   if(filecached && filecached->s() == size && filecached->t() == size){
 
-    if(!compress_tex || do_atlas)
-      return decompressImage(filecached);
-   
+    if(!compress_tex || do_atlas){
+      osg::Image *ret=decompressImage(filecached).get();
+      return ret;
+    }
     return filecached;
   
 }
@@ -352,8 +353,10 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 
   retImage->setFileName(basename);
   
-  if(!compress_tex || do_atlas)
-    return decompressImage(retImage);
+  if(!compress_tex || do_atlas){
+    osg::Image *ret=decompressImage(retImage).get();
+    return ret;
+  }
   else
     return retImage;
 }

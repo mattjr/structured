@@ -323,6 +323,15 @@ static bool parse_args( int argc, char *argv[ ] )
   
   
 
+  bool vrip_on;
+  recon_config_file->get_value("USE_VRIP",vrip_on,false);
+  
+  mono_cam=argp.read("--mono");
+  if(!mono_cam)
+    recon_config_file->get_value("MONO_CAM",mono_cam,false);
+ 
+
+  further_clean=mono_cam;
 
   recon_config_file->get_value("VRIP_SUBVOL",subvol,40.0);
   recon_config_file->get_value("MAX_FEAT_COUNT",max_feature_count,5000);
@@ -387,8 +396,10 @@ static bool parse_args( int argc, char *argv[ ] )
   use_proj_tex=argp.read("--projtex");
   even_split= argp.read("--evensplit" );
   argp.read("--cellscale",cell_scale );
-
-  if(argp.read("--vrip") ){
+  if(!vrip_on)
+    vrip_on=argp.read("--vrip");
+  
+  if(vrip_on ){
     run_pos=false;
     use_vrip_recon = true;
     no_simp = false;
@@ -416,7 +427,7 @@ static bool parse_args( int argc, char *argv[ ] )
      
   output_uv_file=argp.read("--uv" ) ;
   use_sift_features=argp.read("--sift");
-  mono_cam=further_clean=argp.read("--mono");
+ 
   use_dense_feature = argp.read("--dense-features");
   use_surf_features = argp.read("--surf");
   argp.read("--start",start_time);

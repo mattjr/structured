@@ -33,6 +33,77 @@ MyGraphicsContext *mgc=NULL;
 std::vector<GtsBBox *> bboxes_all;;
 
 boost::mutex bfMutex;
+
+class UnrefTextureAtlas : public osg::NodeVisitor
+{
+public:
+
+    UnrefTextureAtlas():
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
+        {}
+
+    virtual void apply(osg::Node& node)
+    {
+        if (node.getStateSet()) apply(*node.getStateSet());
+        traverse(node);
+    }
+    
+    virtual void apply(osg::Geode& node)
+    {
+        if (node.getStateSet()) apply(*node.getStateSet());
+        
+        for(unsigned int i=0;i<node.getNumDrawables();++i)
+        {
+            osg::Drawable* drawable = node.getDrawable(i);
+            if (drawable && drawable->getStateSet()) apply(*drawable->getStateSet());
+        }
+        
+        traverse(node);
+    }
+    
+    virtual void apply(osg::StateSet& stateset)
+    {
+        // search for the existence of any texture object attributes
+        for(unsigned int i=0;i<stateset.getTextureAttributeList().size();++i)
+        {
+            osg::Texture* texture = dynamic_cast<osg::Texture*>(stateset.getTextureAttribute(i,osg::StateAttribute::TEXTURE));
+            if (texture)
+            {
+                _textureSet.insert(texture);
+            }
+        }
+    }
+    
+    void unref_ptrs()
+    {
+       
+
+        for(TextureSet::iterator itr=_textureSet.begin();
+            itr!=_textureSet.end();
+            ++itr)
+        {
+            osg::Texture* texture = const_cast<osg::Texture*>(itr->get());
+            
+            osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(texture);
+            osg::Texture3D* texture3D = dynamic_cast<osg::Texture3D*>(texture);
+            
+            osg::ref_ptr<osg::Image> image = texture2D ? texture2D->getImage() : (texture3D ? texture3D->getImage() : 0);
+	    // printf("texture %d image %d\n",texture->referenceCount(),image->referenceCount());
+	    while(image->referenceCount()>0){
+	      image->unref();
+	    }
+
+	    //printf("texture %d image %d\n",texture->referenceCount(),image->referenceCount());
+	    }
+	}
+
+    
+    typedef std::set< osg::ref_ptr<osg::Texture> > TextureSet;
+    TextureSet                          _textureSet;
+ 
+    
+};
+
 class SetDynamicStateSetVisitor : public osg::NodeVisitor
 {
 public:
@@ -267,14 +338,12 @@ osg::ref_ptr<osg::Image>OSGExporter::cacheCompressedImage(IplImage *img,string n
 
 osg::ref_ptr<osg::Image >OSGExporter::decompressImage(osg::ref_ptr<osg::Image > img_ptr){
   osg::Image *img=img_ptr.get();
+
   IplImage *tmp=cvCreateImage(cvSize(img->s(),img->t()),IPL_DEPTH_8U,3);
   decompressed_ptrs.push_back(tmp);
   DecompressImageRGB((unsigned char *)tmp->imageData,tmp->width,tmp->height,img->data(),squish::kDxt1);
   osg::ref_ptr< osg::Image >image_full= Convert_OpenCV_TO_OSG_IMAGE(tmp,false);
   image_full->ref();
-  img_ptr->unref();
-  img_ptr->unref();
-
   return image_full;
 }
 
@@ -283,16 +352,18 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
   string basename=osgDB::getSimpleFileName(name);
   string ddsname=osgDB::getNameLessExtension(name);
   ddsname +=".dds";
+
   bool cachedLoaded=false;
-  osg::ref_ptr<osg::Image>filecached;
-  osg::ref_ptr<osg::Image>retImage=new osg::Image;
+  osg::Image *filecached;
+  osg::Image *retImage=new osg::Image;
   if(compressed_img_cache.find(basename) == compressed_img_cache.end() || !compressed_img_cache[basename] ){
     
     if(FileExists(ddsname)){
       filecached=osgDB::readImageFile(ddsname);
-      if(filecached.valid()){
+      if(filecached){
 	cachedLoaded=true;
 	filecached->ref();
+
       }
     }
     
@@ -309,22 +380,21 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
       }
     }
     filecached->setFileName(basename);
-    compressed_img_cache[basename]=filecached.get();
+    compressed_img_cache[basename]=filecached;
 
   }else{  
-    filecached=compressed_img_cache[basename].get();
+    filecached=compressed_img_cache[basename];
   }
-  
-  // printf("filecached refs %d\n",filecached->referenceCount());
-  if(filecached.valid() && filecached->s() == size && filecached->t() == size){
+
+  if(filecached && filecached->s() == size && filecached->t() == size){
 
     if(!compress_tex || do_atlas){
       osg::Image *ret=decompressImage(filecached).get();
       return ret;
     }
-    return filecached.get();
+    return filecached;
   
-}
+  }
 
 
   int resize=filecached->s();
@@ -367,7 +437,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
     return ret;
   }
   else
-    return retImage.get();
+    return retImage;
 }
 #define TEXUNIT_ARRAY       0
 #define TEXUNIT_HIST        2
@@ -386,7 +456,7 @@ void OSGExporter::calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,str
        continue;
      string name=textures[itr->first];
       
-     osg::Image *img=compressed_img_cache[name].get();
+     osg::Image *img=compressed_img_cache[name];
      if(!img){
        printf("Image null in getTextureHists %s\n",name.c_str());
        continue;
@@ -443,7 +513,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
        continue;
      string name=textures[itr->first];
       
-     osg::Image *img=compressed_img_cache[name].get();
+     osg::Image *img=compressed_img_cache[name];
      if(!img){
        printf("Image null in getTextureHists %s\n",name.c_str());
        continue;
@@ -1123,7 +1193,11 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
       // root->getChild(0)=NULL;
     }
   }
-  
+  if(do_atlas){
+    UnrefTextureAtlas uta;
+    tex->accept(uta);
+    uta.unref_ptrs();
+  }
   return true;
 
   /*  root->removeChild(0,1);
@@ -1396,9 +1470,12 @@ OSGExporter::~OSGExporter(){
   
   decompressed_ptrs.clear();
  {
-   std::map<string,osg::ref_ptr<osg::Image> >::const_iterator itr;
-   for(itr = compressed_img_cache.begin(); itr != compressed_img_cache.end(); ++itr)
-     itr->second->unref();
+   std::map<string,osg::Image * >::const_iterator itr;
+   for(itr = compressed_img_cache.begin(); itr != compressed_img_cache.end(); ++itr){
+      
+
+      itr->second->unref();
+   }
  }
 }
 

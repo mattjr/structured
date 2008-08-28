@@ -130,7 +130,7 @@ public:
 ~OSGExporter();
 
   std::map<string,IplImage *> tex_image_cache;
-  std::map<string,osg::ref_ptr<osg::Image> > compressed_img_cache;
+  std::map<string,osg::Image * > compressed_img_cache;
   osg::Image *getCachedCompressedImage(string name,int size);
   osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
 

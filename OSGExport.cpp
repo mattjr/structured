@@ -21,7 +21,7 @@
 #include "auv_lod.hpp"
 #include "auv_gts_utils.hpp"
 #include "auv_tex_projection.hpp"
-
+#include "adt_image_norm.hpp"
 using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;
@@ -33,6 +33,56 @@ MyGraphicsContext *mgc=NULL;
 std::vector<GtsBBox *> bboxes_all;;
 
 boost::mutex bfMutex;
+class SetDynamicStateSetVisitor : public osg::NodeVisitor
+{
+public:
+
+    SetDynamicStateSetVisitor():
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        _numStateSetChanged(0)
+    {
+      osg::notify(osg::INFO)<< "Running DynamicStateSet..."<<std::endl;
+    }
+        
+    ~SetDynamicStateSetVisitor()
+    {
+       osg::notify(osg::INFO)<<"  Number of StateState removed "<<_numStateSetChanged<<std::endl;
+    }
+
+    virtual void apply(osg::Node& node)
+    {
+        if (node.getStateSet())
+        {
+	  node.getStateSet()->setDataVariance(osg::Object::DYNAMIC);
+            ++_numStateSetChanged;
+        }
+        traverse(node);
+    }
+    
+    virtual void apply(osg::Geode& node)
+    {
+        if (node.getStateSet())
+        {
+          node.getStateSet()->setDataVariance(osg::Object::DYNAMIC);
+	  ++_numStateSetChanged;
+        }
+        
+        for(unsigned int i=0;i<node.getNumDrawables();++i)
+        {
+            osg::Drawable* drawable = node.getDrawable(i);
+            if (drawable && drawable->getStateSet())
+            {
+	      drawable->getStateSet()->setDataVariance(osg::Object::DYNAMIC);
+	      ++_numStateSetChanged;
+	    
+            }
+        }
+        
+        traverse(node);
+    }
+    
+    unsigned int _numStateSetChanged;
+};
 
 void OSGExporter::compress(osg::Texture2D* texture2D, osg::Texture::InternalFormatMode internalFormatMode){
  
@@ -260,7 +310,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 
   if(filecached && filecached->s() == size && filecached->t() == size){
 
-    if(!compress_tex)
+    if(!compress_tex || do_atlas)
       return decompressImage(filecached);
    
     return filecached;
@@ -302,7 +352,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 
   retImage->setFileName(basename);
   
-  if(!compress_tex)
+  if(!compress_tex || do_atlas)
     return decompressImage(retImage);
   else
     return retImage;
@@ -394,10 +444,11 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 
  
      IplImage *novelty_image=  histCalc.get_novelty_img(tmp,hist); 
-     //mcvNormalize((IplImage*)novelty_image, (IplImage*)novelty_image, 0, 255);
+     mcvNormalize((IplImage*)novelty_image, (IplImage*)novelty_image, 0, 255);
      IplImage *texInfo=cvNewColor(novelty_image);
      IplImage *tmpG=cvNewGray(novelty_image);
-     mcvNormalize((IplImage*)novelty_image, (IplImage*)novelty_image, 0, 255);
+
+     
      cvConvertScale(novelty_image,tmpG);
      
      cvSmooth(tmpG,med,CV_MEDIAN,9);
@@ -934,14 +985,15 @@ public:
     
     void compress()
     {
-     osg::notify(osg::NOTICE)<<"Compress TEXTURE Visitor Compressing"<<std::endl;
+     osg::notify(osg::INFO)<<"Compress TEXTURE Visitor Compressing"<<std::endl;
+     if(!mgc){
      MyGraphicsContext context;
         if (!context.valid())
         {
-            osg::notify(osg::NOTICE)<<"Error: Unable to create graphis context - cannot run compression"<<std::endl;
+            osg::notify(osg::INFO)<<"Error: Unable to create graphis context - cannot run compression"<<std::endl;
             return;
         }
-
+     }
         osg::ref_ptr<osg::State> state = new osg::State;
 
         for(TextureSet::iterator itr=_textureSet.begin();
@@ -1000,7 +1052,8 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
   osg::MatrixTransform* positioned2= new osg::MatrixTransform(trans);
 
    
-  if(!compress_tex && tex){
+if(do_atlas && tex){
+ 
     if(verbose)
       printf("Texture Atlas Creation\n"); 
     osgUtil::Optimizer optimizer;
@@ -1014,9 +1067,13 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
     options |= osgUtil::Optimizer::DEFAULT_OPTIMIZATIONS;
     options |=osgUtil::Optimizer::TEXTURE_ATLAS_BUILDER;
     optimizer.optimize(tex,options);
-    CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT5_COMPRESSION);
-    tex->accept(ctv);
-    ctv.compress();
+    if(compress_tex){
+      CompressTexturesVisitor ctv(osg::Texture::USE_S3TC_DXT1_COMPRESSION);
+      tex->accept(ctv);
+      ctv.compress();
+    }
+    SetDynamicStateSetVisitor sdssv;
+    tex->accept(sdssv);
   }
   osgDB::ReaderWriter::WriteResult result;
   char outtex[255];

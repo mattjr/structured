@@ -59,6 +59,7 @@ static bool compress_textures = true;
 static bool single_run=false;
 static int single_run_index=0;
 static int lodNum=3;
+static bool do_atlas=true;
 static string stereo_calib_file_name;
 static std::map<int,std::string> texture_file_names;
 static bool hardware_compress=true;
@@ -70,6 +71,7 @@ static bool usePlaneDist=false;
 int margins[]={10,500,INT_MAX};
 static bool use_proj_tex=false;
 static bool use_regen_tex=false;
+static bool no_tex=false;
 static bool use_dist_coords=true;
    int lodTexSize[3];
 //
@@ -96,6 +98,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	  dir_name=string( argv[i+1]) ;
 	  i+=2;
 	}
+      else if( strcmp( argv[i], "--notex" ) == 0 )
+	{
+     
+	  no_tex=true;
+	  i+=1;
+	}
       else if( strcmp( argv[i], "--margins" ) == 0 )
 	{
 	  if( i == argc-3 ) return false;
@@ -107,6 +115,11 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--nosimp" ) == 0 )
 	{
 	  no_simp=true;
+	  i+=1;
+	}
+ else if( strcmp( argv[i], "--no-atlas" ) == 0 )
+	{
+	  do_atlas=false;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--projtex" ) == 0 )
@@ -339,6 +352,7 @@ static void print_usage( void )
  
   cout << "   -n <max_frame_count>    Set the maximum number of frames to be processed." << endl;
   cout << "    --no-compress-tex           Don't Compress Textures" << endl;
+  cout << "    --no-atlas           Don't Do  Texture Atlas" << endl;
   cout << "    --no-hardware-compress      Software Texture Compress" << endl;
   cout << "    --nosimp      Don't Simplify" << endl;
   cout << "    -v      Verbose" << endl;
@@ -518,8 +532,14 @@ std::vector<vector<string >   > outNames;
   
   int i;
   for( i=startRun; i < (int) totalMeshCount; i++){
-    GNode *bboxTree=loadBBox(osgDB::getSimpleFileName(meshNames[i]).c_str(),gts_trans_map);
-    /*if(!bboxTree){ 
+    GNode *bboxTree=NULL;
+    if(!no_tex)
+      bboxTree=loadBBox(osgDB::getSimpleFileName(meshNames[i]).c_str(),
+			gts_trans_map);
+    else 
+      bboxTree=NULL;   
+
+ /*if(!bboxTree){ 
       fprintf(stderr,"Failed to load bboxtree\n");
       exit(-1);
     }
@@ -538,13 +558,13 @@ std::vector<vector<string >   > outNames;
    basepath= osgDB::getRealPath (basepath) +"/";
    
    OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
-				       num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex);    
+				       num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex,do_atlas);    
     osg::Node * lod0Node[2];
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;
     char out_name[255];
 
-    for(int j=0; j < lodNum; j++){
+    for(int j=2; j < lodNum; j++){
        boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
        string str=meshNames[i];
        if(!no_simp){

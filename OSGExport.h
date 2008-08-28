@@ -99,8 +99,8 @@ typedef std::map<int,string> MaterialToIDMap;
 class OSGExporter 
 {
 public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=true,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false,bool do_novelty=false,string basedir="",bool usePlaneDist=false,bool applyNonVisMat=false,bool use_proj_tex=false): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),gpuNovelty(false),computeHists(do_novelty),basedir(basedir),usePlaneDist(usePlaneDist) ,applyNonVisMat(applyNonVisMat),use_proj_tex(use_proj_tex) {state=NULL;
-    do_atlas=false;
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=true,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false,bool do_novelty=false,string basedir="",bool usePlaneDist=false,bool applyNonVisMat=false,bool use_proj_tex=false,bool do_atlas=true): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),gpuNovelty(false),computeHists(do_novelty),basedir(basedir),usePlaneDist(usePlaneDist) ,applyNonVisMat(applyNonVisMat),use_proj_tex(use_proj_tex),do_atlas(do_atlas) {state=NULL;
+  
     _planeTexSize=32;
     context=NULL;
   
@@ -151,7 +151,7 @@ protected:
   bool tex_saved;
   int _tex_size;
   bool compress_tex;
-  bool do_atlas;
+ 
   int num_threads;
   int verbose;
   bool _hardware_compress;
@@ -162,6 +162,7 @@ protected:
   bool usePlaneDist;
   bool applyNonVisMat;
   bool use_proj_tex;
+ bool do_atlas;
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
   vector<osg::ref_ptr<osg::Texture2DArray> > osg_tex_arr_ptrs;
   map<int,osg::Texture *> osg_tex_map;

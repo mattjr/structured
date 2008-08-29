@@ -88,7 +88,7 @@ static bool have_mb_ply=false;
 static bool have_cov_file=false;
 static string stereo_calib_file_name;
 static bool no_simp=true;
-
+static double simp_res[3];
 static FILE *uv_fp;
 static ofstream file_name_list;
 static string base_dir;
@@ -96,6 +96,8 @@ static bool no_depth=false;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 static int num_threads=1;
 static FILE *fpp,*fpp2,*pos_fp;
+static double connected_comp_size_clean;
+static double hole_fill_size;
 static bool even_split=false;
 static double cell_scale=1.0;
 static bool use_dense_feature=false;
@@ -331,7 +333,6 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("MONO_CAM",mono_cam,false);
  
 
-  further_clean=mono_cam;
 
   recon_config_file->get_value("VRIP_SUBVOL",subvol,40.0);
   recon_config_file->get_value("MAX_FEAT_COUNT",max_feature_count,5000);
@@ -349,8 +350,15 @@ static bool parse_args( int argc, char *argv[ ] )
   recon_config_file->get_value("VRIP_RES",vrip_res,0.033);
   recon_config_file->get_value("NORMALISED_VAR",normalised_var,400);
   recon_config_file->get_value("NORMALISED_MEAN",normalised_mean,128);
-  
+  recon_config_file->get_value("HOLE_FILL_SIZE",hole_fill_size,10.0);
+  recon_config_file->get_value("CC_CLEAN_SIZE",connected_comp_size_clean,5.0);
+  recon_config_file->get_value("EXTRA_CLEAN",further_clean,false);
+  recon_config_file->get_value("SIMP_RES_1",simp_res[0],0.005);
+  recon_config_file->get_value("SIMP_RES_2",simp_res[1],0.1);
+  recon_config_file->get_value("SIMP_RES_3",simp_res[2],0.5);
 
+  
+ 
 
   string mbfile;
 
@@ -1955,7 +1963,7 @@ int main( int argc, char *argv[ ] )
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\n");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(0.005 %f %f)\n",0.1*simp_mult,0.5*simp_mult);
+		"REDFACT=(%f %f %f)\n",simp_res[0],simp_res[1],simp_res[2]);
 	 
      
 	//	fprintf(conf_ply_file,//"if [ -e clipped-diced-%08d.ply ]; then\n"
@@ -1967,7 +1975,7 @@ int main( int argc, char *argv[ ] )
 	
 	char simpargstr[255];
 	if(further_clean)
-	  sprintf(simpargstr," -H200 -S100 ");
+	  sprintf(simpargstr," -H%f -S%f ",hole_fill_size,connected_comp_size_clean);
 	else
 	  sprintf(simpargstr," ");
 	fprintf(dicefp, "LOGDIR=%s\n"

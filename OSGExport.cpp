@@ -1194,9 +1194,9 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
     }
   }
   if(do_atlas){
-    UnrefTextureAtlas uta;
+    /*UnrefTextureAtlas uta;
     tex->accept(uta);
-    uta.unref_ptrs();
+    uta.unref_ptrs();*/
   }
   return true;
 

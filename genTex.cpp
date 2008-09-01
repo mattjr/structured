@@ -72,6 +72,8 @@ static bool usePlaneDist=false;
 int margins[]={10,500,INT_MAX};
 static bool use_proj_tex=false;
 static bool use_regen_tex=false;
+static bool range_run=false;
+static int endRun=0;
 static bool no_tex=false;
 static bool use_dist_coords=true;
 int lodTexSize[3];
@@ -183,6 +185,14 @@ static bool parse_args( int argc, char *argv[ ] )
 	  single_run_index = atoi( argv[i+1] );
 	  i+=2;
 	  single_run=true;
+	}
+      else if( strcmp( argv[i], "--range-run" ) == 0 )
+	{
+	  if( i == argc-2 ) return false;
+	  single_run_index = atoi( argv[i+1] );
+	  endRun = atoi( argv[i+2] );
+	  i+=3;
+	  range_run=true;
 	}
       else if( strcmp( argv[i], "--lod-start" ) == 0 )
 	{
@@ -527,6 +537,10 @@ std::vector<vector<string >   > outNames;
     verbose=true;
     startRun=single_run_index;
     totalMeshCount=single_run_index+1;
+  }
+  else if(range_run){
+    startRun=single_run_index;
+    totalMeshCount=min((int)meshNames.size(),endRun);
   }else{
     startRun=0;
     if(have_max_mesh_count )

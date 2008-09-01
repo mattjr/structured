@@ -76,7 +76,7 @@ static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
 static bool output_pts_cov=false;
 static bool use_sift_features = false;
-static bool sing_gen_tex=true;
+static bool sing_gen_tex=false;
 static bool use_surf_features = false;
 static bool use_ncc = false;
 static int skip_counter=0;
@@ -414,7 +414,7 @@ static bool parse_args( int argc, char *argv[ ] )
   }
   argp.read("--vrip-ramp",vrip_ramp );
   dist_run=argp.read("--dist" );
-  sing_gen_tex =  (!argp.read("--threaded-gentex"));
+  sing_gen_tex =  argp.read("--threaded-gentex");
   dice_lod=argp.read("--dicelod" );
 
   no_simp=argp.read( "--nosimp" );
@@ -2063,14 +2063,15 @@ int main( int argc, char *argv[ ] )
 	  if(!sing_gen_tex){
 	    fprintf(dicefp,"cd $DICEDIR\n"
 		    "NUMDICED=`wc -l valid.txt |cut -f1 -d\" \" `\n"
+		    "GENTEX_RANGE=%d\n"
 		    "rm -f gentexcmds\n"
-		    "for i in `echo {0..$(($NUMDICED - 1))}`;\n"
+		    "for i in `seq 0 $GENTEX_RANGE $(($NUMDICED - 1))`;\n"
 		    "do\n"
-		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s -f %s --single-run $i %s\" >> gentexcmds\n"
+		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s -f %s --range-run $i $(($i + $GENTEX_RANGE)) %s\" >> gentexcmds\n"
 		    "done\n"
 		    "LOGDIR=%s\n"
 		    "cd $DICEDIR\n"
-		    ,stereo_config_file_name.c_str(),cachedtexdir,argstr,texlogdir);
+		    ,dist_gentex_range,stereo_config_file_name.c_str(),cachedtexdir,argstr,texlogdir);
 	    if(dist_run)
 	      fprintf(dicefp,
 		      "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit-hwcard gentexcmds -logdir $LOGDIR\n");

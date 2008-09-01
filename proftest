@@ -11,4 +11,4 @@ DICEDIR=$PWD/mesh-diced/
 mkdir -p $DICEDIR
 cd $DICEDIR
 cd $RUNDIR
-callgrind /home/mkj/cvs/threadedStereo/genTex /media/reef/r20070524_042006_ng2_16_canyon_survey//stereo.cfg /media/reef/r20070524_042006_ng2_16_canyon_survey//recon.cfg -f /media/reef/r20070524_042006_ng2_16_canyon_survey//cache-tex/  -t 1 -n 2 #--lod-start 2
+valgrind --tool=callgrind /home/mkj/cvs/threadedStereo/genTex /media/reef/r20070524_042006_ng2_16_canyon_survey//stereo.cfg /media/reef/r20070524_042006_ng2_16_canyon_survey//recon.cfg -f /media/reef/r20070524_042006_ng2_16_canyon_survey//cache-tex/  -t 1 -n 2 #--lod-start 2

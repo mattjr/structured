@@ -53,6 +53,7 @@ static double stop_time = numeric_limits<double>::max();
 //
 // Command-line arguments
 //
+static int dist_gentex_range=0;
 static int vrip_split;
 static FILE *pts_cov_fp;
 static string stereo_config_file_name;
@@ -356,6 +357,7 @@ static bool parse_args( int argc, char *argv[ ] )
   recon_config_file->get_value("SIMP_RES_1",simp_res[0],0.005);
   recon_config_file->get_value("SIMP_RES_2",simp_res[1],0.1);
   recon_config_file->get_value("SIMP_RES_3",simp_res[2],0.5);
+  recon_config_file->get_value("DIST_GENTEX_RANGE",dist_gentex_range,10);
 
   
  

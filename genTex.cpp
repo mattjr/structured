@@ -67,6 +67,7 @@ static float tex_scale=1.0;
 static  char diceddir[255];
 extern std::vector<GtsBBox *> bboxes_all;
 static bool do_novelty=false;
+static std::vector<GtsMatrix *>gts_inv_ptr;
 static bool usePlaneDist=false;
 int margins[]={10,500,INT_MAX};
 static bool use_proj_tex=false;
@@ -597,13 +598,14 @@ std::vector<vector<string >   > outNames;
 
 	bool res=convert_ply(mesh,surf,verbose,planeIdx);
        mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
+       delete planeIdx;
        if(!res ){
 	 printf("Failed to load surface %s\n",
 	     meshNames[i].c_str());
-      exit(-1);
-    }
-    if(verbose)
-      printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(surf),
+	 exit(-1);
+       }
+       if(verbose)
+	 printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(surf),
 	     gts_surface_edge_number(surf));
        /* GtsSurface *surf = gts_surface_new(gts_surface_class(),
 					 (GtsFaceClass*)t_face_class(),
@@ -703,17 +705,27 @@ std::vector<vector<string >   > outNames;
     //Destory Surf
     //if(s)
     //gts_object_destroy (GTS_OBJECT (s)); 
-    bboxes_all.clear();;
+    // if(bboxTree)
+    //gts_bb_tree_destroy(bboxTree,true);
+   
+
+    bboxes_all.clear();
     delete osgExp;
+    
   }
   mesh_count(i,totalMeshCount,lodNum,lodNum,0,0,0);
 
   // 
   // Clean-up
   //
-  //for(int i=0; i < (int)gts_trans.size(); i++)
-  // gts_matrix_destroy(gts_trans[i]);
+  std::map<int,GtsMatrix *>::iterator iter;
+  for(iter=gts_trans_map.begin(); iter!=gts_trans_map.end(); iter++){
+    if(iter->second)
+      gts_matrix_destroy(iter->second);
+  }
+
   delete config_file;
+  delete recon_config_file;
   delete calib;
 
   return 0;

@@ -31,7 +31,7 @@ using namespace squish;
 
 MyGraphicsContext *mgc=NULL;
 std::vector<GtsBBox *> bboxes_all;;
-
+std::vector<GeometryCollection *> gc_ptrs;
 boost::mutex bfMutex;
 
 class UnrefTextureAtlas : public osg::NodeVisitor
@@ -87,10 +87,16 @@ public:
             osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(texture);
             osg::Texture3D* texture3D = dynamic_cast<osg::Texture3D*>(texture);
             
-            osg::ref_ptr<osg::Image> image = texture2D ? texture2D->getImage() : (texture3D ? texture3D->getImage() : 0);
+	    //    osg::ref_ptr<osg::Image> image = texture2D ? texture2D->getImage() : (texture3D ? texture3D->getImage() : 0);
 	    // printf("texture %d image %d\n",texture->referenceCount(),image->referenceCount());
-	    while(image->referenceCount()>0){
-	      image->unref();
+	    if(texture2D){
+	      while(texture2D->referenceCount()>0){
+		texture2D->unref();
+	      }
+	    }else if(texture3D){
+	      while(texture3D->referenceCount()>0){
+		texture3D->unref();
+	      }
 	    }
 
 	    //printf("texture %d image %d\n",texture->referenceCount(),image->referenceCount());
@@ -188,8 +194,11 @@ void OSGExporter::compress(osg::Texture2D* texture2D, osg::Texture::InternalForm
  void bin_face_mat_osg (T_Face * f, gpointer * data){
   MaterialToGeometryCollectionMap *mtgcm=(MaterialToGeometryCollectionMap *)data[0];
   //uint uiFace =  *((guint *) data[1]);
-  if(mtgcm->count(f->material) <= 0)
-    (*mtgcm)[f->material]= new GeometryCollection;
+  if(mtgcm->count(f->material) <= 0){
+    GeometryCollection *gc_tmp = new GeometryCollection;
+    gc_ptrs.push_back(gc_tmp);
+    (*mtgcm)[f->material]= gc_tmp;
+  }
   GeometryCollection& gc = *(*mtgcm)[f->material];
   gc._numPoints += 3;
   gc._numPrimitives += 1;
@@ -336,14 +345,16 @@ osg::ref_ptr<osg::Image>OSGExporter::cacheCompressedImage(IplImage *img,string n
   return image;
 }
 
-osg::ref_ptr<osg::Image >OSGExporter::decompressImage(osg::ref_ptr<osg::Image > img_ptr){
-  osg::Image *img=img_ptr.get();
+osg::Image *OSGExporter::decompressImage(osg::Image * img_ptr){
 
-  IplImage *tmp=cvCreateImage(cvSize(img->s(),img->t()),IPL_DEPTH_8U,3);
-  decompressed_ptrs.push_back(tmp);
-  DecompressImageRGB((unsigned char *)tmp->imageData,tmp->width,tmp->height,img->data(),squish::kDxt1);
-  osg::ref_ptr< osg::Image >image_full= Convert_OpenCV_TO_OSG_IMAGE(tmp,false);
-  image_full->ref();
+  osg::Image *image_full= new osg::Image();
+  unsigned char *newdata = new unsigned char[img_ptr->s()*img_ptr->t()*3*sizeof(unsigned char)];
+  decompressed_ptrs.push_back(image_full);
+
+  DecompressImageRGB(newdata,img_ptr->s(),img_ptr->t(),img_ptr->data(),squish::kDxt1);
+ 
+  image_full->setImage(img_ptr->s(),img_ptr->t(),img_ptr->r(),osg::Texture::USE_IMAGE_DATA_FORMAT,GL_RGB,GL_UNSIGNED_BYTE,newdata,osg::Image::USE_NEW_DELETE);
+
   return image_full;
 }
 
@@ -355,7 +366,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 
   bool cachedLoaded=false;
   osg::Image *filecached;
-  osg::Image *retImage=new osg::Image;
+
   if(compressed_img_cache.find(basename) == compressed_img_cache.end() || !compressed_img_cache[basename] ){
     
     if(FileExists(ddsname)){
@@ -389,7 +400,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
   if(filecached && filecached->s() == size && filecached->t() == size){
 
     if(!compress_tex || do_atlas){
-      osg::Image *ret=decompressImage(filecached).get();
+      osg::Image *ret=decompressImage(filecached);
       return ret;
     }
     return filecached;
@@ -407,9 +418,12 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
 
   if(resize == 0)
     resize=1;
-
+  
+  osg::Image *retImage=new osg::Image;
+  downsampled_img_ptrs.push_back(retImage);
   int datasize=filecached->getTotalSizeInBytesIncludingMipmaps()-filecached->getMipmapOffset(i);
   unsigned char *newdata = new unsigned char[datasize];
+  resize_data_ptrs.push_back(newdata);
   memcpy(newdata,filecached->getMipmapData(i),datasize);
   retImage->setImage(resize,resize,filecached->r(),filecached->getInternalTextureFormat() ,filecached->getPixelFormat(),filecached->getDataType(),newdata,osg::Image::USE_NEW_DELETE);
   osg::Image::MipmapDataType mipmaps;
@@ -432,7 +446,7 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
   retImage->setFileName(basename);
   
   if(!compress_tex || do_atlas){
-    osg::Image *ret=decompressImage(retImage).get();
+    osg::Image *ret=decompressImage(retImage);
   
     return ret;
   }
@@ -559,7 +573,6 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 {
    _tex_size=tex_size;
    map<int,int> texnum2arraynum;
-  MaterialToGeometryCollectionMap mtgcm;
   gpointer data[10];
   gint n=0;
   data[0]=&mtgcm;
@@ -725,7 +738,11 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    osg::StateSet* stateset = new osg::StateSet;
 	    // create texture
 	    osg::Texture2D* texture = new osg::Texture2D;
-	    // texture->setUnRefImageDataAfterApply( false );
+	    /*   if(do_atlas || compress_tex) 
+	      texture->setUnRefImageDataAfterApply( true );
+	    else
+	      texture->setUnRefImageDataAfterApply( false );
+	    */
 	    texture->setImage(image.get());
 	    //texture->setInternalFormatMode(internalFormatMode);
 	    stateset->setTextureAttributeAndModes(baseTexUnit,texture,
@@ -814,11 +831,11 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     osg::ref_ptr<osg::Geode> untextured = new osg::Geode;
     osg::ref_ptr<osg::Geode> textured = new osg::Geode;
     osg::TextureRectangle* histTex=NULL;
-    osg::Program* program=NULL;
+    osg::ref_ptr<osg::Program> program= new osg::Program;
 
    
      
-      program = new osg::Program;
+     
       program->setName( "microshader" );
       osg::Shader *novelty=new osg::Shader( osg::Shader::FRAGMENT);
       osg::Shader *distNovelty=new osg::Shader( osg::Shader::VERTEX);
@@ -833,7 +850,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       
       program->addShader(  novelty );
        program->addShader( distNovelty );
- 
+       osg::TextureRectangle* planeTex=NULL;
       if(computeHists){
 	
 	Hist_Calc histCalc(_tex_size,_tex_size,16,1);
@@ -844,11 +861,13 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  histTex= getTextureHists(finalhist);
 	else
 	  addNoveltyTextures(mtgcm,textures,histCalc,finalhist);
+
+	// add everthing into the Geode.   
+	getPlaneTex(planes,_planeTexSize);
       }
       
       
-      // add everthing into the Geode.   
-      osg::TextureRectangle* planeTex=	 getPlaneTex(planes,_planeTexSize);
+  
       
       
       osgUtil::SmoothingVisitor smoother;
@@ -888,7 +907,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 		 gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_PLANES,
 							      planeTex);
 		 
-		 gc._geom->getStateSet()->setAttributeAndModes( program,
+		 gc._geom->getStateSet()->setAttributeAndModes( program.get(),
 								osg::StateAttribute::ON );
 	       }
 	     
@@ -1129,10 +1148,10 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
 					   1.0f,0.0f));
 
 
-  osg::MatrixTransform* positioned1 = new osg::MatrixTransform(trans);
+  osg::ref_ptr<osg::MatrixTransform> positioned1 = new osg::MatrixTransform(trans);
 
   
-  osg::MatrixTransform* positioned2= new osg::MatrixTransform(trans);
+  osg::ref_ptr<osg::MatrixTransform> positioned2= new osg::MatrixTransform(trans);
 
    
   if(do_atlas && tex){
@@ -1193,11 +1212,23 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
       // root->getChild(0)=NULL;
     }
   }
-  if(do_atlas){
-    /*UnrefTextureAtlas uta;
+  /*if(do_atlas){
+    UnrefTextureAtlas uta;
     tex->accept(uta);
-    uta.unref_ptrs();*/
-  }
+    uta.unref_ptrs();
+    }*/
+  /*
+  {
+   MaterialToGeometryCollectionMap::iterator itr;
+   for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
+     itr->second->_geom->unref();
+     // if(itr->second) 
+     //delete itr->second;
+     
+     
+     }
+     }*/
+ mtgcm.clear();
   return true;
 
   /*  root->removeChild(0,1);
@@ -1465,7 +1496,19 @@ OSGExporter::~OSGExporter(){
     tex_image_cache.clear();
   }
   for(unsigned int i=0; i<decompressed_ptrs.size(); i++){
-    cvReleaseImage(&decompressed_ptrs[i]);
+    //   decompressed_ptrs[i]->unref();
+  }
+
+ for(unsigned int i=0; i<resize_data_ptrs.size(); i++){
+   if(resize_data_ptrs[i])
+     delete resize_data_ptrs[i];
+  }
+
+ for(unsigned int i=0; i<downsampled_img_ptrs.size(); i++){
+   // printf(" %d\n",downsampled_img_ptrs[i]->referenceCount());  
+   do{
+     downsampled_img_ptrs[i]->unref();
+   }while(downsampled_img_ptrs[i]->referenceCount()> 0);
   }
   
   decompressed_ptrs.clear();
@@ -1476,7 +1519,16 @@ OSGExporter::~OSGExporter(){
 
       itr->second->unref();
    }
+ 
  }
+  for(unsigned int i=0; i< gc_ptrs.size(); i++)
+   if(gc_ptrs[i])
+      delete gc_ptrs[i];
+ //      Seg faults ????
+ 
+ gc_ptrs.clear();
+ 
+ 
 }
 
 

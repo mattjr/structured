@@ -147,6 +147,11 @@ protected:
   MyGraphicsContext *context;
   bool ive_out;
 
+
+  MaterialToGeometryCollectionMap mtgcm;
+
+
+
   string prefixdir;
   bool tex_saved;
   int _tex_size;
@@ -166,8 +171,11 @@ protected:
   vector<osg::ref_ptr<osg::Texture2D> > osg_tex_ptrs;
   vector<osg::ref_ptr<osg::Texture2DArray> > osg_tex_arr_ptrs;
   map<int,osg::Texture *> osg_tex_map;
-  std::vector<IplImage *> decompressed_ptrs;
-  osg::ref_ptr<osg::Image > decompressImage(osg::ref_ptr<osg::Image> img_ptr);
+  std::vector<osg::Image *> decompressed_ptrs;
+  std::vector<unsigned char *> resize_data_ptrs;
+
+  std::vector<osg::Image *> downsampled_img_ptrs;
+  osg::Image *decompressImage(osg::Image * img_ptr);
   
   void  calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc);
   void addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc,CvHistogram *hist);

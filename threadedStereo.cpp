@@ -148,7 +148,7 @@ int normalised_var;
 static Stereo_Calib *calib;
  static Config_File *config_file; 
  static Config_File *recon_config_file; 
-static int texmargin[3];
+
   static Config_File *dense_config_file; 
 static  int tex_size;
 #ifdef USE_DENSE_STEREO
@@ -1810,13 +1810,13 @@ int main( int argc, char *argv[ ] )
 	FILE *genmbfp=fopen("genmb.sh","w");
 	fprintf(genmbfp,"#!/bin/bash\nPATH=$PATH:%s/tridecimator\ncd %s\n"
 		"if [ -e %s/mb.ply ]; then\n"
-		"cp %s/mb.ply %s/mesh-agg/ \n"
+		"cp %s/mb.ply .\n"
 		"exit 0;\n"
 		"fi\n"
 		"find . -name 'mb*.ply' | xargs rm -f\n"
 		"%s/../seabed_localisation/bin/copy_deltaT %s %s %s\n",
 		basepath.c_str(),
-		aggdir,deltaT_dir.c_str(),deltaT_dir.c_str(),basepath.c_str(),basepath.c_str(),
+		aggdir,deltaT_dir.c_str(),deltaT_dir.c_str(),basepath.c_str(),
 		//--start %f --stop %fstart_time,stop_time,
 		deltaT_config_name.c_str(),deltaT_dir.c_str(),
 		deltaT_pose.c_str());
@@ -2039,8 +2039,18 @@ int main( int argc, char *argv[ ] )
 	fclose(dicefp);
 	if(!no_simp)
 	  system("./simp.sh");
-	if(use_vrip_recon){
-	  dicefp=fopen("./gentex.sh","w+");
+	vector<string> gentexnames;
+	gentexnames.push_back("./gentex.sh");
+	gentexnames.push_back("./posgentex.sh");
+
+	vector<string> gentexdir;
+	gentexdir.push_back("mesh-diced");
+	gentexdir.push_back("mesh-pos");
+	
+	for(int i=0; i <2; i++){
+	 
+
+	  dicefp=fopen(gentexnames[i].c_str(),"w+");
 	  fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $DICEDIR\n",basepath.c_str());
 
 	  char argstr[255];
@@ -2069,11 +2079,11 @@ int main( int argc, char *argv[ ] )
 		    "rm -f gentexcmds\n"
 		    "for i in `seq 0 $GENTEX_RANGE $(($NUMDICED - 1))`;\n"
 		    "do\n"
-		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s -f %s --range-run $i $(($i + $GENTEX_RANGE)) %s\" >> gentexcmds\n"
+		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s %s -f %s  --dicedir %s --range-run $i $(($i + $GENTEX_RANGE)) %s\" >> gentexcmds\n"
 		    "done\n"
 		    "LOGDIR=%s\n"
 		    "cd $DICEDIR\n"
-		    ,dist_gentex_range,stereo_config_file_name.c_str(),cachedtexdir,argstr,texlogdir);
+		    ,dist_gentex_range,stereo_config_file_name.c_str(),recon_config_file_name.c_str(),cachedtexdir,gentexdir[i].c_str(),argstr,texlogdir);
 	    if(dist_run)
 	      fprintf(dicefp,
 		      "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit-hwcard gentexcmds -logdir $LOGDIR\n");
@@ -2090,10 +2100,15 @@ int main( int argc, char *argv[ ] )
 
 	  fchmod(fileno(dicefp),0777);
 	  fclose(dicefp);
-	  if(!no_gen_tex)
-	    system("./gentex.sh");
+	  if(no_gen_tex)
+	    continue;
+	  if(i==0 && use_vrip_recon)
+	    system(gentexnames[i].c_str());
+	  if(i==1 && !use_poisson_recon)
+	    system(gentexnames[i].c_str());
+	   
 	}
-	if(use_poisson_recon){
+	/*	if(use_poisson_recon){
 	  dicefp=fopen("./posgentex.sh","w+");
 	  fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	  
@@ -2140,7 +2155,7 @@ int main( int argc, char *argv[ ] )
 	  fclose(dicefp);
 	  if(!no_gen_tex && run_pos)
 	    system("./posgentex.sh");
-	}
+	    }*/
 	if(!no_gen_tex || use_poisson_recon){
 	  FILE *lodfp=fopen("lodgen.sh","w");
 	  char ar[255];

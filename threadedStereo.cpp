@@ -119,6 +119,7 @@ static bool single_run=false;
 static int single_run_start=0;
 static int single_run_stop=0;
 static bool dice_lod=false;
+static bool clean_pos_pts;
 static bool use_dense_stereo=false;
 static int non_cached_meshes=0;
 static double edgethresh;
@@ -354,6 +355,7 @@ static bool parse_args( int argc, char *argv[ ] )
   recon_config_file->get_value("HOLE_FILL_SIZE",hole_fill_size,10.0);
   recon_config_file->get_value("CC_CLEAN_SIZE",connected_comp_size_clean,5.0);
   recon_config_file->get_value("EXTRA_CLEAN",further_clean,false);
+  recon_config_file->get_value("CLEAN_POS_PTS",clean_pos_pts,false);
   recon_config_file->get_value("SIMP_RES_1",simp_res[0],0.005);
   recon_config_file->get_value("SIMP_RES_2",simp_res[1],0.1);
   recon_config_file->get_value("SIMP_RES_3",simp_res[2],0.5);
@@ -1282,11 +1284,13 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     
     mesh->write(filename);
 
-    if(use_poisson_recon)
+    if(use_poisson_recon){
       
-     
-      //for(fi=cm.face.begin(); fi!=cm.face.end();++fi){
+      dump_pts(pos_fp,filename,clean_pos_pts);
       /*
+     
+      for(fi=cm.face.begin(); fi!=cm.face.end();++fi){
+      
 	for (int i = 0; i < nv; i++) {
 	for(int j=0; j<3; j++){
 	if(j==2){
@@ -1300,10 +1304,11 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	printf("\n");
 
 	for(int j=0; j<3; j++)
-	buf[j+3]=(float)mesh->normals[i][j];*/
+	buf[j+3]=(float)mesh->normals[i][j];
 
-      // }
-    
+       }
+      */
+    }
       name.mesh_name = osgDB::getSimpleFileName(filename);
 
     gts_bbox_set(name.bbox,NULL,
@@ -1538,7 +1543,7 @@ int main( int argc, char *argv[ ] )
     }
      
     string config_dir_name;
-    Stereo_Calib *calib;
+    Stereo_Calib *calib=NULL;
     int slash_pos = stereo_config_file_name.rfind( "/" );
     if( slash_pos != -1 )
       config_dir_name = stereo_config_file_name.substr( 0, slash_pos+1 );
@@ -1808,14 +1813,14 @@ int main( int argc, char *argv[ ] )
       if(gen_mb_ply){
 
 	FILE *genmbfp=fopen("genmb.sh","w");
-	fprintf(genmbfp,"#!/bin/bash\nPATH=$PATH:%s/tridecimator\ncd %s\n"
+	fprintf(genmbfp,"#!/bin/bash\nPATH=$PATH:%s/tridecimator:/usr/lib/gmt/bin/:%s../mbsystems/bin/\ncd %s\n"
 		"if [ -e %s/mb.ply ]; then\n"
 		"cp %s/mb.ply .\n"
 		"exit 0;\n"
 		"fi\n"
 		"find . -name 'mb*.ply' | xargs rm -f\n"
 		"%s/../seabed_localisation/bin/copy_deltaT %s %s %s\n",
-		basepath.c_str(),
+		basepath.c_str(),	basepath.c_str(),
 		aggdir,deltaT_dir.c_str(),deltaT_dir.c_str(),basepath.c_str(),
 		//--start %f --stop %fstart_time,stop_time,
 		deltaT_config_name.c_str(),deltaT_dir.c_str(),
@@ -2051,7 +2056,7 @@ int main( int argc, char *argv[ ] )
 	 
 
 	  dicefp=fopen(gentexnames[i].c_str(),"w+");
-	  fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $DICEDIR\n",basepath.c_str());
+	  fprintf(dicefp,"#!/bin/bash\necho 'TexGen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/%s\nmkdir -p $DICEDIR\ncd $DICEDIR\n",basepath.c_str(),gentexdir[i].c_str());
 
 	  char argstr[255];
 	  strcpy(argstr,"");

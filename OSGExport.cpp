@@ -218,7 +218,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   ClippingMap *cm=(ClippingMap *)data[2];
   GeometryCollection& gc = *(*mtgcm)[f->material];
   osg::BoundingBox &texLimits=(*cm)[osgDB::getSimpleFileName((*textures)[f->material])];
-  int planeTexSize=(int)data[7];
+  int planeTexSize=(long int)data[7];
   
   map<int,int> *texnum2arraynum=(map<int,int> *)data[9];
 

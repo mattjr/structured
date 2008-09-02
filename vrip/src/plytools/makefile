@@ -27,7 +27,7 @@ CXXSRCS = \
 	plyarea.cc      plyxform.cc plyconfthresh.cc\
 	plyaddinfo.cc    plymirror.cc \
 	plystrip.cc      plyconfcrop.cc  plysubtract.cc \
-	plyshared.cc     plyvolume.cc	 plydice.cc \
+	plyshared.cc     	 plydice.cc \
 	plyplanecrop.cc xyz2ply.cc	 plysubdiv.cc\
 	plyclipbboxes.cc plysubtractlist.cc
 
@@ -36,7 +36,7 @@ PERLSRCS = \
 	ply2crunchset   ply2bboxcube
 
 TARGETS = \
-	plybbox      plyflip        plyvolume \
+	plybbox      plyflip         \
 	plybound     plyhead        ply2asc \
 	plycomps     plynormals     plyunshared \
 	ply2verts    plyremove      plyxform \

@@ -2079,7 +2079,7 @@ int main( int argc, char *argv[ ] )
 		    "rm -f gentexcmds\n"
 		    "for i in `seq 0 $GENTEX_RANGE $(($NUMDICED - 1))`;\n"
 		    "do\n"
-		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s %s -f %s  --dicedir %s --range-run $i $(($i + $GENTEX_RANGE)) %s\" >> gentexcmds\n"
+		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s %s -f %s  --dicedir %s/ --range-run $i $(($i + $GENTEX_RANGE)) %s\" >> gentexcmds\n"
 		    "done\n"
 		    "LOGDIR=%s\n"
 		    "cd $DICEDIR\n"

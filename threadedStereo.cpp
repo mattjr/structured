@@ -1943,7 +1943,8 @@ int main( int argc, char *argv[ ] )
 		  "else\n"
 		  "\tcp  mb.ply inv-mb-%08d.ply\n"
 		  "fi\n",0,0,0,0); 
-	  fprintf(conf_ply_file,"for f in `echo {1..%d}`\n"
+	  if(cells.size()-1 > 0){
+	    fprintf(conf_ply_file,"for f in `echo {1..%d}`\n"
 		  "do\n"
 		  "i=`printf \"%%08d\\n\" \"$f\"`\n"
 		  "ilast=`printf \"%%08d\" \"$(($f - 1 ))\"`\n"
@@ -1952,8 +1953,11 @@ int main( int argc, char *argv[ ] )
 		  "else\n"
 		  "\tcp inv-mb-$ilast.ply  inv-mb-$i.ply\n" 
 		  "fi\n"
-		  "done\n"
-		  "tridecimator inv-mb-$i.ply ../mesh-diced/inv-mb.ply 0 -F\n",cells.size()-1);
+		    "done\n",cells.size()-1);
+	  }
+
+	  fprintf(conf_ply_file,
+		  "tridecimator inv-mb-$i.ply ../mesh-diced/inv-mb.ply 0 -F\n");
 
 	    
 	}
@@ -2042,7 +2046,7 @@ int main( int argc, char *argv[ ] )
 
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
-	if(!no_simp)
+	if(!no_simp && use_vrip_recon)
 	  system("./simp.sh");
 	vector<string> gentexnames;
 	gentexnames.push_back("./gentex.sh");

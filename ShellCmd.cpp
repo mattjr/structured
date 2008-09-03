@@ -75,7 +75,7 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 		  "else\n"
 		  "\tcp  pos_rec-lod$k.ply inv-mb-%08d-lod$k.ply\n"
 		  "fi\n",0,0,0,0); 
-	  
+	  if( cells.size()-1 > 0){
 	  fprintf(conf_ply_file,"for f in `echo {1..%ld}`\n"
 		  "do\n"
 		  "i=`printf \"%%08d\\n\" \"$f\"`\n"
@@ -97,8 +97,14 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 		"\tplymerge $VISLIST > merged-lod$f.ply\n"
 		"\tplysubtract -i 0.1 pos_rec-lod$f.ply merged-lod$f.ply > inv-mb-lod$f.ply;\n"
 	"done\n"	*/
-	  "done\n"
-		"cd ../mesh-pos/\n"
+		  ,cells.size()-1);
+	  }
+	  else{
+	    fprintf(conf_ply_file, "tridecimator inv-mb-%08d-lod$k.ply ../mesh-pos/inv-mb-lod$k.ply 0 \n",0);
+	  }
+	  fprintf(conf_ply_file,
+		  "done\n"
+		  "cd ../mesh-pos/\n"
 		"rm -f valid.txt\n"
 	  "cat diced.txt |   while read MESHNAME; do\n"
 	  "REALNAME=`echo $MESHNAME | sed s/.ply/-lod0.ply/g` \n"	 
@@ -108,7 +114,7 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 	  "echo $MESHNAME >> valid.txt\n"
 	  "done\n"
 	  
-	  ,cells.size()-1);
+	 );
 	
 	}
 

@@ -1390,7 +1390,13 @@ bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks
 
 int main( int argc, char *argv[ ] )
 {
-
+  FILE *rerunfp=fopen("rerun.sh","w");
+  fprintf(rerunfp,"#!/bin/bash\n");
+  for(int i=0; i < argc; i++)
+    fprintf(rerunfp,"%s ",argv[i]);
+  fprintf(rerunfp,"\n");;
+  fchmod(fileno(rerunfp),0777);
+  fclose(rerunfp);
   //
   // Parse command line arguments
   //

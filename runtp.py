@@ -9,7 +9,7 @@ pool = Pool(3)
     
 @threadpool(pool)
 def runcmd_threadpool(cm,i,total):
-    print 'Process %d/%d complete.' % (i , 0)
+    print 'Process %d/%d complete.' % (i , total)
     cmd= 'csh -c \'%s\'' % cm[:-1]
     commands.getstatusoutput(cmd)
     #sleep(random())
@@ -25,10 +25,9 @@ except IOError:
     sys.exit(0)
 total=0
 i=0
-#total=sum(1 for line in cmdfile)
-#close(cmdfile)
-#cmdfile = open(fname, 'r')
-
+total=sum(1 for line in cmdfile)
+close(cmdfile)
+cmdfile = open(fname, 'r')
 #pbar = ProgressBar().start()
 for line in cmdfile:
     runcmd_threadpool(line,i,total)

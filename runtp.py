@@ -26,7 +26,7 @@ except IOError:
 total=0
 i=0
 total=sum(1 for line in cmdfile)
-close(cmdfile)
+cmdfile.close()
 cmdfile = open(fname, 'r')
 #pbar = ProgressBar().start()
 for line in cmdfile:

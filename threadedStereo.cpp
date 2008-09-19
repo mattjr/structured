@@ -1734,7 +1734,7 @@ int main( int argc, char *argv[ ] )
 
       vrip_seg_fp=fopen(vrip_seg_fname,"w");
       bboxfp = fopen(conf_name,"w");
-      if(!vrip_seg_fp || !bboxfp)
+      if(!vrip_seg_fp || !bboxfp){
 	printf("Unable to open %s\n",vrip_seg_fname);
       }	
       char redirstr[255];

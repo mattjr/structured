@@ -129,7 +129,7 @@ char cachedtexdir[255];
 static bool no_pos_clip=true;
 static string deltaT_config_name;
 static string deltaT_dir;
-static bool use_vrip_recon=false;
+static bool use_vrip_recon=true;
 static bool hardware_compress=true;
 const char *uname="mesh";
 const char *dicedir="mesh-diced";
@@ -254,8 +254,39 @@ void print_uv_3dpts( list<Feature*>          &features,
 static bool parse_args( int argc, char *argv[ ] )
 {
   libplankton::ArgumentParser argp(&argc,argv);
-  if(argp.isOption(argp[1])){
-    fprintf(stderr,"First arg must be base dir");
+  argp.getApplicationUsage()->setApplicationName(argp.getApplicationName());
+  argp.getApplicationUsage()->setDescription(argp.getApplicationName()+" example demonstrates the use of ImageStream for rendering movies as textures.");
+  argp.getApplicationUsage()->setCommandLineUsage(argp.getApplicationName()+" <basedir>  [options]  ...\nwill look for stereo.cfg recon.cfg pose_file.data and dir img for images\n I suggest creating symlinks to those files allowing for varible configuration.\n");
+  argp.getApplicationUsage()->addCommandLineOption( "-r <texture size>","       Final texture output size." );
+  argp.getApplicationUsage()->addCommandLineOption( "-m <max_feature_count>" ," Set the maximum number of features to be found." );
+  argp.getApplicationUsage()->addCommandLineOption( "-n <max_frame_count>","   Set the maximum number of frames to be processed." );
+  argp.getApplicationUsage()->addCommandLineOption( "-z <feature_depth>","Set an estimate for the feature depth relative to cameras." );
+  argp.getApplicationUsage()->addCommandLineOption( "-t <num_threads>","Number of threads to run" );
+  argp.getApplicationUsage()->addCommandLineOption( "--mbfile","Multibeam ply mesh" );
+  argp.getApplicationUsage()->addCommandLineOption( "--cov <file>","Input covar file." ); 
+  argp.getApplicationUsage()->addCommandLineOption( "-c","Use the normalised cross correlation feature descriptor" );
+  argp.getApplicationUsage()->addCommandLineOption( "--sift","Find SIFT features." );
+  argp.getApplicationUsage()->addCommandLineOption( "--surf","Find SURF features." );
+  argp.getApplicationUsage()->addCommandLineOption( "-d","Do not display debug images." );
+  argp.getApplicationUsage()->addCommandLineOption( "--confply","Output confply file." );
+  argp.getApplicationUsage()->addCommandLineOption( "--nogentex","Don't texture" );
+  argp.getApplicationUsage()->addCommandLineOption( "--genmb","Generate MB mesh" );
+  argp.getApplicationUsage()->addCommandLineOption( "--split <num>","Split individual meshes passed to vrip at num" );
+   argp.getApplicationUsage()->addCommandLineOption( "--dicevol <vol>","Dice mesh to subvolume pieces of <vol> size" );
+   argp.getApplicationUsage()->addCommandLineOption( "--res <resolution>","Vrip at resolution res default 0.033" );
+   argp.getApplicationUsage()->addCommandLineOption( "-p","Pause after each frame." );
+   argp.getApplicationUsage()->addCommandLineOption( "--uv","Output UV File." );
+   argp.getApplicationUsage()->addCommandLineOption( "--3ds","Output 3ds Files." );
+   argp.getApplicationUsage()->addCommandLineOption( "--dense-features","Dense features ." );
+   argp.getApplicationUsage()->addCommandLineOption( "--ptscov","Output pts and cov ." );
+   argp.getApplicationUsage()->addCommandLineOption( "--dicelod","Dice lods" );
+   argp.getApplicationUsage()->addCommandLineOption( "--stereo-config","Specify diffrent stereo config" );
+   argp.getApplicationUsage()->addCommandLineOption( "--contents-file","Specify diffrent contents file ." );
+   argp.getApplicationUsage()->addCommandLineOption( "--nosimp","Specify diffrent contents file ." );
+
+  if(argp.argc() < 2 || argp.isOption(argp[1]) ){
+    fprintf(stderr,"First arg must be base dir\n");
+    argp.getApplicationUsage()->write(std::cerr,osg::ApplicationUsage::COMMAND_LINE_OPTION);
     exit(-1);
   }
   base_dir=argp[1];
@@ -327,7 +358,7 @@ static bool parse_args( int argc, char *argv[ ] )
   
 
   bool vrip_on;
-  recon_config_file->get_value("USE_VRIP",vrip_on,false);
+  recon_config_file->get_value("USE_VRIP",vrip_on,true);
   
   mono_cam=argp.read("--mono");
   if(!mono_cam)

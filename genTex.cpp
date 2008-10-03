@@ -25,7 +25,6 @@
 #include "auv_stereo_geometry.hpp"
 
 #include "auv_stereo_corner_finder.hpp"
-#include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
 #include "adt_file_utils.hpp"
 #include "OSGExport.h"
@@ -446,7 +445,6 @@ int main( int argc, char *argv[ ] )
 
   config_file->set_value( "SKF_SHOW_DEBUG_IMAGES"    , display_debug_images );
   config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"    , display_debug_images );
-  config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
 
   
 

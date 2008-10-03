@@ -29,7 +29,7 @@
 #include "auv_stereo_geometry.hpp"
 #include "adt_file_utils.hpp"
 #include "auv_stereo_corner_finder.hpp"
-#include "auv_stereo_ncc_corner_finder.hpp"
+//#include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
 #include "adt_image_norm.hpp"
 #include "auv_stereo_dense.hpp"
@@ -78,7 +78,7 @@ static bool output_pts_cov=false;
 static bool use_sift_features = false;
 static bool sing_gen_tex=false;
 static bool use_surf_features = false;
-static bool use_ncc = false;
+//static bool use_ncc = false;
 static int skip_counter=0;
 static double vrip_ramp;
 static int num_skip=0;
@@ -350,7 +350,7 @@ static bool parse_args( int argc, char *argv[ ] )
 
   config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
   config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
-  config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
+  //config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
   config_file->set_value( "MESH_TEX_SIZE", tex_size );
   config_file->get_value( "SD_SCALE", dense_scale,1.0);
  
@@ -461,7 +461,7 @@ static bool parse_args( int argc, char *argv[ ] )
   display_debug_images = !argp.read("-d");
   regen_tex=argp.read("--regen");
   pause_after_each_frame = argp.read("-p");
-  use_ncc=argp.read("-c");
+  //use_ncc=argp.read("-c");
   argp.read("--split",vrip_split);
 
   argp.read("--dicevol",subvol);
@@ -767,6 +767,7 @@ public:
 					   calib );
 #endif
     }
+    /*
     else if( use_ncc )
       {
 	finder = new Stereo_NCC_Corner_Finder(*config_file, 
@@ -774,6 +775,7 @@ public:
                                               image_scale, 
                                               calib );
       }
+      */
     else
       {
 

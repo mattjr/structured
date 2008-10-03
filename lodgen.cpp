@@ -25,7 +25,6 @@
 #include "auv_stereo_geometry.hpp"
 
 #include "auv_stereo_corner_finder.hpp"
-#include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
 #include "adt_raw_file.hpp"
 #include "OSGExport.h"

@@ -852,7 +852,7 @@ struct Convoluter : public SliceConsumer
 protected:
   void consume(Slice slice_i) 
   {
-    
+
     if(!ts->runP(slice_i))
       slice_i.valid=false;
     else
@@ -925,6 +925,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
 	     contents_file >> name.overlap 
 	     );
   
+    name.mesh_name = "surface-"+osgDB::getStrippedName(name.left_name)+".tc.ply";
   }
   while (readok && (name.time < start_time || (skip_counter++ < num_skip)));
   skip_counter=0;
@@ -1054,10 +1055,10 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     texcached=FileExists(texfilename);
   }
  
-  sprintf(filename,"%s/surface-%s.tc.ply",
-	  aggdir,osgDB::getStrippedName(name.left_name).c_str());
+  sprintf(filename,"%s/%s.ply",
+	  aggdir,osgDB::getStrippedName(name.mesh_name).c_str());
 
- 
+
   GtsSurface *surf=NULL;
   if(!meshcached || !texcached ){
   
@@ -1351,7 +1352,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
        }
       */
     }
-      name.mesh_name = osgDB::getSimpleFileName(filename);
+
+  
 
     gts_bbox_set(name.bbox,NULL,
 		 mesh->bbox.min[0],
@@ -1668,6 +1670,10 @@ int main( int argc, char *argv[ ] )
     display_debug_images = false; 
     boost::xtime_get(&xt, boost::TIME_UTC);
     SlicePool pool(tasks);
+    //Needed or open mp will try to create threads within threads which is 
+    //not a good thing opencv openmp support blows anyway as of late.
+    //weird bug
+    cvSetNumThreads(1);
     Convolution convolution(pool,(int)tasks.size() > num_threads ? num_threads : tasks.size(),stereo_config_file_name,"semi-dense.cfg");
     boost::thread thrd(convolution);
     thrd.join();
@@ -1687,7 +1693,7 @@ int main( int argc, char *argv[ ] )
 	    name.time);
     fprintf(fpp,"%f %f %f %f %f %f",name.bbox->x1,name.bbox->y1,name.bbox->z1,
 	    name.bbox->x2,name.bbox->y2,name.bbox->z2);
-    
+
     for(int i=0; i< 4; i++){
       for(int j=0; j < 4; j++){
 	fprintf(fpp," %f",name.m[i][j]);
@@ -1718,6 +1724,7 @@ int main( int argc, char *argv[ ] )
 		"surface-%s.tc.ply %f 1\n"
 		,osgDB::getStrippedName(tasks[i].left_name).c_str(),vrip_res);
 	valid++;
+
       }
       
     }

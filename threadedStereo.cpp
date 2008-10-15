@@ -791,9 +791,9 @@ public:
 						  image_scale, 
 						  calib );
       }
-    printf("here2\n");
+
     osgExp=new OSGExporter(dir_name,false,true,tex_size);    
-    printf("here3\n");
+
 
   }
 
@@ -1108,8 +1108,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 		      max_feature_count,
 		      features,
 		      feature_depth_guess );
-	printf("Heresd\n");
-	return true;
+
 	if(use_dense_feature) 
 	  finder_dense->find( left_frame,
 			      right_frame,

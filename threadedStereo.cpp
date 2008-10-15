@@ -348,9 +348,7 @@ static bool parse_args( int argc, char *argv[ ] )
     
   }
 
-
-  config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
-  config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
+  
   //config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
   config_file->set_value( "MESH_TEX_SIZE", tex_size );
   config_file->get_value( "SD_SCALE", dense_scale,1.0);
@@ -426,7 +424,7 @@ static bool parse_args( int argc, char *argv[ ] )
   single_run= argp.read( "--single-run",single_run_start, single_run_stop );
   if(single_run)
     display_debug_images = false;
-     
+
   
   argp.read( "-t" ,num_threads);
   argp.read( "--res",vrip_res );
@@ -459,7 +457,9 @@ static bool parse_args( int argc, char *argv[ ] )
   use_cached=(!argp.read("--no_cached" ));
   do_novelty=argp.read("--novelty");
   output_pts_cov=argp.read("--ptscov");
-  display_debug_images = !argp.read("-d");
+  if( argp.read("-d"))
+    display_debug_images = false;
+
   regen_tex=argp.read("--regen");
   pause_after_each_frame = argp.read("-p");
   //use_ncc=argp.read("-c");
@@ -510,6 +510,9 @@ static bool parse_args( int argc, char *argv[ ] )
   strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
   strcpy(cachedtexdir,string(base_dir+string("/")+cachedtexdir).c_str());
 
+
+  config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
+  config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
 
 #ifndef HAVE_LIBKEYPOINT
   if( use_sift_features || use_surf_features )

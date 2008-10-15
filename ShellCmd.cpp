@@ -125,7 +125,7 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	if(run)
-	  system("./dicepos.sh");
+	  int res=system("./dicepos.sh");
 }
 
 void ShellCmd::pos_simp_cmd2(bool run){
@@ -178,7 +178,7 @@ void ShellCmd::pos_simp_cmd2(bool run){
   fchmod(fileno(dicefp),0777);
   fclose(dicefp);
   if(run)
-    system("./pos_simp.sh");
+    int res=system("./pos_simp.sh");
   
 }
 void ShellCmd::pos_simp_cmd(bool run){
@@ -232,7 +232,7 @@ void ShellCmd::pos_simp_cmd(bool run){
   fchmod(fileno(dicefp),0777);
   fclose(dicefp);
   if(run)
-    system("./pos_simp.sh");
+    int res=system("./pos_simp.sh");
   
 }
 

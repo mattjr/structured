@@ -345,6 +345,33 @@ osg::ref_ptr<osg::Image>OSGExporter::cacheCompressedImage(IplImage *img,string n
   return image;
 }
 
+osg::ref_ptr<osg::Image>OSGExporter::cacheImage(IplImage *img,string name,int tex_size,bool ret){
+ 
+
+  IplImage *tex_img=cvCreateImage(cvSize(tex_size,tex_size),
+				  IPL_DEPTH_8U,3);
+
+  if(img && tex_img)
+    cvResize(img,tex_img);
+  else
+    printf("Invalid Images\n");
+
+  if(ret){
+    osg::ref_ptr<osg::Image> image= Convert_OpenCV_TO_OSG_IMAGE(tex_img);
+    osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
+    texture->setImage(image.get());
+    osgDB::writeImageFile(*image.get(),name);
+    cvReleaseImage(&tex_img);
+    return image;
+  }
+  else {
+    cvSaveImage(name.c_str(),tex_img);
+    cvReleaseImage(&tex_img);
+
+  }
+    return NULL;
+}
+
 osg::Image *OSGExporter::decompressImage(osg::Image * img_ptr){
 
   osg::Image *image_full= new osg::Image();
@@ -452,6 +479,81 @@ osg::Image *OSGExporter::getCachedCompressedImage(string name,int size){
   }
   else
     return retImage;
+}
+
+
+osg::Image *OSGExporter::getCachedImage(string name,int size){
+  IplImage *img=NULL;
+  string basename=osgDB::getSimpleFileName(name);
+ 
+
+
+  bool cachedLoaded=false;
+  osg::Image *filecached;
+
+  if(compressed_img_cache.find(basename) == compressed_img_cache.end() || !compressed_img_cache[basename] ){
+    
+    if(FileExists(name)){
+      filecached=osgDB::readImageFile(name);
+      if(filecached){
+	cachedLoaded=true;
+	filecached->ref();
+
+      }
+    }
+    
+    if(!cachedLoaded){
+      img = cvLoadImage(name.c_str(),-1);
+      if(!img){
+	printf("In Cached Compressed Img Load failed %s.\n",name.c_str());
+	return NULL;
+      }
+      else{
+	osg::ref_ptr<osg::Image> comp_img=cacheImage(img,name,size).get();
+	filecached=comp_img.get();
+	comp_img->ref();
+      }
+    }
+    filecached->setFileName(basename);
+    compressed_img_cache[basename]=filecached;
+
+  }else{  
+    filecached=compressed_img_cache[basename];
+  }
+
+  if(filecached && filecached->s() == size && filecached->t() == size){
+
+    return filecached;
+  
+  }
+
+  IplImage *tex_img=cvCreateImage(cvSize(size,size),
+				  IPL_DEPTH_8U,3);
+  IplImage *or_img =cvCreateImageHeader(cvSize( filecached->s(), filecached->t()),
+				  IPL_DEPTH_8U,3);
+  or_img->imageData=(char *)filecached->data();
+  
+  if(or_img && tex_img)
+    cvResize(or_img,tex_img);
+  else
+    printf("Invalid Images\n");
+
+  // osg::Image *retImage=new osg::Image;
+  //downsampled_img_ptrs.push_back(retImage);
+  // retImage->ref();
+  /*  int datasize=size*size*3;
+  unsigned char *newdata = new unsigned char[datasize];
+  //  resize_data_ptrs.push_back(newdata);
+  memcpy(newdata,tex_img->imageData,datasize);
+  retImage->setImage(size,size,filecached->r(),filecached->getInternalTextureFormat() ,filecached->getPixelFormat(),filecached->getDataType(),newdata,osg::Image::USE_NEW_DELETE);*/
+  osg::Image *retImage =Convert_OpenCV_TO_OSG_IMAGE(tex_img,false,false);
+  cvReleaseImageHeader(&tex_img);
+  cvReleaseImageHeader(&or_img);
+
+  retImage->setFileName(basename);
+  
+  
+  return retImage;
 }
 #define TEXUNIT_ARRAY       0
 #define TEXUNIT_HIST        2
@@ -718,8 +820,11 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  if(verbose)printf("\n");	 
 	fflush(stdout); 
 	
-	 
-	osg::ref_ptr<osg::Image> image=getCachedCompressedImage(filename,tex_size);
+	osg::ref_ptr<osg::Image> image;
+	if(do_atlas)
+	 image=getCachedImage(filename,tex_size);
+	else
+	  image=getCachedCompressedImage(filename,tex_size);
 	int baseTexUnit=0;
 	
 	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);

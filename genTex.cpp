@@ -475,12 +475,17 @@ int main( int argc, char *argv[ ] )
  
 
   char mdir[255];
+  char subdir[255];
   if(use_regen_tex)
     strcpy(mdir,"mesh-blend");
   else
     strcpy(mdir,"mesh");
   auv_data_tools::makedir(mdir);
   chmod(mdir,   0777);
+  strcpy(subdir,"lod");
+  string fulllodpath=string(mdir) + "/"+string(subdir);
+  auv_data_tools::makedir(fulllodpath.c_str());
+  chmod(fulllodpath.c_str(),   0777);
   if(num_threads > 1)
     g_thread_init (NULL);
  
@@ -672,7 +677,7 @@ std::vector<vector<string >   > outNames;
 	strcpy(ext,"3ds");
       else
 	strcpy(ext,"ive");
-      sprintf(out_name,"%s/blended-%02d-lod%d.%s",mdir,i,j,ext);
+      sprintf(out_name,"%s/%s/blended-%02d-lod%d.%s",mdir,subdir,i,j,ext);
       osg::ref_ptr<osg::Geode> group[2];
       ClippingMap cm;
       std::map<int,GtsMatrix *>::iterator iter;

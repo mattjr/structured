@@ -104,6 +104,7 @@ static bool use_dense_feature=false;
 //StereoMatching* stereo;
 //StereoImage simage;
 static bool gen_mb_ply=false;
+static bool no_atlas=false;
 static bool output_ply_and_conf =true;
 static FILE *conf_ply_file;
 static bool output_3ds=false;
@@ -139,7 +140,7 @@ static string deltaT_pose;
 static string dense_method="";
 bool dist_run=false;
 static bool mono_cam=false;
-
+static       int sysres=0;
 static bool do_hw_blend=false;
 // Image normalisation
 #define USE_IMAGE_NORMALISATION true
@@ -154,7 +155,7 @@ static  int tex_size;
 #ifdef USE_DENSE_STEREO
 Stereo_Dense *sdense=NULL;
 #endif
-
+void runC(Stereo_Pose_Data &name);
 void print_uv_3dpts( list<Feature*>          &features,
 		     list<Stereo_Feature_Estimate> &feature_positions,
 		     unsigned int                   left_frame_id,
@@ -500,11 +501,11 @@ static bool parse_args( int argc, char *argv[ ] )
     else if( use_surf_features )   
       config_file->set_value( "SKF_KEYPOINT_TYPE", "SURF" );
 
-  strcpy(cachedmeshdir,"cache-mesh");
+  
   if(use_dense_stereo)
-    sprintf(cachedmeshdir,"%s-dense/",cachedmeshdir);
+    sprintf(cachedmeshdir,"cache-mesh-dense/");
   else
-    sprintf(cachedmeshdir,"%s-feat/",cachedmeshdir);
+    sprintf(cachedmeshdir,"cache-mesh-feat/");
 
   strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
   strcpy(cachedtexdir,string(base_dir+string("/")+cachedtexdir).c_str());
@@ -790,8 +791,9 @@ public:
 						  image_scale, 
 						  calib );
       }
-     
+    printf("here2\n");
     osgExp=new OSGExporter(dir_name,false,true,tex_size);    
+    printf("here3\n");
 
   }
 
@@ -850,7 +852,7 @@ struct Convoluter : public SliceConsumer
 protected:
   void consume(Slice slice_i) 
   {
-	 
+    
     if(!ts->runP(slice_i))
       slice_i.valid=false;
     else
@@ -1026,8 +1028,12 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       fclose(fp);
       chmod(filename,   0666);
   */
-  sprintf(texfilename,"%s/%s.dds",
-	  cachedtexdir,osgDB::getStrippedName(name.left_name).c_str());
+  if(no_atlas)
+    sprintf(texfilename,"%s/%s.dds",
+	    cachedtexdir,osgDB::getStrippedName(name.left_name).c_str());
+  else
+    sprintf(texfilename,"%s/%s.png",
+	    cachedtexdir,osgDB::getStrippedName(name.left_name).c_str());
   if(use_dense_stereo)
     sprintf(meshfilename,"%s/surface-%s-%s.ply",
 	    cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str(),
@@ -1070,10 +1076,13 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	image_count_verbose (progCount, totalTodoCount);
 	return false;
       } 
-    
+
     if(!texcached){
       //      printf("\nCaching texture %s\n",texfilename);
-      osgExp->cacheCompressedImage(color_frame,texfilename,512);
+      if(!no_atlas)
+	osgExp->cacheImage(color_frame,texfilename,512,false);
+      else
+	osgExp->cacheCompressedImage(color_frame,texfilename,512);
     }
     
     if(!meshcached){
@@ -1099,6 +1108,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 		      max_feature_count,
 		      features,
 		      feature_depth_guess );
+	printf("Heresd\n");
+	return true;
 	if(use_dense_feature) 
 	  finder_dense->find( left_frame,
 			      right_frame,
@@ -1113,7 +1124,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	// Triangulate the features if requested
 	//
 	
-	
+
 	
 	Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
 	
@@ -1388,7 +1399,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 
 void runC(Stereo_Pose_Data &name){
  
-  //printf("%s Written Out to  %s\n",name.left_name.c_str(),name.mesh_name.c_str());
+  printf("%s Written Out to  %s\n",name.left_name.c_str(),name.mesh_name.c_str());
 }
 bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks,Camera_Calib *cam_calib,unsigned int &stereo_pair_count){
 
@@ -1808,7 +1819,7 @@ int main( int argc, char *argv[ ] )
 	 }*/
       fprintf(vripcmds_fp,"cd ..\n");
 
-   
+
 
       for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=cells[i].poses[j];
@@ -1880,7 +1891,7 @@ int main( int argc, char *argv[ ] )
 		deltaT_dir.c_str());
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
-	system("./genmb.sh");
+	sysres=system("./genmb.sh");
       }
   
       /* if(!single_run && have_mb_ply){
@@ -1931,7 +1942,7 @@ int main( int argc, char *argv[ ] )
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	if(run_pos){
-	  system("./runpos.sh");
+	  sysres=system("./runpos.sh");
 	}
 	shellcm.pos_dice(cells,eps,run_pos);
 	//shellcm.pos_simp_cmd(use_poisson_recon);
@@ -1950,7 +1961,7 @@ int main( int argc, char *argv[ ] )
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	if(run_pos){
-	  system("./runpos.sh");
+	  sysres=system("./runpos.sh");
 	  shellcm.pos_dice(cells,eps);
 	}
       }
@@ -1991,7 +2002,7 @@ int main( int argc, char *argv[ ] )
 		  "else\n"
 		  "\tcp inv-mb-$ilast.ply  inv-mb-$i.ply\n" 
 		  "fi\n"
-		    "done\n",cells.size()-1);
+		    "done\n",(int)(cells.size()-1));
 	  }
 
 	  fprintf(conf_ply_file,
@@ -2006,7 +2017,7 @@ int main( int argc, char *argv[ ] )
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	if(!no_vrip && use_vrip_recon)
-	  system("./runvrip.sh");
+	  sysres=system("./runvrip.sh");
       
 	FILE *dicefp=fopen("./simp.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
@@ -2085,7 +2096,7 @@ int main( int argc, char *argv[ ] )
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
 	if(!no_simp && use_vrip_recon)
-	  system("./simp.sh");
+	  sysres=system("./simp.sh");
 	vector<string> gentexnames;
 	gentexnames.push_back("./gentex.sh");
 	gentexnames.push_back("./posgentex.sh");
@@ -2150,9 +2161,9 @@ int main( int argc, char *argv[ ] )
 	  if(no_gen_tex)
 	    continue;
 	  if(i==0 && use_vrip_recon)
-	    system(gentexnames[i].c_str());
+	    sysres=system(gentexnames[i].c_str());
 	  if(i==1 && !use_poisson_recon)
-	    system(gentexnames[i].c_str());
+	    sysres=system(gentexnames[i].c_str());
 	   
 	}
 	/*	if(use_poisson_recon){
@@ -2201,7 +2212,7 @@ int main( int argc, char *argv[ ] )
 	  fchmod(fileno(dicefp),0777);
 	  fclose(dicefp);
 	  if(!no_gen_tex && run_pos)
-	    system("./posgentex.sh");
+	    sysres=system("./posgentex.sh");
 	    }*/
 	if(!no_gen_tex || use_poisson_recon){
 	  FILE *lodfp=fopen("lodgen.sh","w");
@@ -2218,7 +2229,7 @@ int main( int argc, char *argv[ ] )
 	  fchmod(fileno(lodfp),0777);
 	  fclose(lodfp);
 	  if(!no_gen_tex )
-	    system("./lodgen.sh");
+	    sysres=system("./lodgen.sh");
 	}
 	
 	{
@@ -2242,7 +2253,7 @@ int main( int argc, char *argv[ ] )
 	  fchmod(fileno(rgfp),0777);
 	  fclose (rgfp);
 	  if(regen_tex)
-	    system("./regen.sh"); 
+	    sysres=system("./regen.sh"); 
 	}
       }
     }

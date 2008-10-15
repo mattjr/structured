@@ -242,9 +242,9 @@ static void recursive_split( const vector<const Stereo_Pose_Data *> &poses,
 
 
    // Find the best split point
-   unsigned int best_axis;
-   double best_split_point;
-   double min_cost;
+   unsigned int best_axis=0;
+   double best_split_point=0.0;
+   double min_cost=DBL_MAX;
    for( unsigned int i=0; i < num_split_samples ; i++ )
    {
       if( i==0 || x_costs[i] < min_cost )

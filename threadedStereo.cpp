@@ -1691,7 +1691,7 @@ int main( int argc, char *argv[ ] )
     Slice name=(*itr);
     fprintf(fpp,"%f",   
 	    name.time);
-    fprintf(fpp,"%f %f %f %f %f %f",name.bbox->x1,name.bbox->y1,name.bbox->z1,
+    fprintf(fpp," %f %f %f %f %f %f",name.bbox->x1,name.bbox->y1,name.bbox->z1,
 	    name.bbox->x2,name.bbox->y2,name.bbox->z2);
 
     for(int i=0; i< 4; i++){

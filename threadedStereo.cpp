@@ -1318,6 +1318,9 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   if(output_ply_and_conf){
     TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
+    if(!mesh)
+      return false;
+    
     edge_len_thresh(mesh,edgethresh);
     
     xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],

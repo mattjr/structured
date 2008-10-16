@@ -1333,31 +1333,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     
     mesh->write(filename);
 
-    if(use_poisson_recon){
-      
-      dump_pts(pos_fp,filename,clean_pos_pts);
-      /*
-     
-      for(fi=cm.face.begin(); fi!=cm.face.end();++fi){
-      
-	for (int i = 0; i < nv; i++) {
-	for(int j=0; j<3; j++){
-	if(j==2){
-	   
-	buf[j]=(float)mesh->vertices[i][j];
-	}else{
-	buf[j]=(float)mesh->vertices[i][j];
-	}
-	printf("%f ",buf[j]);
-	}
-	printf("\n");
-
-	for(int j=0; j<3; j++)
-	buf[j+3]=(float)mesh->normals[i][j];
-
-       }
-      */
-    }
+ 
 
   
 
@@ -1711,6 +1687,10 @@ int main( int argc, char *argv[ ] )
 	}
       }
       fprintf(fpp,"\n");
+      
+      if(use_poisson_recon)
+	dump_pts(pos_fp,name.mesh_name.c_str(),clean_pos_pts);
+    
     }
     
     char conf_name[255];

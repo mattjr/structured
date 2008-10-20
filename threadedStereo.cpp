@@ -1688,9 +1688,9 @@ int main( int argc, char *argv[ ] )
       }
       fprintf(fpp,"\n");
       
-      if(use_poisson_recon)
-	dump_pts(pos_fp,name.mesh_name.c_str(),clean_pos_pts);
-    
+      if(use_poisson_recon){
+	dump_pts(pos_fp,string("mesh-agg/"+name.mesh_name).c_str(),clean_pos_pts);
+      }
     }
     
     char conf_name[255];

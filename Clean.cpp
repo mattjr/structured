@@ -36,7 +36,7 @@ void dump_pts(FILE *pos_fp,const char * filename,bool clean){
 	  float buf[6];
 	  vcg::tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);
 	  vcg::tri::Clean<CMeshO>::FlipMesh(cm);
-
+	 
    
       CMeshO::VertexIterator vi;
       for(vi=cm.vert.begin();vi!=cm.vert.end();++vi){

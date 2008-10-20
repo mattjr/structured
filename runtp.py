@@ -14,8 +14,13 @@ else:
 def runcmd_threadpool(cm,i,total):
     print 'Processing %d/%d' % (i +1 , total)
     cmd= 'csh -c \'%s\'' % cm[:-1]
-    commands.getstatusoutput(cmd)
-    #sleep(random())
+    s,o = commands.getstatusoutput(cmd)
+    if s != 0:
+        print 'problem running: ', cmd
+        print 'output : ',o
+    
+   
+#sleep(random())
     #pbar.update(i)    
     
 

@@ -1,12 +1,23 @@
 #include "ShellCmd.h"
-void ShellCmd::write_generic(string filename,string cmdfile){
+void ShellCmd::write_generic(string filename,string cmdfile,const vector<string> *precmds , const vector<string> *postcmds){
   FILE *fp=fopen(filename.c_str(),"w");
   fprintf(fp,"#!/usr/bin/python\n");
   fprintf(fp,"import sys\n");
   fprintf(fp,"import os\n");
   fprintf(fp,"import setupts\n");
   fprintf(fp,"setupts.setup(os)\n");
-  fprintf(fp,"os.system('time ' + setupts.basepath +'/runtp.py %s %d')\n",cmdfile.c_str(),num_threads);
+  if(precmds){
+    for(int i=0; i< (int)precmds->size(); i++)
+      fprintf(fp,"os.system('%s')\n",(*precmds)[i].c_str());
+  }
+  
+  fprintf(fp,"os.system('time ' + setupts.basepath +'/runtp.py %s %d')\n",
+	  cmdfile.c_str(),num_threads);
+  
+  if(postcmds){
+    for(int i=0; i<(int) postcmds->size(); i++)
+      fprintf(fp,"os.system('%s')\n",(*postcmds)[i].c_str());
+  }
   fchmod(fileno(fp),0777);
 
   fclose(fp);
@@ -20,13 +31,14 @@ void ShellCmd::write_setup(void){
   fprintf(fp,"\tdicedir =' %s'\n",dicedir);
   fprintf(fp,"\tvrip_path = basepath+'/vrip'\n");
   fprintf(fp,"\tMY_PATH = os.getenv('PATH', 'Error')\n");
-  fprintf(fp,"\tos.environ[\"PATH\"] = MY_PATH + ':' + vrip_path + '/bin'\n");
+  fprintf(fp,"\tos.environ[\"PATH\"] = MY_PATH + ':' + vrip_path + '/bin' +"
+	  "':'+basepath+'/poisson/'\n");
+  fprintf(fp,"\tos.environ[\"BASEPATH\"] = basepath\n");
   fprintf(fp,"\tos.environ[\"VRIP_HOME\"] = vrip_path + '/src/vrip/'\n");
   fprintf(fp,"\tos.popen('mkdir -p ' + dicedir)\n");
   fclose(fp);
 }
   
-/*,fprintf("VRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG*/
 
 void ShellCmd::pos_dice(vector<Cell_Data>cells,float eps,bool run){
 FILE *	conf_ply_file=fopen("./dicepos.sh","w+"); 

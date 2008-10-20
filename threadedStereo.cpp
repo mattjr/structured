@@ -437,14 +437,25 @@ static bool parse_args( int argc, char *argv[ ] )
   use_proj_tex=argp.read("--projtex");
   even_split= argp.read("--evensplit" );
   argp.read("--cellscale",cell_scale );
+
+
+  if(argp.read("--pos")){
+    vrip_on=false;
+    use_vrip_recon = false;
+    run_pos=true;
+  }
+
   if(!vrip_on)
     vrip_on=argp.read("--vrip");
-  
+
+
   if(vrip_on ){
     run_pos=false;
     use_vrip_recon = true;
     no_simp = false;
   }
+
+
   argp.read("--vrip-ramp",vrip_ramp );
   dist_run=argp.read("--dist" );
   sing_gen_tex =  argp.read("--threaded-gentex");
@@ -1759,6 +1770,8 @@ int main( int argc, char *argv[ ] )
       simp_mult=2.0;
     
     ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,dist_run,cwd,aggdir,dicedir,have_mb_ply,num_threads);
+    shellcm.write_setup();
+	
     std::vector<Cell_Data> cells;
     if(even_split)
       cells=calc_cells(tasks,EVEN_SPLIT,cell_scale);
@@ -1890,58 +1903,59 @@ int main( int argc, char *argv[ ] )
 	sysres=system("./genmb.sh");
       }
   
-      /* if(!single_run && have_mb_ply){
-	 for(int i=0; i < (int)mb_ply_filenames.size(); i++){
-	 string simpname =osgDB::getSimpleFileName(mb_ply_filenames[i]);
-	 string inname=mb_ply_filenames[i];
-	 string outname=(string(aggdir)+string("/")+simpname);
-	 cout << "Copying " << inname << " to " << outname<<endl;
-	 std::ifstream  IN (inname.c_str());
-	 std::ofstream  OUT(outname.c_str()); 
-	 OUT << IN.rdbuf();
-	 fprintf(conf_ply_file,
-	 "bmesh %s .1 0\n"
-	 ,simpname.c_str()); 
-	 }
-	 }
-      */
+      
       
       if(use_poisson_recon && !no_merge){
-	conf_ply_file=fopen("./runpos.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\n"
-		"VRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\n"
-		"PATH=$PATH:$VRIP_HOME/bin:%s/tridecimator:%s/poisson/\n"
-		"cd mesh-agg/\n",
-		basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str(),
-		basepath.c_str());
-	fprintf(conf_ply_file, "cat pos_pts.bnpts > pos_out.bnpts\n");
+	string runpos_fn = "./runpos.py";
+	string poscmd_fn= string(aggdir)+"/posgencmds";
+	FILE *poscmd_fp=fopen(poscmd_fn.c_str(),"w");
+	std::vector<string> precmds;
+	std::vector<string> postcmds;
+	char cmdtmp[255];
+	precmds.push_back( "cat mesh-agg/pos_pts.bnpts > mesh-pos/pos_out.bnpts");
 
-	if(have_mb_ply)
-	  fprintf(conf_ply_file,"%s/poisson/dumpnormpts %s mb.bnpts -flip\n"
-		  "cat mb.bnpts >> pos_out.bnpts\n",basepath.c_str(),
+	if(have_mb_ply){
+	  sprintf(cmdtmp,"%s/poisson/dumpnormpts %s mesh-pos/mb.bnpts -flip",
+		  basepath.c_str(),
 		  osgDB::getSimpleFileName( mb_ply_filenames[0]).c_str());
+	  precmds.push_back(cmdtmp);
+	  sprintf(cmdtmp,"cat mesh-pos/mb.bnpts >> mesh-pos/pos_out.bnpts\n");
+	  precmds.push_back(cmdtmp);
+	}	  
+
 	int mintridepth;
 	if(have_mb_ply)
 	  mintridepth=0;
 	else
 	  mintridepth=8;
-	if( no_pos_clip){
-	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose  --out ../mesh-pos/pos_rec-lod2.ply\n",8,6,1.0);
-	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose  --out ../mesh-pos/pos_raw.ply\n",11,6,4.0);
-	}else{
-	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --mintridepth %d --out ../mesh-pos/pos_rec-lod2.ply\n",8,6,1.0,mintridepth-2);
-	  fprintf(conf_ply_file,"PoissonRecon --binary --depth %d --in pos_out.bnpts --solverDivide %d --samplesPerNode %f --verbose --mintridepth %d --out ../mesh-pos/pos_raw.ply\n",11,6,4.0,mintridepth);
-	}
 
-	fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod0.ply 0 -e15.0\n");
-	fprintf(conf_ply_file,"$BASEPATH/tridecimator/tridecimator ../mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod1.ply 0 -e15.0\n");
-	fchmod(fileno(conf_ply_file),0777);
-	fclose(conf_ply_file);
+	fprintf(poscmd_fp,"%s/poisson/PoissonRecon --binary --depth %d "
+		"--in pos_out.bnpts --solverDivide %d --samplesPerNode %f "
+		"--verbose  --out mesh-pos/pos_rec-lod2.ply\n",basepath.c_str(),
+		8,6,1.0);
+	  fprintf(poscmd_fp,"%s/poisson/PoissonRecon --binary --depth %d "
+		  "--in pos_out.bnpts --solverDivide %d --samplesPerNode %f "
+		  "--verbose  --out mesh-pos/pos_raw.ply\n",basepath.c_str(),
+		  11,6,4.0);
+	  if( !no_pos_clip){
+	    fprintf(poscmd_fp," --mintridepth %d" ,mintridepth-2);
+	    fprintf(poscmd_fp," --mintridepth %d" ,mintridepth);
+	  }
+
+	  fclose(poscmd_fp);
+
+	sprintf(cmdtmp,"$BASEPATH/tridecimator/tridecimator "
+		"mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod0.ply 0 -e15.0");
+	postcmds.push_back(cmdtmp);
+	sprintf(cmdtmp,"$BASEPATH/tridecimator/tridecimator "
+		"mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod1.ply 0 -e15.0");
+	postcmds.push_back(cmdtmp);
+	shellcm.write_generic(runpos_fn,poscmd_fn,&precmds,&postcmds);
 	if(run_pos){
-	  sysres=system("./runpos.sh");
+	  sysres=system(runpos_fn.c_str());
 	}
 	shellcm.pos_dice(cells,eps,run_pos);
-	//shellcm.pos_simp_cmd(use_poisson_recon);
+
 	
       }else{
 	conf_ply_file=fopen("./runpos.sh","w+"); 
@@ -1964,57 +1978,10 @@ int main( int argc, char *argv[ ] )
       
 
       if(!single_run){
-	/*	conf_ply_file=fopen("./runvrip.sh","w+"); 
-	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n cd mesh-agg/\necho -e 'Vriping...\\n'\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
-	fprintf(conf_ply_file,"VRIPLOGDIR=%s\n"
-		,vriplogdir);
-	fprintf(conf_ply_file,"find . -name 'mb*.ply' | sort  > mbmeshes.txt\n");
-	if(have_mb_ply)
-	  fprintf(conf_ply_file,"cat meshes.txt| cut -f1 -d\" \" | xargs $BASEPATH/vrip/bin/plymerge  > unblended.ply\n$BASEPATH/tridecimator/tridecimator $OUTDIR/unblended.ply $OUTDIR/unblended.stl 0 -F\n"
-		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > joined-mb.ply\n"
-		  "echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\n#auv_mesh_align unblended.ply joined-mb.ply\n#$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\n");
 
-		 	fprintf(conf_ply_file,"cd ..\n");
-
-	if(dist_run){
-	  fprintf(conf_ply_file,"time $BASEPATH/vrip/bin/loadbalance ~/loadlimit mesh-agg/vripcmds -logdir $VRIPLOGDIR\n");
-	}else{
-	  fprintf(conf_ply_file,"time %s/runtp.py mesh-agg/vripcmds\n",basepath.c_str());
-	}
-	if(have_mb_ply){
-	  fprintf(conf_ply_file,"cd mesh-agg\n");
-	  fprintf(conf_ply_file,"if [ -e sub-mb-%08d.ply ]; then\n"
-		  "\tplysubtract mb.ply sub-mb-%08d.ply > inv-mb-%08d.ply\n"
-		  "else\n"
-		  "\tcp  mb.ply inv-mb-%08d.ply\n"
-		  "fi\n",0,0,0,0); 
-	  if(cells.size()-1 > 0){
-	    fprintf(conf_ply_file,"for f in `echo {1..%d}`\n"
-		  "do\n"
-		  "i=`printf \"%%08d\\n\" \"$f\"`\n"
-		  "ilast=`printf \"%%08d\" \"$(($f - 1 ))\"`\n"
-		  "if [ -e sub-mb-$i.ply ]; then\n"
-		  "\tplysubtract inv-mb-$ilast.ply sub-mb-$i.ply > inv-mb-$i.ply;\n"
-		  "else\n"
-		  "\tcp inv-mb-$ilast.ply  inv-mb-$i.ply\n" 
-		  "fi\n"
-		    "done\n",(int)(cells.size()-1));
-	  }
-
-	  fprintf(conf_ply_file,
-		  "tridecimator inv-mb-$i.ply ../mesh-diced/inv-mb.ply 0 -F\n");
-
-	    
-	}
-	
-
-	 
-      
-	fchmod(fileno(conf_ply_file),0777);
-	fclose(conf_ply_file);*/
 	string vripcmd="runvrip.py";
        
-	shellcm.write_setup();
+
 	shellcm.write_generic(vripcmd,vripcmd_fn);
 	if(!no_vrip && use_vrip_recon)
 	  sysres=system("./runvrip.py");

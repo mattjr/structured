@@ -5,11 +5,14 @@ from progressbar import *
 from time import sleep
 from random import random
 import sys
-pool = Pool(3)
+if len(sys.argv) > 2:
+    pool = Pool(int(sys.argv[2]))
+else:
+    pool = Pool(3)
     
 @threadpool(pool)
 def runcmd_threadpool(cm,i,total):
-    print 'Process %d/%d complete.' % (i , total)
+    print 'Processing %d/%d' % (i +1 , total)
     cmd= 'csh -c \'%s\'' % cm[:-1]
     commands.getstatusoutput(cmd)
     #sleep(random())

@@ -46,7 +46,7 @@ void PathLoader::createPath(const char *path, std::vector<osg::Matrixd> &camMat,
       }
     }
   
-    if (!camfile.fail()){ 
+  if (!camfile.fail()){ 
        //      GOOD
       
 

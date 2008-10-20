@@ -1731,7 +1731,8 @@ int main( int argc, char *argv[ ] )
     FILE *vrip_seg_fp;
     char vrip_seg_fname[255];
     FILE *bboxfp;
-    FILE *vripcmds_fp=fopen("mesh-agg/vripcmds","w");
+    string vripcmd_fn="mesh-agg/vripcmds";
+    FILE *vripcmds_fp=fopen(vripcmd_fn.c_str(),"w");
     FILE *diced_fp=fopen("mesh-diced/diced.txt","w");
 
     if(!vripcmds_fp){
@@ -1757,7 +1758,7 @@ int main( int argc, char *argv[ ] )
     else
       simp_mult=2.0;
     
-    ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,dist_run,cwd,aggdir,have_mb_ply);
+    ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,dist_run,cwd,aggdir,dicedir,have_mb_ply,num_threads);
     std::vector<Cell_Data> cells;
     if(even_split)
       cells=calc_cells(tasks,EVEN_SPLIT,cell_scale);
@@ -1963,7 +1964,7 @@ int main( int argc, char *argv[ ] )
       
 
       if(!single_run){
-	conf_ply_file=fopen("./runvrip.sh","w+"); 
+	/*	conf_ply_file=fopen("./runvrip.sh","w+"); 
 	fprintf(conf_ply_file,"#!/bin/bash\nBASEPATH=%s/\nOUTDIR=$PWD/%s\nVRIP_HOME=%s/vrip\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin:%s/tridecimator\n cd mesh-agg/\necho -e 'Vriping...\\n'\n",basepath.c_str(),aggdir,basepath.c_str(),basepath.c_str());
 	fprintf(conf_ply_file,"VRIPLOGDIR=%s\n"
 		,vriplogdir);
@@ -1973,7 +1974,7 @@ int main( int argc, char *argv[ ] )
 		  "cat mbmeshes.txt | xargs $BASEPATH/vrip/bin/plymerge  > joined-mb.ply\n"
 		  "echo -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > unblended.xf\necho -e \"1.0 0.0 0.0 0.0\\n0.0 1.0 0.0 0.0\\n0.0 0.0 1.0 0.0\\n0.0 0.0 0.0 1.0\\n\" > joined-mb.xf\n#auv_mesh_align unblended.ply joined-mb.ply\n#$BASEPATH/vrip/bin/plyxform -f joined-mb.xf  < joined-mb.ply > mb.ply\n");
 
-	fprintf(conf_ply_file,"cd ..\n");
+		 	fprintf(conf_ply_file,"cd ..\n");
 
 	if(dist_run){
 	  fprintf(conf_ply_file,"time $BASEPATH/vrip/bin/loadbalance ~/loadlimit mesh-agg/vripcmds -logdir $VRIPLOGDIR\n");
@@ -2010,10 +2011,14 @@ int main( int argc, char *argv[ ] )
 	 
       
 	fchmod(fileno(conf_ply_file),0777);
-	fclose(conf_ply_file);
+	fclose(conf_ply_file);*/
+	string vripcmd="runvrip.py";
+       
+	shellcm.write_setup();
+	shellcm.write_generic(vripcmd,vripcmd_fn);
 	if(!no_vrip && use_vrip_recon)
-	  sysres=system("./runvrip.sh");
-      
+	  sysres=system("./runvrip.py");
+       
 	FILE *dicefp=fopen("./simp.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\n");

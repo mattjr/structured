@@ -1,18 +1,20 @@
 #include "ShellCmd.h"
-void ShellCmd::write_generic(string filename,string cmdfile,const vector<string> *precmds , const vector<string> *postcmds){
+void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds){
   FILE *fp=fopen(filename.c_str(),"w");
   fprintf(fp,"#!/usr/bin/python\n");
   fprintf(fp,"import sys\n");
   fprintf(fp,"import os\n");
   fprintf(fp,"import setupts\n");
   fprintf(fp,"setupts.setup(os)\n");
+  fprintf(fp,"print 'Running %s...'\n",cmdname.c_str());
+
   if(precmds){
     for(int i=0; i< (int)precmds->size(); i++)
       fprintf(fp,"os.system('%s')\n",(*precmds)[i].c_str());
   }
   
-  fprintf(fp,"os.system('time ' + setupts.basepath +'/runtp.py %s %d')\n",
-	  cmdfile.c_str(),num_threads);
+  fprintf(fp,"os.system('time ' + setupts.basepath +'/runtp.py %s %d %s')\n",
+	  cmdfile.c_str(),num_threads,cmdname.c_str());
   
   if(postcmds){
     for(int i=0; i<(int) postcmds->size(); i++)
@@ -44,7 +46,7 @@ void ShellCmd::pos_dice(vector<Cell_Data>cells,float eps,bool run){
 FILE *	conf_ply_file=fopen("./dicepos.sh","w+"); 
 FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 	FILE *	diced_fp=fopen("mesh-pos/diced.txt","w");
-
+	int res=0;
 	for(int i=0; i <(int)cells.size(); i++){
 	  if(cells[i].poses.size() == 0)
 	    continue;
@@ -165,11 +167,11 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 	fchmod(fileno(conf_ply_file),0777);
 	fclose(conf_ply_file);
 	if(run)
-	  int res=system("./dicepos.sh");
+	  res=system("./dicepos.sh");
 }
 
 void ShellCmd::pos_simp_cmd2(bool run){
-  
+  int res;
   FILE *dicefp=fopen("./pos_simp.sh","w+");
   fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-pos/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath);
   fprintf(dicefp,"cd $DICEDIR\n");
@@ -218,11 +220,11 @@ void ShellCmd::pos_simp_cmd2(bool run){
   fchmod(fileno(dicefp),0777);
   fclose(dicefp);
   if(run)
-    int res=system("./pos_simp.sh");
+    res=system("./pos_simp.sh");
   
 }
 void ShellCmd::pos_simp_cmd(bool run){
-  
+  int res;
   FILE *dicefp=fopen("./pos_simp.sh","w+");
   fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...\\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-pos/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath);
   fprintf(dicefp,"cd $DICEDIR\n");
@@ -272,7 +274,7 @@ void ShellCmd::pos_simp_cmd(bool run){
   fchmod(fileno(dicefp),0777);
   fclose(dicefp);
   if(run)
-    int res=system("./pos_simp.sh");
+    res=system("./pos_simp.sh");
   
 }
 

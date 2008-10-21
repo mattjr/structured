@@ -1758,8 +1758,9 @@ int main( int argc, char *argv[ ] )
       exit(-1);
     }
     char cwd[255];
+    char *dirres;
     if(!dist_run)
-      getcwd(cwd,255);
+      dirres=getcwd(cwd,255);
     else
       strcpy(cwd,"/mnt/shared/");
 
@@ -1767,7 +1768,7 @@ int main( int argc, char *argv[ ] )
     const char *texlogdir="/mnt/shared/log-tex";
     const char *simplogdir="/mnt/shared/log-simp";
     const char *pos_simp_log_dir="/mnt/shared/log-possimp";
-    const char *vriplogdir="/mnt/shared/log-vrip";
+    //const char *vriplogdir="/mnt/shared/log-vrip";
     
     float simp_mult=1.0;
     
@@ -1960,7 +1961,7 @@ int main( int argc, char *argv[ ] )
 	sprintf(cmdtmp,"$BASEPATH/tridecimator/tridecimator "
 		"mesh-pos/pos_raw.ply mesh-pos/pos_rec-lod1.ply 0 -e15.0");
 	postcmds.push_back(cmdtmp);
-	shellcm.write_generic(runpos_fn,poscmd_fn,&precmds,&postcmds);
+	shellcm.write_generic(runpos_fn,poscmd_fn,"Pos",&precmds,&postcmds);
 	if(run_pos){
 	  sysres=system(runpos_fn.c_str());
 	}
@@ -1992,7 +1993,7 @@ int main( int argc, char *argv[ ] )
 	string vripcmd="runvrip.py";
        
 
-	shellcm.write_generic(vripcmd,vripcmd_fn);
+	shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip");
 	if(!no_vrip)
 	  sysres=system("./runvrip.py");
        

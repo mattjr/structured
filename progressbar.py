@@ -282,6 +282,22 @@ class ProgressBar(object):
             self.finished = True
             self.fd.write(self._format_line() + '\n')
 
+    def inc(self):
+        "Updates the progress bar to a new value."
+        
+        self.currval += 1
+        if not self._need_update() or self.finished:
+            return
+        if not self.start_time:
+            self.start_time = time.time()
+        self.seconds_elapsed = time.time() - self.start_time
+        self.prev_percentage = self.percentage()
+        if self.currval != self.maxval:
+            self.fd.write(self._format_line() + '\r')
+        else:
+            self.finished = True
+            self.fd.write(self._format_line() + '\n')
+
     def start(self):
         """Start measuring time, and prints the bar at 0%.
 

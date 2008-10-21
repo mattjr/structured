@@ -127,7 +127,7 @@ static bool no_merge=false;
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[255];
 char cachedtexdir[255];
-static bool no_pos_clip=true;
+static bool pos_clip=false;
 static string deltaT_config_name;
 static string deltaT_dir;
 static bool use_vrip_recon=true;
@@ -155,6 +155,8 @@ static  int tex_size;
 #ifdef USE_DENSE_STEREO
 Stereo_Dense *sdense=NULL;
 #endif
+int pos_lod0_min_depth,pos_lod2_min_depth;
+int pos_lod0_depth,pos_lod2_depth;
 void runC(Stereo_Pose_Data &name);
 void print_uv_3dpts( list<Feature*>          &features,
 		     list<Stereo_Feature_Estimate> &feature_positions,
@@ -389,7 +391,13 @@ static bool parse_args( int argc, char *argv[ ] )
   recon_config_file->get_value("SIMP_RES_2",simp_res[1],0.1);
   recon_config_file->get_value("SIMP_RES_3",simp_res[2],0.5);
   recon_config_file->get_value("DIST_GENTEX_RANGE",dist_gentex_range,10);
+  recon_config_file->get_value("POS_LOD2_MIN_DEPTH",pos_lod2_min_depth,6);
+  recon_config_file->get_value("POS_LOD2_DEPTH",pos_lod2_depth,8);
 
+  recon_config_file->get_value("POS_LOD0_MIN_DEPTH",pos_lod0_min_depth,8);
+  recon_config_file->get_value("POS_LOD0_DEPTH",pos_lod0_depth,11);
+  recon_config_file->get_value("POS_MIN_CLIP",pos_clip,true);
+  
   
  
 
@@ -406,7 +414,8 @@ static bool parse_args( int argc, char *argv[ ] )
       
   argp.read( "--monoskip" ,mono_skip);
 
-  no_pos_clip=(!argp.read(  "--posclip"));
+  if(argp.read(  "--noposclip"))
+    pos_clip=false;
 
   if(argp.read("--genmb")){
     gen_mb_ply=true;
@@ -1931,18 +1940,21 @@ int main( int argc, char *argv[ ] )
 
 	fprintf(poscmd_fp,"%s/poisson/PoissonRecon --binary --depth %d "
 		"--in mesh-pos/pos_out.bnpts --solverDivide %d --samplesPerNode %f "
-		"--verbose  --out mesh-pos/pos_rec-lod2.ply\n",basepath.c_str(),
+		"--verbose  --out mesh-pos/pos_rec-lod2.ply ",basepath.c_str(),
 		8,6,1.0);
-	  fprintf(poscmd_fp,"%s/poisson/PoissonRecon --binary --depth %d "
-		  "--in mesh-pos/pos_out.bnpts --solverDivide %d --samplesPerNode %f "
-		  "--verbose  --out mesh-pos/pos_raw.ply\n",basepath.c_str(),
-		  11,6,4.0);
-	  if( !no_pos_clip){
-	    fprintf(poscmd_fp," --mintridepth %d" ,mintridepth-2);
-	    fprintf(poscmd_fp," --mintridepth %d" ,mintridepth);
-	  }
-
-	  fclose(poscmd_fp);
+	if( pos_clip)
+	  fprintf(poscmd_fp," --mintridepth %d" ,pos_lod2_min_depth);
+	fprintf(poscmd_fp,"\n");
+	
+	fprintf(poscmd_fp,"%s/poisson/PoissonRecon --binary --depth %d "
+		"--in mesh-pos/pos_out.bnpts --solverDivide %d --samplesPerNode %f "
+		"--verbose  --out mesh-pos/pos_raw.ply ",basepath.c_str(),
+		11,6,4.0);
+	if( pos_clip)
+	  fprintf(poscmd_fp," --mintridepth %d" ,pos_lod0_min_depth);
+	fprintf(poscmd_fp,"\n");
+	
+	fclose(poscmd_fp);
 
 	sprintf(cmdtmp,"$BASEPATH/tridecimator/tridecimator "
 		"mesh-pos/pos_raw.ply mesh-pos/pos_rec-lod0.ply 0 -e15.0");

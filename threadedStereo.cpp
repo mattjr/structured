@@ -2115,17 +2115,17 @@ int main( int argc, char *argv[ ] )
 		    "rm -f gentexcmds\n"
 		    "for i in `seq 0 $GENTEX_RANGE $(($NUMDICED - 1))`;\n"
 		    "do\n"
-		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s %s -f %s -t %d --dicedir %s/ --range-run $i $(($i + $GENTEX_RANGE)) %s\" >> gentexcmds\n"
+		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s %s -f %s  --dicedir %s/ --range-run $i $(($i + $GENTEX_RANGE)) %s\" >> gentexcmds\n"
 		    "done\n"
 		    "LOGDIR=%s\n"
 		    "cd $DICEDIR\n"
-		    ,dist_gentex_range,stereo_config_file_name.c_str(),recon_config_file_name.c_str(),cachedtexdir,num_threads,gentexdir[i].c_str(),argstr,texlogdir);
+		    ,dist_gentex_range,stereo_config_file_name.c_str(),recon_config_file_name.c_str(),cachedtexdir,gentexdir[i].c_str(),argstr,texlogdir);
 	    if(dist_run)
 	      fprintf(dicefp,
 		      "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit-hwcard gentexcmds -logdir $LOGDIR\n");
 		
 	    else
-	      fprintf(dicefp,"time %s/runtp.py gentexcmds\n",basepath.c_str());
+	      fprintf(dicefp,"time %s/runtp.py gentexcmds %d\n",basepath.c_str(),num_threads);
 	    
 	  }else{  
 	    fprintf(dicefp,"cd $RUNDIR\ntime %s/genTex %s %s -f %s ",basepath.c_str(),stereo_config_file_name.c_str(),recon_config_file_name.c_str(),cachedtexdir);

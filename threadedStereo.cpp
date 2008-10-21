@@ -2142,7 +2142,7 @@ int main( int argc, char *argv[ ] )
 	    continue;
 	  if(i==0 && use_vrip_recon)
 	    sysres=system(gentexnames[i].c_str());
-	  if(i==1 && use_poisson_recon)
+	  if(i==1 && run_pos)
 	    sysres=system(gentexnames[i].c_str());
 	   
 	}

@@ -19,7 +19,7 @@ def runcmd_threadpool(cm,i,total,dir):
     if s != 0:
         print 'problem running: ', cmd
         print 'output : ',o
-        errfn='%s/%d-cmd-%03d.txt'% (dir,os.getpid(),i)
+        errfn='./%s/%d-cmd-%03d.txt'% (dir,os.getpid(),i)
         print 'wrote log to %s ' % errfn
         f = open(errfn, 'w')
         f.write( 'problem running: %s' % cmd)

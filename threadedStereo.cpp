@@ -130,7 +130,6 @@ char cachedtexdir[255];
 static bool pos_clip=false;
 static string deltaT_config_name;
 static string deltaT_dir;
-static bool use_vrip_recon=true;
 static bool hardware_compress=true;
 const char *uname="mesh";
 const char *dicedir="mesh-diced";
@@ -450,7 +449,7 @@ static bool parse_args( int argc, char *argv[ ] )
 
   if(argp.read("--pos")){
     vrip_on=false;
-    use_vrip_recon = false;
+    no_vrip=true;
     run_pos=true;
   }
 
@@ -460,7 +459,6 @@ static bool parse_args( int argc, char *argv[ ] )
 
   if(vrip_on ){
     run_pos=false;
-    use_vrip_recon = true;
     no_simp = false;
   }
 
@@ -497,11 +495,11 @@ static bool parse_args( int argc, char *argv[ ] )
   argp.read("--stop",stop_time);
   output_3ds=  argp.read("--3ds");
   no_gen_tex=argp.read("--nogentex");
-  no_vrip=argp.read("--novrip");
+  if(argp.read("--novrip"))
+    no_vrip=true;
   no_merge=argp.read("--nomerge");
   if(no_merge){
     run_pos = false;
-    use_vrip_recon=true;
     no_simp=false;
   }
 
@@ -1995,7 +1993,7 @@ int main( int argc, char *argv[ ] )
        
 
 	shellcm.write_generic(vripcmd,vripcmd_fn);
-	if(!no_vrip && use_vrip_recon)
+	if(!no_vrip)
 	  sysres=system("./runvrip.py");
        
 	FILE *dicefp=fopen("./simp.sh","w+");
@@ -2074,7 +2072,7 @@ int main( int argc, char *argv[ ] )
 
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
-	if(!no_simp && use_vrip_recon)
+	if(!no_simp && !no_vrip)
 	  sysres=system("./simp.sh");
 	vector<string> gentexnames;
 	gentexnames.push_back("./gentex.sh");
@@ -2140,7 +2138,7 @@ int main( int argc, char *argv[ ] )
 	  fclose(dicefp);
 	  if(no_gen_tex)
 	    continue;
-	  if(i==0 && use_vrip_recon)
+	  if(i==0 && !no_vrip)
 	    sysres=system(gentexnames[i].c_str());
 	  if(i==1 && run_pos)
 	    sysres=system(gentexnames[i].c_str());

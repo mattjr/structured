@@ -1192,14 +1192,14 @@ public:
     void compress()
     {
      osg::notify(osg::INFO)<<"Compress TEXTURE Visitor Compressing"<<std::endl;
-     if(!mgc){
+     //  if(!mgc){
      MyGraphicsContext context;
         if (!context.valid())
         {
             osg::notify(osg::INFO)<<"Error: Unable to create graphis context - cannot run compression"<<std::endl;
             return;
         }
-     }
+	//   }
         osg::ref_ptr<osg::State> state = new osg::State;
 
         for(TextureSet::iterator itr=_textureSet.begin();

@@ -1907,7 +1907,7 @@ int main( int argc, char *argv[ ] )
       
       if(use_poisson_recon && !no_merge){
 	string runpos_fn = "./runpos.py";
-	string poscmd_fn= string(aggdir)+"/posgencmds";
+	string poscmd_fn= string("mesh-pos")+"/posgencmds";
 	FILE *poscmd_fp=fopen(poscmd_fn.c_str(),"w");
 	std::vector<string> precmds;
 	std::vector<string> postcmds;
@@ -1930,11 +1930,11 @@ int main( int argc, char *argv[ ] )
 	  mintridepth=8;
 
 	fprintf(poscmd_fp,"%s/poisson/PoissonRecon --binary --depth %d "
-		"--in pos_out.bnpts --solverDivide %d --samplesPerNode %f "
+		"--in mesh-pos/pos_out.bnpts --solverDivide %d --samplesPerNode %f "
 		"--verbose  --out mesh-pos/pos_rec-lod2.ply\n",basepath.c_str(),
 		8,6,1.0);
 	  fprintf(poscmd_fp,"%s/poisson/PoissonRecon --binary --depth %d "
-		  "--in pos_out.bnpts --solverDivide %d --samplesPerNode %f "
+		  "--in mesh-pos/pos_out.bnpts --solverDivide %d --samplesPerNode %f "
 		  "--verbose  --out mesh-pos/pos_raw.ply\n",basepath.c_str(),
 		  11,6,4.0);
 	  if( !no_pos_clip){
@@ -1945,10 +1945,10 @@ int main( int argc, char *argv[ ] )
 	  fclose(poscmd_fp);
 
 	sprintf(cmdtmp,"$BASEPATH/tridecimator/tridecimator "
-		"mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod0.ply 0 -e15.0");
+		"mesh-pos/pos_raw.ply mesh-pos/pos_rec-lod0.ply 0 -e15.0");
 	postcmds.push_back(cmdtmp);
 	sprintf(cmdtmp,"$BASEPATH/tridecimator/tridecimator "
-		"mesh-pos/pos_raw.ply ../mesh-pos/pos_rec-lod1.ply 0 -e15.0");
+		"mesh-pos/pos_raw.ply mesh-pos/pos_rec-lod1.ply 0 -e15.0");
 	postcmds.push_back(cmdtmp);
 	shellcm.write_generic(runpos_fn,poscmd_fn,&precmds,&postcmds);
 	if(run_pos){
@@ -2093,6 +2093,7 @@ int main( int argc, char *argv[ ] )
 	    sprintf(tp," --nonvis %d ",(int)cells.size());
 	    strcat(argstr,tp);
 	  }
+	  
 
 	  if(no_simp)
 	    fprintf(dicefp,"cat diced.txt | xargs plybbox > range.txt;cp diced.txt valid.txt\n");
@@ -2104,11 +2105,11 @@ int main( int argc, char *argv[ ] )
 		    "rm -f gentexcmds\n"
 		    "for i in `seq 0 $GENTEX_RANGE $(($NUMDICED - 1))`;\n"
 		    "do\n"
-		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s %s -f %s  --dicedir %s/ --range-run $i $(($i + $GENTEX_RANGE)) %s\" >> gentexcmds\n"
+		    "\techo \"setenv DISPLAY :0.0;cd $DICEDIR/..;$BASEPATH/genTex %s %s -f %s -t %d --dicedir %s/ --range-run $i $(($i + $GENTEX_RANGE)) %s\" >> gentexcmds\n"
 		    "done\n"
 		    "LOGDIR=%s\n"
 		    "cd $DICEDIR\n"
-		    ,dist_gentex_range,stereo_config_file_name.c_str(),recon_config_file_name.c_str(),cachedtexdir,gentexdir[i].c_str(),argstr,texlogdir);
+		    ,dist_gentex_range,stereo_config_file_name.c_str(),recon_config_file_name.c_str(),cachedtexdir,num_threads,gentexdir[i].c_str(),argstr,texlogdir);
 	    if(dist_run)
 	      fprintf(dicefp,
 		      "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit-hwcard gentexcmds -logdir $LOGDIR\n");
@@ -2129,7 +2130,7 @@ int main( int argc, char *argv[ ] )
 	    continue;
 	  if(i==0 && use_vrip_recon)
 	    sysres=system(gentexnames[i].c_str());
-	  if(i==1 && !use_poisson_recon)
+	  if(i==1 && use_poisson_recon)
 	    sysres=system(gentexnames[i].c_str());
 	   
 	}

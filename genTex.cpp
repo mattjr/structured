@@ -581,6 +581,7 @@ std::vector<vector<string >   > outNames;
    
    OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
 				       num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex,do_atlas);    
+
     osg::Node * lod0Node[2];
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;

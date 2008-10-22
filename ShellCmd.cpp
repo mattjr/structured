@@ -13,7 +13,7 @@ void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const
       fprintf(fp,"os.system('%s')\n",(*precmds)[i].c_str());
   }
   
-  fprintf(fp,"os.system('time ' + setupts.basepath +'/runtp.py %s %d %s')\n",
+  fprintf(fp,"os.system(setupts.basepath +'/runtp.py %s %d %s')\n",
 	  cmdfile.c_str(),num_threads,cmdname.c_str());
   
   if(postcmds){
@@ -213,7 +213,7 @@ void ShellCmd::pos_simp_cmd2(bool run){
     fprintf(dicefp,"cd $DICEDIR\n"
 	    "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n");
   } else {
-    fprintf(dicefp,"time %s/runtp.py simpcmds\n",basepath);
+    fprintf(dicefp,"%s/runtp.py simpcmds\n",basepath);
   }
 
   fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");

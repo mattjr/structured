@@ -67,7 +67,7 @@ else:
     title = 'Cmds: '
 
 
-widgets = [title, Percentage(), ' ',Curr(),'/',Max(),' ', Bar(),
+widgets = [title, ' ',Percentage(), ' ',Curr(),'/',Max(),' ', Bar(),
                    ' ', ETA()]
 
 dir,end = os.path.split(fname)
@@ -96,7 +96,7 @@ pbar.start()
 main.wait()
 
 pbar.finish()
-print 'done'
+
 print ''
 
 #@threaded

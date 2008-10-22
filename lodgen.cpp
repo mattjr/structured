@@ -126,7 +126,7 @@ int main( int argc, char *argv[ ] )
     sprintf(tmp,"%s/valid.txt",dicedir);
     string dicefile(tmp);
     std::vector<string> meshNames;
-    cout << tmp <<endl;
+    //    cout << tmp <<endl;
     
     struct stat BUF;
     bool have_dice=(stat(dicefile.c_str(),&BUF)!=-1);
@@ -142,7 +142,7 @@ int main( int argc, char *argv[ ] )
       while(eof != EOF){
 	eof=fscanf(dicefp,"%s\n",tmp);
 	if(eof != EOF){
-	  printf("Diced files %s\n",tmp);
+	  //	  printf("Diced files %s\n",tmp);
 	  meshNames.push_back("mesh-diced/"+string(tmp));
 	 
 	}
@@ -153,7 +153,7 @@ int main( int argc, char *argv[ ] )
 
   osg::Node * lod0Node[2];
 
-  printf("Loading %d bbox files\n",max_mesh_count);
+  // printf("Loading %d bbox files\n",max_mesh_count);
   for(int i=0; i <  (int)max_mesh_count; i++){
   
   

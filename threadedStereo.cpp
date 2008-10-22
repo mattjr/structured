@@ -1549,7 +1549,11 @@ int main( int argc, char *argv[ ] )
   }
  
   //
-  printf("Threaded Stereo: %d threads initialized.\n",num_threads);
+  if(num_threads > 1)
+    printf("Threaded Stereo: %d threads initialized\n",num_threads);
+  else
+    printf("Threaded Stereo: single thread initialized\n");
+
   printf("Processing Meshes...\n");
 
   Matrix *image_coord_covar;

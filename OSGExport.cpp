@@ -301,19 +301,20 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
     Lut_Vec color;
     float val;// r,g,b,val;
     Colors::eColorMap map=Colors::eRainbowMap;
-    val = ( GTS_VERTEX(v1)->p.z -zrange[0] )/range;  
+    val = clamp ( ( GTS_VERTEX(v1)->p.z -zrange[0] )/range , 0.0f, 1.0f);
+
     color=GlobalColors()->Get(map, val); 
     (*gc._colors++).set(color[0],color[1],color[2],1.0);
     //  jet_color_map(val,r,g,b);
     //(*gc._colors++).set(r,b,g,1.0);
    
-    val = ( GTS_VERTEX(v2)->p.z -zrange[0] )/range;    
+    val = clamp (  ( GTS_VERTEX(v2)->p.z -zrange[0] )/range, 0.0f, 1.0f);;    
     color=GlobalColors()->Get(map, val); 
     (*gc._colors++).set(color[0],color[1],color[2],1.0);
     //jet_color_map(val,r,g,b);
     // (*gc._colors++).set(r,b,g,1.0);
    
-    val = ( GTS_VERTEX(v3)->p.z -zrange[0] )/range;    
+    val = clamp ( ( GTS_VERTEX(v3)->p.z -zrange[0] )/range, 0.0f, 1.0f);   
     color=GlobalColors()->Get(map, val); 
     (*gc._colors++).set(color[0],color[1],color[2],1.0);
     //jet_color_map(val,r,g,b);
@@ -489,71 +490,61 @@ osg::Image *OSGExporter::getCachedImage(string name,int size){
 
 
   bool cachedLoaded=false;
-  osg::Image *filecached;
+  IplImage *filecached=NULL;
 
-  if(compressed_img_cache.find(basename) == compressed_img_cache.end() || !compressed_img_cache[basename] ){
+  if(tex_image_cache.find(basename) == tex_image_cache.end() || !tex_image_cache[basename] ){
     
     if(FileExists(name)){
-      filecached=osgDB::readImageFile(name);
+      filecached=cvLoadImage(name.c_str(),1);
+      cout << name <<endl;
       if(filecached){
 	cachedLoaded=true;
-	filecached->ref();
 
       }
     }
     
     if(!cachedLoaded){
-      img = cvLoadImage(name.c_str(),-1);
+      img = cvLoadImage((string("img/")+basename).c_str(),1);
       if(!img){
 	printf("In Cached Compressed Img Load failed %s.\n",name.c_str());
 	return NULL;
       }
       else{
 	osg::ref_ptr<osg::Image> comp_img=cacheImage(img,name,size).get();
-	filecached=comp_img.get();
-	comp_img->ref();
+	filecached=img;
       }
     }
-    filecached->setFileName(basename);
-    compressed_img_cache[basename]=filecached;
+ 
+    tex_image_cache[basename]=filecached;
 
   }else{  
-    filecached=compressed_img_cache[basename];
+    filecached=tex_image_cache[basename];
   }
 
-  if(filecached && filecached->s() == size && filecached->t() == size){
+ 
 
-    return filecached;
-  
-  }
+  IplImage *tex_img=NULL;
+  IplImage *small_img=NULL;
+ if(filecached->width == size && filecached->height == size){
+   tex_img=filecached;
+   osg::Image *retImage =Convert_OpenCV_TO_OSG_IMAGE(tex_img,true,false);
+   return retImage;
+ }else{
+   small_img  =cvCreateImage(cvSize(size,size),
+			   IPL_DEPTH_8U,3);
+   
+   
+   
+   if(filecached && small_img)
+     cvResize(filecached,small_img);
+   else
+     printf("Invalid Images\n");
+ 
+   osg::Image *retImage =Convert_OpenCV_TO_OSG_IMAGE(small_img,false,false);
+   cvReleaseImageHeader(&small_img);
 
-  IplImage *tex_img=cvCreateImage(cvSize(size,size),
-				  IPL_DEPTH_8U,3);
-  IplImage *or_img =cvCreateImageHeader(cvSize( filecached->s(), filecached->t()),
-				  IPL_DEPTH_8U,3);
-  or_img->imageData=(char *)filecached->data();
-  
-  if(or_img && tex_img)
-    cvResize(or_img,tex_img);
-  else
-    printf("Invalid Images\n");
-
-  // osg::Image *retImage=new osg::Image;
-  //downsampled_img_ptrs.push_back(retImage);
-  // retImage->ref();
-  /*  int datasize=size*size*3;
-  unsigned char *newdata = new unsigned char[datasize];
-  //  resize_data_ptrs.push_back(newdata);
-  memcpy(newdata,tex_img->imageData,datasize);
-  retImage->setImage(size,size,filecached->r(),filecached->getInternalTextureFormat() ,filecached->getPixelFormat(),filecached->getDataType(),newdata,osg::Image::USE_NEW_DELETE);*/
-  osg::Image *retImage =Convert_OpenCV_TO_OSG_IMAGE(tex_img,false,false);
-  cvReleaseImageHeader(&tex_img);
-  cvReleaseImageHeader(&or_img);
-
-  retImage->setFileName(basename);
-  
-  
-  return retImage;
+   return retImage;
+ }
 }
 #define TEXUNIT_ARRAY       0
 #define TEXUNIT_HIST        2

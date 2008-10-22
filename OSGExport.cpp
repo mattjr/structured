@@ -496,7 +496,7 @@ osg::Image *OSGExporter::getCachedImage(string name,int size){
     
     if(FileExists(name)){
       filecached=cvLoadImage(name.c_str(),1);
-      cout << name <<endl;
+
       if(filecached){
 	cachedLoaded=true;
 

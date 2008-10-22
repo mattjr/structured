@@ -135,8 +135,10 @@ const char *uname="mesh";
 const char *dicedir="mesh-diced";
 const char *aggdir="mesh-agg";
 static string recon_config_file_name;
+static string mbdir="mb";
 static string deltaT_pose;
 static string dense_method="";
+static bool use_new_mb;
 bool dist_run=false;
 static bool mono_cam=false;
 static       int sysres=0;
@@ -147,6 +149,7 @@ int normalised_mean;
 int normalised_var;
 static Stereo_Calib *calib;
  static Config_File *config_file; 
+static   GTimer  * overall_timer;
  static Config_File *recon_config_file; 
 
   static Config_File *dense_config_file; 
@@ -306,12 +309,13 @@ static bool parse_args( int argc, char *argv[ ] )
   deltaT_config_name=base_dir+string("/")+"localiser.cfg";
   deltaT_dir=base_dir+string("/")+"DT/";
   deltaT_pose=base_dir+string("/")+"deltat_pose_est.data";
+  mbdir=base_dir+"/"+mbdir+"/";
   stereo_config_file_name= base_dir+string("/")+stereo_config_file_name;
   recon_config_file_name= base_dir+string("/")+recon_config_file_name;
   contents_file_name= base_dir+string("/")+contents_file_name;
   dir_name= base_dir+string("/")+dir_name;
  
-  // cout <<dir_name<<endl;
+  cout <<mbdir<<endl;
   // Create the stereo feature finder
   //
   //
@@ -415,6 +419,10 @@ static bool parse_args( int argc, char *argv[ ] )
 
   if(argp.read(  "--noposclip"))
     pos_clip=false;
+
+ if(argp.read("--usenewmb"))
+   use_new_mb=true;
+ 
 
   if(argp.read("--genmb")){
     gen_mb_ply=true;
@@ -1434,6 +1442,8 @@ bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks
 
 int main( int argc, char *argv[ ] )
 {
+  overall_timer=g_timer_new ();
+
   FILE *rerunfp=fopen("rerun.sh","w");
   fprintf(rerunfp,"#!/bin/bash\n");
   for(int i=0; i < argc; i++)
@@ -1841,9 +1851,8 @@ int main( int argc, char *argv[ ] )
     
 	 }*/
       fprintf(vripcmds_fp,"cd ..\n");
-
-
-
+    
+      
       for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=cells[i].poses[j];
 	//Vrip List
@@ -1917,7 +1926,16 @@ int main( int argc, char *argv[ ] )
 	sysres=system("./genmb.sh");
       }
   
-      
+      if(use_new_mb){
+	ifstream mblist((mbdir+"mblist.txt").c_str());
+	char tmp[255];
+	while(!mblist.eof()){
+	  mblist.getline(tmp,255); 
+	  mb_ply_filenames.push_back(mbdir+"/"+string(tmp));
+	}
+	mblist.close();
+      }
+ 
       
       if(use_poisson_recon && !no_merge){
 	string runpos_fn = "./runpos.py";
@@ -1928,13 +1946,15 @@ int main( int argc, char *argv[ ] )
 	char cmdtmp[255];
 	precmds.push_back( "cat mesh-agg/pos_pts.bnpts > mesh-pos/pos_out.bnpts");
 
-	if(have_mb_ply){
-	  sprintf(cmdtmp,"%s/poisson/dumpnormpts %s mesh-pos/mb.bnpts -flip",
-		  basepath.c_str(),
-		  osgDB::getSimpleFileName( mb_ply_filenames[0]).c_str());
-	  precmds.push_back(cmdtmp);
-	  sprintf(cmdtmp,"cat mesh-pos/mb.bnpts >> mesh-pos/pos_out.bnpts\n");
-	  precmds.push_back(cmdtmp);
+	if(mb_ply_filenames.size()){
+	  for(int i=0; i <(int) mb_ply_filenames.size(); i++){
+	    sprintf(cmdtmp,"%s/poisson/dumpnormpts %s mesh-pos/mb-%03d.bnpts -flip >> mesh-pos/log-dumpmbpts.txt 2>&1" ,
+		    basepath.c_str(),
+		     mb_ply_filenames[i].c_str(),i);
+	    precmds.push_back(cmdtmp);
+	    sprintf(cmdtmp,"cat mesh-pos/mb-%03d.bnpts >> mesh-pos/pos_out.bnpts",i);
+	    precmds.push_back(cmdtmp);
+	  }
 	}	  
 
 	int mintridepth;
@@ -1962,10 +1982,10 @@ int main( int argc, char *argv[ ] )
 	fclose(poscmd_fp);
 
 	sprintf(cmdtmp,"$BASEPATH/tridecimator/tridecimator "
-		"mesh-pos/pos_raw.ply mesh-pos/pos_rec-lod0.ply 0 -e15.0");
+		"mesh-pos/pos_raw.ply mesh-pos/pos_rec-lod0.ply 0 -e15.0 > mesh-pos/log-pos_rec-lod0.ply");
 	postcmds.push_back(cmdtmp);
 	sprintf(cmdtmp,"$BASEPATH/tridecimator/tridecimator "
-		"mesh-pos/pos_raw.ply mesh-pos/pos_rec-lod1.ply 0 -e15.0");
+		"mesh-pos/pos_raw.ply mesh-pos/pos_rec-lod1.ply 0 -e15.0> mesh-pos/log-pos_rec-lod1.ply");
 	postcmds.push_back(cmdtmp);
 	shellcm.write_generic(runpos_fn,poscmd_fn,"Pos",&precmds,&postcmds);
 	if(run_pos){
@@ -2177,7 +2197,14 @@ int main( int argc, char *argv[ ] )
     }
   }
    
-  
+  g_timer_stop(overall_timer);
+  gdouble total_elapsed = g_timer_elapsed (overall_timer, NULL);
+  cout << total_elapsed<<endl;
+  gdouble hours, mins, secs;
+  hours = floor (total_elapsed/3600.);
+  mins = floor ((total_elapsed - 3600.*hours)/60.);
+  secs = floor (total_elapsed - 3600.*hours - 60.*mins);
+  printf("Total Time for Completion: %02.0f:%02.0f:%02.0f\n",hours,mins,secs);
   // 
   // Clean-up
   //

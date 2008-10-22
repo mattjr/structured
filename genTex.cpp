@@ -578,7 +578,8 @@ std::vector<vector<string >   > outNames;
    
    string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
    basepath= osgDB::getRealPath (basepath) +"/";
-   
+   if(!mgc)
+     mgc = new MyGraphicsContext();
    OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
 				       num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex,do_atlas);    
 

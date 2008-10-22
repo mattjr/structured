@@ -1549,7 +1549,9 @@ int main( int argc, char *argv[ ] )
   }
  
   //
- 
+  printf("Threaded Stereo: %d threads initialized.\n",num_threads);
+  printf("Processing Meshes...\n");
+
   Matrix *image_coord_covar;
   if(have_cov_file){
     image_coord_covar = new Matrix(4,4);
@@ -1661,7 +1663,7 @@ int main( int argc, char *argv[ ] )
      
      
     double secs=time/1000.0;
-    printf("single thread: %.2f sec\n", secs);
+    printf("Single Thread Time: %.2f sec\n", secs);
      
     delete ts;
   }
@@ -1681,7 +1683,7 @@ int main( int argc, char *argv[ ] )
     boost::xtime_get(&xt2, boost::TIME_UTC);
     time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000; 
     double secs=time/1000.0;
-    printf("max %d consumer pool: %.2f sec\n", num_threads, secs);
+    printf("Threads %d Time: %.2f sec\n", num_threads, secs);
     for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++)
       if(!itr->valid)
 	tasks.erase(itr);

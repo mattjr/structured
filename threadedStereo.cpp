@@ -316,7 +316,6 @@ static bool parse_args( int argc, char *argv[ ] )
   contents_file_name= base_dir+string("/")+contents_file_name;
   dir_name= base_dir+string("/")+dir_name;
  
-  cout <<mbdir<<endl;
   // Create the stereo feature finder
   //
   //

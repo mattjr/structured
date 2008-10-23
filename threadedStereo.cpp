@@ -1768,7 +1768,8 @@ int main( int argc, char *argv[ ] )
       char tmp[255];
       while(!mblist.eof()){
 	mblist.getline(tmp,255); 
-	mb_ply_filenames.push_back(mbdir+"/"+string(tmp));
+	if(strlen(tmp)> 1)
+	  mb_ply_filenames.push_back(mbdir+"/"+string(tmp));
       }
       mblist.close();
     }

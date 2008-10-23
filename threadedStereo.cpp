@@ -1943,7 +1943,7 @@ int main( int argc, char *argv[ ] )
 	FILE *poscmd_fp=fopen(poscmd_fn.c_str(),"w");
 	std::vector<string> precmds;
 	std::vector<string> postcmds;
-	char cmdtmp[255];
+	char cmdtmp[1024];
 	precmds.push_back( "cat mesh-agg/pos_pts.bnpts > mesh-pos/pos_out.bnpts");
 
 	if(mb_ply_filenames.size()){

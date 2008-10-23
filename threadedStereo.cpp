@@ -1762,6 +1762,20 @@ int main( int argc, char *argv[ ] )
       fprintf(stderr,"No valid meshes bailing\n");
       exit(-1);
     }
+
+    if(use_new_mb){
+      ifstream mblist((mbdir+"mblist.txt").c_str());
+      char tmp[255];
+      while(!mblist.eof()){
+	mblist.getline(tmp,255); 
+	mb_ply_filenames.push_back(mbdir+"/"+string(tmp));
+      }
+      mblist.close();
+    }
+    
+    if(mb_ply_filenames.size())
+      have_mb_ply=true;
+
     FILE *vrip_seg_fp;
     char vrip_seg_fname[255];
     FILE *bboxfp;
@@ -1824,13 +1838,16 @@ int main( int argc, char *argv[ ] )
       fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
 
       if(have_mb_ply){
-	fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/mb.ply > ../mesh-agg/clipped-mb-%08d.ply;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/vis-mb-%08d.ply;plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d.ply > ../mesh-agg/sub-mb-%08d.ply;", cells[i].bounds.min_x,
+	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
+	  fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/clipped-mb-%08d-%08d.ply;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d-%08d.ply > ../mesh-agg/vis-mb-%08d-%08d.ply;plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d-%08d.ply > ../mesh-agg/sub-mb-%08d-%08d.ply;", cells[i].bounds.min_x,
 		cells[i].bounds.min_y,
 		FLT_MIN,
 		cells[i].bounds.max_x,
-		cells[i].bounds.max_y,
-		FLT_MAX,
-		eps,i,vrip_seg_fname,2.0,i,i,1.0,i,i);
+		  cells[i].bounds.max_y,
+		  FLT_MAX,
+		  eps,
+		  mb_ply_filenames[k].c_str(),k,i,vrip_seg_fname,2.0,k,i,k,i,1.0,k,i,k,i);
+	}
       }
       if(!no_merge)
 	fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,vrip_ramp,i,i,redirstr);
@@ -1866,7 +1883,8 @@ int main( int argc, char *argv[ ] )
 	fprintf(bboxfp,"\n");
       }
       if(have_mb_ply)
-	fprintf(vrip_seg_fp,"vis-mb-%08d.ply  0.1 0\n",i);
+	for(int k=0; k < (int)mb_ply_filenames.size(); k++)
+	  fprintf(vrip_seg_fp,"vis-mb-%08d-%08d.ply  0.1 0\n",k,i);
 
       fclose(vrip_seg_fp);
       fclose(bboxfp);
@@ -1926,16 +1944,7 @@ int main( int argc, char *argv[ ] )
 	sysres=system("./genmb.sh");
       }
   
-      if(use_new_mb){
-	ifstream mblist((mbdir+"mblist.txt").c_str());
-	char tmp[255];
-	while(!mblist.eof()){
-	  mblist.getline(tmp,255); 
-	  mb_ply_filenames.push_back(mbdir+"/"+string(tmp));
-	}
-	mblist.close();
-      }
- 
+    
       
       if(use_poisson_recon && !no_merge){
 	string runpos_fn = "./runpos.py";
@@ -1946,7 +1955,7 @@ int main( int argc, char *argv[ ] )
 	char cmdtmp[1024];
 	precmds.push_back( "cat mesh-agg/pos_pts.bnpts > mesh-pos/pos_out.bnpts");
 
-	if(mb_ply_filenames.size()){
+	if(have_mb_ply){
 	  for(int i=0; i <(int) mb_ply_filenames.size(); i++){
 	    sprintf(cmdtmp,"%s/poisson/dumpnormpts %s mesh-pos/mb-%03d.bnpts -flip >> mesh-pos/log-dumpmbpts.txt 2>&1" ,
 		    basepath.c_str(),

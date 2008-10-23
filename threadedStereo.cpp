@@ -149,8 +149,9 @@ int normalised_mean;
 int normalised_var;
 static Stereo_Calib *calib;
  static Config_File *config_file; 
-static   GTimer  * overall_timer;
- static Config_File *recon_config_file; 
+//static   GTimer  * overall_timer;
+static time_t start_timer, end_timer; 
+static Config_File *recon_config_file; 
 
   static Config_File *dense_config_file; 
 static  int tex_size;
@@ -1442,7 +1443,7 @@ bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks
 
 int main( int argc, char *argv[ ] )
 {
-  overall_timer=g_timer_new ();
+  start_timer = time(NULL); 
 
   FILE *rerunfp=fopen("rerun.sh","w");
   fprintf(rerunfp,"#!/bin/bash\n");
@@ -1662,7 +1663,7 @@ int main( int argc, char *argv[ ] )
   totalTodoCount=stereo_pair_count;
  
   boost::xtime xt, xt2;
-  long time;
+  long time_num;
   // consumer pool model...
   if(num_threads == 1){
      
@@ -1673,10 +1674,10 @@ int main( int argc, char *argv[ ] )
 	tasks.erase(tasks.begin()+i);
     }    
     boost::xtime_get(&xt2, boost::TIME_UTC);
-    time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
+    time_num = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
      
      
-    double secs=time/1000.0;
+    double secs=time_num/1000.0;
     printf("Single Thread Time: %.2f sec\n", secs);
      
     delete ts;
@@ -1695,8 +1696,8 @@ int main( int argc, char *argv[ ] )
     thrd.join();
      
     boost::xtime_get(&xt2, boost::TIME_UTC);
-    time = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000; 
-    double secs=time/1000.0;
+    time_num = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000; 
+    double secs=time_num/1000.0;
     printf("Threads %d Time: %.2f sec\n", num_threads, secs);
     for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++)
       if(!itr->valid)
@@ -2197,9 +2198,9 @@ int main( int argc, char *argv[ ] )
     }
   }
    
-  g_timer_stop(overall_timer);
-  gdouble total_elapsed = g_timer_elapsed (overall_timer, NULL);
-  cout << total_elapsed<<endl;
+  end_timer = time(NULL); 
+  gdouble total_elapsed =  end_timer - start_timer; 
+ 
   gdouble hours, mins, secs;
   hours = floor (total_elapsed/3600.);
   mins = floor ((total_elapsed - 3600.*hours)/60.);

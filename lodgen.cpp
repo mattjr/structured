@@ -48,7 +48,7 @@ static int lodNum=3;
 char dicedir[255];
 char mdir[255];
 char subdir[255];
-
+ char prefix[255];
 //
 // Parse command line arguments into global variables
 //
@@ -57,7 +57,7 @@ static bool parse_args( int argc, char *argv[ ] )
 
   strcpy(mdir,"mesh");
   strcpy(subdir,"lod");
-   
+  strcpy(prefix,"blended");
   int i=1;
   while( i < argc )
     {
@@ -77,6 +77,13 @@ static bool parse_args( int argc, char *argv[ ] )
         {
           if( i == argc-1 ) return false;
 	  strcpy(mdir, argv[i+1]);
+          i+=2;
+        }else
+
+      if( strcmp( argv[i], "--prefix" ) == 0 )
+        {
+          if( i == argc-1 ) return false;
+	  strcpy(prefix, argv[i+1]);
           i+=2;
         }
     
@@ -111,6 +118,8 @@ static void print_usage( void )
 
 int main( int argc, char *argv[ ] )
 {
+ 
+  
   //
   // Parse command line arguments
   //
@@ -119,6 +128,7 @@ int main( int argc, char *argv[ ] )
       print_usage( );
       exit( 1 );
     }
+
   std::vector<vector<string > > outNames;
   std::vector<osg::ref_ptr<osg::Node>  > outNodes;
   if(!have_max_mesh_count){
@@ -153,19 +163,19 @@ int main( int argc, char *argv[ ] )
 
   osg::Node * lod0Node[2];
 
-  // printf("Loading %d bbox files\n",max_mesh_count);
+  //  printf("Loading %d bbox files\n",max_mesh_count);
   for(int i=0; i <  (int)max_mesh_count; i++){
   
   
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;   
     char out_name[255];
-    sprintf(out_name,"%s/%s/blended-%02d-lod2-t.ive",mdir,subdir,i);
+    sprintf(out_name,"%s/%s/%s-%02d-lod2-t.ive",mdir,subdir,prefix,i);
     lod0Node[0]=   osgDB::readNodeFile(string(out_name));
-    sprintf(out_name,"%s/%s/blended-%02d-lod2-u.ive",mdir,subdir,i);
+    sprintf(out_name,"%s/%s/%s-%02d-lod2-u.ive",mdir,subdir,prefix,i);
     lod0Node[1]=osgDB::readNodeFile(string(out_name));
   
-    sprintf(out_name,"%s/%s/blended-%02d-lod2-t.ive",mdir,subdir,i);
+    sprintf(out_name,"%s/%s/%s-%02d-lod2-t.ive",mdir,subdir,prefix,i);
  
   
   
@@ -180,7 +190,7 @@ int main( int argc, char *argv[ ] )
 	char out_name[255];
 	vector<string> setnames;
 	for(int  j=0; j < lodNum; j++){
-	  sprintf(out_name,"%s/%s/blended-%02d-lod%d%s",mdir,subdir,i,j,text[k]);
+	  sprintf(out_name,"%s/%s/%s-%02d-lod%d%s",mdir,subdir,prefix,i,j,text[k]);
 
 	  if(FileExists(out_name)){
 	    setnames.push_back(string(subdir)+"/"+osgDB::getSimpleFileName(out_name));

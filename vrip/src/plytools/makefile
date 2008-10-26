@@ -29,7 +29,7 @@ CXXSRCS = \
 	plystrip.cc      plyconfcrop.cc  plysubtract.cc \
 	plyshared.cc     	 plydice.cc \
 	plyplanecrop.cc xyz2ply.cc	 plysubdiv.cc\
-	plyclipbboxes.cc plysubtractlist.cc
+	plyclipbboxes.cc plysubtractlist.cc plyadd.cc
 
 PERLSRCS = \
 	plys2set	plysets2conf	plysetlevel \
@@ -44,7 +44,7 @@ TARGETS = \
 	plyarea      plycrunch	    plymirror \
 	plydice	     plyconfcrop    plysubtract \
 	plyplanecrop plysubdiv    plystrip       xyz2ply \
-	plyconfthresh plydicegroup plyclipbboxes plysubtractlist
+	plyconfthresh plydicegroup plyclipbboxes plysubtractlist plyadd
 
 SGICXXSRCS = iv2ply.cc ply2iv.cc
 
@@ -92,6 +92,9 @@ plyshared: plyshared.o
 
 plysubtract: plysubtract.o
 	$(CXX) -o $@ plysubtract.o $(LIBPATHS) $(LIBS)
+
+plyadd: plyadd.o
+	$(CXX) -o $@ plyadd.o $(LIBPATHS) $(LIBS)
 
 
 plysubtractlist: plysubtractlist.o

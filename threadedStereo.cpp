@@ -142,6 +142,8 @@ static bool use_new_mb;
 bool dist_run=false;
 static bool mono_cam=false;
 static       int sysres=0;
+static double vrip_mb_clip_margin;
+static double vrip_mb_clip_margin_extra;
 static bool do_hw_blend=false;
 // Image normalisation
 #define USE_IMAGE_NORMALISATION true
@@ -400,6 +402,8 @@ static bool parse_args( int argc, char *argv[ ] )
   recon_config_file->get_value("POS_LOD0_MIN_DEPTH",pos_lod0_min_depth,8);
   recon_config_file->get_value("POS_LOD0_DEPTH",pos_lod0_depth,11);
   recon_config_file->get_value("POS_MIN_CLIP",pos_clip,true);
+  recon_config_file->get_value("VRIP_MB_CLIP_MARGIN",vrip_mb_clip_margin,0.1);
+  recon_config_file->get_value("VRIP_MB_CLIP_MARGIN_EXTRA",vrip_mb_clip_margin_extra,0.1);
   
   
  
@@ -1810,7 +1814,7 @@ int main( int argc, char *argv[ ] )
     
     ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,dist_run,cwd,aggdir,dicedir,have_mb_ply,num_threads);
     shellcm.write_setup();
-	
+    string mbfile=mbdir+"/"+"mb-total.ply";
     std::vector<Cell_Data> cells;
     if(even_split)
       cells=calc_cells(tasks,EVEN_SPLIT,cell_scale);
@@ -1839,16 +1843,21 @@ int main( int argc, char *argv[ ] )
       fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
 
       if(have_mb_ply){
-	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
-	  fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/clipped-mb-%08d-%08d.ply;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d-%08d.ply > ../mesh-agg/vis-mb-%08d-%08d.ply;plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d-%08d.ply > ../mesh-agg/sub-mb-%08d-%08d.ply;", cells[i].bounds.min_x,
+       	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
+fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply;tridecimator ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply ../mesh-agg/clipped-mb-%08d-%08d.ply 0 -e%f;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d-%08d.ply > ../mesh-agg/vis-mb-%08d-%08d.ply;", cells[i].bounds.min_x,
 		cells[i].bounds.min_y,
 		FLT_MIN,
 		cells[i].bounds.max_x,
 		  cells[i].bounds.max_y,
 		  FLT_MAX,
 		  eps,
-		  mb_ply_filenames[k].c_str(),k,i,vrip_seg_fname,2.0,k,i,k,i,1.0,k,i,k,i);
+	mb_ply_filenames[k].c_str(),k,i,k,i,k,i,edgethresh,vrip_seg_fname,vrip_mb_clip_margin+vrip_mb_clip_margin_extra,k,i,k,i);
+
+
+
+ fprintf(vripcmds_fp,	  " plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d-%08d.ply > ../mesh-agg/sub-mb-%08d-%08d.ply;",vrip_mb_clip_margin,k,i,k,i);
 	}
+	
       }
       if(!no_merge)
 	fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,vrip_ramp,i,i,redirstr);
@@ -1863,11 +1872,17 @@ int main( int argc, char *argv[ ] )
 	      cells[i].bounds.max_y,
 	      FLT_MAX,
 	      eps,i,i);
-    
-      /* if(have_mb_ply){
-	 fprintf(vripcmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply; plymerge ../mesh-diced/nomb-diced-%08d.ply ../mesh-agg/inv-mb-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",i,i,i,i,i);
-    
-	 }*/
+
+     if(have_mb_ply){
+       fprintf(vripcmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply;",i,i);
+	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
+	  fprintf(vripcmds_fp,"plysubtract  ../mesh-agg/clipped-mb-%08d-%08d.ply ../mesh-agg/sub-mb-%08d-%08d.ply >  ../mesh-agg/inv-mb-%08d-%08d.ply ;",k,i,k,i,k,i);
+	}
+	fprintf(vripcmds_fp,"plymerge ../mesh-diced/nomb-diced-%08d.ply ",i );
+	for(int k=0; k < (int)mb_ply_filenames.size(); k++)
+	  fprintf(vripcmds_fp," ../mesh-agg/inv-mb-%08d-%08d.ply ",k,i);
+	fprintf(vripcmds_fp,"> ../mesh-diced/clipped-diced-%08d.ply;",i);
+     }
       fprintf(vripcmds_fp,"cd ..\n");
     
       
@@ -2078,27 +2093,8 @@ int main( int argc, char *argv[ ] )
 	} else {
 	  fprintf(dicefp,"%s/runtp.py simpcmds %d %s\n",basepath.c_str(),num_threads,"Simp");
 	}
-	if(have_mb_ply){
-	  float mbres[3]={0,0,0};
-	  fprintf(dicefp,"echo inv-mb.ply >> valid.txt\n");
-	  for(int k=0; k < 3; k++)
-	    fprintf(dicefp,"%s/tridecimator/tridecimator inv-mb.ply inv-mb-lod%d.ply %fr\n",basepath.c_str(),k,mbres[k]);
-	}
-	fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");
-	/*	fprintf(conf_ply_file,"for f in `echo {1..%d}`\n"
-		"do\n"
-		"i=`printf \"%%08d\\n\" \"$f\"`\n"
-		"ilast=`printf \"%%08d\" \"$(($f - 1 ))\"`\n"
-		"if [ -e clipped-diced-$i.ply ]; then\n"
-		"\tplysubtract -t 0.4 clipped-diced-$ilast-lod0.ply clipped-diced-$i-lod0.ply > cd-$ilast-lod0.ply;\n"
-		"mv   clipped-diced-$ilast-lod0.ply unsub-clipped-diced-$ilast-lod0.ply\n"
-		"cp  cd-$ilast-lod0.ply  clipped-diced-$ilast-lod0.ply\n"
-		"else\n"
-		"\tcp clipped-diced-$ilast-lod0.ply  cd-$ilast-lod0.ply\n" 
-		"fi\n"
-		"done\n",cells.size());
-	*/
 
+	fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
 	if(!no_simp && !no_vrip)

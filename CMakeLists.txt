@@ -12,11 +12,22 @@
 #  * libpolyp
 #  * gts
 PROJECT(libpolyp)
+
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+
+# This can removed if the required cmake version is increased to 2.6
+IF(COMMAND CMAKE_POLICY)
+  CMAKE_POLICY(SET CMP0003 NEW)
+ENDIF(COMMAND CMAKE_POLICY)
+
+
+#-----------------------#
+# Includes              #
+#-----------------------#
 
 INCLUDE( ${CMAKE_ROOT}/Modules/CheckIncludeFileCXX.cmake )
 INCLUDE( ${CMAKE_ROOT}/Modules/CheckLibraryExists.cmake )
-INCLUDE( ${CMAKE_ROOT}/Modules/UsePkgConfig.cmake )
+INCLUDE( ${CMAKE_ROOT}/Modules/FindPkgConfig.cmake )
 
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOSG.cmake )
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOpenCV.cmake ) 
@@ -125,22 +136,11 @@ ENDIF( NOT LAPACK_FOUND )
 
   
 # Gts
-PKGCONFIG("gts" GTS_INCLUDE_DIR GTS_LINK_DIR GTS_LINK_FLAGS GTS_CFLAGS )
-IF( NOT GTS_INCLUDE_DIR )
+pkg_check_modules( GTS "gts" )
+IF( NOT GTS_FOUND )
    MESSAGE( FATAL_ERROR  "ERROR - Can't find Gts" )
-ENDIF( NOT GTS_INCLUDE_DIR )      
-MESSAGE( ${GTS_INCLUDE_DIR} )
+ENDIF( NOT GTS_FOUND )   
 
-
-# FIXME: the --export-dynamic in the GTS linker flags is causing threadedStereo
-#        to segfault. I don't know why this isn't working. For now I'm just
-#        reproducing the linker flags without the --export-dynamic.
-IF( NOT APPLE )
-MESSAGE( "WARNING - Performing dodgy update of GTKS cflags to prevent --export-dynamic" )
-MESSAGE( "Original GTS_LINK_FLAGS = ${GTS_LINK_FLAGS}" )
-SET( GTS_LINK_FLAGS "-pthread -lgts -lgthread-2.0 -lrt -lgmodule-2.0 -ldl -lglib-2.0" )
-MESSAGE( "Modified GTS_LINK_FLAGS = ${GTS_LINK_FLAGS}" )
-ENDIF ( NOT APPLE )
 
 
 # ulapack 
@@ -167,7 +167,7 @@ IF( USE_LIBKEYPOINT )
    SET( LIBKEYPOINT_LIB keypoint  )
    ADD_DEFINITIONS( "-DHAVE_LIBKEYPOINT" )
    
-   SET( CMAKE_REQUIRED_FLAGS "-I ${OPENCV_INCLUDE_DIR} ${OPENCV_LINK_FLAGS}" )
+   SET( CMAKE_REQUIRED_FLAGS "-I ${OPENCV_INCLUDE_DIRS} ${OPENCV_LIBRARIES}" )
    CHECK_INCLUDE_FILE_CXX( "keypoint.hpp" HAVE_LIBKEYPOINT "-I ${LIBKEYPOINT_INCLUDE_DIR}" )
    IF( NOT HAVE_LIBKEYPOINT )
 #      MESSAGE( FATAL_ERROR  "ERROR - Can't find libkeypoint" )
@@ -193,9 +193,9 @@ ADD_DEFINITIONS( ${GTS_CFLAGS} )
 ADD_DEFINITIONS( "-Wall " )
 
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
-                     ${OPENCV_INCLUDE_DIR}
+                     ${OPENCV_INCLUDE_DIRS}
 		     ${OPENGL_INCLUDE_DIR}
- 		     ${GTS_INCLUDE_DIR}
+ 		     ${GTS_INCLUDE_DIRS}
 		     "tridecimator/vcg"
 		     "tridecimator/"
                      ${ULAPACK_INCLUDE_DIR}
@@ -207,7 +207,8 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
 		     ${OSG_INCLUDE_DIR}
 		     )
 
-LINK_DIRECTORIES( ${OPENCV_LINK_DIR} ${GTS_LINK_DIR})
+LINK_DIRECTORIES( ${OPENCV_LIBRARY_DIRS}
+                  ${GTS_LIBRARY_DIRS})
 
 LINK_LIBRARIES(	${OSG_LIBRARY}
 		${OSGDB_LIBRARY}
@@ -215,11 +216,11 @@ LINK_LIBRARIES(	${OSG_LIBRARY}
 		${OSGVIEWER_LIBRARY}
 		${OSGTEXT_LIBRARY}
 		${LIBADT_LIBRARY}
-		${OPENCV_LIBRARY}
+		${OPENCV_LIBRARIES}
 		${BOOST_THREAD_LIBRARY}
 		${LIBPLANKTON_LIBRARY}	
 		${LIBSNAPPER_LIBRARY}
-		${GTS_LINK_FLAGS}
+		${GTS_LIBRARIES}
 		${LAPACK_LIBRARY}
                 ${LIBKEYPOINT_LIB}
 		-l3ds    		

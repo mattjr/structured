@@ -7,7 +7,7 @@
 BUILD_DIR = build
 
 all: subdirs setup
-	@make -j 12 -C $(BUILD_DIR) all
+	@make -C $(BUILD_DIR) all
 
 install: setup
 	@make -C $(BUILD_DIR) install

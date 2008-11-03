@@ -12,6 +12,7 @@
 #  * libpolyp
 #  * gts
 PROJECT(libpolyp)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
 INCLUDE( ${CMAKE_ROOT}/Modules/CheckIncludeFileCXX.cmake )
 INCLUDE( ${CMAKE_ROOT}/Modules/CheckLibraryExists.cmake )

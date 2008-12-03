@@ -278,7 +278,7 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS(retex mbosg tridecimator)
+SUBDIRS(retex mbosg tridecimator mesh2hmap)
 SET( SRCS OSGExport.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp

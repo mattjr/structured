@@ -170,9 +170,10 @@ void mesh2hmap(hmap_t *hmap, const mesh_t *mesh,
 	else hmap->rows = ceilf(y_max/y_m_pix);
 
 	// limit matrix to 40Mb
-	if ( hmap->cols*hmap->rows > 10*1024*1024) {
+	printf("Image Size %d x %d: %1.2fMegs\n",hmap->cols,hmap->rows,hmap->cols*hmap->rows*sizeof(short)/1024.0/1024.0);
+	if ( hmap->cols*hmap->rows > 100*1024*1024) {
 		perror("Error: requested image resolution too large. "
-		     "Maximum is 40Mb");
+		     "Maximum is 400Mb");
 		exit(1);
 	}
 	hmap->map = fmatrix_create(hmap->rows,hmap->cols);

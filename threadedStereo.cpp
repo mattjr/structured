@@ -1377,7 +1377,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 		 mesh->bbox.max[0],
 		 mesh->bbox.max[1],
 		 mesh->bbox.max[2]);
-
+    delete mesh;
   }
   
 

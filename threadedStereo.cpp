@@ -447,6 +447,8 @@ static bool parse_args( int argc, char *argv[ ] )
 
   
   argp.read( "-t" ,num_threads);
+  if(num_threads > 1)
+    display_debug_images = false;
   argp.read( "--res",vrip_res );
   string cov_file;
   if(argp.read("--cov" ,cov_file))

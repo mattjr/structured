@@ -1712,11 +1712,11 @@ int main( int argc, char *argv[ ] )
 
 
   if(!single_run){
-    
+    int ct=0;
     for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++){
       Slice name=(*itr);
-      fprintf(fpp,"%f",   
-	      name.time);
+      fprintf(fpp,"%d %f %s %s",   
+	      ct++,name.time,name.left_name.c_str(),name.right_name.c_str());
       fprintf(fpp," %f %f %f %f %f %f",name.bbox->x1,name.bbox->y1,
 	      name.bbox->z1,
 	      name.bbox->x2,name.bbox->y2,name.bbox->z2);

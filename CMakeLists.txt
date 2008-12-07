@@ -83,6 +83,11 @@ ENDIF( NOT LIBSNAPPER_PREFIX )
 IF( NOT LIBKEYPOINT_PREFIX )
    SET( LIBKEYPOINT_PREFIX /usr/local/ )
 ENDIF( NOT LIBKEYPOINT_PREFIX )
+
+IF( NOT UF_PREFIX )
+   SET( UF_PREFIX /usr/local )
+ENDIF( NOT UF_PREFIX )
+
 #-----------------------#
 # Installation Options  #
 #-----------------------#
@@ -140,6 +145,10 @@ pkg_check_modules( GTS "gts" )
 IF( NOT GTS_FOUND )
    MESSAGE( FATAL_ERROR  "ERROR - Can't find Gts" )
 ENDIF( NOT GTS_FOUND )   
+
+# UF
+SET( UF_INC ${UF_PREFIX}/include/uf-1.1 )
+SET( UF_LIBRARY ufGeographicConversions ufGPSParser )
 
 
 
@@ -205,6 +214,8 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${LIBPLANKTON_INCLUDE_DIR}
                      ${LIBKEYPOINT_INCLUDE_DIR}
 		     ${OSG_INCLUDE_DIR}
+      ${UF_INC}
+
 		     )
 
 LINK_DIRECTORIES( ${OPENCV_LIBRARY_DIRS}
@@ -225,6 +236,8 @@ LINK_LIBRARIES(	${OSG_LIBRARY}
                 ${LIBKEYPOINT_LIB}
 		-l3ds    		
 		${LIBPOLYP_LIBRARY}
+		${UF_LIBRARY}
+ 
 	)
 
 
@@ -278,7 +291,7 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS(retex mbosg tridecimator mesh2hmap)
+SUBDIRS(retex mbosg tridecimator mesh2hmap mesh2xy)
 SET( SRCS OSGExport.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp

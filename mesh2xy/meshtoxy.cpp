@@ -156,9 +156,9 @@ int main( int argc, char *argv[ ] )
    // 
    // Open an output file, and truncate it, and add header line
    string output_name = xy_name;
-   ofstream output_file(output_name.c_str(), ios_base::trunc | ios_base::out);
+   ofstream output_file(output_name.c_str(), ios_base::trunc | ios::binary | ios_base::out);
 
-   output_file << fixed << setprecision(7);
+
 
 
    // Run through all the data and convert from grid to lat / long...
@@ -176,7 +176,10 @@ int main( int argc, char *argv[ ] )
 					    gridConvergence, 
 					    pointScale);
 
-     output_file << setprecision(7) << pos_lat << pos_long <<endl;
+     output_file.write( (char*)&pos_long,sizeof(pos_long)); 
+     output_file.write( (char*)&pos_lat,sizeof(pos_lat)); 
+     
+
    }
 
    

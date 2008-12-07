@@ -162,6 +162,13 @@ void mesh2hmap(hmap_t *hmap, const mesh_t *mesh,
 	x_max -= x_min;
 	y_max -= y_min;
 	z_max -= z_min;
+	
+	hmap->x_max= x_max;
+	hmap->y_max= y_max;
+
+	hmap->x_min= x_min;
+	hmap->y_min= y_min;
+
 
 	if (hmap->cols > 0) x_m_pix = x_max/hmap->cols;
 	else hmap->cols = ceilf(x_max/x_m_pix);

@@ -43,8 +43,9 @@ void trimesh2mesh(mesh_t *mesh, const char *textfilename)
 	
 	int i;
 	for(i = 0; i < mesh->num_vert; i++) {
-	  mesh->vert[i][0]= tmesh->vertices[i][0];
-	  mesh->vert[i][1]= tmesh->vertices[i][1];
+	  /*reverse x and y */
+	  mesh->vert[i][0]= tmesh->vertices[i][1];
+	  mesh->vert[i][1]= tmesh->vertices[i][0];
 	  mesh->vert[i][2]= tmesh->vertices[i][2];
 	
 	}

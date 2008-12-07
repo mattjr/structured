@@ -23,6 +23,8 @@
 #define _OUTPUT_H_
 
 #include "mesh2hmap.h"
+#include <gmt.h>
+#include <gmt_grdio.h>
 
 void hmap2pgm(const char *filename, const hmap_t *hmap, const int range,
 	      const int min, const int max, const int bg);
@@ -30,6 +32,7 @@ void hmap2ppm(const char *filename, const hmap_t *hmap, const int range,
 		const int min, const int max, const char *min_colour,
 		const char *max_colour, const char * background);
 void print_raw_hmap(const char *filename, const hmap_t *hmap);
+void print_gmt_hmap(const char *filename, const hmap_t *hmap,double dx,double dy,const char *config_name);
 void print_mesh(mesh_t *mesh);
 void print_hmap(hmap_t *hmap);
 

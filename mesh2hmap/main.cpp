@@ -29,6 +29,7 @@
 #include "parser.h"
 #include "mesh2hmap.h"
 #include "output.h"
+     #include <netcdf.h>
 
 
 
@@ -47,6 +48,7 @@
 //
 //   vrml2hmap [options] meshfile [pgmfilename]
 //
+char config_name[512];
 int main(int argc, char **argv) 
 {
 	char *usage = "Usage: mesh2hmap [ --normal=[+-][xyz] \n"
@@ -68,6 +70,7 @@ int main(int argc, char **argv)
 	// boolean options
 	char *prnt_str = "--print";
 	char *raw_str = "--raw";
+	char *gmt_str = "--gmt=";
 	char *vrml_str = "--vrml";
 	char *ntv_str = "--native";
 	char *help_str = "--help";
@@ -78,6 +81,7 @@ int main(int argc, char **argv)
 	// booleans set by command-line options
 	char print = 0;
 	char raw = 0;
+	char gmt = 0;
 	char vrml = 1;
 	char native = 0;
 
@@ -139,6 +143,9 @@ int main(int argc, char **argv)
 			print = 1;
 		} else if (strncmp(argv[i], raw_str, strlen(raw_str)) == 0) {
 			raw = 1;
+		} else if (strncmp(argv[i], gmt_str, strlen(gmt_str)) == 0) {
+			gmt = 1;
+			sscanf(argv[i],"--gmt=%s",config_name);
 		} else if (strncmp(argv[i], vrml_str, strlen(vrml_str)) == 0) {
 			vrml = 1; native = 0;
 		} else if (strncmp(argv[i], ntv_str, strlen(ntv_str)) == 0) {
@@ -221,6 +228,11 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	if(gmt){
+	  print_gmt_hmap(outfile, &hmap,x_m_pix,y_m_pix,config_name);
+	  fmatrix_free(hmap.map);
+	  return 0;
+	}
 	int range = (int) pow(2,bpp) - 1;
 
 	char *p[] = {max_clr, min_clr, bg_clr};

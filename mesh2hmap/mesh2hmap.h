@@ -29,6 +29,7 @@ typedef struct hmap {
 	float m_per_pix; // meters per pixel
 	float min, max; // min and max values in heightmap
 	fmatrix_t map; // floating point height map
+  double x_min,x_max,y_min,y_max;
 } hmap_t;
 
 

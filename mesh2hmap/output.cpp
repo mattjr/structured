@@ -22,12 +22,16 @@
 #include <stdlib.h> // exit()
 #include <assert.h> // assert()
 #include <math.h> // fmax(), fmin()
-
+#include <GeographicConversions/ufRedfearn.h>
 #include "output.h"
 #include "mesh2hmap.h"
+#include <string>
+#include <iostream>
+#include <auv_config_file.hpp>
 
 
-
+using namespace std;
+using namespace libplankton;
 // Set background (-Inf) to 'val'
 void background_to_val(hmap_t *hmap, float val) 
 {
@@ -278,6 +282,146 @@ void print_raw_hmap(const char *filename, const hmap_t *hmap)
 		}
 		fputc('\n', fp);
 	}
+}
+
+void print_gmt_hmap(const char *filename, const hmap_t *hmap,double dx,double dy,const char *config_name)
+{
+  int  pad[4];
+  assert( hmap != NULL );
+  int argc = 0;
+  char *argv = "mesh2hmap";
+   struct GRD_HEADER h;
+   int update=FALSE;
+
+   double lat_origin, long_origin;
+
+   int index;
+   double timestamp;
+   double x, y, z, roll, pitch, heading;
+   double gridConvergence, pointScale;
+   string zone;
+
+   // IMPORTANT:- specify the ellipsoid and projection for GeographicConversions
+   UF::GeographicConversions::Redfearn gpsConversion("WGS84","UTM");
+   double easting_orig, northing_orig, easting, northing;
+
+
+/* Initialize with default values */
+   GMT_begin (0, &argv);
+   GMT_io_init(); 
+   GMT_make_dnan(GMT_d_NaN);
+   GMT_make_fnan(GMT_f_NaN);
+   
+   GMT_grd_init(&h, argc, &argv, update);
+
+  
+  pad[3] = pad[2] = pad[1] = pad[0] = 0;
+
+
+   Config_File *config_file;
+
+   try
+   {
+      config_file = new Config_File( config_name );
+   }
+   catch( string error )
+   {
+      cerr << "ERROR - " << error << endl;
+      exit( 1 );
+   }
+
+  
+   if( !config_file->get_value( "LATITUDE", lat_origin ) )
+   {
+      cerr << "ERROR - the localiser config file doesn't define option"
+           << " LATITUDE. This was previously LATITUDE"
+           << " in the stereo config file." << endl;
+      exit(1);
+   }
+   if( !config_file->get_value( "LONGITUDE", long_origin ) )
+   {
+      cerr << "ERROR - the localiser config file doesn't define option"
+           << " LONGITUDE. This was previously LONGITUDE"
+           << " in the stereo config file." << endl;
+      exit(1);
+   }
+
+
+  // Get the mission origin in UTM grid co-ords.
+  gpsConversion.GetGridCoordinates( lat_origin, long_origin,
+				    zone,
+				    easting_orig, northing_orig, 
+				    gridConvergence, pointScale );
+  
+  /*  northing = northing_orig + x;
+  easting  = easting_orig + y;
+  
+  double pos_lat, pos_long;
+  gpsConversion.GetGeographicCoordinates(zone, easting, northing, 
+					 pos_lat, pos_long, 
+					 gridConvergence, 
+					 pointScale);
+  */  
+  h.ny = hmap->rows;
+  h.nx = hmap->cols;
+  double min_lat, min_long;
+  double max_lat, max_long;
+
+
+  double northing_min = northing_orig + hmap->y_min;
+  double easting_min  = easting_orig + hmap->x_min;
+
+
+  double northing_max = northing_orig + hmap->y_max;
+  double easting_max  = easting_orig + hmap->x_max;
+  
+  
+  gpsConversion.GetGeographicCoordinates(zone, easting_min, northing_min, 
+					 min_lat, min_long, 
+					 gridConvergence, 
+					 pointScale);
+
+
+  gpsConversion.GetGeographicCoordinates(zone, easting_max, northing_max, 
+					 max_lat, max_long, 
+					 gridConvergence, 
+					 pointScale);
+  dx = (max_long - min_long) / h.nx;
+  dy = (max_lat - min_lat) / h.ny;
+
+  printf("Black Jason %f %f %g\n",max_lat,min_lat ,dy);
+  h.x_min = min_long;
+  h.x_max = min_long+ (h.nx * dx);
+  h.y_min = min_lat;
+  h.y_max = min_lat +(h.ny * dy);
+  h.x_inc = dx;
+  printf("%f %f\n",dy,dx);
+  h.y_inc = dy;//h.y_max / h.ny;
+  h.node_offset = 1;//1 if pixel reg, 
+  h.z_scale_factor = 1.0;
+  h.z_add_offset = 0.0;
+  //int output_type=3;//Float
+
+  /* strcpy (h.x_units, "Spherical Mercator projected Longitude, -Jm1, length from West Edge.");
+  strcpy (h.y_units, "Spherical Mercator projected Latitude, -Jm1, length from South Edge.");
+  strcpy (h.z_units, "T/F, one or more satellite tracks go through this pixel.");
+  */ strcpy (h.title, "Marine Gravity Data from Altimetry");
+  //sprintf (h.remark, "Spherical Mercator Projected with -R%.8lg/%.8lg/%.8lg/%.8lg -Jm1\0", west, east, south, north);
+
+  h.z_min = hmap->min;
+  h.z_max = hmap->max;
+  int ij=0;
+  float * a = (float *)GMT_memory(CNULL, h.nx*h.ny, sizeof(float), GMT_program);
+  for(int i = hmap->rows-1; i >=0; i--) {
+    for(int j = 0; j < hmap->cols; j++,ij++) {
+      a[ij] = (hmap->map[i][j] == -HUGE_VAL) ? GMT_f_NaN : hmap->map[i][j];
+    }
+  }
+
+  GMT_write_grd((char *)filename, &h, a, 0.0, 0.0, 0.0, 0.0, pad, FALSE);
+
+  free((char *)a);
+  GMT_end (0, NULL);
 }
 
 

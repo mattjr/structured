@@ -153,6 +153,13 @@ void mesh2hmap(hmap_t *hmap, const mesh_t *mesh,
 		z_max = fmax(z_max, mesh->vert[i][z]);
 	}
 
+	hmap->x_max= x_max;
+	hmap->y_max= y_max;
+
+	hmap->x_min= x_min;
+	hmap->y_min= y_min;
+
+
 	for (i = 0; i < mesh->num_vert ; i++) {
 		mesh->vert[i][x] -= x_min;
 		mesh->vert[i][y] -= y_min;
@@ -163,11 +170,7 @@ void mesh2hmap(hmap_t *hmap, const mesh_t *mesh,
 	y_max -= y_min;
 	z_max -= z_min;
 	
-	hmap->x_max= x_max;
-	hmap->y_max= y_max;
 
-	hmap->x_min= x_min;
-	hmap->y_min= y_min;
 
 
 	if (hmap->cols > 0) x_m_pix = x_max/hmap->cols;

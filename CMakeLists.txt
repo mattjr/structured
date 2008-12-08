@@ -191,6 +191,7 @@ ENDIF( USE_LIBKEYPOINT )
 # gmt
 SET( GMT_INC ${GMT_PREFIX}/gmt/ )
 SET( GMT_LIBRARY gmt netcdf )
+SET( GMT_DIR /usr/lib/gmt/lib )
 
 # libsnapper 
 SET( LIBSNAPPER_INC ${LIBSNAPPER_PREFIX}/include/libsnapper )
@@ -229,7 +230,8 @@ ${GMT_INC}
 		     )
 
 LINK_DIRECTORIES( ${OPENCV_LIBRARY_DIRS}
-                  ${GTS_LIBRARY_DIRS})
+                  ${GTS_LIBRARY_DIRS}
+		  ${GMT_DIR})
 
 LINK_LIBRARIES(	${OSG_LIBRARY}
 		${OSGDB_LIBRARY}

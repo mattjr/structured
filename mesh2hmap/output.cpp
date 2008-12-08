@@ -397,7 +397,7 @@ void print_gmt_hmap(const char *filename, const hmap_t *hmap,double dx,double dy
   h.x_inc = dx;
   printf("%f %f\n",dy,dx);
   h.y_inc = dy;//h.y_max / h.ny;
-  h.node_offset = 1;//1 if pixel reg, 
+  h.node_offset = 0;//1 if pixel reg, 
   h.z_scale_factor = 1.0;
   h.z_add_offset = 0.0;
   //int output_type=3;//Float

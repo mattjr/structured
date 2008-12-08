@@ -386,14 +386,14 @@ void print_gmt_hmap(const char *filename, const hmap_t *hmap,double dx,double dy
 					 max_lat, max_long, 
 					 gridConvergence, 
 					 pointScale);
-  dx = (max_long - min_long) / h.nx;
-  dy = (max_lat - min_lat) / h.ny;
+  dx = (max_long - min_long) / (h.nx-1);
+  dy = (max_lat - min_lat) / (h.ny-1);
 
   printf("Black Jason %f %f %g\n",max_lat,min_lat ,dy);
   h.x_min = min_long;
-  h.x_max = min_long+ (h.nx * dx);
+  h.x_max = max_lat;//min_long+ (h.nx * dx);
   h.y_min = min_lat;
-  h.y_max = min_lat +(h.ny * dy);
+  h.y_max = max_lat;//min_lat +(h.ny-1) * dy);
   h.x_inc = dx;
   printf("%f %f\n",dy,dx);
   h.y_inc = dy;//h.y_max / h.ny;

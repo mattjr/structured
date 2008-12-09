@@ -1,13 +1,5 @@
 //
-// stereo_feature_finder_test.cpp
-//
-// A program to test the feature finding classes by running through a set of
-// images loaded from a contents file.
-//
-// Each line of the contents file should have the following format:
-//    <timestamp> <left_image_name> <right_image_name>
-//
-// 06-03-05
+// threadedStereo.cpp
 //
 
 #include <cmath>
@@ -55,7 +47,6 @@ static double stop_time = numeric_limits<double>::max();
 static int dist_gentex_range=0;
 static int vrip_split;
 static FILE *pts_cov_fp;
-static string stereo_config_file_name;
 static string contents_file_name;
 static string dir_name;
 static bool use_cached=true;
@@ -150,7 +141,6 @@ static bool do_hw_blend=false;
 int normalised_mean;
 int normalised_var;
 static Stereo_Calib *calib;
- static Config_File *config_file; 
 //static   GTimer  * overall_timer;
 static time_t start_timer, end_timer; 
 static Config_File *recon_config_file; 
@@ -264,7 +254,7 @@ static bool parse_args( int argc, char *argv[ ] )
   libplankton::ArgumentParser argp(&argc,argv);
   argp.getApplicationUsage()->setApplicationName(argp.getApplicationName());
   argp.getApplicationUsage()->setDescription(argp.getApplicationName()+" example demonstrates the use of ImageStream for rendering movies as textures.");
-  argp.getApplicationUsage()->setCommandLineUsage(argp.getApplicationName()+" <basedir>  [options]  ...\nwill look for stereo.cfg recon.cfg pose_file.data and dir img for images\n I suggest creating symlinks to those files allowing for varible configuration.\n");
+  argp.getApplicationUsage()->setCommandLineUsage(argp.getApplicationName()+" <basedir>  [options]  ...\nwill look for recon.cfg stereo.calib stereo_pose_est.data and dir img for images\n I suggest creating symlinks to those files allowing for varible configuration.\n");
   argp.getApplicationUsage()->addCommandLineOption( "-r <texture size>","       Final texture output size." );
   argp.getApplicationUsage()->addCommandLineOption( "-m <max_feature_count>" ," Set the maximum number of features to be found." );
   argp.getApplicationUsage()->addCommandLineOption( "-n <max_frame_count>","   Set the maximum number of frames to be processed." );
@@ -288,7 +278,7 @@ static bool parse_args( int argc, char *argv[ ] )
    argp.getApplicationUsage()->addCommandLineOption( "--dense-features","Dense features ." );
    argp.getApplicationUsage()->addCommandLineOption( "--ptscov","Output pts and cov ." );
    argp.getApplicationUsage()->addCommandLineOption( "--dicelod","Dice lods" );
-   argp.getApplicationUsage()->addCommandLineOption( "--stereo-config","Specify diffrent stereo config" );
+   argp.getApplicationUsage()->addCommandLineOption( "--stereo-calib","Specify diffrent stereo calib" );
    argp.getApplicationUsage()->addCommandLineOption( "--contents-file","Specify diffrent contents file ." );
    argp.getApplicationUsage()->addCommandLineOption( "--nosimp","Specify diffrent contents file ." );
 
@@ -299,21 +289,21 @@ static bool parse_args( int argc, char *argv[ ] )
   }
   base_dir=argp[1];
   recon_config_file_name = "recon.cfg";
-  stereo_config_file_name = "stereo.cfg";
-  contents_file_name = "pose_file.data";
+  stereo_calib_file_name = "stereo.calib";
+  contents_file_name = "stereo_pose_est.data";
 
   dir_name = "img/";
   strcpy(cachedtexdir,"cache-tex/");
 
 
-  argp.read("--stereo-config",stereo_config_file_name);
+  argp.read("--stereo-calib",stereo_calib_file_name);
   argp.read("--poses",contents_file_name );
 
   deltaT_config_name=base_dir+string("/")+"localiser.cfg";
   deltaT_dir=base_dir+string("/")+"DT/";
   deltaT_pose=base_dir+string("/")+"deltat_pose_est.data";
   mbdir=base_dir+"/"+mbdir+"/";
-  stereo_config_file_name= base_dir+string("/")+stereo_config_file_name;
+  stereo_calib_file_name= base_dir+string("/")+stereo_calib_file_name;
   recon_config_file_name= base_dir+string("/")+recon_config_file_name;
   contents_file_name= base_dir+string("/")+contents_file_name;
   dir_name= base_dir+string("/")+dir_name;
@@ -329,36 +319,24 @@ static bool parse_args( int argc, char *argv[ ] )
      cerr << "ERROR - " << error << endl;
      exit( 1 );
    }
-  string config_dir_name;
-  int slash_pos = stereo_config_file_name.rfind( "/" );
-  if( slash_pos != -1 )
-    config_dir_name = stereo_config_file_name.substr( 0, slash_pos+1 );
-   try {
-     config_file= new Config_File(stereo_config_file_name.c_str());
-   }   catch( string error ) {
-     cerr << "ERROR - " << error << endl;
-     exit( 1 );
-   }
+
    
   if(use_dense_feature)
     dense_config_file= new Config_File("semi-dense.cfg");
   
-  if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) ){
-    stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
-    try {
-      calib = new Stereo_Calib( stereo_calib_file_name );
-    }
-      catch( string error ) {
-	cerr << "ERROR - " << error << endl;
-	exit( 1 );
-      }
-    
+  try {
+    calib = new Stereo_Calib( stereo_calib_file_name );
   }
+    catch( string error ) {
+      cerr << "ERROR - " << error << endl;
+      exit( 1 );
+    }
+
 
   
-  //config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
-  config_file->set_value( "MESH_TEX_SIZE", tex_size );
-  config_file->get_value( "SD_SCALE", dense_scale,1.0);
+  //recon_config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
+  recon_config_file->set_value( "MESH_TEX_SIZE", tex_size );
+  recon_config_file->get_value( "SD_SCALE", dense_scale,1.0);
  
   
   
@@ -523,15 +501,15 @@ static bool parse_args( int argc, char *argv[ ] )
   }
   
  if(dense_method == "")
-    config_file->get_value( "SD_METHOD", dense_method);
+    recon_config_file->get_value( "SD_METHOD", dense_method);
   else
-    config_file->set_value( "SD_METHOD", dense_method);
+    recon_config_file->set_value( "SD_METHOD", dense_method);
 
   
   if( use_sift_features )
-    config_file->set_value( "SKF_KEYPOINT_TYPE", "SIFT" );
+    recon_config_file->set_value( "SKF_KEYPOINT_TYPE", "SIFT" );
     else if( use_surf_features )   
-      config_file->set_value( "SKF_KEYPOINT_TYPE", "SURF" );
+      recon_config_file->set_value( "SKF_KEYPOINT_TYPE", "SURF" );
 
   
   if(use_dense_stereo)
@@ -543,8 +521,8 @@ static bool parse_args( int argc, char *argv[ ] )
   strcpy(cachedtexdir,string(base_dir+string("/")+cachedtexdir).c_str());
 
 
-  config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
-  config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
+  recon_config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
+  recon_config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
 
 #ifndef HAVE_LIBKEYPOINT
   if( use_sift_features || use_surf_features )
@@ -570,7 +548,7 @@ static void print_usage( void )
   cout << "   threadedStereo [OPTIONS] <basedir>" << endl; 
   cout << "   <basedir> allows you to choose one directory under which the program "<<endl;
 
-  cout << "   will look for stereo.cfg pose_file.data and dir img for images"<< endl;
+  cout << "   will look for recon.cfg stereo.calib stereo_pose_est.data and dir img for images"<< endl;
   cout << "     I suggest creating symlinks to those files allowing for varible configuration."<< endl;
   cout << "OPTIONS:" << endl;
   cout << "   -r <texture size>       Final texture output size." << endl;
@@ -596,7 +574,7 @@ static void print_usage( void )
   cout << "   --dense-features        Dense features ." << endl;
   cout << "   --ptscov                Output pts and cov ." << endl;
   cout << "   --dicelod                Dice lods" << endl;
-  cout << "   --stereo-config              Specify diffrent stereo config" << endl;
+  cout << "   --stereo-calib              Specify diffrent stereo calib" << endl;
   cout << "   --contents-file         Specify diffrent contents file ." << endl;
   cout << "   --nosimp         Specify diffrent contents file ." << endl;
   cout << endl;
@@ -797,7 +775,7 @@ public:
     finder_dense = NULL;
     if( use_sift_features || use_surf_features ){
 #ifdef HAVE_LIBKEYPOINT
-      finder = new Stereo_Keypoint_Finder( *config_file, 
+      finder = new Stereo_Keypoint_Finder( *recon_config_file, 
 					   use_undistorted_images, 
 					   image_scale, 
 					   calib );
@@ -806,7 +784,7 @@ public:
     /*
     else if( use_ncc )
       {
-	finder = new Stereo_NCC_Corner_Finder(*config_file, 
+	finder = new Stereo_NCC_Corner_Finder(*recon_config_file, 
                                               use_undistorted_images, 
                                               image_scale, 
                                               calib );
@@ -816,7 +794,7 @@ public:
       {
 
      
-	finder = new Stereo_Corner_Finder( *config_file, 
+	finder = new Stereo_Corner_Finder( *recon_config_file, 
 					   use_undistorted_images, 
 					   image_scale, 
 					   calib );
@@ -1040,7 +1018,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 
 #ifdef USE_DENSE_STEREO
   if(!sdense && use_dense_stereo){
-    sdense= new Stereo_Dense(*config_file,
+    sdense= new Stereo_Dense(*recon_config_file,
 			     dense_scale ,
 			     calib  );
     printf("Dense Scale %f\n",dense_scale);
@@ -1472,21 +1450,6 @@ int main( int argc, char *argv[ ] )
   basepath= osgDB::getRealPath (basepath);
   //cout << "Binary Path " <<basepath <<endl;
  
-  //
-  // Open the config file
-  // Ensure the option to display the feature finding debug images is on.
-  //
-  Config_File *config_file;
-  try
-    {
-      config_file = new Config_File( stereo_config_file_name );
-    }
-  catch( string error )
-    {
-      cerr << "a ERROR - " << error << endl;
-      exit( 1 );
-    }
-  //
   // Run through the data
   //conf
   ifstream *cov_file;
@@ -1576,10 +1539,10 @@ int main( int argc, char *argv[ ] )
   if(have_cov_file){
     image_coord_covar = new Matrix(4,4);
     image_coord_covar->clear( );
-    config_file->get_value("STEREO_LEFT_X_VAR",(*image_coord_covar)(0,0) );
-    config_file->get_value("STEREO_LEFT_Y_VAR",(*image_coord_covar)(1,1) );
-    config_file->get_value("STEREO_RIGHT_X_VAR",(*image_coord_covar)(2,2));
-    config_file->get_value("STEREO_RIGHT_Y_VAR",(*image_coord_covar)(3,3));
+    recon_config_file->get_value("STEREO_LEFT_X_VAR",(*image_coord_covar)(0,0) );
+    recon_config_file->get_value("STEREO_LEFT_Y_VAR",(*image_coord_covar)(1,1) );
+    recon_config_file->get_value("STEREO_RIGHT_X_VAR",(*image_coord_covar)(2,2));
+    recon_config_file->get_value("STEREO_RIGHT_Y_VAR",(*image_coord_covar)(3,3));
   }else
     image_coord_covar=NULL;
 
@@ -1616,23 +1579,15 @@ int main( int argc, char *argv[ ] )
      
     string config_dir_name;
     Stereo_Calib *calib=NULL;
-    int slash_pos = stereo_config_file_name.rfind( "/" );
-    if( slash_pos != -1 )
-      config_dir_name = stereo_config_file_name.substr( 0, slash_pos+1 );
-    
-    config_file= new Config_File(stereo_config_file_name.c_str());
-  
-    if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) ){
-      stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
-      try {
-	calib = new Stereo_Calib( stereo_calib_file_name );
-      }
-      catch( string error ) {
-	cerr << "ERROR - " << error << endl;
-	exit( 1 );
-      }
 
+    try {
+      calib = new Stereo_Calib( stereo_calib_file_name );
     }
+    catch( string error ) {
+      cerr << "ERROR - " << error << endl;
+      exit( 1 );
+    }
+
     gen_stereo_from_mono(mono_names,tasks,&calib->left_calib,stereo_pair_count);
     
     
@@ -1673,7 +1628,7 @@ int main( int argc, char *argv[ ] )
   if(num_threads == 1){
      
     boost::xtime_get(&xt, boost::TIME_UTC);
-    threadedStereo *ts= new threadedStereo(stereo_config_file_name,"semi-dense.cfg");
+    threadedStereo *ts= new threadedStereo(recon_config_file_name,"semi-dense.cfg");
     for(unsigned int i=0; i < tasks.size(); i++){
       if(!ts->runP(tasks[i]))
 	tasks.erase(tasks.begin()+i);
@@ -1696,7 +1651,7 @@ int main( int argc, char *argv[ ] )
     //not a good thing opencv openmp support blows anyway as of late.
     //weird bug
     cvSetNumThreads(1);
-    Convolution convolution(pool,(int)tasks.size() > num_threads ? num_threads : tasks.size(),stereo_config_file_name,"semi-dense.cfg");
+    Convolution convolution(pool,(int)tasks.size() > num_threads ? num_threads : tasks.size(),recon_config_file_name,"semi-dense.cfg");
     boost::thread thrd(convolution);
     thrd.join();
      
@@ -2143,7 +2098,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  fprintf(dicefp,"setenv DISPLAY :0.0;cd %s/..;%s/genTex %s %s "
 		  "-f %s  --dicedir %s/ --range-run %d %d %s\n"
 		  ,gentexdir[i].c_str(),basepath.c_str(),
-		  stereo_config_file_name.c_str(),
+		  recon_config_file_name.c_str(),
 		  recon_config_file_name.c_str(),
 		  cachedtexdir,gentexdir[i].c_str(),
 		  j,j+dist_gentex_range,argstr);
@@ -2193,8 +2148,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		  "$BASEPATH/osgretex -pathfile ../mesh/campath.txt -config %s ../mesh/final.ive\n"
 		  "cd $RUNDIR\ntime $BASEPATH/genTex --regen --dicedir %s --margins 10 10 1000000000000000 %s -f %s\n"
 		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",
-		  stereo_config_file_name.c_str(), dicedir,
-		  stereo_config_file_name.c_str(),"mesh-regen-tex/",dicedir);
+		  recon_config_file_name.c_str(), dicedir,
+		  recon_config_file_name.c_str(),"mesh-regen-tex/",dicedir);
 	  
 	  fchmod(fileno(rgfp),0777);
 	  fclose (rgfp);
@@ -2219,7 +2174,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
   //  for(int i =0; i < (int)tasks.size(); i++)
   // delete tasks[i].veh_pose; 
-  delete config_file;
+  //delete config_file;
   
 
   delete cov_file;

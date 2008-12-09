@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------
- *	$Id: grd2ply.cpp,v 1.1 2008-12-08 22:51:49 m.roberson Exp $
+ *	$Id: grd2ply.cpp,v 1.2 2008-12-09 23:26:03 m.roberson Exp $
  *
  *	Copyright (c) 1991-2007 by P. Wessel and W. H. F. Smith
  *	See COPYING file for copying and redistribution conditions.
@@ -43,6 +43,8 @@ using namespace std;
 using namespace libplankton;
 	int v_count=0;
 int f_count=0;
+FILE *fp=NULL;
+string out_name;
 //
 // Global variables for command-line arguments
 //
@@ -134,12 +136,13 @@ int main (int argc, char **argv)
 					Ctrl->W.weight = (argv[i][2]) ? atof (&argv[i][2]) : 1.0;
 			        case 'F':
 				  
-				  if(argv[i+1]) {
+				  if(argv[i+1] && argv[i+2]) {
 				    localframe=true;
 				    localiser_config_file_name=argv[i+1];
-				    fprintf(stderr,"config %s\n",localiser_config_file_name.c_str());
-				    i++;
-				    argc--;
+				    out_name=argv[i+2];
+				    fprintf(stderr,"config %s out %s\n",localiser_config_file_name.c_str(),out_name.c_str());
+				    i+=2;
+				    argc-=2;
 				  }
 					break;
 
@@ -381,22 +384,33 @@ int main (int argc, char **argv)
 	    f_count++;
 	 
 	  }
-			fprintf(GMT_stdout,"ply\n");
-			if (GMT_io.binary[GMT_OUT]) fprintf(GMT_stdout,"format binary_little_endian 1.0\n");
-		else fprintf(GMT_stdout,"format ascii 1.0\n");
-			//fprintf(GMT_stdout,"comment %s\n",part_description);
-			//fprintf(GMT_stdout,"comment PLY exporter written by Paul Adams\n");
-			fprintf(GMT_stdout,"element vertex %d\n",v_count);
-			fprintf(GMT_stdout,"property float x\n");
-			fprintf(GMT_stdout,"property float y\n");
+	if(f_count == 0){
+	  fprintf(stderr,"no faces valid bailing\n");
+	  exit(-1);
+	}
+	
+	fp=fopen(out_name.c_str(),"wb");
+	if(!fp)
+{
+	  fprintf(stderr,"unable to open file\n");
+	  exit(-1);
+	}
+			fprintf(fp,"ply\n");
+			if (GMT_io.binary[GMT_OUT]) fprintf(fp,"format binary_little_endian 1.0\n");
+		else fprintf(fp,"format ascii 1.0\n");
+			//fprintf(fp,"comment %s\n",part_description);
+			//fprintf(fp,"comment PLY exporter written by Paul Adams\n");
+			fprintf(fp,"element vertex %d\n",v_count);
+			fprintf(fp,"property float x\n");
+			fprintf(fp,"property float y\n");
 			
-			fprintf(GMT_stdout,"property float z\n");
+			fprintf(fp,"property float z\n");
 			
-			fprintf(GMT_stdout,"element face %d\n",f_count);
+			fprintf(fp,"element face %d\n",f_count);
 			
-			fprintf(GMT_stdout,"property list uchar int vertex_indices\n");
+			fprintf(fp,"property list uchar int vertex_indices\n");
 			
-			fprintf(GMT_stdout,"end_header\n");
+			fprintf(fp,"end_header\n");
 		
 		
 
@@ -419,7 +433,11 @@ int main (int argc, char **argv)
 				}else{
 				  out[0] = x[i];	out[1] = y[j];
 				}
-				((void (*)(FILE*,int,double*))GMT_output) (GMT_stdout, n_out, out);
+				if(GMT_io.binary[GMT_OUT])
+				  fwrite(  out,n_out,sizeof(float),fp);
+				else
+				  fprintf(fp,"%f %f %f\n",out[0],out[1],out[2]);
+
 				vvalid++;
 			  }
 			
@@ -438,30 +456,30 @@ int main (int argc, char **argv)
 		  {
 
 
-		    iout[0]=sup_remap[ij];
+		    iout[2]=sup_remap[ij];
 		    iout[1]=sup_remap[ij+1];
-		    iout[2]=sup_remap[ij+grd.nx+1];
+		    iout[0]=sup_remap[ij+grd.nx+1];
 		    if(GMT_io.binary[GMT_OUT]){
-		      fwrite(&c,sizeof(unsigned char),1,stdout);
-		      fwrite(iout,sizeof(int),3,stdout);
+		      fwrite(&c,sizeof(unsigned char),1,fp);
+		      fwrite(iout,sizeof(int),3,fp);
 		    }
 		    else
-		      fprintf(stdout,"%d %d %d %d\n",c,iout[0],iout[1],iout[2]);
+		      fprintf(fp,"%d %d %d %d\n",c,iout[0],iout[1],iout[2]);
 		    
 		    fvalid++;
 		  }
 		if(sup_remap[ij] != -1 && sup_remap[ij+grd.nx] != -1 && sup_remap[ij+grd.nx+1] != -1 && ij+grd.nx < (grd.ny * grd.nx) && ij+grd.nx+1 < (grd.ny * grd.nx)){
 		c=3;
-		iout[2]=sup_remap[ij];
+		iout[0]=sup_remap[ij];
 		iout[1]=sup_remap[ij+grd.nx];
-		iout[0]=sup_remap[ij+grd.nx+1];
+		iout[2]=sup_remap[ij+grd.nx+1];
 	
 		if(GMT_io.binary[GMT_OUT]){
-		  fwrite(&c,sizeof(unsigned char),1,stdout);
-		  fwrite(iout,sizeof(int),3,stdout);
+		  fwrite(&c,sizeof(unsigned char),1,fp);
+		  fwrite(iout,sizeof(int),3,fp);
 		}
 		else
-		  fprintf(stdout,"%d %d %d %d\n",c,iout[0],iout[1],iout[2]);
+		  fprintf(fp,"%d %d %d %d\n",c,iout[0],iout[1],iout[2]);
 
 		fvalid++;
 		}
@@ -471,6 +489,7 @@ int main (int argc, char **argv)
 	}
 
 	fprintf(stderr,"%d vvalid %d fvalid\n",vvalid,fvalid);
+	fclose(fp);
 	if (gmtdefs.verbose) fprintf (stderr, "%s: %d values extracted\n", GMT_program, n_total - n_suppressed);
 	if (n_suppressed && gmtdefs.verbose) {
 		if (Ctrl->S.reverse)

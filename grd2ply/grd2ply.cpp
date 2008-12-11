@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------
- *	$Id: grd2ply.cpp,v 1.2 2008-12-09 23:26:03 m.roberson Exp $
+ *	$Id: grd2ply.cpp,v 1.3 2008-12-11 00:51:38 m.roberson Exp $
  *
  *	Copyright (c) 1991-2007 by P. Wessel and W. H. F. Smith
  *	See COPYING file for copying and redistribution conditions.
@@ -429,7 +429,7 @@ int main (int argc, char **argv)
 				  easting-=local_easting;
 				  northing-=local_northing;
 
-				  out[0] = easting;	out[1] = northing;
+				  out[0] = northing;	out[1] = easting;
 				}else{
 				  out[0] = x[i];	out[1] = y[j];
 				}
@@ -456,9 +456,9 @@ int main (int argc, char **argv)
 		  {
 
 
-		    iout[2]=sup_remap[ij];
+		    iout[0]=sup_remap[ij];
 		    iout[1]=sup_remap[ij+1];
-		    iout[0]=sup_remap[ij+grd.nx+1];
+		    iout[2]=sup_remap[ij+grd.nx+1];
 		    if(GMT_io.binary[GMT_OUT]){
 		      fwrite(&c,sizeof(unsigned char),1,fp);
 		      fwrite(iout,sizeof(int),3,fp);
@@ -470,9 +470,9 @@ int main (int argc, char **argv)
 		  }
 		if(sup_remap[ij] != -1 && sup_remap[ij+grd.nx] != -1 && sup_remap[ij+grd.nx+1] != -1 && ij+grd.nx < (grd.ny * grd.nx) && ij+grd.nx+1 < (grd.ny * grd.nx)){
 		c=3;
-		iout[0]=sup_remap[ij];
+		iout[2]=sup_remap[ij];
 		iout[1]=sup_remap[ij+grd.nx];
-		iout[2]=sup_remap[ij+grd.nx+1];
+		iout[0]=sup_remap[ij+grd.nx+1];
 	
 		if(GMT_io.binary[GMT_OUT]){
 		  fwrite(&c,sizeof(unsigned char),1,fp);

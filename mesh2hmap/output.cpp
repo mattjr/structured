@@ -391,7 +391,7 @@ void print_gmt_hmap(const char *filename, const hmap_t *hmap,double dx,double dy
 
   printf("Black Jason %f %f %g\n",max_lat,min_lat ,dy);
   h.x_min = min_long;
-  h.x_max = max_lat;//min_long+ (h.nx * dx);
+  h.x_max = max_long;//min_long+ (h.nx * dx);
   h.y_min = min_lat;
   h.y_max = max_lat;//min_lat +(h.ny-1) * dy);
   h.x_inc = dx;

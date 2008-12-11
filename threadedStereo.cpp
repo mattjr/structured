@@ -1725,19 +1725,21 @@ int main( int argc, char *argv[ ] )
     }
 
     if(use_new_mb){
-      ifstream mblist((mbdir+"mblist.txt").c_str());
+      ifstream mblist("mb_grd/mblist.txt");
       char tmp[255];
-      while(!mblist.eof()){
+      while(mblist && !mblist.eof()){
 	mblist.getline(tmp,255); 
 	if(strlen(tmp)> 1)
-	  mb_ply_filenames.push_back(mbdir+"/"+string(tmp));
+	  mb_ply_filenames.push_back(string(tmp));
       }
       mblist.close();
     }
     
-    if(mb_ply_filenames.size())
+    if(mb_ply_filenames.size()){
       have_mb_ply=true;
-
+      printf("Integrating Vision clipped mb from %d files.\n",mb_ply_filenames.size());
+    }
+    
     FILE *vrip_seg_fp;
     char vrip_seg_fname[255];
     FILE *bboxfp;

@@ -454,9 +454,9 @@ int main( int argc, char *argv[ ] )
   //
   Stereo_Calib *calib = NULL;
   bool have_stereo_calib = false;
-   
-  if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) )
-    {
+  stereo_calib_file_name = "stereo.calib";
+  //if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) )
+   {
       stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
       try
 	{

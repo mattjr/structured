@@ -23,6 +23,7 @@
 */
 
 #include <osgDB/ReadFile>
+#include <osgDB/WriteFile>
 #include <osgUtil/Optimizer>
 #include <osgViewer/Viewer>
 #include <osg/CoordinateSystemNode>
@@ -49,13 +50,14 @@
 #include <wrap/io_trimesh/export_stl.h>
 #include <wrap/io_trimesh/export_vrml.h>
 
-
+#include <string>
 #include <vcg/complex/trimesh/update/topology.h>
 #include <vcg/complex/trimesh/update/bounding.h>
 #include <vcg/complex/trimesh/update/normal.h>
 #include "meshmodel.h"
 using namespace vcg;
 using namespace tri;
+using namespace std;
 #include <osgText/Text>
 
 #include <sstream>
@@ -409,7 +411,8 @@ m2.vert.EnableVFAdjacency();
 	for(int j=0;j<3;++j)
 	  if((*pf).IsB(j)) {
 	    osg::Vec3d pos((*pf).V(j)->cP()[0],(*pf).V(j)->cP()[1],(*pf).V(j)->cP()[2]);
-	    boundry->push_back(pos);
+	    //	    boundry->push_back(pos);
+	    	    points->push_back(pos);
 	      }
 
     for(pf=m2.face.begin();pf!=m2.face.end();++pf){
@@ -418,7 +421,7 @@ m2.vert.EnableVFAdjacency();
        points->push_back(pos);
      }
     }
-    osg::ref_ptr<WallConstraint> wc;
+    /*   osg::ref_ptr<WallConstraint> wc;
     wc=new WallConstraint; // This example does not remove the interior
     // eg to force terrain edges that are on ridges in the terrain etc.
     // use wireframe to see the constrained edges.
@@ -428,8 +431,10 @@ m2.vert.EnableVFAdjacency();
     wc->setVertexArray(boundry);
     wc->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_LOOP,0,boundry->size()) );
     //   wc->setHeight(12.0);
+  wc->handleOverlaps();
+ 
     trig->addInputConstraint(wc.get());
-    
+    */
     /*
     std::vector < pyramid* > pyrlist;
     osg::ref_ptr<WallConstraint> wc; // This example does not remove the interior
@@ -660,7 +665,6 @@ m2.vert.EnableVFAdjacency();
     } // ndcs>0
 */
     trig->setInputPointArray(points);
-   wc->handleOverlaps();
  
     /** NB you need to supply a vec3 array for the triangulator to calculate normals into */
     osg::Vec3Array *norms=new osg::Vec3Array;
@@ -668,7 +672,7 @@ m2.vert.EnableVFAdjacency();
     
     trig->triangulate();
 
-       trig->removeInternalTriangles(wc.get());
+    //trig->removeInternalTriangles(wc.get());
     osg::notify(osg::WARN) << " End of trig\n " <<std::endl;
     
     // Calculate the texture coordinates after triangulation as 
@@ -689,6 +693,8 @@ m2.vert.EnableVFAdjacency();
     gm->setNormalArray(trig->getOutputNormalArray());
     gm->setNormalBinding(osg::Geometry::BIND_PER_PRIMITIVE);
     geode->addDrawable(gm.get());
+    osgDB::writeNodeFile(*geode, string(argv[3]) ,osgDB::Registry::instance()->getOptions());
+    exit(0);
    #if 0
  if (ndcs>0) {
         for ( std::vector < pyramid* >::iterator itr=pyrlist.begin(); itr!=pyrlist.end(); itr++) {

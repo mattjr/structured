@@ -22,18 +22,14 @@
 #include <cstdio>						// C I/O (for sscanf)
 #include <cstring>						// string manipulation
 #include <fstream>						// file I/O
-#include "/home/mkj/exp/ann_1.1.1/include/ANN/ANN.h"					// ANN declarations
+#include "ann_1.1.1/include/ANN/ANN.h"					// ANN declarations
 
-#include "/home/mkj/exp/ann_1.1.1/include/ANN/ANNperf.h"					// ANN declarations
+#include "ann_1.1.1/include/ANN/ANNperf.h"					// ANN declarations
 
-#include "/home/mkj/exp/ann_1.1.1/src/kd_tree.h"
-#include "/home/mkj/exp/ann_1.1.1/src/kd_split.h"
+#include "ann_1.1.1/src/kd_tree.h"
+#include "ann_1.1.1/src/kd_split.h"
 using namespace std;					// make std:: accessible
-void conv_to_ply(ANNkd_node *node,ostream &out);
-void conv_to_ply(ANNkd_tree *the_tree,
-		 ostream &out);
-void conv_to_ply(ANNkd_leaf leaf,
-	  ostream &out);
+
 //----------------------------------------------------------------------
 // ann_sample
 //
@@ -122,6 +118,7 @@ void ANNkd_tree::conv_to_ply(std::vector<face> *faces,ostream &out)
   ANNkdStats st;	
   getStats(st);
   int num_cells=st.n_lf;
+  printf("Leaves %d\n",num_cells);
   /*	annPrintPt(bnd_box_lo, dim, out);	// print lower bound
 	out << "\n";
 	annPrintPt(bnd_box_hi, dim, out);	// print upper bound
@@ -133,33 +130,25 @@ void ANNkd_tree::conv_to_ply(std::vector<face> *faces,ostream &out)
   root->conv_to_ply(faces,out);				// invoke printing at root
 }
 
-void ANNkd_split::conv_to_ply(ANNkd_node *node,ostream &out)					// dump a splitting node
+void ANNkd_split::conv_to_ply(std::vector<face> *faces,ostream &out)					// dump a splitting node
 {
-  if(!node)
-    return;
-  ANNkd_split *split_node=dynamic_cast<ANNkd_split *>(node);
-  if(split_node){
-    conv_to_ply(split_node->child[ANN_LO],out);			// print low child
-    conv_to_ply(split_node->child[ANN_HI],out);			// print low child
-    return;
-  }else{
-    ANNkd_leaf *leaf_node=dynamic_cast<ANNkd_leaf *>(node);
-    if(leaf_node)
-      conv_to_ply(leaf_node,out);
-    return;
-  }
+  
+   child[ANN_LO]->conv_to_ply(faces,out);			// print low child
+   child[ANN_HI]->conv_to_ply(faces,out);			// print low child
+
+
 }
 
-void convert_to_ply(ANNkd_leaf *leaf,					// dump a leaf node
+void ANNkd_leaf::conv_to_ply(std::vector<face> *faces,					// dump a leaf node
 		ostream &out)					// output stream
 {
-  if (leaf == KD_TRIVIAL) {			// canonical trivial leaf node
+  if (this == KD_TRIVIAL) {			// canonical trivial leaf node
 	  return;				// leaf no points
 	}
 	else{
-	  out << "leaf " << leaf->n_pts;
-		for (int j = 0; j < leaf->n_pts; j++) {
-			out << " " << leaf->bkt[j];
+	  out << "leaf " << n_pts;
+		for (int j = 0; j < n_pts; j++) {
+			out << " " << bkt[j];
 		}
 		out << "\n";
 	}
@@ -224,8 +213,8 @@ int main(int argc, char **argv)
 					dataPts,					// the data points
 					nPts,						// number of points
 					dim);						// dimension of space
-
-	conv_to_ply(kdTree,*plyOut);
+	std::vector<face> faces;
+	kdTree->conv_to_ply(&faces,*plyOut);
 	/*	ofstream out_dump_file("dump.dmp");
 	if (!out_dump_file) {
 	  cerr << "File name: " << "dump.dmp" << "\n";

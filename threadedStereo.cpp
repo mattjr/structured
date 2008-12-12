@@ -1835,7 +1835,10 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
      if(have_mb_ply){
        fprintf(vripcmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply;",i,i);
 	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
-	  fprintf(vripcmds_fp,"plysubtract  ../mesh-agg/clipped-mb-%08d-%08d.ply ../mesh-agg/sub-mb-%08d-%08d.ply >  ../mesh-agg/inv-mb-%08d-%08d.ply ;",k,i,k,i,k,i);
+	  fprintf(vripcmds_fp,"plysubtract  ../mesh-agg/clipped-mb-%08d-%08d.ply ../mesh-agg/vis-mb-%08d-%08d.ply >  ../mesh-agg/tmp-mb-%08d-%08d.ply ;",k,i,k,i,k,i);
+	  fprintf(vripcmds_fp,"clip_delaunay  ../mesh-diced/nomb-diced-%08d.ply ../mesh-agg/tmp-mb-%08d-%08d.ply  ../mesh-agg/unclean-inv-mb-%08d-%08d.ply ;",i,k,i,k,i);
+ fprintf(vripcmds_fp,"tridecimator ../mesh-agg/unclean-inv-mb-%08d-%08d.ply ../mesh-agg/inv-mb-%08d-%08d.ply 0 -e0.25;",k,i,k,i);
+
 	}
 	fprintf(vripcmds_fp,"plymerge ../mesh-diced/nomb-diced-%08d.ply ",i );
 	for(int k=0; k < (int)mb_ply_filenames.size(); k++)

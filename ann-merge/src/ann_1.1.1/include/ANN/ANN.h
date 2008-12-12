@@ -89,7 +89,9 @@
 
 #include <cmath>			// math includes
 #include <iostream>			// I/O streams
-
+#include <vector>
+#include <stdlib.h>
+#include <string.h>
 //----------------------------------------------------------------------
 // Limits
 // There are a number of places where we use the maximum double value as
@@ -604,7 +606,9 @@ enum ANNshrinkRule {
 		ANN_BD_CENTROID			= 2,	// centroid splitting
 		ANN_BD_SUGGEST			= 3};	// the authors' suggested choice
 const int ANN_N_SHRINK_RULES	= 4;	// number of shrink rules
-
+typedef struct _face{
+  int idx[3];
+}face;
 //----------------------------------------------------------------------
 //	kd-tree:
 //		The main search data structure supported by ANN is a kd-tree.
@@ -775,6 +779,8 @@ public:
 								
 	virtual void getStats(				// compute tree statistics
 		ANNkdStats&		st);			// the statistics (modified)
+	virtual void conv_to_ply(std::vector<face> *faces,std::ostream &out);
+
 };								
 
 //----------------------------------------------------------------------

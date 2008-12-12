@@ -132,7 +132,9 @@ void ANNkd_tree::conv_to_ply(std::vector<face> *faces,ostream &out)
 
 void ANNkd_split::conv_to_ply(std::vector<face> *faces,ostream &out)					// dump a splitting node
 {
-  
+  out << cd_bnds[ANN_LO] << " 0.0\n";
+  out << cd_bnds[ANN_HI] << " 0.0\n";
+	
    child[ANN_LO]->conv_to_ply(faces,out);			// print low child
    child[ANN_HI]->conv_to_ply(faces,out);			// print low child
 
@@ -146,11 +148,11 @@ void ANNkd_leaf::conv_to_ply(std::vector<face> *faces,					// dump a leaf node
 	  return;				// leaf no points
 	}
 	else{
-	  out << "leaf " << n_pts;
+	  /*	  out << "leaf " << n_pts;
 		for (int j = 0; j < n_pts; j++) {
 			out << " " << bkt[j];
 		}
-		out << "\n";
+		out << "\n";*/
 	}
 }
 /*

@@ -23,7 +23,7 @@
 #include <OpenGL/glu.h>
 
 #else
-#include <GL/glx.h> /* this includes the necessary X headers */
+
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/glut.h>
@@ -172,7 +172,7 @@ void	LoadData(float *pts)
 // Load some data and put it into the quadtree.
 {
 	
-	root->AddHeightMap(RootCornerData, hm);
+  //root->AddHeightMap(RootCornerData, hm);
 	
 
 }

@@ -186,8 +186,9 @@ void load_hm_file(HeightMapInfo *hm,const char *filename){
 	float max=data[1];
 	float zrange = max-min;
 	fread((char *)idata,sizeof(int),2,fp);
-	hm->XSize=idata[0];
-	hm->ZSize=idata[1];
+	hm->ZSize=idata[0];
+	hm->XSize=idata[1];
+
 	hm->RowWidth=hm->XSize;
 	hm->Scale=5;
 	hm->Data = new int16[hm->XSize * hm->ZSize];
@@ -196,14 +197,17 @@ void load_hm_file(HeightMapInfo *hm,const char *filename){
 	for(int i=0; i < hm->XSize * hm->ZSize; i++){
 	  fread((char *)&tmp,sizeof(float),1,fp);
 	  if(isinf(tmp))
-	    hm->Data[i]=0;
-	    else
-	      
-	      hm->Data[i]=((uint16)(((tmp-min)/zrange)*(range-1))+1);
-	  //	  printf("%f %f %f %d %d\n",tmp, (tmp-min)/zrange,zrange,range,hm->Data[i]);
+	    //	    hm->Data[i]=100;//	    
+	    tmp=min;
+	    //	    hm->Data[i]=0;
+	    // else
+	    //	  else
+	    // hm->Data[i]=0;
+	    hm->Data[i]=((uint16)(((tmp-min)/zrange)*(range)));
+	      //printf("%f %f %f %d %d\n",tmp, (tmp-min)/zrange,zrange,range,hm->Data[i]);
 	}
-	hm->XOrigin=16384;
-	hm->ZOrigin=16384;
+	hm->XOrigin=24576;
+	  hm->ZOrigin=24576;
 
 }
 

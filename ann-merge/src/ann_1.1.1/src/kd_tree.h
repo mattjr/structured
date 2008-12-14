@@ -58,7 +58,7 @@ public:
 												// print node
 	virtual void print(int level, ostream &out) = 0;
 	virtual void dump(ostream &out) = 0;		// dump node
-virtual void conv_to_ply(std::vector<face> *faces,ostream &out)=0;
+  virtual void conv_to_ply(std::vector<face> *faces,ANNorthRect &box,ostream &out)=0;
 
 	friend class ANNkd_tree;					// allow kd-tree to access us
 };
@@ -114,7 +114,7 @@ public:
 	virtual void ann_search(ANNdist);			// standard search
 	virtual void ann_pri_search(ANNdist);		// priority search
 	virtual void ann_FR_search(ANNdist);		// fixed-radius search
-  virtual void conv_to_ply(std::vector<face> *faces,ostream &out);
+  virtual void conv_to_ply(std::vector<face> *faces,ANNorthRect &box,ostream &out);
 };
 
 //----------------------------------------------------------------------
@@ -181,7 +181,7 @@ public:
 	virtual void ann_search(ANNdist);			// standard search
 	virtual void ann_pri_search(ANNdist);		// priority search
 	virtual void ann_FR_search(ANNdist);		// fixed-radius search
-  virtual void conv_to_ply(std::vector<face> *faces,ostream &out);
+  virtual void conv_to_ply(std::vector<face> *faces,ANNorthRect &box,ostream &out);
 };
 
 //----------------------------------------------------------------------

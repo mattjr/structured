@@ -28,16 +28,14 @@
 #include "parser.h"
 #include "matrix.h" // fmatrix_resize(), fmatrix_create(), ...
 #include "mesh2hmap.h" // mesh_t
-#include "TriMesh.h"
-void trimesh2mesh(mesh_t *mesh, const char *textfilename)
-{
-	assert(textfilename != NULL);
-	TriMesh *tmesh = TriMesh::read(textfilename);
 
-	if(tmesh == NULL) {
-		printf("Failed to open '%s', aborting\n", textfilename);
-		abort();
-	}
+void trimesh2mesh(mesh_t *mesh,	TriMesh *tmesh )
+{
+  if(tmesh == NULL){
+    fprintf(stderr, "Mesh null trimesh2mesh\n");
+    return;
+    
+  }
 	mesh->num_vert=tmesh->vertices.size();
 	mesh->vert = fmatrix_create(mesh->num_vert, 3);
 	

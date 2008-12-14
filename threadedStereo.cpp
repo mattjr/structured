@@ -32,6 +32,10 @@
 #include "TriMesh_algo.h"
 #include "ShellCmd.h"
 #include "stereo_cells.hpp"
+#include "matrix.h"
+#include "parser.h"
+#include "mesh2hmap.h"
+#include "output.h"
 using namespace std;
 using namespace libplankton;
 using namespace ulapack;
@@ -144,7 +148,7 @@ static Stereo_Calib *calib;
 //static   GTimer  * overall_timer;
 static time_t start_timer, end_timer; 
 static Config_File *recon_config_file; 
-
+static bool hmap_method=true;
   static Config_File *dense_config_file; 
 static  int tex_size;
 #ifdef USE_DENSE_STEREO
@@ -1340,7 +1344,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   
     apply_xform(mesh,xf);
     mesh->need_bbox();
-    
+
     mesh->write(filename);
 
  
@@ -1355,6 +1359,44 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 		 mesh->bbox.max[0],
 		 mesh->bbox.max[1],
 		 mesh->bbox.max[2]);
+
+    if(hmap_method){
+      mesh_t hmmesh;
+      trimesh2mesh(&hmmesh, mesh);
+      int x, y, z, invert;
+	float  x_m_pix, y_m_pix;
+      int width, height;
+      width = height = 0;
+
+      invert = 0;
+      z = 2; x = 0; y = 1;
+      x_m_pix = y_m_pix = 0.01;
+      
+      hmap_t hmap;
+      hmap.rows = height;
+      hmap.cols = width;
+      mesh2hmap(&hmap, &hmmesh, x, y, z, invert, x_m_pix, y_m_pix);
+      //print_hmap(&hmap); return 0;
+      fmatrix_free(hmmesh.vert);
+      irowarray_free(hmmesh.poly, hmmesh.num_poly);
+
+      char tmp[255];
+      int bpp=8;
+      int range = (int) pow(2,bpp) - 1;
+      int min=0;
+	int bg = 0;
+      int max=range;
+      sprintf(tmp,"%s.ppm",meshfilename);
+	char max_clr[3*11 + 3];
+	char min_clr[3*11 + 3];
+	char bg_clr[3*11 + 3];
+	sprintf(max_clr, "%d %d %d", range, range, range);
+	sprintf(min_clr, "%d %d %d", min, min, min);
+	sprintf(bg_clr, "%d %d %d", bg, bg, bg); 
+      hmap2ppm(tmp,&hmap, range, min, max, 
+				min_clr, max_clr, bg_clr);
+      printf("%s\n",tmp);
+    }
     delete mesh;
   }
   

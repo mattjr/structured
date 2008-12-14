@@ -29,7 +29,8 @@
 #include "ann_1.1.1/src/kd_tree.h"
 #include "ann_1.1.1/src/kd_split.h"
 using namespace std;					// make std:: accessible
-
+#define PTDIMENSION 3
+#define TREEDIM 2
 //----------------------------------------------------------------------
 // ann_sample
 //
@@ -118,6 +119,7 @@ void ANNkd_tree::conv_to_ply(std::vector<face> *faces,ostream &out)
   ANNkdStats st;	
   getStats(st);
   int num_cells=st.n_lf;
+  ANNorthRect bnd_box(dim, bnd_box_lo, bnd_box_hi);
   printf("Leaves %d\n",num_cells);
   /*	annPrintPt(bnd_box_lo, dim, out);	// print lower bound
 	out << "\n";
@@ -127,21 +129,29 @@ void ANNkd_tree::conv_to_ply(std::vector<face> *faces,ostream &out)
   if(num_cells == 0)
     return;
 
-  root->conv_to_ply(faces,out);				// invoke printing at root
+  root->conv_to_ply(faces,bnd_box,out);				// invoke printing at root
 }
 
-void ANNkd_split::conv_to_ply(std::vector<face> *faces,ostream &out)					// dump a splitting node
+void ANNkd_split::conv_to_ply(std::vector<face> *faces,ANNorthRect &box,ostream &out)					// dump a splitting node
 {
-  out << cd_bnds[ANN_LO] << " 0.0\n";
-  out << cd_bnds[ANN_HI] << " 0.0\n";
+ 	ANNkdStats ch_stats;
+	int dim=TREEDIM;
 	
-   child[ANN_LO]->conv_to_ply(faces,out);			// print low child
-   child[ANN_HI]->conv_to_ply(faces,out);			// print low child
+
+	ANNorthRect thisbb=bbox;
+	//	getStats(dim,ch_stats,box);
+	out << thisbb.lo[0] << " " << thisbb.lo[1] << " 0.0\n";
+	out << thisbb.hi[0] << " " <<thisbb.hi[1] << " 0.0\n";
+
+
+	
+	child[ANN_LO]->conv_to_ply(faces,box,out);			// print low child
+	child[ANN_HI]->conv_to_ply(faces,box,out);			// print low child
 
 
 }
 
-void ANNkd_leaf::conv_to_ply(std::vector<face> *faces,					// dump a leaf node
+void ANNkd_leaf::conv_to_ply(std::vector<face> *faces,	ANNorthRect &box,				// dump a leaf node
 		ostream &out)					// output stream
 {
   if (this == KD_TRIVIAL) {			// canonical trivial leaf node
@@ -183,7 +193,7 @@ int main(int argc, char **argv)
 	// search structure
 
 	getArgs(argc, argv);
-#define PTDIMENSION 3
+
 	//float c[2*PTDIMENSION];
 	// get length of file:
 	int length;

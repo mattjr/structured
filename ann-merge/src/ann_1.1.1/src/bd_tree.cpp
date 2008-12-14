@@ -31,7 +31,7 @@
 #include "kd_split.h"					// kd-tree splitting rules
 
 #include <ANN/ANNperf.h>				// performance evaluation
-void ANNbd_shrink::conv_to_ply(std::vector<face> *faces,ostream &out){};
+void ANNbd_shrink::conv_to_ply(std::vector<face> *faces,ANNorthRect &box,ostream &out){};
 //----------------------------------------------------------------------
 //	Printing a bd-tree 
 //		These routines print a bd-tree.   See the analogous procedure

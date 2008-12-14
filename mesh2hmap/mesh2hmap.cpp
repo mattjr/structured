@@ -248,3 +248,4 @@ void mesh2hmap(hmap_t *hmap, const mesh_t *mesh,
 	free(sub_grid.grid_row);
 	free(sub_grid.grid_col);
 }
+

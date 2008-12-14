@@ -23,9 +23,9 @@
 #define _MESH_PARSER_H_
 
 #include "mesh2hmap.h" // mesh_t
-
+#include "TriMesh.h"
 void vrml2mesh(mesh_t *mesh, const char *vrmlfilename);
 void native2mesh(mesh_t *mesh, const char *textfilename);
-void trimesh2mesh(mesh_t *mesh, const char *textfilename);
+void trimesh2mesh(mesh_t *mesh, TriMesh *tmesh );
 
 #endif

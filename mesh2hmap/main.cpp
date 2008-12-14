@@ -183,7 +183,13 @@ int main(int argc, char **argv)
 	mesh_t mesh;
 	//	if (native) native2mesh(&mesh, meshfile);
 	//	else if (vrml) vrml2mesh(&mesh, meshfile);
-	trimesh2mesh(&mesh, meshfile);
+	TriMesh *tmesh = TriMesh::read(meshfile);
+
+	if(tmesh == NULL) {
+		printf("Failed to open '%s', aborting\n", meshfile);
+		abort();
+	}
+	trimesh2mesh(&mesh, tmesh);
 
 	if (print) {
 		print_mesh(&mesh);

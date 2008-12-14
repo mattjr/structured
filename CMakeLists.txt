@@ -217,6 +217,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
  		     ${GTS_INCLUDE_DIRS}
 		     "tridecimator/vcg"
 		     "tridecimator/"
+		     "mesh2hmap/"
                      ${ULAPACK_INCLUDE_DIR}
 		     ${LIBADT_INCLUDE_DIR}
   		     ${LIBSNAPPER_INC}
@@ -319,6 +320,6 @@ ADD_LIBRARY( ts STATIC ${SRCS} )
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
 ADD_EXECUTABLE( genTex genTex.cpp )
 ADD_EXECUTABLE( lodgen lodgen.cpp )
-TARGET_LINK_LIBRARIES( threadedStereo ts plankton )
+TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf)
 TARGET_LINK_LIBRARIES( genTex ts plankton)
 TARGET_LINK_LIBRARIES( lodgen ts )

@@ -30,6 +30,7 @@ typedef struct hmap {
 	float min, max; // min and max values in heightmap
 	fmatrix_t map; // floating point height map
   double x_min,x_max,y_min,y_max;
+  double xOri,yOri;
 } hmap_t;
 
 

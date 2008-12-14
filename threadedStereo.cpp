@@ -1386,7 +1386,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       int min=0;
 	int bg = 0;
       int max=range;
-      sprintf(tmp,"%s.ppm",meshfilename);
+      sprintf(tmp,"%s.ppm",filename);
 	char max_clr[3*11 + 3];
 	char min_clr[3*11 + 3];
 	char bg_clr[3*11 + 3];
@@ -1395,7 +1395,9 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	sprintf(bg_clr, "%d %d %d", bg, bg, bg); 
       hmap2ppm(tmp,&hmap, range, min, max, 
 				min_clr, max_clr, bg_clr);
-      printf("%s\n",tmp);
+     
+      sprintf(tmp,"%s.hm",filename);
+      write_hmap_file(tmp, &hmap);
     }
     delete mesh;
   }

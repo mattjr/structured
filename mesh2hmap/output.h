@@ -35,5 +35,6 @@ void print_raw_hmap(const char *filename, const hmap_t *hmap);
 void print_gmt_hmap(const char *filename, const hmap_t *hmap,double dx,double dy,const char *config_name);
 void print_mesh(mesh_t *mesh);
 void print_hmap(hmap_t *hmap);
+void write_hmap_file(const char *filename, const hmap_t *hmap);
 
 #endif

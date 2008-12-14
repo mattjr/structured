@@ -43,7 +43,7 @@ void	MouseHandler(int button, int state, int x, int y);
 void	MotionHandler(int x, int y);
 void	SpecialKeyHandler(int key, int x, int y);
 void	KeyHandler(unsigned char key, int x, int y);
-void	LoadData(float *pts);
+void	LoadData(char  *filename);
 void	LoadData();
 
 
@@ -89,7 +89,7 @@ int	main(int argc, char *argv[])
 	int	i;
 	int cnt=0;
 	root = new quadsquare(&RootCornerData);
-	FILE* fp;
+	/*	FILE* fp;
 #define DIMENSION 3
 	float c[2*DIMENSION];
 	fp=fopen(argv[1],"rb");
@@ -113,8 +113,9 @@ int	main(int argc, char *argv[])
 	  idx++;
 	}
 	fclose(fp);
-	printf("%d count %f %f %f %f %f %f\n",cnt,min[0],min[1],min[2],max[0],max[1],max[2]);
-	LoadData();
+	printf("%d count %f %f %f %f %f %f\n",cnt,min[0],min[1],min[2],max[0],max[1],max[2]);*/
+	
+		LoadData(argv[1]);
 	
 	// Debug info.
 	printf("nodes = %d\n", root->CountNodes());
@@ -167,12 +168,52 @@ int	main(int argc, char *argv[])
 
 	return 0;
 }
+void load_hm_file(HeightMapInfo *hm,const char *filename){
+  FILE *fp= fopen(filename,"rb");
+  if(!fp){
+    fprintf(stderr,"Cannot open %s\n",filename);
+    return;
+  }
+	float data[2];
+	int idata[2];
+	
+	fread((char *)data,sizeof(float),2,fp);
+	hm->XOrigin=data[0];
+	hm->ZOrigin=data[1];
 
-void	LoadData(float *pts)
+	fread((char *)data,sizeof(float),2,fp);
+	float min=data[0];
+	float max=data[1];
+	float zrange = max-min;
+	fread((char *)idata,sizeof(int),2,fp);
+	hm->XSize=idata[0];
+	hm->ZSize=idata[1];
+	hm->RowWidth=hm->XSize;
+	hm->Scale=5;
+	hm->Data = new int16[hm->XSize * hm->ZSize];
+	float tmp;
+	int range = (int) pow(2,8) - 1;
+	for(int i=0; i < hm->XSize * hm->ZSize; i++){
+	  fread((char *)&tmp,sizeof(float),1,fp);
+	  if(isinf(tmp))
+	    hm->Data[i]=0;
+	    else
+	      
+	      hm->Data[i]=((uint16)(((tmp-min)/zrange)*(range-1))+1);
+	  //	  printf("%f %f %f %d %d\n",tmp, (tmp-min)/zrange,zrange,range,hm->Data[i]);
+	}
+	hm->XOrigin=16384;
+	hm->ZOrigin=16384;
+
+}
+
+void	LoadData(char *filename)
 // Load some data and put it into the quadtree.
 {
-	
-  //root->AddHeightMap(RootCornerData, hm);
+
+  HeightMapInfo	hm;
+  load_hm_file(&hm,filename);
+  root->AddHeightMap(RootCornerData, hm);
 	
 
 }

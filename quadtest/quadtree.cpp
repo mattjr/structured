@@ -1313,7 +1313,7 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm)
 	s[2] = hm.Sample(cd.xorg + half, cd.zorg);
 	s[3] = hm.Sample(cd.xorg, cd.zorg + half);
 	s[4] = hm.Sample(cd.xorg + half, cd.zorg + half*2);
-	printf("%d %d %f\n",cd.xorg + half, cd.zorg + half,s[0]);
+
 	// Modify the vertex heights if necessary, and set the dirty
 	// flag if any modifications occur, so that we know we need to
 	// recompute error data later.

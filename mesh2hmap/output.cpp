@@ -283,6 +283,34 @@ void print_raw_hmap(const char *filename, const hmap_t *hmap)
 		fputc('\n', fp);
 	}
 }
+void write_hmap_file(const char *filename, const hmap_t *hmap)
+{
+	assert( hmap != NULL );
+
+	FILE *fp;
+	if ( filename == NULL ) fp = stdout;
+	else fp = fopen(filename, "wb");
+	
+	int i,j;
+	float data[2];
+	int idata[2];
+	data[0]=hmap->xOri;
+	data[1]=hmap->yOri;
+	fwrite((char *)data,sizeof(float),2,fp);
+	data[0]=hmap->min;
+	data[1]=hmap->max;
+	fwrite((char *)data,sizeof(float),2,fp);
+	idata[0]=hmap->rows;
+	idata[1]=hmap->cols;
+	fwrite((char *)idata,sizeof(int),2,fp);
+	
+	for( i = 0; i < hmap->rows; i++) {
+	  for(j = 0; j < hmap->cols; j++) {
+	    fwrite((char *)&(hmap->map[i][j]),sizeof(float),1,fp);
+	  }
+	}
+	fclose(fp);
+}
 
 void print_gmt_hmap(const char *filename, const hmap_t *hmap,double dx,double dy,const char *config_name)
 {

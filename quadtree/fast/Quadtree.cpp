@@ -28,6 +28,7 @@
  */
 
 #include "Quadtree.h"
+#include "../SpatialQuadtree.h"
 #include <math.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -804,7 +805,7 @@ void Quadtree<nd>::printLocation(char l) {
 /**                 INSTANCIATIONS OF THE TEMPLATE CLASS                        ***/
 /**********************************************************************************/                  
 
-template class Quadtree<Mynode>;
+template class Quadtree<QTElement>;
 
 
 

@@ -89,9 +89,11 @@ ENDIF( CMAKE_BUILD_TYPE STREQUAL MinSizeRel )
 # Locations for the library and binary files
 SET( LIBRARY_OUTPUT_PATH     ${PROJECT_SOURCE_DIR}/lib )
 SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )
-LINK_LIBRARIES(	${GLUT_LIBRARY} fastquad)
-ADD_LIBRARY(fastquad fast/Quadtree.cpp fast/Quadnode.cpp )
-ADD_EXECUTABLE( quadtree fast/demo.cpp fast/Mytree.cpp fast/Mynode.cpp  )
+LINK_LIBRARIES(	${GLUT_LIBRARY} )
+
+#ADD_EXECUTABLE( demo fast/demo.cpp fast/Mytree.cpp  fast/Quadtree.cpp   )
+
+ADD_EXECUTABLE( quadmerge quadmerge.cpp SpatialQuadtree.cpp  fast/Quadnode.cpp fast/Quadtree.cpp fast/Quadtree.cpp  fast/Mynode.cpp  )
 # Build libraries
 #SUBDIRS(src) #tests
 

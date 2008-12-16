@@ -31,7 +31,7 @@
 #define Quadtree_h       1
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <math.h>
 /*******************************************************************
 
   Quadtree structure
@@ -62,6 +62,10 @@ class Quadtree {
 
   inline int treeSize() { 
     return Size;
+  }
+  inline int local(int index){
+    int j=nodeLevel(index);
+    return (int)((double)index- (pow(4.0,j)-1.0)/3.0);
   }
   
   inline int nodeLevel(int index) {

@@ -1382,7 +1382,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 
       char tmp[255];
       int bpp=8;
-      int range = (int) pow(2,bpp) - 1;
+      int range = (int) pow((double)2,bpp) - 1;
       int min=0;
 	int bg = 0;
       int max=range;

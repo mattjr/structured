@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id: quadtree.hpp,v 1.1 2008-12-17 23:37:28 m.roberson Exp $
+//$Id: quadtree.hpp,v 1.2 2008-12-18 22:41:42 m.roberson Exp $
 
 #ifndef QUADTREE_HPP
 #define QUADTREE_HPP
@@ -73,7 +73,7 @@ struct quadtree_node
 template <typename T>
 class quadtree
 {
-private:
+protected:
     quadtree_node<T>* root_;
     const int maxdepth_;
     const double ratio_;

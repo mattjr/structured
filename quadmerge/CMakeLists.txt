@@ -6,6 +6,7 @@ PROJECT(ann-merge)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
 find_package( GLUT ) 
+INCLUDE( ${PROJECT_SOURCE_DIR}/../../CMakeUtils/FindOSG.cmake )
 #--------------------------------#
 # Enforce an out-of-source build #
 #--------------------------------#
@@ -14,7 +15,9 @@ STRING(COMPARE EQUAL "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" INSOURCE)
 IF(INSOURCE)
   MESSAGE(FATAL_ERROR "This project requires an out of source build. This is handled by the Makefile. Please type 'make'.")
 ENDIF(INSOURCE)
-
+ if(COMMAND cmake_policy)
+      cmake_policy(SET CMP0003 NEW)
+    endif(COMMAND cmake_policy)
 
 #--------------------------------#
 # Build Options                  #
@@ -85,11 +88,16 @@ ENDIF( CMAKE_BUILD_TYPE STREQUAL MinSizeRel )
 #-----------------------#
 # Build Instructions    #
 #-----------------------#
+INCLUDE_DIRECTORIES( 
+		     ${OSG_INCLUDE_DIR}
+  
+
+		     )
 
 # Locations for the library and binary files
 SET( LIBRARY_OUTPUT_PATH     ${PROJECT_SOURCE_DIR}/lib )
 SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )
-LINK_LIBRARIES(	${GLUT_LIBRARY} )
+LINK_LIBRARIES(	${GLUT_LIBRARY} plplotcxxd ${OSG_LIBRARY} ${OSGVIEWER_LIBRARY})
 ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp
 )
 

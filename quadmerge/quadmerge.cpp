@@ -1,6 +1,7 @@
 #include  <stdio.h>
 #include  <stdlib.h>
 #include "terrainnode.hpp"
+#include <osgViewer/Viewer>
 using namespace std;
 int main( int argc, char **argv ) {
 
@@ -45,6 +46,12 @@ int main( int argc, char **argv ) {
 	  qt.insert(data,pt_ext);
 	  //	  cout <<tree_bounds.contains(pt_ext)<< " "<< pt_ext << " total " << tree_bounds<<endl;
 	}
-	qt.print();
+	//	qt.print();
+	//qt.draw();
 	printf("Num items %d\n",qt.count_items());
+// construct the viewer.
+	qt.render_tree();
+    osgViewer::Viewer viewer;
+    viewer.setSceneData(qt.osg_root);
+    return viewer.run();
 }

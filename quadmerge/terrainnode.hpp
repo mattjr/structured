@@ -12,7 +12,7 @@
 #include <osg/PolygonMode>
  class terrain_data{
 public:
-  double z;
+   double x,y,z;
 friend  std::ostream& operator << (std::ostream& os, const terrain_data &data)
   {
     return os<<data.z<<std::endl;
@@ -26,8 +26,10 @@ public:
   {
     osg_root = new osg::Group();
     tree_geode =new osg::Geode();
-    tree_geometry = new osg::Geometry();
-    tree_geode->addDrawable(tree_geometry); 
+    tree_box_geometry = new osg::Geometry();
+    tree_point_geometry = new osg::Geometry();
+    tree_geode->addDrawable(tree_point_geometry); 
+    tree_geode->addDrawable(tree_box_geometry); 
     osg_root->addChild(tree_geode);
     osg::StateSet *state = osg_root->getOrCreateStateSet();
     osg::PolygonMode *polyModeObj;
@@ -40,6 +42,7 @@ public:
     
  
     tree_box_vertices=  new osg::Vec3Array;
+    tree_point_vertices=  new osg::Vec3Array;
 #ifdef PLOTTING
     pls = new plstream();
  
@@ -120,18 +123,25 @@ void render_tree() const
 		render_tree(root_);
 		//	osg::DrawElementsUInt* tree_base = new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, tree_box_vertices->size());
 		
-		tree_geometry->setVertexArray(tree_box_vertices);
-	       	tree_geometry->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,tree_box_vertices->size()));//	tree_geometry->addPrimitiveSet(tree_base);
+		tree_box_geometry->setVertexArray(tree_box_vertices);
+	       	tree_box_geometry->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,tree_box_vertices->size()));
+
+		tree_point_geometry->setVertexArray(tree_point_vertices);
+	       	tree_point_geometry->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS,0,tree_point_vertices->size()));
 	
     }
   void render_tree(const terrain_node *node,int level=0) const{
     
     if (node){
+      std::vector<terrain_data>::const_iterator itr=node->data_.begin();
       tree_box_vertices->push_back( osg::Vec3(node->ext_.minx(),node->ext_.miny(),0.0));
       tree_box_vertices->push_back( osg::Vec3( node->ext_.minx(),node->ext_.maxy(),0.0));
       tree_box_vertices->push_back( osg::Vec3( node->ext_.maxx(),node->ext_.maxy(),0.0));
       tree_box_vertices->push_back (osg::Vec3( node->ext_.maxx(),node->ext_.miny(),0.0));
-      
+      while(itr!=node->data_.end()) {
+	tree_point_vertices->push_back(osg::Vec3(itr->x,itr->y,0.0));
+	++itr;
+      }
       for (int i=0;i<4;++i){
 	render_tree(node->children_[i],level+1);
       }
@@ -144,9 +154,11 @@ const char *f_name;
 #endif
 
 osg::Geode* tree_geode;
-osg::Geometry *tree_geometry;
+osg::Geometry *tree_box_geometry;
+osg::Geometry *tree_point_geometry;
 
 osg::Vec3Array* tree_box_vertices;
+osg::Vec3Array* tree_point_vertices;
 public :
 osg::Group* osg_root;
 };

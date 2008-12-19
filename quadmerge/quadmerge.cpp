@@ -37,12 +37,15 @@ int main( int argc, char **argv ) {
 	fclose(fp);
 	printf("%d count %f %f %f %f %f %f\n",cnt,min[0],min[1],min[2],max[0],max[1],max[2] );
 	mapnik::Envelope<double> tree_bounds(min[0],min[1],max[0],max[1]);
-	terrain_tree qt(tree_bounds,10,0.5);
+	terrain_tree qt(tree_bounds,atoi(argv[2]),0.5);
 	for(i=0; i < cnt*DIMENSION; i+=DIMENSION){
 	  //	  cout << "pt : " << pts[i] << " " << pts[i+1] << " "<< pts[i +2]<<endl;
 	  Envelope<double> pt_ext((double)pts[i+0],(double)pts[i+1],(double)pts[i+0],(double)pts[i+1]);
 	  terrain_data data;
+	  data.x=pts[i];
+	  data.y=pts[i+1];
 	  data.z=pts[i+2];
+
 	  qt.insert(data,pt_ext);
 	  //	  cout <<tree_bounds.contains(pt_ext)<< " "<< pt_ext << " total " << tree_bounds<<endl;
 	}
@@ -50,6 +53,8 @@ int main( int argc, char **argv ) {
 	//qt.draw();
 	printf("Num items %d\n",qt.count_items());
 // construct the viewer.
+//	qt.trim();
+	qt.balance();
 	qt.render_tree();
     osgViewer::Viewer viewer;
     viewer.setSceneData(qt.osg_root);

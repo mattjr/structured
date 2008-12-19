@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id: quadtree.hpp,v 1.2 2008-12-18 22:41:42 m.roberson Exp $
+//$Id: quadtree.hpp,v 1.3 2008-12-19 00:23:09 m.roberson Exp $
 
 #ifndef QUADTREE_HPP
 #define QUADTREE_HPP
@@ -113,6 +113,11 @@ public:
     void trim() 
     {
         trim_tree(root_);
+    }
+
+    void balance() 
+    {
+        balance(root_);
     }     
     
     void write(std::ostream& out)
@@ -130,6 +135,87 @@ public:
     }
 
 private:
+  void collapse(quadtree_node<T>*&  node){
+    if(node){
+      for (int i=0;i<4;++i){
+	{	
+	  collapse(node->children_[i]);
+	  while(node->children_[i]->data_.size())
+	    node->data.push_back(node->children_[i]->data_.pop());
+	  node->children_[i]=NULL;
+	  
+	  
+	}
+      }
+    }
+  }
+
+ void subdivide(quadtree_node<T>*  node)
+    {
+        if (node)
+        {
+            coord2d c=node->ext_.center();
+
+            double width=node->ext_.width();
+            double height=node->ext_.height();
+
+            double lox=node->ext_.minx();
+            double loy=node->ext_.miny();
+            double hix=node->ext_.maxx();
+            double hiy=node->ext_.maxy();
+
+            Envelope<double> ext[4];
+            ext[0]=Envelope<double>(lox,loy,lox + width * ratio_,loy + height * ratio_);
+            ext[1]=Envelope<double>(hix - width * ratio_,loy,hix,loy + height * ratio_);
+            ext[2]=Envelope<double>(lox,hiy - height*ratio_,lox + width * ratio_,hiy);
+            ext[3]=Envelope<double>(hix - width * ratio_,hiy - height*ratio_,hix,hiy);
+
+               for (int i=0;i<4;++i)
+                {
+                   
+                        if (!node->children_[i])
+			{
+                            node->children_[i]=new quadtree_node<T>(ext[i]);
+                        }
+
+		}
+	       while(node->data_.size()){
+		 T item=node->data_.pop();
+		 Envelope<double> item_ext=item.get_ext();
+		 for(int i=0; i<4; ++i){
+		   if (ext[i].contains(item_ext)) {
+		     node->children_[i]->data_.push_back(item);
+		   }
+		}
+
+            }
+          
+        }
+    }
+
+  void balance(quadtree_node<T>*&  node)
+    {   
+      /*  if (node) 
+        {
+	  if (node->children_[0] &&  
+            for (int i=0;i<4;++i)
+            {	
+                trim_tree(node->children_[i]);	
+            }
+
+            if (node->num_subnodes()==1 && node->data_.size()==0)
+            {
+                for (int i=0;i<4;++i) 
+                {
+                    if (node->children_[i])
+                    {   
+                        node=node->children_[i];
+                        break;	
+                    }
+                }
+            }	
+	    }*/
+    }
 
     void trim_tree(quadtree_node<T>*&  node)
     {   
@@ -281,16 +367,21 @@ private:
             {
                 for (int i=0;i<4;++i)
                 {
-                    if (ext[i].contains(item_ext))
-                    {
+                   
                         if (!node->children_[i])
 			{
                             node->children_[i]=new quadtree_node<T>(ext[i]);
                         }
-                        insert(data,item_ext,node->children_[i],maxdepth-1);
-                        return;
-                    }
-                }
+
+		}
+		for(int i=0; i<4; ++i){
+		  if (ext[i].contains(item_ext)) {
+		    insert(data,item_ext,node->children_[i],maxdepth-1);
+		    return;
+		  }
+		  
+		}
+
             }
             node->data_.push_back(data);
         }

@@ -1,64 +1,85 @@
 #include  <stdio.h>
 #include  <stdlib.h>
 #include "terrainnode.hpp"
+#include "TriMesh_algo.h"
 #include <osgViewer/Viewer>
+
+#include "raster.hpp"
 using namespace std;
+typedef struct _mesh_input{
+  string name;
+  float res;
+}mesh_input;
+std::vector<mesh_input> meshes;
 int main( int argc, char **argv ) {
 
 
 
   FILE* fp;
-  int i,cnt=0;
-#define DIMENSION 3
-	float c[2*DIMENSION];
-	fp=fopen(argv[1],"rb");
-	double min[3],max[3];
+  char meshname[255];
+  float res;
+  fp=fopen(argv[1],"rb");
+  if(!fp){
+    fprintf(stderr,"Can't open %s\n",argv[1]);
+    exit(0);
+  }
+  
+  while(1){
+    if(fscanf(fp,"%s %f %*d",meshname,&res)!=2)
+      break;
+    mesh_input m;
+    m.name=meshname;
+    m.res=res;
+    meshes.push_back(m);
+  }
+  mapnik::Envelope<double> tree_bounds;
+  for(unsigned int i=0; i< meshes.size(); i++){
+    TriMesh::verbose=0;
+    TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
+    mesh->need_bbox();
+    tree_bounds.expand_to_include(Envelope<double>(mesh->bbox.min[0],
+						   mesh->bbox.min[1],
+						   mesh->bbox.max[0],
+						   mesh->bbox.max[1]));
+    delete mesh;
+  }
+  cout <<"Number of meshes " << meshes.size() <<endl; 
+  cout << "Bounding Box " << tree_bounds<<endl;
 
+  terrain_tree qt(tree_bounds,20,0.5,atof(argv[2]));
+  cout <<"Created Tree\n";
+ for(unsigned int i=0; i< meshes.size(); i++){
+   TriMesh::verbose=0;
+   TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
+   int nf = mesh->faces.size();
+   for (int i = 0; i < nf; i++){
+     raster_triangle(mesh->vertices[mesh->faces[i][0]],
+		     mesh->vertices[mesh->faces[i][1]],
+		     mesh->vertices[mesh->faces[i][2]]);
+   }
 
-	while(1){
-	  if(fread(c,sizeof(float),2*DIMENSION,fp)!=6){break;}
-	  for(i=0;i<DIMENSION;i++){
-	    if(!cnt || c[i]<min[i]){min[i]=c[i];}
-	    if(!cnt || c[i]>max[i]){max[i]=c[i];}
-	  }
-	  cnt++;
-	}
-	printf("Number of Pts %d\n",cnt);
-	fseek(fp,SEEK_SET,0);
-	terrain_data *pts = new terrain_data[cnt*DIMENSION];
-      
-	//float *norms= new terrain_data[cnt*DIMENSION];
-	int ptcount=0;
-	while(1){
-	  if(fread(c,sizeof(float),2*DIMENSION,fp)!=6){break;}
-	  pts[ptcount].x=(double)((float *)c)[0];
-	  pts[ptcount].y=(double)((float *)c)[1];
-	  pts[ptcount].z=(double)((float *)c)[2];
-	  ptcount++;
-	}
-	fclose(fp);
-	printf("%d count %f %f %f %f %f %f\n",ptcount,min[0],min[1],min[2],max[0],max[1],max[2] );
-	mapnik::Envelope<double> tree_bounds(min[0],min[1],max[0],max[1]);
-	terrain_tree qt(tree_bounds,20,0.5,atof(argv[2]));
-	for(i=0; i < ptcount; i++){
-
-	  Envelope<double> pt_ext(pts[i].x,pts[i].y,pts[i].x,pts[i].y);
-	  qt.insert(pts[i],pt_ext);
-
-	  //	  cout <<tree_bounds.contains(pt_ext)<< " "<< pt_ext << " total " << tree_bounds<<endl;
-	}
-
-	  delete pts;
-	  //delete norms;
-	//	qt.print();
-	//qt.draw();
-	printf("Num items %d\n",qt.count_items());
-// construct the viewer.
-//	qt.trim();
-//	qt.balance();
-	qt.render_terrain();
-	//qt.render_tree();
-    osgViewer::Viewer viewer;
-    viewer.setSceneData(qt.osg_root);
-    return viewer.run();
+   delete mesh;  
+ }
+ 
+  /* for(i=0; i < ptcount; i++){
+    
+    Envelope<double> pt_ext(pts[i].x,pts[i].y,pts[i].x,pts[i].y);
+    qt.insert(pts[i],pt_ext);
+    
+    //	  cout <<tree_bounds.contains(pt_ext)<< " "<< pt_ext << " total " << tree_bounds<<endl;
+  }
+  */
+  //delete pts;
+  //delete norms;
+  //	qt.print();
+  //qt.draw();
+  printf("Num items %d\n",qt.count_items());
+  // construct the viewer.
+  //	qt.trim();
+  //	qt.balance();
+  //qt.render_terrain();
+  qt.render_tree();
+  // osgViewer::Viewer viewer;
+  //viewer.setSceneData(qt.osg_root);
+  // return viewer.run();
 }

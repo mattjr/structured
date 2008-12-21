@@ -209,7 +209,7 @@ argv[0]= "quadmerge" ;
 		// create triangulator and set the points as the area
 		osg::ref_ptr<osgUtil::DelaunayTriangulator> trig = new osgUtil::DelaunayTriangulator();
 		trig->setInputPointArray(terrain_vertices);
-		printf("Triangulating %d pts...\n",terrain_vertices->size());
+		printf("Triangulating %d pts...\n",(int)terrain_vertices->size());
 		const osg::Timer& timer = *osg::Timer::instance();
 		osg::Timer_t start_tick = timer.tick();
 		

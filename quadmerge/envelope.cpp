@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id: envelope.cpp,v 1.1 2008-12-17 23:37:28 m.roberson Exp $
+//$Id: envelope.cpp,v 1.2 2008-12-21 08:14:04 m.roberson Exp $
 
 #include "envelope.hpp"
 
@@ -300,7 +300,7 @@ namespace mapnik
         // not sure what to do here. intersect?
         return *this;
     }
-    
+  
     template <typename T>    
     Envelope<T>& Envelope<T>::operator*=(T t)
     {

@@ -40,7 +40,9 @@ IF( NOT CMAKE_INSTALL_PREFIX )
    SET( CMAKE_INSTALL_PREFIX "/usr/local" )
 ENDIF( NOT CMAKE_INSTALL_PREFIX )
 
-
+IF( NOT LIBPOLYP_PREFIX )
+   SET( LIBPOLYP_PREFIX /usr/local )
+ENDIF( NOT LIBPOLYP_PREFIX )
 #-----------------------#
 # Compiler setup        #
 #-----------------------#
@@ -51,9 +53,11 @@ ELSE(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     ADD_DEFINITIONS( "-Wall" )
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
+# libpolyp 
+SET( LIBPOLYP_INC ${LIBPOLYP_PREFIX}/include/libpolyp )
+SET( LIBPOLYP_LIBRARY polyp )
 
-
-INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include )
+INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include  ${LIBPOLYP_INC})
 
 
 #-----------------------#
@@ -97,8 +101,8 @@ INCLUDE_DIRECTORIES(
 # Locations for the library and binary files
 SET( LIBRARY_OUTPUT_PATH     ${PROJECT_SOURCE_DIR}/lib )
 SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )
-LINK_LIBRARIES(	${GLUT_LIBRARY} plplotcxxd ${OSG_LIBRARY} ${OSGVIEWER_LIBRARY})
-ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp
+LINK_LIBRARIES(	${GLUT_LIBRARY} plplotcxxd ${OSG_LIBRARY} ${OSGVIEWER_LIBRARY} 	${LIBPOLYP_LIBRARY})
+ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp raster.cpp
 )
 
 # Build libraries

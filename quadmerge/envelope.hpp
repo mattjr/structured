@@ -20,7 +20,7 @@
  *
  *****************************************************************************/
 
-//$Id: envelope.hpp,v 1.1 2008-12-17 23:37:28 m.roberson Exp $
+//$Id: envelope.hpp,v 1.2 2008-12-21 08:14:04 m.roberson Exp $
 
 #ifndef ENVELOPE_HPP
 #define ENVELOPE_HPP
@@ -31,6 +31,7 @@
 #include <boost/operators.hpp>
 // stl
 #include <iomanip>
+#include <ostream>
 #include <string.h>
 namespace mapnik {
 	template <typename T> class  Envelope 
@@ -78,7 +79,8 @@ namespace mapnik {
         EnvelopeType& operator+=(EnvelopeType const& other);
         EnvelopeType& operator-=(EnvelopeType const& other);
         EnvelopeType& operator*=(T);
-        EnvelopeType& operator/=(T);    
+        EnvelopeType& operator/=(T);
+       
     };
     
     template <class charT,class traits,class T>

@@ -6,10 +6,7 @@
 
 #include "raster.hpp"
 using namespace std;
-typedef struct _mesh_input{
-  string name;
-  float res;
-}mesh_input;
+
 std::vector<mesh_input> meshes;
 int main( int argc, char **argv ) {
 
@@ -37,10 +34,11 @@ int main( int argc, char **argv ) {
     TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
     mesh->need_bbox();
-    tree_bounds.expand_to_include(Envelope<double>(mesh->bbox.min[0],
+    meshes[i].envelope=Envelope<double>(mesh->bbox.min[0],
 						   mesh->bbox.min[1],
 						   mesh->bbox.max[0],
-						   mesh->bbox.max[1]));
+				     mesh->bbox.max[1]);
+    tree_bounds.expand_to_include(meshes[i].envelope);
     delete mesh;
   }
   cout <<"Number of meshes " << meshes.size() <<endl; 
@@ -49,16 +47,14 @@ int main( int argc, char **argv ) {
   terrain_tree qt(tree_bounds,20,0.5,atof(argv[2]));
   cout <<"Created Tree\n";
  for(unsigned int i=0; i< meshes.size(); i++){
+ 
+
    TriMesh::verbose=0;
    TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
-   int nf = mesh->faces.size();
-   for (int i = 0; i < nf; i++){
-     raster_triangle(mesh->vertices[mesh->faces[i][0]],
-		     mesh->vertices[mesh->faces[i][1]],
-		     mesh->vertices[mesh->faces[i][2]]);
-   }
 
-   delete mesh;  
+
+
+    delete mesh;  
  }
  
   /* for(i=0; i < ptcount; i++){

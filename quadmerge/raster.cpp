@@ -1,7 +1,9 @@
 #include "raster.hpp"
+#include "nn/nn.h"
+#include <float.h>
 float kill_threshold_squared = 2500.0f; // 50*50 units
 
-
+#include <sys/time.h>
 //----------------------------------------------------------------------------
 // CLAMP TO RASTER INT THAT IS INSIDE TRIANGLE BIASED TOWARDS MIN (INCLUSIVE)
 //----------------------------------------------------------------------------
@@ -154,4 +156,214 @@ static inline int Floor(const float x)
       }
     }
   }
+}
+
+
+
+void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data){
+  nn::point* pin = NULL;
+  delaunay* d = NULL;
+  nn::point* pout = NULL;
+  nnai* nn = NULL;
+  int nout = 0;
+  double* zin = NULL;
+  double* xout = NULL;
+  double* yout = NULL;
+  double* zout = NULL;
+  int cpi = -1;               /* control point index */
+  struct timeval tv0, tv1, tv2;
+  struct timezone tz;
+  int nv = mesh->vertices.size();
+  pin = (nn::point *)malloc(nv * sizeof(point));
+  zin = (double *)malloc(nv * sizeof(double));
+  for (int i = 0; i < nv; i++){
+    nn::point* p = &pin[i];
+    
+    p->x = mesh->vertices[i][0];
+    p->y = mesh->vertices[i][1];
+    p->z = mesh->vertices[i][2];
+    zin[i] = p->z;
+    
+  }
+  printf("  triangulating:\n");
+  fflush(stdout);
+  d = delaunay_build(nv, pin, 0, NULL, 0, NULL);
+  int nx=(int)floor(mesh_data.envelope.width()/mesh_data.res);
+  int ny=(int)floor(mesh_data.envelope.height()/mesh_data.res);
+  
+  points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
+  
+  xout =(double *) malloc(nout * sizeof(double));
+  yout = (double *)malloc(nout * sizeof(double));
+  zout = (double *)malloc(nout * sizeof(double));
+  for (int i = 0; i < nout; ++i) {
+    nn::point* p = &pout[i];
+    
+    xout[i] = p->x;
+    yout[i] = p->y;
+    zout[i] = NAN;
+  }
+  cpi = (nx / 2) * (nx + 1);
+  
+  gettimeofday(&tv0, &tz);
+  
+  /*
+   * create interpolator 
+   */
+  printf("  creating interpolator:\n");
+  fflush(stdout);
+  nn = nnai_build(d, nout, xout, yout);
+  
+  fflush(stdout);
+  gettimeofday(&tv1, &tz);
+  {
+    long dt = 1000000 * (tv1.tv_sec - tv0.tv_sec) + tv1.tv_usec - tv0.tv_usec;
+    
+    printf("    interpolator creation time = %ld us (%.2f us / point)\n", dt, (double) dt / nout);
+  }
+  
+  /*
+   * interpolate 
+   */
+  printf("  interpolating:\n");
+  fflush(stdout);
+  nnai_interpolate(nn, zin, zout);
+  if (nn_verbose)
+    for (int i = 0; i < nout; ++i)
+      printf("    (%f, %f, %f)\n", xout[i], yout[i], zout[i]);
+  
+  fflush(stdout);
+  gettimeofday(&tv2, &tz);
+  {
+    long dt = 1000000.0 * (tv2.tv_sec - tv1.tv_sec) + tv2.tv_usec - tv1.tv_usec;
+    
+    printf("    interpolation time = %ld us (%.2f us / point)\n", dt, (double) dt / nout);
+  }
+  
+  printf("\n");
+  
+  nnai_destroy(nn);
+  free(zin);
+  free(xout);
+  free(yout);
+  free(zout);
+  free(pout);
+  delaunay_destroy(d);
+  free(pin);
+}
+typedef struct {
+    int nvertices;
+    int* vertices;              /* vertex indices [nvertices] */
+    double* weights;            /* vertex weights [nvertices] */
+} nn_weights;
+
+struct nnai {
+    delaunay* d;
+    double wmin;
+    double n;                   /* number of output points */
+    double* x;                  /* [n] */
+    double* y;                  /* [n] */
+    nn_weights* weights;
+};
+
+/** Builds Natural Neighbours array interpolator.
+ *
+ * This includes calculation of weights used in nnai_interpolate().
+ *
+ * @param d Delaunay triangulation
+ * @return Natural Neighbours interpolation
+ */
+nnai* nnai_build(delaunay* d, int n, double* x, double* y)
+{
+  nnai* nn = (nnai*)malloc(sizeof(nnai));
+    nnpi* nnpi = nnpi_create(d);
+    int* vertices;
+    double* weights;
+    int i;
+
+    if (n <= 0)
+      printf("nnai_create(): n = %d\n", n);
+
+    nn->d = d;
+    nn->n = n;
+    nn->x = (double *)malloc(n * sizeof(double));
+    memcpy(nn->x, x, n * sizeof(double));
+    nn->y = (double *) malloc(n * sizeof(double));
+    memcpy(nn->y, y, n * sizeof(double));
+    nn->weights = (nn_weights*****)malloc(n * sizeof(nn_weights));
+
+    for (i = 0; i < n; ++i) {
+        nn_weights* w = &nn->weights[i];
+        point p;
+
+        p.x = x[i];
+        p.y = y[i];
+
+        nnpi_calculate_weights(nnpi, &p);
+
+        vertices = nnpi_get_vertices(nnpi);
+        weights = nnpi_get_weights(nnpi);
+
+        w->nvertices = nnpi_get_nvertices(nnpi);
+        w->vertices = malloc(w->nvertices * sizeof(int));
+        memcpy(w->vertices, vertices, w->nvertices * sizeof(int));
+        w->weights = malloc(w->nvertices * sizeof(double));
+        memcpy(w->weights, weights, w->nvertices * sizeof(double));
+    }
+
+    nnpi_destroy(nnpi);
+
+    return nn;
+}
+
+/* Destroys Natural Neighbours array interpolator.
+ *
+ * @param nn Structure to be destroyed
+ */
+void nnai_destroy(nnai* nn)
+{
+    int i;
+
+    for (i = 0; i < nn->n; ++i) {
+        nn_weights* w = &nn->weights[i];
+
+        free(w->vertices);
+        free(w->weights);
+    }
+
+    free(nn->x);
+    free(nn->y);
+    free(nn->weights);
+    free(nn);
+}
+
+/* Conducts NN interpolation in a fixed array of output points using 
+ * data specified in a fixed array of input points. Uses pre-calculated
+ * weights.
+ *
+ * @param nn NN array interpolator
+ * @param zin input data [nn->d->npoints]
+ * @param zout output data [nn->n]. Must be pre-allocated!
+ */
+void nnai_interpolate(nnai* nn, double* zin, double* zout)
+{
+    int i;
+
+    for (i = 0; i < nn->n; ++i) {
+        nn_weights* w = &nn->weights[i];
+        double z = 0.0;
+        int j;
+
+        for (j = 0; j < w->nvertices; ++j) {
+            double weight = w->weights[j];
+
+            if (weight < nn->wmin) {
+                z = NAN;
+                break;
+            }
+            z += weight * zin[w->vertices[j]];
+        }
+
+        zout[i] = z;
+    }
 }

@@ -6,6 +6,21 @@
 
 #include "raster.hpp"
 using namespace std;
+static void points_to_quadtree(int n, point_nn* points, terrain_tree &qt)
+{
+    int i;
+
+    for (i = 0; i < n; ++i) {
+        point_nn* p = &points[i];
+	terrain_data data;
+	data.z=p->z;
+	data.x=p->x;
+	data.y=p->y;
+       
+        if (!isnan(p->z) && p->z !=-DBL_MAX)
+          qt.insert(data,p->x, p->y);
+    }
+}
 
 std::vector<mesh_input> meshes;
 int main( int argc, char **argv ) {
@@ -52,11 +67,16 @@ int main( int argc, char **argv ) {
    TriMesh::verbose=0;
    TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
 
-
-
-    delete mesh;  
- }
+   point_nn*pout;
+   int nout;
+   interpolate_grid(mesh,meshes[i],pout,nout);
+   
+   points_to_quadtree(nout,pout,qt);
+   //free(&pout);
  
+   delete mesh;  
+ }
+ printf("Iterpolation Done\n");
   /* for(i=0; i < ptcount; i++){
     
     Envelope<double> pt_ext(pts[i].x,pts[i].y,pts[i].x,pts[i].y);
@@ -75,7 +95,7 @@ int main( int argc, char **argv ) {
   //	qt.balance();
   //qt.render_terrain();
   qt.render_tree();
-  // osgViewer::Viewer viewer;
-  //viewer.setSceneData(qt.osg_root);
-  // return viewer.run();
+   osgViewer::Viewer viewer;
+  viewer.setSceneData(qt.osg_root);
+   return viewer.run();
 }

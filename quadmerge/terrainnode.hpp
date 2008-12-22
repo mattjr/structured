@@ -89,49 +89,7 @@ argv[0]= "quadmerge" ;
         insert(data,item_ext,root_);
     }
   
- void insert(const terrain_data data,const Envelope<double>& item_ext,quadtree_node<terrain_data>*  node )
-    {
-        if (node && node->ext_.contains(item_ext))
-        {
-            coord2d c=node->ext_.center();
-
-            double width=node->ext_.width();
-            double height=node->ext_.height();
-
-            double lox=node->ext_.minx();
-            double loy=node->ext_.miny();
-            double hix=node->ext_.maxx();
-            double hiy=node->ext_.maxy();
-
-            Envelope<double> ext[4];
-            ext[0]=Envelope<double>(lox,loy,lox + width * ratio_,loy + height * ratio_);
-            ext[1]=Envelope<double>(hix - width * ratio_,loy,hix,loy + height * ratio_);
-            ext[2]=Envelope<double>(lox,hiy - height*ratio_,lox + width * ratio_,hiy);
-            ext[3]=Envelope<double>(hix - width * ratio_,hiy - height*ratio_,hix,hiy);
-
-            if (width <= _min_extent_size || height <= _min_extent_size)
-            {
-                for (int i=0;i<4;++i)
-                {
-                   
-                        if (!node->children_[i])
-			{
-                            node->children_[i]=new quadtree_node<T>(ext[i]);
-                        }
-
-		}
-		for(int i=0; i<4; ++i){
-		  if (ext[i].contains(item_ext)) {
-		    insert(data,item_ext,node->children_[i]);
-		    return;
-		  }
-		  
-		}
-
-            }
-            node->data_.push_back(data);
-        }
-    }
+ 
  void draw() const
     {
       pls->init();
@@ -170,6 +128,54 @@ argv[0]= "quadmerge" ;
         }
     }
 #endif
+void insert(const terrain_data& data,double x,double y)
+    {
+      insert(data, Envelope<double>(x,y,x,y),root_);
+    }
+void insert(const terrain_data &data,const Envelope<double>& item_ext,quadtree_node<terrain_data>*  node )
+    {
+        if (node && node->ext_.contains(item_ext))
+        {
+            coord2d c=node->ext_.center();
+
+            double width=node->ext_.width();
+            double height=node->ext_.height();
+
+            double lox=node->ext_.minx();
+            double loy=node->ext_.miny();
+            double hix=node->ext_.maxx();
+            double hiy=node->ext_.maxy();
+	    
+            Envelope<double> ext[4];
+            ext[0]=Envelope<double>(lox,loy,lox + width * ratio_,loy + height * ratio_);
+            ext[1]=Envelope<double>(hix - width * ratio_,loy,hix,loy + height * ratio_);
+            ext[2]=Envelope<double>(lox,hiy - height*ratio_,lox + width * ratio_,hiy);
+            ext[3]=Envelope<double>(hix - width * ratio_,hiy - height*ratio_,hix,hiy);
+
+            if (width > min_extent_size_ || height > min_extent_size_)
+            {
+                for (int i=0;i<4;++i)
+                {
+                   
+                        if (!node->children_[i])
+			{
+                            node->children_[i]=new terrain_node(ext[i]);
+                        }
+
+		}
+		for(int i=0; i<4; ++i){
+		  if (ext[i].contains(item_ext)) {
+		    insert(data,item_ext,node->children_[i]);
+		    return;
+		  }
+		  
+		}
+
+            }
+	 
+            node->data_.push_back(data);
+        }
+    }
   void render_tree() const {
     
 		render_tree(root_);

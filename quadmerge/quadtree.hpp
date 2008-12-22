@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id: quadtree.hpp,v 1.3 2008-12-19 00:23:09 m.roberson Exp $
+//$Id: quadtree.hpp,v 1.4 2008-12-22 03:22:32 m.roberson Exp $
 
 #ifndef QUADTREE_HPP
 #define QUADTREE_HPP
@@ -88,6 +88,10 @@ public:
         if (root_) delete root_;
     }
     
+  void insert(const T& data,double x,double y)
+    {
+      insert(data, Envelope<double>(x,y,x,y),root_,maxdepth_);
+    }
     void insert(const T& data,const Envelope<double>& item_ext)
     {
         insert(data,item_ext,root_,maxdepth_);

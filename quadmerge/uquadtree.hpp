@@ -22,7 +22,11 @@ typedef unsigned int uint32;
 typedef short int16;
 typedef int int32;
 #define UINT16_MAX_MINUS_ONE (65536 -1)
-extern double zmin,zmax,zrange;
+typedef struct _global_extents{
+ double min[3],max[3],range[3];
+}global_extents;
+
+extern global_extents ge;
 struct HeightMapInfo {
 	uint16*	Data;
 	int	x_origin, y_origin;

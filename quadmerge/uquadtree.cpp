@@ -1039,7 +1039,7 @@ static void	InitVert(int index, float x, float y, float z)
 	int	i = index * 3;
 	VertexArray[i] = x;
 	//printf("%f y, %f  \n",y,((y/(float)UINT16_MAX_MINUS_ONE) *zrange)+ zmin);
-	VertexArray[i+1] = ((y/(float)UINT16_MAX_MINUS_ONE) *(zrange*1000.0))+ zmin;
+       	VertexArray[i+1] = ((y/(float)UINT16_MAX_MINUS_ONE) *(ge.range[2]))+ ge.min[2];
 	VertexArray[i+2] = z;
 }
 
@@ -1101,7 +1101,7 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 	int	whole = 2 << cd.Level;
 	
 	// If this square is outside the frustum, then don't render it.
-	if (vis != Clip::NO_CLIP) {
+	/*if (vis != Clip::NO_CLIP) {
 		float	min[3], max[3];
 		min[0] = cd.xorg;
 		min[1] = MinZ * VERTICAL_SCALE;
@@ -1116,7 +1116,7 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 		}
 		// else vis is either NO_CLIP or SOME_CLIP.  If it's NO_CLIP, then child
 		// squares won't have to bother with the frustum check.
-	}
+		}*/
 	
 	int	i;
 

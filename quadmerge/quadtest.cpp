@@ -71,7 +71,8 @@ bool	PinToGround = false;
 bool	MoveForward = false;
 
 int	TriangleCounter = 0;
-double zmin=DBL_MAX,zmax=DBL_MIN,zrange=0.0;
+global_extents ge;
+
 static float	Detail = 1000.0;// FLT_MAX;
 
 
@@ -97,6 +98,12 @@ int	main(int argc, char *argv[])
 	
 	int	i;
 	int cnt=0;
+	for(int i=0; i <3; i++){
+	  ge.min[i]=DBL_MAX;
+	  ge.max[i]=DBL_MIN;
+	  ge.range[i]=1.0;
+	}
+
 	root = new quadsquare(&RootCornerData);
 	/*	FILE* fp;
 #define DIMENSION 3
@@ -143,6 +150,9 @@ int	main(int argc, char *argv[])
 	    m.res=res;
 	    meshes.push_back(m);
 	  }
+	  double zmin=DBL_MAX;
+	  double zmax=DBL_MIN;
+	
 	  mapnik::Envelope<double> tree_bounds;
 	  for(unsigned int i=0; i< meshes.size(); i++){
 	    TriMesh::verbose=0;
@@ -162,12 +172,35 @@ int	main(int argc, char *argv[])
 	    
 	    delete mesh;
 	  }
-	  zrange=zmax-zmin;
-	  
+	  ge.range[2]=zmax-zmin;
+	  ge.range[0]=tree_bounds.width();
+	  ge.range[1]=tree_bounds.height();
+	  ge.min[0]=tree_bounds.minx();
+	  ge.min[1]=tree_bounds.miny();
+	  ge.min[2]=zmin;
+
+	  ge.max[0]=tree_bounds.maxx();
+	  ge.max[1]=tree_bounds.maxy();
+	  ge.max[2]=zmax;
+
+
 	  LoadData(meshes);
 	}
-	else
+	else{
+	  ge.range[2]=(double)UINT16_MAX_MINUS_ONE;
+	  ge.range[0]=1.0;
+	  ge.range[1]=1.0;
+	  ge.min[0]=0.0;
+	  ge.min[1]=0.0;
+	  ge.min[2]=0.0;
+
+	  ge.max[0]=0.0;
+	  ge.max[1]=0.0;
+	  ge.max[2]=0.0;
 	  LoadData();
+
+
+	}
 	// Debug info.
 	printf("nodes = %d\n", root->CountNodes());
 	printf("max error = %g\n", root->RecomputeErrorAndLighting(RootCornerData));
@@ -292,7 +325,7 @@ void	LoadData(std::vector<mesh_input> &meshes)
    hm.Data = new uint16[hm.XSize * hm.YSize];
    
    for(int i=0; i < hm.XSize * hm.YSize; i++){
-     hm.Data[i]= ((UINT16_MAX_MINUS_ONE)* ((pout[i].z-zmin)/(zmax-zmin))) +1;
+     hm.Data[i]= ((UINT16_MAX_MINUS_ONE)* ((pout[i].z-ge.min[2])/(ge.range[2]))) +1;
      //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
    }
    //zmin=0.0;
@@ -319,8 +352,7 @@ void	LoadData(char *filename)
 void	LoadData()
 // Load some data and put it into the quadtree.
 {
-	 zmin=0.0;
-	 zrange=1.0;
+	 
   
 	
 	HeightMapInfo	hm;

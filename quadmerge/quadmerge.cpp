@@ -69,8 +69,10 @@ int main( int argc, char **argv ) {
 
    point_nn*pout;
    int nout;
-   interpolate_grid(mesh,meshes[i],pout,nout);
-   
+   int nx,ny;
+   interpolate_grid(mesh,meshes[i],pout,nout,ny,ny);
+   printf("\r %03d number of points: %d",i,nout);
+   fflush(stdout);
    points_to_quadtree(nout,pout,qt);
    //free(&pout);
  
@@ -89,7 +91,7 @@ int main( int argc, char **argv ) {
   //delete norms;
   //	qt.print();
   //qt.draw();
-  printf("Num items %d\n",qt.count_items());
+ printf("Num items %d %f mem\n",qt.count_items(),qt.count_items()*sizeof(terrain_node)/1024.0/1024.0);
   // construct the viewer.
   //	qt.trim();
   //	qt.balance();

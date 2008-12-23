@@ -160,7 +160,7 @@ static inline int Floor(const float x)
 
 
 
-void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout,int &nout){
+void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny){
   point_nn* pin = NULL;
  
   pout = NULL;
@@ -186,8 +186,8 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
     
   }
 
-  int nx=(int)floor(mesh_data.envelope.width()/mesh_data.res);
-  int ny=(int)floor(mesh_data.envelope.height()/mesh_data.res);
+  nx=(int)floor(mesh_data.envelope.width()/mesh_data.res);
+  ny=(int)floor(mesh_data.envelope.height()/mesh_data.res);
   double wmin = -DBL_MAX;
   points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
   nnpi_interpolate_points(nv, pin, wmin, nout, pout);

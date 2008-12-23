@@ -70,7 +70,8 @@ int main( int argc, char **argv ) {
    point_nn*pout;
    int nout;
    int nx,ny;
-   interpolate_grid(mesh,meshes[i],pout,nout,ny,ny);
+   float cx,cy;
+   interpolate_grid(mesh,meshes[i],pout,nout,ny,ny,cx,cy);
    printf("\r %03d number of points: %d",i,nout);
    fflush(stdout);
    points_to_quadtree(nout,pout,qt);

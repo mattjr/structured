@@ -71,8 +71,8 @@ bool	PinToGround = false;
 bool	MoveForward = false;
 
 int	TriangleCounter = 0;
-
-static float	Detail = 140;
+double zmin=DBL_MAX,zmax=DBL_MIN,zrange=0.0;
+static float	Detail = 1000.0;// FLT_MAX;
 
 
 int	main(int argc, char *argv[])
@@ -136,14 +136,14 @@ int	main(int argc, char *argv[])
 	  }
 	  
 	  while(1){
-	    if(fscanf(fp,"%s %f %*d",meshname,&res)!=2)
+	    if(fscanf(fp,"%s %f %*d",meshname,&res)!=2 || feof(fp))
 	      break;
 	    mesh_input m;
 	    m.name=meshname;
 	    m.res=res;
 	    meshes.push_back(m);
 	  }
-  mapnik::Envelope<double> tree_bounds;
+	  mapnik::Envelope<double> tree_bounds;
 	  for(unsigned int i=0; i< meshes.size(); i++){
 	    TriMesh::verbose=0;
 	    TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
@@ -152,10 +152,17 @@ int	main(int argc, char *argv[])
 						mesh->bbox.min[1],
 						mesh->bbox.max[0],
 						mesh->bbox.max[1]);
+	    if( mesh->bbox.min[2] < zmin)
+	      zmin= mesh->bbox.min[2];
+	    
+	    if( mesh->bbox.min[2] > zmax)
+	      zmax= mesh->bbox.max[2];
+
 	    tree_bounds.expand_to_include(meshes[i].envelope);
 	    
 	    delete mesh;
 	  }
+	  zrange=zmax-zmin;
 	  
 	  LoadData(meshes);
 	}
@@ -166,11 +173,11 @@ int	main(int argc, char *argv[])
 	printf("max error = %g\n", root->RecomputeErrorAndLighting(RootCornerData));
 
 	// Get rid of unnecessary nodes in flat-ish areas.
-	printf("Culling unnecessary nodes (detail factor = 25)...\n");
-	root->StaticCullData(RootCornerData, 25);
+	//printf("Culling unnecessary nodes (detail factor = 25)...\n");
+	//root->StaticCullData(RootCornerData, 25);
 
 	// Post-cull debug info.
-	printf("nodes = %d\n", root->CountNodes());
+	/*printf("nodes = %d\n", root->CountNodes());
 	printf("max error = %g\n", root->RecomputeErrorAndLighting(RootCornerData));
 
 
@@ -180,7 +187,7 @@ int	main(int argc, char *argv[])
 	for (i = 0; i < 10; i++) {
 		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
 	}
-
+	*/
 	
 	//
 	// Set up glut.
@@ -222,23 +229,23 @@ void load_hm_file(HeightMapInfo *hm,const char *filename){
 	int idata[2];
 	
 	fread((char *)data,sizeof(float),2,fp);
-	hm->XOrigin=data[0];
-	hm->ZOrigin=data[1];
+	hm->x_origin=data[0];
+	hm->y_origin=data[1];
 
 	fread((char *)data,sizeof(float),2,fp);
 	float min=data[0];
 	float max=data[1];
 	float zrange = max-min;
 	fread((char *)idata,sizeof(int),2,fp);
-	hm->ZSize=idata[0];
+	hm->YSize=idata[0];
 	hm->XSize=idata[1];
 
 	hm->RowWidth=hm->XSize;
 	hm->Scale=5;
-	hm->Data = new int16[hm->XSize * hm->ZSize];
+	hm->Data = new uint16[hm->XSize * hm->YSize];
 	float tmp;
 	int range = (int) pow(2,8) - 1;
-	for(int i=0; i < hm->XSize * hm->ZSize; i++){
+	for(int i=0; i < hm->XSize * hm->YSize; i++){
 	  fread((char *)&tmp,sizeof(float),1,fp);
 	  if(isinf(tmp))
 	    //	    hm->Data[i]=100;//	    
@@ -250,13 +257,14 @@ void load_hm_file(HeightMapInfo *hm,const char *filename){
 	    hm->Data[i]=((uint16)(((tmp-min)/zrange)*(range)));
 	      //printf("%f %f %f %d %d\n",tmp, (tmp-min)/zrange,zrange,range,hm->Data[i]);
 	}
-	hm->XOrigin=24576;
-	  hm->ZOrigin=24576;
+	hm->x_origin=24576;
+	  hm->y_origin=24576;
 
 }
 void	LoadData(std::vector<mesh_input> &meshes)
 // Load some data and put it into the quadtree.
 {
+ 
   for(unsigned int i=0; i< meshes.size(); i++){
  
 
@@ -266,17 +274,34 @@ void	LoadData(std::vector<mesh_input> &meshes)
    point_nn*pout;
    int nout;
    int nx,ny;
-   interpolate_grid(mesh,meshes[i],pout,nout,nx,ny);
+   float cx,cy;
+   interpolate_grid(mesh,meshes[i],pout,nout,nx,ny,cx,cy);
    printf("\r %03d number of points: %d",i,nout);
    fflush(stdout);
    // points_to_quadtree(nout,pout,qt);
    //free(&pout);
- 
+   printf("Nx %d Ny %d Cx %f Cy %f\n",nx,ny,cx,cy);
+   HeightMapInfo	hm;
+   hm.x_origin = (int)cx;
+   hm.y_origin = (int)cy;
+   
+   hm.XSize = nx;
+   hm.YSize = ny;
+   hm.RowWidth = hm.XSize;
+   hm.Scale = 7;
+   hm.Data = new uint16[hm.XSize * hm.YSize];
+   
+   for(int i=0; i < hm.XSize * hm.YSize; i++){
+     hm.Data[i]= ((UINT16_MAX_MINUS_ONE)* ((pout[i].z-zmin)/(zmax-zmin))) +1;
+     //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
+   }
+   //zmin=0.0;
+   root->AddHeightMap(RootCornerData, hm);
+   delete [] hm.Data;
    delete mesh;  
  }
  
-  HeightMapInfo	hm;
-  root->AddHeightMap(RootCornerData, hm);
+ 
 	
 
 }
@@ -294,43 +319,45 @@ void	LoadData(char *filename)
 void	LoadData()
 // Load some data and put it into the quadtree.
 {
-	
+	 zmin=0.0;
+	 zrange=1.0;
+  
 	
 	HeightMapInfo	hm;
-	hm.XOrigin = 0;
-	hm.ZOrigin = 0;
+	hm.x_origin = 0;
+	hm.y_origin = 0;
 	hm.XSize = 512;
-	hm.ZSize = 512;
+	hm.YSize = 512;
 	hm.RowWidth = hm.XSize;
 	hm.Scale = 7;
-	hm.Data = new int16[hm.XSize * hm.ZSize];
+	hm.Data = new uint16[hm.XSize * hm.YSize];
 
 	printf("Loading height grids...\n");
 
 	// Big coarse data, at 128 meter sample spacing.
 	FILE*	fp = fopen("demdata/gc16at128.raw", "rb");
-	fread(hm.Data, sizeof(uint16), hm.XSize * hm.ZSize, fp);
+	fread(hm.Data, sizeof(uint16), hm.XSize * hm.YSize, fp);
 	fclose(fp);
 	printf("Building quadtree data...\n");
-	//	hm.ZSize = 100;
+	//	hm.YSize = 100;
 	root->AddHeightMap(RootCornerData, hm);
 	
 	// More detailed data at 64 meter spacing, covering the middle of the terrain.
-	/*	hm.XOrigin = 16384;
-	hm.ZOrigin = 16384;
+	/*	hm.x_origin = 16384;
+	hm.y_origin = 16384;
 	hm.Scale = 6;
 	fp = fopen("demdata/gc16at64.raw", "rb");
-	fread(hm.Data, sizeof(uint16), hm.XSize * hm.ZSize, fp);
+	fread(hm.Data, sizeof(uint16), hm.XSize * hm.YSize, fp);
 	fclose(fp);
 	printf("Adding quadtree data...\n");
 	root->AddHeightMap(RootCornerData, hm);
 	
 	// Even more detailed data, at 32 meter spacing, covering a smaller area near the middle.
-	hm.XOrigin = 24576;
-	hm.ZOrigin = 24576;
+	hm.x_origin = 24576;
+	hm.y_origin = 24576;
 	hm.Scale = 5;
 	fp = fopen("demdata/gc16at32.raw", "rb");
-	fread(hm.Data, sizeof(uint16), hm.XSize * hm.ZSize, fp);
+	fread(hm.Data, sizeof(uint16), hm.XSize * hm.YSize, fp);
 	fclose(fp);
 	printf("Adding quadtree data...\n");
 	root->AddHeightMap(RootCornerData, hm);

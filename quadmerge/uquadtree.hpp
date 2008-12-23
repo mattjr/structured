@@ -21,21 +21,21 @@ typedef unsigned short uint16;
 typedef unsigned int uint32;
 typedef short int16;
 typedef int int32;
-
-
+#define UINT16_MAX_MINUS_ONE (65536 -1)
+extern double zmin,zmax,zrange;
 struct HeightMapInfo {
-	int16*	Data;
-	int	XOrigin, ZOrigin;
-	int	XSize, ZSize;
+	uint16*	Data;
+	int	x_origin, y_origin;
+	int	XSize, YSize;
 	int	RowWidth;
 	int	Scale;
 
-	float	Sample(int x, int z) const;
+	float	Sample(int x, int y) const;
 };
 
 
 struct	VertInfo {
-	uint16	Y;
+	uint16	Z;
 	unsigned char	Lightness;	// For simple precomputed vertex lighting for purposes of the demo.  It's a waste of 2 bytes if we're texturing.
 };
 
@@ -50,7 +50,7 @@ struct quadcornerdata {
 	quadsquare*	Square;
 	int	ChildIndex;
 	int	Level;
-	int	xorg, zorg;
+	int	xorg, yorg;
 	VertInfo	Verts[4];	// ne, nw, sw, se
 };
 
@@ -60,7 +60,7 @@ struct quadsquare {
 
 	VertInfo	Vertex[5];	// center, e, n, w, s
 	uint16	Error[6];	// e, s, children: ne, nw, sw, se
-	uint16	MinY, MaxY;	// Bounds for frustum culling and error testing.
+	uint16	MinZ, MaxZ;	// Bounds for frustum culling and error testing.
 	unsigned char	EnabledFlags;	// bits 0-7: e, n, w, s, ne, nw, sw, se
 	unsigned char	SubEnabledCount[2];	// e, s enabled reference counts.
 	bool	Static;

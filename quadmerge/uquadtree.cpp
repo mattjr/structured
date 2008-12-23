@@ -143,11 +143,11 @@ void	DrawHeightField(CDC* dc, int xorigin, int yorigin, int Size, quadsquare* he
 	quadcornerdata	q;
 	q.Level = 15;
 	q.ChildIndex = 0;
-	q.xorg = q.zorg = 0;
-	q.Verts[1].Y = 0;
-	q.Verts[2].Y = 0;
-	q.Verts[3].Y = 0;
-	q.Verts[4].Y = 0;
+	q.xorg = q.yorg = 0;
+	q.Verts[1].Z = 0;
+	q.Verts[2].Z = 0;
+	q.Verts[3].Z = 0;
+	q.Verts[4].Z = 0;
 	
 	DrawQuadTree(dc, heightfield, xorigin, yorigin, Size >> 1, q, false);
 
@@ -164,10 +164,10 @@ void	DrawContourBox(CDC* dc, int x, int y, int BlockPixels, VertInfo samples[4])
 {
 	// Draw contour lines.
 	float	samp[4];
-	samp[0] = samples[0].Y * cp.OneOverInterval;	// upper left
-	samp[1] = samples[1].Y * cp.OneOverInterval;	// upper right
-	samp[2] = samples[2].Y * cp.OneOverInterval;	// lower right
-	samp[3] = samples[3].Y * cp.OneOverInterval;	// lower left
+	samp[0] = samples[0].Z * cp.OneOverInterval;	// upper left
+	samp[1] = samples[1].Z * cp.OneOverInterval;	// upper right
+	samp[2] = samples[2].Z * cp.OneOverInterval;	// lower right
+	samp[3] = samples[3].Z * cp.OneOverInterval;	// lower left
 
 	int	min = 100000;
 	int	max = -100000;
@@ -299,25 +299,25 @@ quadsquare::quadsquare(quadcornerdata* pcd)
 	
 	// Set default vertex positions by interpolating from given corners.
 	// Just bilinear interpolation.
-	Vertex[0].Y = 0.25 * (pcd->Verts[0].Y + pcd->Verts[1].Y + pcd->Verts[2].Y + pcd->Verts[3].Y);
-	Vertex[1].Y = 0.5 * (pcd->Verts[3].Y + pcd->Verts[0].Y);
-	Vertex[2].Y = 0.5 * (pcd->Verts[0].Y + pcd->Verts[1].Y);
-	Vertex[3].Y = 0.5 * (pcd->Verts[1].Y + pcd->Verts[2].Y);
-	Vertex[4].Y = 0.5 * (pcd->Verts[2].Y + pcd->Verts[3].Y);
+	Vertex[0].Z = 0.25 * (pcd->Verts[0].Z + pcd->Verts[1].Z + pcd->Verts[2].Z + pcd->Verts[3].Z);
+	Vertex[1].Z = 0.5 * (pcd->Verts[3].Z + pcd->Verts[0].Z);
+	Vertex[2].Z = 0.5 * (pcd->Verts[0].Z + pcd->Verts[1].Z);
+	Vertex[3].Z = 0.5 * (pcd->Verts[1].Z + pcd->Verts[2].Z);
+	Vertex[4].Z = 0.5 * (pcd->Verts[2].Z + pcd->Verts[3].Z);
 
 	for (i = 0; i < 2; i++) {
 		Error[i] = 0;
 	}
 	for (i = 0; i < 4; i++) {
-		Error[i+2] = fabs((Vertex[0].Y + pcd->Verts[i].Y) - (Vertex[i+1].Y + Vertex[((i+1)&3) + 1].Y)) * 0.25;
+		Error[i+2] = fabs((Vertex[0].Z + pcd->Verts[i].Z) - (Vertex[i+1].Z + Vertex[((i+1)&3) + 1].Z)) * 0.25;
 	}
 
-	// Compute MinY/MaxY based on corner verts.
-	MinY = MaxY = pcd->Verts[0].Y;
+	// Compute MinY/MaxZ based on corner verts.
+	MinZ = MaxZ = pcd->Verts[0].Z;
 	for (i = 1; i < 4; i++) {
-		float	y = pcd->Verts[i].Y;
-		if (y < MinY) MinY = y;
-		if (y > MaxY) MaxY = y;
+		float	y = pcd->Verts[i].Z;
+		if (y < MinZ) MinZ = y;
+		if (y > MaxZ) MaxZ = y;
 	}
 	
 	// Initialize colors by interpolating from corners.
@@ -377,7 +377,7 @@ float	quadsquare::GetHeight(const quadcornerdata& cd, float x, float z)
 	int	half = 1 << cd.Level;
 
 	float	lx = (x - cd.xorg) / float(half);
-	float	lz = (z - cd.zorg) / float(half);
+	float	lz = (z - cd.yorg) / float(half);
 
 	int	ix = floor(lx);
 	int	iz = floor(lz);
@@ -409,28 +409,28 @@ float	quadsquare::GetHeight(const quadcornerdata& cd, float x, float z)
 	switch (index) {
 	default:
 	case 0:
-		s00 = Vertex[2].Y;
-		s01 = cd.Verts[0].Y;
-		s10 = Vertex[0].Y;
-		s11 = Vertex[1].Y;
+		s00 = Vertex[2].Z;
+		s01 = cd.Verts[0].Z;
+		s10 = Vertex[0].Z;
+		s11 = Vertex[1].Z;
 		break;
 	case 1:
-		s00 = cd.Verts[1].Y;
-		s01 = Vertex[2].Y;
-		s10 = Vertex[3].Y;
-		s11 = Vertex[0].Y;
+		s00 = cd.Verts[1].Z;
+		s01 = Vertex[2].Z;
+		s10 = Vertex[3].Z;
+		s11 = Vertex[0].Z;
 		break;
 	case 2:
-		s00 = Vertex[3].Y;
-		s01 = Vertex[0].Y;
-		s10 = cd.Verts[2].Y;
-		s11 = Vertex[4].Y;
+		s00 = Vertex[3].Z;
+		s01 = Vertex[0].Z;
+		s10 = cd.Verts[2].Z;
+		s11 = Vertex[4].Z;
 		break;
 	case 3:
-		s00 = Vertex[0].Y;
-		s01 = Vertex[1].Y;
-		s10 = Vertex[4].Y;
-		s11 = cd.Verts[3].Y;
+		s00 = Vertex[0].Z;
+		s01 = Vertex[1].Z;
+		s10 = Vertex[4].Z;
+		s11 = cd.Verts[3].Z;
 		break;
 	}
 
@@ -500,7 +500,7 @@ unsigned int	MakeColor(unsigned char Lightness)
 float	quadsquare::RecomputeErrorAndLighting(const quadcornerdata& cd)
 // Recomputes the error values for this tree.  Returns the
 // max error.
-// Also updates MinY & MaxY.
+// Also updates MinZ & MaxZ.
 // Also computes quick & dirty vertex lighting for the demo.
 {
 	int	i;
@@ -511,37 +511,37 @@ float	quadsquare::RecomputeErrorAndLighting(const quadcornerdata& cd)
 	// Compute error of center vert.
 	float	e;
 	if (cd.ChildIndex & 1) {
-		e = fabs(Vertex[0].Y - (cd.Verts[1].Y + cd.Verts[3].Y) * 0.5);
+		e = fabs(Vertex[0].Z - (cd.Verts[1].Z + cd.Verts[3].Z) * 0.5);
 	} else {
-		e = fabs(Vertex[0].Y - (cd.Verts[0].Y + cd.Verts[2].Y) * 0.5);
+		e = fabs(Vertex[0].Z - (cd.Verts[0].Z + cd.Verts[2].Z) * 0.5);
 	}
 	if (e > maxerror) maxerror = e;
 
 	// Initial min/max.
-	MaxY = Vertex[0].Y;
-	MinY = Vertex[0].Y;
+	MaxZ = Vertex[0].Z;
+	MinZ = Vertex[0].Z;
 
 	// Check min/max of corners.
 	for (i = 0; i < 4; i++) {
-		float	y = cd.Verts[i].Y;
-		if (y < MinY) MinY = y;
-		if (y > MaxY) MaxY = y;
+		float	y = cd.Verts[i].Z;
+		if (y < MinZ) MinZ = y;
+		if (y > MaxZ) MaxZ = y;
 	}
 	
 	// Edge verts.
-	e = fabs(Vertex[1].Y - (cd.Verts[0].Y + cd.Verts[3].Y) * 0.5);
+	e = fabs(Vertex[1].Z - (cd.Verts[0].Z + cd.Verts[3].Z) * 0.5);
 	if (e > maxerror) maxerror = e;
 	Error[0] = e;
 	
-	e = fabs(Vertex[4].Y - (cd.Verts[2].Y + cd.Verts[3].Y) * 0.5);
+	e = fabs(Vertex[4].Z - (cd.Verts[2].Z + cd.Verts[3].Z) * 0.5);
 	if (e > maxerror) maxerror = e;
 	Error[1] = e;
 
 	// Min/max of edge verts.
 	for (i = 0; i < 4; i++) {
-		float	y = Vertex[1 + i].Y;
-		if (y < MinY) MinY = y;
-		if (y > MaxY) MaxY = y;
+		float	y = Vertex[1 + i].Z;
+		if (y < MinZ) MinZ = y;
+		if (y > MaxZ) MaxZ = y;
 	}
 	
 	// Check child squares.
@@ -551,11 +551,11 @@ float	quadsquare::RecomputeErrorAndLighting(const quadcornerdata& cd)
 			SetupCornerData(&q, cd, i);
 			Error[i+2] = Child[i]->RecomputeErrorAndLighting(q);
 
-			if (Child[i]->MinY < MinY) MinY = Child[i]->MinY;
-			if (Child[i]->MaxY > MaxY) MaxY = Child[i]->MaxY;
+			if (Child[i]->MinZ < MinZ) MinZ = Child[i]->MinZ;
+			if (Child[i]->MaxZ > MaxZ) MaxZ = Child[i]->MaxZ;
 		} else {
 			// Compute difference between bilinear average at child center, and diagonal edge approximation.
-			Error[i+2] = fabs((Vertex[0].Y + cd.Verts[i].Y) - (Vertex[i+1].Y + Vertex[((i+1)&3) + 1].Y)) * 0.25;
+			Error[i+2] = fabs((Vertex[0].Z + cd.Verts[i].Z) - (Vertex[i+1].Z + Vertex[((i+1)&3) + 1].Z)) * 0.25;
 		}
 		if (Error[i+2] > maxerror) maxerror = Error[i+2];
 	}
@@ -566,32 +566,32 @@ float	quadsquare::RecomputeErrorAndLighting(const quadcornerdata& cd)
 	//
 
 	float	OneOverSize = 1.0 / (2 << cd.Level);
-	Vertex[0].Lightness = MakeLightness((Vertex[1].Y - Vertex[3].Y) * OneOverSize,
-					    (Vertex[4].Y - Vertex[2].Y) * OneOverSize);
+	Vertex[0].Lightness = MakeLightness((Vertex[1].Z - Vertex[3].Z) * OneOverSize,
+					    (Vertex[4].Z - Vertex[2].Z) * OneOverSize);
 
 	float	v;
 	quadsquare*	s = GetNeighbor(0, cd);
-	if (s) v = s->Vertex[0].Y; else v = Vertex[1].Y;
-	Vertex[1].Lightness = MakeLightness((v - Vertex[0].Y) * OneOverSize,
-				    (cd.Verts[3].Y - cd.Verts[0].Y) * OneOverSize);
+	if (s) v = s->Vertex[0].Z; else v = Vertex[1].Z;
+	Vertex[1].Lightness = MakeLightness((v - Vertex[0].Z) * OneOverSize,
+				    (cd.Verts[3].Z - cd.Verts[0].Z) * OneOverSize);
 	
 	s = GetNeighbor(1, cd);
-	if (s) v = s->Vertex[0].Y; else v = Vertex[2].Y;
-	Vertex[2].Lightness = MakeLightness((cd.Verts[0].Y - cd.Verts[1].Y) * OneOverSize,
-				    (Vertex[0].Y - v) * OneOverSize);
+	if (s) v = s->Vertex[0].Z; else v = Vertex[2].Z;
+	Vertex[2].Lightness = MakeLightness((cd.Verts[0].Z - cd.Verts[1].Z) * OneOverSize,
+				    (Vertex[0].Z - v) * OneOverSize);
 	
 	s = GetNeighbor(2, cd);
-	if (s) v = s->Vertex[0].Y; else v = Vertex[3].Y;
-	Vertex[3].Lightness = MakeLightness((Vertex[0].Y - v) * OneOverSize,
-				    (cd.Verts[2].Y - cd.Verts[1].Y) * OneOverSize);
+	if (s) v = s->Vertex[0].Z; else v = Vertex[3].Z;
+	Vertex[3].Lightness = MakeLightness((Vertex[0].Z - v) * OneOverSize,
+				    (cd.Verts[2].Z - cd.Verts[1].Z) * OneOverSize);
 	
 	s = GetNeighbor(3, cd);
-	if (s) v = s->Vertex[0].Y; else v = Vertex[4].Y;
-	Vertex[4].Lightness = MakeLightness((cd.Verts[3].Y - cd.Verts[2].Y) * OneOverSize,
-				    (v - Vertex[0].Y) * OneOverSize);
+	if (s) v = s->Vertex[0].Z; else v = Vertex[4].Z;
+	Vertex[4].Lightness = MakeLightness((cd.Verts[3].Z - cd.Verts[2].Z) * OneOverSize,
+				    (v - Vertex[0].Z) * OneOverSize);
 	
 
-	// The error, MinY/MaxY, and lighting values for this node and descendants are correct now.
+	// The error, MinZ/MaxZ, and lighting values for this node and descendants are correct now.
 	Dirty = false;
 	
 	return maxerror;
@@ -670,12 +670,12 @@ void	quadsquare::StaticCullAux(const quadcornerdata& cd, float ThresholdDetail, 
 		if (s == NULL || (s->Child[1] == NULL && s->Child[2] == NULL)) {
 
 			// Force vertex height to the edge value.
-			float	y = (cd.Verts[0].Y + cd.Verts[3].Y) * 0.5;
-			Vertex[1].Y = y;
+			float	y = (cd.Verts[0].Z + cd.Verts[3].Z) * 0.5;
+			Vertex[1].Z = y;
 			Error[0] = 0;
 			
 			// Force alias vertex to match.
-			if (s) s->Vertex[3].Y = y;
+			if (s) s->Vertex[3].Z = y;
 			
 			Dirty = true;
 		}
@@ -684,11 +684,11 @@ void	quadsquare::StaticCullAux(const quadcornerdata& cd, float ThresholdDetail, 
 	if (Child[2] == NULL && Child[3] == NULL && Error[1] * ThresholdDetail < size) {
 		quadsquare*	s = GetNeighbor(3, cd);
 		if (s == NULL || (s->Child[0] == NULL && s->Child[1] == NULL)) {
-			float	y = (cd.Verts[2].Y + cd.Verts[3].Y) * 0.5;
-			Vertex[4].Y = y;
+			float	y = (cd.Verts[2].Z + cd.Verts[3].Z) * 0.5;
+			Vertex[4].Z = y;
 			Error[1] = 0;
 			
-			if (s) s->Vertex[2].Y = y;
+			if (s) s->Vertex[2].Z = y;
 			
 			Dirty = true;
 		}
@@ -708,7 +708,7 @@ void	quadsquare::StaticCullAux(const quadcornerdata& cd, float ThresholdDetail, 
 		bool	NecessaryEdges = false;
 		for (i = 0; i < 4; i++) {
 			// See if vertex deviates from edge between corners.
-			float	diff = fabs(Vertex[i+1].Y - (cd.Verts[i].Y + cd.Verts[(i+3)&3].Y) * 0.5);
+			float	diff = fabs(Vertex[i+1].Z - (cd.Verts[i].Z + cd.Verts[(i+3)&3].Z) * 0.5);
 			if (diff > 0.00001) {
 				NecessaryEdges = true;
 			}
@@ -967,20 +967,20 @@ void	quadsquare::UpdateAux(const quadcornerdata& cd, const float ViewerLocation[
 	int	whole = half << 1;
 
 	// See about enabling child verts.
-	if ((EnabledFlags & 1) == 0 && VertexTest(cd.xorg + whole, Vertex[1].Y, cd.zorg + half, Error[0], ViewerLocation) == true) EnableEdgeVertex(0, false, cd);	// East vert.
-	if ((EnabledFlags & 8) == 0 && VertexTest(cd.xorg + half, Vertex[4].Y, cd.zorg + whole, Error[1], ViewerLocation) == true) EnableEdgeVertex(3, false, cd);	// South vert.
+	if ((EnabledFlags & 1) == 0 && VertexTest(cd.xorg + whole, Vertex[1].Z, cd.yorg + half, Error[0], ViewerLocation) == true) EnableEdgeVertex(0, false, cd);	// East vert.
+	if ((EnabledFlags & 8) == 0 && VertexTest(cd.xorg + half, Vertex[4].Z, cd.yorg + whole, Error[1], ViewerLocation) == true) EnableEdgeVertex(3, false, cd);	// South vert.
 	if (cd.Level > 0) {
 		if ((EnabledFlags & 32) == 0) {
-			if (BoxTest(cd.xorg, cd.zorg, half, MinY, MaxY, Error[3], ViewerLocation) == true) EnableChild(1, cd);	// nw child.er
+			if (BoxTest(cd.xorg, cd.yorg, half, MinZ, MaxZ, Error[3], ViewerLocation) == true) EnableChild(1, cd);	// nw child.er
 		}
 		if ((EnabledFlags & 16) == 0) {
-			if (BoxTest(cd.xorg + half, cd.zorg, half, MinY, MaxY, Error[2], ViewerLocation) == true) EnableChild(0, cd);	// ne child.
+			if (BoxTest(cd.xorg + half, cd.yorg, half, MinZ, MaxZ, Error[2], ViewerLocation) == true) EnableChild(0, cd);	// ne child.
 		}
 		if ((EnabledFlags & 64) == 0) {
-			if (BoxTest(cd.xorg, cd.zorg + half, half, MinY, MaxY, Error[4], ViewerLocation) == true) EnableChild(2, cd);	// sw child.
+			if (BoxTest(cd.xorg, cd.yorg + half, half, MinZ, MaxZ, Error[4], ViewerLocation) == true) EnableChild(2, cd);	// sw child.
 		}
 		if ((EnabledFlags & 128) == 0) {
-			if (BoxTest(cd.xorg + half, cd.zorg + half, half, MinY, MaxY, Error[5], ViewerLocation) == true) EnableChild(3, cd);	// se child.
+			if (BoxTest(cd.xorg + half, cd.yorg + half, half, MinZ, MaxZ, Error[5], ViewerLocation) == true) EnableChild(3, cd);	// se child.
 		}
 		
 		// Recurse into child quadrants as necessary.
@@ -1005,19 +1005,19 @@ void	quadsquare::UpdateAux(const quadcornerdata& cd, const float ViewerLocation[
 	}
 	
 	// Test for disabling.  East, South, and center.
-	if ((EnabledFlags & 1) && SubEnabledCount[0] == 0 && VertexTest(cd.xorg + whole, Vertex[1].Y, cd.zorg + half, Error[0], ViewerLocation) == false) {
+	if ((EnabledFlags & 1) && SubEnabledCount[0] == 0 && VertexTest(cd.xorg + whole, Vertex[1].Z, cd.yorg + half, Error[0], ViewerLocation) == false) {
 		EnabledFlags &= ~1;
 		quadsquare*	s = GetNeighbor(0, cd);
 		if (s) s->EnabledFlags &= ~4;
 	}
-	if ((EnabledFlags & 8) && SubEnabledCount[1] == 0 && VertexTest(cd.xorg + half, Vertex[4].Y, cd.zorg + whole, Error[1], ViewerLocation) == false) {
+	if ((EnabledFlags & 8) && SubEnabledCount[1] == 0 && VertexTest(cd.xorg + half, Vertex[4].Z, cd.yorg + whole, Error[1], ViewerLocation) == false) {
 		EnabledFlags &= ~8;
 		quadsquare*	s = GetNeighbor(3, cd);
 		if (s) s->EnabledFlags &= ~2;
 	}
 	if (EnabledFlags == 0 &&
 	    cd.Parent != NULL &&
-	    BoxTest(cd.xorg, cd.zorg, whole, MinY, MaxY, CenterError, ViewerLocation) == false)
+	    BoxTest(cd.xorg, cd.yorg, whole, MinZ, MaxZ, CenterError, ViewerLocation) == false)
 	{
 		// Disable ourself.
 		cd.Parent->Square->NotifyChildDisable(*cd.Parent, cd.ChildIndex);	// nb: possibly deletes 'this'.
@@ -1038,7 +1038,8 @@ static void	InitVert(int index, float x, float y, float z)
 {
 	int	i = index * 3;
 	VertexArray[i] = x;
-	VertexArray[i+1] = y;
+	//printf("%f y, %f  \n",y,((y/(float)UINT16_MAX_MINUS_ONE) *zrange)+ zmin);
+	VertexArray[i+1] = ((y/(float)UINT16_MAX_MINUS_ONE) *(zrange*1000.0))+ zmin;
 	VertexArray[i+2] = z;
 }
 
@@ -1103,11 +1104,11 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 	if (vis != Clip::NO_CLIP) {
 		float	min[3], max[3];
 		min[0] = cd.xorg;
-		min[1] = MinY * VERTICAL_SCALE;
-		min[2] = cd.zorg;
+		min[1] = MinZ * VERTICAL_SCALE;
+		min[2] = cd.yorg;
 		max[0] = cd.xorg + whole;
-		max[1] = MaxY * VERTICAL_SCALE;
-		max[2] = cd.zorg + whole;
+		max[1] = MaxZ * VERTICAL_SCALE;
+		max[2] = cd.yorg + whole;
 		vis = Clip::ComputeBoxVisibility(min, max);
 		if (vis == Clip::NOT_VISIBLE) {
 			// This square is completely outside the view frustum.
@@ -1134,19 +1135,21 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 	if (flags == 0) return;
 
 //	// xxx debug color.
-//	glColor3f(cd.Level * 10 / 255.0, ((cd.Level & 3) * 60 + ((cd.zorg >> cd.Level) & 255)) / 255.0, ((cd.Level & 7) * 30 + ((cd.xorg >> cd.Level) & 255)) / 255.0);
+//	glColor3f(cd.Level * 10 / 255.0, ((cd.Level & 3) * 60 + ((cd.yorg >> cd.Level) & 255)) / 255.0, ((cd.Level & 7) * 30 + ((cd.xorg >> cd.Level) & 255)) / 255.0);
 	
 	// Init vertex data.
-	InitVert(0, cd.xorg + half, Vertex[0].Y, cd.zorg + half);
-	InitVert(1, cd.xorg + whole, Vertex[1].Y, cd.zorg + half);
-	InitVert(2, cd.xorg + whole, cd.Verts[0].Y, cd.zorg);
-	InitVert(3, cd.xorg + half, Vertex[2].Y, cd.zorg);
-	InitVert(4, cd.xorg, cd.Verts[1].Y, cd.zorg);
-	InitVert(5, cd.xorg, Vertex[3].Y, cd.zorg + half);
-	InitVert(6, cd.xorg, cd.Verts[2].Y, cd.zorg + whole);
-	InitVert(7, cd.xorg + half, Vertex[4].Y, cd.zorg + whole);
-	InitVert(8, cd.xorg + whole, cd.Verts[3].Y, cd.zorg + whole);
-
+	InitVert(0, cd.xorg + half, Vertex[0].Z, cd.yorg + half);
+	InitVert(1, cd.xorg + whole, Vertex[1].Z, cd.yorg + half);
+	InitVert(2, cd.xorg + whole, cd.Verts[0].Z, cd.yorg);
+	InitVert(3, cd.xorg + half, Vertex[2].Z, cd.yorg);
+	InitVert(4, cd.xorg, cd.Verts[1].Z, cd.yorg);
+	InitVert(5, cd.xorg, Vertex[3].Z, cd.yorg + half);
+	InitVert(6, cd.xorg, cd.Verts[2].Z, cd.yorg + whole);
+	InitVert(7, cd.xorg + half, Vertex[4].Z, cd.yorg + whole);
+	InitVert(8, cd.xorg + whole, cd.Verts[3].Z, cd.yorg + whole);
+	for(int i=0; i< 9; i++)
+	  ColorArray[i]=0xFFFFFFFF;
+	/*
 	if (!Textured) {
 		ColorArray[0] = MakeColor(Vertex[0].Lightness);
 		ColorArray[1] = MakeColor(Vertex[1].Lightness);
@@ -1158,7 +1161,7 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 		ColorArray[7] = MakeColor(Vertex[4].Lightness);
 		ColorArray[8] = MakeColor(cd.Verts[3].Lightness);
 	}
-
+	*/
 	int	vcount = 0;
 	
 // Local macro to make the triangle logic shorter & hopefully clearer.
@@ -1229,7 +1232,7 @@ void	quadsquare::SetupCornerData(quadcornerdata* q, const quadcornerdata& cd, in
 	default:
 	case 0:
 		q->xorg = cd.xorg + half;
-		q->zorg = cd.zorg;
+		q->yorg = cd.yorg;
 		q->Verts[0] = cd.Verts[0];
 		q->Verts[1] = Vertex[2];
 		q->Verts[2] = Vertex[0];
@@ -1238,7 +1241,7 @@ void	quadsquare::SetupCornerData(quadcornerdata* q, const quadcornerdata& cd, in
 
 	case 1:
 		q->xorg = cd.xorg;
-		q->zorg = cd.zorg;
+		q->yorg = cd.yorg;
 		q->Verts[0] = Vertex[2];
 		q->Verts[1] = cd.Verts[1];
 		q->Verts[2] = Vertex[3];
@@ -1247,7 +1250,7 @@ void	quadsquare::SetupCornerData(quadcornerdata* q, const quadcornerdata& cd, in
 
 	case 2:
 		q->xorg = cd.xorg;
-		q->zorg = cd.zorg + half;
+		q->yorg = cd.yorg + half;
 		q->Verts[0] = Vertex[0];
 		q->Verts[1] = Vertex[3];
 		q->Verts[2] = cd.Verts[2];
@@ -1256,7 +1259,7 @@ void	quadsquare::SetupCornerData(quadcornerdata* q, const quadcornerdata& cd, in
 
 	case 3:
 		q->xorg = cd.xorg + half;
-		q->zorg = cd.zorg + half;
+		q->yorg = cd.yorg + half;
 		q->Verts[0] = Vertex[1];
 		q->Verts[1] = Vertex[0];
 		q->Verts[2] = Vertex[4];
@@ -1273,10 +1276,10 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm)
 {
 	// If block is outside rectangle, then don't bother.
 	int	BlockSize = 2 << cd.Level;
-	if (cd.xorg > hm.XOrigin + ((hm.XSize + 2) << hm.Scale) ||
-	    cd.xorg + BlockSize < hm.XOrigin - (1 << hm.Scale) ||
-	    cd.zorg > hm.ZOrigin + ((hm.ZSize + 2) << hm.Scale) ||
-	    cd.zorg + BlockSize < hm.ZOrigin - (1 << hm.Scale))
+	if (cd.xorg > hm.x_origin + ((hm.XSize + 2) << hm.Scale) ||
+	    cd.xorg + BlockSize < hm.x_origin - (1 << hm.Scale) ||
+	    cd.yorg > hm.y_origin + ((hm.YSize + 2) << hm.Scale) ||
+	    cd.yorg + BlockSize < hm.y_origin - (1 << hm.Scale))
 	{
 		// This square does not touch the given height array area; no need to modify this square or descendants.
 		return;
@@ -1308,11 +1311,11 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm)
 	
 	// Deviate vertex heights based on data sampled from heightmap.
 	float	s[5];
-	s[0] = hm.Sample(cd.xorg + half, cd.zorg + half);
-	s[1] = hm.Sample(cd.xorg + half*2, cd.zorg + half);
-	s[2] = hm.Sample(cd.xorg + half, cd.zorg);
-	s[3] = hm.Sample(cd.xorg, cd.zorg + half);
-	s[4] = hm.Sample(cd.xorg + half, cd.zorg + half*2);
+	s[0] = hm.Sample(cd.xorg + half, cd.yorg + half);
+	s[1] = hm.Sample(cd.xorg + half*2, cd.yorg + half);
+	s[2] = hm.Sample(cd.xorg + half, cd.yorg);
+	s[3] = hm.Sample(cd.xorg, cd.yorg + half);
+	s[4] = hm.Sample(cd.xorg + half, cd.yorg + half*2);
 
 	// Modify the vertex heights if necessary, and set the dirty
 	// flag if any modifications occur, so that we know we need to
@@ -1320,7 +1323,7 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm)
 	for (i = 0; i < 5; i++) {
 		if (s[i] != 0) {
 			Dirty = true;
-			Vertex[i].Y += s[i];
+			Vertex[i].Z += s[i];
 		}
 	}
 
@@ -1351,15 +1354,15 @@ float	HeightMapInfo::Sample(int x, int z) const
 {
 	// Break coordinates into grid-relative coords (ix,iz) and remainder (rx,rz).
 	
-	int	ix = (x - XOrigin) >> Scale;
-	int	iz = (z - ZOrigin) >> Scale;
+	int	ix = (x - x_origin) >> Scale;
+	int	iz = (z - y_origin) >> Scale;
 
 	int	mask = (1 << Scale) - 1;
 
-	int	rx = (x - XOrigin) & mask;
-	int	rz = (z - ZOrigin) & mask;
+	int	rx = (x - x_origin) & mask;
+	int	rz = (z - y_origin) & mask;
 
-	if (ix < 0 || ix >= XSize-1 || iz < 0 || iz >= ZSize-1) return 0;	// Outside the grid.
+	if (ix < 0 || ix >= XSize-1 || iz < 0 || iz >= YSize-1) return 0;	// Outside the grid.
 
 	float	fx = float(rx) / (mask + 1);
 	float	fz = float(rz) / (mask + 1);

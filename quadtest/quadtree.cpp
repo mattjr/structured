@@ -1078,7 +1078,7 @@ int	quadsquare::Render(const quadcornerdata& cd, bool Textured)
 		glEnable(GL_TEXTURE_GEN_T);
 	}
 
-	RenderAux(cd, Textured, Clip::SOME_CLIP);
+	RenderAux(cd, Textured, Clip::NO_CLIP);
 
 	glDisable(GL_TEXTURE_GEN_S);
 	glDisable(GL_TEXTURE_GEN_T);

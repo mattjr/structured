@@ -23,7 +23,7 @@
 #endif
 
 
-
+#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include "uquadtree.hpp"
@@ -1097,9 +1097,26 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 // Does the work of rendering this square.  Uses the enabled vertices only.
 // Recurses as necessary.
 {
+  
 	int	half = 1 << cd.Level;
 	int	whole = 2 << cd.Level;
-	
+
+
+	double cellsizex=ge.range[0];
+	for(int i=2; i<cd.Level; i++)
+	  cellsizex*=0.5;
+
+	double cellsizey=ge.range[0];
+	for(int i=2; i<cd.Level; i++)
+	  cellsizey*=0.5;
+
+	double worldhalfx=cellsizex*half;
+	double worldhalfy=cellsizey*half;
+
+	double worldwholex=cellsizex*whole;
+	double worldwholey=cellsizex*whole;
+	//	printf("Level %f %d\n",cellsizex,cd.Level);
+	//	printf("Level %d h %d whole %d %d %d\n",cd.Level,half,whole,1 << 1 , 1<< 0);
 	// If this square is outside the frustum, then don't render it.
 	/*if (vis != Clip::NO_CLIP) {
 		float	min[3], max[3];
@@ -1138,7 +1155,7 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 //	glColor3f(cd.Level * 10 / 255.0, ((cd.Level & 3) * 60 + ((cd.yorg >> cd.Level) & 255)) / 255.0, ((cd.Level & 7) * 30 + ((cd.xorg >> cd.Level) & 255)) / 255.0);
 	
 	// Init vertex data.
-	InitVert(0, cd.xorg + half, Vertex[0].Z, cd.yorg + half);
+	/*	InitVert(0, cd.xorg + half, Vertex[0].Z, cd.yorg + half);
 	InitVert(1, cd.xorg + whole, Vertex[1].Z, cd.yorg + half);
 	InitVert(2, cd.xorg + whole, cd.Verts[0].Z, cd.yorg);
 	InitVert(3, cd.xorg + half, Vertex[2].Z, cd.yorg);
@@ -1146,7 +1163,17 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 	InitVert(5, cd.xorg, Vertex[3].Z, cd.yorg + half);
 	InitVert(6, cd.xorg, cd.Verts[2].Z, cd.yorg + whole);
 	InitVert(7, cd.xorg + half, Vertex[4].Z, cd.yorg + whole);
-	InitVert(8, cd.xorg + whole, cd.Verts[3].Z, cd.yorg + whole);
+	InitVert(8, cd.xorg + whole, cd.Verts[3].Z, cd.yorg + whole);*/
+
+	InitVert(0, cd.xorg + worldhalfx, Vertex[0].Z, cd.yorg + worldhalfy);
+	InitVert(1, cd.xorg + worldwholex, Vertex[1].Z, cd.yorg + worldhalfy);
+	InitVert(2, cd.xorg + worldwholex, cd.Verts[0].Z, cd.yorg);
+	InitVert(3, cd.xorg + worldhalfx, Vertex[2].Z, cd.yorg);
+	InitVert(4, cd.xorg, cd.Verts[1].Z, cd.yorg);
+	InitVert(5, cd.xorg, Vertex[3].Z, cd.yorg + worldhalfy);
+	InitVert(6, cd.xorg, cd.Verts[2].Z, cd.yorg + worldwholey);
+	InitVert(7, cd.xorg + worldhalfx, Vertex[4].Z, cd.yorg + worldwholey);
+	InitVert(8, cd.xorg + worldwholex, cd.Verts[3].Z, cd.yorg + worldwholey);
 	for(int i=0; i< 9; i++)
 	  ColorArray[i]=0xFFFFFFFF;
 	/*

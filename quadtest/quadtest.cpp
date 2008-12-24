@@ -14,7 +14,16 @@
 #include "geometry.hpp"
 #include "clip.hpp"
 #include "quadtree.hpp"
+include  <stdio.h>
+#include  <stdlib.h>
 
+#include "TriMesh_algo.h"
+#include <osgViewer/Viewer>
+typedef struct _mesh_input{
+  std::string name;
+  float res;
+  mapnik::Envelope<double> envelope;
+}mesh_input;
 #include <stdlib.h> 
 #include <string.h>
 #if defined(__APPLE__)
@@ -30,11 +39,45 @@
 
 #endif
 
+void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny){
+  point_nn* pin = NULL;
+ 
+  pout = NULL;
+  nnai* nn = NULL;
+  nout = 0;
+  double* zin = NULL;
+  double* xout = NULL;
+  double* yout = NULL;
+  double* zout = NULL;
+  int cpi = -1;               /* control point index */
+  struct timeval tv0, tv1, tv2;
+  struct timezone tz;
+  int nv = mesh->vertices.size();
+  pin = (point_nn *)malloc(nv * sizeof(point_nn));
+  zin = (double *)malloc(nv * sizeof(double));
+  for (int i = 0; i < nv; i++){
+    point_nn* p = &pin[i];
+    
+    p->x = mesh->vertices[i][0];
+    p->y = mesh->vertices[i][1];
+    p->z = mesh->vertices[i][2];
+    zin[i] = p->z;
+    
+  }
+
+  nx=(int)floor(mesh_data.envelope.width()/mesh_data.res);
+  ny=(int)floor(mesh_data.envelope.height()/mesh_data.res);
+  double wmin = -DBL_MAX;
+  points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
+  nnpi_interpolate_points(nv, pin, wmin, nout, pout);
+  //points_write(nout, pout);
+}
 
 
 
 #define PI 3.141592654
 
+std::vector<mesh_input> meshes;
 
 void	DisplayReshape(int w, int h);
 void	Display();
@@ -115,8 +158,43 @@ int	main(int argc, char *argv[])
 	fclose(fp);
 	printf("%d count %f %f %f %f %f %f\n",cnt,min[0],min[1],min[2],max[0],max[1],max[2]);*/
 	
-		LoadData(argv[1]);
-	
+	//	       LoadData(argv[1]);
+	if(argc > 1){
+	  FILE* fp;
+	  char meshname[255];
+	  float res;
+	  fp=fopen(argv[1],"rb");
+	  if(!fp){
+	    fprintf(stderr,"Can't open %s\n",argv[1]);
+	    exit(0);
+	  }
+	  
+	  while(1){
+	    if(fscanf(fp,"%s %f %*d",meshname,&res)!=2)
+	      break;
+	    mesh_input m;
+	    m.name=meshname;
+	    m.res=res;
+	    meshes.push_back(m);
+	  }
+
+	  for(unsigned int i=0; i< meshes.size(); i++){
+	    TriMesh::verbose=0;
+	    TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
+	    mesh->need_bbox();
+	    meshes[i].envelope=Envelope<double>(mesh->bbox.min[0],
+						mesh->bbox.min[1],
+						mesh->bbox.max[0],
+						mesh->bbox.max[1]);
+	    tree_bounds.expand_to_include(meshes[i].envelope);
+	    
+	    delete mesh;
+	  }
+	  
+	  LoadData(meshes);
+	}
+	else
+	  LoadData();
 	// Debug info.
 	printf("nodes = %d\n", root->CountNodes());
 	printf("max error = %g\n", root->RecomputeErrorAndLighting(RootCornerData));
@@ -210,6 +288,31 @@ void load_hm_file(HeightMapInfo *hm,const char *filename){
 	  hm->ZOrigin=24576;
 
 }
+void	LoadData(std::vector<mesh_input> &meshes)
+// Load some data and put it into the quadtree.
+{
+  for(unsigned int i=0; i< meshes.size(); i++){
+ 
+
+   TriMesh::verbose=0;
+   TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
+
+   point_nn*pout;
+   int nout;
+   interpolate_grid(mesh,meshes[i],pout,nout);
+   printf("\r %03d number of points: %d",i,nout);
+   fflush(stdout);
+   points_to_quadtree(nout,pout,qt);
+   //free(&pout);
+ 
+   delete mesh;  
+ }
+ 
+  load_hm_file(&hm,filename);
+  root->AddHeightMap(RootCornerData, hm);
+	
+
+}
 
 void	LoadData(char *filename)
 // Load some data and put it into the quadtree.
@@ -242,10 +345,11 @@ void	LoadData()
 	fread(hm.Data, sizeof(uint16), hm.XSize * hm.ZSize, fp);
 	fclose(fp);
 	printf("Building quadtree data...\n");
+	//	hm.ZSize = 100;
 	root->AddHeightMap(RootCornerData, hm);
 	
 	// More detailed data at 64 meter spacing, covering the middle of the terrain.
-	hm.XOrigin = 16384;
+	/*	hm.XOrigin = 16384;
 	hm.ZOrigin = 16384;
 	hm.Scale = 6;
 	fp = fopen("demdata/gc16at64.raw", "rb");
@@ -264,7 +368,7 @@ void	LoadData()
 	printf("Adding quadtree data...\n");
 	root->AddHeightMap(RootCornerData, hm);
 	
-	delete [] hm.Data;
+	delete [] hm.Data;*/
 }
 
 

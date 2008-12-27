@@ -1506,7 +1506,10 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
     for (i=0; i<3; i++) {
         nFlatTriangleCorner *tc = tc_array[i];
 	ul::vector p = ul::vector(float(tc->x),float(tc->y),tc->vi->Z);
-
+	p.SetX(tc->x*ge.cell_size);
+	
+	p.SetZ(	((tc->vi->Z/(float)UINT16_MAX_MINUS_ONE) *(ge.range[2]))+ ge.min[2]);
+	p.SetY(tc->y*ge.cell_size);
         fprintf(wf_fp,"v %f %f %f\n",p.X(),p.Y(),p.Z());
 	//        fp->PutS(buf);
     }

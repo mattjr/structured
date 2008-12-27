@@ -1173,7 +1173,7 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 	for(int i=0; i< 9; i++)
 	  ColorArray[i]=0xFFFFFFFF;
 	 
-	if (!Textured) {
+	/*	if (!Textured) {
 		ColorArray[0] = MakeColor(Vertex[0].Lightness);
 		ColorArray[1] = MakeColor(Vertex[1].Lightness);
 		ColorArray[2] = MakeColor(cd.Verts[0].Lightness);
@@ -1184,7 +1184,7 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 		ColorArray[7] = MakeColor(Vertex[4].Lightness);
 		ColorArray[8] = MakeColor(cd.Verts[3].Lightness);
 	}
-	
+	*/
 	int	vcount = 0;
 	
 // Local macro to make the triangle logic shorter & hopefully clearer.
@@ -1506,11 +1506,11 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
     for (i=0; i<3; i++) {
         nFlatTriangleCorner *tc = tc_array[i];
 	ul::vector p = ul::vector(float(tc->x),float(tc->y),tc->vi->Z);
-	p.SetX(tc->x*ge.cell_size);
+	p.SetX(ge.min[0]+(tc->x*ge.cell_size));
 	
 	p.SetZ(	((tc->vi->Z/(float)UINT16_MAX_MINUS_ONE) *(ge.range[2]))+ ge.min[2]);
-	p.SetY(tc->y*ge.cell_size);
-        fprintf(wf_fp,"v %f %f %f\n",p.X(),p.Y(),p.Z());
+	p.SetY(ge.min[1]+(tc->y*ge.cell_size));
+        fprintf(wf_fp,"v %f %f %f\n",p.X(),p.Z(),-p.Y());
 	//        fp->PutS(buf);
     }
     wf_num_tris++;

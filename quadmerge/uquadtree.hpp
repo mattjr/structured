@@ -16,16 +16,38 @@
 
 #include "clip.hpp"
 #include "geometry.hpp"
-
+#include <ostream>
 typedef unsigned short uint16;
 typedef unsigned int uint32;
 typedef short int16;
 typedef int int32;
 #define UINT16_MAX_MINUS_ONE (65536 -1)
-typedef struct _global_extents{
- double min[3],max[3],range[3];
+class global_extents{
+public:
+  double min[3],max[3],range[3];
   double cell_size;
-}global_extents;
+  int max_Level;
+  double get_cell_size(int level){
+    int	whole_cell_int_size = 2 << level;
+    double tree_max_size=std::max(range[0],range[1]);
+    return tree_max_size/whole_cell_int_size;
+  }
+  void get_closest_res_level(double target_res,int &level, double &res){
+    for(level=max_Level; level > 0; level--){
+      res=get_cell_size(level);
+      //printf("%f= %d\n",res,level);
+      if(res > target_res){
+	level=max_Level-level;
+	break;      
+      }
+    }
+  }
+  friend  std::ostream& operator << (std::ostream& os, const global_extents &data){
+    return os<<"Min X: "<< data.min[0] << " Y: "<< data.min[1] << " Z: "<< data.min[2] <<"Max X: "<< data.max[0] << " Y: "<< data.max[1] << " Z: " <<data.max[2] << "Cell Size " << data.cell_size <<std::endl;
+  }
+
+  
+};
 
 extern global_extents ge;
 struct HeightMapInfo {

@@ -39,7 +39,7 @@
 
 using mapnik::Envelope;
 using namespace ul;
-
+using std::cout;
 
 
 #define PI 3.141592654
@@ -56,9 +56,9 @@ void	KeyHandler(unsigned char key, int x, int y);
 void	LoadData(char  *filename);
 void	LoadData();
 
-int max_Level=15;
+//int max_Level=15;
 quadsquare*	root = NULL;
-quadcornerdata	RootCornerData = { NULL, NULL, 0, max_Level, 0, 0, { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } } };
+quadcornerdata	RootCornerData = { NULL, NULL, 0, 0, 0, 0, { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } } };
 
 ul::vector	ViewerDir(1, 0, 0);
 ul::vector	ViewerUp(0, 1, 0);
@@ -96,6 +96,9 @@ int	main(int argc, char *argv[])
 	printf(" * '-' decreases terrain detail\n");
 	printf("\n");
   */
+  ge.max_Level=15;
+  RootCornerData.Level= ge.max_Level;
+
 	int	i;
 	int cnt=0;
 	for(int i=0; i <3; i++){
@@ -161,13 +164,16 @@ int	main(int argc, char *argv[])
 						mesh->bbox.min[1],
 						mesh->bbox.max[0],
 						mesh->bbox.max[1]);
+	    cout << meshes[i].envelope;
 	    if( mesh->bbox.min[2] < zmin)
 	      zmin= mesh->bbox.min[2];
 	    
 	    if( mesh->bbox.min[2] > zmax)
 	      zmax= mesh->bbox.max[2];
-
-	    tree_bounds.expand_to_include(meshes[i].envelope);
+	    if(i == 0)
+	      tree_bounds=meshes[i].envelope;
+	    else
+	      tree_bounds.expand_to_include(meshes[i].envelope);
 	    
 	    delete mesh;
 	  }
@@ -175,7 +181,7 @@ int	main(int argc, char *argv[])
 	  RootCornerData.xorg=tree_bounds.center().x;
 	  RootCornerData.yorg=tree_bounds.center().y;
 	  root = new quadsquare(&RootCornerData);
-	  int	whole_cell_int_size = 2 << max_Level;
+	  int	whole_cell_int_size = 2 << ge.max_Level;
 	  double tree_max_size=max(tree_bounds.width(),tree_bounds.height());
 	  ge.cell_size=tree_max_size/whole_cell_int_size;
 	  //	  ge.cell_size=0.1;
@@ -190,7 +196,7 @@ int	main(int argc, char *argv[])
 	  ge.max[1]=tree_bounds.maxy();
 	  ge.max[2]=zmax;
 
-
+	  std::cout << ge;
 	  LoadData(meshes);
 	}
 	else{
@@ -233,6 +239,7 @@ int	main(int argc, char *argv[])
 	  //		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
 		root->RenderToWF(RootCornerData);
 	}
+	return 0;
 	//
 	// Set up glut.
 	//
@@ -319,7 +326,9 @@ void	LoadData(std::vector<mesh_input> &meshes)
    int nout;
    int nx,ny;
    float cx,cy;
-   interpolate_grid(mesh,meshes[i],pout,nout,nx,ny,cx,cy);
+   int level;
+   double actual_res;
+   interpolate_grid(mesh,meshes[i],pout,nout,nx,ny,cx,cy,actual_res,level);
    printf("\r %03d number of points: %d",i,nout);
    fflush(stdout);
    // points_to_quadtree(nout,pout,qt);
@@ -332,7 +341,7 @@ void	LoadData(std::vector<mesh_input> &meshes)
    hm.XSize = nx;
    hm.YSize = ny;
    hm.RowWidth = hm.XSize;
-   hm.Scale = 7;
+   hm.Scale =level;
    hm.Data = new uint16[hm.XSize * hm.YSize];
    
    for(int i=0; i < hm.XSize * hm.YSize; i++){

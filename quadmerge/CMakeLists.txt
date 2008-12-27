@@ -115,8 +115,7 @@ SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )
 LINK_DIRECTORIES( ${PROJECT_SOURCE_DIR}/nn/ )
 LINK_LIBRARIES(	${GLUT_LIBRARY}  ${OSG_LIBRARY} ${OSGVIEWER_LIBRARY} 	${LIBPOLYP_LIBRARY} nn ${OPENGL_gl_LIBRARY})
 
-ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp raster.cpp 
-)
+#ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp raster.cpp )
 ADD_EXECUTABLE( quadtest quadtest.cpp envelope.cpp raster.cpp geometry.cpp uquadtree.cpp 
 )
 

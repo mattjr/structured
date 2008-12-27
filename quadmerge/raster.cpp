@@ -1,5 +1,5 @@
 #include "raster.hpp"
-
+#include "uquadtree.hpp"
 #include <float.h>
 float kill_threshold_squared = 2500.0f; // 50*50 units
 
@@ -160,7 +160,7 @@ static inline int Floor(const float x)
 
 
 
-void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny,float &cx,float &cy){
+void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny,float &cx,float &cy,double &res,int &level){
   point_nn* pin = NULL;
  
   pout = NULL;
@@ -185,11 +185,14 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
     zin[i] = p->z;
     
   }
+  double actual_res;
+  ge.get_closest_res_level(mesh_data.res,level,actual_res);
+  printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
   cx=mesh_data.envelope.center().x;
   cy=mesh_data.envelope.center().y;
 
-  nx=(int)floor(mesh_data.envelope.width()/mesh_data.res);
-  ny=(int)floor(mesh_data.envelope.height()/mesh_data.res);
+  nx=(int)floor(mesh_data.envelope.width()/actual_res);
+  ny=(int)floor(mesh_data.envelope.height()/actual_res);
   double wmin = -DBL_MAX;
   points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
   nnpi_interpolate_points(nv, pin, wmin, nout, pout);

@@ -15,7 +15,7 @@
 
 
 #include "clip.hpp"
-
+#include "geometry.hpp"
 
 typedef unsigned short uint16;
 typedef unsigned int uint32;
@@ -24,6 +24,7 @@ typedef int int32;
 #define UINT16_MAX_MINUS_ONE (65536 -1)
 typedef struct _global_extents{
  double min[3],max[3],range[3];
+  double cell_size;
 }global_extents;
 
 extern global_extents ge;
@@ -83,7 +84,7 @@ struct quadsquare {
 	int	Render(const quadcornerdata& cd, bool Textured);
 
 	float	GetHeight(const quadcornerdata& cd, float x, float z);
-	
+	int	  RenderToWF(const quadcornerdata& cd);
 private:
 	void	EnableEdgeVertex(int index, bool IncrementCount, const quadcornerdata& cd);
 	quadsquare*	EnableDescendant(int count, int stack[], const quadcornerdata& cd);
@@ -95,12 +96,31 @@ private:
 
 	quadsquare*	GetNeighbor(int dir, const quadcornerdata& cd);
 	void	CreateChild(int index, const quadcornerdata& cd);
-	void	SetupCornerData(quadcornerdata* q, const quadcornerdata& pd, int ChildIndex);
+  void	SetupCornerData(quadcornerdata* q, const quadcornerdata& pd, int ChildIndex);
 
+  void RenderToWFAux(const quadcornerdata& cd);
 	void	UpdateAux(const quadcornerdata& cd, const float ViewerLocation[3], float CenterError);
 	void	RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibility vis);
 	void	SetStatic(const quadcornerdata& cd);
+
+
+class nFlatTriangleCorner {
+public:
+    int x,y;            // polar x/z 
+    const VertInfo *vi;       // vertex info containing y coord, normal and index reuse data
+  ul::vector pos;        // the triangle's corner position in model space
+    bool pos_ok;        // false: pos noch nicht updated    
+    nFlatTriangleCorner() {
+        pos_ok = false;
+    };
 };
+void AddTriangleToWF(quadsquare * /* usused qs */, 
+                                   nFlatTriangleCorner *tc0, 
+                                   nFlatTriangleCorner *tc1,
+		     nFlatTriangleCorner *tc2);
+
+};
+
 
 
 #endif // QUADTREE_HPP

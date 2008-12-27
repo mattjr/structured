@@ -7,6 +7,11 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
 find_package( GLUT ) 
 INCLUDE( ${PROJECT_SOURCE_DIR}/../../CMakeUtils/FindOSG.cmake )
+FIND_PACKAGE( OpenGL )
+IF( NOT OPENGL_FOUND )
+   MESSAGE( FATAL_ERROR  "ERROR - Can't find OpenGL" )
+ENDIF( NOT OPENGL_FOUND )
+
 #--------------------------------#
 # Enforce an out-of-source build #
 #--------------------------------#
@@ -56,8 +61,14 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 # libpolyp 
 SET( LIBPOLYP_INC ${LIBPOLYP_PREFIX}/include/libpolyp )
 SET( LIBPOLYP_LIBRARY polyp )
+# Boost 
+FIND_PACKAGE(Boost)
+IF( NOT Boost_FOUND )
+   MESSAGE( FATAL_ERROR  "ERROR - Can't find boost" )
+ENDIF( NOT Boost_FOUND )      
+SET( CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR} )
 
-INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include  ${LIBPOLYP_INC})
+INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include  ${LIBPOLYP_INC} ${Boost_INCLUDE_DIR})
 
 
 #-----------------------#
@@ -102,7 +113,7 @@ INCLUDE_DIRECTORIES(
 SET( LIBRARY_OUTPUT_PATH     ${PROJECT_SOURCE_DIR}/lib )
 SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )
 LINK_DIRECTORIES( ${PROJECT_SOURCE_DIR}/nn/ )
-LINK_LIBRARIES(	${GLUT_LIBRARY} plplotcxxd ${OSG_LIBRARY} ${OSGVIEWER_LIBRARY} 	${LIBPOLYP_LIBRARY} nn)
+LINK_LIBRARIES(	${GLUT_LIBRARY}  ${OSG_LIBRARY} ${OSGVIEWER_LIBRARY} 	${LIBPOLYP_LIBRARY} nn ${OPENGL_gl_LIBRARY})
 
 ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp raster.cpp 
 )

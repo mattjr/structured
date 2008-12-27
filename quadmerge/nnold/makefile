@@ -17,10 +17,10 @@ INSTALL = /usr/bin/install -c
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_DATA = ${INSTALL} -m 644
 
-CC = /home/mkj/bin/gcc
+CC = gcc
 CFLAGS = -g -O2 -Wall -pedantic
 CFLAGS_TRIANGLE = -g -O2 -Wall -pedantic -w -ffloat-store
-CFLAGS_VULNERABLE = #-fno-force-mem -ffloat-store
+CFLAGS_VULNERABLE = -fno-force-mem -ffloat-store
 LDFLAGS = 
 
 AR = ar

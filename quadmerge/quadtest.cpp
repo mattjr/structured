@@ -56,16 +56,16 @@ void	KeyHandler(unsigned char key, int x, int y);
 void	LoadData(char  *filename);
 void	LoadData();
 
-
+int max_Level=15;
 quadsquare*	root = NULL;
-quadcornerdata	RootCornerData = { NULL, NULL, 0, 15, 0, 0, { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } } };
+quadcornerdata	RootCornerData = { NULL, NULL, 0, max_Level, 0, 0, { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } } };
 
 ul::vector	ViewerDir(1, 0, 0);
 ul::vector	ViewerUp(0, 1, 0);
 float	ViewerTheta = 0;
 float	ViewerPhi = 0;
 float	ViewerHeight = 0;
-ul::vector	ViewerLoc(30000, 9550, 30000);
+ul::vector	ViewerLoc(0, 40, 0);
 float	Speed = (1 << 5);
 bool	PinToGround = false;
 bool	MoveForward = false;
@@ -73,13 +73,13 @@ bool	MoveForward = false;
 int	TriangleCounter = 0;
 global_extents ge;
 
-static float	Detail = 1000.0;// FLT_MAX;
+static float	Detail = 100.0;// FLT_MAX;
 
 
 int	main(int argc, char *argv[])
 {
 	// Print a summary of the user-interface.
-	printf("Welcome to the Adaptive Quadtree Meshing demo.\n");
+  /*	printf("Welcome to the Adaptive Quadtree Meshing demo.\n");
 	printf("by Thatcher Ulrich <tu@tulrich.com> Copyright 2000\n\n");
 	printf("Use the mouse and keyboard to control the program.  Here's a summary:\n");
 	printf(" * mouse-left plus mouse-move rotates the view orientation\n");
@@ -95,7 +95,7 @@ int	main(int argc, char *argv[])
 	printf(" * '=' increases terrain detail\n");
 	printf(" * '-' decreases terrain detail\n");
 	printf("\n");
-	
+  */
 	int	i;
 	int cnt=0;
 	for(int i=0; i <3; i++){
@@ -104,7 +104,6 @@ int	main(int argc, char *argv[])
 	  ge.range[i]=1.0;
 	}
 
-	root = new quadsquare(&RootCornerData);
 	/*	FILE* fp;
 #define DIMENSION 3
 	float c[2*DIMENSION];
@@ -172,6 +171,14 @@ int	main(int argc, char *argv[])
 	    
 	    delete mesh;
 	  }
+
+	  RootCornerData.xorg=tree_bounds.center().x;
+	  RootCornerData.yorg=tree_bounds.center().y;
+	  root = new quadsquare(&RootCornerData);
+	  int	whole_cell_int_size = 2 << max_Level;
+	  double tree_max_size=max(tree_bounds.width(),tree_bounds.height());
+	  ge.cell_size=tree_max_size/whole_cell_int_size;
+	  //	  ge.cell_size=0.1;
 	  ge.range[2]=zmax-zmin;
 	  ge.range[0]=tree_bounds.width();
 	  ge.range[1]=tree_bounds.height();
@@ -193,7 +200,7 @@ int	main(int argc, char *argv[])
 	  ge.min[0]=0.0;
 	  ge.min[1]=0.0;
 	  ge.min[2]=0.0;
-
+	  ge.cell_size=1.0;
 	  ge.max[0]=0.0;
 	  ge.max[1]=0.0;
 	  ge.max[2]=0.0;
@@ -204,7 +211,7 @@ int	main(int argc, char *argv[])
 	// Debug info.
 	printf("nodes = %d\n", root->CountNodes());
 	printf("max error = %g\n", root->RecomputeErrorAndLighting(RootCornerData));
-
+	  printf("Cell Size %f\n",ge.cell_size);
 	// Get rid of unnecessary nodes in flat-ish areas.
 	//printf("Culling unnecessary nodes (detail factor = 25)...\n");
 	//root->StaticCullData(RootCornerData, 25);
@@ -221,7 +228,11 @@ int	main(int argc, char *argv[])
 		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
 	}
 	*/
-	
+	// Draw the quadtree.
+	if (root) {
+	  //		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
+		root->RenderToWF(RootCornerData);
+	}
 	//
 	// Set up glut.
 	//
@@ -280,7 +291,7 @@ void load_hm_file(HeightMapInfo *hm,const char *filename){
 	int range = (int) pow(2,8) - 1;
 	for(int i=0; i < hm->XSize * hm->YSize; i++){
 	  fread((char *)&tmp,sizeof(float),1,fp);
-	  if(isinf(tmp))
+	  //if(isinf(tmp))
 	    //	    hm->Data[i]=100;//	    
 	    tmp=min;
 	    //	    hm->Data[i]=0;

@@ -965,6 +965,8 @@ void	quadsquare::UpdateAux(const quadcornerdata& cd, const float ViewerLocation[
 
 	int	half = 1 << cd.Level;
 	int	whole = half << 1;
+	//	float worldhalf=half*ge.cell_size;
+	//float worldwhole=whole*ge.cell_size;
 
 	// See about enabling child verts.
 	if ((EnabledFlags & 1) == 0 && VertexTest(cd.xorg + whole, Vertex[1].Z, cd.yorg + half, Error[0], ViewerLocation) == true) EnableEdgeVertex(0, false, cd);	// East vert.
@@ -1029,18 +1031,18 @@ float	VertexArray[9 * 3];
 unsigned int	ColorArray[9];
 unsigned char	VertList[24];
 int	TriCount = 0;
-	
-
+int wf_num_tris=0;
+FILE *wf_fp=NULL;
 
 static void	InitVert(int index, float x, float y, float z)
 // Initializes the indexed vertex of VertexArray[] with the
 // given values.
 {
 	int	i = index * 3;
-	VertexArray[i] = x;
+	VertexArray[i] = x*ge.cell_size;
 	//printf("%f y, %f  \n",y,((y/(float)UINT16_MAX_MINUS_ONE) *zrange)+ zmin);
        	VertexArray[i+1] = ((y/(float)UINT16_MAX_MINUS_ONE) *(ge.range[2]))+ ge.min[2];
-	VertexArray[i+2] = z;
+	VertexArray[i+2] = z*ge.cell_size;
 }
 
 
@@ -1101,20 +1103,14 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 	int	half = 1 << cd.Level;
 	int	whole = 2 << cd.Level;
 
+	
+  
 
-	double cellsizex=ge.range[0];
-	for(int i=2; i<cd.Level; i++)
-	  cellsizex*=0.5;
+	double worldhalfx=ge.cell_size*half;
+	double worldhalfy=ge.cell_size*half;
 
-	double cellsizey=ge.range[0];
-	for(int i=2; i<cd.Level; i++)
-	  cellsizey*=0.5;
-
-	double worldhalfx=cellsizex*half;
-	double worldhalfy=cellsizey*half;
-
-	double worldwholex=cellsizex*whole;
-	double worldwholey=cellsizex*whole;
+	double worldwholex=ge.cell_size*whole;
+	double worldwholey=ge.cell_size*whole;
 	//	printf("Level %f %d\n",cellsizex,cd.Level);
 	//	printf("Level %d h %d whole %d %d %d\n",cd.Level,half,whole,1 << 1 , 1<< 0);
 	// If this square is outside the frustum, then don't render it.
@@ -1155,7 +1151,7 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 //	glColor3f(cd.Level * 10 / 255.0, ((cd.Level & 3) * 60 + ((cd.yorg >> cd.Level) & 255)) / 255.0, ((cd.Level & 7) * 30 + ((cd.xorg >> cd.Level) & 255)) / 255.0);
 	
 	// Init vertex data.
-	/*	InitVert(0, cd.xorg + half, Vertex[0].Z, cd.yorg + half);
+		InitVert(0, cd.xorg + half, Vertex[0].Z, cd.yorg + half);
 	InitVert(1, cd.xorg + whole, Vertex[1].Z, cd.yorg + half);
 	InitVert(2, cd.xorg + whole, cd.Verts[0].Z, cd.yorg);
 	InitVert(3, cd.xorg + half, Vertex[2].Z, cd.yorg);
@@ -1163,9 +1159,9 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 	InitVert(5, cd.xorg, Vertex[3].Z, cd.yorg + half);
 	InitVert(6, cd.xorg, cd.Verts[2].Z, cd.yorg + whole);
 	InitVert(7, cd.xorg + half, Vertex[4].Z, cd.yorg + whole);
-	InitVert(8, cd.xorg + whole, cd.Verts[3].Z, cd.yorg + whole);*/
+	InitVert(8, cd.xorg + whole, cd.Verts[3].Z, cd.yorg + whole);
 
-	InitVert(0, cd.xorg + worldhalfx, Vertex[0].Z, cd.yorg + worldhalfy);
+	/*	InitVert(0, cd.xorg + worldhalfx, Vertex[0].Z, cd.yorg + worldhalfy);
 	InitVert(1, cd.xorg + worldwholex, Vertex[1].Z, cd.yorg + worldhalfy);
 	InitVert(2, cd.xorg + worldwholex, cd.Verts[0].Z, cd.yorg);
 	InitVert(3, cd.xorg + worldhalfx, Vertex[2].Z, cd.yorg);
@@ -1173,10 +1169,10 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 	InitVert(5, cd.xorg, Vertex[3].Z, cd.yorg + worldhalfy);
 	InitVert(6, cd.xorg, cd.Verts[2].Z, cd.yorg + worldwholey);
 	InitVert(7, cd.xorg + worldhalfx, Vertex[4].Z, cd.yorg + worldwholey);
-	InitVert(8, cd.xorg + worldwholex, cd.Verts[3].Z, cd.yorg + worldwholey);
+	InitVert(8, cd.xorg + worldwholex, cd.Verts[3].Z, cd.yorg + worldwholey);*/
 	for(int i=0; i< 9; i++)
 	  ColorArray[i]=0xFFFFFFFF;
-	/*
+	 
 	if (!Textured) {
 		ColorArray[0] = MakeColor(Vertex[0].Lightness);
 		ColorArray[1] = MakeColor(Vertex[1].Lightness);
@@ -1188,7 +1184,7 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 		ColorArray[7] = MakeColor(Vertex[4].Lightness);
 		ColorArray[8] = MakeColor(cd.Verts[3].Lightness);
 	}
-	*/
+	
 	int	vcount = 0;
 	
 // Local macro to make the triangle logic shorter & hopefully clearer.
@@ -1308,7 +1304,7 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm)
 	    cd.yorg > hm.y_origin + ((hm.YSize + 2) << hm.Scale) ||
 	    cd.yorg + BlockSize < hm.y_origin - (1 << hm.Scale))
 	{
-		// This square does not touch the given height array area; no need to modify this square or descendants.
+	  // This square does not touch the given height array area; no need to modify this square or descendants.
 		return;
 	}
 
@@ -1402,4 +1398,119 @@ float	HeightMapInfo::Sample(int x, int z) const
 	return (s00 * (1-fx) + s01 * fx) * (1-fz) +
 		(s10 * (1-fx) + s11 * fx) * fz;
 }
+
+
+//-------------------------------------------------------------------
+//  RenderToWF()
+//  Render quadtree to a wavefront file. You should run a few
+//  Update()'s over the tree with an appropriate detail error
+//  and the viewer positioned at (0,0,0) before calling
+//  RenderToWF().
+//  20-Jul-00   floh    created
+//-------------------------------------------------------------------
+int	quadsquare::RenderToWF(const quadcornerdata& cd)
+{
+  wf_num_tris=0;
+  wf_fp=fopen("out.obj","w");
+  RenderToWFAux(cd);
+  int num = wf_num_tris * 3;
+  int i;
+  char buf[512];
+  for (i=1; i<=num; i+=3) {
+    fprintf(wf_fp,"f %d %d %d\n",i,i+1,i+2);
+    //  fp->PutS(buf);
+  }
+  fclose(wf_fp);
+}
+
+
+void quadsquare::RenderToWFAux(const quadcornerdata& cd)
+{
+    int half = 1 << cd.Level;
+    int whole = 2 << cd.Level;
+
+    // recursively go down to child node
+    int i;
+    int flags = 0;
+    int mask = 1;
+    quadcornerdata q;
+    for (i=0; i<4; i++, mask<<=1) {
+        if (EnabledFlags & (16<<i)) {
+            	SetupCornerData(&q, cd, i);
+			Child[i]->RenderToWFAux(q);
+		} else {
+			flags |= mask;
+		}
+	}
+
+
+    if (flags == 0) return;
+
+    nFlatTriangleCorner tc[9];
+    int x0 = cd.xorg;
+    int x1 = cd.xorg + half;
+    int x2 = cd.xorg + whole;
+    int z0 = cd.yorg;
+    int z1 = cd.yorg + half;
+    int z2 = cd.yorg + whole;
+
+    tc[0].x=x1; tc[0].y=z1; tc[0].vi=&(Vertex[0]);
+    tc[1].x=x2; tc[1].y=z1; tc[1].vi=&(Vertex[1]);
+    tc[2].x=x2; tc[2].y=z0; tc[2].vi=&(cd.Verts[0]);
+    tc[3].x=x1; tc[3].y=z0; tc[3].vi=&(Vertex[2]);
+    tc[4].x=x0; tc[4].y=z0; tc[4].vi=&(cd.Verts[1]);
+    tc[5].x=x0; tc[5].y=z1; tc[5].vi=&(Vertex[3]);
+    tc[6].x=x0; tc[6].y=z2; tc[6].vi=&(cd.Verts[2]);
+    tc[7].x=x1; tc[7].y=z2; tc[7].vi=&(Vertex[4]);
+    tc[8].x=x2; tc[8].y=z2; tc[8].vi=&(cd.Verts[3]);
+
+#undef tri
+#define tri(a,b,c) (AddTriangleToWF(this,&(tc[c]),&(tc[b]),&(tc[a])))
+
+    // Make the list of triangles to draw.
+    if ((EnabledFlags & 1) == 0) tri(0, 8, 2);
+    else {
+        if (flags & 8) tri(0, 8, 1);
+        if (flags & 1) tri(0, 1, 2);
+    }
+    if ((EnabledFlags & 2) == 0) tri(0, 2, 4);
+    else {
+        if (flags & 1) tri(0, 2, 3);
+        if (flags & 2) tri(0, 3, 4);
+    }
+    if ((EnabledFlags & 4) == 0) tri(0, 4, 6);
+    else {
+        if (flags & 2) tri(0, 4, 5);
+        if (flags & 4) tri(0, 5, 6);
+    }
+    if ((EnabledFlags & 8) == 0) tri(0, 6, 8);
+    else {
+        if (flags & 4) tri(0, 6, 7);
+        if (flags & 8) tri(0, 7, 8);
+    }
+}
+
+void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */, 
+                                   nFlatTriangleCorner *tc0, 
+                                   nFlatTriangleCorner *tc1,
+                                   nFlatTriangleCorner *tc2)
+{
+    
+    nFlatTriangleCorner *tc_array[3];
+    tc_array[0] = tc0;
+    tc_array[1] = tc1;
+    tc_array[2] = tc2;
+
+    int i;
+    char buf[512];
+    for (i=0; i<3; i++) {
+        nFlatTriangleCorner *tc = tc_array[i];
+	ul::vector p = ul::vector(float(tc->x),float(tc->y),tc->vi->Z);
+
+        fprintf(wf_fp,"v %f %f %f\n",p.X(),p.Y(),p.Z());
+	//        fp->PutS(buf);
+    }
+    wf_num_tris++;
+}
+
 

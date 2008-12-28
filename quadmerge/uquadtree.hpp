@@ -32,6 +32,11 @@ public:
     double tree_max_size=std::max(range[0],range[1]);
     return tree_max_size/whole_cell_int_size;
   }
+
+  int get_in_cells(double p,int level){
+    double cell_size=get_cell_size(level);
+    return ((int)((p/cell_size) + 0.5));
+  }
   void get_closest_res_level(double target_res,int &level, double &res){
     for(level=max_Level; level > 0; level--){
       res=get_cell_size(level);

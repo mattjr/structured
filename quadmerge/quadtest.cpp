@@ -178,9 +178,7 @@ int	main(int argc, char *argv[])
 	    delete mesh;
 	  }
 
-	  RootCornerData.xorg=tree_bounds.center().x;
-	  RootCornerData.yorg=tree_bounds.center().y;
-	  root = new quadsquare(&RootCornerData);
+
 	  int	whole_cell_int_size = 2 << ge.max_Level;
 	  double tree_max_size=max(tree_bounds.width(),tree_bounds.height());
 	  ge.cell_size=tree_max_size/whole_cell_int_size;
@@ -197,6 +195,12 @@ int	main(int argc, char *argv[])
 	  ge.max[2]=zmax;
 
 	  std::cout << ge;
+
+	  RootCornerData.xorg=ge.get_in_cells(tree_bounds.minx()-tree_bounds.minx(),ge.max_Level);
+	  RootCornerData.yorg=ge.get_in_cells(tree_bounds.miny()-tree_bounds.miny(),ge.max_Level);
+	  printf("Root Corner xorg %d yorg %d\n",RootCornerData.xorg,RootCornerData.yorg);
+	  root = new quadsquare(&RootCornerData);
+
 	  LoadData(meshes);
 	}
 	else{
@@ -335,9 +339,9 @@ void	LoadData(std::vector<mesh_input> &meshes)
    //free(&pout);
    printf("Nx %d Ny %d Cx %f Cy %f\n",nx,ny,cx,cy);
    HeightMapInfo	hm;
-   hm.x_origin = (int)cx;
-   hm.y_origin = (int)cy;
-   
+   hm.x_origin = ge.get_in_cells(meshes[i].envelope.minx()-ge.min[0],ge.max_Level);
+   hm.y_origin = ge.get_in_cells(meshes[i].envelope.miny()-ge.min[1],ge.max_Level);
+   printf("Xorigin %d Yorigin %d\n",hm.x_origin,hm.y_origin);
    hm.XSize = nx;
    hm.YSize = ny;
    hm.RowWidth = hm.XSize;

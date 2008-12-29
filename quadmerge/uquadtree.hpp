@@ -48,7 +48,7 @@ public:
     }
   }
   friend  std::ostream& operator << (std::ostream& os, const global_extents &data){
-    return os<<"Min X: "<< data.min[0] << " Y: "<< data.min[1] << " Z: "<< data.min[2] <<"Max X: "<< data.max[0] << " Y: "<< data.max[1] << " Z: " <<data.max[2] << "Cell Size " << data.cell_size <<std::endl;
+    return os<<"Min X: "<< data.min[0] << " Y: "<< data.min[1] << " Z: "<< data.min[2] <<"\nMax X: "<< data.max[0] << " Y: "<< data.max[1] << " Z: " <<data.max[2] << "\nCell Size " << data.cell_size <<std::endl;
   }
 
   

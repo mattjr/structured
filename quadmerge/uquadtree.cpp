@@ -21,10 +21,11 @@
 #include <GL/glut.h>
 
 #endif
-
-
+#include <limits.h>
+#include <float.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include "uquadtree.hpp"
 #include "geometry.hpp"
@@ -1207,9 +1208,9 @@ int	quadsquare::RenderToWF(const quadcornerdata& cd)
     //    fprintf(wf_fp,"f %d %d %d\n",i,i+1,i+2);
     unsigned char fc=3;
     fwrite((char *)&fc,sizeof(unsigned char),1,wf_fp);
-    buf[0]=i;
+    buf[0]=i+2;
     buf[1]=i+1;
-    buf[2]=i+2;
+    buf[2]=i+0;
     fwrite((char *)buf,sizeof(int),3,wf_fp);
 
     //  fp->PutS(buf);
@@ -1240,7 +1241,7 @@ void quadsquare::RenderToWFAux(const quadcornerdata& cd)
 
 
     if (flags == 0) return;
-
+    if(!Static) return;
     nFlatTriangleCorner tc[9];
     int x0 = cd.xorg;
     int x1 = cd.xorg + half;
@@ -1284,6 +1285,10 @@ void quadsquare::RenderToWFAux(const quadcornerdata& cd)
         if (flags & 8) tri(0, 7, 8);
     }
 }
+
+
+
+
 uint16 get_avg_Z(float *samples,int num){
   double avg=0;
   for(int i=0; i < num; i++)
@@ -1292,6 +1297,30 @@ uint16 get_avg_Z(float *samples,int num){
       return (uint16)(avg/num);
 
 }
+
+
+uint16 get_max_Z(float *samples,int num){
+  double max=DBL_MIN;
+  for(int i=0; i < num; i++)
+    if(samples[i] > max)
+      max=samples[i];
+      
+      return (uint16)(max);
+
+}
+
+
+uint16 get_min_Z(float *samples,int num){
+  double min=DBL_MAX;
+  for(int i=0; i < num; i++)
+    if(samples[i] < min)
+      min=samples[i];
+      
+      return (uint16)(min);
+
+}
+
+
 void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */, 
                                    nFlatTriangleCorner *tc0, 
                                    nFlatTriangleCorner *tc1,
@@ -1306,6 +1335,13 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
     int i;
     float buf[3];
     char *ptr;
+
+    for (i=0; i<3; i++) {
+      nFlatTriangleCorner *tc = tc_array[i];
+      if(!tc->vi->Zsamples ||tc->vi->Z == 0 )
+	return;
+    }
+
     for (i=0; i<3; i++) {
         nFlatTriangleCorner *tc = tc_array[i];
 	ul::vector p = ul::vector(float(tc->x),float(tc->y),tc->vi->Z);
@@ -1313,19 +1349,19 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	uint16 Z=0;
 	
 	if(tc->vi->Zsamples){
-	  Z=get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
-	}else
+	  Z=get_min_Z(tc->vi->Zsamples,tc->vi->num_samples);//get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
+	}else{
 	  Z=tc->vi->Z;
-
-
+	}
+	if(Z!=0){
 	p.SetZ(	((Z/(float)UINT16_MAX_MINUS_ONE) *(ge.range[2]))+ ge.min[2]);
 	p.SetY(ge.min[1]+(tc->y*ge.cell_size));
 	//        fprintf(wf_fp,"v %f %f %f\n",p.X(),p.Z(),-p.Y());
 	buf[0]=p.X();
-	buf[1]=p.Z();
-	buf[2]=-p.Y();
+	buf[2]=p.Z();
+	buf[1]=p.Y();
 	fwrite((char *)buf,sizeof(float),3,wf_fp);
-	
+	}
 	
 	//        fp->PutS(buf);
     }

@@ -16,6 +16,7 @@
 #include "uquadtree.hpp"
 #include  <stdio.h>
 #include  <stdlib.h>
+#include "auv_mesh_utils.hpp" 
 #include "envelope.hpp"
 #include "raster.hpp"
 #include "TriMesh_algo.h"
@@ -24,6 +25,7 @@
 #include <stdlib.h> 
 #include <string.h>
 #include <vector>
+
 #if defined(__APPLE__)
 #include <GLUT/glut.h>
 #include <OpenGL/gl.h>
@@ -40,7 +42,7 @@
 using mapnik::Envelope;
 using namespace ul;
 using std::cout;
-
+double edge_thresh;
 
 #define PI 3.141592654
 
@@ -99,7 +101,7 @@ int	main(int argc, char *argv[])
   ge.max_Level=15;
   RootCornerData.Level= ge.max_Level;
 
-
+  edge_thresh=atof(argv[2]);
   
 	for(int i=0; i <3; i++){
 	  ge.min[i]=DBL_MAX;
@@ -159,6 +161,7 @@ int	main(int argc, char *argv[])
 	  for(unsigned int i=0; i< meshes.size(); i++){
 	    TriMesh::verbose=0;
 	    TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
+	    edge_len_thresh(mesh,edge_thresh);
 	    mesh->need_bbox();
 	    meshes[i].envelope=Envelope<double>(mesh->bbox.min[0],
 						mesh->bbox.min[1],
@@ -325,7 +328,7 @@ void	LoadData(std::vector<mesh_input> &meshes)
 
    TriMesh::verbose=0;
    TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
-
+   edge_len_thresh(mesh,edge_thresh);
    point_nn*pout;
    int nout;
    int nx,ny;

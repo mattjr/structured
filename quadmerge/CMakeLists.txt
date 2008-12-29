@@ -6,11 +6,21 @@ PROJECT(ann-merge)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
 find_package( GLUT ) 
+INCLUDE( ${CMAKE_ROOT}/Modules/CheckIncludeFileCXX.cmake )
 INCLUDE( ${PROJECT_SOURCE_DIR}/../../CMakeUtils/FindOSG.cmake )
+INCLUDE( ${PROJECT_SOURCE_DIR}/../../CMakeUtils/FindOpenCV.cmake ) 
 FIND_PACKAGE( OpenGL )
 IF( NOT OPENGL_FOUND )
    MESSAGE( FATAL_ERROR  "ERROR - Can't find OpenGL" )
 ENDIF( NOT OPENGL_FOUND )
+IF( NOT LIBPOLYP_PREFIX )
+   SET( LIBPOLYP_PREFIX /usr/local )
+ENDIF( NOT LIBPOLYP_PREFIX )
+# Gts
+pkg_check_modules( GTS "gts" )
+IF( NOT GTS_FOUND )
+   MESSAGE( FATAL_ERROR  "ERROR - Can't find Gts" )
+ENDIF( NOT GTS_FOUND )   
 
 #--------------------------------#
 # Enforce an out-of-source build #
@@ -48,6 +58,17 @@ ENDIF( NOT CMAKE_INSTALL_PREFIX )
 IF( NOT LIBPOLYP_PREFIX )
    SET( LIBPOLYP_PREFIX /usr/local )
 ENDIF( NOT LIBPOLYP_PREFIX )
+
+IF( NOT LIBPLANKTON_PREFIX )
+   SET( LIBPLANKTON_PREFIX /usr/local/ )
+ENDIF( NOT LIBPLANKTON_PREFIX )
+# libplankton 
+SET( LIBPLANKTON_INCLUDE_DIR ${LIBPLANKTON_PREFIX}/include/libplankton )
+SET( LIBPLANKTON_LIB plankton )
+CHECK_INCLUDE_FILE_CXX( "auv_matrix.hpp" HAVE_LIBPLANKTON "-I ${LIBPLANKTON_INCLUDE_DIR}" )
+IF( NOT HAVE_LIBPLANKTON )
+   MESSAGE( FATAL_ERROR  "ERROR - Can't find libplankton" )
+ENDIF( NOT HAVE_LIBPLANKTON )    
 #-----------------------#
 # Compiler setup        #
 #-----------------------#
@@ -67,8 +88,15 @@ IF( NOT Boost_FOUND )
    MESSAGE( FATAL_ERROR  "ERROR - Can't find boost" )
 ENDIF( NOT Boost_FOUND )      
 SET( CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR} )
-
-INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include  ${LIBPOLYP_INC} ${Boost_INCLUDE_DIR})
+# libpolyp 
+SET( LIBPOLYP_INC ${LIBPOLYP_PREFIX}/include/libpolyp )
+SET( LIBPOLYP_LIBRARY polyp )
+INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include  
+  ${LIBPOLYP_INC} ${Boost_INCLUDE_DIR} ${LIBPOLYP_INC} 
+  ${GTS_INCLUDE_DIRS} 		     
+  ${OSG_INCLUDE_DIR}
+    ${OPENCV_INCLUDE_DIRS} 
+  ${LIBPLANKTON_INCLUDE_DIR})
 
 
 #-----------------------#
@@ -104,8 +132,7 @@ ENDIF( CMAKE_BUILD_TYPE STREQUAL MinSizeRel )
 # Build Instructions    #
 #-----------------------#
 INCLUDE_DIRECTORIES( 
-		     ${OSG_INCLUDE_DIR}
-  
+
 
 		     )
 
@@ -116,9 +143,8 @@ LINK_DIRECTORIES( ${PROJECT_SOURCE_DIR}/nn/ )
 LINK_LIBRARIES(	${GLUT_LIBRARY}  ${OSG_LIBRARY} ${OSGVIEWER_LIBRARY} 	${LIBPOLYP_LIBRARY} nn ${OPENGL_gl_LIBRARY})
 
 #ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp raster.cpp )
-ADD_EXECUTABLE( quadtest quadtest.cpp envelope.cpp raster.cpp geometry.cpp uquadtree.cpp 
-)
-
+ADD_EXECUTABLE( quadtest quadtest.cpp envelope.cpp raster.cpp geometry.cpp uquadtree.cpp )
+ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp raster.cpp geometry.cpp uquadtree.cpp )
 # Build libraries
 #SUBDIRS(src) #tests
 

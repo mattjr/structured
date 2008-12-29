@@ -185,9 +185,11 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
     zin[i] = p->z;
     
   }
+  int nin=nv;
+  points_thinlin(&nin,&pin,0.5);
   double actual_res;
   ge.get_closest_res_level(mesh_data.res,level,actual_res);
-  printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
+  //  printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
   cx=mesh_data.envelope.center().x;
   cy=mesh_data.envelope.center().y;
 
@@ -195,6 +197,6 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
   ny=(int)floor(mesh_data.envelope.height()/actual_res);
   double wmin = -DBL_MAX;
   points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
-  nnpi_interpolate_points(nv, pin, wmin, nout, pout);
+  nnpi_interpolate_points(nin, pin, wmin, nout, pout);
   //points_write(nout, pout);
 }

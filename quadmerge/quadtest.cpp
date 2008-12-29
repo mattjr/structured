@@ -99,8 +99,8 @@ int	main(int argc, char *argv[])
   ge.max_Level=15;
   RootCornerData.Level= ge.max_Level;
 
-	int	i;
-	int cnt=0;
+
+  
 	for(int i=0; i <3; i++){
 	  ge.min[i]=DBL_MAX;
 	  ge.max[i]=DBL_MIN;
@@ -164,7 +164,7 @@ int	main(int argc, char *argv[])
 						mesh->bbox.min[1],
 						mesh->bbox.max[0],
 						mesh->bbox.max[1]);
-	    cout << meshes[i].envelope;
+	    // cout << meshes[i].envelope;
 	    if( mesh->bbox.min[2] < zmin)
 	      zmin= mesh->bbox.min[2];
 	    
@@ -333,15 +333,15 @@ void	LoadData(std::vector<mesh_input> &meshes)
    int level;
    double actual_res;
    interpolate_grid(mesh,meshes[i],pout,nout,nx,ny,cx,cy,actual_res,level);
-   printf("\r %03d number of points: %d",i,nout);
+   printf("\r %03d/%03d",i,meshes.size());
    fflush(stdout);
    // points_to_quadtree(nout,pout,qt);
    //free(&pout);
-   printf("Nx %d Ny %d Cx %f Cy %f\n",nx,ny,cx,cy);
+   //   printf("Nx %d Ny %d Cx %f Cy %f\n",nx,ny,cx,cy);
    HeightMapInfo	hm;
    hm.x_origin = ge.get_in_cells(meshes[i].envelope.minx()-ge.min[0],ge.max_Level);
    hm.y_origin = ge.get_in_cells(meshes[i].envelope.miny()-ge.min[1],ge.max_Level);
-   printf("Xorigin %d Yorigin %d\n",hm.x_origin,hm.y_origin);
+   //   printf("Xorigin %d Yorigin %d\n",hm.x_origin,hm.y_origin);
    hm.XSize = nx;
    hm.YSize = ny;
    hm.RowWidth = hm.XSize;
@@ -349,6 +349,7 @@ void	LoadData(std::vector<mesh_input> &meshes)
    hm.Data = new uint16[hm.XSize * hm.YSize];
    
    for(int i=0; i < hm.XSize * hm.YSize; i++){
+     // printf("%f ",pout[i].z);
      hm.Data[i]= ((UINT16_MAX_MINUS_ONE)* ((pout[i].z-ge.min[2])/(ge.range[2]))) +1;
      //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
    }

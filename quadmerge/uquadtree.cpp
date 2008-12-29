@@ -296,7 +296,10 @@ quadsquare::quadsquare(quadcornerdata* pcd)
 	for (i = 0; i < 2; i++) {
 		SubEnabledCount[i] = 0;
 	}
-	
+
+	//for(i=0; i < 5; i++)
+	  //	  Vertex[i].samples=pcd->Verts[i].samples;
+
 	// Set default vertex positions by interpolating from given corners.
 	// Just bilinear interpolation.
 	Vertex[0].Z = 0.25 * (pcd->Verts[0].Z + pcd->Verts[1].Z + pcd->Verts[2].Z + pcd->Verts[3].Z);
@@ -1346,7 +1349,9 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm)
 	for (i = 0; i < 5; i++) {
 		if (s[i] != 0) {
 			Dirty = true;
-			Vertex[i].Z += s[i];
+			Vertex[i].Z = s[i];
+			Vertex[i].samples++;
+		
 		}
 	}
 
@@ -1398,7 +1403,18 @@ float	HeightMapInfo::Sample(int x, int z) const
 	return (s00 * (1-fx) + s01 * fx) * (1-fz) +
 		(s10 * (1-fx) + s11 * fx) * fz;
 }
-
+void ply_header(FILE *fp,int num_tris,int num_verts){
+  fseek(fp, 0, SEEK_SET); 
+  fprintf(fp,"ply\n");
+  fprintf(fp,"format binary_little_endian 1.0\n");
+  fprintf(fp,"element vertex %012d\n",num_verts);
+  fprintf(fp,"property float x\n");
+  fprintf(fp,"property float y\n");
+  fprintf(fp,"property float z\n");
+  fprintf(fp,"element face %012d\n",num_tris);
+  fprintf(fp,"property list uchar int vertex_indices\n");
+  fprintf(fp,"end_header\n");
+}
 
 //-------------------------------------------------------------------
 //  RenderToWF()
@@ -1411,15 +1427,25 @@ float	HeightMapInfo::Sample(int x, int z) const
 int	quadsquare::RenderToWF(const quadcornerdata& cd)
 {
   wf_num_tris=0;
-  wf_fp=fopen("out.obj","w");
+  int vnum=0;
+  wf_fp=fopen("out.ply","wb");
+  ply_header(wf_fp,wf_num_tris,vnum);
   RenderToWFAux(cd);
-  int num = wf_num_tris * 3;
+  vnum = wf_num_tris * 3;
   int i;
-  char buf[512];
-  for (i=1; i<=num; i+=3) {
-    fprintf(wf_fp,"f %d %d %d\n",i,i+1,i+2);
+  int buf[3];
+  for (i=1; i<=vnum; i+=3) {
+    //    fprintf(wf_fp,"f %d %d %d\n",i,i+1,i+2);
+    unsigned char fc=3;
+    fwrite((char *)&fc,sizeof(unsigned char),1,wf_fp);
+    buf[0]=i;
+    buf[1]=i+1;
+    buf[2]=i+2;
+    fwrite((char *)buf,sizeof(int),3,wf_fp);
+
     //  fp->PutS(buf);
   }
+  ply_header(wf_fp,wf_num_tris,vnum);
   fclose(wf_fp);
 }
 
@@ -1502,7 +1528,8 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
     tc_array[2] = tc2;
 
     int i;
-    char buf[512];
+    float buf[3];
+    char *ptr;
     for (i=0; i<3; i++) {
         nFlatTriangleCorner *tc = tc_array[i];
 	ul::vector p = ul::vector(float(tc->x),float(tc->y),tc->vi->Z);
@@ -1510,7 +1537,13 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	
 	p.SetZ(	((tc->vi->Z/(float)UINT16_MAX_MINUS_ONE) *(ge.range[2]))+ ge.min[2]);
 	p.SetY(ge.min[1]+(tc->y*ge.cell_size));
-        fprintf(wf_fp,"v %f %f %f\n",p.X(),p.Z(),-p.Y());
+	//        fprintf(wf_fp,"v %f %f %f\n",p.X(),p.Z(),-p.Y());
+	buf[0]=p.X();
+	buf[1]=p.Z();
+	buf[2]=-p.Y();
+	fwrite((char *)buf,sizeof(float),3,wf_fp);
+	
+	
 	//        fp->PutS(buf);
     }
     wf_num_tris++;

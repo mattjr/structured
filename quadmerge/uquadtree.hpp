@@ -68,7 +68,8 @@ struct HeightMapInfo {
 
 struct	VertInfo {
 	uint16	Z;
-  unsigned char samples;
+  unsigned char num_samples;
+  float *Zsamples;
 	unsigned char	Lightness;	// For simple precomputed vertex lighting for purposes of the demo.  It's a waste of 2 bytes if we're texturing.
 };
 

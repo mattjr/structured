@@ -109,7 +109,8 @@ struct quadsquare {
 	quadsquare(quadcornerdata* pcd);
 	~quadsquare();
 
-	void	AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm);
+  void StaticUpdate(const quadcornerdata& cd, float Detail);
+  void	AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm);
 	void	StaticCullData(const quadcornerdata& cd, float ThresholdDetail);	
 	float	RecomputeErrorAndLighting(const quadcornerdata& cd);
 	int	CountNodes();
@@ -127,6 +128,7 @@ private:
 
 	void	ResetTree();
 	void	StaticCullAux(const quadcornerdata& cd, float ThresholdDetail, int TargetLevel);
+  void StaticUpdateAux(const quadcornerdata& cd,float CenterError);
 
 	quadsquare*	GetNeighbor(int dir, const quadcornerdata& cd);
 	void	CreateChild(int index, const quadcornerdata& cd);
@@ -156,6 +158,6 @@ void AddTriangleToWF(quadsquare * /* usused qs */,
 };
 
 void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii=false);
-extern bool render_non_static;
+extern bool render_no_data;
 extern char *wf_fname;
 #endif // QUADTREE_HPP

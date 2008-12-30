@@ -31,7 +31,7 @@
 #include "geometry.hpp"
 #define NO_DATA 0
 using namespace ul;
-bool render_non_static=false;
+bool render_no_data=false;
 
 //
 // quadsquare functions.
@@ -719,6 +719,99 @@ bool	BoxTest(float x, float z, float size, float miny, float maxy, float error, 
 //const float	VERTICAL_SCALE = 1.0 / 8.0;
 const float	VERTICAL_SCALE = 1.0;
 
+void	quadsquare::StaticUpdate(const quadcornerdata& cd, float Detail)
+// Refresh the vertex enabled states in the tree, according to the
+// location of the viewer.  May force creation or deletion of qsquares
+// in areas which need to be interpolated.
+{
+	DetailThreshold = Detail;
+	
+	StaticUpdateAux(cd,0);
+}
+
+bool	DetailTest(int level,float error)
+// edge-length to height ratio less than ThresholdDetail.
+{
+	float	size = 2 << level;	// Edge length.
+	//	return (error * DetailThreshold) > size;
+	//	if(level > 10)
+	  return false;
+}
+void	quadsquare::StaticUpdateAux(const quadcornerdata& cd,float CenterError)
+// Does the actual work of updating enabled states and tree growing/shrinking.
+{
+	BlockUpdateCount++;	//xxxxx
+	
+	// Make sure error values are current.
+	if (Dirty) {
+		RecomputeErrorAndLighting(cd);
+	}
+
+	int	half = 1 << cd.Level;
+	int	whole = half << 1;
+
+	// See about enabling child verts.
+	/*	if ((EnabledFlags & 1) == 0 && VertexTest(cd.xorg + whole, Vertex[1].Z, cd.yorg + half, Error[0], ViewerLocation) == true) EnableEdgeVertex(0, false, cd);	// East vert.
+	if ((EnabledFlags & 8) == 0 && VertexTest(cd.xorg + half, Vertex[4].Z, cd.yorg + whole, Error[1], ViewerLocation) == true) EnableEdgeVertex(3, false, cd);	// South vert.
+	if (cd.Level > 0) {
+		if ((EnabledFlags & 32) == 0) {
+			if (BoxTest(cd.xorg, cd.yorg, half, MinZ, MaxZ, Error[3], ViewerLocation) == true) EnableChild(1, cd);	// nw child.er
+		}
+		if ((EnabledFlags & 16) == 0) {
+			if (BoxTest(cd.xorg + half, cd.yorg, half, MinZ, MaxZ, Error[2], ViewerLocation) == true) EnableChild(0, cd);	// ne child.
+		}
+		if ((EnabledFlags & 64) == 0) {
+			if (BoxTest(cd.xorg, cd.yorg + half, half, MinZ, MaxZ, Error[4], ViewerLocation) == true) EnableChild(2, cd);	// sw child.
+		}
+		if ((EnabledFlags & 128) == 0) {
+			if (BoxTest(cd.xorg + half, cd.yorg + half, half, MinZ, MaxZ, Error[5], ViewerLocation) == true) EnableChild(3, cd);	// se child.
+		}
+	*/
+	float ViewerLocation[3]={0,0,0};
+	if (cd.Level > 0) {
+
+		// Recurse into child quadrants as necessary.
+		quadcornerdata	q;
+		
+		if (EnabledFlags & 32) {
+			SetupCornerData(&q, cd, 1);
+			Child[1]->StaticUpdateAux(q, Error[3]);
+		}
+		if (EnabledFlags & 16) {
+			SetupCornerData(&q, cd, 0);
+			Child[0]->StaticUpdateAux(q,  Error[2]);
+		}
+		if (EnabledFlags & 64) {
+			SetupCornerData(&q, cd, 2);
+			Child[2]->StaticUpdateAux(q,  Error[4]);
+		}
+		if (EnabledFlags & 128) {
+			SetupCornerData(&q, cd, 3);
+			Child[3]->StaticUpdateAux(q,  Error[5]);
+		}
+	}
+	
+	// Test for disabling.  East, South, and center.
+	if ((EnabledFlags & 1) && SubEnabledCount[0] == 0 && VertexTest(cd.xorg + whole, Vertex[1].Z, cd.yorg + half, Error[0], ViewerLocation) == false) {
+		EnabledFlags &= ~1;
+		quadsquare*	s = GetNeighbor(0, cd);
+		if (s) s->EnabledFlags &= ~4;
+	}
+	if ((EnabledFlags & 8) && SubEnabledCount[1] == 0 && VertexTest(cd.xorg + half, Vertex[4].Z, cd.yorg + whole, Error[1], ViewerLocation) == false) {
+		EnabledFlags &= ~8;
+		quadsquare*	s = GetNeighbor(3, cd);
+		if (s) s->EnabledFlags &= ~2;
+	}
+	if (EnabledFlags == 0 &&
+	    cd.Parent != NULL &&
+	    BoxTest(cd.xorg, cd.yorg, whole, MinZ, MaxZ, CenterError, ViewerLocation) == false)
+	{
+		// Disable ourself.
+		cd.Parent->Square->NotifyChildDisable(*cd.Parent, cd.ChildIndex);	// nb: possibly deletes 'this'.
+	}
+
+}
+
 
 void	quadsquare::Update(const quadcornerdata& cd, const float ViewerLocation[3], float Detail)
 // Refresh the vertex enabled states in the tree, according to the
@@ -803,6 +896,9 @@ void	quadsquare::UpdateAux(const quadcornerdata& cd, const float ViewerLocation[
 		cd.Parent->Square->NotifyChildDisable(*cd.Parent, cd.ChildIndex);	// nb: possibly deletes 'this'.
 	}
 }
+
+
+
 
 
 float	VertexArray[9 * 3];
@@ -1228,6 +1324,7 @@ int	quadsquare::RenderToWF(const quadcornerdata& cd)
   }
   ply_header(wf_fp,wf_num_tris,vnum);
   fclose(wf_fp);
+  printf("Wrote %d Faces %d Vertcies\n",wf_num_tris,vnum);
   return 0;
 }
 
@@ -1253,7 +1350,7 @@ void quadsquare::RenderToWFAux(const quadcornerdata& cd)
 
 
     if (flags == 0) return;
-    if(!Static && !render_non_static) return;
+    //    if(!Static && !render_non_static) return;
     nFlatTriangleCorner tc[9];
     int x0 = cd.xorg;
     int x1 = cd.xorg + half;
@@ -1362,13 +1459,13 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
     int i;
     float buf[3];
     
-    if(!render_non_static){
-      for (i=0; i<3; i++) {
+    //if(!render_non_static){
+    if(1){ for (i=0; i<3; i++) {
 	nFlatTriangleCorner *tc = tc_array[i];
-	if(!tc->vi->Zsamples ||tc->vi->Z == 0 )
+	if(tc->vi->Z == 0 )
 	  return;
       }
-    }
+      }
     for (i=0; i<3; i++) {
         nFlatTriangleCorner *tc = tc_array[i];
 	ul::vector p = ul::vector(float(tc->x),float(tc->y),tc->vi->Z);
@@ -1382,7 +1479,7 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	  Z=tc->vi->Z;
 	}
 	if(Z==0){
-	  fprintf(stderr, "Shouldn't be zero I don't think uquadtree line 1372\n");
+	  	  fprintf(stderr, "Shouldn't be zero I don't think uquadtree line 1372\n");
 	  Z=1;
 	}
 	 

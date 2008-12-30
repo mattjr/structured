@@ -155,7 +155,7 @@ int	main(int argc, char *argv[])
 	  RootCornerData.yorg=ge.get_in_cells(tree_bounds.miny()-tree_bounds.miny(),ge.max_Level);
 	  printf("Root Corner xorg %d yorg %d\n",RootCornerData.xorg,RootCornerData.yorg);
 	  root = new quadsquare(&RootCornerData);
-	  render_non_static=false;
+	  render_no_data=false;
 	  LoadData(meshes);
 	
 	
@@ -179,6 +179,7 @@ int	main(int argc, char *argv[])
 		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
 	}
 	*/
+	  const float detail[]={FLT_MAX,20.0,3.0};
 	// Draw the quadtree.
 	if (root) {
 	  //		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
@@ -192,6 +193,12 @@ int	main(int argc, char *argv[])
 	      str.replace(pos, 4, std::string(tmp) );
 	      strcpy(wf_fname,str.c_str());
 	      std::cout << "Writing " << wf_fname << std::endl;
+	      //	      root->StaticUpdate(RootCornerData,detail[i]);
+	      if(i > 0){
+		for(int j=0; j< 20; j++)
+		  //	  root->Update(RootCornerData, (const float*) ViewerLoc, detail[i]);  
+		  root->StaticUpdate(RootCornerData,detail[i]);
+	      }
 	      root->RenderToWF(RootCornerData);
 	    }
 	  }

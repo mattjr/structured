@@ -107,6 +107,8 @@ static char cov_file_name[255];
 static bool no_gen_tex=false;
 static int mono_skip=2;
 static bool no_vrip=false;
+static bool quad_integration=true;
+static bool no_quadmerge=false;
 static double vrip_res;
 static bool regen_tex=false;
 static string basepath;
@@ -128,7 +130,9 @@ static string deltaT_dir;
 static bool hardware_compress=true;
 const char *uname="mesh";
 const char *dicedir="mesh-diced";
+const char *quaddir="mesh-quad";
 const char *aggdir="mesh-agg";
+
 static string recon_config_file_name;
 static string mbdir="mb";
 static string deltaT_pose;
@@ -1447,6 +1451,9 @@ int main( int argc, char *argv[ ] )
   ifstream      contents_file;
   
   
+  auv_data_tools::makedir(quaddir);
+
+  chmod(quaddir,   0777);
 
   auv_data_tools::makedir(aggdir);
 
@@ -1728,7 +1735,7 @@ int main( int argc, char *argv[ ] )
     
     if(mb_ply_filenames.size()){
       have_mb_ply=true;
-      printf("Integrating Vision clipped mb from %d files.\n",mb_ply_filenames.size());
+      printf("Integrating Vision clipped mb from %d files.\n",(int)mb_ply_filenames.size());
     }
     
     FILE *vrip_seg_fp;
@@ -1860,6 +1867,107 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(vripcmds_fp);
     fclose(diced_fp);
+
+    FILE *quadmerge_seg_fp;
+    char quadmerge_seg_fname[255];
+    
+    string quadmergecmd_fn="mesh-quad/quadmergecmds";
+    FILE *quadmergecmds_fp=fopen(quadmergecmd_fn.c_str(),"w");
+    diced_fp=fopen("mesh-diced/diced.txt","w");
+
+    if(!quadmergecmds_fp){
+      printf("Can't open quadmergecmds\n");
+      exit(-1);
+    }
+    
+    
+    //string mbfile=mbdir+"/"+"mb-total.ply";
+    // std::vector<Cell_Data> cells;
+    if(even_split)
+      cells=calc_cells(tasks,EVEN_SPLIT,cell_scale);
+    else
+      cells=calc_cells(tasks,AUV_SPLIT,cell_scale);
+
+    for(int i=0; i <(int)cells.size(); i++){
+      if(cells[i].poses.size() == 0)
+	continue;
+      
+      sprintf(quadmerge_seg_fname,"mesh-quad/quadmergeseg-%08d.txt",i);
+      sprintf(conf_name,"mesh-quad/bbox-clipped-diced-%08d.ply.txt",i);
+
+      quadmerge_seg_fp=fopen(quadmerge_seg_fname,"w");
+      bboxfp = fopen(conf_name,"w");
+      if(!quadmerge_seg_fp || !bboxfp){
+	printf("Unable to open %s\n",quadmerge_seg_fname);
+      }	
+    
+
+      fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
+      fprintf(quadmergecmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-quad/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
+
+      if(have_mb_ply){
+       	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
+fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply;tridecimator ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply ../mesh-agg/clipped-mb-%08d-%08d.ply 0 -e%f;", cells[i].bounds.min_x,
+		cells[i].bounds.min_y,
+		FLT_MIN,
+		cells[i].bounds.max_x,
+		  cells[i].bounds.max_y,
+		  FLT_MAX,
+		  eps,
+	mb_ply_filenames[k].c_str(),k,i,k,i,k,i,edgethresh);
+
+	}
+	
+      }
+      if(!no_merge)
+	fprintf(quadmergecmds_fp,"$BASEDIR/quadmerge/bin/quadmerge ../%s %f ../mesh-quad/seg-%08d.ply;",quadmerge_seg_fname,edgethresh,i);
+      fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/seg-%08d.ply > ../mesh-quad/clipped-diced-%08d.ply;",
+	      cells[i].bounds.min_x,
+	      cells[i].bounds.min_y,
+	      FLT_MIN,
+	      cells[i].bounds.max_x,
+	      cells[i].bounds.max_y,
+	      FLT_MAX,
+	      eps,i,i);
+
+      /*     if(have_mb_ply){
+       fprintf(quadmergecmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply;",i,i);
+	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
+	  fprintf(quadmergecmds_fp,"plysubtract  ../mesh-agg/clipped-mb-%08d-%08d.ply ../mesh-agg/vis-mb-%08d-%08d.ply >  ../mesh-agg/tmp-mb-%08d-%08d.ply ;",k,i,k,i,k,i);
+	  fprintf(quadmergecmds_fp,"clip_delaunay  ../mesh-diced/nomb-diced-%08d.ply ../mesh-agg/tmp-mb-%08d-%08d.ply  ../mesh-agg/unclean-inv-mb-%08d-%08d.ply ;",i,k,i,k,i);
+ fprintf(vripcmds_fp,"tridecimator ../mesh-agg/unclean-inv-mb-%08d-%08d.ply ../mesh-agg/inv-mb-%08d-%08d.ply 0 -e0.25;",k,i,k,i);
+
+	}
+	fprintf(quadmergecmds_fp,"plymerge ../mesh-diced/nomb-diced-%08d.ply ",i );
+	for(int k=0; k < (int)mb_ply_filenames.size(); k++)
+	  fprintf(vripcmds_fp," ../mesh-agg/inv-mb-%08d-%08d.ply ",k,i);
+	fprintf(quadmergecmds_fp,"> ../mesh-diced/clipped-diced-%08d.ply;",i);
+     }
+      fprintf(quadmergecmds_fp,"cd ..\n");
+      */
+      
+      for(unsigned int j=0; j <cells[i].poses.size(); j++){
+	const Stereo_Pose_Data *pose=cells[i].poses[j];
+	//Quadmerge List
+	fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f 1\n",pose->mesh_name.c_str(),vrip_res);
+	//Gen Tex File bbox
+	fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
+	save_bbox_frame(pose->bbox,bboxfp);
+	for(int k=0; k < 4; k++)
+	  for(int n=0; n < 4; n++)
+	    fprintf(bboxfp," %lf",pose->m[k][n]);
+	fprintf(bboxfp,"\n");
+      }
+      /*      if(have_mb_ply)
+	for(int k=0; k < (int)mb_ply_filenames.size(); k++)
+	  fprintf(quadmerge_seg_fp,"vis-mb-%08d-%08d.ply  0.1 0\n",k,i);
+      */
+      fclose(quadmerge_seg_fp);
+      fclose(bboxfp);
+    }
+    fclose(quadmergecmds_fp);
+
+
     if(output_uv_file)
       fclose(uv_fp);
     if(output_3ds)
@@ -1993,14 +2101,21 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       
 
       if(!single_run){
-
+	if(quad_integration){	
+	  string quadmergecmd="runquadmerge.py";
+	  
+	  
+	  shellcm.write_generic(quadmergecmd,quadmergecmd_fn,"Quadmerge");
+	  if(!no_quadmerge)
+	    sysres=system("./runquadmerge.py");
+	  
+	}
+	
 	string vripcmd="runvrip.py";
-       
-
 	shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip");
 	if(!no_vrip)
 	  sysres=system("./runvrip.py");
-       
+	
 	FILE *dicefp=fopen("./simp.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\n");

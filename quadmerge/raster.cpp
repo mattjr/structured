@@ -159,28 +159,41 @@ static inline int Floor(const float x)
 }*/
 
  void write_mesh(point_nn *pin, int nin,const char *fn,bool ascii){
- delaunay* d = delaunay_build(nin, pin, 0, NULL, 0, NULL);
- FILE *fp=fopen(fn,"w");
- ply_header(fp,d->ntriangles,d->npoints);
- float buf[3];
- for(int i=0; i<d->npoints; i++){
-   buf[0]=d->points[i].x;
-   buf[1]=d->points[i].y;
-   buf[2]=d->points[i].z;
-   if(ascii)
-     fprintf("%f %f %f\n",buf[0],buf[1],buf[2]);
-   else 
-     fwrite((char*)&buf,3,sizeof(float),fp);
- }
- unsigned char numt=3;
- int ibuf[3];
- for(int i=0; i<d->ntriangles; i++){
-   fwrite((char*)&numt,1,sizeof(unsigned char),fp);
-   ibuf[0]=d->triangles[i].vids[0];
-   ibuf[1]=d->triangles[i].vids[1];
-   ibuf[2]=d->triangles[i].vids[2];
-   fwrite((char*)&ibuf,3,sizeof(int),fp);
- }
+   point_nn* pin_clean=new point_nn[nin];
+   int nin_clean=0;
+   for(int i=0; i < nin; i++){
+     if(!isnan(pin[i].z ))
+       pin_clean[nin_clean++]=pin[i];
+   }
+   if(nin_clean == 0)
+     return;
+   delaunay* d = delaunay_build(nin_clean, pin_clean, 0, NULL, 0, NULL);
+   FILE *fp=fopen(fn,"w");
+   ply_header(fp,d->ntriangles,d->npoints,ascii);
+   float buf[3];
+   for(int i=0; i<d->npoints; i++){
+     buf[0]=d->points[i].x;
+     buf[1]=d->points[i].y;
+     buf[2]=d->points[i].z;
+     if(ascii)
+       fprintf(fp,"%f %f %f\n",buf[0],buf[1],buf[2]);
+     else 
+       fwrite((char*)&buf,3,sizeof(float),fp);
+   }
+   unsigned char numt=3;
+   int ibuf[3];
+   for(int i=0; i<d->ntriangles; i++){
+     if(!ascii)
+       fwrite((char*)&numt,1,sizeof(unsigned char),fp);
+     ibuf[2]=d->triangles[i].vids[0];
+     ibuf[1]=d->triangles[i].vids[1];
+     ibuf[0]=d->triangles[i].vids[2];
+     if(ascii)
+       fprintf(fp,"3 %d %d %d\n",ibuf[0],ibuf[1],ibuf[2]);
+     else
+       fwrite((char*)&ibuf,3,sizeof(int),fp);
+   }
+   delete pin_clean;
 
 }
 
@@ -207,7 +220,7 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
     
   }
   int nin=nv;
-  // points_thinlin(&nin,&pin,10.1);
+  points_thinlin(&nin,&pin,0.1);
   double actual_res;
   ge.get_closest_res_level(mesh_data.res,level,actual_res);
   //  printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);

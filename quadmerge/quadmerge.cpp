@@ -141,7 +141,7 @@ int	main(int argc, char *argv[])
 	  RootCornerData.yorg=ge.get_in_cells(tree_bounds.miny()-tree_bounds.miny(),ge.max_Level);
 	  printf("Root Corner xorg %d yorg %d\n",RootCornerData.xorg,RootCornerData.yorg);
 	  root = new quadsquare(&RootCornerData);
-
+	  render_non_static=false;
 	  LoadData(meshes);
 	}
 	
@@ -173,6 +173,64 @@ int	main(int argc, char *argv[])
 	return 0;
 
 }
+
+void	LoadData(std::vector<mesh_input> &meshes)
+// Load some data and put it into the quadtree.
+{
+ 
+  for(unsigned int i=0; i< meshes.size(); i++){
+ 
+
+   TriMesh::verbose=0;
+   TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
+   edge_len_thresh(mesh,edge_thresh);
+   point_nn*pout;
+   int nout;
+   int nx,ny;
+   float cx,cy;
+   int level;
+   double actual_res;
+   interpolate_grid(mesh,meshes[i],pout,nout,nx,ny,cx,cy,actual_res,level);
+   char fname[255];
+   sprintf(fname,"tmp/%s",meshes[i].name.c_str());
+   //  write_mesh(pout,nout,fname,true);
+   printf("\r %03d/%03d",i,(int)meshes.size());
+   fflush(stdout);
+   // points_to_quadtree(nout,pout,qt);
+   //free(&pout);
+   //   printf("Nx %d Ny %d Cx %f Cy %f\n",nx,ny,cx,cy);
+   HeightMapInfo	hm;
+   hm.x_origin = ge.get_in_cells(meshes[i].envelope.minx()-ge.min[0],ge.max_Level);
+   hm.y_origin = ge.get_in_cells(meshes[i].envelope.miny()-ge.min[1],ge.max_Level);
+   //   printf("Xorigin %d Yorigin %d\n",hm.x_origin,hm.y_origin);
+   hm.XSize = nx;
+   hm.YSize = ny;
+   hm.RowWidth = hm.XSize;
+   hm.Scale =level;
+   hm.Data = new uint16[hm.XSize * hm.YSize];
+   
+   for(int i=0; i < hm.XSize * hm.YSize; i++){
+     // printf("%f ",pout[i].z);
+     if(isnan(pout[i].z))
+       hm.Data[i]=0;
+     else
+       hm.Data[i]= std::min((int)((UINT16_MAX_MINUS_ONE)* ((pout[i].z-ge.min[2])/(ge.range[2]))) ,UINT16_MAX_MINUS_ONE) +1;
+     //  printf("%d %d\n",hm.Data[i],UINT16_MAX_MINUS_ONE);
+     //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
+   }
+  
+   
+   root->AddHeightMap(RootCornerData, hm);
+   delete [] hm.Data;
+   delete mesh;  
+ }
+ 
+ 
+	
+
+}
+
+
 void load_hm_file(HeightMapInfo *hm,const char *filename){
   FILE *fp= fopen(filename,"rb");
   if(!fp){
@@ -215,57 +273,6 @@ void load_hm_file(HeightMapInfo *hm,const char *filename){
 	  hm->y_origin=24576;
 
 }
-void	LoadData(std::vector<mesh_input> &meshes)
-// Load some data and put it into the quadtree.
-{
- 
-  for(unsigned int i=0; i< meshes.size(); i++){
- 
-
-   TriMesh::verbose=0;
-   TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
-   edge_len_thresh(mesh,edge_thresh);
-   point_nn*pout;
-   int nout;
-   int nx,ny;
-   float cx,cy;
-   int level;
-   double actual_res;
-   interpolate_grid(mesh,meshes[i],pout,nout,nx,ny,cx,cy,actual_res,level);
-   char fname[255];
-   sprintf(fname,"tmp/%s",meshes[i].name.c_str());
-   write_mesh(pout,nout,fname);
-   printf("\r %03d/%03d",i,(int)meshes.size());
-   fflush(stdout);
-   // points_to_quadtree(nout,pout,qt);
-   //free(&pout);
-   //   printf("Nx %d Ny %d Cx %f Cy %f\n",nx,ny,cx,cy);
-   HeightMapInfo	hm;
-   hm.x_origin = ge.get_in_cells(meshes[i].envelope.minx()-ge.min[0],ge.max_Level);
-   hm.y_origin = ge.get_in_cells(meshes[i].envelope.miny()-ge.min[1],ge.max_Level);
-   //   printf("Xorigin %d Yorigin %d\n",hm.x_origin,hm.y_origin);
-   hm.XSize = nx;
-   hm.YSize = ny;
-   hm.RowWidth = hm.XSize;
-   hm.Scale =level;
-   hm.Data = new uint16[hm.XSize * hm.YSize];
-   
-   for(int i=0; i < hm.XSize * hm.YSize; i++){
-     // printf("%f ",pout[i].z);
-     hm.Data[i]= ((UINT16_MAX_MINUS_ONE)* ((pout[i].z-ge.min[2])/(ge.range[2]))) +1;
-     //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
-   }
-   //zmin=0.0;
-   root->AddHeightMap(RootCornerData, hm);
-   delete [] hm.Data;
-   delete mesh;  
- }
- 
- 
-	
-
-}
-
 void	LoadData(char *filename)
 // Load some data and put it into the quadtree.
 {

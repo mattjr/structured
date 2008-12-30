@@ -29,9 +29,9 @@
 #include <math.h>
 #include "uquadtree.hpp"
 #include "geometry.hpp"
-
+#define NO_DATA 0
 using namespace ul;
-
+bool render_non_static=false;
 
 //
 // quadsquare functions.
@@ -68,12 +68,21 @@ quadsquare::quadsquare(quadcornerdata* pcd)
 	  
 	// Set default vertex positions by interpolating from given corners.
 	// Just bilinear interpolation.
-	Vertex[0].Z = 0.25 * (pcd->Verts[0].Z + pcd->Verts[1].Z + pcd->Verts[2].Z + pcd->Verts[3].Z);
-	Vertex[1].Z = 0.5 * (pcd->Verts[3].Z + pcd->Verts[0].Z);
-	Vertex[2].Z = 0.5 * (pcd->Verts[0].Z + pcd->Verts[1].Z);
-	Vertex[3].Z = 0.5 * (pcd->Verts[1].Z + pcd->Verts[2].Z);
-	Vertex[4].Z = 0.5 * (pcd->Verts[2].Z + pcd->Verts[3].Z);
-
+	bool isnodata=false;
+	for(int i=0; i< 4; i++)
+	  if(pcd->Verts[i].Z == NO_DATA)
+	    isnodata=true;
+	
+	if(isnodata){
+	  for(int i=0; i < 5; i++)
+	    Vertex[i].Z=NO_DATA;
+	}else{
+	  Vertex[0].Z = 0.25 * (pcd->Verts[0].Z + pcd->Verts[1].Z + pcd->Verts[2].Z + pcd->Verts[3].Z);
+	  Vertex[1].Z = 0.5 * (pcd->Verts[3].Z + pcd->Verts[0].Z);
+	  Vertex[2].Z = 0.5 * (pcd->Verts[0].Z + pcd->Verts[1].Z);
+	  Vertex[3].Z = 0.5 * (pcd->Verts[1].Z + pcd->Verts[2].Z);
+	  Vertex[4].Z = 0.5 * (pcd->Verts[2].Z + pcd->Verts[3].Z);
+	}
 	for (i = 0; i < 2; i++) {
 		Error[i] = 0;
 	}
@@ -1159,7 +1168,7 @@ float	HeightMapInfo::Sample(int x, int z) const
 
 	int	rx = (x - x_origin) & mask;
 	int	rz = (z - y_origin) & mask;
-
+ 
 	if (ix < 0 || ix >= XSize-1 || iz < 0 || iz >= YSize-1) return 0;	// Outside the grid.
 
 	float	fx = float(rx) / (mask + 1);
@@ -1169,14 +1178,20 @@ float	HeightMapInfo::Sample(int x, int z) const
 	float	s01 = Data[(ix+1) + iz * RowWidth];
 	float	s10 = Data[ix + (iz+1) * RowWidth];
 	float	s11 = Data[(ix+1) + (iz+1) * RowWidth];
-
+	//Don't interpolate from no data
+	if(s00 ==NO_DATA || s01 == NO_DATA ||s10 == NO_DATA ||s11==NO_DATA)
+	  return 0;
+	
 	return (s00 * (1-fx) + s01 * fx) * (1-fz) +
 		(s10 * (1-fx) + s11 * fx) * fz;
 }
-void ply_header(FILE *fp,int num_tris,int num_verts){
+void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii){
   fseek(fp, 0, SEEK_SET); 
   fprintf(fp,"ply\n");
-  fprintf(fp,"format binary_little_endian 1.0\n");
+  if(ascii)
+    fprintf(fp,"format ascii 1.0\n");
+  else
+    fprintf(fp,"format binary_little_endian 1.0\n");
   fprintf(fp,"element vertex %012d\n",num_verts);
   fprintf(fp,"property float x\n");
   fprintf(fp,"property float y\n");
@@ -1241,7 +1256,7 @@ void quadsquare::RenderToWFAux(const quadcornerdata& cd)
 
 
     if (flags == 0) return;
-    if(!Static) return;
+    if(!Static && !render_non_static) return;
     nFlatTriangleCorner tc[9];
     int x0 = cd.xorg;
     int x1 = cd.xorg + half;
@@ -1289,34 +1304,34 @@ void quadsquare::RenderToWFAux(const quadcornerdata& cd)
 
 
 
-uint16 get_avg_Z(float *samples,int num){
+float get_avg_Z(float *samples,int num){
   double avg=0;
   for(int i=0; i < num; i++)
     avg+=samples[i];
       
-      return (uint16)(avg/num);
+      return (avg/num);
 
 }
 
 
-uint16 get_max_Z(float *samples,int num){
+float get_max_Z(float *samples,int num){
   double max=DBL_MIN;
   for(int i=0; i < num; i++)
     if(samples[i] > max)
       max=samples[i];
       
-      return (uint16)(max);
+      return (max);
 
 }
 
 
-uint16 get_min_Z(float *samples,int num){
+float get_min_Z(float *samples,int num){
   double min=DBL_MAX;
   for(int i=0; i < num; i++)
     if(samples[i] < min)
       min=samples[i];
       
-      return (uint16)(min);
+      return (min);
 
 }
 
@@ -1335,33 +1350,39 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
     int i;
     float buf[3];
     char *ptr;
-
-    for (i=0; i<3; i++) {
-      nFlatTriangleCorner *tc = tc_array[i];
-      if(!tc->vi->Zsamples ||tc->vi->Z == 0 )
-	return;
+    if(!render_non_static){
+      for (i=0; i<3; i++) {
+	nFlatTriangleCorner *tc = tc_array[i];
+	if(!tc->vi->Zsamples ||tc->vi->Z == 0 )
+	  return;
+      }
     }
-
     for (i=0; i<3; i++) {
         nFlatTriangleCorner *tc = tc_array[i];
 	ul::vector p = ul::vector(float(tc->x),float(tc->y),tc->vi->Z);
 	p.SetX(ge.min[0]+(tc->x*ge.cell_size));
-	uint16 Z=0;
+	int Z=0;
 	
 	if(tc->vi->Zsamples){
-	  Z=get_min_Z(tc->vi->Zsamples,tc->vi->num_samples);//get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
+	  Z=get_max_Z(tc->vi->Zsamples,tc->vi->num_samples);//get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
 	}else{
 	  Z=tc->vi->Z;
 	}
-	if(Z!=0){
-	p.SetZ(	((Z/(float)UINT16_MAX_MINUS_ONE) *(ge.range[2]))+ ge.min[2]);
+	if(Z==0){
+	  fprintf(stderr, "Shouldn't be zero I don't think uquadtree line 1372\n");
+	  Z=1;
+	}
+	 
+
+	p.SetZ((((Z-1)/(float)UINT16_MAX_MINUS_ONE) *(ge.range[2]))+ ge.min[2]);
+       	//printf("Z %f\n",((Z-1)/(float)UINT16_MAX_MINUS_ONE) );
 	p.SetY(ge.min[1]+(tc->y*ge.cell_size));
 	//        fprintf(wf_fp,"v %f %f %f\n",p.X(),p.Z(),-p.Y());
 	buf[0]=p.X();
 	buf[2]=p.Z();
 	buf[1]=p.Y();
 	fwrite((char *)buf,sizeof(float),3,wf_fp);
-	}
+	//}
 	
 	//        fp->PutS(buf);
     }

@@ -21,7 +21,7 @@ typedef unsigned short uint16;
 typedef unsigned int uint32;
 typedef short int16;
 typedef int int32;
-#define UINT16_MAX_MINUS_ONE (65536 -1)
+#define UINT16_MAX_MINUS_ONE (USHRT_MAX-2)
 class global_extents{
 public:
   double min[3],max[3],range[3];
@@ -67,7 +67,8 @@ struct HeightMapInfo {
 
 
 struct	VertInfo {
-	uint16	Z;
+  //	uint16	Z;
+  int Z;
   unsigned char num_samples;
   float *Zsamples;
 	unsigned char	Lightness;	// For simple precomputed vertex lighting for purposes of the demo.  It's a waste of 2 bytes if we're texturing.
@@ -150,6 +151,6 @@ void AddTriangleToWF(quadsquare * /* usused qs */,
 
 };
 
-void ply_header(FILE *fp,int num_tris,int num_verts);
-
+void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii=false);
+extern bool render_non_static;
 #endif // QUADTREE_HPP

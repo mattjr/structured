@@ -1946,9 +1946,11 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
 	  fprintf(vripcmds_fp," ../mesh-agg/inv-mb-%08d-%08d.ply ",k,i);
 	fprintf(quadmergecmds_fp,"> ../mesh-diced/clipped-diced-%08d.ply;",i);
      }
-      fprintf(quadmergecmds_fp,"cd ..\n");
+    
       */
-      
+
+     fprintf(quadmergecmds_fp,"cd ..\n");
+   
       for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=cells[i].poses[j];
 	//Quadmerge List

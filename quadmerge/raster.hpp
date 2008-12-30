@@ -13,6 +13,7 @@
 typedef struct _mesh_input{
   std::string name;
   float res;
+  int count;
   mapnik::Envelope<double> envelope;
 }mesh_input;
 

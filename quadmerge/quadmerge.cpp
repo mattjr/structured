@@ -58,8 +58,51 @@ global_extents ge;
 bool lod=false;
 float	Detail = 100.0;// FLT_MAX;
 
+void bound_xyz( mesh_input &m,double &zmin, double &zmax){
+  float data[3];
+  bool first=false;
+  FILE *fp=fopen(m.name.c_str(),"r");
+  while(!feof(fp)){
+    if(fread(data,3,sizeof(float),fp) != 3)
+      break;
+    if(!first){
+      m.envelope=Envelope<double>(data[0],data[1],data[0],data[1]);
+      first=true;
+      m.count=3;
+    }else{
+      m.envelope.expand_to_include(data[0],data[1]);
+      m.count+=3;
+    }
+
+    if( data[2] < zmin)
+      zmin= data[2];
+    
+    if( data[2] > zmax)
+      zmax= data[2];
+  }
+
+}
 
 
+void bound_mesh( mesh_input &m,double &zmin, double &zmax){
+ 
+  TriMesh::verbose=0;
+  TriMesh *mesh = TriMesh::read(m.name.c_str());
+  edge_len_thresh(mesh,edge_thresh);
+  mesh->need_bbox();
+  m.envelope=Envelope<double>(mesh->bbox.min[0],
+				      mesh->bbox.min[1],
+				      mesh->bbox.max[0],
+				      mesh->bbox.max[1]);
+  // cout << meshes[i].envelope;
+  if( mesh->bbox.min[2] < zmin)
+    zmin= mesh->bbox.min[2];
+  
+  if( mesh->bbox.min[2] > zmax)
+    zmax= mesh->bbox.max[2];
+  delete mesh;
+
+}
 int	main(int argc, char *argv[])
 {
   libplankton::ArgumentParser argp(&argc,argv);
@@ -77,6 +120,8 @@ int	main(int argc, char *argv[])
   edge_thresh=0.5;
   argp.read("-edgethresh",edge_thresh);	  
   argp.read("-input",input);
+  std::string rangefile;
+  bool range= argp.read("-range",rangefile);
   
   if(  argp.read("-lod"))
     lod=true;
@@ -111,28 +156,18 @@ int	main(int argc, char *argv[])
 	
 	  mapnik::Envelope<double> tree_bounds;
 	  for(unsigned int i=0; i< meshes.size(); i++){
-	    TriMesh::verbose=0;
-	    TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
-	    edge_len_thresh(mesh,edge_thresh);
-	    mesh->need_bbox();
-	    meshes[i].envelope=Envelope<double>(mesh->bbox.min[0],
-						mesh->bbox.min[1],
-						mesh->bbox.max[0],
-						mesh->bbox.max[1]);
-	    // cout << meshes[i].envelope;
-	    if( mesh->bbox.min[2] < zmin)
-	      zmin= mesh->bbox.min[2];
-	    
-	    if( mesh->bbox.min[2] > zmax)
-	      zmax= mesh->bbox.max[2];
+	    if(meshes[i].name.substr(meshes[i].name.size()-3) == "ply")
+	      bound_mesh(meshes[i],zmin,zmax);
+	    else
+	      bound_xyz(meshes[i],zmin,zmax);
+
 	    if(i == 0)
 	      tree_bounds=meshes[i].envelope;
 	    else
 	      tree_bounds.expand_to_include(meshes[i].envelope);
 	    
-	    delete mesh;
 	  }
-
+	 
 
 	  int	whole_cell_int_size = 2 << ge.max_Level;
 	  double tree_max_size=max(tree_bounds.width(),tree_bounds.height());
@@ -148,12 +183,18 @@ int	main(int argc, char *argv[])
 	  ge.max[0]=tree_bounds.maxx();
 	  ge.max[1]=tree_bounds.maxy();
 	  ge.max[2]=zmax;
-
+	  if(range){
+	    FILE *rangefp=fopen(rangefile.c_str(),"w");
+	    if(rangefp){fprintf(rangefp,"%f %f %f\n%f %f %f\n",ge.min[0],ge.min[1],ge.min[2],ge.max[0],ge.max[1],ge.max[2]);
+	    fclose(rangefp);
+	    }else
+	      fprintf(stderr,"Couldn't open %s\n",rangefile.c_str());
+	  }
 	  std::cout << ge;
 
 	  RootCornerData.xorg=ge.get_in_cells(tree_bounds.minx()-tree_bounds.minx(),ge.max_Level);
 	  RootCornerData.yorg=ge.get_in_cells(tree_bounds.miny()-tree_bounds.miny(),ge.max_Level);
-	  printf("Root Corner xorg %d yorg %d\n",RootCornerData.xorg,RootCornerData.yorg);
+	  //printf("Root Corner xorg %d yorg %d\n",RootCornerData.xorg,RootCornerData.yorg);
 	  root = new quadsquare(&RootCornerData);
 	  render_no_data=false;
 	  LoadData(meshes);
@@ -208,16 +249,42 @@ int	main(int argc, char *argv[])
 	return 0;
 
 }
+void load_xyz( mesh_input &m){
+  float *xyzdata=new float[m.count];
+  float *ptr=xyzdata;
+  FILE *fp=fopen(m.name.c_str(),"r");
+  while(!feof(fp)){
+    if(fread(ptr,3,sizeof(float),fp) != 3)
+      break;
+    ptr+=3;
+  }
 
-void	LoadData(std::vector<mesh_input> &meshes)
-// Load some data and put it into the quadtree.
-{
+ HeightMapInfo	hm;
+ hm.x_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
+ hm.y_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
+ /* hm.XSize = nx;
+ hm.YSize = ny;
+ hm.RowWidth = hm.XSize;
+ hm.Scale =level;*/
+ hm.Data = new uint16[hm.XSize * hm.YSize];
+   
+ for(int i=0; i < hm.XSize * hm.YSize; i++){
+   // if(std::isnan(pout[i].z))
+   if(1) hm.Data[i]=0;
+   else
+     ;//hm.Data[i]= ge.toUINTz(pout[i].z);
+   //  printf("%d %d\n",hm.Data[i],UINT16_MAX_MINUS_ONE);
+   //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
+ }
  
-  for(unsigned int i=0; i< meshes.size(); i++){
  
-
-   TriMesh::verbose=0;
-   TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
+ root->AddHeightMap(RootCornerData, hm);
+ delete [] hm.Data;
+ delete xyzdata;
+}
+void load_mesh( mesh_input &m){
+  TriMesh::verbose=0;
+   TriMesh *mesh = TriMesh::read(m.name.c_str());
    edge_len_thresh(mesh,edge_thresh);
    point_nn*pout;
    int nout;
@@ -225,18 +292,18 @@ void	LoadData(std::vector<mesh_input> &meshes)
    float cx,cy;
    int level;
    double actual_res;
-   interpolate_grid(mesh,meshes[i],pout,nout,nx,ny,cx,cy,actual_res,level);
+   interpolate_grid(mesh,m,pout,nout,nx,ny,cx,cy,actual_res,level);
    char fname[255];
-   sprintf(fname,"tmp/%s",meshes[i].name.c_str());
+   sprintf(fname,"tmp/%s",m.name.c_str());
    //  write_mesh(pout,nout,fname,true);
-   printf("\r %03d/%03d",i,(int)meshes.size());
+   
    fflush(stdout);
    // points_to_quadtree(nout,pout,qt);
    //free(&pout);
    //   printf("Nx %d Ny %d Cx %f Cy %f\n",nx,ny,cx,cy);
    HeightMapInfo	hm;
-   hm.x_origin = ge.get_in_cells(meshes[i].envelope.minx()-ge.min[0],ge.max_Level);
-   hm.y_origin = ge.get_in_cells(meshes[i].envelope.miny()-ge.min[1],ge.max_Level);
+   hm.x_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
+   hm.y_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
    //   printf("Xorigin %d Yorigin %d\n",hm.x_origin,hm.y_origin);
    hm.XSize = nx;
    hm.YSize = ny;
@@ -258,7 +325,19 @@ void	LoadData(std::vector<mesh_input> &meshes)
    root->AddHeightMap(RootCornerData, hm);
    delete [] hm.Data;
    delete mesh;  
- }
+}
+void	LoadData(std::vector<mesh_input> &meshes)
+// Load some data and put it into the quadtree.
+{
+ 
+  for(unsigned int i=0; i< meshes.size(); i++){
+    printf("\r %03d/%03d",i,(int)meshes.size());
+    if(meshes[i].name.substr(meshes[i].name.size()-3) == "ply")
+      load_mesh(meshes[i]);
+    else
+      load_xyz(meshes[i]);
+
+  }
  
   printf("\r %03d/%03d\n",(int)meshes.size(),(int)meshes.size());
 	

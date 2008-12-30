@@ -336,7 +336,7 @@ void	LoadData(std::vector<mesh_input> &meshes)
    int level;
    double actual_res;
    interpolate_grid(mesh,meshes[i],pout,nout,nx,ny,cx,cy,actual_res,level);
-   printf("\r %03d/%03d",i,meshes.size());
+   printf("\r %03d/%03d",i,(int)meshes.size());
    fflush(stdout);
    // points_to_quadtree(nout,pout,qt);
    //free(&pout);

@@ -5,4 +5,4 @@ if [ -n "$EXISTS" ]; then
 else
   GSF_FLAG="-GSF"
 fi
-echo "y\n" | ~/cvs/seabed_localisation/mbm_processDT.sh $1  $GSF_FLAG -UNGRD -NP -E 0.1/0.1/m -O $PWD/mb_grd 
+echo "y\n" | ~/cvs/seabed_localisation/mbm_processDT.sh $1  $GSF_FLAG -GRD2XYZ -NP -E 0.1/0.1/m -O $PWD/mb_grd 

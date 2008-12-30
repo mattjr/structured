@@ -214,7 +214,7 @@ void	LoadData(std::vector<mesh_input> &meshes)
      if(isnan(pout[i].z))
        hm.Data[i]=0;
      else
-       hm.Data[i]= std::min((int)((UINT16_MAX_MINUS_ONE)* ((pout[i].z-ge.min[2])/(ge.range[2]))) ,UINT16_MAX_MINUS_ONE) +1;
+       hm.Data[i]= ge.toUINTz(pout[i].z);
      //  printf("%d %d\n",hm.Data[i],UINT16_MAX_MINUS_ONE);
      //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
    }

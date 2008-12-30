@@ -205,8 +205,8 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
   nout = 0;
   double* zin = NULL;
   
-  struct timeval tv0, tv1, tv2;
-  struct timezone tz;
+  //struct timeval tv0, tv1, tv2;
+  //struct timezone tz;
   int nv = mesh->vertices.size();
   pin = (point_nn *)malloc(nv * sizeof(point_nn));
   zin = (double *)malloc(nv * sizeof(double));

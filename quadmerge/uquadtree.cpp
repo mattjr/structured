@@ -884,11 +884,7 @@ void	quadsquare::RenderAux(const quadcornerdata& cd, bool Textured, Clip::Visibi
 	
   
 
-	double worldhalfx=ge.cell_size*half;
-	double worldhalfy=ge.cell_size*half;
-
-	double worldwholex=ge.cell_size*whole;
-	double worldwholey=ge.cell_size*whole;
+	
 	//	printf("Level %f %d\n",cellsizex,cd.Level);
 	//	printf("Level %d h %d whole %d %d %d\n",cd.Level,half,whole,1 << 1 , 1<< 0);
 	// If this square is outside the frustum, then don't render it.
@@ -1232,6 +1228,7 @@ int	quadsquare::RenderToWF(const quadcornerdata& cd)
   }
   ply_header(wf_fp,wf_num_tris,vnum);
   fclose(wf_fp);
+  return 0;
 }
 
 
@@ -1313,6 +1310,21 @@ float get_avg_Z(float *samples,int num){
 
 }
 
+float get_clipped_avg_Z(float *samples,int num,float val,float dist){
+  double avg=0;
+  int counted=0;
+  for(int i=0; i < num; i++){
+    if(fabs(samples[i] - val) < dist){
+      avg+=samples[i];
+      counted++;
+    }
+  }
+  if(counted == 0)
+    return val;
+  
+  return (avg/counted);
+
+}
 
 float get_max_Z(float *samples,int num){
   double max=DBL_MIN;
@@ -1349,7 +1361,7 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 
     int i;
     float buf[3];
-    char *ptr;
+    
     if(!render_non_static){
       for (i=0; i<3; i++) {
 	nFlatTriangleCorner *tc = tc_array[i];
@@ -1364,7 +1376,8 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	int Z=0;
 	
 	if(tc->vi->Zsamples){
-	  Z=get_max_Z(tc->vi->Zsamples,tc->vi->num_samples);//get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
+	  double maxZ=get_max_Z(tc->vi->Zsamples,tc->vi->num_samples);//get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
+	  Z=get_clipped_avg_Z(tc->vi->Zsamples,tc->vi->num_samples,maxZ,ge.toUINTz(100.0));
 	}else{
 	  Z=tc->vi->Z;
 	}

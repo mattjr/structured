@@ -17,6 +17,7 @@
 #include "clip.hpp"
 #include "geometry.hpp"
 #include <ostream>
+#include <limits.h>
 typedef unsigned short uint16;
 typedef unsigned int uint32;
 typedef short int16;
@@ -32,7 +33,10 @@ public:
     double tree_max_size=std::max(range[0],range[1]);
     return tree_max_size/whole_cell_int_size;
   }
-
+  int toUINTz(double z){
+    return  std::min((int)((UINT16_MAX_MINUS_ONE)* ((z-min[2])/(range[2]))) ,UINT16_MAX_MINUS_ONE) +1;
+      }
+  
   int get_in_cells(double p,int level){
     double cell_size=get_cell_size(level);
     return ((int)((p/cell_size) + 0.5));

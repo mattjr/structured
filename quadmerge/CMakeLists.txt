@@ -64,11 +64,11 @@ IF( NOT LIBPLANKTON_PREFIX )
 ENDIF( NOT LIBPLANKTON_PREFIX )
 # libplankton 
 SET( LIBPLANKTON_INCLUDE_DIR ${LIBPLANKTON_PREFIX}/include/libplankton )
-SET( LIBPLANKTON_LIB plankton )
-CHECK_INCLUDE_FILE_CXX( "auv_matrix.hpp" HAVE_LIBPLANKTON "-I ${LIBPLANKTON_INCLUDE_DIR}" )
-IF( NOT HAVE_LIBPLANKTON )
-   MESSAGE( FATAL_ERROR  "ERROR - Can't find libplankton" )
-ENDIF( NOT HAVE_LIBPLANKTON )    
+#SET( LIBPLANKTON_LIB plankton )
+#CHECK_INCLUDE_FILE_CXX( "auv_matrix.hpp" HAVE_LIBPLANKTON "-I ${LIBPLANKTON_INCLUDE_DIR}" )
+#IF( NOT HAVE_LIBPLANKTON )
+#   MESSAGE( FATAL_ERROR  "ERROR - Can't find libplankton" )
+#ENDIF( NOT HAVE_LIBPLANKTON )    
 #-----------------------#
 # Compiler setup        #
 #-----------------------#

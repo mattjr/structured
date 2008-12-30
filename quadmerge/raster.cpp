@@ -158,7 +158,7 @@ static inline int Floor(const float x)
   }
 }*/
 
-void write_mesh(point_nn *pin, int nin,const char *fn){
+ void write_mesh(point_nn *pin, int nin,const char *fn,bool ascii){
  delaunay* d = delaunay_build(nin, pin, 0, NULL, 0, NULL);
  FILE *fp=fopen(fn,"w");
  ply_header(fp,d->ntriangles,d->npoints);
@@ -167,7 +167,10 @@ void write_mesh(point_nn *pin, int nin,const char *fn){
    buf[0]=d->points[i].x;
    buf[1]=d->points[i].y;
    buf[2]=d->points[i].z;
-   fwrite((char*)&buf,3,sizeof(float),fp);
+   if(ascii)
+     fprintf("%f %f %f\n",buf[0],buf[1],buf[2]);
+   else 
+     fwrite((char*)&buf,3,sizeof(float),fp);
  }
  unsigned char numt=3;
  int ibuf[3];

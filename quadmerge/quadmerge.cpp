@@ -26,7 +26,7 @@
 #include <string.h>
 #include <vector>
 #include "auv_args.hpp"
-
+#include <math.h>
 using mapnik::Envelope;
 using namespace ul;
 using std::cout;
@@ -239,7 +239,7 @@ void	LoadData(std::vector<mesh_input> &meshes)
    
    for(int i=0; i < hm.XSize * hm.YSize; i++){
      // printf("%f ",pout[i].z);
-     if(isnan(pout[i].z))
+     if(std::isnan(pout[i].z))
        hm.Data[i]=0;
      else
        hm.Data[i]= ge.toUINTz(pout[i].z);

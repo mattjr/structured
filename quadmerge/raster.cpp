@@ -162,7 +162,7 @@ static inline int Floor(const float x)
    point_nn* pin_clean=new point_nn[nin];
    int nin_clean=0;
    for(int i=0; i < nin; i++){
-     if(!isnan(pin[i].z ))
+     if(!std::isnan(pin[i].z ))
        pin_clean[nin_clean++]=pin[i];
    }
    if(nin_clean == 0)

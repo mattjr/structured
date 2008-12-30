@@ -25,7 +25,7 @@
 #include <stdlib.h> 
 #include <string.h>
 #include <vector>
-
+#include "auv_args.hpp"
 
 using mapnik::Envelope;
 using namespace ul;
@@ -55,23 +55,32 @@ bool	MoveForward = false;
 
 int	TriangleCounter = 0;
 global_extents ge;
-
+bool lod=false;
 float	Detail = 100.0;// FLT_MAX;
 
 
 
 int	main(int argc, char *argv[])
 {
-  if(argc < 4){
+  libplankton::ArgumentParser argp(&argc,argv);
+
+  if(argp.argc() < 4){
     fprintf(stderr,"Usage quadmerge meshlistfile.txt edgethreshold outfile.ply\n");
     exit(-1);
   }
-  wf_fname=argv[3];
+  std::string tmp,input;
+  if(  argp.read("-output",tmp ));
+  wf_fname = (char *)malloc(255);
+  strcpy(  wf_fname,tmp.c_str());;
   ge.max_Level=15;
   RootCornerData.Level= ge.max_Level;
-
-  edge_thresh=atof(argv[2]);
+  edge_thresh=0.5;
+  argp.read("-edgethresh",edge_thresh);	  
+  argp.read("-input",input);
   
+  if(  argp.read("-lod"))
+    lod=true;
+
 	for(int i=0; i <3; i++){
 	  ge.min[i]=DBL_MAX;
 	  ge.max[i]=DBL_MIN;
@@ -79,13 +88,13 @@ int	main(int argc, char *argv[])
 	}
 
 
-	if(argc > 1){
+
 	  FILE* fp;
 	  char meshname[255];
 	  float res;
-	  fp=fopen(argv[1],"rb");
+	  fp=fopen(input.c_str(),"rb");
 	  if(!fp){
-	    fprintf(stderr,"Can't open %s\n",argv[1]);
+	    fprintf(stderr,"Can't open %s\n",input.c_str());
 	    exit(0);
 	  }
 	  
@@ -148,7 +157,7 @@ int	main(int argc, char *argv[])
 	  root = new quadsquare(&RootCornerData);
 	  render_non_static=false;
 	  LoadData(meshes);
-	}
+	
 	
 	// Debug info.
 	printf("nodes = %d\n", root->CountNodes());
@@ -173,7 +182,21 @@ int	main(int argc, char *argv[])
 	// Draw the quadtree.
 	if (root) {
 	  //		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
-		root->RenderToWF(RootCornerData);
+	  if(lod){
+	    std::string name(wf_fname);
+	    for(int i=0; i < 3; i++){
+	      char tmp[255];
+	      sprintf(tmp,"-lod%d.ply",i);
+	      std::string str(name);
+	      int pos=str.find(".ply");
+	      str.replace(pos, 4, std::string(tmp) );
+	      strcpy(wf_fname,str.c_str());
+	      std::cout << "Writing " << wf_fname << std::endl;
+	      root->RenderToWF(RootCornerData);
+	    }
+	  }
+	  else
+	    root->RenderToWF(RootCornerData);
 	}
 	return 0;
 

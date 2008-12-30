@@ -1873,7 +1873,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     
     string quadmergecmd_fn="mesh-quad/quadmergecmds";
     FILE *quadmergecmds_fp=fopen(quadmergecmd_fn.c_str(),"w");
-    diced_fp=fopen("mesh-diced/diced.txt","w");
+    diced_fp=fopen("mesh-quad/diced.txt","w");
 
     if(!quadmergecmds_fp){
       printf("Can't open quadmergecmds\n");
@@ -1920,8 +1920,8 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
 	
       }
       if(!no_merge)
-	fprintf(quadmergecmds_fp,"$BASEDIR/quadmerge/bin/quadmerge ../%s %f ../mesh-quad/seg-%08d.ply;",quadmerge_seg_fname,edgethresh,i);
-      fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/seg-%08d.ply > ../mesh-quad/clipped-diced-%08d.ply;",
+	fprintf(quadmergecmds_fp,"$BASEDIR/quadmerge/bin/quadmerge  -lod -input ../%s -edgethresh %f -output ../mesh-quad/seg-%08d.ply;",quadmerge_seg_fname,edgethresh,i);
+      /*fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/seg-%08d.ply > ../mesh-quad/clipped-diced-%08d.ply;",
 	      cells[i].bounds.min_x,
 	      cells[i].bounds.min_y,
 	      FLT_MIN,
@@ -1929,7 +1929,10 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
 	      cells[i].bounds.max_y,
 	      FLT_MAX,
 	      eps,i,i);
-
+      */
+      fprintf(quadmergecmds_fp,"cp ../mesh-quad/seg-%08d.ply  ../mesh-quad/clipped-diced-%08d.ply;",i,i);
+      for(int t=0; t < 3; t++)
+	fprintf(quadmergecmds_fp,"cp ../mesh-quad/seg-%08d-lod%d.ply  ../mesh-quad/clipped-diced-%08d-lod%d.ply;",i,t,i,t);
       /*     if(have_mb_ply){
        fprintf(quadmergecmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply;",i,i);
 	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
@@ -1966,7 +1969,7 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
       fclose(bboxfp);
     }
     fclose(quadmergecmds_fp);
-
+    fclose(diced_fp);
 
     if(output_uv_file)
       fclose(uv_fp);
@@ -2104,8 +2107,10 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
 	if(quad_integration){	
 	  string quadmergecmd="runquadmerge.py";
 	  
-	  
-	  shellcm.write_generic(quadmergecmd,quadmergecmd_fn,"Quadmerge");
+	  	std::vector<string> postcmds;
+		postcmds.push_back("cp mesh-quad/diced.txt mesh-quad/valid.txt");
+		postcmds.push_back("cd mesh-quad/;cat valid.txt | xargs plybbox > range.txt");
+	  shellcm.write_generic(quadmergecmd,quadmergecmd_fn,"Quadmerge",NULL,&postcmds);
 	  if(!no_quadmerge)
 	    sysres=system("./runquadmerge.py");
 	  
@@ -2170,17 +2175,19 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
 	vector<string> gentexnames;
 	gentexnames.push_back("./gentex.py");
 	gentexnames.push_back("./posgentex.py");
+	gentexnames.push_back("./quadgentex.py");
 
 	vector<string> gentexdir;
 	gentexdir.push_back("mesh-diced");
 	gentexdir.push_back("mesh-pos");
+	gentexdir.push_back("mesh-quad");
 	std::vector<string> precmds;
 	if(no_simp){ 
 	  string cmdtmp="cat diced.txt | xargs plybbox > range.txt;cp diced.txt valid.txt\n";
 	precmds.push_back(cmdtmp);
       }
       string gentexcmd_fn;
-      for(int i=0; i <2; i++){
+      for(int i=0; i <(int)gentexdir.size(); i++){
 	gentexcmd_fn=(gentexdir[i]+"/gentexcmds");
 	dicefp=fopen(gentexcmd_fn.c_str(),"w+");
 	
@@ -2223,6 +2230,8 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
 	  sysres=system(gentexnames[i].c_str());
 	if(i==1 && run_pos)
 	  sysres=system(gentexnames[i].c_str());
+	if(i==2 && !no_quadmerge)
+	  sysres=system(gentexnames[i].c_str());
 	
       }
 
@@ -2231,6 +2240,8 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
 	  char ar[255];
 	  if(run_pos)
 	    strcpy(ar,"--dicedir mesh-pos/");
+	  else if(quad_integration)
+	    strcpy(ar,"--dicedir mesh-quad/");
 	  else
 	    strcpy(ar,"--dicedir mesh-diced/");
 	  fprintf(lodfp,"#!/bin/bash\n"

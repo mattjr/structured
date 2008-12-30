@@ -157,4 +157,5 @@ void AddTriangleToWF(quadsquare * /* usused qs */,
 
 void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii=false);
 extern bool render_non_static;
+extern char *wf_fname;
 #endif // QUADTREE_HPP

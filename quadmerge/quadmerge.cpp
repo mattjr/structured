@@ -59,9 +59,14 @@ global_extents ge;
 float	Detail = 100.0;// FLT_MAX;
 
 
+
 int	main(int argc, char *argv[])
 {
-
+  if(argc < 4){
+    fprintf(stderr,"Usage quadmerge meshlistfile.txt edgethreshold outfile.ply\n");
+    exit(-1);
+  }
+  wf_fname=argv[3];
   ge.max_Level=15;
   RootCornerData.Level= ge.max_Level;
 
@@ -225,7 +230,7 @@ void	LoadData(std::vector<mesh_input> &meshes)
    delete mesh;  
  }
  
- 
+  printf("\r %03d/%03d\n",(int)meshes.size(),(int)meshes.size());
 	
 
 }

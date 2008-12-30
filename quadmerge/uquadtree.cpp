@@ -36,7 +36,7 @@ bool render_non_static=false;
 //
 // quadsquare functions.
 //
-
+char *wf_fname;
 
 quadsquare::quadsquare(quadcornerdata* pcd)
 // Constructor.
@@ -1209,7 +1209,7 @@ int	quadsquare::RenderToWF(const quadcornerdata& cd)
 {
   wf_num_tris=0;
   int vnum=0;
-  wf_fp=fopen("out.ply","wb");
+  wf_fp=fopen(wf_fname,"wb");
   ply_header(wf_fp,wf_num_tris,vnum);
   RenderToWFAux(cd);
   vnum = wf_num_tris * 3;

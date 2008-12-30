@@ -58,7 +58,7 @@ typedef struct delaunay delaunay;
  */
 struct delaunay {
     int npoints;
-    point* points;
+    point_nn* points;
     double xmin;
     double xmax;
     double ymin;
@@ -93,7 +93,7 @@ struct delaunay {
 /*
  * delaunay_build() and delaunay_destroy() belong to "nn.h"
  */
-void delaunay_circles_find(delaunay* d, point* p, int* n, int** out);
-int delaunay_xytoi(delaunay* d, point* p, int seed);
+void delaunay_circles_find(delaunay* d, point_nn* p, int* n, int** out);
+int delaunay_xytoi(delaunay* d, point_nn* p, int seed);
 
 #endif

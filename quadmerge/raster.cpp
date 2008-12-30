@@ -2,7 +2,7 @@
 #include "uquadtree.hpp"
 #include <float.h>
 float kill_threshold_squared = 2500.0f; // 50*50 units
-
+#include "nn/delaunay.h"
 #include <sys/time.h>
 //----------------------------------------------------------------------------
 // CLAMP TO RASTER INT THAT IS INSIDE TRIANGLE BIASED TOWARDS MIN (INCLUSIVE)
@@ -63,7 +63,7 @@ static inline int Floor(const float x)
   where det = the orientation Det[ax-bx ay-by; cx-bx cy-by];
     Dx  = Det[ay-by az-bz; cy-by cz-bz]; 
     Dy  = Det[ax-bx az-bz; cx-bx cz-bz]; 
-*/
+
  void raster_triangle(const float* a, const float* b, const float* c)
 {
   const float* t;
@@ -156,21 +156,39 @@ static inline int Floor(const float x)
       }
     }
   }
+}*/
+
+void write_mesh(point_nn *pin, int nin,const char *fn){
+ delaunay* d = delaunay_build(nin, pin, 0, NULL, 0, NULL);
+ FILE *fp=fopen(fn,"w");
+ ply_header(fp,d->ntriangles,d->npoints);
+ float buf[3];
+ for(int i=0; i<d->npoints; i++){
+   buf[0]=d->points[i].x;
+   buf[1]=d->points[i].y;
+   buf[2]=d->points[i].z;
+   fwrite((char*)&buf,3,sizeof(float),fp);
+ }
+ unsigned char numt=3;
+ int ibuf[3];
+ for(int i=0; i<d->ntriangles; i++){
+   fwrite((char*)&numt,1,sizeof(unsigned char),fp);
+   ibuf[0]=d->triangles[i].vids[0];
+   ibuf[1]=d->triangles[i].vids[1];
+   ibuf[2]=d->triangles[i].vids[2];
+   fwrite((char*)&ibuf,3,sizeof(int),fp);
+ }
+
 }
-
-
 
 void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny,float &cx,float &cy,double &res,int &level){
   point_nn* pin = NULL;
  
   pout = NULL;
-  nnai* nn = NULL;
+  
   nout = 0;
   double* zin = NULL;
-  double* xout = NULL;
-  double* yout = NULL;
-  double* zout = NULL;
-  int cpi = -1;               /* control point index */
+  
   struct timeval tv0, tv1, tv2;
   struct timezone tz;
   int nv = mesh->vertices.size();
@@ -186,7 +204,7 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
     
   }
   int nin=nv;
-  points_thinlin(&nin,&pin,0.5);
+  // points_thinlin(&nin,&pin,10.1);
   double actual_res;
   ge.get_closest_res_level(mesh_data.res,level,actual_res);
   //  printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
@@ -195,7 +213,7 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
 
   nx=(int)floor(mesh_data.envelope.width()/actual_res);
   ny=(int)floor(mesh_data.envelope.height()/actual_res);
-  double wmin = -DBL_MAX;
+  double wmin = 0;//-DBL_MAX;
   points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
   nnpi_interpolate_points(nin, pin, wmin, nout, pout);
   //points_write(nout, pout);

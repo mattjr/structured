@@ -158,7 +158,11 @@ void mesh2hmap(hmap_t *hmap, const mesh_t *mesh,
 
 	hmap->x_min= x_min;
 	hmap->y_min= y_min;
-
+	hmap->z_min=z_min;
+	hmap->z_max=z_max;
+	hmap->xOri=((x_max-x_min)/2.0) +x_min;
+	hmap->yOri=((y_max-y_min)/2.0)+y_min;
+	printf("Origin %f %f\n",hmap->xOri,hmap->yOri);
 
 	for (i = 0; i < mesh->num_vert ; i++) {
 		mesh->vert[i][x] -= x_min;

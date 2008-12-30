@@ -232,6 +232,9 @@ void	LoadData(std::vector<mesh_input> &meshes)
    int level;
    double actual_res;
    interpolate_grid(mesh,meshes[i],pout,nout,nx,ny,cx,cy,actual_res,level);
+   char fname[255];
+   sprintf(fname,"tmp/%s",meshes[i].name.c_str());
+   write_mesh(pout,nout,fname);
    printf("\r %03d/%03d",i,(int)meshes.size());
    fflush(stdout);
    // points_to_quadtree(nout,pout,qt);

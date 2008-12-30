@@ -150,6 +150,6 @@ void AddTriangleToWF(quadsquare * /* usused qs */,
 
 };
 
-
+void ply_header(FILE *fp,int num_tris,int num_verts);
 
 #endif // QUADTREE_HPP

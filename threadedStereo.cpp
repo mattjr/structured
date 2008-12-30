@@ -148,7 +148,7 @@ static Stereo_Calib *calib;
 //static   GTimer  * overall_timer;
 static time_t start_timer, end_timer; 
 static Config_File *recon_config_file; 
-static bool hmap_method=true;
+static bool hmap_method=false;
   static Config_File *dense_config_file; 
 static  int tex_size;
 #ifdef USE_DENSE_STEREO
@@ -604,59 +604,6 @@ void save_bbox_frame (GtsBBox * bb, FILE * fptr){
 
 }
 
-// Remove edge longer then thresh
-void edge_len_thresh(TriMesh *mesh,double thresh)
-{
-  mesh->need_faces();
-  int numfaces = mesh->faces.size();
-
-
-  vector<bool> toremove(numfaces, false);
-  for (int i = 0; i < numfaces; i++) {
-    const point &v0 = mesh->vertices[mesh->faces[i][0]];
-    const point &v1 = mesh->vertices[mesh->faces[i][1]];
-    const point &v2 = mesh->vertices[mesh->faces[i][2]];
-    float d01 = dist2(v0, v1);
-    float d12 = dist2(v1, v2);
-    float d20 = dist2(v2, v0);
-    if (d01 > thresh || d12 > thresh || d20 > thresh)
-      toremove[i] = true;
-  }
-  remove_faces(mesh, toremove);
-  remove_unused_vertices(mesh);
-}
-
-// Remove edge longer then thresh
-void edge_len_thresh_percent(TriMesh *mesh,double thresh)
-{
-  double sum=0.0;
-  mesh->need_faces();
-  int numfaces = mesh->faces.size();
-  for (int i = 0; i < numfaces; i++) {
-    const point &v0 = mesh->vertices[mesh->faces[i][0]];
-    const point &v1 = mesh->vertices[mesh->faces[i][1]];
-    const point &v2 = mesh->vertices[mesh->faces[i][2]];
-    sum+= dist2(v0, v1);
-    sum += dist2(v1, v2);
-    sum+= dist2(v2, v0);
-  }
-  sum/=numfaces;
-  double threshlen=sum * thresh;
-  //printf("Avg len %f Thresh %f\n",sum,threshlen);
-  vector<bool> toremove(numfaces, false);
-  for (int i = 0; i < numfaces; i++) {
-    const point &v0 = mesh->vertices[mesh->faces[i][0]];
-    const point &v1 = mesh->vertices[mesh->faces[i][1]];
-    const point &v2 = mesh->vertices[mesh->faces[i][2]];
-    float d01 = dist2(v0, v1);
-    float d12 = dist2(v1, v2);
-    float d20 = dist2(v2, v0);
-    if (d01 > threshlen || d12 > threshlen || d20 > threshlen)
-      toremove[i] = true;
-  }
-  remove_faces(mesh, toremove);
-  remove_unused_vertices(mesh);
-}
 
 
 //
@@ -1379,7 +1326,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       //print_hmap(&hmap); return 0;
       fmatrix_free(hmmesh.vert);
       irowarray_free(hmmesh.poly, hmmesh.num_poly);
-
+      printf("%f %f\n",hmap.z_min, hmap.z_max);
       char tmp[255];
       int bpp=8;
       int range = (int) pow((double)2,bpp) - 1;

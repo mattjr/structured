@@ -185,15 +185,7 @@ int main(int argc ,char**argv){
   else if(format == "ply")
     err=vcg::tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1]);
 
- cm.face.EnableFFAdjacency();
- cm.face.EnableMark();
-	cm.vert.EnableMark();
-	  vcg::tri::UpdateTopology<CMeshO>::FaceFace(cm);
-  
-	cm.vert.EnableVFAdjacency();
-    cm.face.EnableVFAdjacency();
 
-	  vcg::tri::UpdateTopology<CMeshO>::VertexFace(cm);
 
   //vcg::tri::UpdateTopology<CMeshO>::FaceFace(cm);
   // vcg::tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
@@ -203,6 +195,16 @@ int main(int argc ,char**argv){
     fprintf(stderr,"Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::Importer<CMeshO>::ErrorMsg(err));
     exit(-1);
   }
+
+ cm.face.EnableFFAdjacency();
+ cm.face.EnableMark();
+	cm.vert.EnableMark();
+	  vcg::tri::UpdateTopology<CMeshO>::FaceFace(cm);
+  
+	cm.vert.EnableVFAdjacency();
+    cm.face.EnableVFAdjacency();
+
+	  vcg::tri::UpdateTopology<CMeshO>::VertexFace(cm);
   if(xfname){
     vcg::tri::UpdatePosition<CMeshO>::Matrix(cm, matrix);
     vcg::tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);  

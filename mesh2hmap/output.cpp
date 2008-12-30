@@ -297,16 +297,30 @@ void write_hmap_file(const char *filename, const hmap_t *hmap)
 	data[0]=hmap->xOri;
 	data[1]=hmap->yOri;
 	fwrite((char *)data,sizeof(float),2,fp);
-	data[0]=hmap->min;
-	data[1]=hmap->max;
+
+	data[0]=hmap->x_min;
+	data[1]=hmap->x_max;
+
 	fwrite((char *)data,sizeof(float),2,fp);
+	data[0]=hmap->y_min;
+	data[1]=hmap->y_max;
+
+	fwrite((char *)data,sizeof(float),2,fp);
+
+	data[0]=hmap->z_min;
+	data[1]=hmap->z_max;
+
+	fwrite((char *)data,sizeof(float),2,fp);
+
+
 	idata[0]=hmap->rows;
 	idata[1]=hmap->cols;
 	fwrite((char *)idata,sizeof(int),2,fp);
-	
+	float tmp;
 	for( i = 0; i < hmap->rows; i++) {
 	  for(j = 0; j < hmap->cols; j++) {
-	    fwrite((char *)&(hmap->map[i][j]),sizeof(float),1,fp);
+	    tmp=hmap->map[i][j]+hmap->z_min;
+	    fwrite((char *)&tmp,sizeof(float),1,fp);
 	  }
 	}
 	fclose(fp);
@@ -417,13 +431,13 @@ void print_gmt_hmap(const char *filename, const hmap_t *hmap,double dx,double dy
   dx = (max_long - min_long) / (h.nx-1);
   dy = (max_lat - min_lat) / (h.ny-1);
 
-  printf("Black Jason %f %f %g\n",max_lat,min_lat ,dy);
+
   h.x_min = min_long;
   h.x_max = max_long;//min_long+ (h.nx * dx);
   h.y_min = min_lat;
   h.y_max = max_lat;//min_lat +(h.ny-1) * dy);
   h.x_inc = dx;
-  printf("%f %f\n",dy,dx);
+
   h.y_inc = dy;//h.y_max / h.ny;
   h.node_offset = 0;//1 if pixel reg, 
   h.z_scale_factor = 1.0;

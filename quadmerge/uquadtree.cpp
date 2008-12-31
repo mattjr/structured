@@ -1161,6 +1161,86 @@ void	quadsquare::SetupCornerData(quadcornerdata* q, const quadcornerdata& cd, in
 	}	
 }
 
+void	quadsquare::AddPts(const quadcornerdata& cd,pt_3 *pts,int npts)
+// Sets the height of all samples within the specified rectangular
+// region using the given array of floats.  Extends the tree to the
+// level of detail defined by (1 << hm.Scale) as necessary.
+{
+
+
+}
+void	quadsquare::AddPtsAux(const quadcornerdata& cd, pt_3 &pt,int minScale){
+  // If block is outside rectangle, then don't bother.
+  int	BlockSize = 2 << cd.Level;
+  if (cd.xorg > ge.get_in_cells(pt.x,cd.Level) ||
+      cd.xorg + BlockSize <  ge.get_in_cells(pt.x,cd.Level) ||
+      cd.yorg >ge.get_in_cells(pt.y,cd.Level) ||
+      cd.yorg + BlockSize < ge.get_in_cells(pt.y,cd.Level))
+    {
+      // This square does not touch the given height array area; no need to modify this square or descendants.
+      return;
+    }
+  
+  if (cd.Parent && cd.Parent->Square) {
+    cd.Parent->Square->EnableChild(cd.ChildIndex, *cd.Parent);	// causes parent edge verts to be enabled, possibly causing neighbor blocks to be created.
+  }
+  
+	int	i;
+	
+	int	half = 1 << cd.Level;
+
+	// Create and update child nodes.
+	for (i = 0; i < 4; i++) {
+		quadcornerdata	q;
+		SetupCornerData(&q, cd, i);
+				
+		if (Child[i] == NULL && cd.Level > minScale/*hm.Scale*/) {
+			// Create child node w/ current (unmodified) values for corner verts.
+			Child[i] = new quadsquare(&q);
+		}
+		
+		// Recurse.
+		if (Child[i]) {
+		  Child[i]->AddPtsAux(q, pt,minScale);
+		}
+	}
+	
+	// Deviate vertex heights based on data sampled from heightmap.
+/*
+	s[0] = hm.Sample(cd.xorg + half, cd.yorg + half);
+	s[1] = hm.Sample(cd.xorg + half*2, cd.yorg + half);
+	s[2] = hm.Sample(cd.xorg + half, cd.yorg);
+	s[3] = hm.Sample(cd.xorg, cd.yorg + half);
+	s[4] = hm.Sample(cd.xorg + half, cd.yorg + half*2);
+*/
+	// Modify the vertex heights if necessary, and set the dirty
+	// flag if any modifications occur, so that we know we need to
+	// recompute error data later.
+	for (i = 0; i < 5; i++) {
+		if (pt.s[i] != 0) {
+			Dirty = true;
+			Vertex[i].num_samples++;
+			Vertex[i].Zsamples=(float *)realloc(Vertex[i].Zsamples,Vertex[i].num_samples*sizeof(float));
+			Vertex[i].Zsamples[Vertex[i].num_samples-1]=pt.s[i];
+			  
+			Vertex[i].Z = pt.s[i];
+		
+		
+		}
+	}
+
+	if (!Dirty) {
+		// Check to see if any child nodes are dirty, and set the dirty flag if so.
+		for (i = 0; i < 4; i++) {
+			if (Child[i] && Child[i]->Dirty) {
+				Dirty = true;
+				break;
+			}
+		}
+	}
+
+	if (Dirty) SetStatic(cd);
+}
 
 void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm)
 // Sets the height of all samples within the specified rectangular

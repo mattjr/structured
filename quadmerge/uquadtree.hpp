@@ -77,7 +77,10 @@ struct	VertInfo {
   float *Zsamples;
 	unsigned char	Lightness;	// For simple precomputed vertex lighting for purposes of the demo.  It's a waste of 2 bytes if we're texturing.
 };
-
+typedef struct _pt_3 {
+  float x,y;
+  float s[5];
+}pt_3;
 
 class quadsquare;
 
@@ -111,6 +114,8 @@ struct quadsquare {
 
   void StaticUpdate(const quadcornerdata& cd, float Detail);
   void	AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm);
+  void	AddPts(const quadcornerdata& cd,pt_3 *pts,int npts);
+  void	AddPtsAux(const quadcornerdata& cd, pt_3 &pt,int minScale);
 	void	StaticCullData(const quadcornerdata& cd, float ThresholdDetail);	
 	float	RecomputeErrorAndLighting(const quadcornerdata& cd);
 	int	CountNodes();

@@ -114,6 +114,7 @@ struct quadsquare {
 
   void StaticUpdate(const quadcornerdata& cd, float Detail);
   void	AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm);
+  void AddHeightMapNotFull(const quadcornerdata& cd, const HeightMapInfo& hm);
   void	AddPts(const quadcornerdata& cd,pt_3 *pts,int npts);
   void	AddPtsAux(const quadcornerdata& cd, pt_3 &pt,int minScale);
 	void	StaticCullData(const quadcornerdata& cd, float ThresholdDetail);	

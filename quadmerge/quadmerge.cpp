@@ -182,7 +182,7 @@ int	main(int argc, char *argv[])
   RootCornerData.yorg=ge.get_in_cells(tree_bounds.miny()-tree_bounds.miny(),ge.max_Level);
   //printf("Root Corner xorg %d yorg %d\n",RootCornerData.xorg,RootCornerData.yorg);
   root = new quadsquare(&RootCornerData);
-  render_no_data=false;
+  render_no_data=true;
   LoadData(meshes);
 	
 	
@@ -308,7 +308,8 @@ void load_mesh( mesh_input &m){
   }
   
    
-  root->AddHeightMap(RootCornerData, hm);
+  //  root->AddHeightMap(RootCornerData, hm);
+root->AddHeightMap(RootCornerData, hm);
   delete [] hm.Data;
   delete mesh;  
 }

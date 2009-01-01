@@ -2,7 +2,9 @@
 #include "fileio.hpp"
 #include "uquadtree.hpp"
 #include <math.h>
+
 using namespace std;
+using mapnik::Envelope;
 /**
  * Loads from a netCDF file.
  * Elevation values are assumed to be integer meters.  Projection is
@@ -55,106 +57,90 @@ void load_hm_file(HeightMapInfo *hm,const char *filename){
   hm->y_origin=24576;
 
 }
-bool LoadFromCDF(const char *szFileName,short &nx, short &ny,float *&data)
-{
-        int id;
 
+void bound_grd( mesh_input &m,double &zmin, double &zmax){
+  struct GRD_HEADER gmtheader;    /* GMT header to be written to file */
+  int argc=1;
+  const char *argv[]={"gmtiomodule",0};
+  const int falsev=(1==0);
+  argc=GMT_begin(argc,(char **)argv); /* Sets crazy globals */
+  GMT_grd_init (&gmtheader, argc,(char **) argv, falsev); /* Initialize grd header structure  */
+  GMT_read_grd_info ((char *)m.name.c_str(),&gmtheader);
+  double easting ,northing,l_xmin,l_ymin,l_xmax,l_ymax;
+  gpsConversion.GetGridCoordinates(gmtheader.y_min,gmtheader.x_min,
+				   zone, easting, northing, 
+				   gridConvergence, pointScale);
+  easting-=local_easting;
+  northing-=local_northing;
+   
+  l_ymin=easting;
+  l_xmin=northing;
+ 
 
-        /* open existing netCDF dataset */
-        int status = nc_open(szFileName, NC_NOWRITE, &id);
-        if (status != NC_NOERR)
-                return false;
+  gpsConversion.GetGridCoordinates(gmtheader.y_max,gmtheader.x_max,
+				   zone, easting, northing, 
+				   gridConvergence, pointScale);
+  easting-=local_easting;
+  northing-=local_northing;
+  
+  l_ymax=easting;
+  l_xmax=northing;
+  
 
-        // get dimension IDs
-        int id_side = 0, id_xysize = 0;
-        nc_inq_dimid(id, "side", &id_side);
-        status = nc_inq_dimid(id, "xysize", &id_xysize);
-        if (status != NC_NOERR)
-        {
-	  std::string msg;
-	  // Error messages can be turned into strings with nc_strerror
-	  msg = "Could not determine size of CDF file. Error: ";
-	  msg += nc_strerror(status);
-	  nc_close(id);                           // close netCDF dataset
-	  std::cerr << msg<<endl;
-	  return false;
-        }
+  m.envelope=Envelope<double>(l_xmin,l_ymin,
+			      l_xmax,l_ymax);
+ 
+ const size_t nm = gmtheader.nx * gmtheader.ny;
+ float *data;
+ data = (float *) GMT_memory (VNULL, (size_t)nm, sizeof (float), GMT_program);
 
-        size_t xysize_length = 0;
-        nc_inq_dimlen(id, id_xysize, &xysize_length);
+ /* Read the entire grd image */
+ if (GMT_read_grd ((char*)m.name.c_str(), &gmtheader, data, 0.0, 0.0, 0.0, 0.0, GMT_pad, FALSE)) {
+   // Bad?  free memory and bail
+   printf ("IS THIS BAD?\n");
+   GMT_free ((void *)data);
 
-        // get variable IDs
-        int id_xrange = 0, id_yrange = 0, id_zrange = 0;
-        int id_spacing = 0, id_dimension = 0, id_z = 0;
-        nc_inq_varid(id, "x_range", &id_xrange);
-        nc_inq_varid(id, "y_range", &id_yrange);
-        nc_inq_varid(id, "z_range", &id_zrange);
-        nc_inq_varid(id, "spacing", &id_spacing);
-        nc_inq_varid(id, "dimension", &id_dimension);
-        nc_inq_varid(id, "z", &id_z);
-
-        // get values of variables
-        double xrange[2], yrange[2], zrange[2], spacing[2];
-        int dimension[2] = { 0, 0 };
-        nc_get_var_double(id, id_xrange, xrange);
-        nc_get_var_double(id, id_yrange, yrange);
-        nc_get_var_double(id, id_zrange, zrange);
-        nc_get_var_double(id, id_spacing, spacing);
-        nc_get_var_int(id, id_dimension, dimension);
-
-        double *z;
-        try
-        {
-                z = new double[xysize_length];
-        }
-        catch (bad_alloc&)
-        {
-
-	  size_t bytes = sizeof(double)*xysize_length;
-	  fprintf(stderr,"Could not allocate %d bytes (%.1f MB, %.2f GB)\n",
-		  bytes, (float)bytes/1024/1024, (float)bytes/1024/1024/1024);
-	  nc_close(id);                           // close netCDF dataset
-	  return false;
-        }
-
-      
-	data=new float[xysize_length];
-        nc_get_var_double(id, id_z, z);
-      
-
-        nc_close(id);                           // close netCDF dataset
-
-        // Now copy the values into the vtElevationGrid object
-        nx = dimension[0];
-        ny = dimension[1];
-	
-        int i, j;
-        for (i = 0; i <nx; i++)
-        {
-                for (j = 0; j < ny; j++)
-                {
-		  //SetValue(i, m_iRows-1-j, (short)z[j*m_iColumns+i]);
-		  data[i*ny + j]=z[j*ny+i];
-                }
-        }
-        /*if (progress_callback != NULL) progress_callback(90);
-
-        m_proj.SetProjectionSimple(false, 0, EPSG_DATUM_WGS84);
-
-        m_EarthExtents.left = xrange[0];
-        m_EarthExtents.right = xrange[1];
-        m_EarthExtents.top = yrange[1];
-        m_EarthExtents.bottom = yrange[0];
-
-        ComputeCornersFromExtents();
-	*/
-        // delete temporary storage
-        delete z;
-	
-        return true;
+   return;
+ }
+ 
+ for(int i=0; i < nm; i++){
+   if( data[i] < zmin)
+     zmin= data[i];
+   if( data[i] > zmax)
+     zmax= data[i];
+ }
+ std::cout << m.name << " " <<m.envelope << "zmin " << zmin << " zmax " << zmax<<std::endl;
+ GMT_free ((void *)data);
 
 
 }
 
+bool read_grd_data(const char *name,short &nx,short &ny,float *&data){
+  struct GRD_HEADER gmtheader;    /* GMT header to be written to file */
+  int argc=1;
+  const char *argv[]={"gmtiomodule",0};
+  const int falsev=(1==0);
+  argc=GMT_begin(argc,(char **)argv); /* Sets crazy globals */
+  GMT_grd_init (&gmtheader, argc,(char **) argv, falsev); /* Initialize grd header structure  */
+  GMT_read_grd_info ((char *)name,&gmtheader);
+  nx=gmtheader.nx;  
+  ny=gmtheader.ny;
+
+  const size_t nm = gmtheader.nx * gmtheader.ny;
+
+  data = (float *) GMT_memory (VNULL, (size_t)nm, sizeof (float), GMT_program);
+
+ /* Read the entire grd image */
+ if (GMT_read_grd ((char*)name, &gmtheader, data, 0.0, 0.0, 0.0, 0.0, GMT_pad, FALSE)) {
+   // Bad?  free memory and bail
+   printf ("IS THIS BAD?\n");
+   GMT_free ((void *)data);
+
+   return false;
+ }
+ 
+ return true;
+
+}
 
 

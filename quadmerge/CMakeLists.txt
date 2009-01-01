@@ -62,6 +62,11 @@ ENDIF( NOT LIBPOLYP_PREFIX )
 IF( NOT LIBPLANKTON_PREFIX )
    SET( LIBPLANKTON_PREFIX /usr/local/ )
 ENDIF( NOT LIBPLANKTON_PREFIX )
+
+
+IF( NOT UF_PREFIX )
+   SET( UF_PREFIX /usr/local )
+ENDIF( NOT UF_PREFIX )
 # libplankton 
 SET( LIBPLANKTON_INCLUDE_DIR ${LIBPLANKTON_PREFIX}/include/libplankton )
 SET( LIBPLANKTON_LIB plankton )
@@ -69,6 +74,9 @@ SET( LIBPLANKTON_LIB plankton )
 #IF( NOT HAVE_LIBPLANKTON )
 #   MESSAGE( FATAL_ERROR  "ERROR - Can't find libplankton" )
 #ENDIF( NOT HAVE_LIBPLANKTON )    
+# UF
+SET( UF_INC ${UF_PREFIX}/include/uf-1.1 )
+SET( UF_LIBRARY ufGeographicConversions ufGPSParser )  
 #-----------------------#
 # Compiler setup        #
 #-----------------------#
@@ -96,7 +104,8 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
   ${GTS_INCLUDE_DIRS} 		     
   ${OSG_INCLUDE_DIR}
     ${OPENCV_INCLUDE_DIRS} 
-  ${LIBPLANKTON_INCLUDE_DIR})
+  ${LIBPLANKTON_INCLUDE_DIR}
+  ${UF_INC})
 
 
 #-----------------------#
@@ -140,7 +149,7 @@ INCLUDE_DIRECTORIES(
 SET( LIBRARY_OUTPUT_PATH     ${PROJECT_SOURCE_DIR}/lib )
 SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )
 LINK_DIRECTORIES( ${PROJECT_SOURCE_DIR}/nn/ )
-LINK_LIBRARIES(	${GLUT_LIBRARY}  ${OSG_LIBRARY} ${OSGVIEWER_LIBRARY} 	${LIBPOLYP_LIBRARY} nn ${OPENGL_gl_LIBRARY} ${LIBPLANKTON_LIB} netcdf)
+LINK_LIBRARIES(	${GLUT_LIBRARY}  ${OSG_LIBRARY} ${OSGVIEWER_LIBRARY} 	${LIBPOLYP_LIBRARY} nn ${OPENGL_gl_LIBRARY} ${LIBPLANKTON_LIB} gmt ${UF_LIBRARY})
 
 #ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp raster.cpp )
 #ADD_EXECUTABLE( quadtest quadtest.cpp envelope.cpp raster.cpp geometry.cpp uquadtree.cpp )

@@ -203,20 +203,18 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
   pout = NULL;
   
   nout = 0;
-  double* zin = NULL;
-  
   //struct timeval tv0, tv1, tv2;
   //struct timezone tz;
   int nv = mesh->vertices.size();
   pin = (point_nn *)malloc(nv * sizeof(point_nn));
-  zin = (double *)malloc(nv * sizeof(double));
+
   for (int i = 0; i < nv; i++){
     point_nn* p = &pin[i];
     
     p->x = mesh->vertices[i][0];
     p->y = mesh->vertices[i][1];
     p->z = mesh->vertices[i][2];
-    zin[i] = p->z;
+
     
   }
   int nin=nv;
@@ -232,5 +230,5 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
   double wmin = 0;//-DBL_MAX;
   points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
   nnpi_interpolate_points(nin, pin, wmin, nout, pout);
-  //points_write(nout, pout);
+  free(pin);
 }

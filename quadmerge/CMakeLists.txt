@@ -153,7 +153,7 @@ LINK_LIBRARIES(	${GLUT_LIBRARY}  ${OSG_LIBRARY} ${OSGVIEWER_LIBRARY} 	${LIBPOLYP
 
 #ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp raster.cpp )
 #ADD_EXECUTABLE( quadtest quadtest.cpp envelope.cpp raster.cpp geometry.cpp uquadtree.cpp )
-ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp raster.cpp geometry.cpp uquadtree.cpp fileio.cpp)
+ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp raster.cpp geometry.cpp uquadtree.cpp fileio.cpp resample.cpp)
 # Build libraries
 #SUBDIRS(src) #tests
 

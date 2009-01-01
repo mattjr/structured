@@ -87,8 +87,8 @@ void bound_grd( mesh_input &m,double &zmin, double &zmax){
   l_xmax=northing;
   
 
-  m.envelope=Envelope<double>(l_xmin,l_ymin,
-			      l_xmax,l_ymax);
+  m.envelope=Envelope<double>(l_ymin,l_xmin,
+			      l_ymax,l_xmax);
  
  const size_t nm = gmtheader.nx * gmtheader.ny;
  float *data;

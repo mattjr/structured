@@ -26,7 +26,7 @@
 #include <string.h>
 #include <vector>
 #include <libplankton/auv_config_file.hpp>
-
+#include "resample.hpp"
 #include <GeographicConversions/ufRedfearn.h>
 #include "auv_args.hpp"
 #include <math.h>
@@ -353,16 +353,43 @@ void load_grd( mesh_input &m){
   short nx,ny;
   int level;
   double actual_res;
-  float *data;
-  if(!read_grd_data(m.name.c_str(),nx,ny,data))
+  float *data_grd;
+  if(!read_grd_data(m.name.c_str(),nx,ny,data_grd))
   return;
   ge.get_closest_res_level(m.res,level,actual_res);
+  /*Flip X and Y*/
+  int nnx=m.envelope.width()/actual_res;
+  int nny=m.envelope.height()/actual_res;
+  //Flip x and y
+ if(nnx> nx || nny > ny){
+    fprintf(stderr,"Supposed to be downsampling AHHHHH!\n");
+  }
+
+  float *data =new float[nnx*nny];
+  printf("Nx %d New Ny %d Ny %d New Nx %d %f %f\n",nx,nny,ny,nnx,m.res,actual_res);
+ 
+  bool flipx=true;
+  
+  downsampleArray(data_grd,nx,ny,data,nnx,nny,flipx);
+  //  GMT_free ((void *)data_grd);
+  //data=data_grd;
   HeightMapInfo	hm;
-  hm.x_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
-  hm.y_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
+  if(flipx){
+    hm.y_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
+    hm.x_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
+  }
+  else{
+    hm.x_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
+    hm.y_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
+  }
   //   printf("Xorigin %d Yorigin %d\n",hm.x_origin,hm.y_origin);
-  hm.XSize = nx;
-  hm.YSize = ny;
+  if(flipx){
+    hm.XSize = nny;
+    hm.YSize = nnx;
+  }else{
+    hm.XSize = nnx;
+    hm.YSize = nny;
+  }
   hm.RowWidth = hm.XSize;
   hm.Scale =level;
   hm.Data = new uint16[hm.XSize * hm.YSize];

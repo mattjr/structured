@@ -103,13 +103,13 @@ void bound_grd( mesh_input &m,double &zmin, double &zmax){
    return;
  }
  
- for(int i=0; i < nm; i++){
+ for(int i=0; i < (int)nm; i++){
    if( data[i] < zmin)
      zmin= data[i];
    if( data[i] > zmax)
      zmax= data[i];
  }
- std::cout << m.name << " " <<m.envelope << "zmin " << zmin << " zmax " << zmax<<std::endl;
+ // std::cout << m.name << " " <<m.envelope << "zmin " << zmin << " zmax " << zmax<<std::endl;
  GMT_free ((void *)data);
 
 

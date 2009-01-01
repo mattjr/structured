@@ -366,13 +366,13 @@ void load_grd( mesh_input &m){
   }
 
   float *data =new float[nnx*nny];
-  printf("Nx %d New Ny %d Ny %d New Nx %d %f %f\n",nx,nny,ny,nnx,m.res,actual_res);
+  //  printf("Nx %d New Ny %d Ny %d New Nx %d %f %f\n",nx,nny,ny,nnx,m.res,actual_res);
  
   bool flipx=true;
   
   downsampleArray(data_grd,nx,ny,data,nnx,nny,flipx);
-  //  GMT_free ((void *)data_grd);
-  //data=data_grd;
+  GMT_free ((void *)data_grd);
+ 
   HeightMapInfo	hm;
   if(flipx){
     hm.x_origin = ge.get_in_cells(m.envelope.miny()-ge.min[0],ge.max_Level);
@@ -403,7 +403,7 @@ void load_grd( mesh_input &m){
     
   root->AddHeightMap(RootCornerData, hm);
   delete [] hm.Data;
-  GMT_free ((void *)data);  
+  delete data;
 }
 void	LoadData(std::vector<mesh_input> &meshes)
 // Load some data and put it into the quadtree.

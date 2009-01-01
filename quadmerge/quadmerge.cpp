@@ -375,12 +375,12 @@ void load_grd( mesh_input &m){
   //data=data_grd;
   HeightMapInfo	hm;
   if(flipx){
-    hm.y_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
-    hm.x_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
+    hm.x_origin = ge.get_in_cells(m.envelope.miny()-ge.min[0],ge.max_Level);
+    hm.y_origin = ge.get_in_cells(m.envelope.minx()-ge.min[1],ge.max_Level);
   }
   else{
-    hm.x_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
-    hm.y_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
+    hm.x_origin = ge.get_in_cells(m.envelope.miny()-ge.min[0],ge.max_Level);
+    hm.y_origin = ge.get_in_cells(m.envelope.minx()-ge.min[1],ge.max_Level);
   }
   //   printf("Xorigin %d Yorigin %d\n",hm.x_origin,hm.y_origin);
   if(flipx){

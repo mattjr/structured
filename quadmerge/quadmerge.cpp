@@ -220,6 +220,8 @@ int	main(int argc, char *argv[])
 	
   // Debug info.
   printf("nodes = %d\n", root->CountNodes());
+  printf("node size %d\n",sizeof(quadsquare));
+  printf("Memory %.2fM\n",sizeof(quadsquare)*root->CountNodes()/1024.0/1024.0);
   printf("max error = %g\n", root->RecomputeErrorAndLighting(RootCornerData));
   printf("Cell Size %f\n",ge.cell_size);
   // Get rid of unnecessary nodes in flat-ish areas.

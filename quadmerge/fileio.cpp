@@ -65,7 +65,10 @@ void bound_grd( mesh_input &m,double &zmin, double &zmax){
   const int falsev=(1==0);
   argc=GMT_begin(argc,(char **)argv); /* Sets crazy globals */
   GMT_grd_init (&gmtheader, argc,(char **) argv, falsev); /* Initialize grd header structure  */
-  GMT_read_grd_info ((char *)m.name.c_str(),&gmtheader);
+  if(GMT_read_grd_info ((char *)m.name.c_str(),&gmtheader)){
+    fprintf(stderr,"Cant open %s\n",m.name.c_str());
+    return;
+  }
   double easting ,northing,l_xmin,l_ymin,l_xmax,l_ymax;
   gpsConversion.GetGridCoordinates(gmtheader.y_min,gmtheader.x_min,
 				   zone, easting, northing, 

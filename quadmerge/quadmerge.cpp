@@ -219,8 +219,10 @@ int	main(int argc, char *argv[])
 	
 	
   // Debug info.
+
+
   printf("nodes = %d\n", root->CountNodes());
-  printf("node size %d\n",sizeof(quadsquare));
+  printf("node size %d\n",(int)sizeof(quadsquare));
   printf("Memory %.2fM\n",sizeof(quadsquare)*root->CountNodes()/1024.0/1024.0);
   printf("max error = %g\n", root->RecomputeErrorAndLighting(RootCornerData));
   printf("Cell Size %f\n",ge.cell_size);
@@ -240,7 +242,7 @@ int	main(int argc, char *argv[])
     root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
     }
   */
-  const float detail[]={FLT_MAX,20.0,3.0};
+  const float detail[]={FLT_MAX,10000.0,1000.0};
   // Draw the quadtree.
   if (root) {
     //		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
@@ -351,7 +353,10 @@ void load_mesh( mesh_input &m){
 
 void load_grd( mesh_input &m){
 
- 
+  if(!have_geoconf){
+    fprintf(stderr,"Config file with origin needed for grd processing\n");
+    exit(-1);
+  }
   short nx,ny;
   int level;
   double actual_res;
@@ -368,7 +373,7 @@ void load_grd( mesh_input &m){
   }
 
   float *data =new float[nnx*nny];
-  //  printf("Nx %d New Ny %d Ny %d New Nx %d %f %f\n",nx,nny,ny,nnx,m.res,actual_res);
+  //printf("New/Old  X: %d/%d Y: %d/%d  %f/%f\n",nx,nnx,ny,nny,m.res,actual_res);
  
   bool flipx=true;
   

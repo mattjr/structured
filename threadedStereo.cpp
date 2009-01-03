@@ -1920,7 +1920,7 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
 	
       }
       if(!no_merge)
-	fprintf(quadmergecmds_fp,"$BASEDIR/quadmerge/bin/quadmerge  -lod -input ../%s -edgethresh %f -output ../mesh-quad/seg-%08d.ply;",quadmerge_seg_fname,edgethresh,i);
+	fprintf(quadmergecmds_fp,"$BASEDIR/quadmerge/bin/quadmerge -geoconf %s -lod -input ../%s -edgethresh %f -output ../mesh-quad/seg-%08d.ply -range ../mesh-quad/range.txt;",deltaT_config_name.c_str(),quadmerge_seg_fname,edgethresh,i);
       /*fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/seg-%08d.ply > ../mesh-quad/clipped-diced-%08d.ply;",
 	      cells[i].bounds.min_x,
 	      cells[i].bounds.min_y,
@@ -2111,7 +2111,7 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
 	  
 	  	std::vector<string> postcmds;
 		postcmds.push_back("cp mesh-quad/diced.txt mesh-quad/valid.txt");
-		postcmds.push_back("cd mesh-quad/;cat valid.txt | xargs plybbox > range.txt");
+		//postcmds.push_back("cd mesh-quad/;cat valid.txt | xargs plybbox > range.txt");
 	  shellcm.write_generic(quadmergecmd,quadmergecmd_fn,"Quadmerge",NULL,&postcmds);
 	  if(!no_quadmerge)
 	    sysres=system("./runquadmerge.py");

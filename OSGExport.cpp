@@ -894,6 +894,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
     
 	    }
+
+	   
 	    gc._texturesActive=true;
 	    stateset->setDataVariance(osg::Object::STATIC);
 	    
@@ -1013,46 +1015,65 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	 
 	  
 	  else{
+	  
 	    osg::StateSet *utstateset = gc._geom->getOrCreateStateSet();
-	    osg::Material* material = new osg::Material;
-	    
-	    osg::Vec4 specular( 0.18, 0.18, 0.18, 0.18 );
-	    specular *= 1.5;
-	    float mat_shininess = 64.0f ;
-	    osg::Vec4 ambient (0.02, 0.02, 0.05, 0.05 );
-	    
-	    osg::Vec4 light0_ambient( 0, 0, 0, 0 );
-	    osg::Vec4 diffuse( 0.8, 0.8, 0.8, 0.85 );
-	    
-	    osg::Vec4 light1_diffuse( -0.01, -0.01, -0.03, -0.03 );
-	    osg::Vec4 light0_specular( 0.85, 0.85, 0.85, 0.85 );
-	    material->setAmbient(osg::Material::FRONT_AND_BACK,ambient);
-	    
-	    material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
-	    material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
-	    material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
-	    //if(!applyNonVisMat){
-	       
-	       utstateset->setAttribute(material);
-	       // }else {
+	    if(shader_height_coloring){
+	      osg::Program* program=NULL;
+	      program = new osg::Program;
+	      program->setName( "colorshader" );
+	      osg::Shader *hcolorf=new osg::Shader( osg::Shader::FRAGMENT);
+	      osg::Shader *hcolorv=new osg::Shader( osg::Shader::VERTEX);
+	      loadShaderSource( hcolorf, basedir+"hcolor.frag" );
+	      loadShaderSource( hcolorv, basedir+"hcolor.vert" );
+	      program->addShader(  hcolorf );
+	      program->addShader(  hcolorv );
+	      utstateset->setAttributeAndModes( program, osg::StateAttribute::ON );
 
-	       if(applyNonVisMat){
-	       osg::PolygonOffset* polyoffset = new osg::PolygonOffset;
-	       polyoffset->setFactor(-1.0f);
-	       polyoffset->setUnits(-1.0f);
-	       //    osg::PolygonMode* polymode = new osg::PolygonMode;
-	       //polymode->setMode(osg::PolygonMode::FRONT_AND_BACK,osg::PolygonMode::LINE);
-	       utstateset->setAttributeAndModes(polyoffset,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
-	       //utstateset->setAttributeAndModes(polymode,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
-	       
-	       /*
-	       osg::Material* material = new osg::Material;
-	       utstateset->setAttributeAndModes(material,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
-	       utstateset->setMode(GL_LIGHTING,osg::StateAttribute::OVERRIDE|osg::StateAttribute::OFF);
-	       //fprintf(stderr,"Apply non vis\n");
-	       */
-
-	     }
+	      utstateset->addUniform( new osg::Uniform( "zrange", osg::Vec3(zrange[0], zrange[1], 0.0f) ));
+	      utstateset->addUniform( new osg::Uniform( "shaderOut", 2));
+	      utstateset->setDataVariance(osg::Object::STATIC);
+	      
+	    }else{
+	      osg::Material* material = new osg::Material;
+	    
+	      osg::Vec4 specular( 0.18, 0.18, 0.18, 0.18 );
+	      specular *= 1.5;
+	      float mat_shininess = 64.0f ;
+	      osg::Vec4 ambient (0.02, 0.02, 0.05, 0.05 );
+	      
+	      osg::Vec4 light0_ambient( 0, 0, 0, 0 );
+	      osg::Vec4 diffuse( 0.8, 0.8, 0.8, 0.85 );
+	      
+	      osg::Vec4 light1_diffuse( -0.01, -0.01, -0.03, -0.03 );
+	      osg::Vec4 light0_specular( 0.85, 0.85, 0.85, 0.85 );
+	      material->setAmbient(osg::Material::FRONT_AND_BACK,ambient);
+	      
+	      material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
+	      material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
+	      material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
+	      //if(!applyNonVisMat){
+	      
+	      utstateset->setAttribute(material);
+	      // }else {
+	      
+	      if(applyNonVisMat){
+		osg::PolygonOffset* polyoffset = new osg::PolygonOffset;
+		polyoffset->setFactor(-1.0f);
+		polyoffset->setUnits(-1.0f);
+		//    osg::PolygonMode* polymode = new osg::PolygonMode;
+		//polymode->setMode(osg::PolygonMode::FRONT_AND_BACK,osg::PolygonMode::LINE);
+		utstateset->setAttributeAndModes(polyoffset,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
+		//utstateset->setAttributeAndModes(polymode,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
+		
+		/*
+		  osg::Material* material = new osg::Material;
+		  utstateset->setAttributeAndModes(material,osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON);
+		  utstateset->setMode(GL_LIGHTING,osg::StateAttribute::OVERRIDE|osg::StateAttribute::OFF);
+		  //fprintf(stderr,"Apply non vis\n");
+		  */
+		
+	      }
+	    }
 	    untextured->addDrawable(gc._geom);
 	  }
 

@@ -120,7 +120,7 @@ static bool parse_args( int argc, char *argv[ ] )
 	  no_simp=true;
 	  i+=1;
 	}
- else if( strcmp( argv[i], "--no-atlas" ) == 0 )
+      else if( strcmp( argv[i], "--no-atlas" ) == 0 )
 	{
 	  do_atlas=false;
 	  i+=1;
@@ -226,11 +226,11 @@ static bool parse_args( int argc, char *argv[ ] )
 	  i+=2;
 	}
       else if( strcmp( argv[i], "-t" ) == 0 )
-      {
-         if( i == argc-1 ) return false;
-         num_threads = atoi( argv[i+1] );
-	 i+=2;
-      }
+	{
+	  if( i == argc-1 ) return false;
+	  num_threads = atoi( argv[i+1] );
+	  i+=2;
+	}
       else if( !have_stereo_config_file_name )
 	{
 	  stereo_config_file_name = argv[i];
@@ -259,11 +259,11 @@ static bool parse_args( int argc, char *argv[ ] )
 
 GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
   char conf_name[255];
-    if(use_regen_tex)
-      sprintf(conf_name,"mesh-regen-tex/re-bbox.txt");
-      // sprintf(conf_name,"mesh-regen-tex/re-bbox-%s.txt",str);
-    else
-      sprintf(conf_name,"%s/bbox-%s.txt",diceddir,str);
+  if(use_regen_tex)
+    sprintf(conf_name,"mesh-regen-tex/re-bbox.txt");
+  // sprintf(conf_name,"mesh-regen-tex/re-bbox-%s.txt",str);
+  else
+    sprintf(conf_name,"%s/bbox-%s.txt",diceddir,str);
 
   FILE *bboxfp = fopen(conf_name,"r");
   int count;
@@ -277,16 +277,16 @@ GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
     while (eof0 != EOF && eof1 != EOF && eof2 != EOF){
       
       eof0 = fscanf(bboxfp,"%d %s %lf %lf %lf %lf %lf %lf" ,&count, name,
-	     &x1,&y1,&z1,&x2,&y2,&z2);
+		    &x1,&y1,&z1,&x2,&y2,&z2);
       if(eof0 == EOF)
 	break;
       for(int i=0; i < 4; i++)
 	for(int j=0; j < 4; j++)
-	 eof1 = fscanf(bboxfp," %lf",&mtmp[i][j]);
-     eof2 = fscanf(bboxfp,"\n");
+	  eof1 = fscanf(bboxfp," %lf",&mtmp[i][j]);
+      eof2 = fscanf(bboxfp,"\n");
       
    
-     texture_file_names[count]=(name);
+      texture_file_names[count]=(name);
 
       GtsBBox *bbox= gts_bbox_new(gts_bbox_class(),NULL,x1,y1,z1,x2,y2,z2);
       bbox->bounded=(void *)count;
@@ -303,14 +303,14 @@ GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
     return bboxTree;
   }
   //printf("No bbox file bailing...\n");
-    return NULL;
+  return NULL;
 
 
 }
 gboolean mesh_count ( int number, int total,int lod,int maxlod,int coarseper,int tex,int textotal){
   if(verbose)
     return true;
- if (number == total) {
+  if (number == total) {
     boost::call_once(&timer_destroy, once2);
     fprintf (stderr, "\n");
     fflush (stderr);
@@ -422,9 +422,9 @@ int main( int argc, char *argv[ ] )
   try {
     recon_config_file= new Config_File(recon_config_file_name.c_str());
   }   catch( string error ) {
-     cerr << "ERROR - " << error << endl;
-     exit( 1 );
-   }
+    cerr << "ERROR - " << error << endl;
+    exit( 1 );
+  }
 
   recon_config_file->get_value( "TEX_SIZE_LOD0", lodTexSize[0],
 				max((int)(512*tex_scale),4) );
@@ -456,19 +456,19 @@ int main( int argc, char *argv[ ] )
   bool have_stereo_calib = false;
   stereo_calib_file_name = "stereo.calib";
   //if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) )
-   {
-      stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
-      try
-	{
-	  calib = new Stereo_Calib( stereo_calib_file_name );
-	}
-      catch( string error )
-	{
-	  cerr << "ERROR - " << error << endl;
-	  exit( 1 );
-	}
-      have_stereo_calib = true;
-    }      
+  {
+    stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
+    try
+      {
+	calib = new Stereo_Calib( stereo_calib_file_name );
+      }
+    catch( string error )
+      {
+	cerr << "ERROR - " << error << endl;
+	exit( 1 );
+      }
+    have_stereo_calib = true;
+  }      
 
  
 
@@ -504,7 +504,7 @@ int main( int argc, char *argv[ ] )
   sprintf(dicefname,"%s/valid.txt",diceddir);
   string dicefile(dicefname);
   std::vector<string> meshNames;
-std::vector<vector<string >   > outNames;
+  std::vector<vector<string >   > outNames;
   std::vector<osg::ref_ptr<osg::Node>  > outNodes;
 
   struct stat BUF;
@@ -547,9 +547,9 @@ std::vector<vector<string >   > outNames;
   }else{
     startRun=0;
     if(have_max_mesh_count )
-    totalMeshCount=max_mesh_count;
-  else
-    totalMeshCount=meshNames.size();
+      totalMeshCount=max_mesh_count;
+    else
+      totalMeshCount=meshNames.size();
   }
   
   int i;
@@ -561,10 +561,10 @@ std::vector<vector<string >   > outNames;
     else 
       bboxTree=NULL;   
 
- /*if(!bboxTree){ 
+    /*if(!bboxTree){ 
       fprintf(stderr,"Failed to load bboxtree\n");
       exit(-1);
-    }
+      }
     */
    
     //int initialEdges=gts_surface_edge_number(s);
@@ -573,15 +573,15 @@ std::vector<vector<string >   > outNames;
     //float simpRatio[]={0.5,0.1,0.01};
     
     std::vector<string > lodnames;
-   string path=string(argv[0]);
-   unsigned int loc=path.rfind("/");
+    string path=string(argv[0]);
+    unsigned int loc=path.rfind("/");
    
-   string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
-   basepath= osgDB::getRealPath (basepath) +"/";
-   if(!mgc)
-     mgc = new MyGraphicsContext();
-   OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
-				       num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex,do_atlas);    
+    string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
+    basepath= osgDB::getRealPath (basepath) +"/";
+    if(!mgc)
+      mgc = new MyGraphicsContext();
+    OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
+					num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex,do_atlas);    
 
     osg::Node * lod0Node[2];
     lod0Node[0]=NULL;
@@ -589,63 +589,63 @@ std::vector<vector<string >   > outNames;
     char out_name[255];
 
     for(int j=lodStart; j < lodNum; j++){
-       boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
-       string str=meshNames[i];
-       if(!no_simp){
-	 char tmp[255];
-	 sprintf(tmp,"-lod%d.ply",j);
-	 int pos=str.find(".ply");
-	 str.replace(pos, 4, string(tmp) );
-       }
-       if(verbose)
-	 printf("Loading Surface %s ...\n",str.c_str());
+      boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
+      string str=meshNames[i];
+      if(!no_simp){
+	char tmp[255];
+	sprintf(tmp,"-lod%d.ply",j);
+	int pos=str.find(".ply");
+	str.replace(pos, 4, string(tmp) );
+      }
+      if(verbose)
+	printf("Loading Surface %s ...\n",str.c_str());
        
-       GtsSurface *surf = gts_surface_new(gts_surface_class(),
-				       (GtsFaceClass *) t_face_class(),
+      GtsSurface *surf = gts_surface_new(gts_surface_class(),
+					 (GtsFaceClass *) t_face_class(),
 					 gts_edge_class(), t_vertex_class());
-       TriMesh::verbose=verbose;
+      TriMesh::verbose=verbose;
        
-       TriMesh *mesh = TriMesh::read(str.c_str());
-       if(!mesh){
-	 fprintf(stderr,"Empty mesh skipping\n");
-	 continue;
-       }
-	DepthStats ds(mesh);
-	vector<Plane3D> planes;
-	vector<TriMesh::BBox> bounds;
-	vector<int> *planeIdx=ds.getPlaneFits(planes,bounds,2,4);
+      TriMesh *mesh = TriMesh::read(str.c_str());
+      if(!mesh){
+	fprintf(stderr,"Empty mesh skipping\n");
+	continue;
+      }
+      DepthStats ds(mesh);
+      vector<Plane3D> planes;
+      vector<TriMesh::BBox> bounds;
+      vector<int> *planeIdx=ds.getPlaneFits(planes,bounds,2,4);
 
-	bool res=convert_ply(mesh,surf,verbose,planeIdx);
-       mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
-       delete planeIdx;
-       if(!res ){
-	 printf("Failed to load surface %s\n",
-	     meshNames[i].c_str());
-	 exit(-1);
-       }
-       if(verbose)
-	 printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(surf),
-	     gts_surface_edge_number(surf));
-       /* GtsSurface *surf = gts_surface_new(gts_surface_class(),
-					 (GtsFaceClass*)t_face_class(),
-					 gts_edge_class(), t_vertex_class());
+      bool res=convert_ply(mesh,surf,verbose,planeIdx);
+      mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
+      delete planeIdx;
+      if(!res ){
+	printf("Failed to load surface %s\n",
+	       meshNames[i].c_str());
+	exit(-1);
+      }
+      if(verbose)
+	printf("Done Loaded %d Verts %d Edges\n",gts_surface_vertex_number(surf),
+	       gts_surface_edge_number(surf));
+      /* GtsSurface *surf = gts_surface_new(gts_surface_class(),
+	 (GtsFaceClass*)t_face_class(),
+	 gts_edge_class(), t_vertex_class());
       
-      int currentEdges=gts_surface_edge_number(s);
-      if(!no_simp && bboxTree){
-	int targetEdges=(int)(initialEdges*simpRatio[j]);
+	 int currentEdges=gts_surface_edge_number(s);
+	 if(!no_simp && bboxTree){
+	 int targetEdges=(int)(initialEdges*simpRatio[j]);
 
-	if(verbose){
-	  printf("LOD %d Surface has %d edges downsampling to %d\n",
-		 j,currentEdges,targetEdges);
-	  printf("Coarsen...\n");
-	}
+	 if(verbose){
+	 printf("LOD %d Surface has %d edges downsampling to %d\n",
+	 j,currentEdges,targetEdges);
+	 printf("Coarsen...\n");
+	 }
 	
-	coarsen(s,targetEdges,verbose,coarsecallback);
+	 coarsen(s,targetEdges,verbose,coarsecallback);
 	
-	if(verbose)
-	  printf("Done\n");
-	gts_surface_copy(surf,s);
-	}*/
+	 if(verbose)
+	 printf("Done\n");
+	 gts_surface_copy(surf,s);
+	 }*/
        
       boost::xtime xt, xt2;
       long time;
@@ -687,16 +687,16 @@ std::vector<vector<string >   > outNames;
       if(use_proj_tex){
 	camMatrices= new  std::map<int,osg::Matrixd>;
 	for(iter=gts_trans_map.begin(); iter!=gts_trans_map.end(); iter++){
-	GtsMatrix *m=iter->second;
-	osg::Matrixd osgm;
-	for(int i=0; i < 4; i++){
-	  for(int j=0; j <4; j++){
-	    osgm(j,i)=m[i][j];
+	  GtsMatrix *m=iter->second;
+	  osg::Matrixd osgm;
+	  for(int i=0; i < 4; i++){
+	    for(int j=0; j <4; j++){
+	      osgm(j,i)=m[i][j];
+	    }
 	  }
-	}
-	(*camMatrices)[iter->first]=osgm;
+	  (*camMatrices)[iter->first]=osgm;
 	
-      }
+	}
       }
 
       osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,

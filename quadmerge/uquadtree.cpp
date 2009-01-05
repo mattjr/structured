@@ -1250,7 +1250,7 @@ bool quadsquare::check_valid(const quadcornerdata& cd, const HeightMapInfo& hm){
 	  for(int j=cd.yorg; j < cd.yorg + BlockSize; j++){
 	    ix = (i - hm.x_origin) >> hm.Scale;
 	    iy = (j - hm.y_origin) >> hm.Scale;
-	    if(ix > hm.XSize || ix < 0 || iy > hm.YSize || iy < 0)
+	    if(ix >= hm.XSize || ix < 0 || iy >= hm.YSize || iy < 0)
 	      	      continue;
 	    if(hm.Data[ix + iy *hm.RowWidth] != 0)
 	      return true;

@@ -40,7 +40,7 @@ void load_hm_file(HeightMapInfo *hm,const char *filename){
   hm->Scale=5;
   hm->Data = new uint16[hm->XSize * hm->YSize];
   float tmp;
-  int range = (int) pow(2,8) - 1;
+  int range = (int) pow(2.0,8) - 1;
   for(int i=0; i < hm->XSize * hm->YSize; i++){
     fread((char *)&tmp,sizeof(float),1,fp);
     //if(isinf(tmp))

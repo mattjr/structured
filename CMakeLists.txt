@@ -232,7 +232,8 @@ ${GMT_INC}
 
 LINK_DIRECTORIES( ${OPENCV_LIBRARY_DIRS}
                   ${GTS_LIBRARY_DIRS}
-		  ${GMT_DIR})
+		  ${GMT_DIR}
+		  ${PROJECT_SOURCE_DIR}/quadmerge/nn)
 
 LINK_LIBRARIES(	${OSG_LIBRARY}
 		${OSGDB_LIBRARY}
@@ -304,7 +305,7 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS(retex mbosg tridecimator mesh2hmap mesh2xy grd2ply clip_delaunay )
+SUBDIRS(retex mbosg tridecimator mesh2hmap mesh2xy grd2ply clip_delaunay quadmerge)
 SET( SRCS OSGExport.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp

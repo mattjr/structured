@@ -13,7 +13,7 @@
 
 using namespace std;
 
-#define VERBOSE 0
+#define VERBOSE 1
 
 #define POSE_INDEX_X 0 
 #define POSE_INDEX_Y 1
@@ -368,6 +368,70 @@ static void recursive_split_even( const vector<const Stereo_Pose_Data *> &poses,
    }
 
 }                                  
+
+
+
+static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
+                             const Bounds &bounds,
+                             unsigned int depth,
+                             vector<Cell_Data> &cells )
+{
+   if( depth > max_tree_depth )
+   {
+      cerr << "ERROR - maximum recursion level reached in recursive_split" << endl;
+      exit(1);
+   }
+
+
+
+   if(bounds.area() < max_cell_area ){
+     Cell_Data new_cell( poses, bounds );
+     cells.push_back( new_cell );
+     return ;
+   }
+
+   unsigned int best_axis= POSE_INDEX_X ;
+   double best_split_point=(bounds.max_x-bounds.min_x)/2;
+ 
+   // Perform the split
+   vector<const Stereo_Pose_Data*> poses1, poses2;
+   Bounds bounds1, bounds2;
+   split_data( poses, bounds, best_axis, best_split_point, 
+               poses1, bounds1, poses2, bounds2 );
+
+
+   // Check if the subsets need to be recursively split
+   if( bounds1.area() > max_cell_area  )
+   {   
+      recursive_split( poses1, bounds1, depth+1, cells );
+   }
+   else
+   {
+      Cell_Data new_cell( poses1, bounds1 );
+      cells.push_back( new_cell );
+#if VERBOSE
+      printf( "Cell %d at depth %d area: %f, poses: %d\n", cells.size(), depth,
+              bounds1.area(), poses1.size() );
+#endif
+   }
+
+
+   if( bounds2.area() > max_cell_area )
+   {   
+      recursive_split( poses2, bounds2, depth+1, cells );
+   }
+   else
+   {
+      Cell_Data new_cell( poses2, bounds2 );
+      cells.push_back( new_cell );
+#if VERBOSE
+      printf( "Cell %d at depth %d area: %f, poses: %d\n", cells.size(), depth,
+              bounds2.area(), poses2.size() );
+#endif
+   }
+
+}                                  
+
 //----------------------------------------------------------------------------//
 //  Public Functions                                                          //
 //----------------------------------------------------------------------------//
@@ -441,6 +505,34 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,int method,d
      recursive_split( node_poses, bounds, 1, cells );
    else
      recursive_split_even( node_poses, bounds, 1, cells );
+   
+   return cells;
+}
+                   
+
+vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,double x1,double x2,double y1 ,double y2,int numcells ) 
+{
+   // Calculate the bounds of the stereo data
+   Bounds bounds;
+   bounds.set(x1,x2,y1,y2);
+#if VERBOSE
+   printf( "Bounds: %f %f %f %f\n", bounds.min_x, bounds.max_x ,
+                                    bounds.min_y, bounds.max_y );
+#endif
+
+  
+   // Root node of the binary tree has all poses
+   vector<const Stereo_Pose_Data *> node_poses( poses.size() );
+   for( unsigned int i=0 ; i<poses.size() ; i++ )
+       node_poses[i] = &poses[i];
+
+
+   max_cell_area=   bounds.area()/numcells;
+
+   // Perform binary division until termination criteria
+   vector<Cell_Data> cells;
+ 
+   recursive_split_area( node_poses, bounds, 1, cells );
    
    return cells;
 }

@@ -1331,7 +1331,7 @@ int	quadsquare::RenderToWF(const quadcornerdata& cd)
   vnum = wf_num_tris * 3;
   int i;
   int buf[3];
-  for (i=1; i<=vnum; i+=3) {
+  for (i=0; i<vnum; i+=3) {
     //    fprintf(wf_fp,"f %d %d %d\n",i,i+1,i+2);
     unsigned char fc=3;
     fwrite((char *)&fc,sizeof(unsigned char),1,wf_fp);

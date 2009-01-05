@@ -1,6 +1,6 @@
 #!/bin/bash
 ALT_THRESH=10.0
-BACKGROUND="-K /home/mkj/datasets/grd_5m/test3.grd"
+BACKGROUND="-K /Users/mkj/datasets/fort1.grd"
 #"-K 
 HIALT_RES=1.0/1.0/m
 function float_cond()

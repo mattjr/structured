@@ -125,17 +125,23 @@ int	main(int argc, char *argv[])
     have_geoconf=true;
     double lat_orig,lon_orig;
 
-    
-    libplankton::Config_File config_file( config_file_name );   
-   
-    if( config_file.get_value( "LATITUDE", lat_orig) == 0 )      {
+     try {
+
+    libplankton::Config_File config_file( config_file_name ); 
+  if( config_file.get_value( "LATITUDE", lat_orig) == 0 )      {
       fprintf(stderr,"Couldn't get geoconf gloabal params\n");
       have_geoconf=false;
     }
     if( config_file.get_value( "LONGITUDE", lon_orig) == 0 ){
       fprintf(stderr,"Couldn't get geoconf gloabal params\n");
       have_geoconf=false;
-    }
+    }  
+     }   catch( std::string error ) {
+       std::cerr << "ERROR - " << error << endl;
+     exit( 1 );
+   }
+
+  
     cout << "Lat Origin "<<lat_orig << " Long Ori " << lon_orig<<endl;
     gpsConversion.GetGridCoordinates( lat_orig, lon_orig,
 				      zone, local_easting, local_northing,

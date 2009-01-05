@@ -84,7 +84,7 @@ public:
 std::vector<Stereo_Pose_Data> load_stereo_pose_file( const std::string &file_name );
 
 std::vector<Cell_Data> calc_cells( const std::vector<Stereo_Pose_Data> &poses ,int method,double cell_scale=1.0); 
-
+std::vector<Cell_Data> calc_cells( const std::vector<Stereo_Pose_Data> &poses,double x1,double x2,double y1 ,double y2,int numcells );
 
 
 #endif // !AUV_STEREO_CELLS_HPP

@@ -13,7 +13,7 @@
 
 using namespace std;
 
-#define VERBOSE 1
+#define VERBOSE 0
 
 #define POSE_INDEX_X 0 
 #define POSE_INDEX_Y 1

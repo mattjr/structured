@@ -1978,11 +1978,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
       
       fclose(quadmerge_seg_fp);
-
-    if(even_split)
-      cells=calc_cells(tasks,EVEN_SPLIT,cell_scale);
-    else
-      cells=calc_cells(tasks,AUV_SPLIT,cell_scale);
+      int numcells= total_env.width() *total_env.height() / 50.0;
+      cells=calc_cells(tasks,total_env.minx(),total_env.maxx(),total_env.miny(),total_env.maxy(),5.0);
 
     for(int i=0; i <(int)cells.size(); i++){
       if(cells[i].poses.size() == 0)

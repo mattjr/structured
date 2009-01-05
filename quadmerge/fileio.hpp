@@ -7,9 +7,7 @@
 #include <GeographicConversions/ufRedfearn.h>
 #include <gmt.h>
 
-void bound_grd( mesh_input &m,double &zmin, double &zmax);
-extern double local_easting, local_northing;
-extern double gridConvergence, pointScale;
-extern std::string zone;
+bool bound_grd( mesh_input &m,double &zmin, double &zmax,double local_easting,double local_northing);
+
 extern UF::GeographicConversions::Redfearn gpsConversion;
 bool read_grd_data(const char *name,short &nx,short &ny,float *&data);

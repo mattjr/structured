@@ -5,6 +5,9 @@
 
 using namespace std;
 using mapnik::Envelope;
+
+
+
 /**
  * Loads from a netCDF file.
  * Elevation values are assumed to be integer meters.  Projection is
@@ -58,7 +61,7 @@ void load_hm_file(HeightMapInfo *hm,const char *filename){
 
 }
 
-void bound_grd( mesh_input &m,double &zmin, double &zmax){
+bool bound_grd( mesh_input &m,double &zmin, double &zmax,double local_easting, double local_northing){
   struct GRD_HEADER gmtheader;    /* GMT header to be written to file */
   int argc=1;
   const char *argv[]={"gmtiomodule",0};
@@ -67,8 +70,12 @@ void bound_grd( mesh_input &m,double &zmin, double &zmax){
   GMT_grd_init (&gmtheader, argc,(char **) argv, falsev); /* Initialize grd header structure  */
   if(GMT_read_grd_info ((char *)m.name.c_str(),&gmtheader)){
     fprintf(stderr,"Cant open %s\n",m.name.c_str());
-    return;
+    return false;
   }
+  UF::GeographicConversions::Redfearn gpsConversion;
+  
+  double gridConvergence, pointScale;
+  std::string zone;
   double easting ,northing,l_xmin,l_ymin,l_xmax,l_ymax;
   gpsConversion.GetGridCoordinates(gmtheader.y_min,gmtheader.x_min,
 				   zone, easting, northing, 
@@ -103,7 +110,7 @@ void bound_grd( mesh_input &m,double &zmin, double &zmax){
    printf ("IS THIS BAD?\n");
    GMT_free ((void *)data);
 
-   return;
+   return false;
  }
  
  for(int i=0; i < (int)nm; i++){
@@ -114,7 +121,7 @@ void bound_grd( mesh_input &m,double &zmin, double &zmax){
  }
  // std::cout << m.name << " " <<m.envelope << "zmin " << zmin << " zmax " << zmax<<std::endl;
  GMT_free ((void *)data);
-
+ return true;
 
 }
 

@@ -36,6 +36,8 @@
 #include "parser.h"
 #include "mesh2hmap.h"
 #include "output.h"
+#include "quadmerge/envelope.hpp"
+#include "quadmerge/fileio.hpp"
 using namespace std;
 using namespace libplankton;
 using namespace ulapack;
@@ -156,6 +158,10 @@ static Config_File *recon_config_file;
 static bool hmap_method=false;
   static Config_File *dense_config_file; 
 static  int tex_size;
+
+static   double local_easting, local_northing;
+using mapnik::Envelope;
+Envelope<double> total_env;
 #ifdef USE_DENSE_STEREO
 Stereo_Dense *sdense=NULL;
 #endif
@@ -309,6 +315,35 @@ static bool parse_args( int argc, char *argv[ ] )
   argp.read("--poses",contents_file_name );
 
   deltaT_config_name=base_dir+string("/")+"localiser.cfg";
+    double lat_orig,lon_orig;
+
+     try {
+
+    libplankton::Config_File config_file( deltaT_config_name ); 
+  if( config_file.get_value( "LATITUDE", lat_orig) == 0 )      {
+      fprintf(stderr,"Couldn't get geoconf gloabal params\n");
+     
+    }
+    if( config_file.get_value( "LONGITUDE", lon_orig) == 0 ){
+      fprintf(stderr,"Couldn't get geoconf gloabal params\n");
+   
+    }  
+     }   catch( std::string error ) {
+       std::cerr << "ERROR - " << error << endl;
+     exit( 1 );
+   }
+
+
+
+    cout << "Lat Origin "<<lat_orig << " Long Ori " << lon_orig<<endl;
+    UF::GeographicConversions::Redfearn gpsConversion;
+  
+    double gridConvergence, pointScale;
+    std::string zone;
+    gpsConversion.GetGridCoordinates( lat_orig, lon_orig,
+				      zone, local_easting, local_northing,
+				      gridConvergence, pointScale);
+
   deltaT_dir=base_dir+string("/")+"DT/";
   deltaT_pose=base_dir+string("/")+"deltat_pose_est.data";
   mbdir=base_dir+"/"+mbdir+"/";
@@ -1314,6 +1349,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 		 mesh->bbox.max[1],
 		 mesh->bbox.max[2]);
 
+
+
     if(hmap_method){
       mesh_t hmmesh;
       trimesh2mesh(&hmmesh, mesh);
@@ -1671,6 +1708,13 @@ int main( int argc, char *argv[ ] )
     int ct=0;
     for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++){
       Slice name=(*itr);
+
+      if(ct==0)
+	total_env.init(name.bbox->x1,name.bbox->y1,name.bbox->x2,name.bbox->y2);
+      else
+	total_env.expand_to_include(Envelope<double>(name.bbox->x1,name.bbox->y1,name.bbox->x2,name.bbox->y2));
+
+
       fprintf(fpp,"%d %f %s %s",   
 	      ct++,name.time,name.left_name.c_str(),name.right_name.c_str());
       fprintf(fpp," %f %f %f %f %f %f",name.bbox->x1,name.bbox->y1,
@@ -1894,7 +1938,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     //Quadmerge List
       fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f 1\n",tasks[i].mesh_name.c_str(),vrip_res);
     }
-    
+    cout << total_env <<endl;
     if(have_mb_grd){
 
       int count=0;
@@ -1903,6 +1947,13 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	while(!feof(lafp)){
 	  char tmp[255];
 	  fscanf(lafp,"%s\n",tmp);
+	
+	  mesh_input m;
+	  double zmin,zmax;
+	  m.name="mb_grd/grdfiles/"+string(tmp);
+	  if(bound_grd(m,zmin,zmax,local_easting,local_northing))
+	    total_env.expand_to_include(m.envelope);
+	  cout << total_env <<endl;
 	  fprintf(quadmerge_seg_fp,"../mb_grd/grdfiles/%s  0.1 0\n",tmp);
 	  count++;
 	}
@@ -1915,6 +1966,12 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       float background_res=5.0;
       if(stat(background_mb.c_str(),&stFileInfo) == 0 ){
 	printf("Found hi-alt background MB GRD file.\n");
+	  mesh_input m;
+	  double zmin,zmax;
+	  m.name=background_mb;
+	  if(bound_grd(m,zmin,zmax,local_easting,local_northing))
+	    total_env.expand_to_include(m.envelope);
+	  cout << total_env << endl;;
 	fprintf(quadmerge_seg_fp,"../%s  %f 0\n",background_mb.c_str(),
 		background_res);
       }

@@ -35,12 +35,14 @@ using mapnik::Envelope;
 using namespace ul;
 using std::cout;
 double edge_thresh;
-std::string zone;
+
 using  std::cout;
 using  std::endl;
-double gridConvergence, pointScale;
+
 #define PI 3.141592654
-UF::GeographicConversions::Redfearn gpsConversion;
+
+
+
 std::vector<mesh_input> meshes;
 void	LoadData(std::vector<mesh_input> &meshes);
 void	LoadData(char  *filename);
@@ -50,7 +52,7 @@ quadcornerdata	RootCornerData = { NULL, NULL, 0, 0, 0, 0, { { 0, 0 }, { 0, 0 }, 
 int	TriangleCounter = 0;
 global_extents ge;
 bool lod=false;
-double local_easting, local_northing;
+
 bool have_geoconf=false;
 void bound_xyz( mesh_input &m,double &zmin, double &zmax){
   float data[3];
@@ -120,11 +122,12 @@ int	main(int argc, char *argv[])
   if(  argp.read("-lod"))
     lod=true;
   std::string config_file_name;
+  double local_easting, local_northing;
   if(argp.read("-geoconf",config_file_name)){
  
     have_geoconf=true;
     double lat_orig,lon_orig;
-
+   
      try {
 
     libplankton::Config_File config_file( config_file_name ); 
@@ -141,8 +144,13 @@ int	main(int argc, char *argv[])
      exit( 1 );
    }
 
-  
+
+
     cout << "Lat Origin "<<lat_orig << " Long Ori " << lon_orig<<endl;
+    UF::GeographicConversions::Redfearn gpsConversion;
+
+    double gridConvergence, pointScale;
+    std::string zone;
     gpsConversion.GetGridCoordinates( lat_orig, lon_orig,
 				      zone, local_easting, local_northing,
 				      gridConvergence, pointScale);
@@ -180,7 +188,7 @@ int	main(int argc, char *argv[])
     if(meshes[i].name.substr(meshes[i].name.size()-3) == "ply")
       bound_mesh(meshes[i],zmin,zmax);
     else if(meshes[i].name.substr(meshes[i].name.size()-3) == "grd")
-      bound_grd(meshes[i],zmin,zmax);
+      bound_grd(meshes[i],zmin,zmax,local_easting,local_northing);
     else
       bound_xyz(meshes[i],zmin,zmax);
 
@@ -247,7 +255,7 @@ int	main(int argc, char *argv[])
     root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
     }
   */
-  const float detail[]={FLT_MAX,10000.0,1000.0};
+  const float detail[]={FLT_MAX,800000.0,100000.0};
   // Draw the quadtree.
   if (root) {
     //		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);

@@ -314,6 +314,8 @@ SET( SRCS OSGExport.cpp
 		novelty.cpp
 		stereo_cells.cpp
 		tridecimator/plylib.cpp
+		quadmerge/envelope.cpp
+		quadmerge/fileio.cpp
 		)
 
 ADD_DEFINITIONS( "-g")

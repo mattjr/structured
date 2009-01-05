@@ -80,6 +80,7 @@ static int num_skip=0;
 static bool use_proj_tex=false;
 static vector<string> mb_ply_filenames;
 static bool have_mb_ply=false;
+static bool have_mb_grd=false;
 static bool have_cov_file=false;
 static string stereo_calib_file_name;
 static bool no_simp=true;
@@ -412,7 +413,9 @@ static bool parse_args( int argc, char *argv[ ] )
 
  if(argp.read("--usenewmb"))
    use_new_mb=true;
- 
+
+ if(argp.read("--havembgrd"))
+   have_mb_grd=true;
 
   if(argp.read("--genmb")){
     gen_mb_ply=true;
@@ -1891,10 +1894,32 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     //Quadmerge List
       fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f 1\n",tasks[i].mesh_name.c_str(),vrip_res);
     }
-   /*      if(have_mb_ply)
-	for(int k=0; k < (int)mb_ply_filenames.size(); k++)
-	  fprintf(quadmerge_seg_fp,"vis-mb-%08d-%08d.ply  0.1 0\n",k,i);
-      */
+    
+    if(have_mb_grd){
+
+      int count=0;
+      FILE *lafp=fopen("mb_grd/low_alt_mb.txt","r");
+      if(lafp){
+	while(!feof(lafp)){
+	  char tmp[255];
+	  fscanf(lafp,"%s\n",tmp);
+	  fprintf(quadmerge_seg_fp,"../mb_grd/grdfiles/%s  0.1 0\n",tmp);
+	  count++;
+	}
+	fclose(lafp);
+	if(count)
+	printf("Using MB GRD found %d lowalt hires files\n",count);
+      }
+      string background_mb("mb_grd/blendedhi.grd");
+      struct stat stFileInfo; 
+      float background_res=5.0;
+      if(stat(background_mb.c_str(),&stFileInfo) == 0 ){
+	printf("Found hi-alt background MB GRD file.\n");
+	fprintf(quadmerge_seg_fp,"../%s  %f 0\n",background_mb.c_str(),
+		background_res);
+      }
+    }
+      
       fclose(quadmerge_seg_fp);
 
     if(even_split)

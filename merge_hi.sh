@@ -16,10 +16,13 @@ function float_cond()
 }
 grdfolder=`find . -type d |grep GRD_  | sort|head`
 hialt=
+rm -f low_alt_mb.txt
 for i in *.alt; do
    alt=`cat $i`
    if float_cond "$alt > $ALT_THRESH";then
        hialt="$hialt ${i%.alt}.gsf"
+   else
+       echo ${i%.alt}.gsf.grd >> low_alt_mb.txt
    fi
 done
 rm -f hialtlst

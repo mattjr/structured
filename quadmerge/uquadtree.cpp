@@ -1163,7 +1163,7 @@ void	quadsquare::SetupCornerData(quadcornerdata* q, const quadcornerdata& cd, in
 
 
 
-void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm)
+void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm,bool insert_sparse)
 // Sets the height of all samples within the specified rectangular
 // region using the given array of floats.  Extends the tree to the
 // level of detail defined by (1 << hm.Scale) as necessary.
@@ -1182,7 +1182,9 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm)
 	if (cd.Parent && cd.Parent->Square) {
 		cd.Parent->Square->EnableChild(cd.ChildIndex, *cd.Parent);	// causes parent edge verts to be enabled, possibly causing neighbor blocks to be created.
 	}
-	
+	bool children_valid=(Child[0]!=NULL &&Child[1]!=NULL &&Child[2]!=NULL &&Child[3]!=NULL);
+	if(insert_sparse && (!children_valid && !check_valid(cd,hm) ))
+	  return;
 	int	i;
 	
 	int	half = 1 << cd.Level;
@@ -1199,7 +1201,7 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm)
 		
 		// Recurse.
 		if (Child[i]) {
-			Child[i]->AddHeightMap(q, hm);
+		  Child[i]->AddHeightMap(q, hm,insert_sparse);
 		}
 	}
 	
@@ -1240,90 +1242,22 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm)
 	if (Dirty) SetStatic(cd);
 }
 
-
-void	quadsquare::AddHeightMapNotFull(const quadcornerdata& cd, const HeightMapInfo& hm)
-// Sets the height of valid samples within the specified rectangular
-// region using the given array of floats.  Extends the tree to the
-// level of detail defined by (1 << hm.Scale) as necessary.
-{
-	printf("cd %d\n",cd.Level);
-	// If block is outside rectangle, then don't bother.
+bool quadsquare::check_valid(const quadcornerdata& cd, const HeightMapInfo& hm){
 	int	BlockSize = 2 << cd.Level;
-	if (cd.xorg > hm.x_origin + ((hm.XSize + 2) << hm.Scale) ||
-	    cd.xorg + BlockSize < hm.x_origin - (1 << hm.Scale) ||
-	    cd.yorg > hm.y_origin + ((hm.YSize + 2) << hm.Scale) ||
-	    cd.yorg + BlockSize < hm.y_origin - (1 << hm.Scale))
-	{
-	  // This square does not touch the given height array area; no need to modify this square or descendants.
-		return;
+	int ix,iy;
+
+	for(int i=cd.xorg; i < cd.xorg + BlockSize; i++){
+	  for(int j=cd.yorg; j < cd.yorg + BlockSize; j++){
+	    ix = (i - hm.x_origin) >> hm.Scale;
+	    iy = (j - hm.y_origin) >> hm.Scale;
+	    if(ix > hm.XSize || ix < 0 || iy > hm.YSize || iy < 0)
+	      	      continue;
+	    if(hm.Data[ix + iy *hm.RowWidth] != 0)
+	      return true;
+	      
+	  }
 	}
-
-	if (cd.Parent && cd.Parent->Square) {
-		cd.Parent->Square->EnableChild(cd.ChildIndex, *cd.Parent);	// causes parent edge verts to be enabled, possibly causing neighbor blocks to be created.
-	}
-	
-	int	i;
-	
-	int	half = 1 << cd.Level;
-
-
-	
-	// Deviate vertex heights based on data sampled from heightmap.
-	float	s[5];
-	s[0] = hm.Sample(cd.xorg + half, cd.yorg + half);
-	s[1] = hm.Sample(cd.xorg + half*2, cd.yorg + half);
-	s[2] = hm.Sample(cd.xorg + half, cd.yorg);
-	s[3] = hm.Sample(cd.xorg, cd.yorg + half);
-	s[4] = hm.Sample(cd.xorg + half, cd.yorg + half*2);
-	if(s[0] == 0 && s[1] == 0 && s[2] ==0 && s[3] == 0 && s[4] ==0 && cd.Level < 12){
-	  // return;
-	  printf("Zero at level %d %f\n",cd.Level,s[0]);
-	  return;
-	}
-
-	// Create and update child nodes.
-	for (i = 0; i < 4; i++) {
-		quadcornerdata	q;
-		SetupCornerData(&q, cd, i);
-				
-		if (Child[i] == NULL && cd.Level > hm.Scale) {
-			// Create child node w/ current (unmodified) values for corner verts.
-			Child[i] = new quadsquare(&q);
-		}
-		
-		// Recurse.
-		if (Child[i]) {
-			Child[i]->AddHeightMapNotFull(q, hm);
-		}
-	}
-
-	// Modify the vertex heights if necessary, and set the dirty
-	// flag if any modifications occur, so that we know we need to
-	// recompute error data later.
-	for (i = 0; i < 5; i++) {
-		if (s[i] != 0) {
-			Dirty = true;
-			Vertex[i].num_samples++;
-			Vertex[i].Zsamples=(float *)realloc(Vertex[i].Zsamples,Vertex[i].num_samples*sizeof(float));
-			Vertex[i].Zsamples[Vertex[i].num_samples-1]=s[i];
-			  
-			Vertex[i].Z = s[i];
-		
-		
-		}
-	}
-
-	if (!Dirty) {
-		// Check to see if any child nodes are dirty, and set the dirty flag if so.
-		for (i = 0; i < 4; i++) {
-			if (Child[i] && Child[i]->Dirty) {
-				Dirty = true;
-				break;
-			}
-		}
-	}
-
-	if (Dirty) SetStatic(cd);
+	return false;
 }
 
 //

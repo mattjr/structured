@@ -113,8 +113,8 @@ struct quadsquare {
 	~quadsquare();
 
   void StaticUpdate(const quadcornerdata& cd, float Detail);
-  void	AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm);
-  void AddHeightMapNotFull(const quadcornerdata& cd, const HeightMapInfo& hm);
+  void	AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm,bool insert_sparse=false);
+
   void	AddPts(const quadcornerdata& cd,pt_3 *pts,int npts);
   void	AddPtsAux(const quadcornerdata& cd, pt_3 &pt,int minScale);
 	void	StaticCullData(const quadcornerdata& cd, float ThresholdDetail);	
@@ -127,6 +127,7 @@ struct quadsquare {
 	float	GetHeight(const quadcornerdata& cd, float x, float z);
 	int	  RenderToWF(const quadcornerdata& cd);
 private:
+  bool check_valid(const quadcornerdata& cd, const HeightMapInfo& hm);
 	void	EnableEdgeVertex(int index, bool IncrementCount, const quadcornerdata& cd);
 	quadsquare*	EnableDescendant(int count, int stack[], const quadcornerdata& cd);
 	void	EnableChild(int index, const quadcornerdata& cd);

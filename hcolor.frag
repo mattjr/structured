@@ -85,7 +85,7 @@ vec4 jetColorMap(float val) {
 	jet.w = 1.0;
         return jet;
 }
-
+/*
 
 void main()
 {   
@@ -103,4 +103,32 @@ void main()
     vec4 jet=jetColorMap(val);
     vec4 ran=rainbowColorMap(val);
     gl_FragColor =  color* ran;
+}
+*/
+
+ varying vec3 L;
+ varying vec3 E;
+ varying vec3 H;
+
+void main()
+{
+     vec3 NNormal = normalize(normal.xyz);
+     vec3 Light  = normalize(L);
+     vec3 Eye    = normalize(E);
+     vec3 Half   = normalize(H);
+     float Kd = max(dot(NNormal, Light), 0.0);
+     float Ks = pow(max(dot(Half, NNormal), 0.0),
+                 gl_FrontMaterial.shininess+64);
+     float Ka = 0.0;
+     
+     vec4 diffuse  = Kd * gl_FrontLightProduct[0].diffuse;
+     vec4 specular = Ks * gl_FrontLightProduct[0].specular;
+     vec4 ambient  = Ka * gl_FrontLightProduct[0].ambient;
+     float height = normal.w;;
+     float range= zrange.y-zrange.x;
+     float val =(height-zrange.x)/range;
+    
+    vec4 jet=jetColorMap(val);
+    vec4 ran=rainbowColorMap(val);
+    gl_FragColor = ran* (ambient + diffuse + specular);
 }

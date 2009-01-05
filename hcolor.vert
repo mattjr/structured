@@ -3,7 +3,7 @@
 uniform float tilingFactor;
 
 varying vec4 normal;
-
+varying vec3  L, E, H;
 
 
 void main()
@@ -12,5 +12,10 @@ void main()
     normal.w = gl_Vertex.z;
 
     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-    gl_TexCoord[0] = gl_MultiTexCoord0 * tilingFactor;
+    vec4 eyePosition = gl_ModelViewMatrix * gl_Vertex;
+    vec4 eyeLightPos = gl_LightSource[0].position;
+
+    L = normalize(eyeLightPos.xyz - eyePosition.xyz);
+    E = -normalize(eyePosition.xyz);
+    H = normalize(L + E);
 }

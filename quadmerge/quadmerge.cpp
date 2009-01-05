@@ -38,7 +38,6 @@ double edge_thresh;
 std::string zone;
 using  std::cout;
 using  std::endl;
-
 double gridConvergence, pointScale;
 #define PI 3.141592654
 UF::GeographicConversions::Redfearn gpsConversion;
@@ -408,7 +407,7 @@ void load_grd( mesh_input &m){
       hm.Data[i]= ge.toUINTz(data[i]);
   }
     
-  root->AddHeightMap(RootCornerData, hm);
+    root->AddHeightMap(RootCornerData, hm,true); 
   delete [] hm.Data;
   delete data;
 }

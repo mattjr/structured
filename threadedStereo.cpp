@@ -1880,9 +1880,23 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       exit(-1);
     }
     
+    char quadprecmd[255];
+    sprintf(quadmerge_seg_fname,"mesh-quad/quadmergeseg.txt");
+
+    quadmerge_seg_fp=fopen(quadmerge_seg_fname,"w");    
+    sprintf(quadprecmd,"cd mesh-quad;%s/quadmerge/bin/quadmerge -geoconf %s -lod -input ../%s -edgethresh %f -output ../mesh-quad/quad.ply -range ../mesh-quad/range.txt;",basepath.c_str(),deltaT_config_name.c_str(),quadmerge_seg_fname,edgethresh);
     
-    //string mbfile=mbdir+"/"+"mb-total.ply";
-    // std::vector<Cell_Data> cells;
+    
+    for(int i=0; i < tasks.size(); i++){    
+    //Quadmerge List
+      fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f 1\n",tasks[i].mesh_name.c_str(),vrip_res);
+    }
+   /*      if(have_mb_ply)
+	for(int k=0; k < (int)mb_ply_filenames.size(); k++)
+	  fprintf(quadmerge_seg_fp,"vis-mb-%08d-%08d.ply  0.1 0\n",k,i);
+      */
+      fclose(quadmerge_seg_fp);
+
     if(even_split)
       cells=calc_cells(tasks,EVEN_SPLIT,cell_scale);
     else
@@ -1892,69 +1906,34 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       if(cells[i].poses.size() == 0)
 	continue;
       
-      sprintf(quadmerge_seg_fname,"mesh-quad/quadmergeseg-%08d.txt",i);
+     
       sprintf(conf_name,"mesh-quad/bbox-clipped-diced-%08d.ply.txt",i);
 
-      quadmerge_seg_fp=fopen(quadmerge_seg_fname,"w");
+     
       bboxfp = fopen(conf_name,"w");
-      if(!quadmerge_seg_fp || !bboxfp){
-	printf("Unable to open %s\n",quadmerge_seg_fname);
+      if( !bboxfp){
+	printf("Unable to open %s\n",conf_name);
       }	
     
 
       fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
       fprintf(quadmergecmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-quad/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
 
-      if(have_mb_ply){
-       	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
-fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply;tridecimator ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply ../mesh-agg/clipped-mb-%08d-%08d.ply 0 -e%f;", cells[i].bounds.min_x,
-		cells[i].bounds.min_y,
-		FLT_MIN,
-		cells[i].bounds.max_x,
-		  cells[i].bounds.max_y,
-		  FLT_MAX,
-		  eps,
-	mb_ply_filenames[k].c_str(),k,i,k,i,k,i,edgethresh);
-
-	}
-	
-      }
-      if(!no_merge)
-	fprintf(quadmergecmds_fp,"$BASEDIR/quadmerge/bin/quadmerge -geoconf %s -lod -input ../%s -edgethresh %f -output ../mesh-quad/seg-%08d.ply -range ../mesh-quad/range.txt;",deltaT_config_name.c_str(),quadmerge_seg_fname,edgethresh,i);
-      /*fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/seg-%08d.ply > ../mesh-quad/clipped-diced-%08d.ply;",
+   
+ for(int t=0; t < 3; t++)
+      fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/quad-lod%d.ply > ../mesh-quad/clipped-diced-%08d-lod%d.ply;",
 	      cells[i].bounds.min_x,
 	      cells[i].bounds.min_y,
 	      FLT_MIN,
 	      cells[i].bounds.max_x,
 	      cells[i].bounds.max_y,
 	      FLT_MAX,
-	      eps,i,i);
-      */
-      fprintf(quadmergecmds_fp,"cp ../mesh-quad/seg-%08d.ply  ../mesh-quad/clipped-diced-%08d.ply;",i,i);
-      for(int t=0; t < 3; t++)
-	fprintf(quadmergecmds_fp,"cp ../mesh-quad/seg-%08d-lod%d.ply  ../mesh-quad/clipped-diced-%08d-lod%d.ply;",i,t,i,t);
-      /*     if(have_mb_ply){
-       fprintf(quadmergecmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply;",i,i);
-	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
-	  fprintf(quadmergecmds_fp,"plysubtract  ../mesh-agg/clipped-mb-%08d-%08d.ply ../mesh-agg/vis-mb-%08d-%08d.ply >  ../mesh-agg/tmp-mb-%08d-%08d.ply ;",k,i,k,i,k,i);
-	  fprintf(quadmergecmds_fp,"clip_delaunay  ../mesh-diced/nomb-diced-%08d.ply ../mesh-agg/tmp-mb-%08d-%08d.ply  ../mesh-agg/unclean-inv-mb-%08d-%08d.ply ;",i,k,i,k,i);
- fprintf(vripcmds_fp,"tridecimator ../mesh-agg/unclean-inv-mb-%08d-%08d.ply ../mesh-agg/inv-mb-%08d-%08d.ply 0 -e0.25;",k,i,k,i);
-
-	}
-	fprintf(quadmergecmds_fp,"plymerge ../mesh-diced/nomb-diced-%08d.ply ",i );
-	for(int k=0; k < (int)mb_ply_filenames.size(); k++)
-	  fprintf(vripcmds_fp," ../mesh-agg/inv-mb-%08d-%08d.ply ",k,i);
-	fprintf(quadmergecmds_fp,"> ../mesh-diced/clipped-diced-%08d.ply;",i);
-     }
-    
-      */
-
+	      eps,t,i,t);
      fprintf(quadmergecmds_fp,"cd ..\n");
    
       for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=cells[i].poses[j];
-	//Quadmerge List
-	fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f 1\n",pose->mesh_name.c_str(),vrip_res);
+
 	//Gen Tex File bbox
 	fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
 	save_bbox_frame(pose->bbox,bboxfp);
@@ -1963,11 +1942,8 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
 	    fprintf(bboxfp," %lf",pose->m[k][n]);
 	fprintf(bboxfp,"\n");
       }
-      /*      if(have_mb_ply)
-	for(int k=0; k < (int)mb_ply_filenames.size(); k++)
-	  fprintf(quadmerge_seg_fp,"vis-mb-%08d-%08d.ply  0.1 0\n",k,i);
-      */
-      fclose(quadmerge_seg_fp);
+   
+
       fclose(bboxfp);
     }
     fclose(quadmergecmds_fp);
@@ -2108,11 +2084,12 @@ fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/di
       if(!single_run){
 	if(quad_integration){	
 	  string quadmergecmd="runquadmerge.py";
-	  
-	  	std::vector<string> postcmds;
-		postcmds.push_back("cp mesh-quad/diced.txt mesh-quad/valid.txt");
-		//postcmds.push_back("cd mesh-quad/;cat valid.txt | xargs plybbox > range.txt");
-	  shellcm.write_generic(quadmergecmd,quadmergecmd_fn,"Quadmerge",NULL,&postcmds);
+	  std::vector<string> precmds;
+	  precmds.push_back(quadprecmd);
+	  std::vector<string> postcmds;
+	  postcmds.push_back("cp mesh-quad/diced.txt mesh-quad/valid.txt");
+	  //postcmds.push_back("cd mesh-quad/;cat valid.txt | xargs plybbox > range.txt");
+	  shellcm.write_generic(quadmergecmd,quadmergecmd_fn,"Quadmerge",&precmds,&postcmds);
 	  if(!no_quadmerge)
 	    sysres=system("./runquadmerge.py");
 	  

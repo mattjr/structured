@@ -2048,7 +2048,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       if(gen_mb_ply){
 
 	FILE *genmbfp=fopen("genmb.sh","w");
-	fprintf(genmbfp,"#!/bin/bash\nPATH=$PATH:%s/tridecimator:/usr/lib/gmt/bin/:%s../mbsystems/bin/\ncd %s\n"
+	/*	fprintf(genmbfp,"#!/bin/bash\nPATH=$PATH:%s/tridecimator:/usr/lib/gmt/bin/:%s../mbsystems/bin/\ncd %s\n"
 		"if [ -e %s/mb.ply ]; then\n"
 		"cp %s/mb.ply .\n"
 		"exit 0;\n"
@@ -2075,6 +2075,9 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		"cp mb.ply %s/ \n",
 		basepath.c_str(),deltaT_config_name.c_str(),
 		deltaT_dir.c_str());
+	*/
+	fprintf(genmbfp,"#!/bin/bash\n%s/mb_for_vis.sh %s\n",
+		basepath.c_str(),deltaT_dir.c_str());
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
 	sysres=system("./genmb.sh");

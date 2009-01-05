@@ -1934,11 +1934,11 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     sprintf(quadprecmd,"cd mesh-quad;%s/bin/quadmerge -geoconf %s -lod -input ../%s -edgethresh %f -output ../mesh-quad/quad.ply -range ../mesh-quad/range.txt;",basepath.c_str(),deltaT_config_name.c_str(),quadmerge_seg_fname,edgethresh);
     
     
-    for(int i=0; i < tasks.size(); i++){    
+    for(int i=0; i < (int)tasks.size(); i++){    
     //Quadmerge List
       fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f 1\n",tasks[i].mesh_name.c_str(),vrip_res);
     }
-    cout << total_env <<endl;
+    //    cout << total_env <<endl;
     if(have_mb_grd){
 
       int count=0;
@@ -1953,7 +1953,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  m.name="mb_grd/grdfiles/"+string(tmp);
 	  if(bound_grd(m,zmin,zmax,local_easting,local_northing))
 	    total_env.expand_to_include(m.envelope);
-	  cout << total_env <<endl;
+	  // cout << total_env <<endl;
 	  fprintf(quadmerge_seg_fp,"../mb_grd/grdfiles/%s  0.1 0\n",tmp);
 	  count++;
 	}
@@ -1971,7 +1971,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  m.name=background_mb;
 	  if(bound_grd(m,zmin,zmax,local_easting,local_northing))
 	    total_env.expand_to_include(m.envelope);
-	  cout << total_env << endl;;
+	  //cout << total_env << endl;;
 	fprintf(quadmerge_seg_fp,"../%s  %f 0\n",background_mb.c_str(),
 		background_res);
       }
@@ -1979,11 +1979,10 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       
       fclose(quadmerge_seg_fp);
       int numcells= total_env.width() *total_env.height() / 50.0;
-      cells=calc_cells(tasks,total_env.minx(),total_env.maxx(),total_env.miny(),total_env.maxy(),5.0);
+      cells=calc_cells(tasks,total_env.minx(),total_env.maxx(),total_env.miny(),total_env.maxy(),5);
 
     for(int i=0; i <(int)cells.size(); i++){
-      if(cells[i].poses.size() == 0)
-	continue;
+
       
      
       sprintf(conf_name,"mesh-quad/bbox-clipped-diced-%08d.ply.txt",i);

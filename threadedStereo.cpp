@@ -454,8 +454,8 @@ static bool parse_args( int argc, char *argv[ ] )
 
   if(argp.read("--genmb")){
     gen_mb_ply=true;
-    have_mb_ply=true;
-    mb_ply_filenames.push_back(string("mb.ply")) ;
+    //    have_mb_ply=true;
+    //  mb_ply_filenames.push_back(string("mb.ply")) ;
   }
   argp.read("-z",feature_depth_guess );
   use_dense_stereo=argp.read("--ds" );
@@ -1782,7 +1782,7 @@ int main( int argc, char *argv[ ] )
     
     if(mb_ply_filenames.size()){
       have_mb_ply=true;
-      printf("Integrating Vision clipped mb from %d files.\n",(int)mb_ply_filenames.size());
+      //  printf("Integrating Vision clipped mb from %d files.\n",(int)mb_ply_filenames.size());
     }
     
     FILE *vrip_seg_fp;
@@ -1818,6 +1818,48 @@ int main( int argc, char *argv[ ] )
     
     ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,dist_run,cwd,aggdir,dicedir,have_mb_ply,num_threads);
     shellcm.write_setup();
+
+
+   if(gen_mb_ply){
+
+	FILE *genmbfp=fopen("genmb.sh","w");
+	/*	fprintf(genmbfp,"#!/bin/bash\nPATH=$PATH:%s/tridecimator:/usr/lib/gmt/bin/:%s../mbsystems/bin/\ncd %s\n"
+		"if [ -e %s/mb.ply ]; then\n"
+		"cp %s/mb.ply .\n"
+		"exit 0;\n"
+		"fi\n"
+		"find . -name 'mb*.ply' | xargs rm -f\n"
+		"%s/../seabed_localisation/bin/copy_deltaT %s %s %s\n",
+		basepath.c_str(),	basepath.c_str(),
+		aggdir,deltaT_dir.c_str(),deltaT_dir.c_str(),basepath.c_str(),
+		//--start %f --stop %fstart_time,stop_time,
+		deltaT_config_name.c_str(),deltaT_dir.c_str(),
+		deltaT_pose.c_str());
+	fprintf(genmbfp,"ls -1 | grep .gsf$ > tmplist\n"
+		"mbdatalist -F-1 -I tmplist > formattedlist\n"
+		"mbdatalist -F-1 -I formattedlist -N\n"
+		"mbm_grid -Iformattedlist  -C3 -E1.0/1.0/m\n"
+		"./formattedlist_mbgrid.cmd\n"
+		"grd2xyz -S formattedlist.grd  -bo > tmp.xyz\n"
+		"%s/../seabed_localisation/bin/mbstomesh %s tmp.xyz\n"
+		"mbm_grdtiff -I formattedlist.grd -W1/1 -G5 -A0.25/280/15  -Q -V\n"
+		"./formattedlist.grd_tiff.cmd\n"
+		"tridecimator mb.ply mb-tmp.ply 0 -e500%%\n"
+		"mv mb.ply mb-uncleaned.ply\n"
+		"mv mb-tmp.ply mb.ply\n"
+		"cp mb.ply %s/ \n",
+		basepath.c_str(),deltaT_config_name.c_str(),
+		deltaT_dir.c_str());
+	*/
+	fprintf(genmbfp,"#!/bin/bash\n%s/mb_for_vis.sh %s\n",
+		basepath.c_str(),deltaT_dir.c_str());
+	fchmod(fileno(genmbfp),   0777);
+	fclose(genmbfp);
+	sysres=system("./genmb.sh");
+      }
+
+
+
     string mbfile=mbdir+"/"+"mb-total.ply";
     std::vector<Cell_Data> cells;
     if(even_split)
@@ -2045,43 +2087,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     {
       if(output_pts_cov)
 	fclose(pts_cov_fp);
-      if(gen_mb_ply){
-
-	FILE *genmbfp=fopen("genmb.sh","w");
-	/*	fprintf(genmbfp,"#!/bin/bash\nPATH=$PATH:%s/tridecimator:/usr/lib/gmt/bin/:%s../mbsystems/bin/\ncd %s\n"
-		"if [ -e %s/mb.ply ]; then\n"
-		"cp %s/mb.ply .\n"
-		"exit 0;\n"
-		"fi\n"
-		"find . -name 'mb*.ply' | xargs rm -f\n"
-		"%s/../seabed_localisation/bin/copy_deltaT %s %s %s\n",
-		basepath.c_str(),	basepath.c_str(),
-		aggdir,deltaT_dir.c_str(),deltaT_dir.c_str(),basepath.c_str(),
-		//--start %f --stop %fstart_time,stop_time,
-		deltaT_config_name.c_str(),deltaT_dir.c_str(),
-		deltaT_pose.c_str());
-	fprintf(genmbfp,"ls -1 | grep .gsf$ > tmplist\n"
-		"mbdatalist -F-1 -I tmplist > formattedlist\n"
-		"mbdatalist -F-1 -I formattedlist -N\n"
-		"mbm_grid -Iformattedlist  -C3 -E1.0/1.0/m\n"
-		"./formattedlist_mbgrid.cmd\n"
-		"grd2xyz -S formattedlist.grd  -bo > tmp.xyz\n"
-		"%s/../seabed_localisation/bin/mbstomesh %s tmp.xyz\n"
-		"mbm_grdtiff -I formattedlist.grd -W1/1 -G5 -A0.25/280/15  -Q -V\n"
-		"./formattedlist.grd_tiff.cmd\n"
-		"tridecimator mb.ply mb-tmp.ply 0 -e500%%\n"
-		"mv mb.ply mb-uncleaned.ply\n"
-		"mv mb-tmp.ply mb.ply\n"
-		"cp mb.ply %s/ \n",
-		basepath.c_str(),deltaT_config_name.c_str(),
-		deltaT_dir.c_str());
-	*/
-	fprintf(genmbfp,"#!/bin/bash\n%s/mb_for_vis.sh %s\n",
-		basepath.c_str(),deltaT_dir.c_str());
-	fchmod(fileno(genmbfp),   0777);
-	fclose(genmbfp);
-	sysres=system("./genmb.sh");
-      }
+   
   
     
       
@@ -2270,18 +2276,17 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	
 	
 
-
-	for(int j=0; j <max( (int)cells.size()-dist_gentex_range,1); 
-	    j +=dist_gentex_range){
+	int j1=0;
+	do{
 	  fprintf(dicefp,"setenv DISPLAY :0.0;cd %s/..;%s/genTex %s %s "
 		  "-f %s  --dicedir %s/ --range-run %d %d %s\n"
 		  ,gentexdir[i].c_str(),basepath.c_str(),
 		  recon_config_file_name.c_str(),
 		  recon_config_file_name.c_str(),
 		  cachedtexdir,gentexdir[i].c_str(),
-		  j,j+dist_gentex_range,argstr);
-	  
-	}
+		  j1,j1+dist_gentex_range,argstr);
+	  j1+=dist_gentex_range;
+	}while(j1 < cells.size());
 	fclose(dicefp);
 	shellcm.write_generic(gentexnames[i],gentexcmd_fn,"Gentex",&precmds,NULL);
 	if(no_gen_tex)

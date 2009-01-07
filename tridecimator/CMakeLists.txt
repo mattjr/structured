@@ -107,6 +107,11 @@ SET( SRCS quadricsimp.cpp tridecimator.cpp plylib.cpp
 
 
 ADD_EXECUTABLE( tridecimator  ${SRCS} )
-
+ADD_EXECUTABLE( shadevis shadevis/shadevis.cpp plylib.cpp ./vcg/wrap/gui/trackball.cpp ./vcg/wrap/gui/trackmode.cpp)
 INSTALL_TARGETS( /bin tridecimator )
+INSTALL_TARGETS( /bin shadevis )
+SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )
+
+
+
 

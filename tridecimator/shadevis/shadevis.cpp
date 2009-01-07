@@ -24,6 +24,9 @@
   History
 
 $Log: not supported by cvs2svn $
+Revision 1.1  2009-01-07 22:03:13  m.roberson
+shadevis
+
 Revision 1.11  2006/01/10 13:20:42  cignoni
 Changed ply::PlyMask to io::Mask
 
@@ -64,9 +67,15 @@ Added GPL comments
 // this define is mandatory to avoid the conflicts due to the silly definition of 
 // min and max macros in windows.h (included by glut...)
 #define NOMINMAX 
-
 #include <GL/glew.h>
-#include <GL/glut.h>
+#ifdef __APPLE__
+  #include <GLUT/glut.h>
+#else
+  #include <GL/glut.h>
+#endif
+
+
+
 #include <wrap/gl/space.h>
 
 
@@ -136,7 +145,7 @@ bool cb(const char *buf)
 
 void BuildOnePixelTexture(Color4b c, unsigned int &TexInd)
 {
-  if(TexInd==0) glGenTextures(1,&TexInd);
+  if(TexInd==0) glGenTextures(1,(GLuint*)&TexInd);
 
   glBindTexture(GL_TEXTURE_1D,TexInd);
   glTexImage1D(GL_TEXTURE_1D,0,GL_RGBA,1,0,GL_RGBA,GL_UNSIGNED_BYTE,&c);
@@ -588,7 +597,7 @@ int main(int argc, char** argv)
   glutInitWindowPosition (10,10);
   glutCreateWindow ("shadevis - Visual Computing Lab - vcg.isti.cnr.it ");
   glutDisplayFunc(ViewDisplay);
-  glutReshapeFunc(ViewReshape); 
+  glutReshapeFunc(((void (*)(int, int))ViewReshape)); 
   glutKeyboardFunc(ViewKey);	
   glutSpecialFunc(ViewSpecialKey);	
   glutMouseFunc(ViewMouse);

@@ -24,6 +24,9 @@
   History
 
 $Log: not supported by cvs2svn $
+Revision 1.1  2009-01-07 22:03:13  m.roberson
+shadevis
+
 Revision 1.2  2004/07/11 22:13:30  cignoni
 Added GPL comments
 
@@ -50,7 +53,7 @@ namespace vcg {
    void OpenGLSnap(GLenum format=0)
 	{
 		int vp[4];
-		glGetIntegerv( GL_VIEWPORT,vp );		// Lettura viewport
+		glGetIntegerv( GL_VIEWPORT,(GLint*)vp );		// Lettura viewport
 		glPixelStorei( GL_PACK_ROW_LENGTH, 0);
 		glPixelStorei( GL_PACK_ALIGNMENT, 1);
 		int tx = vp[2];

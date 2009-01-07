@@ -1,7 +1,7 @@
 # 
 # poisson
 
-PROJECT(poisson)
+PROJECT(tridecimator)
 
 
 #--------------------------------#
@@ -105,9 +105,13 @@ SET( SRCS quadricsimp.cpp tridecimator.cpp plylib.cpp
 
 
 
-
+FIND_PACKAGE( GLUT )
+IF( NOT GLUT_FOUND )
+   MESSAGE( FATAL_ERROR  "ERROR - Can't find GLUT" )
+ENDIF( NOT GLUT_FOUND )
 ADD_EXECUTABLE( tridecimator  ${SRCS} )
-ADD_EXECUTABLE( shadevis shadevis/shadevis.cpp plylib.cpp ./vcg/wrap/gui/trackball.cpp ./vcg/wrap/gui/trackmode.cpp)
+ADD_EXECUTABLE( shadevis shadevis/shadevis.cpp plylib.cpp ./vcg/wrap/gui/trackball.cpp ./vcg/wrap/gui/trackmode.cpp   )
+TARGET_LINK_LIBRARIES(shadevis  ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} glew)
 INSTALL_TARGETS( /bin tridecimator )
 INSTALL_TARGETS( /bin shadevis )
 SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )

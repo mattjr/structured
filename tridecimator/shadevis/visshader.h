@@ -24,6 +24,9 @@
   History
 
 $Log: not supported by cvs2svn $
+Revision 1.1  2009-01-07 22:03:13  m.roberson
+shadevis
+
 Revision 1.9  2005/11/12 06:47:18  cignoni
 Added Enhancement, removed type warnings,
 started to refactor code in order to remove the unnecessary generality of the class.
@@ -462,13 +465,13 @@ int GLAccumPixel(	std::vector<int> &PixSeen)
 	double MP[16];
   glGetDoublev(GL_PROJECTION_MATRIX,MP);
 	int VP[4];
-	glGetIntegerv(GL_VIEWPORT,VP);
+	glGetIntegerv(GL_VIEWPORT,(GLint*)VP);
 	double tx,ty,tz;
   
 	for(unsigned int i=0;i<m.vert.size();++i)
 	{
 		gluProject(m.vert[i].P()[0],m.vert[i].P()[1],m.vert[i].P()[2],
-			MM,MP,VP,
+			   MM,MP,(GLint*)VP,
 			&tx,&ty,&tz);
     int col=1;
 		    

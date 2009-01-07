@@ -99,11 +99,17 @@ quadsquare::quadsquare(quadcornerdata* pcd)
 	}
 	
 	// Initialize colors by interpolating from corners.
-	Vertex[0].Lightness = (pcd->Verts[0].Lightness + pcd->Verts[1].Lightness + pcd->Verts[2].Lightness + pcd->Verts[3].Lightness) >> 2;
+	/*Vertex[0].Lightness = (pcd->Verts[0].Lightness + pcd->Verts[1].Lightness + pcd->Verts[2].Lightness + pcd->Verts[3].Lightness) >> 2;
 	Vertex[1].Lightness = (pcd->Verts[3].Lightness + pcd->Verts[0].Lightness) >> 1;
 	Vertex[2].Lightness = (pcd->Verts[0].Lightness + pcd->Verts[1].Lightness) >> 1;
 	Vertex[3].Lightness = (pcd->Verts[1].Lightness + pcd->Verts[2].Lightness) >> 1;
-	Vertex[4].Lightness = (pcd->Verts[2].Lightness + pcd->Verts[3].Lightness) >> 1;
+	Vertex[4].Lightness = (pcd->Verts[2].Lightness + pcd->Verts[3].Lightness) >> 1;*/
+
+	Vertex[0].shadowed = std::max(std::max(pcd->Verts[0].shadowed , pcd->Verts[1].shadowed ),std::max(pcd->Verts[2].shadowed , pcd->Verts[3].shadowed));
+	Vertex[1].shadowed = std::max(pcd->Verts[3].shadowed , pcd->Verts[0].shadowed);
+	Vertex[2].shadowed = std::max(pcd->Verts[0].shadowed , pcd->Verts[1].shadowed);
+	Vertex[3].shadowed = std::max (pcd->Verts[1].shadowed , pcd->Verts[2].shadowed);
+	Vertex[4].shadowed = std::max (pcd->Verts[2].shadowed ,pcd->Verts[3].shadowed);
 }
 
 
@@ -156,7 +162,7 @@ float	quadsquare::GetHeight(const quadcornerdata& cd, float x, float z)
 
 	float	lx = (x - cd.xorg) / float(half);
 	float	lz = (z - cd.yorg) / float(half);
-
+	
 	int	ix = floor(lx);
 	int	iz = floor(lz);
 
@@ -167,6 +173,7 @@ float	quadsquare::GetHeight(const quadcornerdata& cd, float x, float z)
 	if (iz > 1) iz = 1;
 
 	int	index = ix ^ (iz ^ 1) + (iz << 1);
+
 	if (Child[index] && Child[index]->Static) {
 		// Pass the query down to the child which contains it.
 		quadcornerdata	q;
@@ -342,7 +349,7 @@ float	quadsquare::RecomputeErrorAndLighting(const quadcornerdata& cd)
 	//
 	// Compute quickie demo lighting.
 	//
-
+	/*
 	float	OneOverSize = 1.0 / (2 << cd.Level);
 	Vertex[0].Lightness = MakeLightness((Vertex[1].Z - Vertex[3].Z) * OneOverSize,
 					    (Vertex[4].Z - Vertex[2].Z) * OneOverSize);
@@ -367,7 +374,10 @@ float	quadsquare::RecomputeErrorAndLighting(const quadcornerdata& cd)
 	if (s) v = s->Vertex[0].Z; else v = Vertex[4].Z;
 	Vertex[4].Lightness = MakeLightness((cd.Verts[3].Z - cd.Verts[2].Z) * OneOverSize,
 				    (v - Vertex[0].Z) * OneOverSize);
-	
+	*/
+
+	for(int i=0; i <5; i++)
+	  Vertex[i].shadowed=0;
 
 	// The error, MinZ/MaxZ, and lighting values for this node and descendants are correct now.
 	Dirty = false;
@@ -1258,6 +1268,81 @@ bool quadsquare::check_valid(const quadcornerdata& cd, const HeightMapInfo& hm){
 	  }
 	}
 	return false;
+}
+
+void	quadsquare::AddShadowMap(const quadcornerdata& cd, const HeightMapInfo& hm,bool insert_sparse)
+// Sets the height of all samples within the specified rectangular
+// region using the given array of floats.  Extends the tree to the
+// level of detail defined by (1 << hm.Scale) as necessary.
+{
+	// If block is outside rectangle, then don't bother.
+	int	BlockSize = 2 << cd.Level;
+	if (cd.xorg > hm.x_origin + ((hm.XSize + 2) << hm.Scale) ||
+	    cd.xorg + BlockSize < hm.x_origin - (1 << hm.Scale) ||
+	    cd.yorg > hm.y_origin + ((hm.YSize + 2) << hm.Scale) ||
+	    cd.yorg + BlockSize < hm.y_origin - (1 << hm.Scale))
+	{
+	  // This square does not touch the given height array area; no need to modify this square or descendants.
+		return;
+	}
+
+	if (cd.Parent && cd.Parent->Square) {
+		cd.Parent->Square->EnableChild(cd.ChildIndex, *cd.Parent);	// causes parent edge verts to be enabled, possibly causing neighbor blocks to be created.
+	}
+	bool children_valid=(Child[0]!=NULL &&Child[1]!=NULL &&Child[2]!=NULL &&Child[3]!=NULL);
+	if(insert_sparse && (!children_valid && !check_valid(cd,hm) ))
+	  return;
+	int	i;
+	
+	int	half = 1 << cd.Level;
+
+	// Create and update child nodes.
+	for (i = 0; i < 4; i++) {
+		quadcornerdata	q;
+		SetupCornerData(&q, cd, i);
+				
+		if (Child[i] == NULL && cd.Level > hm.Scale) {
+			// Create child node w/ current (unmodified) values for corner verts.
+			Child[i] = new quadsquare(&q);
+		}
+		
+		// Recurse.
+		if (Child[i]) {
+		  Child[i]->AddShadowMap(q, hm,insert_sparse);
+		}
+	}
+	
+	// Deviate vertex heights based on data sampled from heightmap.
+	unsigned char	s[5];
+	s[0] = hm.Sample(cd.xorg + half, cd.yorg + half);
+	s[1] = hm.Sample(cd.xorg + half*2, cd.yorg + half);
+	s[2] = hm.Sample(cd.xorg + half, cd.yorg);
+	s[3] = hm.Sample(cd.xorg, cd.yorg + half);
+	s[4] = hm.Sample(cd.xorg + half, cd.yorg + half*2);
+
+	// Modify the vertex heights if necessary, and set the dirty
+	// flag if any modifications occur, so that we know we need to
+	// recompute error data later.
+	for (i = 0; i < 5; i++) {
+		if (s[i] != 0) {
+			Dirty = true;					  
+			Vertex[i].shadowed = s[i];
+		
+		
+		}
+	}
+
+	if (!Dirty) {
+		// Check to see if any child nodes are dirty, and set the dirty flag if so.
+		for (i = 0; i < 4; i++) {
+			if (Child[i] && Child[i]->Dirty) {
+				Dirty = true;
+				break;
+			}
+		}
+	}
+
+	if (Dirty) SetStatic(cd);
 }
 
 //

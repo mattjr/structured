@@ -31,6 +31,9 @@
 #include "auv_args.hpp"
 #include <math.h>
 #include "fileio.hpp"
+#include "shadowmap.hpp"
+#include "highgui.h"
+
 using mapnik::Envelope;
 using namespace ul;
 using std::cout;
@@ -255,6 +258,49 @@ int	main(int argc, char *argv[])
     root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
     }
   */
+  int lmsize=2048;//4096;
+  float *heightmap= new float[lmsize*lmsize];
+  int xstart=  0;
+  int xend=  2 << RootCornerData.Level;
+ 
+  int xstep = max((xend-xstart)/lmsize,1);
+
+  int ystart=0;
+  int yend= 2 << RootCornerData.Level;
+  int y=0;
+  int x=0;
+
+  int ystep = max((yend-ystart)/lmsize,1);
+  int ct=0;
+  for(int i=0,x=xstart; i< lmsize; i++,x+=xstep){
+    for(int j=0,y=ystart; j<lmsize; j++,y+=ystep){
+      float height=root->GetHeight(RootCornerData, x,y);
+      
+     
+      heightmap[i*lmsize+j]=height;//(unsigned char)((((double)height)/UINT16_MAX_MINUS_ONE )*255);
+      if(height!=0.0){
+	ct++;
+	//	printf("%d,%d: %f\n",x,y,height);
+	//printf("%d %d %d\n",	i,j,lightmap[i*lmsize+j]);
+
+      }
+      
+      
+    }
+
+    
+ 
+  }
+  printf("Count %d\n",ct);
+  
+  unsigned char shadowColor[]={128,128,128};
+  //  float lightDir[]={0.0705, -0.9875, -0.1411};
+  float lightDir[]={0,1,2};//0.0705, -0.9875, -0.1411};
+ unsigned char *lightmap= new unsigned char[lmsize*lmsize*3];
+  IntersectMap(heightmap,lightmap,shadowColor,lmsize,lightDir);
+  IplImage *lmimg=cvCreateImageHeader(cvSize(lmsize,lmsize),IPL_DEPTH_8U,3);
+  lmimg->imageData=(char *) lightmap;
+  cvSaveImage("lightmap.png",lmimg);
   const float detail[]={FLT_MAX,800000.0,100000.0};
   // Draw the quadtree.
   if (root) {

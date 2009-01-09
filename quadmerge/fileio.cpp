@@ -6,6 +6,27 @@
 using namespace std;
 using mapnik::Envelope;
 
+void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii,bool color){
+  fseek(fp, 0, SEEK_SET); 
+  fprintf(fp,"ply\n");
+  if(ascii)
+    fprintf(fp,"format ascii 1.0\n");
+  else
+    fprintf(fp,"format binary_little_endian 1.0\n");
+  fprintf(fp,"element vertex %012d\n",num_verts);
+  fprintf(fp,"property float x\n");
+  fprintf(fp,"property float y\n");
+  fprintf(fp,"property float z\n");
+  if(color){
+    fprintf(fp,"property float diffuse_red\n");
+    fprintf(fp,"property float diffuse_green\n");
+    fprintf(fp,"property float diffuse_blue\n");
+  }
+    
+  fprintf(fp,"element face %012d\n",num_tris);
+  fprintf(fp,"property list uchar int vertex_indices\n");
+  fprintf(fp,"end_header\n");
+}
 
 
 /**

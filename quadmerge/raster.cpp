@@ -4,6 +4,7 @@
 float kill_threshold_squared = 2500.0f; // 50*50 units
 #include "nn/delaunay.h"
 #include <sys/time.h>
+#include "fileio.hpp"
 //----------------------------------------------------------------------------
 // CLAMP TO RASTER INT THAT IS INSIDE TRIANGLE BIASED TOWARDS MIN (INCLUSIVE)
 //----------------------------------------------------------------------------

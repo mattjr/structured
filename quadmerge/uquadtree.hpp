@@ -119,7 +119,7 @@ struct quadsquare {
 void AddShadowMap(const quadcornerdata& cd, const HeightMapInfo& hm,bool insert_sparse);
   void	AddPts(const quadcornerdata& cd,pt_3 *pts,int npts);
   void	AddPtsAux(const quadcornerdata& cd, pt_3 &pt,int minScale);
-	void	StaticCullData(const quadcornerdata& cd, float ThresholdDetail);	
+  void	StaticCullData(const quadcornerdata& cd, float ThresholdDetail);	void UpdateStats(const quadcornerdata& cd);
 	float	RecomputeErrorAndLighting(const quadcornerdata& cd);
 	int	CountNodes();
 	
@@ -165,8 +165,11 @@ void AddTriangleToWF(quadsquare * /* usused qs */,
 		     nFlatTriangleCorner *tc2);
 
 };
-
-void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii=false);
+extern int color_metric;
+extern bool apply_color_wf;
 extern bool render_no_data;
 extern char *wf_fname;
+extern double max_std;
+enum {Z_SAMPLES,Z_ERR};
+
 #endif // QUADTREE_HPP

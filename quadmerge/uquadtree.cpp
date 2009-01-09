@@ -29,15 +29,21 @@
 #include <math.h>
 #include "uquadtree.hpp"
 #include "geometry.hpp"
+#include "sample.hpp"
+#include "auv_mesh_utils.hpp"
 #define NO_DATA 0
+using ul::vector;
+#include "fileio.hpp"
+double max_std=DBL_MIN;
+int color_metric=Z_ERR;
 using namespace ul;
 bool render_no_data=false;
-
+bool apply_color_wf=false;
 //
 // quadsquare functions.
 //
 char *wf_fname;
-
+int	max_z_samples;
 quadsquare::quadsquare(quadcornerdata* pcd)
 // Constructor.
 {
@@ -253,13 +259,13 @@ quadsquare*	quadsquare::GetNeighbor(int dir, const quadcornerdata& cd)
 }
 
 
-static vector	SunVector(0.0705, -0.9875, -0.1411);	// For demo lighting.  Pick some unit vector pointing roughly downward.
+static ul::vector	SunVector(0.0705, -0.9875, -0.1411);	// For demo lighting.  Pick some unit vector pointing roughly downward.
 
 
 unsigned char	MakeLightness(float xslope, float zslope)
 // Generates an 8-bit lightness value, given a surface slope.
 {
-	vector	norm(-xslope, -1, -zslope);	// Actually the negative of the surface slope.
+	ul::vector	norm(-xslope, -1, -zslope);	// Actually the negative of the surface slope.
 	norm.normalize();
 
 	float	dot = norm * SunVector;
@@ -1230,6 +1236,8 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm,
 		if (s[i] != 0) {
 			Dirty = true;
 			Vertex[i].num_samples++;
+			if(Vertex[i].num_samples > max_z_samples)
+			  max_z_samples=Vertex[i].num_samples;
 			Vertex[i].Zsamples=(float *)realloc(Vertex[i].Zsamples,Vertex[i].num_samples*sizeof(float));
 			Vertex[i].Zsamples[Vertex[i].num_samples-1]=s[i];
 			  
@@ -1382,20 +1390,37 @@ float	HeightMapInfo::Sample(int x, int z) const
 	return (s00 * (1-fx) + s01 * fx) * (1-fz) +
 		(s10 * (1-fx) + s11 * fx) * fz;
 }
-void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii){
-  fseek(fp, 0, SEEK_SET); 
-  fprintf(fp,"ply\n");
-  if(ascii)
-    fprintf(fp,"format ascii 1.0\n");
-  else
-    fprintf(fp,"format binary_little_endian 1.0\n");
-  fprintf(fp,"element vertex %012d\n",num_verts);
-  fprintf(fp,"property float x\n");
-  fprintf(fp,"property float y\n");
-  fprintf(fp,"property float z\n");
-  fprintf(fp,"element face %012d\n",num_tris);
-  fprintf(fp,"property list uchar int vertex_indices\n");
-  fprintf(fp,"end_header\n");
+void quadsquare::UpdateStats(const quadcornerdata& cd)
+{
+    int half = 1 << cd.Level;
+    int whole = 2 << cd.Level;
+
+    // recursively go down to child node
+    int i;
+    int flags = 0;
+    int mask = 1;
+    quadcornerdata q;
+    for (i=0; i<4; i++, mask<<=1) {
+        if (EnabledFlags & (16<<i)) {
+            	SetupCornerData(&q, cd, i);
+			Child[i]->UpdateStats(q);
+		} else {
+			flags |= mask;
+		}
+	}
+
+
+    if (flags == 0) return;
+    for(i=0; i< 5; i++){
+      if(!Vertex[i].Zsamples)
+	continue;
+      double dev=stddev(Vertex[i].Zsamples,Vertex[i].num_samples);
+      if( dev > max_std && dev < 0.2)
+	max_std=dev;
+    }
+
+    
+    
 }
 
 //-------------------------------------------------------------------
@@ -1411,7 +1436,7 @@ int	quadsquare::RenderToWF(const quadcornerdata& cd)
   wf_num_tris=0;
   int vnum=0;
   wf_fp=fopen(wf_fname,"wb");
-  ply_header(wf_fp,wf_num_tris,vnum);
+  ply_header(wf_fp,wf_num_tris,vnum,false,apply_color_wf);
   RenderToWFAux(cd);
   vnum = wf_num_tris * 3;
   int i;
@@ -1427,7 +1452,7 @@ int	quadsquare::RenderToWF(const quadcornerdata& cd)
 
     //  fp->PutS(buf);
   }
-  ply_header(wf_fp,wf_num_tris,vnum);
+  ply_header(wf_fp,wf_num_tris,vnum,false,apply_color_wf);
   fclose(wf_fp);
   printf("Wrote %d Faces %d Vertcies\n",wf_num_tris,vnum);
   return 0;
@@ -1597,6 +1622,28 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	buf[2]=p.Z();
 	buf[1]=p.Y();
 	fwrite((char *)buf,sizeof(float),3,wf_fp);
+
+	if(apply_color_wf){
+	  float r,g,b;
+	  float val=0.0;
+	  switch(color_metric){ 
+	  case Z_SAMPLES:
+	    val=clamp(tc->vi->num_samples/(float)max_z_samples,0.0,1.0);
+	    break;
+	  case Z_ERR:
+	   
+	    val=clamp(stddev(tc->vi->Zsamples,tc->vi->num_samples)/max_std,0.0,1.0);
+
+	  }
+
+	  jet_color_map(val,r,g,b);
+	  
+	  buf[0]=r;
+	  buf[2]=g;
+	  buf[1]=b;
+	  fwrite((char *)buf,sizeof(float),3,wf_fp);
+
+	}
 	//}
 	
 	//        fp->PutS(buf);

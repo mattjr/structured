@@ -113,17 +113,20 @@ void main()
 void main()
 {
      vec3 NNormal = normalize(normal.xyz);
-     vec3 Light  = normalize(L);
+     vec3 Light  = normalize(vec3(1,  2.5,  -1));
+//normalize(vec3(0,0,-1 ));
+
+// normalize(L);
      vec3 Eye    = normalize(E);
-     vec3 Half   = normalize(H);
+     vec3 Half   = normalize(E + Light);
      float Kd = max(dot(NNormal, Light), 0.0);
      float Ks = pow(max(dot(Half, NNormal), 0.0),
-                 gl_FrontMaterial.shininess+64);
-     float Ka = 0.0;
+                 gl_FrontMaterial.shininess);
+     float Ka = 1.0;
      
      vec4 diffuse  = Kd * gl_FrontLightProduct[0].diffuse;
      vec4 specular = Ks * gl_FrontLightProduct[0].specular;
-     vec4 ambient  = Ka * gl_FrontLightProduct[0].ambient;
+     vec4 ambient  = Ka * vec4(0.35,0.35,0.35,1.0) ;//gl_FrontLightProduct[0].ambient;
      float height = normal.w;;
      float range= zrange.y-zrange.x;
      float val =(height-zrange.x)/range;

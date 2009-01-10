@@ -24,6 +24,9 @@
   History
 
 $Log: not supported by cvs2svn $
+Revision 1.2  2009-01-07 22:44:33  m.roberson
+ao calcultor
+
 Revision 1.1  2009-01-07 22:03:13  m.roberson
 shadevis
 
@@ -77,7 +80,7 @@ Added GPL comments
 
 
 #include <wrap/gl/space.h>
-
+#include <iostream>
 
 #include <wrap/callback.h>
 #include <vcg/math/base.h>
@@ -278,6 +281,17 @@ void  ViewDisplay (void)
 
   GLfloat light_position0[] = {0.0, 10.0, 300.0, 0.0};
   glLightfv(GL_LIGHT0, GL_POSITION, light_position0);
+  Point4<float> pt(0,10.0,300.0,0.0);
+  Point4<float> pt2=QL.track.Matrix()*pt;
+  
+   for(int i=0; i<4; i++) 
+  for(int j=0; j<4; j++) 
+    std::cout <<QL.track.Matrix()[i][j] << " ";
+    std::cout << "\n";
+for(int i=0; i<3; i++)
+  std::cout <<pt2[i]<<" ";
+ 
+ std::cout << "\n";
   glPopMatrix();
   glTranslatef(0,0,-4);
   if(Q==&QL) DrawLightVector();	

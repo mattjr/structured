@@ -8,7 +8,7 @@ varying vec3  L, E, H;
 
 void main()
 {
-    normal.xyz = normalize(gl_NormalMatrix * gl_Normal);
+  normal.xyz = normalize( /*gl_NormalMatrix * */gl_Normal);
     normal.w = gl_Vertex.z;
 
     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;

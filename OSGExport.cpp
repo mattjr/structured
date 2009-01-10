@@ -1033,24 +1033,23 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      utstateset->addUniform( new osg::Uniform( "shaderOut", 2));
 	      utstateset->setDataVariance(osg::Object::STATIC);
 	      
-	    }else{
-	      osg::Material* material = new osg::Material;
+	    }
 	    
+	    {
+	      osg::Material* material = new osg::Material;
+	      
 	      osg::Vec4 specular( 0.18, 0.18, 0.18, 0.18 );
 	      specular *= 1.5;
 	      float mat_shininess = 64.0f ;
-	      osg::Vec4 ambient (0.02, 0.02, 0.05, 0.05 );
-	      
-	      osg::Vec4 light0_ambient( 0, 0, 0, 0 );
+	      osg::Vec4 ambient (0.92, 0.92, 0.92, 0.95 );
 	      osg::Vec4 diffuse( 0.8, 0.8, 0.8, 0.85 );
 	      
-	      osg::Vec4 light1_diffuse( -0.01, -0.01, -0.03, -0.03 );
-	      osg::Vec4 light0_specular( 0.85, 0.85, 0.85, 0.85 );
+	    
 	      material->setAmbient(osg::Material::FRONT_AND_BACK,ambient);
 	      
 	      material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
 	      material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
-	      material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
+	      //     material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
 	      //if(!applyNonVisMat){
 	      
 	      utstateset->setAttribute(material);

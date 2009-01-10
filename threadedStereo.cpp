@@ -2005,7 +2005,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       }
       string background_mb("mb_grd/blendedhi.grd");
       struct stat stFileInfo; 
-      float background_res=5.0;
+      float background_res=1.0;
       if(stat(background_mb.c_str(),&stFileInfo) == 0 ){
 	printf("Found hi-alt background MB GRD file.\n");
 	  mesh_input m;

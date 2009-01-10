@@ -116,7 +116,7 @@ struct quadsquare {
 
   void StaticUpdate(const quadcornerdata& cd, float Detail);
   void	AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm,bool insert_sparse=false);
-void AddShadowMap(const quadcornerdata& cd, const HeightMapInfo& hm,bool insert_sparse);
+void AddShadowMap(const quadcornerdata& cd, const HeightMapInfo& hm,bool insert_sparse=false);
   void	AddPts(const quadcornerdata& cd,pt_3 *pts,int npts);
   void	AddPtsAux(const quadcornerdata& cd, pt_3 &pt,int minScale);
   void	StaticCullData(const quadcornerdata& cd, float ThresholdDetail);	void UpdateStats(const quadcornerdata& cd);
@@ -170,6 +170,6 @@ extern bool apply_color_wf;
 extern bool render_no_data;
 extern char *wf_fname;
 extern double max_std;
-enum {Z_SAMPLES,Z_ERR};
+enum {Z_SAMPLES,Z_ERR,SHADOWED};
 
 #endif // QUADTREE_HPP

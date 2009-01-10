@@ -1629,14 +1629,23 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	  switch(color_metric){ 
 	  case Z_SAMPLES:
 	    val=clamp(tc->vi->num_samples/(float)max_z_samples,0.0,1.0);
+	    jet_color_map(val,r,g,b);	  
 	    break;
 	  case Z_ERR:
 	   
 	    val=clamp(stddev(tc->vi->Zsamples,tc->vi->num_samples)/max_std,0.0,1.0);
+	    jet_color_map(val,r,g,b);
+	    break;
+
+	  case SHADOWED:
+	    r=tc->vi->shadowed;
+	    g=tc->vi->shadowed;
+	    b=tc->vi->shadowed;
+	    break;
 
 	  }
 
-	  jet_color_map(val,r,g,b);
+	  
 	  
 	  buf[0]=r;
 	  buf[2]=g;

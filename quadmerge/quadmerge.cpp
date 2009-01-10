@@ -274,41 +274,72 @@ int	main(int argc, char *argv[])
     }
   */
   if(compute_shadows){
+    color_metric=SHADOWED;   
     int lmsize=2048;//4096;
-    float *heightmap= new float[lmsize*lmsize];
+    int level;
+    double actual_res;
+    double res=ge.range[0]/lmsize;
+    ge.get_closest_res_level(res,level,actual_res);
+    int nnx=ge.range[0]/actual_res;
+    int nny=ge.range[1]/actual_res;
+    float *heightmap= new float[nnx*nny];
+   unsigned char *heightmap2= new unsigned char[nnx*nny];
+
     int xstart=  0;
     int xend=  2 << RootCornerData.Level;
     
-    int xstep = max((xend-xstart)/lmsize,1);
+    int xstep = max((xend-xstart)/nnx,1);
     
     int ystart=0;
     int yend= 2 << RootCornerData.Level;
     int y=0;
     int x=0;
     
-    int ystep = max((yend-ystart)/lmsize,1);
+    int ystep = max((yend-ystart)/nny,1);
     int ct=0;
-    for(int i=0,x=xstart; i< lmsize; i++,x+=xstep){
-      for(int j=0,y=ystart; j<lmsize; j++,y+=ystep){
+    for(int i=0,x=xstart; i< nnx; i++,x+=xstep){
+      for(int j=0,y=ystart; j<nny; j++,y+=ystep){
 	float height=root->GetHeight(RootCornerData, x,y);
 	
 	
-	heightmap[i*lmsize+j]=height;
+	heightmap[i*nny+j]=height;
+	heightmap2[i*nny+j]=height;
 	if(height!=0.0){
 	  ct++;
 	} 
       }
     }
     printf("Count %d\n",ct);
-    
+    HeightMapInfo	hm;
+    hm.x_origin = 0;
+    hm.y_origin = 0;
+
+    hm.XSize = nny;
+    hm.YSize = nnx;
+
+    hm.RowWidth = hm.XSize;
+    hm.Scale =level;
+    hm.Data = new uint16[hm.XSize * hm.YSize];
+
     unsigned char shadowColor[]={128,128,128};
-    //  float lightDir[]={0.0705, -0.9875, -0.1411};
-    float lightDir[]={0,1,2};//0.0705, -0.9875, -0.1411};
-    unsigned char *lightmap= new unsigned char[lmsize*lmsize*3];
-    IntersectMap(heightmap,lightmap,shadowColor,lmsize,lightDir);
-    IplImage *lmimg=cvCreateImageHeader(cvSize(lmsize,lmsize),IPL_DEPTH_8U,3);
+    /// float lightDir[]={0.0705, -0.9875, -0.1411};
+    float lightDir[]={0.21822   ,0.87287   ,0.43644};//0,1,2};//0.0705, -0.9875, -0.1411};
+       unsigned char *lightmap= new unsigned char[nnx*nny*3];
+    IntersectMap(heightmap,lightmap,shadowColor,nnx,nny,lightDir);
+    //IplImage *lm=cvLoadImage("lightmap.png",0);
+    // unsigned char * lightmap = (unsigned char *)lm->imageData;
+    int pt=0;
+    for(int i =0; i < nnx; i++)
+      for(int j=0; j < nny; j++){
+	hm.Data[i*nny +j]=lightmap[pt];
+	pt+=3;
+      }
+
+        IplImage *lmimg=cvCreateImageHeader(cvSize(nny,nnx),IPL_DEPTH_8U,3);
     lmimg->imageData=(char *) lightmap;
     cvSaveImage("lightmap.png",lmimg);
+    root->AddShadowMap(RootCornerData, hm);
+
   }
   const float detail[]={FLT_MAX,800000.0,100000.0};
   // Draw the quadtree.

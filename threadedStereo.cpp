@@ -135,7 +135,7 @@ const char *uname="mesh";
 const char *dicedir="mesh-diced";
 const char *quaddir="mesh-quad";
 const char *aggdir="mesh-agg";
-
+static bool use_shadows=false;
 static string recon_config_file_name;
 static string mbdir="mb";
 static string deltaT_pose;
@@ -520,7 +520,7 @@ static bool parse_args( int argc, char *argv[ ] )
   pause_after_each_frame = argp.read("-p");
   //use_ncc=argp.read("-c");
   argp.read("--split",vrip_split);
-
+  use_shadows=argp.read("--shadows");
   argp.read("--dicevol",subvol);
   hardware_compress =   !argp.read("--no-hardware-compress");
      
@@ -1971,7 +1971,10 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     
     char quadprecmd[255];
     sprintf(quadmerge_seg_fname,"mesh-quad/quadmergeseg.txt");
-    string shadowstr="-shadow -color";
+    string shadowstr;
+    if(use_shadows)
+      shadowstr="-shadow -color";
+    
     quadmerge_seg_fp=fopen(quadmerge_seg_fname,"w");    
     sprintf(quadprecmd,"cd mesh-quad;%s/bin/quadmerge -geoconf %s -lod %s -input ../%s -edgethresh %f -output ../mesh-quad/quad.ply -range ../mesh-quad/range.txt;",basepath.c_str(),deltaT_config_name.c_str(),shadowstr.c_str(),quadmerge_seg_fname,edgethresh);
     

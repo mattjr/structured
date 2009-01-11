@@ -1307,13 +1307,7 @@ void	quadsquare::AddShadowMap(const quadcornerdata& cd, const HeightMapInfo& hm,
 	// Create and update child nodes.
 	for (i = 0; i < 4; i++) {
 		quadcornerdata	q;
-		SetupCornerData(&q, cd, i);
-				
-		if (Child[i] == NULL && cd.Level > hm.Scale) {
-			// Create child node w/ current (unmodified) values for corner verts.
-			Child[i] = new quadsquare(&q);
-		}
-		
+		SetupCornerData(&q, cd, i);	
 		// Recurse.
 		if (Child[i]) {
 		  Child[i]->AddShadowMap(q, hm,insert_sparse);
@@ -1333,14 +1327,14 @@ void	quadsquare::AddShadowMap(const quadcornerdata& cd, const HeightMapInfo& hm,
 	// recompute error data later.
 	for (i = 0; i < 5; i++) {
 		if (s[i] != 0) {
-			Dirty = true;					  
+		  //	Dirty = true;					  
 			Vertex[i].shadowed = s[i];
 		
 		
 		}
 	}
 
-	if (!Dirty) {
+	/*	if (!Dirty) {
 		// Check to see if any child nodes are dirty, and set the dirty flag if so.
 		for (i = 0; i < 4; i++) {
 			if (Child[i] && Child[i]->Dirty) {
@@ -1349,8 +1343,8 @@ void	quadsquare::AddShadowMap(const quadcornerdata& cd, const HeightMapInfo& hm,
 			}
 		}
 	}
-
-	if (Dirty) SetStatic(cd);
+	*/
+	//	if (Dirty) SetStatic(cd);
 }
 
 //

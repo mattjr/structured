@@ -280,22 +280,23 @@ int	main(int argc, char *argv[])
     double actual_res;
     double res=ge.range[0]/lmsize;
     ge.get_closest_res_level(res,level,actual_res);
-    int nnx=ge.range[0]/actual_res;
-    int nny=ge.range[1]/actual_res;
+    int nny=ge.range[0]/actual_res;
+    int nnx=ge.range[1]/actual_res;
+    //    int size=max(nny,nnx);
     float *heightmap= new float[nnx*nny];
-   unsigned char *heightmap2= new unsigned char[nnx*nny];
+    unsigned char *heightmap2= new unsigned char[nnx*nny];
 
     int xstart=  0;
     int xend=  2 << RootCornerData.Level;
-    
-    int xstep = max((xend-xstart)/nnx,1);
+   
+    int xstep = max((xend-xstart)/max(nny,nnx),1);
     
     int ystart=0;
     int yend= 2 << RootCornerData.Level;
     int y=0;
     int x=0;
     
-    int ystep = max((yend-ystart)/nny,1);
+    int ystep = max((yend-ystart)/max(nny,nnx),1);
     int ct=0;
     for(int i=0,x=xstart; i< nnx; i++,x+=xstep){
       for(int j=0,y=ystart; j<nny; j++,y+=ystep){
@@ -303,7 +304,7 @@ int	main(int argc, char *argv[])
 	
 	
 	heightmap[i*nny+j]=height;
-	heightmap2[i*nny+j]=height;
+	heightmap2[i*nny+j]=(height/(float)UINT16_MAX_MINUS_ONE) *255;
 	if(height!=0.0){
 	  ct++;
 	} 
@@ -314,28 +315,25 @@ int	main(int argc, char *argv[])
     hm.x_origin = 0;
     hm.y_origin = 0;
 
-    hm.XSize = nny;
-    hm.YSize = nnx;
+    hm.XSize = nnx;
+    hm.YSize = nny;
 
     hm.RowWidth = hm.XSize;
     hm.Scale =level;
     hm.Data = new uint16[hm.XSize * hm.YSize];
-
-    unsigned char shadowColor[]={128,128,128};
-    /// float lightDir[]={0.0705, -0.9875, -0.1411};
-    float lightDir[]={0.21822   ,0.87287   ,0.43644};//0,1,2};//0.0705, -0.9875, -0.1411};
-       unsigned char *lightmap= new unsigned char[nnx*nny*3];
-    IntersectMap(heightmap,lightmap,shadowColor,nnx,nny,lightDir);
-    //IplImage *lm=cvLoadImage("lightmap.png",0);
-    // unsigned char * lightmap = (unsigned char *)lm->imageData;
+    
+    IplImage *lmimg=cvCreateImageHeader(cvSize(nny,nnx),IPL_DEPTH_8U,1);
+    unsigned char *lightmap= new unsigned char[nnx*nny];
+    ul::vector Sun(128.0f, 512.0f, 256.0f);
+    calc_shadow(heightmap2,lightmap,nny,nnx,Sun);
     int pt=0;
     for(int i =0; i < nnx; i++)
       for(int j=0; j < nny; j++){
-	hm.Data[i*nny +j]=lightmap[pt];
-	pt+=3;
+	hm.Data[j*nnx +i]=lightmap[pt];
+	pt++;
       }
-
-        IplImage *lmimg=cvCreateImageHeader(cvSize(nny,nnx),IPL_DEPTH_8U,3);
+  
+ 
     lmimg->imageData=(char *) lightmap;
     cvSaveImage("lightmap.png",lmimg);
     root->AddShadowMap(RootCornerData, hm);

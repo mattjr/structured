@@ -4,7 +4,7 @@ uniform float tilingFactor;
 
 varying vec4 normal;
 varying vec3  L, E, H;
-
+varying vec4 vC;
 
 void main()
 {
@@ -18,4 +18,5 @@ void main()
     L = normalize(eyeLightPos.xyz - eyePosition.xyz);
     E = -normalize(eyePosition.xyz);
     H = normalize(L + E);
+    vC=gl_Color;
 }

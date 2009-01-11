@@ -109,7 +109,7 @@ void main()
  varying vec3 L;
  varying vec3 E;
  varying vec3 H;
-
+varying vec4 vC;
 void main()
 {
      vec3 NNormal = normalize(normal.xyz);
@@ -133,5 +133,6 @@ void main()
     
     vec4 jet=jetColorMap(val);
     vec4 ran=rainbowColorMap(val);
-    gl_FragColor = ran* (ambient + diffuse + specular);
+    vec4 shadow = vec4(vC.x,vC.x,vC.x,1.0);
+    gl_FragColor =  ran* shadow* (ambient + diffuse + specular);
 }

@@ -291,35 +291,42 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
     gc._texturesActive=false;
 
   if(gc._colorsActive){
-    if(!zrange){
-      (*gc._colors++).set(0.5,0.5,0.5,0.0);
-      (*gc._colors++).set(0.5,0.5,0.5,0.0);
-      (*gc._colors++).set(0.5,0.5,0.5,0.0);
-    }
-    float range=zrange[1]-zrange[0];
-   
-    Lut_Vec color;
-    float val;// r,g,b,val;
-    Colors::eColorMap map=Colors::eRainbowMap;
-    val = clamp ( ( GTS_VERTEX(v1)->p.z -zrange[0] )/range , 0.0f, 1.0f);
+    if(/*!shader_height_coloring*/0){
 
-    color=GlobalColors()->Get(map, val); 
-    (*gc._colors++).set(color[0],color[1],color[2],1.0);
-    //  jet_color_map(val,r,g,b);
-    //(*gc._colors++).set(r,b,g,1.0);
-   
-    val = clamp (  ( GTS_VERTEX(v2)->p.z -zrange[0] )/range, 0.0f, 1.0f);;    
-    color=GlobalColors()->Get(map, val); 
-    (*gc._colors++).set(color[0],color[1],color[2],1.0);
-    //jet_color_map(val,r,g,b);
-    // (*gc._colors++).set(r,b,g,1.0);
-   
-    val = clamp ( ( GTS_VERTEX(v3)->p.z -zrange[0] )/range, 0.0f, 1.0f);   
-    color=GlobalColors()->Get(map, val); 
-    (*gc._colors++).set(color[0],color[1],color[2],1.0);
-    //jet_color_map(val,r,g,b);
-    //  (*gc._colors++).set(r,b,g,1.0);
-    
+      if(!zrange){
+	(*gc._colors++).set(0.5,0.5,0.5,0.0);
+	(*gc._colors++).set(0.5,0.5,0.5,0.0);
+	(*gc._colors++).set(0.5,0.5,0.5,0.0);
+      }
+      float range=zrange[1]-zrange[0];
+      
+      Lut_Vec color;
+      float val;// r,g,b,val;
+      Colors::eColorMap map=Colors::eRainbowMap;
+      val = clamp ( ( GTS_VERTEX(v1)->p.z -zrange[0] )/range , 0.0f, 1.0f);
+      
+      color=GlobalColors()->Get(map, val); 
+      (*gc._colors++).set(color[0],color[1],color[2],1.0);
+      //  jet_color_map(val,r,g,b);
+      //(*gc._colors++).set(r,b,g,1.0);
+      
+      val = clamp (  ( GTS_VERTEX(v2)->p.z -zrange[0] )/range, 0.0f, 1.0f);;    
+      color=GlobalColors()->Get(map, val); 
+      (*gc._colors++).set(color[0],color[1],color[2],1.0);
+      //jet_color_map(val,r,g,b);
+      // (*gc._colors++).set(r,b,g,1.0);
+      
+      val = clamp ( ( GTS_VERTEX(v3)->p.z -zrange[0] )/range, 0.0f, 1.0f);   
+      color=GlobalColors()->Get(map, val); 
+      (*gc._colors++).set(color[0],color[1],color[2],1.0);
+      //jet_color_map(val,r,g,b);
+      //  (*gc._colors++).set(r,b,g,1.0);
+    }else{
+      (*gc._colors++).set(v1->r/255.0,v1->g/255.0,v1->b/255.0,1.0);
+      (*gc._colors++).set(v2->r/255.0,v2->g/255.0,v2->b/255.0,1.0);
+      (*gc._colors++).set(v3->r/255.0,v3->g/255.0,v3->b/255.0,1.0);
+
+    }
     
   }
 }

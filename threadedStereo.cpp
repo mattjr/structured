@@ -1971,9 +1971,9 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     
     char quadprecmd[255];
     sprintf(quadmerge_seg_fname,"mesh-quad/quadmergeseg.txt");
-
+    string shadowstr="-shadow -color";
     quadmerge_seg_fp=fopen(quadmerge_seg_fname,"w");    
-    sprintf(quadprecmd,"cd mesh-quad;%s/bin/quadmerge -geoconf %s -lod -input ../%s -edgethresh %f -output ../mesh-quad/quad.ply -range ../mesh-quad/range.txt;",basepath.c_str(),deltaT_config_name.c_str(),quadmerge_seg_fname,edgethresh);
+    sprintf(quadprecmd,"cd mesh-quad;%s/bin/quadmerge -geoconf %s -lod %s -input ../%s -edgethresh %f -output ../mesh-quad/quad.ply -range ../mesh-quad/range.txt;",basepath.c_str(),deltaT_config_name.c_str(),shadowstr.c_str(),quadmerge_seg_fname,edgethresh);
     
     
     for(int i=0; i < (int)tasks.size(); i++){    

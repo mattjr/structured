@@ -1636,7 +1636,7 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	    g=rgb[1]/255.0;
 	    b=rgb[2]/255.0;
 
-	    printf("%d %f %f %f %f\n",tc->vi->num_samples,val,r,g,b);
+	    //  printf("%d %f %f %f %f\n",tc->vi->num_samples,val,r,g,b);
 	    break;
 	  case Z_ERR:
 	   

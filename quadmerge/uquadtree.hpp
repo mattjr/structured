@@ -16,6 +16,7 @@
 
 #include "clip.hpp"
 #include "geometry.hpp"
+#include "colormap.hpp"
 #include <ostream>
 #include <limits.h>
 typedef unsigned short uint16;
@@ -170,6 +171,9 @@ extern bool apply_color_wf;
 extern bool render_no_data;
 extern char *wf_fname;
 extern double max_std;
+extern int max_z_samples;
+extern int min_z_samples;
+
 enum {Z_SAMPLES,Z_ERR,SHADOWED};
 
 #endif // QUADTREE_HPP

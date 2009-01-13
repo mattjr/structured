@@ -293,8 +293,7 @@ int	main(int argc, char *argv[])
     
     int ystart=0;
     int yend= 2 << RootCornerData.Level;
-    int y=0;
-    int x=0;
+    
     
     int ystep = max((yend-ystart)/max(nny,nnx),1);
     int ct=0;
@@ -342,6 +341,11 @@ int	main(int argc, char *argv[])
   const float detail[]={FLT_MAX,800000.0,100000.0};
   // Draw the quadtree.
   if (root) {
+    if(color_metric == Z_SAMPLES && apply_color_wf){
+      FILE *fp = fopen("discrete.txt","w");
+      fprintf(fp,"%d %d\n",min_z_samples,max_z_samples);
+      fclose(fp);  
+    }
     //		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
     if(lod){
       std::string name(wf_fname);

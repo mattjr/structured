@@ -354,10 +354,10 @@ int	main(int argc, char *argv[])
       case Z_SAMPLES:
 	discrete=1;
 
-	title<<"Number of samples in Z at " <<min_cell_size <<"(m) cell res";
+	title<<"Number of samples in Z at " <<min_cell_size <<" (m) cell res";
 	break;
       case Z_ERR:
-	title << "Standard Dev Err in Z in (m) at " <<min_cell_size <<"(m) cell res";
+	title << "Standard Dev Err in Z in (m) at " <<min_cell_size <<" (m) cell res";
 	break;
       }
       FILE *fp = fopen(statfile.c_str(),"w");

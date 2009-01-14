@@ -55,7 +55,7 @@ quadcornerdata	RootCornerData = { NULL, NULL, 0, 0, 0, 0, { { 0, 0 }, { 0, 0 }, 
 int	TriangleCounter = 0;
 global_extents ge;
 bool lod=false;
-
+double min_cell_size=DBL_MAX;
 bool have_geoconf=false;
 void bound_xyz( mesh_input &m,double &zmin, double &zmax){
   float data[3];
@@ -345,11 +345,26 @@ int	main(int argc, char *argv[])
   // Draw the quadtree.
   if (root) {
     if( stat){
-      int discrete=(color_metric == Z_SAMPLES);
+      int discrete=0;
+      min_cell_size=ge.cell_size;
+      std::stringstream title;
+      title.setf(std::ios::fixed, std::ios::floatfield);
+      title.precision(5);
+      switch(color_metric){
+      case Z_SAMPLES:
+	discrete=1;
+
+	title<<"Number of samples in Z at " <<min_cell_size <<"(m) cell res";
+	break;
+      case Z_ERR:
+	title << "Standard Dev Err in Z in (m) at " <<min_cell_size <<"(m) cell res";
+	break;
+      }
       FILE *fp = fopen(statfile.c_str(),"w");
-      fprintf(fp,"%f %f %d\n",min_stat_val,max_stat_val,discrete);
+      fprintf(fp,"%f %f %d\n%s\n",min_stat_val,max_stat_val,discrete,title.str().c_str());
       fclose(fp);  
     }
+  
     //		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
     if(lod){
       std::string name(wf_fname);
@@ -420,6 +435,8 @@ void load_mesh( mesh_input &m){
   int level;
   double actual_res;
   interpolate_grid(mesh,m,pout,nout,nx,ny,cx,cy,actual_res,level);
+  if(actual_res < min_cell_size)
+    min_cell_size=actual_res;
   char fname[255];
   sprintf(fname,"tmp/%s",m.name.c_str());
   //  write_mesh(pout,nout,fname,true);
@@ -469,6 +486,8 @@ void load_grd( mesh_input &m){
   if(!read_grd_data(m.name.c_str(),nx,ny,data_grd))
   return;
   ge.get_closest_res_level(m.res,level,actual_res);
+  if(actual_res < min_cell_size)
+    min_cell_size=actual_res;
   /*Flip X and Y*/
   int nnx=m.envelope.width()/actual_res;
   int nny=m.envelope.height()/actual_res;

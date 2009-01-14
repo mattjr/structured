@@ -170,9 +170,8 @@ extern int color_metric;
 extern bool apply_color_wf;
 extern bool render_no_data;
 extern char *wf_fname;
-extern double max_std;
-extern int max_z_samples;
-extern int min_z_samples;
+extern double max_stat_val;
+extern double min_stat_val;
 
 enum {Z_SAMPLES,Z_ERR,SHADOWED};
 

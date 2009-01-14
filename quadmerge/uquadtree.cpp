@@ -35,7 +35,7 @@
 #define NO_DATA 0
 using ul::vector;
 #include "fileio.hpp"
-double max_std=DBL_MIN;
+
 int color_metric=Z_ERR;
 using namespace ul;
 bool render_no_data=false;
@@ -44,8 +44,8 @@ bool apply_color_wf=false;
 // quadsquare functions.
 //
 char *wf_fname;
-int	max_z_samples=INT_MIN;
-int	min_z_samples=INT_MAX;
+double	max_stat_val=DBL_MIN;
+double	min_stat_val=DBL_MAX;
 quadsquare::quadsquare(quadcornerdata* pcd)
 // Constructor.
 {
@@ -1238,10 +1238,6 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm,
 		if (s[i] != 0) {
 			Dirty = true;
 			Vertex[i].num_samples++;
-			if(Vertex[i].num_samples > max_z_samples)
-			  max_z_samples=Vertex[i].num_samples;
-			if(Vertex[i].num_samples < min_z_samples)
-			  min_z_samples=Vertex[i].num_samples;
 			Vertex[i].Zsamples=(float *)realloc(Vertex[i].Zsamples,Vertex[i].num_samples*sizeof(float));
 			Vertex[i].Zsamples[Vertex[i].num_samples-1]=s[i];
 			  
@@ -1410,11 +1406,23 @@ void quadsquare::UpdateStats(const quadcornerdata& cd)
 
     if (flags == 0) return;
     for(i=0; i< 5; i++){
+
       if(!Vertex[i].Zsamples)
 	continue;
-      double dev=stddev(Vertex[i].Zsamples,Vertex[i].num_samples);
-      if( dev > max_std && dev < 0.2)
-	max_std=dev;
+
+      if(color_metric == Z_SAMPLES){
+	if(Vertex[i].num_samples > max_stat_val)
+	  max_stat_val=Vertex[i].num_samples;
+	if(Vertex[i].num_samples < min_stat_val)
+	  min_stat_val=Vertex[i].num_samples;
+      }else if(color_metric == Z_ERR){
+	
+	double dev=stddev(Vertex[i].Zsamples,Vertex[i].num_samples);
+	if( dev > max_stat_val && dev < 0.2)
+	  max_stat_val=dev;
+	if(dev < min_stat_val)
+	  min_stat_val=dev;
+      }
     }
 
     
@@ -1623,15 +1631,14 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 
 	if(apply_color_wf){
 	  float r,g,b;
+	  unsigned char rgb[3];
 	  float val=0.0;
 	  switch(color_metric){ 
 	  case Z_SAMPLES:
 	
-	    val=clamp((tc->vi->num_samples-min_z_samples)/(float)((max_z_samples-min_z_samples)+1),0.0,1.0);
+	  
 
-	    //	    jet_color_map(val,r,g,b);	  
-	    unsigned char rgb[3];
-	    ColorMap::jetColorMap(rgb,tc->vi->num_samples,min_z_samples,max_z_samples);
+	    ColorMap::jetColorMap(rgb,tc->vi->num_samples,min_stat_val,max_stat_val);
 	    r=rgb[0]/255.0;
 	    g=rgb[1]/255.0;
 	    b=rgb[2]/255.0;
@@ -1639,9 +1646,11 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	    //  printf("%d %f %f %f %f\n",tc->vi->num_samples,val,r,g,b);
 	    break;
 	  case Z_ERR:
-	   
-	    val=clamp(stddev(tc->vi->Zsamples,tc->vi->num_samples)/max_std,0.0,1.0);
-	    jet_color_map(val,r,g,b);
+	    val=stddev(tc->vi->Zsamples,tc->vi->num_samples);
+	    ColorMap::jetColorMap(rgb,val,min_stat_val,max_stat_val);
+	    r=rgb[0]/255.0;
+	    g=rgb[1]/255.0;
+	    b=rgb[2]/255.0;
 	    break;
 
 	  case SHADOWED:

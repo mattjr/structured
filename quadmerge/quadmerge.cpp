@@ -121,7 +121,8 @@ int	main(int argc, char *argv[])
   argp.read("-input",input);
   std::string rangefile;
   bool range= argp.read("-range",rangefile);
-  
+  bool stat=false;
+  std::string statfile;
   if(  argp.read("-lod"))
     lod=true;
 
@@ -129,6 +130,8 @@ int	main(int argc, char *argv[])
     compute_shadows=true;
   if(  argp.read("-color"))
     apply_color_wf=true;
+  if(argp.read("-stat",statfile))
+    stat=true;
   if(argp.read("-zerr"))
     color_metric=Z_ERR;
   if(argp.read("-zsamples"))
@@ -341,9 +344,10 @@ int	main(int argc, char *argv[])
   const float detail[]={FLT_MAX,800000.0,100000.0};
   // Draw the quadtree.
   if (root) {
-    if(color_metric == Z_SAMPLES && apply_color_wf){
-      FILE *fp = fopen("discrete.txt","w");
-      fprintf(fp,"%d %d\n",min_z_samples,max_z_samples);
+    if( stat){
+      int discrete=(color_metric == Z_SAMPLES);
+      FILE *fp = fopen(statfile.c_str(),"w");
+      fprintf(fp,"%f %f %d\n",min_stat_val,max_stat_val,discrete);
       fclose(fp);  
     }
     //		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);

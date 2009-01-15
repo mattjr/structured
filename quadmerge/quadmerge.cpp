@@ -374,10 +374,10 @@ int	main(int argc, char *argv[])
       case Z_SAMPLES:
 	discrete=1;
 
-	title<<"Number of samples in Z at " <<min_cell_size <<" (m) cell res";
+	title<<"Number of samples";
 	break;
       case Z_ERR:
-	title << "Standard Dev Err in Z in (m) at " <<min_cell_size <<" (m) cell res";
+	title << "Standard Dev Err [m]";
 	max_stat_val=0.2;
 	break;
       }

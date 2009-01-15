@@ -33,7 +33,7 @@
 #include "fileio.hpp"
 #include "shadowmap.hpp"
 #include "highgui.h"
-
+#include "sample.hpp"
 using mapnik::Envelope;
 using namespace ul;
 using std::cout;
@@ -45,7 +45,7 @@ using  std::endl;
 #define PI 3.141592654
 
 
-
+bool dump_stats=false;
 std::vector<mesh_input> meshes;
 void	LoadData(std::vector<mesh_input> &meshes);
 void	LoadData(char  *filename);
@@ -57,13 +57,20 @@ global_extents ge;
 bool lod=false;
 double min_cell_size=DBL_MAX;
 bool have_geoconf=false;
-void bound_xyz( mesh_input &m,double &zmin, double &zmax){
+void bound_xyz( mesh_input &m,double &zmin, double &zmax,bool ascii){
   float data[3];
   bool first=false;
   FILE *fp=fopen(m.name.c_str(),"r");
   while(!feof(fp)){
-    if(fread(data,3,sizeof(float),fp) != 3)
+
+    if(!ascii){
+      if(fread(data,3,sizeof(float),fp) != 3)
       break;
+    }else{
+      if(fscanf(fp,"%f %f %f\n",&data[0],&data[1],&data[2]) != 3)
+	break;
+    }
+    
     if(!first){
       m.envelope=Envelope<double>(data[0],data[1],data[0],data[1]);
       first=true;
@@ -137,6 +144,9 @@ int	main(int argc, char *argv[])
   if(argp.read("-zsamples"))
     color_metric=Z_SAMPLES;
 
+  if(argp.read("-dumpstat"))
+    dump_stats=true;
+
 
   std::string config_file_name;
   double local_easting, local_northing;
@@ -206,8 +216,10 @@ int	main(int argc, char *argv[])
       bound_mesh(meshes[i],zmin,zmax);
     else if(meshes[i].name.substr(meshes[i].name.size()-3) == "grd")
       bound_grd(meshes[i],zmin,zmax,local_easting,local_northing);
+    else if(meshes[i].name.substr(meshes[i].name.size()-3) == "txt")
+      bound_xyz(meshes[i],zmin,zmax,true);
     else
-      bound_xyz(meshes[i],zmin,zmax);
+      bound_xyz(meshes[i],zmin,zmax,false);
 
     if(i == 0)
       tree_bounds=meshes[i].envelope;
@@ -262,7 +274,15 @@ int	main(int argc, char *argv[])
   //root->StaticCullData(RootCornerData, 25);
   
   root->UpdateStats(RootCornerData);
-  
+  if(dump_stats){
+ 
+    double meanV=mean(stat_vals);
+    double medianV=median(stat_vals);
+
+    FILE *fp=fopen("statfile.txt","w");
+    fprintf(fp,"%f %f\n",meanV,medianV);
+    fclose(fp);
+  }
 
   // Post-cull debug info.
   /*printf("nodes = %d\n", root->CountNodes());
@@ -358,6 +378,7 @@ int	main(int argc, char *argv[])
 	break;
       case Z_ERR:
 	title << "Standard Dev Err in Z in (m) at " <<min_cell_size <<" (m) cell res";
+	max_stat_val=0.2;
 	break;
       }
       FILE *fp = fopen(statfile.c_str(),"w");
@@ -391,37 +412,56 @@ int	main(int argc, char *argv[])
   return 0;
 
 }
-void load_xyz( mesh_input &m){
+void load_xyz( mesh_input &m,bool ascii){
   float *xyzdata=new float[m.count];
   float *ptr=xyzdata;
   FILE *fp=fopen(m.name.c_str(),"r");
+  float data[3];
   while(!feof(fp)){
-    if(fread(ptr,3,sizeof(float),fp) != 3)
+    if(!ascii){
+      if(fread(data,3,sizeof(float),fp) != 3)
       break;
+    }else{
+      if(fscanf(fp,"%f %f %f\n",&data[0],&data[1],&data[2]) != 3)
+	break;
+    }
+    memcpy(ptr,data,sizeof(float)*3);
     ptr+=3;
   }
+  point_nn*pout;
+  int nout;
+  int nx,ny;
+  float cx,cy;
+  int level;
+  double actual_res;
 
-  HeightMapInfo	hm;
+ interpolate_grid(xyzdata,m,pout,nout,nx,ny,cx,cy,actual_res,level);
+HeightMapInfo	hm;
   hm.x_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
   hm.y_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
-  /* hm.XSize = nx;
-     hm.YSize = ny;
-     hm.RowWidth = hm.XSize;
-     hm.Scale =level;*/
+  //printf("Xorigin %d Yorigin %d\n",hm.x_origin,hm.y_origin);
+  hm.XSize = nx;
+  hm.YSize = ny;
+  hm.RowWidth = hm.XSize;
+  hm.Scale =level;
   hm.Data = new uint16[hm.XSize * hm.YSize];
    
   for(int i=0; i < hm.XSize * hm.YSize; i++){
-    // if(std::isnan(pout[i].z))
-    if(1) hm.Data[i]=0;
+    // printf("%f ",pout[i].z);
+    if(std::isnan(pout[i].z))
+      hm.Data[i]=0;
     else
-      ;//hm.Data[i]= ge.toUINTz(pout[i].z);
+      hm.Data[i]= ge.toUINTz(pout[i].z);
     //  printf("%d %d\n",hm.Data[i],UINT16_MAX_MINUS_ONE);
     //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
   }
- 
- 
+  
+   
+  //  root->AddHeightMap(RootCornerData, hm);
   root->AddHeightMap(RootCornerData, hm);
   delete [] hm.Data;
+  
+  free(pout);
   delete xyzdata;
 }
 void load_mesh( mesh_input &m){
@@ -547,8 +587,10 @@ void	LoadData(std::vector<mesh_input> &meshes)
       load_mesh(meshes[i]);
     else    if(meshes[i].name.substr(meshes[i].name.size()-3) == "grd")
       load_grd(meshes[i]);
+    else   if(meshes[i].name.substr(meshes[i].name.size()-3) == "txt")
+      load_xyz(meshes[i],true);
     else
-      load_xyz(meshes[i]);
+      load_xyz(meshes[i],false);
 
   }
  

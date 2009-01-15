@@ -19,6 +19,7 @@
 #include "colormap.hpp"
 #include <ostream>
 #include <limits.h>
+#include <vector>
 typedef unsigned short uint16;
 typedef unsigned int uint32;
 typedef short int16;
@@ -172,7 +173,7 @@ extern bool render_no_data;
 extern char *wf_fname;
 extern double max_stat_val;
 extern double min_stat_val;
-
+extern std::vector<double> stat_vals;
 enum {Z_SAMPLES,Z_ERR,SHADOWED};
 
 #endif // QUADTREE_HPP

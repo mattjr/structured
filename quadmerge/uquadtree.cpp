@@ -32,6 +32,7 @@
 #include "sample.hpp"
 #include "auv_mesh_utils.hpp"
 #include "colormap.hpp"
+
 #define NO_DATA 0
 using ul::vector;
 #include "fileio.hpp"
@@ -44,6 +45,7 @@ bool apply_color_wf=false;
 // quadsquare functions.
 //
 char *wf_fname;
+std::vector<double> stat_vals;
 double	max_stat_val=DBL_MIN;
 double	min_stat_val=DBL_MAX;
 quadsquare::quadsquare(quadcornerdata* pcd)
@@ -750,7 +752,7 @@ void	quadsquare::StaticUpdate(const quadcornerdata& cd, float Detail)
 bool	DetailTest(int level,float error)
 // edge-length to height ratio less than ThresholdDetail.
 {
-	float	size = 2 << level;	// Edge length.
+  //float	size = 2 << level;	// Edge length.
 	//	return (error * DetailThreshold) > size;
 	//	if(level > 10)
 	  return false;
@@ -1386,8 +1388,7 @@ float	HeightMapInfo::Sample(int x, int z) const
 }
 void quadsquare::UpdateStats(const quadcornerdata& cd)
 {
-    int half = 1 << cd.Level;
-    int whole = 2 << cd.Level;
+    
 
     // recursively go down to child node
     int i;
@@ -1416,16 +1417,17 @@ void quadsquare::UpdateStats(const quadcornerdata& cd)
 	if(Vertex[i].num_samples < min_stat_val)
 	  min_stat_val=Vertex[i].num_samples;
       }else if(color_metric == Z_ERR){
-	
+
 	double dev=stddev(Vertex[i].Zsamples,Vertex[i].num_samples);
-	if( dev > max_stat_val && dev < 0.2)
+	if(Vertex[i].num_samples  >1)
+	  stat_vals.push_back(dev);
+	if( dev > max_stat_val )
 	  max_stat_val=dev;
 	if(dev < min_stat_val)
 	  min_stat_val=dev;
       }
+      
     }
-
-    
     
 }
 
@@ -1647,7 +1649,7 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	    break;
 	  case Z_ERR:
 	    val=stddev(tc->vi->Zsamples,tc->vi->num_samples);
-	    ColorMap::jetColorMap(rgb,val,min_stat_val,max_stat_val);
+	    ColorMap::jetColorMap(rgb,val,min_stat_val,min(max_stat_val,0.2));
 	    r=rgb[0]/255.0;
 	    g=rgb[1]/255.0;
 	    b=rgb[2]/255.0;

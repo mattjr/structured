@@ -18,8 +18,9 @@ typedef struct _mesh_input{
   int count;
   mapnik::Envelope<double> envelope;
 }mesh_input;
-
+void interpolate_grid(float *xyzdata,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny,float &cx,float &cy,double &res,int &level);
 void raster_triangle(const float* a, const float* b, const float* c);
 void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx, int &ny,float &cx,float &cy,double &res,int &level);
 void write_mesh(point_nn *pin, int nin,const char *fn,bool ascii=false);
+
 #endif

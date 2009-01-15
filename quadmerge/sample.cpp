@@ -1,6 +1,34 @@
 #include <math.h>
 #include "sample.hpp"
 #include <stdio.h>
+double sum(std::vector<double> & xList)
+{
+        unsigned int items = xList.size();
+        double sum = 0;
+        for (unsigned int i=0; i<items; i++)
+        {
+                sum += xList[i];
+        }
+        return sum;
+}
+
+
+double mean(std::vector<double> & xList)
+{
+        return sum(xList)/xList.size();
+}
+
+double median(std::vector<double> & xList)
+{
+        unsigned int items = xList.size();
+        if (items % 2 == 0) //even number of items
+                return (xList[(items+1)/2]+xList[(items-1)/2])/2;
+        else
+                return xList[(items+1)/2-1];
+}
+
+
+
 bool debug_flag=false;
 double var(float *data, int samples)
 {

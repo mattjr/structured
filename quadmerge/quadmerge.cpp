@@ -94,6 +94,10 @@ void bound_mesh( mesh_input &m,double &zmin, double &zmax){
  
   TriMesh::verbose=0;
   TriMesh *mesh = TriMesh::read(m.name.c_str());
+  if(!mesh){
+      fprintf(stderr, "Quadmerge: %s cannot be opened\n",m.name.c_str());
+      return ;
+  }
   edge_len_thresh(mesh,edge_thresh);
   mesh->need_bbox();
   m.envelope=Envelope<double>(mesh->bbox.min[0],
@@ -467,6 +471,10 @@ HeightMapInfo	hm;
 void load_mesh( mesh_input &m){
   TriMesh::verbose=0;
   TriMesh *mesh = TriMesh::read(m.name.c_str());
+  if(!mesh){
+    fprintf(stderr, "Quadmerge: %s cannot be opened\n",m.name.c_str());
+    return;
+  }
   edge_len_thresh(mesh,edge_thresh);
   point_nn*pout;
   int nout;

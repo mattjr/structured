@@ -303,6 +303,13 @@ static bool parse_args( int argc, char *argv[ ] )
     exit(-1);
   }
   base_dir=argp[1];
+  if(base_dir=="."){
+    int path_max = (unsigned int) PATH_MAX;
+    char dirname[255];
+    char *ret = getcwd(dirname, path_max);
+    if(ret != NULL)
+      base_dir=ret;
+  }
   recon_config_file_name = "recon.cfg";
   stereo_calib_file_name = "stereo.calib";
   contents_file_name = "stereo_pose_est.data";
@@ -483,6 +490,9 @@ static bool parse_args( int argc, char *argv[ ] )
   use_proj_tex=argp.read("--projtex");
   even_split= argp.read("--evensplit" );
   argp.read("--cellscale",cell_scale );
+
+  if(  argp.read("--noquad"))
+    no_quadmerge=true;
 
 
   if(argp.read("--pos")){

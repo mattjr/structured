@@ -305,7 +305,7 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS(retex mbosg tridecimator mesh2hmap mesh2xy grd2ply clip_delaunay quadmerge)
+SUBDIRS(retex mbosg tridecimator mesh2hmap mesh2xy grd2ply clip_delaunay quadmerge single_mesh_gen)
 SET( SRCS OSGExport.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp

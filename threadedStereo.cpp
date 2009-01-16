@@ -488,7 +488,9 @@ static bool parse_args( int argc, char *argv[ ] )
     have_max_frame_count = true;
   use_undistorted_images = argp.read("-u" );
   use_proj_tex=argp.read("--projtex");
-  even_split= argp.read("--evensplit" );
+
+    if(argp.read("--evensplit" ))
+      even_split= true;
   argp.read("--cellscale",cell_scale );
 
   if(  argp.read("--noquad"))

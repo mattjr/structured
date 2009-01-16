@@ -28,7 +28,8 @@
 #include "auv_stereo_corner_finder.hpp"
 //#include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
-
+#include "auv_mesh.hpp"
+#include "auv_mesh_io.hpp"
 using namespace std;
 using namespace libplankton;
 using namespace libsnapper;
@@ -558,9 +559,9 @@ int main( int argc, char *argv[ ] )
  g_ptr_array_add(localV,GTS_VERTEX(vert));
           
          }     
-	 GtsSurface *surf= auv_mesh_pts(localV,mult,0); 
-	 FILE *fp = fopen(meshfilename, "w" );
-	 auv_write_ply(surf, fp,have_cov_file,"test");
+	 GtsSurface *surf= auv_mesh_pts(localV,0.0,0); 
+	 FILE *fp = fopen(triangulation_file_name.c_str(), "w" );
+	 auv_write_ply(surf, fp,false,"test");
 	 fflush(fp);   
 	 fclose(fp);
       }

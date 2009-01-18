@@ -61,7 +61,8 @@ static bool use_cuda_sift_features = false;
 
 static bool triangulate = false;
 static string triangulation_file_name;
-
+static bool dump_timing=false;
+string timing_filename;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 
 
@@ -135,6 +136,14 @@ static bool parse_args( int argc, char *argv[ ] )
       {
          use_sift_features = true;
          i+=1;
+      }
+      else if( strcmp( argv[i], "--timing" ) == 0 )
+      {
+	if( i == argc-1 ) return false;
+	dump_timing=true;
+
+	timing_filename = argv[i+1];
+	i+=2;
       }
       else if( strcmp( argv[i], "--surf" ) == 0 )
       {
@@ -525,7 +534,7 @@ int main( int argc, char *argv[ ] )
                     feature_depth_guess );
       double find_end_time = get_time( );
       
-      
+      double tri_start_time = get_time( );
       //
       // Triangulate the features if requested
       //
@@ -566,7 +575,7 @@ int main( int argc, char *argv[ ] )
 	 fclose(fp);
       }
 
-
+      double tri_end_time = get_time( );
       //
       // Display useful info 
       //
@@ -581,7 +590,13 @@ int main( int argc, char *argv[ ] )
       cout << endl;
       cout << "------------------------------------" << endl;
       cout << endl;
-
+      if(dump_timing){
+	FILE *fp=fopen(timing_filename.c_str(),"w");
+	double total= (find_end_time-find_start_time)+(tri_end_time-tri_start_time);
+	fprintf(fp,"%f\n",total);
+	fclose(fp);
+      }
+	
 
       //
       // Pause between frames if requested.

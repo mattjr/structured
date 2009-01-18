@@ -284,7 +284,7 @@ int	main(int argc, char *argv[])
     double medianV=median(stat_vals);
 
     FILE *fp=fopen("statfile.txt","w");
-    fprintf(fp,"%f %f\n",meanV,medianV);
+    fprintf(fp,"%f %f\n",meanV,max_stat_val);
     fclose(fp);
   }
 

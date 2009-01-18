@@ -53,6 +53,7 @@ static double stop_time = numeric_limits<double>::max();
 static int dist_gentex_range=0;
 static int vrip_split;
 static FILE *pts_cov_fp;
+static int skip_sparse=0;
 static string contents_file_name;
 static string dir_name;
 static bool use_cached=true;
@@ -320,7 +321,7 @@ static bool parse_args( int argc, char *argv[ ] )
 
   argp.read("--stereo-calib",stereo_calib_file_name);
   argp.read("--poses",contents_file_name );
-
+  argp.read("--skipsparse",skip_sparse);
   deltaT_config_name=base_dir+string("/")+"localiser.cfg";
     double lat_orig,lon_orig;
 
@@ -1608,6 +1609,9 @@ int main( int argc, char *argv[ ] )
 
   unsigned int mono_img_count=0;
   int start_skip=0;
+  int skip_sparse_cnt=skip_sparse;
+  if(skip_sparse)
+    printf("Sparsifying Mesh Skipping  %d\n",skip_sparse_cnt);
   if(mono_cam){
     std::vector<Mono_Image_Name> mono_names;
     while( !have_max_frame_count || mono_img_count < max_frame_count*(mono_skip+1) ){
@@ -1651,6 +1655,12 @@ int main( int argc, char *argv[ ] )
       if(ret == ADD_IMG ){
 	if(start_skip++ < single_run_start)
 	  continue;
+	if(skip_sparse_cnt >0){
+	  skip_sparse_cnt--;
+	  continue;
+	}else{
+	  skip_sparse_cnt=skip_sparse;
+	}
 	name.id= single_run_start+stereo_pair_count++;
 	name.valid=true;
 	tasks.push_back(name);

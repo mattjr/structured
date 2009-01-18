@@ -610,14 +610,17 @@ int main( int argc, char *argv[ ] )
 	fprintf(stderr,"Empty mesh skipping\n");
 	continue;
       }
-      DepthStats ds(mesh);
+      vector<int> *planeIdx=NULL;
       vector<Plane3D> planes;
       vector<TriMesh::BBox> bounds;
-      vector<int> *planeIdx=ds.getPlaneFits(planes,bounds,2,4);
+      if(0){
+	DepthStats ds(mesh);
 
+       planeIdx=ds.getPlaneFits(planes,bounds,2,4);
+      }
       bool res=convert_ply(mesh,surf,verbose,planeIdx);
       mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
-      delete planeIdx;
+      //delete planeIdx;
       if(!res ){
 	printf("Failed to load surface %s\n",
 	       meshNames[i].c_str());

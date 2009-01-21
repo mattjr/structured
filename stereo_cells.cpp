@@ -28,6 +28,9 @@ static double       max_cell_area     = 2500;  // square meters
 static unsigned int max_cell_poses    = 300;
 static unsigned int max_tree_depth    = 1000;  // Max recursion level 
 
+static unsigned int max_cell_area_even    = 400;  
+static unsigned int max_cell_poses_even    = 300;  
+
 // Splitting cost heuristic parameters
 static double pose_cost = 1;
 static double overlap_cost = 50;
@@ -37,7 +40,7 @@ static double area_cost_multiplier = 1000;
 // or a non-flat seafloor. The radii are increased to be more conservative
 // FIXME: should this be done in seabed_slam? That would mean that the
 //        detection of overlapping poses would also be more conservative
-static double radius_multiplier = 3; 
+static double radius_multiplier = 3.0; 
 
 
 
@@ -384,15 +387,20 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
 
 
 
-   if(bounds.area() < max_cell_area ){
+   if(bounds.area() < max_cell_area_even ){
      Cell_Data new_cell( poses, bounds );
      cells.push_back( new_cell );
      return ;
    }
-
-   unsigned int best_axis= POSE_INDEX_X ;
-   double best_split_point=(bounds.max_x-bounds.min_x)/2;
- 
+   unsigned int best_axis;
+   double best_split_point;
+   if(bounds.max_x-bounds.min_x  > bounds.max_y-bounds.min_y){
+     best_axis= POSE_INDEX_X ;
+     best_split_point=(bounds.max_x-bounds.min_x)/2;
+   }else{
+     best_axis= POSE_INDEX_Y ;
+     best_split_point=(bounds.max_y-bounds.min_y)/2;
+   }
    // Perform the split
    vector<const Stereo_Pose_Data*> poses1, poses2;
    Bounds bounds1, bounds2;
@@ -401,7 +409,7 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
 
 
    // Check if the subsets need to be recursively split
-   if( bounds1.area() > max_cell_area  )
+   if( bounds1.area() > max_cell_area_even || poses1.size() > max_cell_poses_even  )
    {   
       recursive_split( poses1, bounds1, depth+1, cells );
    }
@@ -416,7 +424,7 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
    }
 
 
-   if( bounds2.area() > max_cell_area )
+   if( bounds2.area() > max_cell_area_even || poses2.size() > max_cell_poses_even)
    {   
       recursive_split( poses2, bounds2, depth+1, cells );
    }
@@ -504,7 +512,7 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,int method,d
    if(method==AUV_SPLIT)
      recursive_split( node_poses, bounds, 1, cells );
    else
-     recursive_split_even( node_poses, bounds, 1, cells );
+     recursive_split_area( node_poses, bounds, 1, cells );
    
    return cells;
 }

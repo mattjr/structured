@@ -6,8 +6,16 @@ if [ -n "$EXISTS" ]; then
 else
   GSF_FLAG="-GSF"
 fi
+if [ "$#" -gt 2 ]; then
+    START_STRING="-START $3"
+fi 
+
+if [ "$#" -gt 3 ]; then
+    STOP_STRING="-STOP $4"
+fi 
+
 if [ -n "$EXISTS2" ]; then
     echo "Allready have cached grd files delete mb_grd if you want to regen"
 else
-    echo "y\n" | ~/cvs/seabed_localisation/mbm_processDT.sh $1  $GSF_FLAG -UNGRD -NP -E 0.1/0.1/m -O $PWD/mb_grd -BK $1/background.grd
+    echo "y\n" | mbm_processDT.sh $1  $GSF_FLAG -UNGRD -NP -E $2/$2/m -O $PWD/mb_grd $START_STRING $STOP_STRING
 fi

@@ -382,7 +382,7 @@ int	main(int argc, char *argv[])
 	break;
       case Z_ERR:
 	title << "Standard Dev Err [m]";
-	max_stat_val=0.2;
+	//	max_stat_val=0.2;
 	break;
       }
       FILE *fp = fopen(statfile.c_str(),"w");

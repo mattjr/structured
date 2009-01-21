@@ -2023,7 +2023,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  if(bound_grd(m,zmin,zmax,local_easting,local_northing))
 	    total_env.expand_to_include(m.envelope);
 	  // cout << total_env <<endl;
-	  fprintf(quadmerge_seg_fp,"../mb_grd/grdfiles/%s  0.1 0\n",tmp);
+	  fprintf(quadmerge_seg_fp,"../mb_grd/grdfiles/%s  %f 0\n",tmp,mb_grd_res);
 	  count++;
 	}
 	fclose(lafp);

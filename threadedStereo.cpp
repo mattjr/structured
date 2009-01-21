@@ -159,7 +159,8 @@ static Config_File *recon_config_file;
 static bool hmap_method=false;
   static Config_File *dense_config_file; 
 static  int tex_size;
-static float mb_grd_res=0.025;
+static float mb_grd_res=0.1;
+static int spline_dist=max((int)round(1.0/mb_grd_res),5);
 static   double local_easting, local_northing;
 using mapnik::Envelope;
 Envelope<double> total_env;
@@ -440,7 +441,10 @@ static bool parse_args( int argc, char *argv[ ] )
 
   string mbfile;
 
-   
+  argp.read("--grdres",mb_grd_res);	 
+  spline_dist=max((int)round(1.0/mb_grd_res),5);
+  argp.read("--spline_dist",spline_dist);	 
+  
   argp.read("-r",image_scale);	  
   argp.read( "--edgethresh" ,edgethresh);
   argp.read("-m", max_feature_count );
@@ -1873,8 +1877,8 @@ int main( int argc, char *argv[ ] )
 		basepath.c_str(),deltaT_config_name.c_str(),
 		deltaT_dir.c_str());
 	*/
-	fprintf(genmbfp,"#!/bin/bash\n%s/mb_for_vis.sh %s %f %f %f\n",
-		basepath.c_str(),deltaT_dir.c_str(),mb_grd_res,start_time,stop_time);
+	fprintf(genmbfp,"#!/bin/bash\n%s/mb_for_vis.sh %s %f %d %f %f\n",
+		basepath.c_str(),deltaT_dir.c_str(),mb_grd_res,spline_dist,start_time,stop_time);
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
 	sysres=system("./genmb.sh");

@@ -6,16 +6,16 @@ if [ -n "$EXISTS" ]; then
 else
   GSF_FLAG="-GSF"
 fi
-if [ "$#" -gt 2 ]; then
-    START_STRING="-START $3"
+if [ "$#" -gt 3 ]; then
+    START_STRING="-START $4"
 fi 
 
-if [ "$#" -gt 3 ]; then
-    STOP_STRING="-STOP $4"
+if [ "$#" -gt 4 ]; then
+    STOP_STRING="-STOP $5"
 fi 
 
 if [ -n "$EXISTS2" ]; then
     echo "Allready have cached grd files delete mb_grd if you want to regen"
 else
-    echo "y\n" | mbm_processDT.sh $1  $GSF_FLAG -UNGRD -NP -E $2/$2/m -O $PWD/mb_grd $START_STRING $STOP_STRING
+    echo "y\n" | mbm_processDT.sh $1  $GSF_FLAG -UNGRD -NP -E $2/$2/m -SPLINE_DIST $3 -O $PWD/mb_grd $START_STRING $STOP_STRING
 fi

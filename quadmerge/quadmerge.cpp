@@ -56,6 +56,7 @@ int	TriangleCounter = 0;
 global_extents ge;
 bool lod=false;
 double min_cell_size=DBL_MAX;
+std::string total_stat_file;
 bool have_geoconf=false;
 void bound_xyz( mesh_input &m,double &zmin, double &zmax,bool ascii){
   float data[3];
@@ -91,7 +92,7 @@ void bound_xyz( mesh_input &m,double &zmin, double &zmax,bool ascii){
 
 
 void bound_mesh( mesh_input &m,double &zmin, double &zmax){
- 
+
   TriMesh::verbose=0;
   TriMesh *mesh = TriMesh::read(m.name.c_str());
   if(!mesh){
@@ -145,13 +146,28 @@ int	main(int argc, char *argv[])
     stat=true;
   if(argp.read("-zerr"))
     color_metric=Z_ERR;
+
+  if(argp.read("-signederr"))
+    color_metric=SIGNED_ERR;
+
   if(argp.read("-zsamples"))
     color_metric=Z_SAMPLES;
 
-  if(argp.read("-dumpstat"))
+  if(argp.read("-dumpstat",total_stat_file))
     dump_stats=true;
+  printf("Color Metric: ");
+  switch(color_metric){
+      case Z_SAMPLES:
+	printf("Z Samples\n");
+	break;
+      case Z_ERR:
+	printf("Z STD Err\n");
+       	break;
 
-
+      case SIGNED_ERR:
+	printf("Signed Err\n");
+       	break;
+      }
   std::string config_file_name;
   double local_easting, local_northing;
   if(argp.read("-geoconf",config_file_name)){
@@ -202,13 +218,14 @@ int	main(int argc, char *argv[])
     fprintf(stderr,"Can't open %s\n",input.c_str());
     exit(0);
   }
-	  
+  int idx=0;
   while(1){
     if(fscanf(fp,"%s %f %*d",meshname,&res)!=2 || feof(fp))
       break;
     mesh_input m;
     m.name=meshname;
     m.res=res;
+    m.index=idx++;
     meshes.push_back(m);
   }
   double zmin=DBL_MAX;
@@ -226,13 +243,16 @@ int	main(int argc, char *argv[])
       bound_xyz(meshes[i],zmin,zmax,false);
 
     if(i == 0)
-      tree_bounds=meshes[i].envelope;
+      tree_bounds.init(meshes[i].envelope.minx(),
+		       meshes[i].envelope.miny(),
+		       meshes[i].envelope.maxx(),
+		       meshes[i].envelope.maxy());
     else
       tree_bounds.expand_to_include(meshes[i].envelope);
-	    
+  
   }
 	 
-
+  cout << tree_bounds<<endl;
   int	whole_cell_int_size = 2 << ge.max_Level;
   double tree_max_size=max(tree_bounds.width(),tree_bounds.height());
   ge.cell_size=tree_max_size/whole_cell_int_size;
@@ -285,7 +305,13 @@ int	main(int argc, char *argv[])
 
     FILE *fp=fopen("statfile.txt","w");
     fprintf(fp,"%f %f\n",meanV,max_stat_val);
+    fprintf(fp,"%f %f\n",meanV,max_stat_val);
     fclose(fp);
+    fp=fopen(total_stat_file.c_str(),"w");
+    for(int i=0; i< (int)stat_vals.size(); i++)
+      fprintf(fp,"%f\n",stat_vals[i]);
+    fclose(fp);
+
   }
 
   // Post-cull debug info.
@@ -449,6 +475,7 @@ HeightMapInfo	hm;
   hm.RowWidth = hm.XSize;
   hm.Scale =level;
   hm.Data = new uint16[hm.XSize * hm.YSize];
+  hm.index=m.index;
    
   for(int i=0; i < hm.XSize * hm.YSize; i++){
     // printf("%f ",pout[i].z);
@@ -469,6 +496,7 @@ HeightMapInfo	hm;
   delete xyzdata;
 }
 void load_mesh( mesh_input &m){
+
   TriMesh::verbose=0;
   TriMesh *mesh = TriMesh::read(m.name.c_str());
   if(!mesh){
@@ -502,7 +530,7 @@ void load_mesh( mesh_input &m){
   hm.RowWidth = hm.XSize;
   hm.Scale =level;
   hm.Data = new uint16[hm.XSize * hm.YSize];
-   
+  hm.index=m.index;
   for(int i=0; i < hm.XSize * hm.YSize; i++){
     // printf("%f ",pout[i].z);
     if(std::isnan(pout[i].z))
@@ -572,7 +600,8 @@ void load_grd( mesh_input &m){
   hm.RowWidth = hm.XSize;
   hm.Scale =level;
   hm.Data = new uint16[hm.XSize * hm.YSize];
-   
+  hm.index=m.index;
+
     for(int i=0; i < hm.XSize * hm.YSize; i++){
     if(std::isnan(data[i]))
       hm.Data[i]=0;

@@ -39,6 +39,13 @@ public:
     return  std::min((int)((UINT16_MAX_MINUS_ONE)* ((z-min[2])/(range[2]))) ,UINT16_MAX_MINUS_ONE) +1;
       }
   
+  double fromUINTz(unsigned short Z){
+    return (((Z-1)/(float)UINT16_MAX_MINUS_ONE) *(range[2]))+ min[2];
+  }
+
+ double fromUINTzLocal(unsigned short Z){
+    return (((Z-1)/(float)UINT16_MAX_MINUS_ONE) *(range[2]));
+  }
   int get_in_cells(double p,int level){
     double cell_size=get_cell_size(level);
     return ((int)((p/cell_size) + 0.5));
@@ -67,7 +74,7 @@ struct HeightMapInfo {
 	int	XSize, YSize;
 	int	RowWidth;
 	int	Scale;
-
+  int index;
 	float	Sample(int x, int y) const;
 };
 
@@ -77,6 +84,7 @@ struct	VertInfo {
   float  Z;
   unsigned char num_samples;
   float *Zsamples;
+  unsigned short *Zsource;
   unsigned char shadowed;
   //	unsigned char	Lightness;	// For simple precomputed vertex lighting for purposes of the demo.  It's a waste of 2 bytes if we're texturing.
 
@@ -174,6 +182,7 @@ extern char *wf_fname;
 extern double max_stat_val;
 extern double min_stat_val;
 extern std::vector<double> stat_vals;
-enum {Z_SAMPLES,Z_ERR,SHADOWED};
+extern bool save_stats;
+enum {Z_SAMPLES,Z_ERR,SHADOWED,SIGNED_ERR};
 
 #endif // QUADTREE_HPP

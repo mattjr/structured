@@ -16,6 +16,7 @@ typedef struct _mesh_input{
   std::string name;
   float res;
   int count;
+  int index;
   mapnik::Envelope<double> envelope;
 }mesh_input;
 void interpolate_grid(float *xyzdata,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny,float &cx,float &cy,double &res,int &level);

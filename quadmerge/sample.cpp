@@ -1,6 +1,8 @@
 #include <math.h>
 #include "sample.hpp"
 #include <stdio.h>
+#include <limits.h>
+
 double sum(std::vector<double> & xList)
 {
         unsigned int items = xList.size();
@@ -21,12 +23,52 @@ double mean(std::vector<double> & xList)
 double median(std::vector<double> & xList)
 {
         unsigned int items = xList.size();
+	if( xList.size() ==0)
+	  return 0.0;
         if (items % 2 == 0) //even number of items
-                return (xList[(items+1)/2]+xList[(items-1)/2])/2;
+	  return (xList[(items+1)/2]+xList[(items-1)/2])/2;
         else
-                return xList[(items+1)/2-1];
+	  return xList[(items+1)/2-1];
+}
+/*Assumes first source is the reference */
+double signed_err(float *data,unsigned short *sources, int samples){
+  unsigned short min_source=SHRT_MAX;
+  if(samples == 0)
+    return 0.0;
+  for(int i=0; i < samples; i++){
+    if(sources[i] < min_source  )
+      min_source=sources[i];
+  }
+  if(min_source == SHRT_MAX){
+    fprintf(stderr,"Weird error shouldn't calulate signed err when there is no referece mesh %d %d\n", samples,sources[0]);
+    return 0.0;
+  }
+  double ref_mean=0.0;
+  int mean_cnt=0;
+  for(int i=0; i < samples; i++){
+    if(sources[i] == min_source){
+      ref_mean+=data[i];
+      mean_cnt++;
+    }
+  }
+
+  if(mean_cnt > 0)
+    ref_mean/=(double)mean_cnt;
+
+  // fprintf(stderr,"%d %f\n",mean_cnt,ref_mean);
+  double err=0.0;
+  for(int i=0; i < samples; i++){
+    if(sources[i] != min_source){
+      err += (data[i]-ref_mean);
+    }
+  }
+
+  return err;
 }
 
+
+
+    
 
 
 bool debug_flag=false;

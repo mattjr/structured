@@ -45,6 +45,7 @@ bool apply_color_wf=false;
 // quadsquare functions.
 //
 char *wf_fname;
+bool save_stats=false;
 std::vector<double> stat_vals;
 double	max_stat_val=DBL_MIN;
 double	min_stat_val=DBL_MAX;
@@ -73,6 +74,7 @@ quadsquare::quadsquare(quadcornerdata* pcd)
 
 	for(i=0; i<5; i++){
 	  Vertex[i].Zsamples=NULL;
+	  Vertex[i].Zsource=NULL;
 	  Vertex[i].num_samples=0;
 	}
 	  
@@ -1190,6 +1192,8 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm,
 {
 	// If block is outside rectangle, then don't bother.
 	int	BlockSize = 2 << cd.Level;
+	int source_idx=hm.index;
+
 	if (cd.xorg > hm.x_origin + ((hm.XSize + 2) << hm.Scale) ||
 	    cd.xorg + BlockSize < hm.x_origin - (1 << hm.Scale) ||
 	    cd.yorg > hm.y_origin + ((hm.YSize + 2) << hm.Scale) ||
@@ -1242,6 +1246,8 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm,
 			Vertex[i].num_samples++;
 			Vertex[i].Zsamples=(float *)realloc(Vertex[i].Zsamples,Vertex[i].num_samples*sizeof(float));
 			Vertex[i].Zsamples[Vertex[i].num_samples-1]=s[i];
+			Vertex[i].Zsource=(unsigned short *)realloc(Vertex[i].Zsource,Vertex[i].num_samples*sizeof(unsigned short));
+			Vertex[i].Zsource[Vertex[i].num_samples-1]=source_idx;
 			  
 			Vertex[i].Z = s[i];
 		
@@ -1419,12 +1425,24 @@ void quadsquare::UpdateStats(const quadcornerdata& cd)
       }else if(color_metric == Z_ERR){
 
 	double dev=stddev(Vertex[i].Zsamples,Vertex[i].num_samples);
-	if(Vertex[i].num_samples  >1)
+	if(Vertex[i].num_samples  >1 && save_stats)
 	  stat_vals.push_back(dev);
 	if( dev > max_stat_val )
 	  max_stat_val=dev;
 	if(dev < min_stat_val)
 	  min_stat_val=dev;
+      }else if(color_metric == SIGNED_ERR){
+	if(Vertex[i].num_samples == 0)
+	  return;
+	
+	double err=signed_err(Vertex[i].Zsamples,Vertex[i].Zsource,
+			      Vertex[i].num_samples);
+	err=ge.fromUINTzLocal(err);
+	stat_vals.push_back(err);
+	if( err > max_stat_val )
+	  max_stat_val=err;
+	if(err < min_stat_val)
+	min_stat_val=err;
       }
       
     }
@@ -1622,7 +1640,7 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	}
 	 
 
-	p.SetZ((((Z-1)/(float)UINT16_MAX_MINUS_ONE) *(ge.range[2]))+ ge.min[2]);
+	p.SetZ(ge.fromUINTz(Z));
        	//printf("Z %f\n",((Z-1)/(float)UINT16_MAX_MINUS_ONE) );
 	p.SetY(ge.min[1]+(tc->y*ge.cell_size));
 	//        fprintf(wf_fp,"v %f %f %f\n",p.X(),p.Z(),-p.Y());
@@ -1650,6 +1668,16 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	  case Z_ERR:
 	    val=stddev(tc->vi->Zsamples,tc->vi->num_samples);
 	    ColorMap::jetColorMap(rgb,val,min_stat_val,min(max_stat_val,0.2));
+	    r=rgb[0]/255.0;
+	    g=rgb[1]/255.0;
+	    b=rgb[2]/255.0;
+	    break;
+
+	  case SIGNED_ERR:
+	    val=signed_err(tc->vi->Zsamples,tc->vi->Zsource,
+			   tc->vi->num_samples);
+	    val=ge.fromUINTzLocal(val);
+	    ColorMap::jetColorMap(rgb,val,min_stat_val,max_stat_val);
 	    r=rgb[0]/255.0;
 	    g=rgb[1]/255.0;
 	    b=rgb[2]/255.0;

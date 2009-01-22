@@ -126,7 +126,7 @@ int	main(int argc, char *argv[])
   if(  argp.read("-output",tmp ));
   wf_fname = (char *)malloc(255);
   strcpy(  wf_fname,tmp.c_str());;
-  ge.max_Level=15;
+  ge.max_Level=12;
   RootCornerData.Level= ge.max_Level;
   edge_thresh=0.5;
   argp.read("-edgethresh",edge_thresh);	  
@@ -565,8 +565,8 @@ void load_grd( mesh_input &m){
   if(actual_res < min_cell_size)
     min_cell_size=actual_res;
   /*Flip X and Y*/
-  int nnx=m.envelope.width()/actual_res;
-  int nny=m.envelope.height()/actual_res;
+  int nnx=m.envelope.height()/actual_res;
+  int nny=m.envelope.width()/actual_res;
   //Flip x and y
  if(nnx> nx || nny > ny){
     fprintf(stderr,"Supposed to be downsampling AHHHHH!\n");
@@ -582,12 +582,12 @@ void load_grd( mesh_input &m){
  
   HeightMapInfo	hm;
   if(flipx){
-    hm.x_origin = ge.get_in_cells(m.envelope.miny()-ge.min[0],ge.max_Level);
-    hm.y_origin = ge.get_in_cells(m.envelope.minx()-ge.min[1],ge.max_Level);
+    hm.x_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
+    hm.y_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
   }
   else{
-    hm.x_origin = ge.get_in_cells(m.envelope.miny()-ge.min[0],ge.max_Level);
-    hm.y_origin = ge.get_in_cells(m.envelope.minx()-ge.min[1],ge.max_Level);
+    hm.x_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
+    hm.y_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
   }
   //   printf("Xorigin %d Yorigin %d\n",hm.x_origin,hm.y_origin);
   if(flipx){

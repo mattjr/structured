@@ -2051,7 +2051,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
       
       fclose(quadmerge_seg_fp);
-      int numcells= total_env.width() *total_env.height() / 50.0;
+      //int numcells= total_env.width() *total_env.height() / 50.0;
       cells=calc_cells(tasks,total_env.minx(),total_env.maxx(),total_env.miny(),total_env.maxy(),5);
 
     for(int i=0; i <(int)cells.size(); i++){
@@ -2317,7 +2317,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		  cachedtexdir,gentexdir[i].c_str(),
 		  j1,j1+dist_gentex_range,argstr);
 	  j1+=dist_gentex_range;
-	}while(j1 < cells.size());
+	}while(j1 < (int)cells.size());
 	fclose(dicefp);
 	shellcm.write_generic(gentexnames[i],gentexcmd_fn,"Gentex",&precmds,NULL);
 	if(no_gen_tex)

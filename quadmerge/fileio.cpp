@@ -117,9 +117,9 @@ bool bound_grd( mesh_input &m,double &zmin, double &zmax,double local_easting, d
   l_ymax=easting;
   l_xmax=northing;
   
-  m.envelope=Envelope<double>(l_ymin,l_xmin,
-			      l_ymax,l_xmax);
-  cout << m.envelope<<endl; 
+  m.envelope=Envelope<double>(l_xmin,l_ymin,
+			      l_xmax,l_ymax);
+  cout <<"sds"<< m.envelope<<endl; 
  const size_t nm = gmtheader.nx * gmtheader.ny;
  float *data;
  data = (float *) GMT_memory (VNULL, (size_t)nm, sizeof (float), GMT_program);

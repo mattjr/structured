@@ -2,7 +2,7 @@
 #include "sample.hpp"
 #include <stdio.h>
 #include <limits.h>
-
+#include "uquadtree.hpp"
 double sum(std::vector<double> & xList)
 {
         unsigned int items = xList.size();
@@ -33,8 +33,11 @@ double median(std::vector<double> & xList)
 /*Assumes first source is the reference */
 double signed_err(float *data,unsigned short *sources, int samples){
   unsigned short min_source=SHRT_MAX;
-  if(samples == 0)
+  if(samples < 2)
     return 0.0;
+  else if(samples > 2)
+    fprintf(stderr, "warning not defined for more then two samples\n");
+
   for(int i=0; i < samples; i++){
     if(sources[i] < min_source  )
       min_source=sources[i];
@@ -47,7 +50,7 @@ double signed_err(float *data,unsigned short *sources, int samples){
   int mean_cnt=0;
   for(int i=0; i < samples; i++){
     if(sources[i] == min_source){
-      ref_mean+=data[i];
+      ref_mean+=ge.fromUINTz(data[i]);
       mean_cnt++;
     }
   }
@@ -55,14 +58,14 @@ double signed_err(float *data,unsigned short *sources, int samples){
   if(mean_cnt > 0)
     ref_mean/=(double)mean_cnt;
 
-  // fprintf(stderr,"%d %f\n",mean_cnt,ref_mean);
+ 
   double err=0.0;
   for(int i=0; i < samples; i++){
     if(sources[i] != min_source){
-      err += (data[i]-ref_mean);
+      err += (ref_mean-ge.fromUINTz(data[i]));
     }
   }
-
+  //  fprintf(stderr,"%d %d %f %f\n",samples,mean_cnt,ref_mean,err);
   return err;
 }
 

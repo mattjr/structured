@@ -1437,7 +1437,7 @@ void quadsquare::UpdateStats(const quadcornerdata& cd)
 	
 	double err=signed_err(Vertex[i].Zsamples,Vertex[i].Zsource,
 			      Vertex[i].num_samples);
-	err=ge.fromUINTzLocal(err);
+
 	stat_vals.push_back(err);
 	if( err > max_stat_val )
 	  max_stat_val=err;
@@ -1676,7 +1676,7 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	  case SIGNED_ERR:
 	    val=signed_err(tc->vi->Zsamples,tc->vi->Zsource,
 			   tc->vi->num_samples);
-	    val=ge.fromUINTzLocal(val);
+	    
 	    ColorMap::jetColorMap(rgb,val,min_stat_val,max_stat_val);
 	    r=rgb[0]/255.0;
 	    g=rgb[1]/255.0;

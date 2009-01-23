@@ -1481,6 +1481,7 @@ int main( int argc, char *argv[ ] )
   start_timer = time(NULL); 
 
   FILE *rerunfp=fopen("rerun.sh","w");
+  FILE *timing_fp=fopen("timing.txt","w");
   fprintf(rerunfp,"#!/bin/bash\n");
   for(int i=0; i < argc; i++)
     fprintf(rerunfp,"%s ",argv[i]);
@@ -1685,7 +1686,8 @@ int main( int argc, char *argv[ ] )
   stop_time=tasks[tasks.size()-1].time;
   
   totalTodoCount=stereo_pair_count;
- 
+  
+  fprintf(timing_fp,"%d\n",tasks.size());
   boost::xtime xt, xt2;
   long time_num;
   // consumer pool model...
@@ -1703,7 +1705,7 @@ int main( int argc, char *argv[ ] )
      
     double secs=time_num/1000.0;
     printf("Single Thread Time: %.2f sec\n", secs);
-     
+    fprintf(timing_fp,"Stereo %f\n",secs);
     delete ts;
   }
   else{
@@ -1723,12 +1725,15 @@ int main( int argc, char *argv[ ] )
     time_num = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000; 
     double secs=time_num/1000.0;
     printf("Threads %d Time: %.2f sec\n", num_threads, secs);
+    fprintf(timing_fp,"Stereo %f\n",secs);
     for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++)
       if(!itr->valid)
 	tasks.erase(itr);
 
   }
 
+
+  fclose(timing_fp);
 
   if(!single_run){
     int ct=0;
@@ -2261,7 +2266,9 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  fprintf(dicefp,"cd $DICEDIR\n"
 		  "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n");
 	} else {
-	  fprintf(dicefp,"%s/runtp.py simpcmds %d %s\n",basepath.c_str(),num_threads,"Simp");
+	  fprintf(dicefp,"cd ..\n"
+		  "%s/runtp.py $DICEDIR/simpcmds %d %s\n"
+		  "cd $DICEDIR\n",basepath.c_str(),num_threads,"Simp");
 	}
 
 	fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");

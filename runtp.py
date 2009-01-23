@@ -99,6 +99,9 @@ pbar.finish()
 
 print ''
 
+f = open('timing.txt', 'a')
+f.write('%s %f\n' % (title,pbar.seconds_elapsed))
+f.close()
 #@threaded
 #def test_threaded(i):
 #    print 'threaded %i enter' % i

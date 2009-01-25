@@ -62,7 +62,7 @@ void load_hm_file(HeightMapInfo *hm,const char *filename){
 
   hm->RowWidth=hm->XSize;
   hm->Scale=5;
-  hm->Data = new uint16[hm->XSize * hm->YSize];
+  hm->Data = new float[hm->XSize * hm->YSize];
   float tmp;
   int range = (int) pow(2.0,8) - 1;
   for(int i=0; i < hm->XSize * hm->YSize; i++){

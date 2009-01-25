@@ -376,7 +376,7 @@ int	main(int argc, char *argv[])
 
     hm.RowWidth = hm.XSize;
     hm.Scale =level;
-    hm.Data = new uint16[hm.XSize * hm.YSize];
+    hm.Data = new float[hm.XSize * hm.YSize];
     
     IplImage *lmimg=cvCreateImageHeader(cvSize(nny,nnx),IPL_DEPTH_8U,1);
     unsigned char *lightmap= new unsigned char[nnx*nny];
@@ -478,7 +478,7 @@ HeightMapInfo	hm;
   hm.YSize = ny;
   hm.RowWidth = hm.XSize;
   hm.Scale =level;
-  hm.Data = new uint16[hm.XSize * hm.YSize];
+  hm.Data = new float[hm.XSize * hm.YSize];
   hm.index=m.index;
    
   for(int i=0; i < hm.XSize * hm.YSize; i++){
@@ -533,7 +533,7 @@ void load_mesh( mesh_input &m){
   hm.YSize = ny;
   hm.RowWidth = hm.XSize;
   hm.Scale =level;
-  hm.Data = new uint16[hm.XSize * hm.YSize];
+  hm.Data = new float[hm.XSize * hm.YSize];
   hm.index=m.index;
   for(int i=0; i < hm.XSize * hm.YSize; i++){
     // printf("%f ",pout[i].z);
@@ -598,7 +598,7 @@ void load_mesh_nointerp( mesh_input &m){
   hm.YSize = hmap.rows;
   hm.RowWidth = hm.XSize;
   hm.Scale =level;
-  hm.Data = new uint16[hm.XSize * hm.YSize];
+  hm.Data = new float[hm.XSize * hm.YSize];
   hm.index=m.index;
   int cnt=0;
   for(int i=0; i < hm.YSize; i++){
@@ -607,8 +607,8 @@ void load_mesh_nointerp( mesh_input &m){
     if(hmap.map[i][j] == -HUGE_VAL)
       hm.Data[cnt]=0;
     else
-      hm.Data[cnt]= ge.toUINTz(hmap.map[i][j]);
-    //  printf("%d %d\n",hm.Data[i],UINT16_MAX_MINUS_ONE);
+      hm.Data[cnt]= (hmap.map[i][j] + hmap.z_min);
+    //     printf("%f\n",hm.Data[cnt]);
     //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
     cnt++;
     }
@@ -671,7 +671,7 @@ void load_grd( mesh_input &m){
   }
   hm.RowWidth = hm.XSize;
   hm.Scale =level;
-  hm.Data = new uint16[hm.XSize * hm.YSize];
+  hm.Data = new float[hm.XSize * hm.YSize];
   hm.index=m.index;
 
     for(int i=0; i < hm.XSize * hm.YSize; i++){

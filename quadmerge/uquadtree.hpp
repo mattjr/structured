@@ -35,12 +35,13 @@ public:
     double tree_max_size=std::max(range[0],range[1]);
     return tree_max_size/whole_cell_int_size;
   }
-  int toUINTz(double z){
-    return  std::min((int)((UINT16_MAX_MINUS_ONE)* ((z-min[2])/(range[2]))) ,UINT16_MAX_MINUS_ONE) +1;
+  float toUINTz(double z){
+    return z; //    return  std::min((int)((UINT16_MAX_MINUS_ONE)* ((z-min[2])/(range[2]))) ,UINT16_MAX_MINUS_ONE) +1;
       }
   
-  double fromUINTz(unsigned short Z){
-    return (((Z-1)/(float)UINT16_MAX_MINUS_ONE) *(range[2]))+ min[2];
+  float fromUINTz(float Z){
+    return Z;    
+//    return (((Z-1)/(float)UINT16_MAX_MINUS_ONE) *(range[2]))+ min[2];
   }
 
  double fromUINTzLocal(unsigned short Z){
@@ -69,7 +70,7 @@ public:
 
 extern global_extents ge;
 struct HeightMapInfo {
-	uint16*	Data;
+	float*	Data;
 	int	x_origin, y_origin;
 	int	XSize, YSize;
 	int	RowWidth;
@@ -113,8 +114,8 @@ struct quadsquare {
 	quadsquare*	Child[4];
 
 	VertInfo	Vertex[5];	// center, e, n, w, s
-	uint16	Error[6];	// e, s, children: ne, nw, sw, se
-	uint16	MinZ, MaxZ;	// Bounds for frustum culling and error testing.
+	float	Error[6];	// e, s, children: ne, nw, sw, se
+	float	MinZ, MaxZ;	// Bounds for frustum culling and error testing.
 	unsigned char	EnabledFlags;	// bits 0-7: e, n, w, s, ne, nw, sw, se
 	unsigned char	SubEnabledCount[2];	// e, s enabled reference counts.
 	bool	Static;

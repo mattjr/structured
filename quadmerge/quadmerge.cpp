@@ -572,7 +572,7 @@ void load_mesh_nointerp( mesh_input &m){
   width = height = 0;
   
   invert = 0;
-  z = 2; x = 0; y = 1;
+  z = 2; x = 1; y = 0;
 
   int level;
   double actual_res;

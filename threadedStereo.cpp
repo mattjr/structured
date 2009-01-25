@@ -110,7 +110,7 @@ static bool output_3ds=false;
 static char cov_file_name[255];
 static bool no_gen_tex=false;
 static int mono_skip=2;
-static bool no_vrip=false;
+static bool no_vrip=true;
 static bool quad_integration=true;
 static bool no_quadmerge=false;
 static double vrip_res;
@@ -508,10 +508,15 @@ static bool parse_args( int argc, char *argv[ ] )
     run_pos=true;
   }
 
-  if(!vrip_on)
-    vrip_on=argp.read("--vrip");
 
 
+  if(argp.read("--vrip")){
+      no_vrip=false;
+      no_quadmerge=true;
+      if( argp.read("--quad"))
+	no_quadmerge=false;
+  }
+  
   if(vrip_on ){
     run_pos=false;
     no_simp = false;
@@ -1687,7 +1692,7 @@ int main( int argc, char *argv[ ] )
   
   totalTodoCount=stereo_pair_count;
   
-  fprintf(timing_fp,"%d\n",tasks.size());
+  fprintf(timing_fp,"%d\n",(int)tasks.size());
   boost::xtime xt, xt2;
   long time_num;
   // consumer pool model...
@@ -2343,7 +2348,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  char ar[255];
 	  if(run_pos)
 	    strcpy(ar,"--dicedir mesh-pos/");
-	  else if(quad_integration)
+	  else if(quad_integration && !no_quadmerge)
 	    strcpy(ar,"--dicedir mesh-quad/");
 	  else
 	    strcpy(ar,"--dicedir mesh-diced/");

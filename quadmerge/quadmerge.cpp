@@ -34,6 +34,8 @@
 #include "shadowmap.hpp"
 #include "highgui.h"
 #include "sample.hpp"
+#include "../mesh2hmap/mesh2hmap.h"
+#include "../mesh2hmap/parser.h"
 using mapnik::Envelope;
 using namespace ul;
 using std::cout;
@@ -213,6 +215,7 @@ int	main(int argc, char *argv[])
   FILE* fp;
   char meshname[255];
   float res;
+  int interp;
   fp=fopen(input.c_str(),"rb");
   if(!fp){
     fprintf(stderr,"Can't open %s\n",input.c_str());
@@ -220,11 +223,12 @@ int	main(int argc, char *argv[])
   }
   int idx=0;
   while(1){
-    if(fscanf(fp,"%s %f %*d",meshname,&res)!=2 || feof(fp))
+    if(fscanf(fp,"%s %f %d",meshname,&res,&interp)!=3 || feof(fp))
       break;
     mesh_input m;
     m.name=meshname;
     m.res=res;
+    m.interp=interp;
     m.index=idx++;
     meshes.push_back(m);
   }
@@ -304,8 +308,8 @@ int	main(int argc, char *argv[])
     double medianV=median(stat_vals);
 
     FILE *fp=fopen("statfile.txt","w");
-    fprintf(fp,"%f %f\n",meanV,max_stat_val);
-    fprintf(fp,"%f %f\n",meanV,max_stat_val);
+    fprintf(fp,"%f %f\n",min_stat_val,max_stat_val);
+    fprintf(fp,"%f %f\n",meanV,medianV);
     fclose(fp);
     fp=fopen(total_stat_file.c_str(),"w");
     for(int i=0; i< (int)stat_vals.size(); i++)
@@ -549,6 +553,74 @@ void load_mesh( mesh_input &m){
   free(pout);
 }
 
+
+void load_mesh_nointerp( mesh_input &m){
+
+  TriMesh::verbose=0;
+  TriMesh *mesh = TriMesh::read(m.name.c_str());
+  if(!mesh){
+    fprintf(stderr, "Quadmerge: %s cannot be opened\n",m.name.c_str());
+    return;
+  }
+  edge_len_thresh(mesh,edge_thresh);
+  
+  mesh_t hmmesh;
+  trimesh2mesh(&hmmesh, mesh);
+  int x, y, z, invert;
+  float  x_m_pix, y_m_pix;
+  int width, height;
+  width = height = 0;
+  
+  invert = 0;
+  z = 2; x = 0; y = 1;
+
+  int level;
+  double actual_res;
+
+  ge.get_closest_res_level(m.res,level,actual_res);
+  x_m_pix = y_m_pix = actual_res;
+  
+  if(actual_res < min_cell_size)
+    min_cell_size=actual_res;
+  hmap_t hmap;
+  
+  hmap.rows = height;
+  hmap.cols = width;
+  mesh2hmap(&hmap, &hmmesh, x, y, z, invert, x_m_pix, y_m_pix);
+  fmatrix_free(hmmesh.vert);
+  irowarray_free(hmmesh.poly, hmmesh.num_poly);
+  
+  HeightMapInfo	hm;
+  hm.x_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
+  hm.y_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
+  //printf("Xorigin %d Yorigin %d\n",hm.x_origin,hm.y_origin);
+  hm.XSize = hmap.cols;
+  hm.YSize = hmap.rows;
+  hm.RowWidth = hm.XSize;
+  hm.Scale =level;
+  hm.Data = new uint16[hm.XSize * hm.YSize];
+  hm.index=m.index;
+  int cnt=0;
+  for(int i=0; i < hm.YSize; i++){
+    for(int j=0; j <  hm.XSize; j++){
+    // printf("%f ",pout[i].z);
+    if(hmap.map[i][j] == -HUGE_VAL)
+      hm.Data[cnt]=0;
+    else
+      hm.Data[cnt]= ge.toUINTz(hmap.map[i][j]);
+    //  printf("%d %d\n",hm.Data[i],UINT16_MAX_MINUS_ONE);
+    //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
+    cnt++;
+    }
+  }
+  
+   
+  //  root->AddHeightMap(RootCornerData, hm);
+  root->AddHeightMap(RootCornerData, hm);
+  delete [] hm.Data;
+  delete mesh;  
+
+}
 void load_grd( mesh_input &m){
 
   if(!have_geoconf){
@@ -620,8 +692,12 @@ void	LoadData(std::vector<mesh_input> &meshes)
   for(unsigned int i=0; i< meshes.size(); i++){
     printf("\r %03d/%03d",i,(int)meshes.size());
     fflush(stdout);
-    if(meshes[i].name.substr(meshes[i].name.size()-3) == "ply")
-      load_mesh(meshes[i]);
+    if(meshes[i].name.substr(meshes[i].name.size()-3) == "ply"){
+      if(meshes[i].interp)
+	load_mesh(meshes[i]);
+      else
+	load_mesh_nointerp(meshes[i]);
+    }
     else    if(meshes[i].name.substr(meshes[i].name.size()-3) == "grd")
       load_grd(meshes[i]);
     else   if(meshes[i].name.substr(meshes[i].name.size()-3) == "txt")

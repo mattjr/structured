@@ -14,6 +14,6 @@ ADD_DEFINITIONS("-DTRILIBRARY")
 ADD_LIBRARY( nn  ${NN_SRC})
 ADD_EXECUTABLE( quadmerge quadmerge.cpp envelope.cpp raster.cpp geometry.cpp uquadtree.cpp fileio.cpp resample.cpp shadowmap.cpp sample.cpp)
 
-TARGET_LINK_LIBRARIES( quadmerge ${GMT_LIBRARY} ${OPENGL_gl_LIBRARY} nn ${LIBPLANKTON_LIB} )
+TARGET_LINK_LIBRARIES( quadmerge ${GMT_LIBRARY} ${OPENGL_gl_LIBRARY} nn ${LIBPLANKTON_LIB} hmap)
 INSTALL_TARGETS( /bin quadmerge )
 SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )

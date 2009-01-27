@@ -55,7 +55,7 @@ public:
     for(level=max_Level; level > 0; level--){
       res=get_cell_size(level);
       //printf("%f= %d\n",res,level);
-      if(res > target_res){
+      if(get_cell_size(level-1) > target_res){
 	level=max_Level-level;
 	break;      
       }

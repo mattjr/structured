@@ -1415,40 +1415,28 @@ void quadsquare::UpdateStats(const quadcornerdata& cd)
 
     if (flags == 0) return;
     for(i=0; i< 5; i++){
-
+      double val=0.0;
       if(!Vertex[i].Zsamples)
 	continue;
 
       if(color_metric == Z_SAMPLES){
-	if(Vertex[i].num_samples > max_stat_val)
-	  max_stat_val=Vertex[i].num_samples;
-	if(Vertex[i].num_samples < min_stat_val)
-	  min_stat_val=Vertex[i].num_samples;
+	val = Vertex[i].num_samples;
       }else if(color_metric == Z_ERR){
-	double dev=stddev(Vertex[i].Zsamples,Vertex[i].num_samples);
-	//	dev *=100.0;
-	
-
-	if(Vertex[i].num_samples  >1 && save_stats)
-	  stat_vals.push_back(dev);
-	if( dev > max_stat_val )
-	  max_stat_val=dev;
-	if(dev < min_stat_val)
-	  min_stat_val=dev;
-      }else if(color_metric == SIGNED_ERR){
-	if(Vertex[i].num_samples == 0)
-	  return;
-	
-	double err=signed_err(Vertex[i].Zsamples,Vertex[i].Zsource,
-			      Vertex[i].num_samples);
-
-	stat_vals.push_back(err);
-	if( err > max_stat_val )
-	  max_stat_val=err;
-	if(err < min_stat_val)
-	min_stat_val=err;
+	val=stddev(Vertex[i].Zsamples,Vertex[i].num_samples);
       }
-      
+      else if(color_metric == Z_VAR){
+	val=var(Vertex[i].Zsamples,Vertex[i].num_samples);
+      }else if(color_metric == SIGNED_ERR){
+	val=signed_err(Vertex[i].Zsamples,Vertex[i].Zsource,
+		       Vertex[i].num_samples);
+      }
+
+      if(Vertex[i].num_samples  >1 && save_stats)
+	stat_vals.push_back(val);
+      if( val > max_stat_val )
+	max_stat_val=val;
+      if(val < min_stat_val)
+	min_stat_val=val; 
     }
     
 }
@@ -1663,35 +1651,18 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	  float val=0.0;
 	  switch(color_metric){ 
 	  case Z_SAMPLES:
-	
-	  
-
-	    ColorMap::jetColorMap(rgb,tc->vi->num_samples,min_stat_val,max_stat_val);
-	    r=rgb[0]/255.0;
-	    g=rgb[1]/255.0;
-	    b=rgb[2]/255.0;
-
-	    //  printf("%d %f %f %f %f\n",tc->vi->num_samples,val,r,g,b);
+	    val=tc->vi->num_samples;
 	    break;
 	  case Z_ERR:
-
 	    val=stddev(tc->vi->Zsamples,tc->vi->num_samples);
-
-	    //printf("%d %f\n",tc->vi->num_samples,val);
-	    ColorMap::jetColorMap(rgb,val,min_stat_val,max_stat_val);
-	    r=rgb[0]/255.0;
-	    g=rgb[1]/255.0;
-	    b=rgb[2]/255.0;
 	    break;
-
+	  case Z_VAR:
+	    val=var(tc->vi->Zsamples,tc->vi->num_samples);
+	    break;
+	    
 	  case SIGNED_ERR:
 	    val=signed_err(tc->vi->Zsamples,tc->vi->Zsource,
 			   tc->vi->num_samples);
-	    
-	    ColorMap::jetColorMap(rgb,val,min_stat_val,max_stat_val);
-	    r=rgb[0]/255.0;
-	    g=rgb[1]/255.0;
-	    b=rgb[2]/255.0;
 	    break;
 
 	  case SHADOWED:
@@ -1699,13 +1670,16 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	    g=tc->vi->shadowed;
 	    b=tc->vi->shadowed;
 	    break;
-
+	    
+	  }
+	  
+	  if(color_metric != SHADOWED){
+	    ColorMap::jetColorMap(rgb,val,min_stat_val,max_stat_val);
+	    r=rgb[0]/255.0;
+	    g=rgb[1]/255.0;
+	    b=rgb[2]/255.0;
 	  }
 
-	  
-
-	  
-	  
 	  buf[0]=r;
 	  buf[1]=g;
 	  buf[2]=b;

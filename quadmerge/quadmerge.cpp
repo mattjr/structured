@@ -155,8 +155,13 @@ int	main(int argc, char *argv[])
   if(argp.read("-zsamples"))
     color_metric=Z_SAMPLES;
 
-  if(argp.read("-dumpstat",total_stat_file))
+  if(argp.read("-zvar"))
+    color_metric=Z_VAR;
+
+  if(argp.read("-dumpstat",total_stat_file)){
+    save_stats=true;
     dump_stats=true;
+  }
   printf("Color Metric: ");
   switch(color_metric){
       case Z_SAMPLES:
@@ -165,7 +170,9 @@ int	main(int argc, char *argv[])
       case Z_ERR:
 	printf("Z STD Err\n");
        	break;
-
+  case Z_VAR:
+    printf("Z Var\n");
+    break;
       case SIGNED_ERR:
 	printf("Signed Err\n");
        	break;
@@ -308,7 +315,7 @@ int	main(int argc, char *argv[])
     double medianV=median(stat_vals);
 
     FILE *fp=fopen("statfile.txt","w");
-    fprintf(fp,"%f %f\n",min_stat_val,max_stat_val);
+    //    fprintf(fp,"%f %f\n",min_stat_val,max_stat_val);
     fprintf(fp,"%f %f\n",meanV,medianV);
     fclose(fp);
     fp=fopen(total_stat_file.c_str(),"w");

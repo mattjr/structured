@@ -104,3 +104,23 @@ if(samples <= 1) return 0;
 }/* end function stddev */
 
 
+double var(float *data, int samples)
+{
+
+
+if(samples <= 1) return 0;
+ double sum2=0.0;
+ double sum=0.0;
+ for(int i=0; i < samples; i++){
+   sum+=data[i];
+   sum2+=data[i]*data[i];
+ }
+ double mean=sum/samples;
+ double var= (sum2 - samples*mean*mean)/(samples-1);
+ if(isnan(var))
+   var=0.0;
+ //printf("%f %f %f %f\n",data[0],data[1],sum/samples,dev); 
+ return var;
+
+
+}/* end function var */

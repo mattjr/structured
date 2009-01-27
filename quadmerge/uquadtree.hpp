@@ -184,6 +184,6 @@ extern double max_stat_val;
 extern double min_stat_val;
 extern std::vector<double> stat_vals;
 extern bool save_stats;
-enum {Z_SAMPLES,Z_ERR,SHADOWED,SIGNED_ERR};
+enum {Z_SAMPLES,Z_ERR,SHADOWED,SIGNED_ERR,Z_VAR};
 
 #endif // QUADTREE_HPP

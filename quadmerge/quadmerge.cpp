@@ -421,6 +421,14 @@ int	main(int argc, char *argv[])
 	title << "Standard Dev Err [m]";
 	//	max_stat_val=0.2;
 	break;
+	case SIGNED_ERR:
+	  title << "Signed Err [m]";
+	  break;
+
+	case Z_VAR:
+	  title << "Var Z [m]";
+	  break;
+	  
       }
       FILE *fp = fopen(statfile.c_str(),"w");
       fprintf(fp,"%f %f %d\n%s\n",min_stat_val,max_stat_val,discrete,title.str().c_str());

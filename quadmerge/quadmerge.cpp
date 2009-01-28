@@ -137,6 +137,8 @@ int	main(int argc, char *argv[])
   bool range= argp.read("-range",rangefile);
   bool stat=false;
   std::string statfile;
+  std::string input_statfile;
+  bool input_stat=false;
   if(  argp.read("-lod"))
     lod=true;
 
@@ -146,6 +148,10 @@ int	main(int argc, char *argv[])
     apply_color_wf=true;
   if(argp.read("-stat",statfile))
     stat=true;
+
+  if(argp.read("-istat",input_statfile)){
+    input_stat=true;
+  }
   if(argp.read("-zerr"))
     color_metric=Z_ERR;
 
@@ -403,12 +409,20 @@ int	main(int argc, char *argv[])
 
   }
   const float detail[]={FLT_MAX,800000.0,100000.0};
-  // Draw the quadtree.
+  std::stringstream title;
+   int discrete=0;
   if (root) {
+    if(input_stat){
+
+      FILE *fp = fopen(input_statfile.c_str(),"r");
+      fscanf(fp,"%lf %lf %*d\n%*s\n",&min_stat_val,
+	      &max_stat_val);
+      fclose(fp);  
+    }
     if( stat){
-      int discrete=0;
+   
       min_cell_size=ge.cell_size;
-      std::stringstream title;
+     
       title.setf(std::ios::fixed, std::ios::floatfield);
       title.precision(5);
       switch(color_metric){
@@ -419,7 +433,7 @@ int	main(int argc, char *argv[])
 	break;
       case Z_ERR:
 	title << "Standard Dev Err [m]";
-	//	max_stat_val=0.2;
+
 	break;
 	case SIGNED_ERR:
 	  title << "Signed Err [m]";
@@ -434,9 +448,10 @@ int	main(int argc, char *argv[])
       fprintf(fp,"%f %f %d\n%s\n",min_stat_val,max_stat_val,discrete,title.str().c_str());
       fclose(fp);  
     }
-  
+    if(input_stat)
+      printf("Loading previously saved stat file for color range %f %f\n",min_stat_val,max_stat_val);  
     //		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
-    if(lod){
+    if(lod){  // Draw the quadtree.
       std::string name(wf_fname);
       for(int i=0; i < 3; i++){
 	char tmp[255];

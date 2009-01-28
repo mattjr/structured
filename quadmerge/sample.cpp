@@ -49,6 +49,7 @@ double signed_err(float *data,unsigned short *sources, int samples){
     if(sources[i] < min_source  )
       min_source=sources[i];
   }
+  
   if(min_source == SHRT_MAX){
     fprintf(stderr,"Weird error shouldn't calulate signed err when there is no referece mesh %d %d\n", samples,sources[0]);
     return 0.0;
@@ -65,15 +66,17 @@ double signed_err(float *data,unsigned short *sources, int samples){
   if(mean_cnt > 0)
     ref_mean/=(double)mean_cnt;
 
- 
+  double other_mean=0.0;
+  int other_cnt=0;
   double err=0.0;
   for(int i=0; i < samples; i++){
     if(sources[i] != min_source){
-      err += (ref_mean-ge.fromUINTz(data[i]));
+      other_mean += ge.fromUINTz(data[i]);
+      other_cnt++;
     }
   }
-  //  fprintf(stderr,"%d %d %f %f\n",samples,mean_cnt,ref_mean,err);
-  return err;
+  other_mean /= (double) other_cnt;
+  return ref_mean-other_mean;
 }
 
 

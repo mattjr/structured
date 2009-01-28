@@ -1674,6 +1674,7 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	  }
 	  
 	  if(color_metric != SHADOWED){
+	    //  printf("%f %f\n",min_stat_val,max_stat_val);
 	    ColorMap::jetColorMap(rgb,val,min_stat_val,max_stat_val);
 	    r=rgb[0]/255.0;
 	    g=rgb[1]/255.0;

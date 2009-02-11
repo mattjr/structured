@@ -32,6 +32,7 @@
 #include "sample.hpp"
 #include "auv_mesh_utils.hpp"
 #include "colormap.hpp"
+#include "robust/RobustStats.hpp"
 
 #define NO_DATA 0
 using ul::vector;
@@ -1425,7 +1426,9 @@ void quadsquare::UpdateStats(const quadcornerdata& cd)
 	val=stddev(Vertex[i].Zsamples,Vertex[i].num_samples);
       }
       else if(color_metric == Z_VAR){
-	val=var(Vertex[i].Zsamples,Vertex[i].num_samples);
+	//	val=var(Vertex[i].Zsamples,Vertex[i].num_samples);
+	val=square_err(Vertex[i].Zsamples,Vertex[i].Zsource,
+		       Vertex[i].num_samples);
       }else if(color_metric == SIGNED_ERR){
 	val=signed_err(Vertex[i].Zsamples,Vertex[i].Zsource,
 		       Vertex[i].num_samples);
@@ -1624,9 +1627,27 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	  //	  for(int i=0; i< tc->vi->num_samples; i++)
 	  //printf("%f ",tc->vi->Zsamples[i]);
 	  // printf("\n");
+	  float res,median,mad,mest,mean;
+	  std::vector<float> weights;
+	  weights.resize(tc->vi->num_samples);
+	
+	
+	    if(tc->vi->num_samples > 2){
+	      try{
+		
+		gpstk::QSort<float>(tc->vi->Zsamples,(int)tc->vi->num_samples);
+		mean=get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
+		mad = gpstk::Robust::MedianAbsoluteDeviation<float>(tc->vi->Zsamples,tc->vi->num_samples, median);
+		mest = gpstk::Robust::MEstimate<float>(tc->vi->Zsamples,tc->vi->num_samples, median, mad, &weights[0]);
+		//		std::cout << "median: "<< median<< " mean: "<< mean << " mest: "<<mest  <<std::endl;//	    gpstk::Robust::StemLeafPlot<float>(std::cout,tc->vi->Zsamples,(long)tc->vi->num_samples,"S");
+	      
+	    }catch (gpstk::Exception& e) {e.dump(std::cerr);}
+	      Z=mest;
+	    }else{
 	  double maxZ=get_max_Z(tc->vi->Zsamples,tc->vi->num_samples);//get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
 	  Z=get_clipped_avg_Z(tc->vi->Zsamples,tc->vi->num_samples,maxZ,ge.toUINTz(100.0));
 	  //	  printf("%f\n",Z);
+	    }
 	}else{
 	  Z=tc->vi->Z;
 	}
@@ -1655,9 +1676,12 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	    break;
 	  case Z_ERR:
 	    val=stddev(tc->vi->Zsamples,tc->vi->num_samples);
+
 	    break;
 	  case Z_VAR:
-	    val=var(tc->vi->Zsamples,tc->vi->num_samples);
+	    	    val=square_err(tc->vi->Zsamples,tc->vi->Zsource,
+				   tc->vi->num_samples);
+		    //val=var(tc->vi->Zsamples,tc->vi->num_samples);
 	    break;
 	    
 	  case SIGNED_ERR:

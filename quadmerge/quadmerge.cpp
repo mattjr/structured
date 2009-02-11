@@ -36,6 +36,7 @@
 #include "sample.hpp"
 #include "../mesh2hmap/mesh2hmap.h"
 #include "../mesh2hmap/parser.h"
+
 using mapnik::Envelope;
 using namespace ul;
 using std::cout;
@@ -319,7 +320,11 @@ int	main(int argc, char *argv[])
  
     double meanV=mean(stat_vals);
     double medianV=median(stat_vals);
+    if(isnan(meanV))
+      meanV=0.0;
 
+    if(isnan(medianV))
+      medianV=0.0;
     FILE *fp=fopen("statfile.txt","w");
     //    fprintf(fp,"%f %f\n",min_stat_val,max_stat_val);
     fprintf(fp,"%f %f\n",meanV,medianV);

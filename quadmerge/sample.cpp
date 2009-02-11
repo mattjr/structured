@@ -82,8 +82,13 @@ double signed_err(float *data,unsigned short *sources, int samples){
 
 
     
+double square_err(float *data,unsigned short *sources, int samples){
+  double se=sqrt(pow(signed_err(data,sources,samples),2));
 
-
+  if(isnan(se))
+    return 0.0;
+  return se;
+}
 
 double stddev(float *data, int samples)
 {

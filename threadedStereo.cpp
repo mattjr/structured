@@ -464,8 +464,9 @@ static bool parse_args( int argc, char *argv[ ] )
  if(argp.read("--havembgrd"))
    have_mb_grd=true;
 
-  if(argp.read("--genmb")){
+ if(argp.read("--genmb") || argp.read("--mb")){
     gen_mb_ply=true;
+    have_mb_grd=true;
     //    have_mb_ply=true;
     //  mb_ply_filenames.push_back(string("mb.ply")) ;
   }

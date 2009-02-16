@@ -118,11 +118,11 @@ quadsquare::quadsquare(quadcornerdata* pcd)
 	Vertex[3].Lightness = (pcd->Verts[1].Lightness + pcd->Verts[2].Lightness) >> 1;
 	Vertex[4].Lightness = (pcd->Verts[2].Lightness + pcd->Verts[3].Lightness) >> 1;*/
 
-	Vertex[0].shadowed = std::max(std::max(pcd->Verts[0].shadowed , pcd->Verts[1].shadowed ),std::max(pcd->Verts[2].shadowed , pcd->Verts[3].shadowed));
-	Vertex[1].shadowed = std::max(pcd->Verts[3].shadowed , pcd->Verts[0].shadowed);
-	Vertex[2].shadowed = std::max(pcd->Verts[0].shadowed , pcd->Verts[1].shadowed);
-	Vertex[3].shadowed = std::max (pcd->Verts[1].shadowed , pcd->Verts[2].shadowed);
-	Vertex[4].shadowed = std::max (pcd->Verts[2].shadowed ,pcd->Verts[3].shadowed);
+	Vertex[0].aux = std::max(std::max(pcd->Verts[0].aux , pcd->Verts[1].aux ),std::max(pcd->Verts[2].aux , pcd->Verts[3].aux));
+	Vertex[1].aux = std::max(pcd->Verts[3].aux , pcd->Verts[0].aux);
+	Vertex[2].aux = std::max(pcd->Verts[0].aux , pcd->Verts[1].aux);
+	Vertex[3].aux = std::max (pcd->Verts[1].aux , pcd->Verts[2].aux);
+	Vertex[4].aux = std::max (pcd->Verts[2].aux ,pcd->Verts[3].aux);
 }
 
 
@@ -390,7 +390,7 @@ float	quadsquare::RecomputeErrorAndLighting(const quadcornerdata& cd)
 	*/
 
 	for(int i=0; i <5; i++)
-	  Vertex[i].shadowed=0;
+	  Vertex[i].aux=0;
 
 	// The error, MinZ/MaxZ, and lighting values for this node and descendants are correct now.
 	Dirty = false;
@@ -1338,7 +1338,7 @@ void	quadsquare::AddShadowMap(const quadcornerdata& cd, const HeightMapInfo& hm,
 	for (i = 0; i < 5; i++) {
 		if (s[i] != 0) {
 		  //	Dirty = true;					  
-			Vertex[i].shadowed = s[i];
+			Vertex[i].aux = s[i];
 		
 		
 		}
@@ -1444,6 +1444,81 @@ void quadsquare::UpdateStats(const quadcornerdata& cd)
     
 }
 
+void quadsquare::UpdateDiffs(const quadcornerdata& cd)
+{
+    
+
+    // recursively go down to child node
+    int i;
+    int flags = 0;
+    int mask = 1;
+    quadcornerdata q;
+    for (i=0; i<4; i++, mask<<=1) {
+        if (EnabledFlags & (16<<i)) {
+            	SetupCornerData(&q, cd, i);
+			Child[i]->UpdateDiffs(q);
+		} else {
+			flags |= mask;
+		}
+	}
+
+
+    if (flags == 0) return;
+  
+    float	v;
+    double diffX,diffY;
+    diffX=0.0;
+    diffY=0.0;
+    if(Vertex[0].Z ==0 || Vertex[1].Z ==0  || Vertex[2].Z == 0 || Vertex[3].Z == 0  || Vertex[4].Z ==0 )
+      return;
+    float vert0=mest(Vertex[0]);
+    quadsquare*	s = GetNeighbor(0, cd);
+    if (s) v = mest(s->Vertex[0]); else v = mest(Vertex[1]);
+    //E
+        if(Vertex[1].num_samples && Vertex[0].num_samples )
+      diffX+=pow(vert0-v,2);
+    
+    s = GetNeighbor(1, cd);
+    if (s) v = mest(s->Vertex[0]); else v = mest(Vertex[2]);
+    //N
+        if(Vertex[2].num_samples && Vertex[0].num_samples  )
+    diffY+=pow(vert0-v,2);
+    
+    s = GetNeighbor(2, cd);
+    if (s) v = mest(s->Vertex[0]); else v = mest(Vertex[3]);
+    //W
+        if(Vertex[3].num_samples && Vertex[0].num_samples )
+    diffX+=pow(vert0-v,2);
+    
+    s = GetNeighbor(3, cd);
+    if (s) v = mest(s->Vertex[0]); else v = mest(Vertex[4]);
+    //S
+        if(Vertex[4].num_samples  && Vertex[0].num_samples)
+      diffY+=pow(vert0-v,2);
+
+
+	printf("%f %f %d %d %d %d %d\n",diffX,diffY,Vertex[0].num_samples,
+	       Vertex[1].num_samples,
+	       Vertex[2].num_samples,
+	       Vertex[3].num_samples,
+	       Vertex[4].num_samples);
+    Vertex[0].aux=diffX+diffY;
+    if(Vertex[0].num_samples+
+	       Vertex[1].num_samples+
+	       Vertex[2].num_samples+
+	       Vertex[3].num_samples+
+       Vertex[4].num_samples < 6)
+      return;
+  if(  Vertex[0].aux > max_stat_val )
+    max_stat_val= Vertex[0].aux ;
+      if( Vertex[0].aux  < min_stat_val)
+	min_stat_val= Vertex[0].aux ; 
+
+
+    
+    
+}
+
 //-------------------------------------------------------------------
 //  RenderToWF()
 //  Render quadtree to a wavefront file. You should run a few
@@ -1509,6 +1584,10 @@ void quadsquare::RenderToWFAux(const quadcornerdata& cd)
     int z0 = cd.yorg;
     int z1 = cd.yorg + half;
     int z2 = cd.yorg + whole;
+    if(color_metric == RUGOSITY){
+      for(int i=1; i < 5; i++)
+	Vertex[i].aux=Vertex[0].aux;
+    }
 
     tc[0].x=x1; tc[0].y=z1; tc[0].vi=&(Vertex[0]);
     tc[1].x=x2; tc[1].y=z1; tc[1].vi=&(Vertex[1]);
@@ -1594,8 +1673,28 @@ float get_min_Z(float *samples,int num){
       return (min);
 
 }
+float mest(const VertInfo &vert){
+  if(vert.num_samples == 0)
+    return 0.0;
 
+  if(vert.num_samples < 2){
+   return vert.Zsamples[0];
+  }
 
+  float median,mad,mest,mean;
+  std::vector<float> weights;
+  weights.resize(vert.num_samples);
+  try{
+    
+    gpstk::QSort<float>(vert.Zsamples,(int)vert.num_samples);
+    mean=get_avg_Z(vert.Zsamples,vert.num_samples);
+    mad = gpstk::Robust::MedianAbsoluteDeviation<float>(vert.Zsamples,vert.num_samples, median);
+    mest = gpstk::Robust::MEstimate<float>(vert.Zsamples,vert.num_samples, median, mad, &weights[0]);
+    //		std::cout << "median: "<< median<< " mean: "<< mean << " mest: "<<mest  <<std::endl;//	    gpstk::Robust::StemLeafPlot<float>(std::cout,vert.Zsamples,(long)vert.num_samples,"S");
+    
+	    }catch (gpstk::Exception& e) {e.dump(std::cerr);}
+  return mest;
+}
 void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */, 
                                    nFlatTriangleCorner *tc0, 
                                    nFlatTriangleCorner *tc1,
@@ -1626,23 +1725,13 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	if(tc->vi->Zsamples){
 	  //	  for(int i=0; i< tc->vi->num_samples; i++)
 	  //printf("%f ",tc->vi->Zsamples[i]);
-	  // printf("\n");
-	  float res,median,mad,mest,mean;
-	  std::vector<float> weights;
-	  weights.resize(tc->vi->num_samples);
+	  // printf("\n"); 
+
 	
 	
 	    if(tc->vi->num_samples > 2){
-	      try{
-		
-		gpstk::QSort<float>(tc->vi->Zsamples,(int)tc->vi->num_samples);
-		mean=get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
-		mad = gpstk::Robust::MedianAbsoluteDeviation<float>(tc->vi->Zsamples,tc->vi->num_samples, median);
-		mest = gpstk::Robust::MEstimate<float>(tc->vi->Zsamples,tc->vi->num_samples, median, mad, &weights[0]);
-		//		std::cout << "median: "<< median<< " mean: "<< mean << " mest: "<<mest  <<std::endl;//	    gpstk::Robust::StemLeafPlot<float>(std::cout,tc->vi->Zsamples,(long)tc->vi->num_samples,"S");
-	      
-	    }catch (gpstk::Exception& e) {e.dump(std::cerr);}
-	      Z=mest;
+
+	      Z=mest(*tc->vi);
 	    }else{
 	  double maxZ=get_max_Z(tc->vi->Zsamples,tc->vi->num_samples);//get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
 	  Z=get_clipped_avg_Z(tc->vi->Zsamples,tc->vi->num_samples,maxZ,ge.toUINTz(100.0));
@@ -1689,11 +1778,17 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 			   tc->vi->num_samples);
 	    break;
 
-	  case SHADOWED:
-	    r=tc->vi->shadowed;
-	    g=tc->vi->shadowed;
-	    b=tc->vi->shadowed;
+	  case RUGOSITY:
+	    val=tc->vi->aux;
 	    break;
+	  
+	  case SHADOWED:
+	    r=tc->vi->aux;
+	    g=tc->vi->aux;
+	    b=tc->vi->aux;
+	    break;
+
+
 	    
 	  }
 	  

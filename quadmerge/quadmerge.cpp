@@ -129,7 +129,7 @@ int	main(int argc, char *argv[])
   if(  argp.read("-output",tmp ));
   wf_fname = (char *)malloc(255);
   strcpy(  wf_fname,tmp.c_str());;
-  ge.max_Level=12;
+  ge.max_Level=15;
   RootCornerData.Level= ge.max_Level;
   edge_thresh=0.5;
   argp.read("-edgethresh",edge_thresh);	  
@@ -159,6 +159,9 @@ int	main(int argc, char *argv[])
   if(argp.read("-signederr"))
     color_metric=SIGNED_ERR;
 
+  if(argp.read("-rugosity"))
+    color_metric=RUGOSITY;
+
   if(argp.read("-zsamples"))
     color_metric=Z_SAMPLES;
 
@@ -180,9 +183,12 @@ int	main(int argc, char *argv[])
   case Z_VAR:
     printf("Z Var\n");
     break;
-      case SIGNED_ERR:
-	printf("Signed Err\n");
-       	break;
+  case SIGNED_ERR:
+    printf("Signed Err\n");
+    break;
+  case RUGOSITY:
+    printf("Rugosity\n");
+    break;
       }
   std::string config_file_name;
   double local_easting, local_northing;
@@ -316,6 +322,10 @@ int	main(int argc, char *argv[])
   //root->StaticCullData(RootCornerData, 25);
   
   root->UpdateStats(RootCornerData);
+  if(color_metric == RUGOSITY){
+    printf("Updating Diffs...\n");
+    root->UpdateDiffs(RootCornerData);
+  }
   if(dump_stats){
  
     double meanV=mean(stat_vals);
@@ -413,7 +423,7 @@ int	main(int argc, char *argv[])
     root->AddShadowMap(RootCornerData, hm);
 
   }
-  const float detail[]={FLT_MAX,800000.0,100000.0};
+  const float detail[]={FLT_MAX,800000.0,100000.0,10000.0,1000.0,700.0,400.0};
   std::stringstream title;
    int discrete=0;
   if (root) {
@@ -458,7 +468,7 @@ int	main(int argc, char *argv[])
     //		root->Update(RootCornerData, (const float*) ViewerLoc, Detail);
     if(lod){  // Draw the quadtree.
       std::string name(wf_fname);
-      for(int i=0; i < 3; i++){
+      for(int i=0; i < 7; i++){
 	char tmp[255];
 	sprintf(tmp,"-lod%d.ply",i);
 	std::string str(name);
@@ -668,7 +678,7 @@ void load_grd( mesh_input &m){
   float *data_grd;
   if(!read_grd_data(m.name.c_str(),nx,ny,data_grd))
   return;
-  ge.get_closest_res_level(m.res,level,actual_res);
+  ge.get_downsample_res_level(m.res,level,actual_res);
   if(actual_res < min_cell_size)
     min_cell_size=actual_res;
   /*Flip X and Y*/

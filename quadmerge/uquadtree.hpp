@@ -61,6 +61,17 @@ public:
       }
     }
   }
+
+  void get_downsample_res_level(double target_res,int &level, double &res){
+    for(level=max_Level; level > 0; level--){
+      res=get_cell_size(level);
+      //printf("%f= %d\n",res,level);
+      if(res > target_res){
+	level=max_Level-level;
+	break;      
+      }
+    }
+  }
   friend  std::ostream& operator << (std::ostream& os, const global_extents &data){
     return os<<"Min X: "<< data.min[0] << " Y: "<< data.min[1] << " Z: "<< data.min[2] <<"\nMax X: "<< data.max[0] << " Y: "<< data.max[1] << " Z: " <<data.max[2] << "\nCell Size " << data.cell_size <<std::endl;
   }
@@ -86,7 +97,7 @@ struct	VertInfo {
   unsigned char num_samples;
   float *Zsamples;
   unsigned short *Zsource;
-  unsigned char shadowed;
+  float aux;
   //	unsigned char	Lightness;	// For simple precomputed vertex lighting for purposes of the demo.  It's a waste of 2 bytes if we're texturing.
 
 };
@@ -124,7 +135,7 @@ struct quadsquare {
 // public:
 	quadsquare(quadcornerdata* pcd);
 	~quadsquare();
-
+  void UpdateDiffs(const quadcornerdata& cd);
   void StaticUpdate(const quadcornerdata& cd, float Detail);
   void	AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm,bool insert_sparse=false);
 void AddShadowMap(const quadcornerdata& cd, const HeightMapInfo& hm,bool insert_sparse=false);
@@ -184,6 +195,6 @@ extern double max_stat_val;
 extern double min_stat_val;
 extern std::vector<double> stat_vals;
 extern bool save_stats;
-enum {Z_SAMPLES,Z_ERR,SHADOWED,SIGNED_ERR,Z_VAR};
-
+enum {Z_SAMPLES,Z_ERR,SHADOWED,SIGNED_ERR,Z_VAR,RUGOSITY};
+float mest(const VertInfo &vert);
 #endif // QUADTREE_HPP

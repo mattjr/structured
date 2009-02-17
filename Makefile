@@ -27,7 +27,7 @@ release: setup
 
 test: setup
 	@cd $(BUILD_DIR); \
-	ctest -D Experimental 
+	ctest .
 
 # Catch all for other targets - will be passed to BUILD_DIR
 %: setup

@@ -322,9 +322,14 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
       //jet_color_map(val,r,g,b);
       //  (*gc._colors++).set(r,b,g,1.0);
     }else{
-      (*gc._colors++).set(v1->r/255.0,v1->g/255.0,v1->b/255.0,1.0);
+      /*(*gc._colors++).set(v1->r/255.0,v1->g/255.0,v1->b/255.0,1.0);
+    
       (*gc._colors++).set(v2->r/255.0,v2->g/255.0,v2->b/255.0,1.0);
-      (*gc._colors++).set(v3->r/255.0,v3->g/255.0,v3->b/255.0,1.0);
+      (*gc._colors++).set(v3->r/255.0,v3->g/255.0,v3->b/255.0,1.0);*/
+      (*gc._colors++).set(v1->r,v1->g,v1->b,1.0);
+    
+      (*gc._colors++).set(v2->r,v2->g,v2->b,1.0);
+      (*gc._colors++).set(v3->r,v3->g,v3->b,1.0);
 
     }
     
@@ -1017,17 +1022,18 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	       }
 	     
 	       
-	      textured->addDrawable(gc._geom);
-	   }
-	 
+	     
+	      //  }
+	
 	  
-	  else{
+	   //  else{
 	  
 	    osg::StateSet *utstateset = gc._geom->getOrCreateStateSet();
 	    if(shader_height_coloring){
 	      osg::Program* program=NULL;
 	      program = new osg::Program;
 	      program->setName( "colorshader" );
+	      //  printf("Here\n");
 	      osg::Shader *hcolorf=new osg::Shader( osg::Shader::FRAGMENT);
 	      osg::Shader *hcolorv=new osg::Shader( osg::Shader::VERTEX);
 	      loadShaderSource( hcolorf, basedir+"hcolor.frag" );
@@ -1041,6 +1047,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      utstateset->setDataVariance(osg::Object::STATIC);
 	      
 	    }
+	     
+	    textured->addDrawable(gc._geom);
 	    
 	    {
 	      osg::Material* material = new osg::Material;

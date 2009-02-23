@@ -43,7 +43,7 @@ static bool tex_array_blend=false;
 static bool applyNonVisMat=false;
 static string stereo_config_file_name;
 static string recon_config_file_name;
-
+static bool shader_color=true;
 static string contents_file_name;
 static string dir_name;
 static int verbose=false;
@@ -100,6 +100,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	  if( i == argc-1 ) return false;
 	  dir_name=string( argv[i+1]) ;
 	  i+=2;
+	}
+  else if( strcmp( argv[i], "--noshader" ) == 0 )
+	{
+     
+	  shader_color=false;
+	  i+=1;
 	}
       else if( strcmp( argv[i], "--notex" ) == 0 )
 	{
@@ -581,7 +587,7 @@ int main( int argc, char *argv[ ] )
     if(!mgc)
       mgc = new MyGraphicsContext();
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
-					num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex,do_atlas);    
+					num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex,do_atlas,shader_color);    
 
     osg::Node * lod0Node[2];
     lod0Node[0]=NULL;

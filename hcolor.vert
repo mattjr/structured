@@ -19,4 +19,6 @@ void main()
     E = -normalize(eyePosition.xyz);
     H = normalize(L + E);
     vC=gl_Color;
+    gl_TexCoord[0] = gl_MultiTexCoord0;
+ 
 }

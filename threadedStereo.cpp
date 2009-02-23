@@ -50,6 +50,7 @@ static double stop_time = numeric_limits<double>::max();
 //
 // Command-line arguments
 //
+static bool rugosity=false;
 static int dist_gentex_range=0;
 static int vrip_split;
 static FILE *pts_cov_fp;
@@ -319,7 +320,7 @@ static bool parse_args( int argc, char *argv[ ] )
   dir_name = "img/";
   strcpy(cachedtexdir,"cache-tex/");
 
-
+  rugosity=argp.read("--rugosity");
   argp.read("--stereo-calib",stereo_calib_file_name);
   argp.read("--poses",contents_file_name );
   argp.read("--skipsparse",skip_sparse);
@@ -2017,7 +2018,6 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     quadmerge_seg_fp=fopen(quadmerge_seg_fname,"w");    
     sprintf(quadprecmd,"cd mesh-quad;%s/bin/quadmerge -geoconf %s -lod %s -input ../%s -edgethresh %f -output ../mesh-quad/quad.ply -range ../mesh-quad/range.txt;",basepath.c_str(),deltaT_config_name.c_str(),shadowstr.c_str(),quadmerge_seg_fname,edgethresh);
     
-    
     for(int i=0; i < (int)tasks.size(); i++){    
     //Quadmerge List
       fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f 1\n",tasks[i].mesh_name.c_str(),vrip_res);
@@ -2082,16 +2082,20 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       fprintf(quadmergecmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-quad/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
 
    
- for(int t=0; t < 3; t++)
-      fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/quad-lod%d.ply > ../mesh-quad/clipped-diced-%08d-lod%d.ply;",
-	      cells[i].bounds.min_x,
-	      cells[i].bounds.min_y,
-	      FLT_MIN,
-	      cells[i].bounds.max_x,
-	      cells[i].bounds.max_y,
-	      FLT_MAX,
-	      eps,t,i,t);
-     fprintf(quadmergecmds_fp,"cd ..\n");
+      for(int t=0; t < 3; t++){
+	fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/quad-lod%d.ply > ../mesh-quad/clipped-diced-%08d-lod%d.ply;",
+		cells[i].bounds.min_x,
+		cells[i].bounds.min_y,
+		FLT_MIN,
+		cells[i].bounds.max_x,
+		cells[i].bounds.max_y,
+		FLT_MAX,
+		eps,t,i,t);
+	if(rugosity){
+	  fprintf(vripcmds_fp,"auv_mesh_shade ../mesh-quad/clipped-diced-%08d-lod%d.ply rugosity 0.5 ../mesh-quad/tmp-diced-%08d-lod%d.ply; mv ../mesh-quad/tmp-diced-%08d-lod%d.ply ../mesh-quad/clipped-diced-%08d-lod%d.ply;",i,t,i,t,i,t,i,t);
+	}
+      }
+      fprintf(quadmergecmds_fp,"cd ..\n");
    
       for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=cells[i].poses[j];

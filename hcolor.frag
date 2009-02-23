@@ -85,6 +85,50 @@ vec4 jetColorMap(float val) {
 	jet.w = 1.0;
         return jet;
 }
+
+vec4 coldColorMap(float value)
+{
+  float max3=1.0/3.0;
+  vec4 rgb;
+  rgb[3]=1.0;
+  if(value<max3)
+    {rgb[0]=0;rgb[1]=0;rgb[2]=(value/max3);}
+  else if(value<2*max3)
+    {rgb[0]=0;rgb[1]=((value-max3)/max3);rgb[2]=1.0;}
+  else if(value<1.0)
+    {rgb[0]=(value-2*max3)/max3;rgb[1]=1.0;rgb[2]=1.0;}
+  else {rgb[0]=rgb[1]=rgb[2]=1.0;}
+
+return rgb;
+}
+
+vec4 hotColorMap(float value)
+{
+  float max3=1.0/3.0;
+  vec4 rgb;
+  rgb[3]=1.0;
+  if(value<max3)
+    {rgb[0]=0;rgb[1]=0;rgb[0]=(value/max3);}
+  else if(value<2*max3)
+    {rgb[0]=1.0;rgb[1]=((value-max3)/max3);rgb[2]=0.0;}
+  else if(value<1.0)
+    {rgb[0]=1.0; rgb[1]=1.0; rgb[2]=(value-2*max3)/max3;}
+  else {rgb[0]=rgb[1]=rgb[2]=1.0;}
+
+return rgb;
+}
+vec4 positiveColorMap(float value)
+{
+  vec4 rgb;
+
+  rgb[0]=0.7529;rgb[1]=0;rgb[2]=0;
+  rgb[0]+=(0.2470*value);
+  rgb[1]+=(1.0*value);
+  if(value>0.5)
+  rgb[2]+=(2*(value-0.5));
+  return rgb;
+}
+
 /*
 
 void main()
@@ -110,8 +154,17 @@ void main()
  varying vec3 E;
  varying vec3 H;
 varying vec4 vC;
+uniform sampler2D colorMap;
 void main()
 {
+
+  vec4 aux= vec4(0.0,vC.y,0.0,1.0);
+  vec4 auxratio = vec4(0.0,0.5,0.0,1.0);
+  if(shaderOut == 2){
+    
+  
+    gl_FragColor =  (((vec4(1.0,1.0,1.0,0.0)-auxratio)*texture2D( colorMap, gl_TexCoord[0].st)) + (auxratio * aux));
+  }else {
      vec3 NNormal = normalize(normal.xyz);
      vec3 Light  = normalize(vec3(1,  2.5,  -1));
 //normalize(vec3(0,0,-1 ));
@@ -133,6 +186,12 @@ void main()
     
     vec4 jet=jetColorMap(val);
     vec4 ran=rainbowColorMap(val);
-    vec4 shadow = vec4(vC.x,vC.x,vC.x,1.0);
-    gl_FragColor =  ran* shadow* (ambient + diffuse + specular);
+    vec4 shadow = vec4(1.0-vC.x,1.0-vC.x,1.0-vC.x,1.0);
+    vec4 auxC = hotColorMap(vC.y);//coldColorMap(vC.y);
+    if(shaderOut == 1)
+      gl_FragColor = ran* shadow* (ambient + diffuse + specular);
+    else
+      gl_FragColor = auxC * shadow* (ambient + diffuse + specular);
+    
+  }
 }

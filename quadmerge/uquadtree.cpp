@@ -35,7 +35,7 @@
 #include "robust/RobustStats.hpp"
 
 #define NO_DATA 0
-using ul::vector;
+//using ul::vector;
 #include "fileio.hpp"
 
 int color_metric=Z_ERR;

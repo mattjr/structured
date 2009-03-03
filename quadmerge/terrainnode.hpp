@@ -12,6 +12,8 @@
 #include <osg/PolygonMode>
 #include <osgUtil/DelaunayTriangulator>
 #include <osg/Timer>
+#include <osg/StateSet>
+#include <osg/Point>
  class terrain_data{
 public:
    double x,y,z;
@@ -47,8 +49,13 @@ public:
 
  
     tree_box_vertices=  new osg::Vec3Array;
+    tree_box_color=new osg::Vec4Array;
+    tree_box_color->push_back(osg::Vec4(0.0f,1.0f,0.0f,1.0f));
     terrain_vertices=  new osg::Vec3Array;
     tree_point_vertices=  new osg::Vec3Array;
+    tree_point_color=new osg::Vec4Array;
+    tree_point_color->push_back(osg::Vec4(1.0f,0.0f,0.0f,1.0f));
+
 #ifdef PLOTTING
     pls = new plstream();
  
@@ -128,6 +135,19 @@ argv[0]= "quadmerge" ;
         }
     }
 #endif
+ 
+  void count_items(const terrain_node* node,int& count) const
+    {
+        if (node)
+        {
+            count += node->data_.size();    
+            for (int i=0;i<4;++i)
+            {
+                count_items(node->children_[i],count);
+            }    
+        }
+    }
+
 void insert(const terrain_data& data,double x,double y)
     {
       insert(data, Envelope<double>(x,y,x,y),root_);
@@ -151,8 +171,9 @@ void insert(const terrain_data &data,const Envelope<double>& item_ext,quadtree_n
             ext[1]=Envelope<double>(hix - width * ratio_,loy,hix,loy + height * ratio_);
             ext[2]=Envelope<double>(lox,hiy - height*ratio_,lox + width * ratio_,hiy);
             ext[3]=Envelope<double>(hix - width * ratio_,hiy - height*ratio_,hix,hiy);
-
-            if (width > min_extent_size_ || height > min_extent_size_)
+	    int count=0;
+	    count_items(node,count);
+            if ((width > min_extent_size_ || height > min_extent_size_) &&   count > 0)
             {
                 for (int i=0;i<4;++i)
                 {
@@ -182,11 +203,17 @@ void insert(const terrain_data &data,const Envelope<double>& item_ext,quadtree_n
 		//	osg::DrawElementsUInt* tree_base = new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, tree_box_vertices->size());
 		
 		tree_box_geometry->setVertexArray(tree_box_vertices);
+		tree_box_geometry->setColorArray(tree_box_color);
+		tree_box_geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+
 	       	tree_box_geometry->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,tree_box_vertices->size()));
 
 		tree_point_geometry->setVertexArray(tree_point_vertices);
 	       	tree_point_geometry->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS,0,tree_point_vertices->size()));
-	
+		tree_point_geometry->setColorArray(tree_point_color);
+		tree_point_geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+		tree_point_geometry->getOrCreateStateSet()->setAttribute( new osg::Point( 3.0f ), osg::StateAttribute::ON );
+
     }
   void render_tree(const terrain_node *node,int level=0) const{
     
@@ -274,6 +301,8 @@ osg::Geometry *terrain_geometry;
 osg::Vec3Array* terrain_vertices;
 osg::Vec3Array* tree_box_vertices;
 osg::Vec3Array* tree_point_vertices;
+osg::Vec4Array* tree_box_color;
+osg::Vec4Array* tree_point_color;
 public :
 osg::Group* osg_root;
 };

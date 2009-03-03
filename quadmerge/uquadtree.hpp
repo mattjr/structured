@@ -10,8 +10,8 @@
 
 
 
-#ifndef QUADTREE_HPP
-#define QUADTREE_HPP
+#ifndef UQUADTREE_HPP
+#define UQUADTREE_HPP
 
 
 #include "clip.hpp"
@@ -150,6 +150,7 @@ void AddShadowMap(const quadcornerdata& cd, const HeightMapInfo& hm,bool insert_
 
 	float	GetHeight(const quadcornerdata& cd, float x, float z);
 	int	  RenderToWF(const quadcornerdata& cd);
+  void	SetupCornerData(quadcornerdata* q, const quadcornerdata& pd, int ChildIndex);
 private:
   bool check_valid(const quadcornerdata& cd, const HeightMapInfo& hm);
 	void	EnableEdgeVertex(int index, bool IncrementCount, const quadcornerdata& cd);
@@ -163,7 +164,7 @@ private:
 
 	quadsquare*	GetNeighbor(int dir, const quadcornerdata& cd);
 	void	CreateChild(int index, const quadcornerdata& cd);
-  void	SetupCornerData(quadcornerdata* q, const quadcornerdata& pd, int ChildIndex);
+
 
   void RenderToWFAux(const quadcornerdata& cd);
 	void	UpdateAux(const quadcornerdata& cd, const float ViewerLocation[3], float CenterError);
@@ -197,4 +198,17 @@ extern std::vector<double> stat_vals;
 extern bool save_stats;
 enum {Z_SAMPLES,Z_ERR,SHADOWED,SIGNED_ERR,Z_VAR,RUGOSITY};
 float mest(const VertInfo &vert);
-#endif // QUADTREE_HPP
+#define USE_OSG 1
+#ifdef USE_OSG
+#include <osgViewer/Viewer>
+#include <osg/Node>
+typedef struct _RECT{
+  int left,right,top,bottom;
+}RECT;
+
+
+void	DrawQuadTree(osg::Node* root,	RECT	r, quadsquare* quad, int xorigin, int yorigin, int BlockPixels, const quadcornerdata& pd, bool NoClip);
+void	DrawContourBox(osg::Node* root, int x, int y, int BlockPixels, VertInfo samples[4]);
+#endif
+
+#endif // UQUADTREE_HPP

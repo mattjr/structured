@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id: quadtree.hpp,v 1.4 2008-12-22 03:22:32 m.roberson Exp $
+//$Id: quadtree.hpp,v 1.5 2009-03-03 06:02:28 m.roberson Exp $
 
 #ifndef QUADTREE_HPP
 #define QUADTREE_HPP
@@ -366,7 +366,8 @@ private:
             ext[1]=Envelope<double>(hix - width * ratio_,loy,hix,loy + height * ratio_);
             ext[2]=Envelope<double>(lox,hiy - height*ratio_,lox + width * ratio_,hiy);
             ext[3]=Envelope<double>(hix - width * ratio_,hiy - height*ratio_,hix,hiy);
-
+	    int count=0;
+	    node->count_items(count);
             if (maxdepth > 1)
             {
                 for (int i=0;i<4;++i)

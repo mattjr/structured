@@ -198,7 +198,7 @@ static inline int Floor(const float x)
 
 }
 
-void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny,float &cx,float &cy,double &res,int &level){
+void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny,float &cx,float &cy,double &res,int &level,bool extrap){
   point_nn* pin = NULL;
  
   pout = NULL;
@@ -222,13 +222,15 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
   points_thinlin(&nin,&pin,0.1);
   double actual_res;
   ge.get_closest_res_level(mesh_data.res,level,actual_res);
-  //  printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
+//  printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
   cx=mesh_data.envelope.center().x;
   cy=mesh_data.envelope.center().y;
 
   nx=(int)floor(mesh_data.envelope.width()/actual_res);
   ny=(int)floor(mesh_data.envelope.height()/actual_res);
-  double wmin = 0;//-DBL_MAX;
+  double wmin = 0;
+  if(extrap)
+    wmin=-DBL_MAX;
   points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
   nnpi_interpolate_points(nin, pin, wmin, nout, pout);
   free(pin);

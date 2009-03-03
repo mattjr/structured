@@ -9,6 +9,7 @@
 // Thatcher Ulrich <tu@tulrich.com>
 
 
+
 #include <stdio.h>
 #include <math.h>
 #include "geometry.hpp"
@@ -37,6 +38,7 @@
 #include "../mesh2hmap/mesh2hmap.h"
 #include "../mesh2hmap/parser.h"
 
+
 using mapnik::Envelope;
 using namespace ul;
 using std::cout;
@@ -47,7 +49,7 @@ using  std::endl;
 
 #define PI 3.141592654
 
-
+bool display_tree=false;
 bool dump_stats=false;
 std::vector<mesh_input> meshes;
 void	LoadData(std::vector<mesh_input> &meshes);
@@ -56,7 +58,7 @@ bool compute_shadows=false;
 quadsquare*	root = NULL;
 quadcornerdata	RootCornerData = { NULL, NULL, 0, 0, 0, 0, { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } } };
 int	TriangleCounter = 0;
-global_extents ge;
+
 bool lod=false;
 double min_cell_size=DBL_MAX;
 std::string total_stat_file;
@@ -136,6 +138,7 @@ int	main(int argc, char *argv[])
   argp.read("-input",input);
   std::string rangefile;
   bool range= argp.read("-range",rangefile);
+  display_tree= argp.read("-disptree");
   bool stat=false;
   std::string statfile;
   std::string input_statfile;
@@ -488,6 +491,16 @@ int	main(int argc, char *argv[])
     else
       root->RenderToWF(RootCornerData);
   }
+
+
+#ifdef USE_OSG
+  if(display_tree){
+    osg::Node* root_osg=new osg::Node;
+    RECT r;
+    int BlockPixels=10;
+    DrawQuadTree(root_osg, r, root, RootCornerData.xorg, RootCornerData.yorg,  BlockPixels, RootCornerData, false);
+  }
+#endif
   return 0;
 
 }

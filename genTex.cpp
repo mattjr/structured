@@ -43,7 +43,7 @@ static bool tex_array_blend=false;
 static bool applyNonVisMat=false;
 static string stereo_config_file_name;
 static string recon_config_file_name;
-static bool shader_color=true;
+static bool shader_color=false;
 static string contents_file_name;
 static string dir_name;
 static int verbose=false;
@@ -101,10 +101,10 @@ static bool parse_args( int argc, char *argv[ ] )
 	  dir_name=string( argv[i+1]) ;
 	  i+=2;
 	}
-  else if( strcmp( argv[i], "--noshader" ) == 0 )
+  else if( strcmp( argv[i], "--shader" ) == 0 )
 	{
      
-	  shader_color=false;
+	  shader_color=true;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--notex" ) == 0 )

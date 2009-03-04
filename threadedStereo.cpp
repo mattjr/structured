@@ -17,6 +17,7 @@
 #include "cv.h"
 #include "highgui.h"
 #include "ulapack/eig.hpp"
+#include <libseabedcommon/seabed_slam_file_io.hpp>
 #include "auv_image_distortion.hpp"
 #include "auv_stereo_geometry.hpp"
 #include "adt_file_utils.hpp"
@@ -71,6 +72,7 @@ static bool run_pos=true;
 static bool do_novelty=false;
 static double dense_scale;
 static bool have_max_frame_count = false;
+static bool do_shader_color=false;
 static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
 static bool output_pts_cov=false;
@@ -111,9 +113,9 @@ static bool output_3ds=false;
 static char cov_file_name[255];
 static bool no_gen_tex=false;
 static int mono_skip=2;
-static bool no_vrip=true;
+static bool no_vrip=false;
 static bool quad_integration=true;
-static bool no_quadmerge=false;
+static bool no_quadmerge=true;
 static double vrip_res;
 static bool regen_tex=false;
 static string basepath;
@@ -512,11 +514,12 @@ static bool parse_args( int argc, char *argv[ ] )
 
 
 
-  if(argp.read("--vrip")){
-      no_vrip=false;
+  if(argp.read("--new")){
+      no_vrip=true;
       no_quadmerge=true;
-      if( argp.read("--quad"))
-	no_quadmerge=false;
+      do_shader_color=true;
+      if( argp.read("--vrip"))
+	no_vrip=false;
   }
   
   if(vrip_on ){
@@ -925,7 +928,7 @@ struct Convolution : public Convolute
 
 
 static int get_auv_image_name( const string  &contents_dir_name,
-			       ifstream      &contents_file,
+			       Stereo_Pose pose,
 			       Stereo_Pose_Data &name
 			       )
 {
@@ -936,31 +939,31 @@ static int get_auv_image_name( const string  &contents_dir_name,
   //
   // Try to read timestamp and file names
   //
-  bool readok;
+
   int index;
   do{
      
-    readok =(contents_file >> index &&
-	     contents_file >> name.time &&
-	     contents_file >>  name.pose[AUV_POSE_INDEX_X] &&
-	     contents_file >>   name.pose[AUV_POSE_INDEX_Y] &&
-	     contents_file >>   name.pose[AUV_POSE_INDEX_Z] &&
-	     contents_file >>   name.pose[AUV_POSE_INDEX_PHI] &&
-	     contents_file >>   name.pose[AUV_POSE_INDEX_THETA] &&
-	     contents_file >>   name.pose[AUV_POSE_INDEX_PSI] &&
-	     contents_file >> name.left_name &&
-	     contents_file >> name.right_name &&
-	     contents_file >> name.alt &&
-	     contents_file >> name.radius &&
-	     contents_file >> name.overlap 
-	     );
+    index = pose.pose_id;
+    name.time = pose.pose_time;
+    name.pose[AUV_POSE_INDEX_X] = pose.pose_est[AUV_POSE_INDEX_X];
+    name.pose[AUV_POSE_INDEX_Y] = pose.pose_est[AUV_POSE_INDEX_Y];
+    name.pose[AUV_POSE_INDEX_Z] = pose.pose_est[AUV_POSE_INDEX_Z];
+    name.pose[AUV_POSE_INDEX_PHI] = pose.pose_est[AUV_POSE_INDEX_PHI];
+    name.pose[AUV_POSE_INDEX_THETA] = pose.pose_est[AUV_POSE_INDEX_THETA];
+    name.pose[AUV_POSE_INDEX_PSI] = pose.pose_est[AUV_POSE_INDEX_PSI];
+    name.left_name = pose.left_image_name;
+    name.right_name = pose.right_image_name;
+    name.alt= pose.altitude;
+    name.radius= pose.image_footprint_radius;
+    name.overlap = pose.likely_overlap;
+    
   
     name.mesh_name = "surface-"+osgDB::getStrippedName(name.left_name)+".tc.ply";
   }
-  while (readok && (name.time < start_time || (skip_counter++ < num_skip)));
+  while ((name.time < start_time || (skip_counter++ < num_skip)));
   skip_counter=0;
    
-  if(!readok || name.time >= stop_time) {
+  if(name.time >= stop_time) {
     // we've reached the end of the contents file
     return END_FILE;
   }      
@@ -1658,11 +1661,14 @@ int main( int argc, char *argv[ ] )
     
     
   }else{
-    while( !have_max_frame_count || stereo_pair_count < max_frame_count ){
+    vector<Stereo_Pose> poses=read_stereo_pose_est_file(contents_file_name );
+    vector<Stereo_Pose>::const_iterator cii;
+    cii=poses.begin();
+    while( cii != poses.end() && (!have_max_frame_count || stereo_pair_count < max_frame_count) ){
       
       Stereo_Pose_Data name;
-      int ret=get_auv_image_name( dir_name, contents_file, name) ;
-      
+      int ret=get_auv_image_name( dir_name, *cii, name) ;
+      cii++;
       
       if(ret == ADD_IMG ){
 	if(start_skip++ < single_run_start)
@@ -2181,10 +2187,10 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	
 	fclose(poscmd_fp);
 
-	sprintf(cmdtmp,"$BASEPATH/tridecimator/tridecimator "
+	sprintf(cmdtmp,"tridecimator "
 		"mesh-pos/pos_raw.ply mesh-pos/pos_rec-lod0.ply 0 -e15.0 > mesh-pos/log-pos_rec-lod0.ply");
 	postcmds.push_back(cmdtmp);
-	sprintf(cmdtmp,"$BASEPATH/tridecimator/tridecimator "
+	sprintf(cmdtmp,"tridecimator "
 		"mesh-pos/pos_raw.ply mesh-pos/pos_rec-lod1.ply 0 -e15.0> mesh-pos/log-pos_rec-lod1.ply");
 	postcmds.push_back(cmdtmp);
 	shellcm.write_generic(runpos_fn,poscmd_fn,"Pos",&precmds,&postcmds);
@@ -2265,7 +2271,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		"FLIPCMD="
 		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
 		"\t\tfi\n"
-		"\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/tridecimator/tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
+		"\t\tSIMPCMD=$SIMPCMD\";\"\"tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
 		"MESHNAME=$NEWNAME\n"
 		"\tdone\n"
 		"echo $SIMPCMD >> simpcmds\n"
@@ -2310,6 +2316,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	strcpy(argstr,"");
 	if(do_novelty)
 	    strcat(argstr," --novelty ");
+	if(do_shader_color)
+	    strcat(argstr," --shader ");
 	if(do_hw_blend)
 	  strcat(argstr," --blend ");
 	if(!hardware_compress)

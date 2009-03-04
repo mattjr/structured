@@ -577,8 +577,8 @@ void load_mesh( mesh_input &m){
     min_cell_size=actual_res;
   char fname[255];
   sprintf(fname,"tmp/%s",m.name.c_str());
-  //  write_mesh(pout,nout,fname,true);
-   
+   write_mesh(pout,nout,fname,true);
+   cout << fname <<endl;
 
   // points_to_quadtree(nout,pout,qt);
   //free(&pout);

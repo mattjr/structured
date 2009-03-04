@@ -3,6 +3,9 @@
 #include "terrainnode.hpp"
 #include "TriMesh_algo.h"
 #include <osgViewer/Viewer>
+#include <osgDB/WriteFile>
+#include <osgDB/Registry>
+
 #include "uquadtree.hpp"
 #include "raster.hpp"
 
@@ -127,8 +130,11 @@ int main( int argc, char **argv ) {
   //	qt.balance();
   //qt.render_terrain();
   qt.render_tree();
-   osgViewer::Viewer viewer;
-   viewer.getCamera()->setClearColor(osg::Vec4(1.0,1.0,1.0,1.0));
-  viewer.setSceneData(qt.osg_root);
-   return viewer.run();
+  osgDB::Registry::instance()->writeNode( *qt.osg_root,"tree.ive",osgDB::Registry::instance()->getOptions() );
+
+  //   osgViewer::Viewer viewer;
+  //viewer.getCamera()->setClearColor(osg::Vec4(1.0,1.0,1.0,1.0));
+  // viewer.setSceneData(qt.osg_root);
+  //return viewer.run();
+
 }

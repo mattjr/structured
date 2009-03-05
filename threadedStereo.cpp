@@ -2089,7 +2089,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
    
       for(int t=0; t < 3; t++){
-	fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/quad-lod%d.ply > ../mesh-quad/clipped-diced-%08d-lod%d.ply;",
+	fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/quad-lod%d.ply > ../mesh-quad/clipped-diced-%08d-lod%d.ply;",
 		cells[i].bounds.min_x,
 		cells[i].bounds.min_y,
 		FLT_MIN,
@@ -2098,7 +2098,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		FLT_MAX,
 		eps,t,i,t);
 	if(rugosity){
-	  fprintf(vripcmds_fp,"auv_mesh_shade ../mesh-quad/clipped-diced-%08d-lod%d.ply rugosity 0.5 ../mesh-quad/tmp-diced-%08d-lod%d.ply; mv ../mesh-quad/tmp-diced-%08d-lod%d.ply ../mesh-quad/clipped-diced-%08d-lod%d.ply;",i,t,i,t,i,t,i,t);
+	  fprintf(quadmergecmds_fp,"auv_mesh_shade ../mesh-quad/clipped-diced-%08d-lod%d.ply rugosity 0.5 ../mesh-quad/tmp-diced-%08d-lod%d.ply; mv ../mesh-quad/tmp-diced-%08d-lod%d.ply ../mesh-quad/clipped-diced-%08d-lod%d.ply;",i,t,i,t,i,t,i,t);
 	}
       }
       fprintf(quadmergecmds_fp,"cd ..\n");

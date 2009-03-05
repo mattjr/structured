@@ -1021,12 +1021,12 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 								osg::StateAttribute::ON );
 	       }
 	     
-	       
-	     
-	      //  }
-	
+	       textured->addDrawable(gc._geom);
+		   
+	   }
+	   
 	  
-	   //  else{
+	   else{
 	  
 	    osg::StateSet *utstateset = gc._geom->getOrCreateStateSet();
 	    if(shader_height_coloring){
@@ -1048,7 +1048,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      
 	    }
 	     
-	    textured->addDrawable(gc._geom);
+	
 	    
 	    {
 	      osg::Material* material = new osg::Material;
@@ -1095,7 +1095,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
     }
       if(usePlaneDist){
-
+	
 	osg::StateSet* _stateset = new osg::StateSet;
 	osg::PolygonMode* _polygonmode = new osg::PolygonMode;
 	_polygonmode->setMode(osg::PolygonMode::FRONT_AND_BACK,

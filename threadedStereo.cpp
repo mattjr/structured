@@ -21,6 +21,7 @@
 #include "auv_image_distortion.hpp"
 #include "auv_stereo_geometry.hpp"
 #include "adt_file_utils.hpp"
+#include "auv_system.hpp"
 #include "auv_stereo_corner_finder.hpp"
 //#include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
@@ -43,6 +44,7 @@ using namespace std;
 using namespace libplankton;
 using namespace ulapack;
 using namespace libsnapper;
+#define DEFAULT_NUM_THREADS (int)(get_num_processors( )*1.5)
 
 
 static int meshNum;
@@ -485,7 +487,8 @@ static bool parse_args( int argc, char *argv[ ] )
   if(single_run)
     display_debug_images = false;
 
-  
+  num_threads=DEFAULT_NUM_THREADS;
+
   argp.read( "-t" ,num_threads);
   if(num_threads > 1)
     display_debug_images = false;
@@ -2026,7 +2029,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     
     for(int i=0; i < (int)tasks.size(); i++){    
     //Quadmerge List
-      fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f 1\n",tasks[i].mesh_name.c_str(),vrip_res);
+      fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f 0\n",tasks[i].mesh_name.c_str(),vrip_res);
     }
     //    cout << total_env <<endl;
     if(have_mb_grd){

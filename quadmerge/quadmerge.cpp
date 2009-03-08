@@ -37,6 +37,7 @@
 #include "sample.hpp"
 #include "../mesh2hmap/mesh2hmap.h"
 #include "../mesh2hmap/parser.h"
+#include "../MemoryUsage.h"
 
 
 using mapnik::Envelope;
@@ -48,6 +49,12 @@ using  std::cout;
 using  std::endl;
 
 #define PI 3.141592654
+double maxMemoryUsage=0.0;
+double MemoryUsage(void){
+	double mem=MemoryInfo::Usage()/(1<<20);
+	if(mem>maxMemoryUsage){maxMemoryUsage=mem;}
+	return mem;
+}
 
 bool display_tree=false;
 bool dump_stats=false;
@@ -311,7 +318,7 @@ int	main(int argc, char *argv[])
 
   LoadData(meshes);
 	
-	
+  printf("Memory Usage: %.3f MB\n",float(MemoryInfo::Usage())/(1<<20));
   // Debug info.
 
 
@@ -492,7 +499,7 @@ int	main(int argc, char *argv[])
       root->RenderToWF(RootCornerData);
   }
 
-
+ printf("Memory Usage: %.3f MB\n",float(MemoryInfo::Usage())/(1<<20));
 #ifdef USE_OSG
   if(display_tree){
     osg::Node* root_osg=new osg::Node;
@@ -576,9 +583,15 @@ void load_mesh( mesh_input &m){
   if(actual_res < min_cell_size)
     min_cell_size=actual_res;
   char fname[255];
-  sprintf(fname,"tmp/%s",m.name.c_str());
-   write_mesh(pout,nout,fname,true);
-   cout << fname <<endl;
+  std::string::size_type slash = m.name.rfind('/');
+  if (slash == std::string::npos)
+    slash = 0;
+  else
+    slash++;
+
+  sprintf(fname,"tmp/%s",m.name.substr(slash).c_str());
+  write_mesh(pout,nout,fname,true);
+  //cout << fname <<endl;
 
   // points_to_quadtree(nout,pout,qt);
   //free(&pout);

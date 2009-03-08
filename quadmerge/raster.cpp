@@ -160,6 +160,10 @@ static inline int Floor(const float x)
 }*/
 
  void write_mesh(point_nn *pin, int nin,const char *fn,bool ascii){
+   if(nin < 3 ){
+     fprintf(stderr,"Less than three interpolated points\n");
+     return;
+   }
    point_nn* pin_clean=new point_nn[nin];
    int nin_clean=0;
    for(int i=0; i < nin; i++){
@@ -223,14 +227,17 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
   double actual_res;
   ge.get_closest_res_level(mesh_data.res,level,actual_res);
 //  printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
+//  actual_res=0.001;
   cx=mesh_data.envelope.center().x;
   cy=mesh_data.envelope.center().y;
 
   nx=(int)floor(mesh_data.envelope.width()/actual_res);
   ny=(int)floor(mesh_data.envelope.height()/actual_res);
+  //  printf("%f %f %d %d\n",nx,ny,cx,cy);
+  // std::cout << mesh_data.envelope<<std::endl;
   double wmin = 0;
-  if(extrap)
-    wmin=-DBL_MAX;
+  //  if(extrap)
+  //wmin=-DBL_MAX;
   points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
   nnpi_interpolate_points(nin, pin, wmin, nout, pout);
   free(pin);

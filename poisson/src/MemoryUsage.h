@@ -87,6 +87,7 @@ class MemoryInfo
   static size_t Usage(void)
   {
 #if LINUX_PROC_MEM	
+s
 	FILE* f = fopen("/Proc/self/stat","rb");
 		
 		int d;

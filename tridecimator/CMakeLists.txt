@@ -114,7 +114,7 @@ ADD_EXECUTABLE( shadevis shadevis/shadevis.cpp plylib.cpp ./vcg/wrap/gui/trackba
 IF( APPLE )
 SET(GLEW_LIB glew)
 ELSE(APPLE)
-SET(GLEW_LIB )
+SET(GLEW_LIB GLEW)
 ENDIF(APPLE)
 TARGET_LINK_LIBRARIES(shadevis  ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIB})
 INSTALL_TARGETS( /bin tridecimator )

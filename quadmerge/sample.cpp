@@ -4,6 +4,7 @@
 #include <limits.h>
 #include "uquadtree.hpp"
 #include <float.h>
+#include <cmath>
 float *convert_to_z(float *samples, int numsamples){
   float *new_samples=new float[numsamples];
   for(int i=0; i < numsamples; i++){

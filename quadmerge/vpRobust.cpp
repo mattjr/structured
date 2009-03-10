@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * $Id: vpRobust.cpp,v 1.1 2009-02-11 00:08:50 m.roberson Exp $
+ * $Id: vpRobust.cpp,v 1.2 2009-03-10 09:16:18 m.roberson Exp $
  *
  * Copyright (C) 1998-2006 Inria. All rights reserved.
  *
@@ -325,7 +325,7 @@ double vpRobust::computeNormalizedMedian(vpColVector &all_normres,
     }
   }
   sorted_residues.resize(index);
-  memcpy(sorted_residues.data(),no_null_weight_residues.data(),index*sizeof(double));
+  memcpy(&sorted_residues.front(),&no_null_weight_residues.front(),index*sizeof(double));
   n_data=index;
 
   //vpCDEBUG(2) << "vpRobust MEstimator reached. No. data = " << n_data

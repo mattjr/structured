@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include "uquadtree.hpp"
+#include <float.h>
 float *convert_to_z(float *samples, int numsamples){
   float *new_samples=new float[numsamples];
   for(int i=0; i < numsamples; i++){
@@ -85,7 +86,7 @@ double signed_err(float *data,unsigned short *sources, int samples){
 double square_err(float *data,unsigned short *sources, int samples){
   double se=sqrt(pow(signed_err(data,sources,samples),2));
 
-  if(isnan(se))
+  if(std::isnan(se))
     return 0.0;
   return se;
 }
@@ -103,7 +104,7 @@ if(samples <= 1) return 0;
  }
 
  double dev= sqrt((sum2 - (sum*sum)/samples)/(samples-1));
- if(isnan(dev))
+ if(std::isnan(dev))
    dev=0.0;
  //printf("%f %f %f %f\n",data[0],data[1],sum/samples,dev); 
  return dev;
@@ -125,7 +126,7 @@ if(samples <= 1) return 0;
  }
  double mean=sum/samples;
  double var= (sum2 - samples*mean*mean)/(samples-1);
- if(isnan(var))
+ if(std::isnan(var))
    var=0.0;
  //printf("%f %f %f %f\n",data[0],data[1],sum/samples,dev); 
  return var;

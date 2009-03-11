@@ -112,7 +112,7 @@ static bool no_atlas=false;
 static bool output_ply_and_conf =true;
 static FILE *conf_ply_file;
 static bool output_3ds=false;
-static char cov_file_name[255];
+static char cov_file_name[2048];
 static bool no_gen_tex=false;
 static int mono_skip=2;
 static bool no_vrip=false;
@@ -131,8 +131,8 @@ static int non_cached_meshes=0;
 static double edgethresh;
 static bool no_merge=false;
 enum {END_FILE,NO_ADD,ADD_IMG};
-char cachedmeshdir[255];
-char cachedtexdir[255];
+char cachedmeshdir[2048];
+char cachedtexdir[2048];
 static bool pos_clip=false;
 static string deltaT_config_name;
 static string deltaT_dir;
@@ -1030,9 +1030,9 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   unsigned int right_frame_id=frame_id++;
   string left_frame_name;
   string right_frame_name;
-  char filename[255];
-  char meshfilename[1024];
-  char texfilename[1024];
+  char filename[2048];
+  char meshfilename[2048];
+  char texfilename[2048];
   bool meshcached=false;
   bool texcached=false;
   
@@ -1308,7 +1308,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 
 
   if(output_3ds){
-    char fname_3ds[255];
+    char fname_3ds[2048];
     surf=  gts_surface_new(gts_surface_class(),
 			   (GtsFaceClass *)t_face_class(), 
 			   gts_edge_class(), t_vertex_class());
@@ -1402,7 +1402,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       fmatrix_free(hmmesh.vert);
       irowarray_free(hmmesh.poly, hmmesh.num_poly);
       printf("%f %f\n",hmap.z_min, hmap.z_max);
-      char tmp[255];
+      char tmp[2048];
       int bpp=8;
       int range = (int) pow((double)2,bpp) - 1;
       int min=0;
@@ -1781,7 +1781,7 @@ int main( int argc, char *argv[ ] )
       }
     }
 
-    char conf_name[1024];
+    char conf_name[2048];
     
     sprintf(conf_name,"%s/meshes.txt",aggdir);
     
@@ -1819,9 +1819,9 @@ int main( int argc, char *argv[ ] )
 
     if(use_new_mb){
       ifstream mblist("mb_grd/mblist.txt");
-      char tmp[255];
+      char tmp[2048];
       while(mblist && !mblist.eof()){
-	mblist.getline(tmp,255); 
+	mblist.getline(tmp,2048); 
 	if(strlen(tmp)> 1)
 	  mb_ply_filenames.push_back(string(tmp));
       }
@@ -1834,7 +1834,7 @@ int main( int argc, char *argv[ ] )
     }
     
     FILE *vrip_seg_fp;
-    char vrip_seg_fname[255];
+    char vrip_seg_fname[2048];
     FILE *bboxfp;
     string vripcmd_fn="mesh-agg/vripcmds";
     FILE *vripcmds_fp=fopen(vripcmd_fn.c_str(),"w");
@@ -1844,10 +1844,10 @@ int main( int argc, char *argv[ ] )
       printf("Can't open vripcmds\n");
       exit(-1);
     }
-    char cwd[255];
+    char cwd[2048];
     char *dirres;
     if(!dist_run)
-      dirres=getcwd(cwd,255);
+      dirres=getcwd(cwd,2048);
     else
       strcpy(cwd,"/mnt/shared/");
 
@@ -1930,7 +1930,7 @@ int main( int argc, char *argv[ ] )
 	printf("Unable to open %s\n",vrip_seg_fname);
       }	
  	
-      char redirstr[255];
+      char redirstr[2048];
       if(!dist_run)
 	sprintf(redirstr,">  vripsurflog-%08d.txt",i);
       else
@@ -1985,7 +1985,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
      }
       fprintf(vripcmds_fp,"cd ..\n");
     
-      	printf("ffffffffffffffhere!!!!!!!!!!!!!!!!!re343434reree\n");   
+      
       for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=cells[i].poses[j];
 	//Vrip List
@@ -2007,9 +2007,9 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(vripcmds_fp);
     fclose(diced_fp);
-     
+ 
     FILE *quadmerge_seg_fp;
-    char quadmerge_seg_fname[255];
+    char quadmerge_seg_fname[2048];
     
     string quadmergecmd_fn="mesh-quad/quadmergecmds";
     FILE *quadmergecmds_fp=fopen(quadmergecmd_fn.c_str(),"w");
@@ -2019,16 +2019,18 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       printf("Can't open quadmergecmds\n");
       exit(-1);
     }
+
     
-    char quadprecmd[255];
+    char quadprecmd[2048];
     sprintf(quadmerge_seg_fname,"mesh-quad/quadmergeseg.txt");
     string shadowstr;
     if(use_shadows)
       shadowstr="-shadow -color";
     
     quadmerge_seg_fp=fopen(quadmerge_seg_fname,"w");    
+
     sprintf(quadprecmd,"cd mesh-quad;%s/bin/quadmerge -geoconf %s -lod %s -input ../%s -edgethresh %f -output ../mesh-quad/quad.ply -range ../mesh-quad/range.txt;",basepath.c_str(),deltaT_config_name.c_str(),shadowstr.c_str(),quadmerge_seg_fname,edgethresh);
-    
+
     for(int i=0; i < (int)tasks.size(); i++){    
     //Quadmerge List
       fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f 0\n",tasks[i].mesh_name.c_str(),vrip_res);
@@ -2040,7 +2042,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       FILE *lafp=fopen("mb_grd/low_alt_mb.txt","r");
       if(lafp){
 	while(!feof(lafp)){
-	  char tmp[255];
+	  char tmp[2048];
 	  fscanf(lafp,"%s\n",tmp);
 	
 	  mesh_input m;
@@ -2071,7 +2073,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		background_res);
       }
     }
-      
+
       fclose(quadmerge_seg_fp);
       //int numcells= total_env.width() *total_env.height() / 50.0;
       cells=calc_cells(tasks,total_env.minx(),total_env.maxx(),total_env.miny(),total_env.maxy(),5);
@@ -2125,7 +2127,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(quadmergecmds_fp);
     fclose(diced_fp);
-
+    
     if(output_uv_file)
       fclose(uv_fp);
     if(output_3ds)
@@ -2154,7 +2156,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	FILE *poscmd_fp=fopen(poscmd_fn.c_str(),"w");
 	std::vector<string> precmds;
 	std::vector<string> postcmds;
-	char cmdtmp[1024];
+	char cmdtmp[2048];
 	precmds.push_back( "cat mesh-agg/pos_pts.bnpts > mesh-pos/pos_out.bnpts");
 
 	if(have_mb_ply){
@@ -2251,7 +2253,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
 		"REDFACT=(%f %f %f)\n",simp_res[0],simp_res[1],simp_res[2]);
 		
-	char simpargstr[255];
+	char simpargstr[2048];
 	if(further_clean)
 	  sprintf(simpargstr," -H%f -S%f ",hole_fill_size,connected_comp_size_clean);
 	else
@@ -2318,7 +2320,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	dicefp=fopen(gentexcmd_fn.c_str(),"w+");
 	
 	
-	char argstr[255];
+	char argstr[2048];
 	strcpy(argstr,"");
 	if(do_novelty)
 	    strcat(argstr," --novelty ");
@@ -2331,7 +2333,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	if(no_simp)
 	  strcat(argstr," --nosimp");
 	if(have_mb_ply){
-	  char tp[255];
+	  char tp[2048];
 	  sprintf(tp," --nonvis %d ",(int)cells.size());
 	  strcat(argstr,tp);
 	}
@@ -2364,7 +2366,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
 	if(!no_gen_tex || use_poisson_recon){
 	  FILE *lodfp=fopen("lodgen.sh","w");
-	  char ar[255];
+	  char ar[2048];
 	  if(run_pos)
 	    strcpy(ar,"--dicedir mesh-pos/");
 	  else if(quad_integration && !no_quadmerge)
@@ -2383,7 +2385,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	}
 	
 	{
-	  char dicedir[255];
+	  char dicedir[2048];
 	  if(run_pos)
 	    strcpy(dicedir,"mesh-pos/");
 	  else

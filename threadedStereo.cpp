@@ -233,6 +233,7 @@ gboolean image_count_verbose ( guint number, guint total)
   }
   if (number == total) {
     boost::call_once(&timer_destroy, once2);
+    fprintf(stderr,"\n");
     printf("\n");
     return TRUE;
   }

@@ -312,10 +312,11 @@ static bool parse_args( int argc, char *argv[ ] )
   base_dir=argp[1];
   if(base_dir=="."){
     int path_max = (unsigned int) PATH_MAX;
-    char dirname[255];
+    char dirname[PATH_MAX];
     char *ret = getcwd(dirname, path_max);
     if(ret != NULL)
       base_dir=ret;
+    printf("%s\n",base_dir.c_str());
   }
   recon_config_file_name = "recon.cfg";
   stereo_calib_file_name = "stereo.calib";
@@ -1750,7 +1751,7 @@ int main( int argc, char *argv[ ] )
 
 
   fclose(timing_fp);
-
+ 
   if(!single_run){
     int ct=0;
     for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++){
@@ -1779,12 +1780,12 @@ int main( int argc, char *argv[ ] )
 	dump_pts(pos_fp,string("mesh-agg/"+name.mesh_name).c_str(),clean_pos_pts);
       }
     }
-    
-    char conf_name[255];
+
+    char conf_name[1024];
     
     sprintf(conf_name,"%s/meshes.txt",aggdir);
     
-    
+
     conf_ply_file=fopen(conf_name,"w");
     if(!conf_ply_file){
       fprintf(stderr,"Can't open %s\n",conf_name);
@@ -1928,6 +1929,7 @@ int main( int argc, char *argv[ ] )
       if(!vrip_seg_fp || !bboxfp){
 	printf("Unable to open %s\n",vrip_seg_fname);
       }	
+ 	
       char redirstr[255];
       if(!dist_run)
 	sprintf(redirstr,">  vripsurflog-%08d.txt",i);
@@ -1983,7 +1985,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
      }
       fprintf(vripcmds_fp,"cd ..\n");
     
-      
+      	printf("ffffffffffffffhere!!!!!!!!!!!!!!!!!re343434reree\n");   
       for(unsigned int j=0; j <cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=cells[i].poses[j];
 	//Vrip List
@@ -2005,7 +2007,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(vripcmds_fp);
     fclose(diced_fp);
-
+     
     FILE *quadmerge_seg_fp;
     char quadmerge_seg_fname[255];
     
@@ -2237,6 +2239,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  
 	}
 	
+
 	string vripcmd="runvrip.py";
 	shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip");
 	if(!no_vrip)

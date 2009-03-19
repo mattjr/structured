@@ -946,35 +946,23 @@ static int get_auv_image_name( const string  &contents_dir_name,
   //
 
   int index;
-  do{
-     
-    index = pose.pose_id;
-    name.time = pose.pose_time;
-    name.pose[AUV_POSE_INDEX_X] = pose.pose_est[AUV_POSE_INDEX_X];
-    name.pose[AUV_POSE_INDEX_Y] = pose.pose_est[AUV_POSE_INDEX_Y];
-    name.pose[AUV_POSE_INDEX_Z] = pose.pose_est[AUV_POSE_INDEX_Z];
-    name.pose[AUV_POSE_INDEX_PHI] = pose.pose_est[AUV_POSE_INDEX_PHI];
-    name.pose[AUV_POSE_INDEX_THETA] = pose.pose_est[AUV_POSE_INDEX_THETA];
-    name.pose[AUV_POSE_INDEX_PSI] = pose.pose_est[AUV_POSE_INDEX_PSI];
-    name.left_name = pose.left_image_name;
-    name.right_name = pose.right_image_name;
-    name.alt= pose.altitude;
-    name.radius= pose.image_footprint_radius;
-    name.overlap = pose.likely_overlap;
-    
-  
-    name.mesh_name = "surface-"+osgDB::getStrippedName(name.left_name)+".tc.ply";
-  }
-  while ((name.time < start_time || (skip_counter++ < num_skip)));
-  skip_counter=0;
-   
-  if(name.time >= stop_time) {
-    // we've reached the end of the contents file
-    return END_FILE;
-  }      
-  if (name.left_name == "DeltaT" || name.right_name == "DeltaT")
-    return NO_ADD;
 
+  index = pose.pose_id;
+  name.time = pose.pose_time;
+  name.pose[AUV_POSE_INDEX_X] = pose.pose_est[AUV_POSE_INDEX_X];
+  name.pose[AUV_POSE_INDEX_Y] = pose.pose_est[AUV_POSE_INDEX_Y];
+  name.pose[AUV_POSE_INDEX_Z] = pose.pose_est[AUV_POSE_INDEX_Z];
+  name.pose[AUV_POSE_INDEX_PHI] = pose.pose_est[AUV_POSE_INDEX_PHI];
+  name.pose[AUV_POSE_INDEX_THETA] = pose.pose_est[AUV_POSE_INDEX_THETA];
+  name.pose[AUV_POSE_INDEX_PSI] = pose.pose_est[AUV_POSE_INDEX_PSI];
+  name.left_name = pose.left_image_name;
+  name.right_name = pose.right_image_name;
+  name.alt= pose.altitude;
+  name.radius= pose.image_footprint_radius;
+  name.overlap = pose.likely_overlap;
+  
+  
+  name.mesh_name = "surface-"+osgDB::getStrippedName(name.left_name)+".tc.ply";
   fill_gts_matrix(name.pose,name.m);
 
     
@@ -1670,28 +1658,22 @@ int main( int argc, char *argv[ ] )
     vector<Stereo_Pose>::const_iterator cii;
     cii=poses.begin();
     while( cii != poses.end() && (!have_max_frame_count || stereo_pair_count < max_frame_count) ){
-      
+   
+
+	
       Stereo_Pose_Data name;
-      int ret=get_auv_image_name( dir_name, *cii, name) ;
+      get_auv_image_name( dir_name, *cii, name) ;
       cii++;
-      
-      if(ret == ADD_IMG ){
-	if(start_skip++ < single_run_start)
-	  continue;
-	if(skip_sparse_cnt >0){
-	  skip_sparse_cnt--;
-	  continue;
-	}else{
-	  skip_sparse_cnt=skip_sparse;
-	}
-	name.id= single_run_start+stereo_pair_count++;
-	name.valid=true;
-	tasks.push_back(name);
-      }else if(ret == NO_ADD){
-	printf("Noadd\n");
+      if(cii->pose_time < start_time){
 	continue;
-      }else if(ret == END_FILE)
+      }
+      if(cii->pose_time >= stop_time)
 	break;
+
+      name.id= single_run_start+stereo_pair_count++;
+      name.valid=true;
+      tasks.push_back(name);
+      
     }
   }
 

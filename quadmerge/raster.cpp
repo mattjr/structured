@@ -174,6 +174,10 @@ static inline int Floor(const float x)
      return;
    delaunay* d = delaunay_build(nin_clean, pin_clean, 0, NULL, 0, NULL);
    FILE *fp=fopen(fn,"w");
+   if(!fp){
+     fprintf(stderr,"Cannont open %s\n",fn);
+     return;
+   }
    ply_header(fp,d->ntriangles,d->npoints,ascii);
    float buf[3];
    for(int i=0; i<d->npoints; i++){

@@ -764,7 +764,8 @@ void	LoadData(std::vector<mesh_input> &meshes)
     printf("\r %03d/%03d",i,(int)meshes.size());
     fflush(stdout);
     if(meshes[i].name.substr(meshes[i].name.size()-3) == "ply"){
-      if(meshes[i].interp)
+      //  if(meshes[i].interp)
+      if(0)
 	load_mesh(meshes[i]);
       else
 	load_mesh_nointerp(meshes[i]);

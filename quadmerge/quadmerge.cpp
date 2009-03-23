@@ -136,8 +136,15 @@ int	main(int argc, char *argv[])
   }
   std::string tmp,input;
   if(  argp.read("-output",tmp ));
+ 
+
+  int maxlevel=15;
+
   wf_fname = (char *)malloc(255);
   strcpy(  wf_fname,tmp.c_str());;
+  if(  argp.read("-maxlevel",maxlevel ))
+  ge.max_Level=maxlevel;
+  else  
   ge.max_Level=15;
   RootCornerData.Level= ge.max_Level;
   edge_thresh=0.5;

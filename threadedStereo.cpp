@@ -70,6 +70,7 @@ static bool use_poisson_recon=true;
 static int max_feature_count;
 static double eps=1.0;
 static double subvol;
+static bool interp_quad=false;
 static bool run_pos=true;
 static bool do_novelty=false;
 static double dense_scale;
@@ -532,6 +533,8 @@ static bool parse_args( int argc, char *argv[ ] )
     no_simp = false;
   }
 
+  if(argp.read("--interp-quad"))
+    interp_quad=true;
 
   argp.read("--vrip-ramp",vrip_ramp );
   dist_run=argp.read("--dist" );
@@ -2016,7 +2019,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
     for(int i=0; i < (int)tasks.size(); i++){    
     //Quadmerge List
-      fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f 0\n",tasks[i].mesh_name.c_str(),vrip_res);
+      fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f %d\n",tasks[i].mesh_name.c_str(),vrip_res,interp_quad);
     }
     //    cout << total_env <<endl;
     if(have_mb_grd){
@@ -2333,7 +2336,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		  cachedtexdir,gentexdir[i].c_str(),
 		  j1,j1+dist_gentex_range,argstr);
 	  j1+=dist_gentex_range;
-	}while(j1 < (int)cells.size());
+	}while(j1 <= (int)cells.size());
 	fclose(dicefp);
 	shellcm.write_generic(gentexnames[i],gentexcmd_fn,"Gentex",&precmds,NULL);
 	if(no_gen_tex)

@@ -44,7 +44,7 @@ using mapnik::Envelope;
 using namespace ul;
 using std::cout;
 double edge_thresh;
-
+bool no_interp=false;
 using  std::cout;
 using  std::endl;
 
@@ -159,6 +159,8 @@ int	main(int argc, char *argv[])
   bool input_stat=false;
   if(  argp.read("-lod"))
     lod=true;
+  if(argp.read("-nointerp"))
+    no_interp=true;
 
   if(  argp.read("-shadow"))
     compute_shadows=true;
@@ -170,6 +172,19 @@ int	main(int argc, char *argv[])
   if(argp.read("-istat",input_statfile)){
     input_stat=true;
   }
+
+  if(argp.read("-merge_metric",tmp)){
+    if(tmp == "robust")
+      merge_metric=ROBUST_MERGE;
+    else if(tmp == "avg")
+      merge_metric=AVG_MERGE;
+    else if(tmp == "clippedavg")
+      merge_metric=CLIPPED_AVG_MERGE;
+  }
+
+
+
+
   if(argp.read("-zerr"))
     color_metric=Z_ERR;
 
@@ -207,6 +222,20 @@ int	main(int argc, char *argv[])
     printf("Rugosity\n");
     break;
       }
+
+
+  printf("Merge Metric: ");
+  switch(merge_metric){
+      case AVG_MERGE:
+	printf("Avg Samples\n");
+	break;
+      case CLIPPED_AVG_MERGE:
+	printf("Clipped avg samples\n");
+       	break;
+  case ROBUST_MERGE:
+    printf("Robust Merge\n");
+    break;
+  }
   std::string config_file_name;
   double local_easting, local_northing;
   if(argp.read("-geoconf",config_file_name)){
@@ -464,11 +493,11 @@ int	main(int argc, char *argv[])
 	title<<"Number of samples";
 	break;
       case Z_ERR:
-	title << "Standard Dev Err [m]";
+	title << "Standard Dev Error [m]";
 
 	break;
 	case SIGNED_ERR:
-	  title << "Signed Err [m]";
+	  title << "Signed Error [m]";
 	  break;
 
 	case Z_VAR:
@@ -771,8 +800,7 @@ void	LoadData(std::vector<mesh_input> &meshes)
     printf("\r %03d/%03d",i,(int)meshes.size());
     fflush(stdout);
     if(meshes[i].name.substr(meshes[i].name.size()-3) == "ply"){
-      //  if(meshes[i].interp)
-      if(0)
+      if(meshes[i].interp && !no_interp)
 	load_mesh(meshes[i]);
       else
 	load_mesh_nointerp(meshes[i]);

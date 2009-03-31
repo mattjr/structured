@@ -38,6 +38,7 @@
 //using ul::vector;
 #include "fileio.hpp"
 global_extents ge;
+int merge_metric=ROBUST_MERGE;
 int color_metric=Z_ERR;
 using namespace ul;
 bool render_no_data=false;
@@ -1727,17 +1728,25 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	  //printf("%f ",tc->vi->Zsamples[i]);
 	  // printf("\n"); 
 
-	
-	
-	    if(tc->vi->num_samples > 2){
+	  if(merge_metric == AVG_MERGE)
+	    Z=get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
+	  else if(merge_metric == CLIPPED_AVG_MERGE){
+	    double maxZ=get_max_Z(tc->vi->Zsamples,tc->vi->num_samples);
+	    Z=get_clipped_avg_Z(tc->vi->Zsamples,tc->vi->num_samples,maxZ,
+				ge.toUINTz(100.0));
 
+	  }else if(merge_metric == ROBUST_MERGE){
+	    if(tc->vi->num_samples > 2){
+	      
 	      Z=mest(*tc->vi);
 	    }else{
-	  double maxZ=get_max_Z(tc->vi->Zsamples,tc->vi->num_samples);//get_avg_Z(tc->vi->Zsamples,tc->vi->num_samples);
-	  Z=get_clipped_avg_Z(tc->vi->Zsamples,tc->vi->num_samples,maxZ,ge.toUINTz(100.0));
-	  //	  printf("%f\n",Z);
+	      double maxZ=get_max_Z(tc->vi->Zsamples,tc->vi->num_samples);
+	      Z=get_clipped_avg_Z(tc->vi->Zsamples,tc->vi->num_samples,maxZ,
+				  ge.toUINTz(100.0));
 	    }
-	}else{
+	  }
+	}
+	else{
 	  Z=tc->vi->Z;
 	}
 	if(Z==0 && !render_no_data){

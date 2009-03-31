@@ -217,6 +217,16 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
   int nv = mesh->vertices.size();
   pin = (point_nn *)malloc(nv * sizeof(point_nn));
 
+    char fname[255];
+  std::string::size_type slash = mesh_data.name.rfind('/');
+  if (slash == std::string::npos)
+    slash = 0;
+  else
+    slash++;
+
+  sprintf(fname,"tmp2/%s",mesh_data.name.substr(slash).c_str());
+  FILE *fp=fopen(fname,"w");
+
   for (int i = 0; i < nv; i++){
     point_nn* p = &pin[i];
     
@@ -224,26 +234,29 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
     p->y = mesh->vertices[i][1];
     p->z = mesh->vertices[i][2];
 
-    
+    fprintf(fp,"%f %f %f\n",p->x,p->y,p->z);
   }
+  fclose(fp);
   int nin=nv;
   points_thinlin(&nin,&pin,0.1);
   double actual_res;
   ge.get_closest_res_level(mesh_data.res,level,actual_res);
-//  printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
-//  actual_res=0.001;
+  printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
+  // actual_res=0.001;
   cx=mesh_data.envelope.center().x;
   cy=mesh_data.envelope.center().y;
 
   nx=(int)floor(mesh_data.envelope.width()/actual_res);
   ny=(int)floor(mesh_data.envelope.height()/actual_res);
-  //  printf("%f %f %d %d\n",nx,ny,cx,cy);
+   printf("%f %f %d %d\n",nx,ny,cx,cy);
   // std::cout << mesh_data.envelope<<std::endl;
-  double wmin = 0;
+   double wmin =0;// -1;
   //  if(extrap)
-  //wmin=-DBL_MAX;
+  //  wmin=-DBL_MAX;
   points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
-  nnpi_interpolate_points(nin, pin, wmin, nout, pout);
+  //  nnpi_interpolate_points(nin, pin, wmin, nout, pout);
+          lpi_interpolate_points(nin, pin, nout, pout);
+
   free(pin);
 }
 

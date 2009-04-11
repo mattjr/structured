@@ -2297,7 +2297,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	gentexdir.push_back("mesh-quad");
 	std::vector<string> precmds;
 	if(no_simp){ 
-	  string cmdtmp="cat diced.txt | xargs plybbox > range.txt;cp diced.txt valid.txt\n";
+	  string cmdtmp="cd mesh-diced;cat diced.txt | xargs plybbox > range.txt;cp diced.txt valid.txt;cd ..";
 	precmds.push_back(cmdtmp);
       }
       string gentexcmd_fn;

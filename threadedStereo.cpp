@@ -2413,8 +2413,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
   // delete tasks[i].veh_pose; 
   //delete config_file;
   
-
-  delete cov_file;
+  if(have_cov_file && cov_file)
+    delete cov_file;
 
 
 }

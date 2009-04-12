@@ -397,7 +397,7 @@ static bool parse_args( int argc, char *argv[ ] )
   
   //recon_config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
   recon_config_file->set_value( "MESH_TEX_SIZE", tex_size );
-  recon_config_file->get_value( "SD_SCALE", dense_scale,1.0);
+  recon_config_file->get_value( "SD_SCALE", dense_scale,0.5);
  
   
   

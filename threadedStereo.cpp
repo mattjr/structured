@@ -522,7 +522,7 @@ static bool parse_args( int argc, char *argv[ ] )
 
   if(argp.read("--new")){
       no_vrip=true;
-      no_quadmerge=true;
+      no_quadmerge=false;
       do_shader_color=true;
       if( argp.read("--vrip"))
 	no_vrip=false;

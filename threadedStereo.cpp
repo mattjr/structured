@@ -484,6 +484,7 @@ static bool parse_args( int argc, char *argv[ ] )
   use_dense_stereo=argp.read("--ds" );
       
   argp.read("--dense-method",dense_method);
+  argp.read("--dense-scale",dense_scale);
   no_depth=argp.read("--no-depth" );
       
   argp.read("-s" ,num_skip);

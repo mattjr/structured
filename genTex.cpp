@@ -77,6 +77,7 @@ static bool no_tex=false;
 static bool use_dist_coords=true;
 int lodTexSize[3];
 int lodStart=0;
+bool passed_calib=false;
 //
 // Parse command line arguments into global variables
 //
@@ -84,8 +85,10 @@ static bool parse_args( int argc, char *argv[ ] )
 {
   bool have_stereo_config_file_name = false;
   bool have_recon_config_file_name = false;
+
+
   strcpy(diceddir,"mesh-diced/");
-   
+     stereo_calib_file_name = "stereo.calib";
   int i=1;
   while( i < argc )
     {
@@ -160,6 +163,13 @@ static bool parse_args( int argc, char *argv[ ] )
 	{
 	  compress_textures=false;
 	  i+=1;
+	}
+      else if( strcmp( argv[i], "--stereo-calib" ) == 0 )
+	{
+	  if( i == argc-1 ) return false;
+	  passed_calib=true;
+	  stereo_calib_file_name = argv[i+1];
+	  i+=2;
 	}
       else if( strcmp( argv[i], "--no-hardware-compress" ) == 0 )
 	{
@@ -256,8 +266,6 @@ static bool parse_args( int argc, char *argv[ ] )
 	  return false;
 	}
     }
-
-
 
 
   return ( have_stereo_config_file_name);
@@ -460,9 +468,11 @@ int main( int argc, char *argv[ ] )
   //
   Stereo_Calib *calib = NULL;
   bool have_stereo_calib = false;
-  stereo_calib_file_name = "stereo.calib";
+
   //if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) )
   {
+
+  if(!passed_calib)
     stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
     try
       {

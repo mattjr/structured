@@ -97,6 +97,7 @@ static double simp_res[3];
 static FILE *uv_fp;
 static ofstream file_name_list;
 static string base_dir;
+static double dense_z_cutoff=4.0;
 static bool no_depth=false;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 static int num_threads=1;
@@ -329,6 +330,7 @@ static bool parse_args( int argc, char *argv[ ] )
 
   rugosity=argp.read("--rugosity");
   argp.read("--stereo-calib",stereo_calib_file_name);
+  argp.read("--z-cutoff",dense_z_cutoff);
   argp.read("--poses",contents_file_name );
   argp.read("--skipsparse",skip_sparse);
   deltaT_config_name=base_dir+string("/")+"localiser.cfg";
@@ -1261,8 +1263,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	localV = g_ptr_array_new ();
 	TVertex *vert;
 	for(int i=0; i<(int)points.size(); i++){
-	  //printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
-	  if(points[i](2) > 4.0 )
+	  //	  printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
+	  if(points[i](2) > dense_z_cutoff )
 	    continue;
 	  
 	  vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
@@ -2329,12 +2331,12 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	int j1=0;
 	do{
 	  fprintf(dicefp,"setenv DISPLAY :0.0;cd %s/..;%s/genTex %s %s "
-		  "-f %s  --dicedir %s/ --range-run %d %d %s\n"
+		  "-f %s  --dicedir %s/ --stereo-calib %s --range-run %d %d %s\n"
 		  ,gentexdir[i].c_str(),basepath.c_str(),
 		  recon_config_file_name.c_str(),
 		  recon_config_file_name.c_str(),
 		  cachedtexdir,gentexdir[i].c_str(),
-		  j1,j1+dist_gentex_range,argstr);
+		  stereo_calib_file_name.c_str(),j1,j1+dist_gentex_range,argstr);
 	  j1+=dist_gentex_range;
 	}while(j1 <= (int)cells.size());
 	fclose(dicefp);

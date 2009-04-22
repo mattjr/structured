@@ -57,6 +57,9 @@ static int nonvisidx=0;
 static bool compress_textures = true;
 static bool single_run=false;
 static int single_run_index=0;
+static string classes_file;
+static bool do_classes=false;
+static std::map<int,string> classes;
 static int lodNum=3;
 static bool do_atlas=true;
 static string stereo_calib_file_name;
@@ -139,6 +142,13 @@ static bool parse_args( int argc, char *argv[ ] )
 	  use_proj_tex=true;
 	  i+=1;
 	}
+      else if( strcmp( argv[i], "--classes" ) == 0 )
+	{
+	  do_classes=true;
+	  classes_file=argv[i+1];
+	  i+=2;
+	}
+
       else if( strcmp( argv[i], "--novelty" ) == 0 )
 	{
 	  do_novelty=true;
@@ -720,7 +730,7 @@ int main( int argc, char *argv[ ] )
 
       osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
 					   lodTexSize[j],group,planes,bounds,
-					   texcallback,zrange,camMatrices);
+					   texcallback,zrange,camMatrices,&classes);
     
 
       

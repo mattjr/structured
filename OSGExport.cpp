@@ -674,7 +674,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 }
 
 
-bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices)
+bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<int,string> *classes)
 {
    _tex_size=tex_size;
    map<int,int> texnum2arraynum;
@@ -855,6 +855,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    //texture->setInternalFormatMode(internalFormatMode);
 	    stateset->setTextureAttributeAndModes(baseTexUnit,texture,
 						  osg::StateAttribute::ON);
+
+
 	    if(computeHists){
 	      stateset->setMode(GL_BLEND,osg::StateAttribute::OFF);
 	      stateset->setMode(GL_ALPHA_TEST,osg::StateAttribute::OFF);
@@ -993,7 +995,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  smoother.smooth(*gc._geom);
 	   if(gc._texturesActive ){
 
-	   
+
+	       
 	       if(gpuNovelty){
 		 gc._geom->getStateSet()->addUniform(new osg::Uniform("hist", 
 								      TEXUNIT_HIST) );

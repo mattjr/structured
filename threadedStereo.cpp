@@ -99,6 +99,7 @@ static ofstream file_name_list;
 static string base_dir;
 static double dense_z_cutoff=4.0;
 static bool no_depth=false;
+static string classes_file;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 static int num_threads=1;
 static FILE *fpp,*fpp2,*pos_fp;
@@ -106,6 +107,7 @@ static double connected_comp_size_clean;
 static double hole_fill_size;
 static bool even_split=false;
 static double cell_scale=1.0;
+static bool do_classes=false;
 static bool use_dense_feature=false;
 //StereoMatching* stereo;
 //StereoImage simage;
@@ -547,6 +549,8 @@ static bool parse_args( int argc, char *argv[ ] )
   no_simp=argp.read( "--nosimp" );
 
   do_hw_blend=argp.read("--blend" );
+
+  do_classes=argp.read("--classes",classes_file );
 
   use_cached=(!argp.read("--no_cached" ));
   do_novelty=argp.read("--novelty");
@@ -2317,6 +2321,11 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	    strcat(argstr," --shader ");
 	if(do_hw_blend)
 	  strcat(argstr," --blend ");
+	if(do_classes){
+	  char tp[2048];
+	  sprintf(tp," --classes %s ",classes_file.c_str());
+	  strcat(argstr,tp);
+	}
 	if(!hardware_compress)
 	  strcat(argstr," --no-hardware-compress ");
 	if(no_simp)

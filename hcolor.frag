@@ -179,8 +179,8 @@ void main()
   vec4 auxratio = vec4(0.0,0.5,0.0,1.0);
   if(shaderOut == 2){
     
-  
-    gl_FragColor =  (((vec4(1.0,1.0,1.0,0.0)-auxratio)*texture2D( colorMap, gl_TexCoord[0].st)) + (auxratio * aux));
+    gl_FragColor = texture2D( colorMap, gl_TexCoord[0].st);
+    // gl_FragColor =  (((vec4(1.0,1.0,1.0,0.0)-auxratio)*texture2D( colorMap, gl_TexCoord[0].st)) + (auxratio * aux));
   }else if(shaderOut == 3){
     
     gl_FragColor = class_color(classid);

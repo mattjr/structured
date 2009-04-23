@@ -185,6 +185,10 @@ void main()
   }else if(shaderOut == 1 && !untex){
     
     gl_FragColor =class_color(classid);
+  }
+  else if(shaderOut == 2 && !untex){
+    float alpha=0.3;
+    gl_FragColor =((1-alpha)*texture2D( colorMap, gl_TexCoord[0].st))+(alpha*class_color(classid));
   }else{
      vec3 NNormal = normalize(normal.xyz);
      vec3 Light  = normalize(vec3(1,  2.5,  -1));

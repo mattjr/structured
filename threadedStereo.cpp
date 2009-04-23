@@ -583,15 +583,19 @@ static bool parse_args( int argc, char *argv[ ] )
     if(do_classes_interp){
       int last_class=-1;
       int last_idx=-1;
+      int left_unknown=0;
       for(int i=0; i < classes.size(); i++){
 	if(classes[i].class_id == 0){
 	  if(last_class != -1 && i-last_idx <= interp_stride  )
 	    classes[i].class_id=last_class;
+	  else
+	    left_unknown++;
 	  }else{
 	  last_class=classes[i].class_id;
 	  last_idx=i;
 	}
       }
+      printf("Interpolating class labels stride %d final unknown count %d\n",interp_stride,left_unknown);
     }
     fp =fopen("classid.txt","w");
     if(!fp){

@@ -59,7 +59,7 @@ static bool single_run=false;
 static int single_run_index=0;
 static string classes_file;
 static bool do_classes=false;
-static std::map<int,string> classes;
+static std::map<string,int> classes;
 static int lodNum=3;
 static bool do_atlas=true;
 static string stereo_calib_file_name;
@@ -526,6 +526,22 @@ int main( int argc, char *argv[ ] )
   }
   fscanf(fp,"%*f %*f %f\n%*f %*f %f\n",&(zrange[0]),&(zrange[1]));
   fclose(fp);
+
+  if(do_classes){
+    FILE *fp =fopen(classes_file.c_str(),"r");
+    if(!fp){
+      fprintf(stderr,"No classes file %s file Quitting\n",classes_file.c_str());
+      exit(-1);
+    }
+    int class_id;
+    char img_name[2048];
+    while(!feof(fp)){
+      fscanf(fp,"%*f %s %d\n",img_name,&class_id);
+      classes[string(img_name)]=class_id;
+    }
+    fclose(fp);
+    printf("Loaded %d class labels\n",classes.size());
+  }
   char dicefname[255];
   sprintf(dicefname,"%s/valid.txt",diceddir);
   string dicefile(dicefname);

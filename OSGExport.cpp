@@ -674,7 +674,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 }
 
 
-bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<int,string> *classes)
+bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes)
 {
    _tex_size=tex_size;
    map<int,int> texnum2arraynum;
@@ -692,6 +692,11 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     data[9]=&texnum2arraynum;
   else
     data[9]=NULL;
+
+  if(classes)
+    useClasses=true;
+  else
+    useClasses=false;
 
   //data[5]=hists;
   //tempFF=getPlaneTex(planes);
@@ -832,6 +837,11 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	
 	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	if (image.valid()){	   
+	  if(useClasses){
+	    int class_id=-1;
+	    if(classes->count(textures[tidx]))
+	      class_id=(*classes)[textures[tidx]];
+	  }
 
 	  if(_tex_array_blend){
 

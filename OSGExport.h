@@ -70,7 +70,7 @@ struct GeometryCollection
         _texcoords(osg::Vec2Array::iterator()),
         _coordCount(0),
         _geom(0) {}
-  
+  int class_id;
   int                         _numPrimitives;
   int                         _numPrimitivesWithTexCoords;
   int                         _numPoints;
@@ -137,7 +137,7 @@ public:
   osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
   osg::ref_ptr<osg::Image>cacheImage(IplImage *img,string name,int tex_size,bool ret=true);
   osg::Image *getCachedImage(string name,int size);
-  bool convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size, osg::ref_ptr<osg::Geode >* group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL,std::map<int,osg::Matrixd> *camMatrices=NULL,std::map<int,string> *classes=NULL) ;  
+  bool convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size, osg::ref_ptr<osg::Geode >* group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL,std::map<int,osg::Matrixd> *camMatrices=NULL,std::map<string,int> *classes=NULL) ;  
   
   bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback=NULL);
 

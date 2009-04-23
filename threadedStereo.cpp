@@ -2373,7 +2373,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	    strcat(argstr," --shader ");
 	if(do_hw_blend)
 	  strcat(argstr," --blend ");
-	if(do_classes){
+	if(do_classes || do_classes_interp){
 	  char tp[2048];
 	  sprintf(tp," --classes %s ","classid.txt");
 	  strcat(argstr,tp);

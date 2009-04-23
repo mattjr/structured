@@ -595,7 +595,7 @@ static bool parse_args( int argc, char *argv[ ] )
 	  last_idx=i;
 	}
       }
-      printf("Interpolating class labels stride %d final unknown count %d\n",interp_stride,left_unknown);
+      printf("Interpolating class labels stride %d\nFinal unknown count %d\n",interp_stride,left_unknown);
     }
     fp =fopen("classid.txt","w");
     if(!fp){

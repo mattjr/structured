@@ -787,7 +787,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	
 	stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
 	stateset->addUniform( new osg::Uniform( "weights", osg::Vec3(0.640f, 0.370f, 0.770f) ));
-	stateset->addUniform( new osg::Uniform( "shaderOut", 2));
+	stateset->addUniform( new osg::Uniform( "shaderOut", 0));
 	
 	stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
 	stateset->setDataVariance(osg::Object::STATIC);
@@ -905,8 +905,9 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    stateset->addUniform(new osg::Uniform( "zrange", 
 						   osg::Vec3(zrange[0],
 							     zrange[1], 0.0f)));
-	    stateset->addUniform( new osg::Uniform( "shaderOut", 3));
+	    stateset->addUniform( new osg::Uniform( "shaderOut", 0));
 	    stateset->addUniform( new osg::Uniform( "classid", class_id));
+	    stateset->addUniform( new osg::Uniform( "untex",false));
 	    stateset->setDataVariance(osg::Object::STATIC);
 	  }
 	  
@@ -1077,7 +1078,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      utstateset->setAttributeAndModes( program, osg::StateAttribute::ON );
 
 	      utstateset->addUniform( new osg::Uniform( "zrange", osg::Vec3(zrange[0], zrange[1], 0.0f) ));
-	      utstateset->addUniform( new osg::Uniform( "shaderOut", 2));
+	      utstateset->addUniform( new osg::Uniform( "shaderOut", 0));
+	      utstateset->addUniform( new osg::Uniform( "untex",true));
 	      utstateset->setDataVariance(osg::Object::STATIC);
 	      
 	    }

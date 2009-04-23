@@ -170,6 +170,7 @@ vec4 class_color(int classid){
  varying vec3 E;
  varying vec3 H;
 varying vec4 vC;
+uniform bool untex;
 uniform int classid;
 uniform sampler2D colorMap;
 void main()
@@ -177,13 +178,13 @@ void main()
 
   vec4 aux= vec4(0.0,vC.y,0.0,1.0);
   vec4 auxratio = vec4(0.0,0.5,0.0,1.0);
-  if(shaderOut == 0){
+  if(shaderOut == 0 && !untex){
     
     gl_FragColor = texture2D( colorMap, gl_TexCoord[0].st);
     // gl_FragColor =  (((vec4(1.0,1.0,1.0,0.0)-auxratio)*texture2D( colorMap, gl_TexCoord[0].st)) + (auxratio * aux));
-  }else if(shaderOut == 1){
+  }else if(shaderOut == 1 && !untex){
     
-    gl_FragColor = class_color(classid);
+    gl_FragColor =class_color(classid);
   }else{
      vec3 NNormal = normalize(normal.xyz);
      vec3 Light  = normalize(vec3(1,  2.5,  -1));

@@ -108,6 +108,8 @@ static double hole_fill_size;
 static bool even_split=false;
 static double cell_scale=1.0;
 static bool do_classes=false;
+static bool do_classes_interp=false;
+
 static bool use_dense_feature=false;
 //StereoMatching* stereo;
 //StereoImage simage;
@@ -271,7 +273,11 @@ void print_uv_3dpts( list<Feature*>          &features,
   fprintf(uv_fp,"\n");
 }
 
-
+typedef struct _class_id_t{
+  int class_id;
+  string name;
+  double time;
+}class_id_t;
 
 //
 // Parse command line arguments into global variables
@@ -551,7 +557,53 @@ static bool parse_args( int argc, char *argv[ ] )
   do_hw_blend=argp.read("--blend" );
 
   do_classes=argp.read("--classes",classes_file );
+  int interp_stride=4;
+  do_classes_interp=argp.read("--classes-interp",classes_file,interp_stride );
+ 
+  if(do_classes || do_classes_interp){
+    FILE *fp =fopen(classes_file.c_str(),"r");
+    if(!fp){
+      fprintf(stderr,"No classes file %s file Quitting\n",classes_file.c_str());
+      exit(-1);
+    }
 
+  
+
+    char img_name[2048];
+    std::vector<class_id_t> classes;
+
+    while(!feof(fp)){
+      class_id_t tmp;
+      fscanf(fp,"%lf %s %d\n",&tmp.time,img_name,&tmp.class_id);
+      tmp.name=img_name;
+      classes.push_back(tmp);
+    }
+    fclose(fp);
+    printf("Loaded %d class labels\n",classes.size());
+    if(do_classes_interp){
+      int last_class=-1;
+      int last_idx=-1;
+      for(int i=0; i < classes.size(); i++){
+	if(classes[i].class_id == 0){
+	  if(last_class != -1 && i-last_idx <= interp_stride  )
+	    classes[i].class_id=last_class;
+	  }else{
+	  last_class=classes[i].class_id;
+	  last_idx=i;
+	}
+      }
+    }
+    fp =fopen("classid.txt","w");
+    if(!fp){
+      fprintf(stderr,"No classes out file classid.txt file Quitting\n");
+      exit(-1);
+    }
+    
+    for(int i=0; i < classes.size(); i++)
+      fprintf(fp,"%f %s %d\n",classes[i].time,classes[i].name.c_str(),
+	      classes[i].class_id);
+    
+  }
   use_cached=(!argp.read("--no_cached" ));
   do_novelty=argp.read("--novelty");
   output_pts_cov=argp.read("--ptscov");
@@ -2323,7 +2375,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  strcat(argstr," --blend ");
 	if(do_classes){
 	  char tp[2048];
-	  sprintf(tp," --classes %s ",classes_file.c_str());
+	  sprintf(tp," --classes %s ","classid.txt");
 	  strcat(argstr,tp);
 	}
 	if(!hardware_compress)

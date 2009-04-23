@@ -837,11 +837,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	
 	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	if (image.valid()){	   
-	  if(useClasses){
-	    int class_id=-1;
-	    if(classes->count(textures[tidx]))
-	      class_id=(*classes)[textures[tidx]];
-	  }
+
 
 	  if(_tex_array_blend){
 
@@ -889,6 +885,31 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      
 	      stateset->setTextureAttribute(0, te);
 	    }
+
+	  if(useClasses){
+	    int class_id=-1;
+	    if(classes->count(osgDB::getNameLessExtension(textures[tidx])))
+	      class_id=(*classes)[osgDB::getNameLessExtension(textures[tidx])];
+	    osg::Program* program=NULL;
+	    program = new osg::Program;
+	    program->setName( "colorshader" );
+	    //  printf("Here\n");
+	    osg::Shader *hcolorf=new osg::Shader( osg::Shader::FRAGMENT);
+	    osg::Shader *hcolorv=new osg::Shader( osg::Shader::VERTEX);
+	    loadShaderSource( hcolorf, basedir+"hcolor.frag" );
+	    loadShaderSource( hcolorv, basedir+"hcolor.vert" );
+	    program->addShader(  hcolorf );
+	    program->addShader(  hcolorv );
+	    stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
+	    
+	    stateset->addUniform(new osg::Uniform( "zrange", 
+						   osg::Vec3(zrange[0],
+							     zrange[1], 0.0f)));
+	    stateset->addUniform( new osg::Uniform( "shaderOut", 3));
+	    stateset->addUniform( new osg::Uniform( "classid", class_id));
+	    stateset->setDataVariance(osg::Object::STATIC);
+	  }
+	  
 	    if(use_proj_tex){
 	      printf("Using proj texture\n");
 	      texture->setWrap(osg::Texture::WRAP_S,

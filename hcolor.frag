@@ -149,11 +149,28 @@ void main()
     gl_FragColor =  color* ran;
 }
 */
+vec4 class_color(int classid){
+  if(classid == -1)
+    return vec4(0.0,0.0,0.0,0.0);
+  else if(classid == 0)
+    return vec4(0.0,0.0,0.0,0.0);
+  else if(classid == 1)
+    return vec4(1.0,0.0,0.0,0.0);
+  else if(classid == 2)
+    return vec4(1.0,1.0,0.0,0.0);
+ else if(classid == 3)
+    return vec4(0.0,0.5,5.0,0.0);
+ else if(classid == 4)
+    return vec4(0.5,0.5,0.0,0.0);
+ else if(classid == 5)
+    return vec4(1.0,0.5,0.0,0.0);
 
+}
  varying vec3 L;
  varying vec3 E;
  varying vec3 H;
 varying vec4 vC;
+uniform int classid;
 uniform sampler2D colorMap;
 void main()
 {
@@ -164,7 +181,10 @@ void main()
     
   
     gl_FragColor =  (((vec4(1.0,1.0,1.0,0.0)-auxratio)*texture2D( colorMap, gl_TexCoord[0].st)) + (auxratio * aux));
-  }else {
+  }else if(shaderOut == 3){
+    
+    gl_FragColor = class_color(classid);
+  }else{
      vec3 NNormal = normalize(normal.xyz);
      vec3 Light  = normalize(vec3(1,  2.5,  -1));
 //normalize(vec3(0,0,-1 ));

@@ -1966,6 +1966,7 @@ int main( int argc, char *argv[ ] )
     else
       vrip_cells=calc_cells(tasks,AUV_SPLIT,cell_scale);
     printf("Split into %d cells for VRIP\n",vrip_cells.size());
+
     for(int i=0; i <(int)vrip_cells.size(); i++){
       if(vrip_cells[i].poses.size() == 0)
 	continue;
@@ -2407,12 +2408,12 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		  recon_config_file_name.c_str(),
 		  cachedtexdir,gentexdir[i].c_str(),
 		  stereo_calib_file_name.c_str(),j1,j1+dist_gentex_range,argstr);
-	  printf("Second Range %d %d\n",j1,j1+dist_gentex_range);
+
 	  j1+=dist_gentex_range;
 
 	}while(j1 <= gentex_limit);
 
-	printf("Second %d\n",gentex_limit);
+
 	fclose(dicefp);
 	shellcm.write_generic(gentexnames[i],gentexcmd_fn,"Gentex",&precmds,NULL);
 	if(no_gen_tex)

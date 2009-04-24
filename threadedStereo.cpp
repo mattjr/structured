@@ -1958,16 +1958,16 @@ int main( int argc, char *argv[ ] )
 
 
     string mbfile=mbdir+"/"+"mb-total.ply";
-    std::vector<Cell_Data> cells;
+    std::vector<Cell_Data> vrip_cells;
     if(even_split){
-      cells=calc_cells(tasks,EVEN_SPLIT,cell_scale);
+      vrip_cells=calc_cells(tasks,EVEN_SPLIT,cell_scale);
       printf("Even Split\n");
     }
     else
-      cells=calc_cells(tasks,AUV_SPLIT,cell_scale);
-
-    for(int i=0; i <(int)cells.size(); i++){
-      if(cells[i].poses.size() == 0)
+      vrip_cells=calc_cells(tasks,AUV_SPLIT,cell_scale);
+    printf("Split into %d cells for VRIP\n",vrip_cells.size());
+    for(int i=0; i <(int)vrip_cells.size(); i++){
+      if(vrip_cells[i].poses.size() == 0)
 	continue;
       
       sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
@@ -1990,11 +1990,11 @@ int main( int argc, char *argv[ ] )
 
       if(have_mb_ply){
        	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
-fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply;tridecimator ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply ../mesh-agg/clipped-mb-%08d-%08d.ply 0 -e%f;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d-%08d.ply > ../mesh-agg/vis-mb-%08d-%08d.ply;", cells[i].bounds.min_x,
-		cells[i].bounds.min_y,
+fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply;tridecimator ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply ../mesh-agg/clipped-mb-%08d-%08d.ply 0 -e%f;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d-%08d.ply > ../mesh-agg/vis-mb-%08d-%08d.ply;", vrip_cells[i].bounds.min_x,
+		vrip_cells[i].bounds.min_y,
 		FLT_MIN,
-		cells[i].bounds.max_x,
-		  cells[i].bounds.max_y,
+		vrip_cells[i].bounds.max_x,
+		  vrip_cells[i].bounds.max_y,
 		  FLT_MAX,
 		  eps,
 	mb_ply_filenames[k].c_str(),k,i,k,i,k,i,edgethresh,vrip_seg_fname,vrip_mb_clip_margin+vrip_mb_clip_margin_extra,k,i,k,i);
@@ -2011,11 +2011,11 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	fprintf(vripcmds_fp,"cat ../%s | cut -f1 -d\" \" | xargs $BASEDIR/vrip/bin/plymerge > ../mesh-agg/seg-%08d.ply;",vrip_seg_fname,i);
 
       fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",
-	      cells[i].bounds.min_x,
-	      cells[i].bounds.min_y,
+	      vrip_cells[i].bounds.min_x,
+	      vrip_cells[i].bounds.min_y,
 	      FLT_MIN,
-	      cells[i].bounds.max_x,
-	      cells[i].bounds.max_y,
+	      vrip_cells[i].bounds.max_x,
+	      vrip_cells[i].bounds.max_y,
 	      FLT_MAX,
 	      eps,i,i);
 
@@ -2035,8 +2035,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       fprintf(vripcmds_fp,"cd ..\n");
     
       
-      for(unsigned int j=0; j <cells[i].poses.size(); j++){
-	const Stereo_Pose_Data *pose=cells[i].poses[j];
+      for(unsigned int j=0; j <vrip_cells[i].poses.size(); j++){
+	const Stereo_Pose_Data *pose=vrip_cells[i].poses[j];
 	//Vrip List
 	fprintf(vrip_seg_fp,"%s %f 1\n",pose->mesh_name.c_str(),vrip_res);
 	//Gen Tex File bbox
@@ -2125,9 +2125,9 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
       fclose(quadmerge_seg_fp);
       //int numcells= total_env.width() *total_env.height() / 50.0;
-      cells=calc_cells(tasks,total_env.minx(),total_env.maxx(),total_env.miny(),total_env.maxy(),5);
+         std::vector<Cell_Data> quad_cells=calc_cells(tasks,total_env.minx(),total_env.maxx(),total_env.miny(),total_env.maxy(),5);
 
-    for(int i=0; i <(int)cells.size(); i++){
+    for(int i=0; i <(int)quad_cells.size(); i++){
 
       
      
@@ -2146,11 +2146,11 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
    
       for(int t=0; t < 3; t++){
 	fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/quad-lod%d.ply > ../mesh-quad/clipped-diced-%08d-lod%d.ply;",
-		cells[i].bounds.min_x,
-		cells[i].bounds.min_y,
+		quad_cells[i].bounds.min_x,
+		quad_cells[i].bounds.min_y,
 		FLT_MIN,
-		cells[i].bounds.max_x,
-		cells[i].bounds.max_y,
+		quad_cells[i].bounds.max_x,
+		quad_cells[i].bounds.max_y,
 		FLT_MAX,
 		eps,t,i,t);
 	if(rugosity){
@@ -2159,8 +2159,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       }
       fprintf(quadmergecmds_fp,"cd ..\n");
    
-      for(unsigned int j=0; j <cells[i].poses.size(); j++){
-	const Stereo_Pose_Data *pose=cells[i].poses[j];
+      for(unsigned int j=0; j <quad_cells[i].poses.size(); j++){
+	const Stereo_Pose_Data *pose=quad_cells[i].poses[j];
 
 	//Gen Tex File bbox
 	fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
@@ -2253,7 +2253,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	if(run_pos){
 	  sysres=system(runpos_fn.c_str());
 	}
-	shellcm.pos_dice(cells,eps,run_pos);
+	shellcm.pos_dice(vrip_cells,eps,run_pos);
 
 	
       }else{
@@ -2271,7 +2271,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	fclose(conf_ply_file);
 	if(run_pos){
 	  sysres=system("./runpos.sh");
-	  shellcm.pos_dice(cells,eps);
+	  shellcm.pos_dice(vrip_cells,eps);
 	}
       }
       
@@ -2358,6 +2358,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	gentexdir.push_back("mesh-diced");
 	gentexdir.push_back("mesh-pos");
 	gentexdir.push_back("mesh-quad");
+	const int quad_idx=2;
 	std::vector<string> precmds;
 	if(no_simp){ 
 	  string cmdtmp="cd mesh-diced;cat diced.txt | xargs plybbox > range.txt;cp diced.txt valid.txt;cd ..";
@@ -2388,11 +2389,14 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  strcat(argstr," --nosimp");
 	if(have_mb_ply){
 	  char tp[2048];
-	  sprintf(tp," --nonvis %d ",(int)cells.size());
+	  if(i ==quad_idx)
+	    sprintf(tp," --nonvis %d ",(int)quad_cells.size());
+	  else
+	    sprintf(tp," --nonvis %d ",(int)vrip_cells.size());
 	  strcat(argstr,tp);
 	}
-	
-	
+	int gentex_limit= (i==quad_idx) ?quad_cells.size() : vrip_cells.size(); 
+	  
 
 	int j1=0;
 	do{
@@ -2403,8 +2407,12 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		  recon_config_file_name.c_str(),
 		  cachedtexdir,gentexdir[i].c_str(),
 		  stereo_calib_file_name.c_str(),j1,j1+dist_gentex_range,argstr);
+	  printf("Second Range %d %d\n",j1,j1+dist_gentex_range);
 	  j1+=dist_gentex_range;
-	}while(j1 <= (int)cells.size());
+
+	}while(j1 <= gentex_limit);
+
+	printf("Second %d\n",gentex_limit);
 	fclose(dicefp);
 	shellcm.write_generic(gentexnames[i],gentexcmd_fn,"Gentex",&precmds,NULL);
 	if(no_gen_tex)

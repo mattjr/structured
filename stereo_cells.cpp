@@ -541,6 +541,6 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,double x1,do
    vector<Cell_Data> cells;
  
    recursive_split_area( node_poses, bounds, 1, cells );
-   
+
    return cells;
 }

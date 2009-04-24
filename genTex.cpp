@@ -59,6 +59,7 @@ static bool single_run=false;
 static int single_run_index=0;
 static string classes_file;
 static bool do_classes=false;
+static int max_class_id=0;
 static std::map<string,int> classes;
 static int lodNum=3;
 static bool do_atlas=true;
@@ -534,13 +535,16 @@ int main( int argc, char *argv[ ] )
       exit(-1);
     }
     int class_id;
+   
     char img_name[2048];
     while(!feof(fp)){
       fscanf(fp,"%*f %s %d\n",img_name,&class_id);
       classes[string(img_name)]=class_id;
+      if(class_id > max_class_id)
+	max_class_id=class_id;
     }
     fclose(fp);
-    printf("Loaded %d class labels\n",classes.size());
+    printf("Loaded %d class labels with max id %d\n",classes.size(),max_class_id);
   }
   char dicefname[255];
   sprintf(dicefname,"%s/valid.txt",diceddir);
@@ -748,7 +752,8 @@ int main( int argc, char *argv[ ] )
        	class_ptr=&classes;
       osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
 					   lodTexSize[j],group,planes,bounds,
-					   texcallback,zrange,camMatrices,class_ptr);
+					   texcallback,zrange,camMatrices,
+					   class_ptr,max_class_id);
     
 
       

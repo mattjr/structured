@@ -674,7 +674,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 }
 
 
-bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes)
+bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes,int num_class_id)
 {
    _tex_size=tex_size;
    map<int,int> texnum2arraynum;
@@ -693,10 +693,10 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   else
     data[9]=NULL;
 
-  if(classes)
-    useClasses=true;
-  else
+  if(!classes || num_class_id == 0)
     useClasses=false;
+  else
+    useClasses=true;
 
   //data[5]=hists;
   //tempFF=getPlaneTex(planes);
@@ -885,7 +885,23 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      
 	      stateset->setTextureAttribute(0, te);
 	    }
-
+ osg::Material* material = new osg::Material;
+	      
+	      osg::Vec4 specular( 0.18, 0.18, 0.18, 0.18 );
+	      specular *= 1.5;
+	      float mat_shininess = 64.0f ;
+	      osg::Vec4 ambient (0.92, 0.92, 0.92, 0.95 );
+	      osg::Vec4 diffuse( 0.8, 0.8, 0.8, 0.85 );
+	      
+	    
+	      material->setAmbient(osg::Material::FRONT_AND_BACK,ambient);
+	      
+	      material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
+	      material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
+	      //     material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
+	      //if(!applyNonVisMat){
+	      
+	    
 	  if(useClasses){
 	    int class_id=-1;
 	    if(classes->count(osgDB::getNameLessExtension(textures[tidx])))
@@ -906,8 +922,9 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 						   osg::Vec3(zrange[0],
 							     zrange[1], 0.0f)));
 	    stateset->addUniform( new osg::Uniform( "shaderOut", 0));
-	    stateset->addUniform( new osg::Uniform( "classid", class_id));
+	    stateset->addUniform( new osg::Uniform( "classid", class_id/(float)(num_class_id)));
 	    stateset->addUniform( new osg::Uniform( "untex",false));
+	    stateset->setAttribute(material);
 	    stateset->setDataVariance(osg::Object::STATIC);
 	  }
 	  

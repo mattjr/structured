@@ -149,7 +149,7 @@ void main()
     gl_FragColor =  color* ran;
 }
 */
-vec4 class_color(int classid){
+ /*vec4 class_color( classid){
   if(classid == -1)
     return vec4(0.0,0.0,0.0,0.0);
   else if(classid == 0)
@@ -165,30 +165,38 @@ vec4 class_color(int classid){
  else if(classid == 5)
     return vec4(1.0,0.5,0.0,0.0);
 
-}
+    }*/
  varying vec3 L;
  varying vec3 E;
  varying vec3 H;
 varying vec4 vC;
 uniform bool untex;
-uniform int classid;
+uniform float classid;
 uniform sampler2D colorMap;
 void main()
 {
 
   vec4 aux= vec4(0.0,vC.y,0.0,1.0);
   vec4 auxratio = vec4(0.0,0.5,0.0,1.0);
+  vec4 class_color =rainbowColorMap(classid);
   if(shaderOut == 0 && !untex){
     
     gl_FragColor = texture2D( colorMap, gl_TexCoord[0].st);
     // gl_FragColor =  (((vec4(1.0,1.0,1.0,0.0)-auxratio)*texture2D( colorMap, gl_TexCoord[0].st)) + (auxratio * aux));
   }else if(shaderOut == 1 && !untex){
-    
-    gl_FragColor =class_color(classid);
+   if(classid == 0.0)
+      gl_FragColor =vec4(0,0,0,0);
+    else
+    gl_FragColor = class_color;
+  
   }
   else if(shaderOut == 2 && !untex){
+ 
     float alpha=0.3;
-    gl_FragColor =((1-alpha)*texture2D( colorMap, gl_TexCoord[0].st))+(alpha*class_color(classid));
+    if(classid ==0.0)
+      gl_FragColor =texture2D( colorMap, gl_TexCoord[0].st);
+    else
+      gl_FragColor =((1-alpha)*texture2D( colorMap, gl_TexCoord[0].st))+(alpha*class_color);
   }else{
      vec3 NNormal = normalize(normal.xyz);
      vec3 Light  = normalize(vec3(1,  2.5,  -1));
@@ -213,10 +221,10 @@ void main()
     vec4 ran=rainbowColorMap(val);
     vec4 shadow = vec4(1.0-vC.x,1.0-vC.x,1.0-vC.x,1.0);
     vec4 auxC = hotColorMap(vC.y);//coldColorMap(vC.y);
-    if(shaderOut == 1)
-      gl_FragColor = ran* shadow* (ambient + diffuse + specular);
-    else
-      gl_FragColor = auxC * shadow* (ambient + diffuse + specular);
+    //if(shaderOut == 1)
+    //  gl_FragColor = ran* shadow* (ambient + diffuse + specular);
+    // else
+    gl_FragColor = jet   * (ambient + diffuse + specular);
     
   }
 }

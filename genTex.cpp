@@ -743,10 +743,12 @@ int main( int argc, char *argv[ ] )
 	
 	}
       }
-
+      std::map<string,int> *	class_ptr=NULL;
+      if(do_classes)
+       	class_ptr=&classes;
       osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
 					   lodTexSize[j],group,planes,bounds,
-					   texcallback,zrange,camMatrices,&classes);
+					   texcallback,zrange,camMatrices,class_ptr);
     
 
       

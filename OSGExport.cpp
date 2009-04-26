@@ -1042,7 +1042,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       GeometryCollection& gc = *(gcAndTexIds[i].first);
       if (gc._geom)
         {
-	  gc._geom->setUseDisplayList(false);
+	  gc._geom->setUseDisplayList(true);
+	  //	  gc._geom->setUseDisplayList(false);
           //  tessellator.retessellatePolygons(*gc._geom);
         
 	  smoother.smooth(*gc._geom);

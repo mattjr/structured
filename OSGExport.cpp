@@ -676,6 +676,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 
 bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes,int num_class_id)
 {
+  bool use_non_shader_color=false;
    _tex_size=tex_size;
    map<int,int> texnum2arraynum;
   gpointer data[10];
@@ -862,46 +863,48 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    stateset->setTextureAttributeAndModes(baseTexUnit,texture,
 						  osg::StateAttribute::ON);
 
-
-	    if(computeHists){
-	      stateset->setMode(GL_BLEND,osg::StateAttribute::OFF);
-	      stateset->setMode(GL_ALPHA_TEST,osg::StateAttribute::OFF);
-	      
-	    }else{
-	      
-	      
-	      osg::TexEnvCombine *te = new osg::TexEnvCombine;    
-	      // Modulate diffuse texture with vertex color.
-	      te->setCombine_RGB(osg::TexEnvCombine::REPLACE);
-	      te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
-	      te->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
-	      te->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
-	      te->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
-	      
-	      // Alpha doesn't matter.
-	      te->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
-	      te->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
-	      te->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
-	      
-	      stateset->setTextureAttribute(0, te);
+	    if(use_non_shader_color){
+	      if(computeHists){
+		stateset->setMode(GL_BLEND,osg::StateAttribute::OFF);
+		stateset->setMode(GL_ALPHA_TEST,osg::StateAttribute::OFF);
+		
+	      }else{
+		
+		
+		osg::TexEnvCombine *te = new osg::TexEnvCombine;    
+		// Modulate diffuse texture with vertex color.
+		te->setCombine_RGB(osg::TexEnvCombine::REPLACE);
+		te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
+		te->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+		te->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
+		te->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+		
+		// Alpha doesn't matter.
+		te->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
+		te->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
+		te->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+		
+		stateset->setTextureAttribute(0, te);
+		
+		osg::Material* material = new osg::Material;
+		
+		osg::Vec4 specular( 0.18, 0.18, 0.18, 0.18 );
+		specular *= 1.5;
+		float mat_shininess = 64.0f ;
+		osg::Vec4 ambient (0.92, 0.92, 0.92, 0.95 );
+		osg::Vec4 diffuse( 0.8, 0.8, 0.8, 0.85 );
+		
+		
+		material->setAmbient(osg::Material::FRONT_AND_BACK,ambient);
+		
+		material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
+		material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
+		//     material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
+		//if(!applyNonVisMat){
+		stateset->setAttribute(material);
+	      }
 	    }
- osg::Material* material = new osg::Material;
-	      
-	      osg::Vec4 specular( 0.18, 0.18, 0.18, 0.18 );
-	      specular *= 1.5;
-	      float mat_shininess = 64.0f ;
-	      osg::Vec4 ambient (0.92, 0.92, 0.92, 0.95 );
-	      osg::Vec4 diffuse( 0.8, 0.8, 0.8, 0.85 );
-	      
-	    
-	      material->setAmbient(osg::Material::FRONT_AND_BACK,ambient);
-	      
-	      material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
-	      material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
-	      //     material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
-	      //if(!applyNonVisMat){
-	      
-	    
+
 	  if(useClasses){
 	    int class_id=-1;
 	    if(classes->count(osgDB::getNameLessExtension(textures[tidx])))
@@ -924,7 +927,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    stateset->addUniform( new osg::Uniform( "shaderOut", 0));
 	    stateset->addUniform( new osg::Uniform( "classid", class_id/(float)(num_class_id)));
 	    stateset->addUniform( new osg::Uniform( "untex",false));
-	    stateset->setAttribute(material);
+	  
+	
 	    stateset->setDataVariance(osg::Object::STATIC);
 	  }
 	  

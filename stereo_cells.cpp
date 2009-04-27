@@ -394,12 +394,13 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
    }
    unsigned int best_axis;
    double best_split_point;
+
    if(bounds.max_x-bounds.min_x  > bounds.max_y-bounds.min_y){
      best_axis= POSE_INDEX_X ;
-     best_split_point=(bounds.max_x-bounds.min_x)/2;
+     best_split_point=(bounds.max_x+bounds.min_x)/2;
    }else{
      best_axis= POSE_INDEX_Y ;
-     best_split_point=(bounds.max_y-bounds.min_y)/2;
+     best_split_point=(bounds.max_y+bounds.min_y)/2;
    }
    // Perform the split
    vector<const Stereo_Pose_Data*> poses1, poses2;
@@ -411,7 +412,7 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
    // Check if the subsets need to be recursively split
    if( bounds1.area() > max_cell_area_even || poses1.size() > max_cell_poses_even  )
    {   
-      recursive_split( poses1, bounds1, depth+1, cells );
+      recursive_split_area( poses1, bounds1, depth+1, cells );
    }
    else
    {
@@ -426,7 +427,7 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
 
    if( bounds2.area() > max_cell_area_even || poses2.size() > max_cell_poses_even)
    {   
-      recursive_split( poses2, bounds2, depth+1, cells );
+      recursive_split_area( poses2, bounds2, depth+1, cells );
    }
    else
    {

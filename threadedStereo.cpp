@@ -82,6 +82,7 @@ static bool output_pts_cov=false;
 static bool use_sift_features = false;
 static bool sing_gen_tex=false;
 static bool use_surf_features = false;
+static double max_alt_cutoff=10.0;
 //static bool use_ncc = false;
 static int skip_counter=0;
 static double vrip_ramp;
@@ -555,6 +556,7 @@ static bool parse_args( int argc, char *argv[ ] )
   no_simp=argp.read( "--nosimp" );
 
   do_hw_blend=argp.read("--blend" );
+  argp.read("--maxaltcutoff",max_alt_cutoff);
 
   do_classes=argp.read("--classes",classes_file );
   int interp_stride=4;
@@ -1730,7 +1732,7 @@ int main( int argc, char *argv[ ] )
       Stereo_Pose_Data name;
       get_auv_image_name( dir_name, *cii, name) ;
       cii++;
-      if(cii->pose_time < start_time){
+      if(cii->pose_time < start_time || cii->altitude > max_alt_cutoff){
 	continue;
       }
       if(cii->pose_time >= stop_time)

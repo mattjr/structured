@@ -289,7 +289,7 @@ static bool parse_args( int argc, char *argv[ ] )
   argp.getApplicationUsage()->setApplicationName(argp.getApplicationName());
   argp.getApplicationUsage()->setDescription(argp.getApplicationName()+" example demonstrates the use of ImageStream for rendering movies as textures.");
   argp.getApplicationUsage()->setCommandLineUsage(argp.getApplicationName()+" <basedir>  [options]  ...\nwill look for recon.cfg stereo.calib stereo_pose_est.data and dir img for images\n I suggest creating symlinks to those files allowing for varible configuration.\n");
-  argp.getApplicationUsage()->addCommandLineOption( "-r <texture size>","       Final texture output size." );
+  argp.getApplicationUsage()->addCommandLineOption( "-r <texturesize>","       Final texture output size." );
   argp.getApplicationUsage()->addCommandLineOption( "-m <max_feature_count>" ," Set the maximum number of features to be found." );
   argp.getApplicationUsage()->addCommandLineOption( "-n <max_frame_count>","   Set the maximum number of frames to be processed." );
   argp.getApplicationUsage()->addCommandLineOption( "-z <feature_depth>","Set an estimate for the feature depth relative to cameras." );
@@ -2400,7 +2400,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	}
 	int gentex_limit= (i==quad_idx) ?quad_cells.size() : vrip_cells.size(); 
 	  
-
+	if(gentex_limit < num_threads*dist_gentex_range)
+	  dist_gentex_range = (int) std::max(gentex_limit/num_threads,1);
 	int j1=0;
 	do{
 	  fprintf(dicefp,"setenv DISPLAY :0.0;cd %s/..;%s/genTex %s %s "

@@ -1356,6 +1356,10 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     
    
     FILE *fp = fopen(meshfilename, "w" );
+    if(!fp){
+      fprintf(stderr,"Can't open %s\n",meshfilename);
+      return false;
+    }
     auv_write_ply(surf, fp,have_cov_file,"test");
     fflush(fp);   
     fclose(fp);

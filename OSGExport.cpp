@@ -291,15 +291,15 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
     gc._texturesActive=false;
 
   if(gc._colorsActive){
-    if(/*!shader_height_coloring*/0){
-
+    //  if(!shader_colori){
+    {
       if(!zrange){
 	(*gc._colors++).set(0.5,0.5,0.5,0.0);
 	(*gc._colors++).set(0.5,0.5,0.5,0.0);
 	(*gc._colors++).set(0.5,0.5,0.5,0.0);
       }
       float range=zrange[1]-zrange[0];
-      
+    
       Lut_Vec color;
       float val;// r,g,b,val;
       Colors::eColorMap map=Colors::eRainbowMap;
@@ -319,19 +319,20 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
       val = clamp ( ( GTS_VERTEX(v3)->p.z -zrange[0] )/range, 0.0f, 1.0f);   
       color=GlobalColors()->Get(map, val); 
       (*gc._colors++).set(color[0],color[1],color[2],1.0);
+
       //jet_color_map(val,r,g,b);
       //  (*gc._colors++).set(r,b,g,1.0);
-    }else{
-      /*(*gc._colors++).set(v1->r/255.0,v1->g/255.0,v1->b/255.0,1.0);
+    }/*else{
+      //(*gc._colors++).set(v1->r/255.0,v1->g/255.0,v1->b/255.0,1.0);
     
-      (*gc._colors++).set(v2->r/255.0,v2->g/255.0,v2->b/255.0,1.0);
-      (*gc._colors++).set(v3->r/255.0,v3->g/255.0,v3->b/255.0,1.0);*/
+     // (*gc._colors++).set(v2->r/255.0,v2->g/255.0,v2->b/255.0,1.0);
+     // (*gc._colors++).set(v3->r/255.0,v3->g/255.0,v3->b/255.0,1.0);
       (*gc._colors++).set(v1->r,v1->g,v1->b,1.0);
     
       (*gc._colors++).set(v2->r,v2->g,v2->b,1.0);
       (*gc._colors++).set(v3->r,v3->g,v3->b,1.0);
 
-    }
+    }*/
     
   }
 }
@@ -761,7 +762,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       gc._geom->setVertexArray(vertArray);
       gc._planeTexValid=false;
       // set up color.
-      {
+      if(!shader_coloring){
 	osg::Vec4Array* colorsArray = new osg::Vec4Array(gc._numPoints);
 	 
 	 
@@ -773,7 +774,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
 	
 
-      }
+      }else
+	gc._colorsActive=false;
       
       if(!_tex_array_blend && gcAndTexIds[gci].second.size() > 1){
 	fprintf(stderr,"Error blending off yet more then one texture per geometry\n");
@@ -892,7 +894,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 		
 		stateset->setTextureAttribute(0, te);
 		
-		osg::Material* material = new osg::Material;
+		/*	osg::Material* material = new osg::Material;
 		
 		osg::Vec4 specular( 0.18, 0.18, 0.18, 0.18 );
 		specular *= 1.5;
@@ -906,8 +908,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 		material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
 		material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
 		//     material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
-		//if(!applyNonVisMat){
-		stateset->setAttribute(material);
+
+		stateset->setAttribute(material);*/
 	      }
 	    }
 	    

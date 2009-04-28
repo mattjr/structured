@@ -676,7 +676,8 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 
 bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes,int num_class_id)
 {
-  bool use_non_shader_color=false;
+  bool use_non_shader_color=true;
+
    _tex_size=tex_size;
    map<int,int> texnum2arraynum;
   gpointer data[10];
@@ -698,6 +699,10 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     useClasses=false;
   else
     useClasses=true;
+
+
+  if(shader_height_coloring || useClasses)
+    use_non_shader_color=false;
 
   //data[5]=hists;
   //tempFF=getPlaneTex(planes);
@@ -905,7 +910,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      }
 	    }
 
-	  if(useClasses){
+	  if(useClasses || shader_height_coloring){
 	    int class_id=-1;
 	    if(classes->count(osgDB::getNameLessExtension(textures[tidx])))
 	      class_id=(*classes)[osgDB::getNameLessExtension(textures[tidx])];

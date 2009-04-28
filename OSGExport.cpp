@@ -676,7 +676,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 
 bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes,int num_class_id)
 {
-  bool use_non_shader_color=true;
+  
 
    _tex_size=tex_size;
    map<int,int> texnum2arraynum;
@@ -695,15 +695,16 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   else
     data[9]=NULL;
 
-  if(!classes || num_class_id == 0)
-    useClasses=false;
-  else
+  if(classes && num_class_id != 0)
     useClasses=true;
+  else
+    useClasses=false;
 
 
-  if(shader_height_coloring || useClasses)
-    use_non_shader_color=false;
+  if(useClasses)
+    shader_coloring=true;
 
+  
   //data[5]=hists;
   //tempFF=getPlaneTex(planes);
  
@@ -868,7 +869,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    stateset->setTextureAttributeAndModes(baseTexUnit,texture,
 						  osg::StateAttribute::ON);
 
-	    if(use_non_shader_color){
+	    if(!shader_coloring){
 	      if(computeHists){
 		stateset->setMode(GL_BLEND,osg::StateAttribute::OFF);
 		stateset->setMode(GL_ALPHA_TEST,osg::StateAttribute::OFF);
@@ -909,34 +910,38 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 		stateset->setAttribute(material);
 	      }
 	    }
-
-	  if(useClasses || shader_height_coloring){
-	    int class_id=-1;
-	    if(classes->count(osgDB::getNameLessExtension(textures[tidx])))
-	      class_id=(*classes)[osgDB::getNameLessExtension(textures[tidx])];
-	    osg::Program* program=NULL;
-	    program = new osg::Program;
-	    program->setName( "colorshader" );
-	    //  printf("Here\n");
-	    osg::Shader *hcolorf=new osg::Shader( osg::Shader::FRAGMENT);
-	    osg::Shader *hcolorv=new osg::Shader( osg::Shader::VERTEX);
-	    loadShaderSource( hcolorf, basedir+"hcolor.frag" );
-	    loadShaderSource( hcolorv, basedir+"hcolor.vert" );
-	    program->addShader(  hcolorf );
-	    program->addShader(  hcolorv );
-	    stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
 	    
-	    stateset->addUniform(new osg::Uniform( "zrange", 
-						   osg::Vec3(zrange[0],
-							     zrange[1], 0.0f)));
-	    stateset->addUniform( new osg::Uniform( "shaderOut", 0));
-	    stateset->addUniform( new osg::Uniform( "classid", class_id/(float)(num_class_id)));
-	    stateset->addUniform( new osg::Uniform( "untex",false));
-	  
-	
-	    stateset->setDataVariance(osg::Object::STATIC);
-	  }
-	  
+	    if(shader_coloring){
+	    
+	      osg::Program* program=NULL;
+	      program = new osg::Program;
+	      program->setName( "colorshader" );
+	      //  printf("Here\n");
+	      osg::Shader *hcolorf=new osg::Shader( osg::Shader::FRAGMENT);
+	      osg::Shader *hcolorv=new osg::Shader( osg::Shader::VERTEX);
+	      loadShaderSource( hcolorf, basedir+"hcolor.frag" );
+	      loadShaderSource( hcolorv, basedir+"hcolor.vert" );
+	      program->addShader(  hcolorf );
+	      program->addShader(  hcolorv );
+	      stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
+	      
+	      stateset->addUniform(new osg::Uniform( "zrange", 
+						     osg::Vec3(zrange[0],
+							       zrange[1], 0.0f)));
+	      stateset->addUniform( new osg::Uniform( "shaderOut", 0));
+	      
+	      stateset->addUniform( new osg::Uniform( "untex",false));
+	      
+	      if(useClasses && classes){
+		int class_id=-1;
+		if(classes->count(osgDB::getNameLessExtension(textures[tidx])))
+		  class_id=(*classes)[osgDB::getNameLessExtension(textures[tidx])];
+		stateset->addUniform( new osg::Uniform( "classid", class_id/(float)(num_class_id)));
+	      }
+	      
+	      stateset->setDataVariance(osg::Object::STATIC);
+	    }
+	    
 	    if(use_proj_tex){
 	      printf("Using proj texture\n");
 	      texture->setWrap(osg::Texture::WRAP_S,
@@ -1091,7 +1096,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	   else{
 	  
 	    osg::StateSet *utstateset = gc._geom->getOrCreateStateSet();
-	    if(shader_height_coloring){
+	    if(shader_coloring){
 	      osg::Program* program=NULL;
 	      program = new osg::Program;
 	      program->setName( "colorshader" );

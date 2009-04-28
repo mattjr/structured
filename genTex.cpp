@@ -627,7 +627,8 @@ int main( int argc, char *argv[ ] )
     if(!mgc)
       mgc = new MyGraphicsContext();
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
-					num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex,do_atlas,shader_color);    
+					num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex,do_atlas,shader_color);
+
 
     osg::Node * lod0Node[2];
     lod0Node[0]=NULL;

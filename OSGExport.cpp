@@ -871,68 +871,9 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    stateset->setTextureAttributeAndModes(baseTexUnit,texture,
 						  osg::StateAttribute::ON);
 
-	    if(!shader_coloring){
-	      if(computeHists){
-		stateset->setMode(GL_BLEND,osg::StateAttribute::OFF);
-		stateset->setMode(GL_ALPHA_TEST,osg::StateAttribute::OFF);
-		
-	      }else{
-		
-		
-		osg::TexEnvCombine *te = new osg::TexEnvCombine;    
-		// Modulate diffuse texture with vertex color.
-		te->setCombine_RGB(osg::TexEnvCombine::REPLACE);
-		te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
-		te->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
-		te->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
-		te->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
-		
-		// Alpha doesn't matter.
-		te->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
-		te->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
-		te->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
-		
-		stateset->setTextureAttribute(0, te);
-		
-		/*	osg::Material* material = new osg::Material;
-		
-		osg::Vec4 specular( 0.18, 0.18, 0.18, 0.18 );
-		specular *= 1.5;
-		float mat_shininess = 64.0f ;
-		osg::Vec4 ambient (0.92, 0.92, 0.92, 0.95 );
-		osg::Vec4 diffuse( 0.8, 0.8, 0.8, 0.85 );
-		
-		
-		material->setAmbient(osg::Material::FRONT_AND_BACK,ambient);
-		
-		material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
-		material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
-		//     material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
-
-		stateset->setAttribute(material);*/
-	      }
-	    }
-	    
+	   
 	    if(shader_coloring){
-	    
-	      osg::Program* program=NULL;
-	      program = new osg::Program;
-	      program->setName( "colorshader" );
-	      //  printf("Here\n");
-	      osg::Shader *hcolorf=new osg::Shader( osg::Shader::FRAGMENT);
-	      osg::Shader *hcolorv=new osg::Shader( osg::Shader::VERTEX);
-	      loadShaderSource( hcolorf, basedir+"hcolor.frag" );
-	      loadShaderSource( hcolorv, basedir+"hcolor.vert" );
-	      program->addShader(  hcolorf );
-	      program->addShader(  hcolorv );
-	      stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
-	      
-	      stateset->addUniform(new osg::Uniform( "zrange", 
-						     osg::Vec3(zrange[0],
-							       zrange[1], 0.0f)));
-	      stateset->addUniform( new osg::Uniform( "shaderOut", 0));
-	      
-	      stateset->addUniform( new osg::Uniform( "untex",false));
+	   
 	      
 	      if(useClasses && classes){
 		int class_id=-1;
@@ -1232,6 +1173,70 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	textured->getOrCreateStateSet()->setAttribute( point, osg::StateAttribute::ON );
       }
 
+      if(shader_coloring){     
+	osg::Program* program=NULL;
+	program = new osg::Program;
+	program->setName( "colorshader" );
+	//  printf("Here\n");
+	osg::Shader *hcolorf=new osg::Shader( osg::Shader::FRAGMENT);
+	osg::Shader *hcolorv=new osg::Shader( osg::Shader::VERTEX);
+	loadShaderSource( hcolorf, basedir+"hcolor.frag" );
+	loadShaderSource( hcolorv, basedir+"hcolor.vert" );
+	program->addShader(  hcolorf );
+	program->addShader(  hcolorv );
+	textured->getOrCreateStateSet()->setAttributeAndModes( program,
+							       osg::StateAttribute::ON );
+	textured->getOrCreateStateSet()->addUniform(new osg::Uniform( "zrange", 
+					       osg::Vec3(zrange[0],
+							 zrange[1], 0.0f)));
+	textured->getOrCreateStateSet()->addUniform( new osg::Uniform( "untex",
+								       false));
+	// stateset->addUniform( new osg::Uniform( "shaderOut", 0));
+	      
+      }else {
+	if(computeHists){
+	  textured->getOrCreateStateSet()->setMode(GL_BLEND,
+						   osg::StateAttribute::OFF);
+	  textured->getOrCreateStateSet()->setMode(GL_ALPHA_TEST,
+						   osg::StateAttribute::OFF);
+	  
+	}else{
+	  
+	  
+	  osg::TexEnvCombine *te = new osg::TexEnvCombine;    
+	  // Modulate diffuse texture with vertex color.
+	  te->setCombine_RGB(osg::TexEnvCombine::REPLACE);
+	  te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
+	  te->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+	  te->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
+	  te->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+	  
+	  // Alpha doesn't matter.
+	  te->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
+	  te->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
+	  te->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+	  
+	  textured->getOrCreateStateSet()->setTextureAttribute(0, te);
+	  
+	  /*	osg::Material* material = new osg::Material;
+		
+		osg::Vec4 specular( 0.18, 0.18, 0.18, 0.18 );
+		specular *= 1.5;
+		float mat_shininess = 64.0f ;
+		osg::Vec4 ambient (0.92, 0.92, 0.92, 0.95 );
+		osg::Vec4 diffuse( 0.8, 0.8, 0.8, 0.85 );
+		
+		
+		material->setAmbient(osg::Material::FRONT_AND_BACK,ambient);
+		
+		material->setSpecular(osg::Material::FRONT_AND_BACK,specular);
+		material->setShininess(osg::Material::FRONT_AND_BACK,mat_shininess);
+		//     material->setColorMode(  osg::Material::AMBIENT_AND_DIFFUSE);
+		
+		stateset->setAttribute(material);*/
+	}
+      }
+	    
  if(textured->getNumDrawables())
   group[0]=textured.get();
  else 

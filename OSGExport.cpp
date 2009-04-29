@@ -984,25 +984,25 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     osg::ref_ptr<osg::Geode> untextured = new osg::Geode;
     osg::ref_ptr<osg::Geode> textured = new osg::Geode;
     osg::TextureRectangle* histTex=NULL;
-    osg::ref_ptr<osg::Program> program= new osg::Program;
+    osg::ref_ptr<osg::Program> novelty_program= new osg::Program;
 
    
      
      
-      program->setName( "microshader" );
+     novelty_program->setName( "microshader" );
       osg::Shader *novelty=new osg::Shader( osg::Shader::FRAGMENT);
       osg::Shader *distNovelty=new osg::Shader( osg::Shader::VERTEX);
       if(gpuNovelty){
 	loadShaderSource( novelty, basedir+"novelty-live.frag" );
       }else{
-	loadShaderSource( novelty, basedir+"novelty-live.frag" );
+	loadShaderSource( novelty, basedir+"novelty.frag" );
 	//	loadShaderSource( novelty, "ass.frag" );
       }
       loadShaderSource( distNovelty, basedir+"novelty.vert" );
       //loadShaderSource( distNovelty, "ass.vert" );
       
-      program->addShader(  novelty );
-       program->addShader( distNovelty );
+      novelty_program->addShader(  novelty );
+      novelty_program->addShader( distNovelty );
        osg::TextureRectangle* planeTex=NULL;
       if(computeHists && _tex_size==512){
 	
@@ -1016,7 +1016,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  addNoveltyTextures(mtgcm,textures,histCalc,finalhist);
 
 	// add everthing into the Geode.   
-	getPlaneTex(planes,_planeTexSize);
+	planeTex=getPlaneTex(planes,_planeTexSize);
       }
       
       
@@ -1039,38 +1039,13 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
 
 	       
-	       if(gpuNovelty){
-		 gc._geom->getStateSet()->addUniform(new osg::Uniform("hist", 
-								      TEXUNIT_HIST) );
-		 gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_HIST,
-							      histTex);
-		 gc._geom->getStateSet()->addUniform( new osg::Uniform("binsize",
-								       16.0f));
-	       }
-	       if(computeHists){
-		
-		 gc._geom->getStateSet()->addUniform( new osg::Uniform( "weights", osg::Vec3(1.12f, 0.66f, 0.26f) ));
-		 
-		 
-		 gc._geom->getStateSet()->addUniform(new osg::Uniform("rtex",0));
-		 gc._geom->getStateSet()->addUniform(new osg::Uniform("infoT",
-								      TEXUNIT_INFO));
-		 
-		 
-		 gc._geom->getStateSet()->addUniform(new osg::Uniform("planes", 
-									TEXUNIT_PLANES) );
-		 gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_PLANES,
-							      planeTex);
-		 
-		 gc._geom->getStateSet()->setAttributeAndModes( program.get(),
-								osg::StateAttribute::ON );
-	       }
+	   
 	     
 	       textured->addDrawable(gc._geom);
 		   
-	   }
 	   
-	  
+	   
+	   }
 	   else{
 	  
 	    osg::StateSet *utstateset = gc._geom->getOrCreateStateSet();
@@ -1208,8 +1183,30 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	point->setSize( 4.0 );
 	textured->getOrCreateStateSet()->setAttribute( point, osg::StateAttribute::ON );
       }
-
-      if(shader_coloring){     
+      
+      if(computeHists){
+	
+	  if(gpuNovelty){
+	    textured->getOrCreateStateSet()->addUniform(new osg::Uniform("hist", 
+							       TEXUNIT_HIST) );
+	    textured->getOrCreateStateSet()->setTextureAttribute(TEXUNIT_HIST,
+						       histTex);
+	    textured->getOrCreateStateSet()->addUniform( new osg::Uniform("binsize",
+								16.0f));
+	  }
+	  
+	  //textured->getOrCreateStateSet()->addUniform(new osg::Uniform("rtex",0));
+	 textured->getOrCreateStateSet()->addUniform(new osg::Uniform("infoT",
+							       TEXUNIT_INFO));
+	  
+	  
+	 textured->getOrCreateStateSet()->addUniform(new osg::Uniform("planes", 
+							       TEXUNIT_PLANES) );
+	 textured->getOrCreateStateSet()->setTextureAttribute(TEXUNIT_PLANES,
+							      planeTex);
+	 textured->getOrCreateStateSet()->setAttributeAndModes(novelty_program,
+								osg::StateAttribute::ON );
+      }else if(shader_coloring){     
 	osg::Program* program=NULL;
 	program = new osg::Program;
 	program->setName( "colorshader" );
@@ -1228,6 +1225,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	textured->getOrCreateStateSet()->addUniform( new osg::Uniform( "untex",
 								       false));
 
+	
 	      
       }else {
 	if(computeHists){

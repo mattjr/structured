@@ -99,7 +99,7 @@ typedef std::map<int,string> MaterialToIDMap;
 class OSGExporter 
 {
 public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=true,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false,bool do_novelty=false,string basedir="",bool usePlaneDist=false,bool applyNonVisMat=false,bool use_proj_tex=false,bool do_atlas=true,bool shader_coloring=true): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),gpuNovelty(false),computeHists(do_novelty),basedir(basedir),usePlaneDist(usePlaneDist) ,applyNonVisMat(applyNonVisMat),use_proj_tex(use_proj_tex),do_atlas(do_atlas),shader_coloring(shader_coloring) {state=NULL;
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=true,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false,bool do_novelty=false,string basedir="",bool usePlaneDist=false,bool applyNonVisMat=false,bool use_proj_tex=false,bool do_atlas=true,bool shader_coloring=true): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),computeHists(do_novelty),basedir(basedir),usePlaneDist(usePlaneDist) ,applyNonVisMat(applyNonVisMat),use_proj_tex(use_proj_tex),do_atlas(do_atlas),shader_coloring(shader_coloring) {state=NULL;
   
     _planeTexSize=32;
     context=NULL;
@@ -128,7 +128,7 @@ public:
   }
   osg::Image *LoadResizeSave(string filename,string outname,bool save,int tex_size);
  
-  bool outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *group);
+  bool outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *group,osg::Group *toggle_ptr=NULL);
 ~OSGExporter();
 
   std::map<string,IplImage *> tex_image_cache;
@@ -137,7 +137,7 @@ public:
   osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
   osg::ref_ptr<osg::Image>cacheImage(IplImage *img,string name,int tex_size,bool ret=true);
   osg::Image *getCachedImage(string name,int size);
-  bool convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size, osg::ref_ptr<osg::Geode >* group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL,std::map<int,osg::Matrixd> *camMatrices=NULL,std::map<string,int> *classes=NULL,int num_class_id=0) ;  
+  bool convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size, osg::ref_ptr<osg::Geode >* group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL,std::map<int,osg::Matrixd> *camMatrices=NULL,std::map<string,int> *classes=NULL,int num_class_id=0,osg::Group *toggle_ptr=NULL) ;  
   
   bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback=NULL);
 

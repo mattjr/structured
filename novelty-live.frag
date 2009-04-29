@@ -3,12 +3,13 @@
 uniform sampler2D rtex;
 uniform sampler2DRect hist;
 uniform sampler2D infoT;
+uniform int shaderOut;
 vec3 jet_colormap(float val)
 {
   vec3 rgb;
-  rgb.x = min(4.0f * val - 1.5f,-4.0f * val + 4.5f) ;
-  rgb.y = min(4.0f * val - 0.5f,-4.0f * val + 3.5f) ;
-  rgb.z = min(4.0f * val + 0.5f,-4.0f * val + 2.5f) ;
+  rgb.x = min(4.0 * val - 1.5,-4.0 * val + 4.5) ;
+  rgb.y = min(4.0 * val - 0.5,-4.0 * val + 3.5) ;
+  rgb.z = min(4.0 * val + 0.5,-4.0 * val + 2.5) ;
   return rgb;
 }
 vec3 colorband_rgb_hsv(vec3 rgb)
@@ -54,7 +55,6 @@ void main()
   
   // gg2=texture2DRect(hist,vec2(0,i)).x;
  
-  vec4 infoC= texture2D(infoT,gl_TexCoord[0].xy);
   vec4 src= texture2D(rtex,gl_TexCoord[0].xy);
   vec4 hsv;
   hsv.xyz=colorband_rgb_hsv(src.xyz);
@@ -65,8 +65,15 @@ void main()
   float idx=bin.y *(16*16) + (bin.z * 16) + bin.w;
   float i=min(floor((idx/(16.0*16*16))*64.0),64-1.0);
   float j=mod(idx,63.0);
+  float nov=texture2D(infoT,gl_TexCoord[0].xy).x;
   float val=texture2DRect(hist,vec2(i,j)).x;
-  gl_FragColor = infoC; //vec4(jet_colormap(val),1);
-
+ if(shaderOut == 0)
+   gl_FragColor = vec4(src.xyz,1); //vec4(jet_colormap(val),1);
+else  if(shaderOut == 1)
+    gl_FragColor = vec4(jet_colormap(val),1);
+else  if(shaderOut == 2)
+    gl_FragColor = vec4(jet_colormap(src.w),1);
+else  if(shaderOut == 3)
+  gl_FragColor = vec4(jet_colormap(nov),1);
 } 
  

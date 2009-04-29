@@ -50,7 +50,7 @@ osg::TextureRectangle*  getTextureHists(  CvHistogram *&finalhist){
        }
       
        *ptr = (*ptr-min)*(255.0/range);
-       //   printf("i: %d j: %d %f\n",i,j,*ptr); 
+       //    printf("i: %d j: %d %f\n",i,j,*ptr); 
        ptr++;
      }
      cout << endl;//"\nTotal " << total <<endl;*/

@@ -660,14 +660,14 @@ int main( int argc, char *argv[ ] )
       vector<int> *planeIdx=NULL;
       vector<Plane3D> planes;
       vector<TriMesh::BBox> bounds;
-      if(0){
+      if(usePlaneDist){
 	DepthStats ds(mesh);
 
        planeIdx=ds.getPlaneFits(planes,bounds,2,4);
       }
       bool res=convert_ply(mesh,surf,verbose,planeIdx);
       mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
-      //delete planeIdx;
+      delete planeIdx;
       if(!res ){
 	printf("Failed to load surface %s\n",
 	       meshNames[i].c_str());
@@ -748,17 +748,20 @@ int main( int argc, char *argv[ ] )
 	
 	}
       }
+      osg::Group *toggle_ptr=NULL;
       std::map<string,int> *	class_ptr=NULL;
       if(do_classes)
        	class_ptr=&classes;
+      if(usePlaneDist)
+	toggle_ptr=new osg::Group();
       osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
 					   lodTexSize[j],group,planes,bounds,
 					   texcallback,zrange,camMatrices,
-					   class_ptr,max_class_id);
+					   class_ptr,max_class_id,toggle_ptr);
     
 
       
-      osgExp->outputModelOSG(out_name,group);
+      osgExp->outputModelOSG(out_name,group,toggle_ptr);
 
       boost::xtime_get(&xt2, boost::TIME_UTC);
       time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;

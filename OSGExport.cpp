@@ -1126,6 +1126,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 			      osg::PolygonMode::LINE);
 	_stateset->setAttribute(_polygonmode);
 	_stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+
    
 	
 	

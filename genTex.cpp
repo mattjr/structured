@@ -664,7 +664,7 @@ int main( int argc, char *argv[ ] )
       if(usePlaneDist){
 	DepthStats ds(mesh);
 	rot=new osg::Matrixd();
-	planeIdx=ds.getPlaneFits(planes,bounds,rot,6,2);
+	planeIdx=ds.getPlaneFits(planes,bounds,rot,5,3);
       }
       bool res=convert_ply(mesh,surf,verbose,planeIdx);
       mesh_count(i,totalMeshCount,j,lodNum,0,0,0);

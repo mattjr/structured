@@ -56,9 +56,9 @@ void main()
    }else if(shaderOut ==2)
      color=vec4(jet_colormap(nov),1);
    else if(shaderOut ==3)
-     color=vec4(jet_colormap(dist),1);
+     color=vec4(jet_colormap(dist*0.75),1);
    else if(shaderOut ==4)
-     color=vec4(jet_colormap(total),1);
+     color=vec4(jet_colormap(total),0.3);
 
    gl_FragColor =color;
 

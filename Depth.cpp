@@ -279,16 +279,47 @@ osg::Vec3Array* displayPlane(Plane3D m_BiggerPlane3D,Point3D center)
   }
   return vec;
 }
+bool point_in_box(osg::Vec3 pt,TriMesh::BBox stepbbox,osg::Matrix *rot){
+  if( !rot){
+    fprintf(stderr,"Null pt in point_in_box\n");
+    return false;
+  }
+  
+  
+  osg::Vec3 rot_pt=rot->preMult(pt);
+
+
+  /* printf("1 %f %f %f %d\n",stepbbox.min[0],rot_pt[0],stepbbox.max[0], stepbbox.min[0] < rot_pt[1] && rot_pt[0]< stepbbox.max[0]);
+  printf("2 %f %f %f %d\n",stepbbox.min[1],rot_pt[1],stepbbox.max[1], stepbbox.min[1] < rot_pt[1] && rot_pt[1]< stepbbox.max[1]);
+  printf("3 %f %f %f %d\n",stepbbox.min[2],rot_pt[2],stepbbox.max[2], stepbbox.min[2] < rot_pt[2] && rot_pt[2]< stepbbox.max[2]);
+  */
+
+
+  
+  if(rot_pt[0] >= stepbbox.min[0] &&
+     rot_pt[0] <= stepbbox.max[0] &&
+   
+     rot_pt[2] >= stepbbox.min[2] &&
+     rot_pt[2] <= stepbbox.max[2] ){
+    //printf("Good\n");
+    return true;
+  }
+  return false;
+}
 vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,osg::Matrix *rot,int widthSplits,int heightSplits){
   float matrix[16];
   float  sides[3];
+  /*  float pos[3];
+      float quat[4];*/
   int nv = _mesh->vertices.size();
+
   BEST_FIT::computeBestFitOBB(_mesh->vertices.size(),
 			      &_mesh->vertices.data()[0][0],
 			      sizeof(_mesh->vertices.data()[0]),
 			      sides,matrix,BEST_FIT::FS_SLOW_FIT);
 
-  _mesh->need_bbox();
+
+  // printf("%f %f %f\n",sides[0],sides[1],sides[2]);
  float bmin[3];
  float bmax[3];
  
@@ -299,59 +330,61 @@ vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::
  bmax[1] = sides[1]*0.5f;
  bmax[2] = sides[2]*0.5f;
  rot->set(matrix);
-  vec v=_mesh->bbox.size();
-  //cout << v << endl;
-  //cout << _mesh->bbox.min << " " << _mesh->bbox.max << endl;
-  printf("%f %f %f\n",sides[0],sides[1],sides[2]);
-  double xstep = sides[0] /widthSplits;
-  double ystep = sides[2]/heightSplits ;
-  vector<int> *planeIdx = new vector<int>;
-  planeIdx->resize(nv);
-  for(int i=0; i < nv; i++)
+ osg::Matrix rot_inv = osg::Matrix::inverse(*rot);
+ double xstep = sides[0] /widthSplits;
+ double ystep = sides[2]/heightSplits ;
+ vector<int> *planeIdx = new vector<int>;
+ planeIdx->resize(nv);
+ 
+ for(int i=0; i < nv; i++)
     (*planeIdx)[i]=-1;
-
-  for(int wS=0; wS < widthSplits; wS++){
-    for(int hS=0; hS <heightSplits; hS++){
-      TriMesh::BBox stepbbox;
+ 
+ for(int wS=0; wS < widthSplits; wS++){
+   for(int hS=0; hS <heightSplits; hS++){
+     // sprintf(tmp,"stuff-%d-%d.txt",wS,hS);
+     //  FILE *fp=fopen(tmp,"w");
+     TriMesh::BBox stepbbox;
      Plane3D plane3D,plane3D_2;
      RansacPlane m_RansacPlane;
      std::vector<bool> inliers;
      unsigned int nInlierCount = 0;
      double dbModelScore;
      m_RansacPlane.setMaxIterationNumber(25);
-     m_RansacPlane.setInlierDistanceThreshold(0.001);
+     m_RansacPlane.setInlierDistanceThreshold(0.005);
      plane3D.clear();
      std::vector<Point3D> m_pPoints;
      std::vector<int> pointIndex;
      int count=0;
      stepbbox.min[0] = bmin[0]+ (xstep*(wS));  ;
      stepbbox.min[1] = bmin[1] ;
-     
+     stepbbox.min[2]= bmin[2]+ (ystep * hS);
+
      stepbbox.max[0] = bmin[0]+ (xstep*(wS+1));
      stepbbox.max[1]=  bmax[1];
-     
-     stepbbox.min[2]= bmin[2]+ (ystep * hS);;//_mesh->bbox.min[2];
-     stepbbox.max[2]= bmin[2]+ (ystep*(hS+1));//_mesh->bbox.max[2];
-    
-//   cout << stepbbox.min << stepbbox.max<< " " <<(xstep * wS) << " " <<(ystep * hS) <<  endl;
- bounds.push_back(stepbbox);
+     stepbbox.max[2]= bmin[2]+ (ystep*(hS+1));
+     //    bounds.push_back(stepbbox);
+
+     // bounds.push_back(stepbbox);
      for (int i = 0; i < nv; i++){
-       if (_mesh->vertices[i][0] >= stepbbox.min[0] &&
-	   _mesh->vertices[i][0] <= stepbbox.max[0] &&
-	   _mesh->vertices[i][1] >= stepbbox.min[1] &&
-	   _mesh->vertices[i][1] <= stepbbox.max[1] ){
+       if (point_in_box(osg::Vec3(_mesh->vertices[i][0], _mesh->vertices[i][1],
+				  _mesh->vertices[i][2]),stepbbox,&rot_inv)){
+	 
 	 Point3D pt(_mesh->vertices[i][0],
 		    _mesh->vertices[i][1],
 		    _mesh->vertices[i][2]);
 	 m_pPoints.push_back(pt);
 	 pointIndex.push_back(count++);
+	 //fprintf(fp,"%f %f %f\n",_mesh->vertices[i][0],
+	 //    _mesh->vertices[i][1],
+	 //   _mesh->vertices[i][2]);
        }
      }
+     // fclose(fp);
      if(pointIndex.size() < 50)
-       continue;
+        continue;
      // --- Ransac ---------
      // --------------------
-     
+      
      nInlierCount = 0;
      inliers.clear();
      m_RansacPlane.setData(&m_pPoints, &pointIndex);
@@ -404,11 +437,13 @@ vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::
      planes.push_back(plane3D);
      bounds.push_back(stepbbox);
      for (int i = 0; i < nv; i++){
-       if (_mesh->vertices[i][0] >= stepbbox.min[0] &&
+       if(point_in_box(osg::Vec3(_mesh->vertices[i][0], _mesh->vertices[i][1],
+				 _mesh->vertices[i][2]),stepbbox,&rot_inv))
+	  /*       if (_mesh->vertices[i][0] >= stepbbox.min[0] &&
 	   _mesh->vertices[i][0] <= stepbbox.max[0] &&
 	   _mesh->vertices[i][1] >= stepbbox.min[1] &&
-	   _mesh->vertices[i][1] <= stepbbox.max[1] ){
-	 (*planeIdx)[i]=(planes.size()-1);
+	   _mesh->vertices[i][1] <= stepbbox.max[1] )*/{
+	  (*planeIdx)[i]=(planes.size()-1);
        }
      }
      

@@ -1119,6 +1119,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 
 	osg::Switch *toggle_plane=new osg::Switch();
 	osg::Geode *planeGeode=new osg::Geode();
+	osg::Geode *boxGeode=new osg::Geode();
 	osg::StateSet* _stateset = new osg::StateSet;
 	osg::PolygonMode* _polygonmode = new osg::PolygonMode;
 	_polygonmode->setMode(osg::PolygonMode::FRONT_AND_BACK,
@@ -1146,11 +1147,13 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  _shapedrawable->setColor(osg::Vec4(1.0,0.0,0.0,0.80));
 	  _shapedrawable->setShape(b.get());
 	  _shapedrawable->setStateSet(_stateset); 
-	  planeGeode->addDrawable(_shapedrawable);
+	  boxGeode->addDrawable(_shapedrawable);
 	  osg::Geometry* linesGeom = new osg::Geometry();
-	  /*	  Plane3D p=planes[i];
-	 
-	  osg::Vec3Array* vertices = displayPlane(p,Point3D(bounds[i].center()[0],bounds[i].center()[1],bounds[i].center()[2]));
+	  Plane3D p=planes[i];
+	  osg::Vec3 center(bounds[i].center()[0],bounds[i].center()[1],bounds[i].center()[2]);
+	  osg::Vec3 rot_center=rot->preMult(center);
+	  //	  cout << rot_center;
+	  osg::Vec3Array* vertices = displayPlane(p,Point3D(rot_center[0],rot_center[1],rot_center[2]));
 	  
 	  // pass the created vertex array to the points geometry object.
 	  linesGeom->setVertexArray(vertices);
@@ -1173,14 +1176,16 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     // since we know up front,
 	  linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES,0,vertices->size()));
 	  linesGeom->setStateSet(_stateset); 
-	  planeGeode->addDrawable(linesGeom); */
+	  planeGeode->addDrawable(linesGeom); 
 	 
 	}
       
 	osg::MatrixTransform *rotT =new osg::MatrixTransform(*rot);
-	rotT->addChild(planeGeode);
+	rotT->addChild(boxGeode);
 	toggle_plane->addChild(rotT);
-	toggle_plane->setAllChildrenOff();
+	toggle_plane->addChild(planeGeode);
+
+	toggle_plane->setAllChildrenOn();
 	if(toggle_ptr)
 	  toggle_ptr->addChild(toggle_plane);
 	osg::Point* point = new osg::Point();

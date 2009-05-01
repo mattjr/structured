@@ -279,15 +279,32 @@ osg::Vec3Array* displayPlane(Plane3D m_BiggerPlane3D,Point3D center)
   }
   return vec;
 }
-vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,int widthSplits,int heightSplits){
+vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,osg::Matrix *rot,int widthSplits,int heightSplits){
+  float matrix[16];
+  float  sides[3];
   int nv = _mesh->vertices.size();
+  BEST_FIT::computeBestFitOBB(_mesh->vertices.size(),
+			      &_mesh->vertices.data()[0][0],
+			      sizeof(_mesh->vertices.data()[0]),
+			      sides,matrix,BEST_FIT::FS_SLOW_FIT);
+
   _mesh->need_bbox();
+ float bmin[3];
+ float bmax[3];
+ 
+ bmin[0] = -sides[0]*0.5f;
+ bmin[1] = -sides[1]*0.5f;
+ bmin[2] = -sides[2]*0.5f;
+ bmax[0] = sides[0]*0.5f;
+ bmax[1] = sides[1]*0.5f;
+ bmax[2] = sides[2]*0.5f;
+ rot->set(matrix);
   vec v=_mesh->bbox.size();
   //cout << v << endl;
   //cout << _mesh->bbox.min << " " << _mesh->bbox.max << endl;
-
-  double xstep = v[0] /widthSplits;
-  double ystep = v[1]/ heightSplits;
+  printf("%f %f %f\n",sides[0],sides[1],sides[2]);
+  double xstep = sides[0] /widthSplits;
+  double ystep = sides[2]/heightSplits ;
   vector<int> *planeIdx = new vector<int>;
   planeIdx->resize(nv);
   for(int i=0; i < nv; i++)
@@ -307,15 +324,17 @@ vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::
      std::vector<Point3D> m_pPoints;
      std::vector<int> pointIndex;
      int count=0;
-     stepbbox.min[0] = _mesh->bbox.min[0] + (xstep * wS);
-     stepbbox.min[1]= _mesh->bbox.min[1] + (ystep * hS);
+     stepbbox.min[0] = bmin[0]+ (xstep*(wS));  ;
+     stepbbox.min[1] = bmin[1] ;
      
-     stepbbox.max[0] = _mesh->bbox.min[0] + (xstep*(wS+1));
-     stepbbox.max[1]= _mesh->bbox.min[1] + (ystep*(hS+1));
+     stepbbox.max[0] = bmin[0]+ (xstep*(wS+1));
+     stepbbox.max[1]=  bmax[1];
      
-     stepbbox.min[2]= _mesh->bbox.min[2];
-     stepbbox.max[2]= _mesh->bbox.max[2];
-     //   cout << stepbbox.min << stepbbox.max<< " " <<(xstep * wS) << " " <<(ystep * hS) <<  endl;
+     stepbbox.min[2]= bmin[2]+ (ystep * hS);;//_mesh->bbox.min[2];
+     stepbbox.max[2]= bmin[2]+ (ystep*(hS+1));//_mesh->bbox.max[2];
+    
+//   cout << stepbbox.min << stepbbox.max<< " " <<(xstep * wS) << " " <<(ystep * hS) <<  endl;
+ bounds.push_back(stepbbox);
      for (int i = 0; i < nv; i++){
        if (_mesh->vertices[i][0] >= stepbbox.min[0] &&
 	   _mesh->vertices[i][0] <= stepbbox.max[0] &&

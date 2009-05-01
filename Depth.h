@@ -2,6 +2,7 @@
 #define DEPTH_H
 #include "OSGExport.h"
 #include "auv_ransac_plane.hpp"
+#include "auv_best_fit.hpp"
 #include "TriMesh.h"
 #include <osg/TextureRectangle>
 using namespace std;
@@ -16,7 +17,7 @@ class DepthStats{
 
 public:
   DepthStats(TriMesh *mesh);
-  vector<int> * getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,
+  vector<int> * getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,osg::Matrix *rot,
 		    int widthSplits,int heightSplits);
   TriMesh *_mesh;
 };

@@ -659,11 +659,12 @@ int main( int argc, char *argv[ ] )
       }
       vector<int> *planeIdx=NULL;
       vector<Plane3D> planes;
+      osg::Matrix *rot=NULL;
       vector<TriMesh::BBox> bounds;
       if(usePlaneDist){
 	DepthStats ds(mesh);
-
-       planeIdx=ds.getPlaneFits(planes,bounds,2,4);
+	rot=new osg::Matrixd();
+	planeIdx=ds.getPlaneFits(planes,bounds,rot,2,4);
       }
       bool res=convert_ply(mesh,surf,verbose,planeIdx);
       mesh_count(i,totalMeshCount,j,lodNum,0,0,0);
@@ -755,7 +756,7 @@ int main( int argc, char *argv[ ] )
       if(usePlaneDist)
 	toggle_ptr=new osg::Group();
       osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
-					   lodTexSize[j],group,planes,bounds,
+					   lodTexSize[j],group,planes,bounds,rot,
 					   texcallback,zrange,camMatrices,
 					   class_ptr,max_class_id,toggle_ptr);
     

@@ -110,7 +110,7 @@ int main(int argc, char** argv)
 	vector<Plane3D> planes;
 	vector<TriMesh::BBox> bounds;
 	osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
-					     512,group,planes,bounds,
+					     512,group,planes,bounds,NULL,
 					     NULL,zrange,NULL);
 	
 	osgExp->outputModelOSG(out_name,group);

@@ -710,7 +710,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 }
 
 
-bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes,int num_class_id,osg::Group *toggle_ptr)
+bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,osg::Matrix *rot,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes,int num_class_id,osg::Group *toggle_ptr)
 {
   
   gpuNovelty=false;
@@ -1138,14 +1138,17 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 						bounds[i].size()[1],
 						bounds[i].size()[2]);
 	  
-	  
+	  //  printf("%f %f %f\n",bounds[i].center()[0],bounds[i].center()[1],bounds[i].center()[2]);
+
+	  //	  printf("%f %f %f\n",bounds[i].size()[0],bounds[i].size()[1],bounds[i].size()[2]);
+
 	  osg::ShapeDrawable* _shapedrawable = new osg::ShapeDrawable;
 	  _shapedrawable->setColor(osg::Vec4(1.0,0.0,0.0,0.80));
 	  _shapedrawable->setShape(b.get());
 	  _shapedrawable->setStateSet(_stateset); 
 	  planeGeode->addDrawable(_shapedrawable);
 	  osg::Geometry* linesGeom = new osg::Geometry();
-	  Plane3D p=planes[i];
+	  /*	  Plane3D p=planes[i];
 	 
 	  osg::Vec3Array* vertices = displayPlane(p,Point3D(bounds[i].center()[0],bounds[i].center()[1],bounds[i].center()[2]));
 	  
@@ -1170,12 +1173,13 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     // since we know up front,
 	  linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES,0,vertices->size()));
 	  linesGeom->setStateSet(_stateset); 
-	  planeGeode->addDrawable(linesGeom); 
+	  planeGeode->addDrawable(linesGeom); */
 	 
 	}
       
-
-	toggle_plane->addChild(planeGeode);
+	osg::MatrixTransform *rotT =new osg::MatrixTransform(*rot);
+	rotT->addChild(planeGeode);
+	toggle_plane->addChild(rotT);
 	toggle_plane->setAllChildrenOff();
 	if(toggle_ptr)
 	  toggle_ptr->addChild(toggle_plane);

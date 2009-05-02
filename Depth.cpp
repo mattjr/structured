@@ -306,7 +306,7 @@ bool point_in_box(osg::Vec3 pt,TriMesh::BBox stepbbox,osg::Matrix *rot){
   }
   return false;
 }
-vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,osg::Matrix *rot,int widthSplits,int heightSplits,unsigned int minPts){
+vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,osg::Matrix *rot,float widthTargetSize,float heightTargetSize,unsigned int minPts){
   float matrix[16];
   float  sides[3];
   /*  float pos[3];
@@ -318,7 +318,9 @@ vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::
 			      sizeof(_mesh->vertices.data()[0]),
 			      sides,matrix,BEST_FIT::FS_SLOW_FIT);
 
-
+  int widthSplits=max((int)round(sides[0]/widthTargetSize),1);
+  int heightSplits=max((int)round(sides[2]/heightTargetSize),1);
+  printf("%d %d\n",widthSplits,heightSplits);
   // printf("%f %f %f\n",sides[0],sides[1],sides[2]);
  float bmin[3];
  float bmax[3];

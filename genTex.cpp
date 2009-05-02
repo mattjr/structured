@@ -510,6 +510,15 @@ int main( int argc, char *argv[ ] )
   auv_data_tools::makedir(mdir);
   chmod(mdir,   0777);
   strcpy(subdir,"lod");
+  FILE *fpp=fopen(string(string(mdir)+"/shaderout.txt").c_str(),"w");
+  if(fpp){
+    if(do_novelty)
+      fprintf(fpp,"%d\n",6);
+    else
+      fprintf(fpp,"%d\n",2);
+    
+    fclose(fpp);
+  }
   string fulllodpath=string(mdir) + "/"+string(subdir);
   auv_data_tools::makedir(fulllodpath.c_str());
   chmod(fulllodpath.c_str(),   0777);
@@ -661,7 +670,10 @@ int main( int argc, char *argv[ ] )
       vector<Plane3D> planes;
       osg::Matrix *rot=NULL;
       vector<TriMesh::BBox> bounds;
-      
+      double width_target=1.5;
+      double height_target=2.0;
+
+
       if(usePlaneDist){
 	DepthStats ds(mesh);
 	rot=new osg::Matrixd();
@@ -669,7 +681,7 @@ int main( int argc, char *argv[ ] )
 	if(lodNum ==2)
 	  planeIdx=new vector<int>;
 	else
-	  planeIdx=ds.getPlaneFits(planes,bounds,rot,1,2,50);
+	  planeIdx=ds.getPlaneFits(planes,bounds,rot,width_target,height_target,10);
       }
       bool res=convert_ply(mesh,surf,verbose,planeIdx);
       mesh_count(i,totalMeshCount,j,lodNum,0,0,0);

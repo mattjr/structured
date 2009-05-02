@@ -49,16 +49,22 @@ void main()
    if(shaderOut == 0)
     color= vec4(src.xyz,1);
    else if(shaderOut ==1){
-    if(total > weights.z)
+    if(nov > weights.z)
       color=mix(vec4(0.0,1.0,0.0,1.0),src,0.6);
     else
       color=src;
-   }else if(shaderOut ==2)
+   }
+   else if(shaderOut ==2){
+    if(total > weights.z)
+      color=mix(vec4(1.0,0.0,0.0,1.0),src,0.6);
+    else
+      color=src;
+   }else if(shaderOut ==3)
      color=vec4(jet_colormap(nov),1);
-   else if(shaderOut ==3)
-     color=vec4(jet_colormap(dist*0.75),1);
    else if(shaderOut ==4)
-     color=vec4(jet_colormap(total),0.3);
+     color=vec4(jet_colormap(dist*0.75),1);
+   else if(shaderOut ==5)
+     color=vec4(jet_colormap(total),1.0);
 
    gl_FragColor =color;
 

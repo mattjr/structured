@@ -18,7 +18,7 @@ class DepthStats{
 public:
   DepthStats(TriMesh *mesh);
   vector<int> * getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,osg::Matrix *rot,
-			     int widthSplits,int heightSplits,unsigned int minPts);
+			    float widthTargetSize,float heightTargetSize,unsigned int minPts);
   TriMesh *_mesh;
 };
 #endif

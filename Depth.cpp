@@ -306,7 +306,7 @@ bool point_in_box(osg::Vec3 pt,TriMesh::BBox stepbbox,osg::Matrix *rot){
   }
   return false;
 }
-vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,osg::Matrix *rot,int widthSplits,int heightSplits){
+vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::BBox> &bounds,osg::Matrix *rot,int widthSplits,int heightSplits,unsigned int minPts){
   float matrix[16];
   float  sides[3];
   /*  float pos[3];
@@ -380,7 +380,8 @@ vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::
        }
      }
      // fclose(fp);
-     if(pointIndex.size() < 50)
+    
+     if(pointIndex.size() < minPts)
         continue;
      // --- Ransac ---------
      // --------------------

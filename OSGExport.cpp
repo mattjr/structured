@@ -575,17 +575,18 @@ void OSGExporter::calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,str
      if(!gc._texturesActive )
        continue;
      string name=textures[itr->first];
-        IplImage  *tmp=NULL;
-     tmp=tex_image_cache[osgDB::getSimpleFileName(name)];
+        IplImage  *scaled=NULL;
+     scaled=tex_image_cache[osgDB::getSimpleFileName(name)];
     
     
-     if(!tmp){
+     if(!scaled){
        printf("Image null in getTextureHists %s\n",name.c_str());
        continue;
      }
      //     IplImage *tmp=cvCreateImage(cvSize(img->s(),img->t()),
      //			 IPL_DEPTH_8U,3);
-     IplImage *mask=cvNewGray(tmp);
+    
+     IplImage *mask=cvNewGray(scaled);
      cvZero(mask);
 
      //DecompressImageRGB((unsigned char *)tmp->imageData,tmp->width,tmp->height,img->data(),squish::kDxt1);
@@ -597,15 +598,14 @@ void OSGExporter::calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,str
        for(int j=0; j<3; j++){
 	 
 	 osg::Vec2f tc = (*gc._texcoordArray)[i+j];
-	 tc *= tmp->width;
+	 tc *= scaled->width;
 	 pt[j]=cvPoint((int)tc[1],(int)tc[0]);
 
        }
        
        cvFillPoly(mask, &tri, &count, 1, CV_RGB(255,255,255));
      }
-    
-     histCalc.calc_hist(tmp,mask,1/*BGR*/);
+     histCalc.calc_hist(scaled,mask,1/*BGR*/);
      if(gpuNovelty){
        osg::Texture *tex=osg_tex_map[itr->first];
        if(!tex){
@@ -613,10 +613,10 @@ void OSGExporter::calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,str
 	 continue;
        }
 	 
-       IplImage *rgba=cvCreateImage(cvSize(tmp->width,tmp->height),
+       IplImage *rgba=cvCreateImage(cvSize(scaled->width,scaled->height),
 				    IPL_DEPTH_8U,4);
      
-       cvCvtColor(tmp, rgba, CV_RGB2RGBA);
+       cvCvtColor(scaled, rgba, CV_RGB2RGBA);
        cvSetImageCOI(rgba,4);
        cvCopy(histCalc.imageTex,rgba);
        cvSetImageCOI(rgba,0);
@@ -630,7 +630,7 @@ void OSGExporter::calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,str
        texture2D->setImage(imageWithG);
        //   compress(texture2D,osg::Texture::USE_S3TC_DXT5_COMPRESSION);
        }
-     // cvReleaseImage(&tmp);
+     // cvReleaseImage(&scaled);
      cvReleaseImage(&mask);
    }
    
@@ -638,13 +638,17 @@ void OSGExporter::calcHists( MaterialToGeometryCollectionMap &mtgcm, map<int,str
 }
 
 void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, map<int,string> textures, Hist_Calc &histCalc,CvHistogram *hist){
-
+  
   MaterialToGeometryCollectionMap::iterator itr;
    for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
      GeometryCollection& gc = *(itr->second);
      if(!gc._texturesActive )
        continue;
+     IplImage *novelty_channel=NULL;
      string name=textures[itr->first];
+     if(novelty_image_cache.count(osgDB::getSimpleFileName(name)) > 0 && novelty_image_cache[osgDB::getSimpleFileName(name)]){
+       novelty_channel=novelty_image_cache[osgDB::getSimpleFileName(name)];
+     }
      osg::Texture *tex=osg_tex_map[itr->first];
      IplImage  *tmp=NULL;
      tmp=tex_image_cache[osgDB::getSimpleFileName(name)];
@@ -652,62 +656,72 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
        printf("Image null in addNovletyTextures %s\n",osgDB::getSimpleFileName(name).c_str());
        continue;
      }
-     IplImage *med=cvNewGray(tmp);
 
-     //     DecompressImageRGB((unsigned char *)tmp->imageData,tmp->width,tmp->height,img->data(),squish::kDxt1);
-
- 
-     IplImage *novelty_image=  histCalc.get_novelty_img(tmp,hist); 
-     mcvNormalize((IplImage*)novelty_image, (IplImage*)novelty_image, 0, 255);
-     IplImage *texInfo=cvNewColor(novelty_image);
-     IplImage *tmpG=cvNewGray(novelty_image);
-
-     cvZero(texInfo);
-     cvConvertScale(novelty_image,tmpG);
+     if(!novelty_channel){
+       IplImage *med=cvNewGray(tmp);
+       
+       //     DecompressImageRGB((unsigned char *)tmp->imageData,tmp->width,tmp->height,img->data(),squish::kDxt1);
+       
+       
+       IplImage *novelty_image=  histCalc.get_novelty_img(tmp,hist); 
+       mcvNormalize((IplImage*)novelty_image, (IplImage*)novelty_image, 0, 255);
+       //       IplImage *texInfo=cvNewColor(novelty_image);
+       IplImage *tmpG=cvNewGray(novelty_image);
+       
+       //cvZero(texInfo);
+       cvConvertScale(novelty_image,tmpG);
+       
+       cvSmooth(tmpG,med,CV_MEDIAN,9);
+       novelty_channel=med;
+       novelty_image_cache[osgDB::getSimpleFileName(name)]=novelty_channel;
+       cvReleaseImage(&tmpG);
+       cvReleaseImage(&novelty_image);
+     }
      
-     cvSmooth(tmpG,med,CV_MEDIAN,9);
-     //   scaleJetImage( (IplImage*)novelty_image, (IplImage*)testImg);
-     if(1){
-       
-       IplImage *rgba=cvCreateImage(cvSize(tmp->width,tmp->height),
-				    IPL_DEPTH_8U,4);
-       
-       cvCvtColor(tmp, rgba, CV_RGB2RGBA);
-       cvSetImageCOI(rgba,4);
-       cvCopy(med,rgba);
-       cvSetImageCOI(rgba,0);
-       // cvNamedWindow("ASDAS",-1);
+     
+     IplImage *rgba=cvCreateImage(cvSize(histCalc.width,histCalc.height),
+				  IPL_DEPTH_8U,4);
+     IplImage *scaled=cvCreateImage(cvSize(histCalc.width,histCalc.height),IPL_DEPTH_8U,3);
+     IplImage *scaled_novelty=cvCreateImage(cvSize(histCalc.width,histCalc.height),IPL_DEPTH_8U,1);
+     cvResize(tmp,scaled);
+     cvResize(novelty_channel,scaled_novelty);
+
+     cvCvtColor(scaled, rgba, CV_RGB2RGBA);
+     cvSetImageCOI(rgba,4);
+     cvCopy(scaled_novelty,rgba);
+     cvSetImageCOI(rgba,0);
+     // cvNamedWindow("ASDAS",-1);
        // cvShowImage("ASDAS",rgba);
        // cvWaitKey(0);
-       osg::Image *imageWithG=Convert_OpenCV_TO_OSG_IMAGE(rgba,false);
-       //osgDB::Registry::instance()->writeImage( *imageWithG,"ass.png",NULL);
-       // exit(0);
-       osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(tex);
-       texture2D->setImage(imageWithG);
-       //   compress(texture2D,osg::Texture::USE_S3TC_DXT5_COMPRESSION);
-     }else{
-       cvSetImageCOI(texInfo,1);
-       cvCopy(med,texInfo);
-       cvSetImageCOI(texInfo,0);
-       cvNamedWindow("ASDAS",-1);
-       cvShowImage("ASDAS",texInfo);
-       cvWaitKey(0);
-       osg::Image *texI=Convert_OpenCV_TO_OSG_IMAGE(texInfo,false);
-       osg::Texture2D* texture2D = new osg::Texture2D(texI);
-       compress(texture2D,osg::Texture::USE_S3TC_DXT1_COMPRESSION);
-       gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_INFO,texture2D );
-	
-	cvReleaseImage(&texInfo);
-     }
-     cvReleaseImage(&tmpG);
-     cvReleaseImage(&novelty_image);
-     cvReleaseImage(&med);
-     //    cvReleaseImage(&tmp);
-
+     osg::Image *imageWithG=Convert_OpenCV_TO_OSG_IMAGE(rgba,false);
+     //osgDB::Registry::instance()->writeImage( *imageWithG,"ass.png",NULL);
+     // exit(0);
+     osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(tex);
+     texture2D->setImage(imageWithG);
+     //   compress(texture2D,osg::Texture::USE_S3TC_DXT5_COMPRESSION);
+     /* }else{
+	    cvSetImageCOI(texInfo,1);
+	    cvCopy(med,texInfo);
+	    cvSetImageCOI(texInfo,0);
+	    cvNamedWindow("ASDAS",-1);
+	    cvShowImage("ASDAS",texInfo);
+	    cvWaitKey(0);
+	    osg::Image *texI=Convert_OpenCV_TO_OSG_IMAGE(texInfo,false);
+	    osg::Texture2D* texture2D = new osg::Texture2D(texI);
+	    compress(texture2D,osg::Texture::USE_S3TC_DXT1_COMPRESSION);
+	    gc._geom->getStateSet()->setTextureAttribute(TEXUNIT_INFO,texture2D );
+	 
+	    cvReleaseImage(&texInfo);
+	    }*/
    }
    
-  
+   //    cvReleaseImage(&tmp);
 }
+
+   
+   
+  
+
 
 
 bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,osg::Matrix *rot,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes,int num_class_id,osg::Group *toggle_ptr)
@@ -1004,17 +1018,18 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       novelty_program->addShader(  novelty );
       novelty_program->addShader( distNovelty );
        osg::TextureRectangle* planeTex=NULL;
-      if(computeHists && _tex_size==512){
-	
+      if(computeHists){
 	Hist_Calc histCalc(_tex_size,_tex_size,16,1);
 	CvHistogram *finalhist=NULL;    
-	calcHists(mtgcm,textures,histCalc);
-	histCalc.get_hist(finalhist);
+	if(!run_higher_res){
+	  calcHists(mtgcm,textures,histCalc);
+	  histCalc.get_hist(finalhist);
+	}
 	if(gpuNovelty)
 	  histTex= getTextureHists(finalhist);
-       	else
+	else
 	  addNoveltyTextures(mtgcm,textures,histCalc,finalhist);
-
+	
 	// add everthing into the Geode.   
 	planeTex=getPlaneTex(planes,_planeTexSize);
       }
@@ -1186,7 +1201,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	toggle_plane->addChild(rotT);
 	toggle_plane->addChild(planeGeode);
 
-	toggle_plane->setAllChildrenOn();
+	toggle_plane->setAllChildrenOff();
 	if(toggle_ptr)
 	  toggle_ptr->addChild(toggle_plane);
 	osg::Point* point = new osg::Point();
@@ -1383,12 +1398,13 @@ public:
     typedef std::set< osg::ref_ptr<osg::Texture> > TextureSet;
     TextureSet                          _textureSet;
     osg::Texture::InternalFormatMode    _internalFormatMode;
-    
+
 };
 
 
 bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *group,osg::Group *toggle_ptr) {
-
+ 
+  run_higher_res=true;
   osg::Geode *tex=group[0].get();
   osg::Geode *untex =group[1].get();
   osg::Matrix trans(   osg::Matrix::rotate(osg::inDegrees(-90.0f),

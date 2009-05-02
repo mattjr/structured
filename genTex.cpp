@@ -661,10 +661,15 @@ int main( int argc, char *argv[ ] )
       vector<Plane3D> planes;
       osg::Matrix *rot=NULL;
       vector<TriMesh::BBox> bounds;
+      
       if(usePlaneDist){
 	DepthStats ds(mesh);
 	rot=new osg::Matrixd();
-	planeIdx=ds.getPlaneFits(planes,bounds,rot,5,3);
+	//	planeIdx=ds.getPlaneFits(planes,bounds,rot,5,3);
+	if(lodNum ==2)
+	  planeIdx=new vector<int>;
+	else
+	  planeIdx=ds.getPlaneFits(planes,bounds,rot,1,2,50);
       }
       bool res=convert_ply(mesh,surf,verbose,planeIdx);
       mesh_count(i,totalMeshCount,j,lodNum,0,0,0);

@@ -99,7 +99,7 @@ typedef std::map<int,string> MaterialToIDMap;
 class OSGExporter 
 {
 public:
-  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=true,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false,bool do_novelty=false,string basedir="",bool usePlaneDist=false,bool applyNonVisMat=false,bool use_proj_tex=false,bool do_atlas=true,bool shader_coloring=true): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),computeHists(do_novelty),basedir(basedir),usePlaneDist(usePlaneDist) ,applyNonVisMat(applyNonVisMat),use_proj_tex(use_proj_tex),do_atlas(do_atlas),shader_coloring(shader_coloring) {state=NULL;
+  OSGExporter(string prefixdir="mesh/",bool tex_saved=true,bool compress_tex=true,int num_threads=1,int verbose=0,bool hardware_compress=true,bool tex_array_blend=false,bool do_novelty=false,string basedir="",bool usePlaneDist=false,bool applyNonVisMat=false,bool use_proj_tex=false,bool do_atlas=true,bool shader_coloring=true): prefixdir(prefixdir),tex_saved(tex_saved),compress_tex(compress_tex),num_threads(num_threads),verbose(verbose),_hardware_compress(hardware_compress),_tex_array_blend(tex_array_blend),computeHists(do_novelty),basedir(basedir),usePlaneDist(usePlaneDist) ,applyNonVisMat(applyNonVisMat),use_proj_tex(use_proj_tex),do_atlas(do_atlas),shader_coloring(shader_coloring),run_higher_res(false) {state=NULL;
   
     _planeTexSize=32;
     context=NULL;
@@ -132,6 +132,7 @@ public:
 ~OSGExporter();
 
   std::map<string,IplImage *> tex_image_cache;
+  std::map<string,IplImage *> novelty_image_cache;
   std::map<string,osg::Image * > compressed_img_cache;
   osg::Image *getCachedCompressedImage(string name,int size);
   osg::ref_ptr<osg::Image>cacheCompressedImage(IplImage *img,string name,int tex_size);
@@ -186,6 +187,7 @@ protected:
 
   int _planeTexSize;
   bool shader_coloring;  
+  bool run_higher_res;
 };
 
 

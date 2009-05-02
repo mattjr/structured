@@ -2380,7 +2380,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	char argstr[2048];
 	strcpy(argstr,"");
 	if(do_novelty)
-	    strcat(argstr," --novelty ");
+	    strcat(argstr," --novelty --planedist ");
 	if(do_shader_color)
 	    strcat(argstr," --shader ");
 	if(do_hw_blend)

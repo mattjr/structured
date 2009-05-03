@@ -320,7 +320,7 @@ vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::
 
   int widthSplits=max((int)round(sides[0]/widthTargetSize),1);
   int heightSplits=max((int)round(sides[2]/heightTargetSize),1);
-  printf("%d %d\n",widthSplits,heightSplits);
+  //printf("%d %d\n",widthSplits,heightSplits);
   // printf("%f %f %f\n",sides[0],sides[1],sides[2]);
  float bmin[3];
  float bmax[3];

@@ -170,12 +170,12 @@ int main( int argc, char *argv[ ] )
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;   
     char out_name[255];
-    sprintf(out_name,"%s/%s/%s-%02d-lod2-t.ive",mdir,subdir,prefix,i);
+    sprintf(out_name,"%s/%s/%s-%04d-lod2-t.ive",mdir,subdir,prefix,i);
     lod0Node[0]=   osgDB::readNodeFile(string(out_name));
-    sprintf(out_name,"%s/%s/%s-%02d-lod2-u.ive",mdir,subdir,prefix,i);
+    sprintf(out_name,"%s/%s/%s-%04d-lod2-u.ive",mdir,subdir,prefix,i);
     lod0Node[1]=osgDB::readNodeFile(string(out_name));
   
-    sprintf(out_name,"%s/%s/%s-%02d-lod2-t.ive",mdir,subdir,prefix,i);
+    sprintf(out_name,"%s/%s/%s-%04d-lod2-t.ive",mdir,subdir,prefix,i);
  
   
   
@@ -190,7 +190,7 @@ int main( int argc, char *argv[ ] )
 	char out_name[255];
 	vector<string> setnames;
 	for(int  j=0; j < lodNum; j++){
-	  sprintf(out_name,"%s/%s/%s-%02d-lod%d%s",mdir,subdir,prefix,i,j,text[k]);
+	  sprintf(out_name,"%s/%s/%s-%04d-lod%d%s",mdir,subdir,prefix,i,j,text[k]);
 
 	  if(FileExists(out_name)){
 	    setnames.push_back(string(subdir)+"/"+osgDB::getSimpleFileName(out_name));

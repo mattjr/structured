@@ -32,6 +32,7 @@
 #include "auv_mesh_utils.hpp"
 #include "auv_mesh_io.hpp"
 #include "Depth.h"
+
 using namespace std;
 using namespace libplankton;
 using namespace libsnapper;
@@ -660,7 +661,8 @@ int main( int argc, char *argv[ ] )
 					 (GtsFaceClass *) t_face_class(),
 					 gts_edge_class(), t_vertex_class());
       TriMesh::verbose=verbose;
-       
+      if(!file_exists(str))
+	continue;
       TriMesh *mesh = TriMesh::read(str.c_str());
       if(!mesh){
 	fprintf(stderr,"Empty mesh skipping\n");
@@ -747,7 +749,7 @@ int main( int argc, char *argv[ ] )
 	strcpy(ext,"3ds");
       else
 	strcpy(ext,"ive");
-      sprintf(out_name,"%s/%s/blended-%02d-lod%d.%s",mdir,subdir,i,j,ext);
+      sprintf(out_name,"%s/%s/blended-%04d-lod%d.%s",mdir,subdir,i,j,ext);
       osg::ref_ptr<osg::Geode> group[2];
       ClippingMap cm;
       std::map<int,GtsMatrix *>::iterator iter;

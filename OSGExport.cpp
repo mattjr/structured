@@ -656,14 +656,19 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
        printf("Image null in addNovletyTextures %s\n",osgDB::getSimpleFileName(name).c_str());
        continue;
      }
-
+     IplImage *scaled=cvCreateImage(cvSize(histCalc.width,histCalc.height),
+				    IPL_DEPTH_8U,3);
+     cvResize(tmp,scaled);
      if(!novelty_channel){
-       IplImage *med=cvNewGray(tmp);
+       if(!hist)
+ 	 continue;
+
+       IplImage *med=cvNewGray(scaled);
        
        //     DecompressImageRGB((unsigned char *)tmp->imageData,tmp->width,tmp->height,img->data(),squish::kDxt1);
        
        
-       IplImage *novelty_image=  histCalc.get_novelty_img(tmp,hist); 
+       IplImage *novelty_image=  histCalc.get_novelty_img(scaled,hist); 
        mcvNormalize((IplImage*)novelty_image, (IplImage*)novelty_image, 0, 255);
        //       IplImage *texInfo=cvNewColor(novelty_image);
        IplImage *tmpG=cvNewGray(novelty_image);
@@ -681,18 +686,18 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
      
      IplImage *rgba=cvCreateImage(cvSize(histCalc.width,histCalc.height),
 				  IPL_DEPTH_8U,4);
-     IplImage *scaled=cvCreateImage(cvSize(histCalc.width,histCalc.height),IPL_DEPTH_8U,3);
+  
      IplImage *scaled_novelty=cvCreateImage(cvSize(histCalc.width,histCalc.height),IPL_DEPTH_8U,1);
-     cvResize(tmp,scaled);
+
      cvResize(novelty_channel,scaled_novelty);
 
      cvCvtColor(scaled, rgba, CV_RGB2RGBA);
      cvSetImageCOI(rgba,4);
      cvCopy(scaled_novelty,rgba);
      cvSetImageCOI(rgba,0);
-     // cvNamedWindow("ASDAS",-1);
-       // cvShowImage("ASDAS",rgba);
-       // cvWaitKey(0);
+     /*      cvNamedWindow("ASDAS",-1);
+       cvShowImage("ASDAS",scaled_novelty);
+       cvWaitKey(5);*/
      osg::Image *imageWithG=Convert_OpenCV_TO_OSG_IMAGE(rgba,false);
      //osgDB::Registry::instance()->writeImage( *imageWithG,"ass.png",NULL);
      // exit(0);
@@ -1020,7 +1025,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
        osg::TextureRectangle* planeTex=NULL;
       if(computeHists){
 	Hist_Calc histCalc(_tex_size,_tex_size,16,1);
-	CvHistogram *finalhist=NULL;    
+
 	if(!run_higher_res){
 	  calcHists(mtgcm,textures,histCalc);
 	  histCalc.get_hist(finalhist);

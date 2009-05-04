@@ -58,6 +58,7 @@ static int dist_gentex_range=0;
 static int vrip_split;
 static FILE *pts_cov_fp;
 static int skip_sparse=0;
+static string background_mb;
 static string contents_file_name;
 static string dir_name;
 static bool use_cached=true;
@@ -342,6 +343,7 @@ static bool parse_args( int argc, char *argv[ ] )
   argp.read("--z-cutoff",dense_z_cutoff);
   argp.read("--poses",contents_file_name );
   argp.read("--skipsparse",skip_sparse);
+  argp.read("--bkmb",background_mb);
   deltaT_config_name=base_dir+string("/")+"localiser.cfg";
     double lat_orig,lon_orig;
 
@@ -357,7 +359,7 @@ static bool parse_args( int argc, char *argv[ ] )
    
     }  
      }   catch( std::string error ) {
-       std::cerr << "ERROR - " << error << endl;
+        std::cerr << "ERROR - " << error << endl;
      exit( 1 );
    }
 
@@ -1954,8 +1956,14 @@ int main( int argc, char *argv[ ] )
 		basepath.c_str(),deltaT_config_name.c_str(),
 		deltaT_dir.c_str());
 	*/
-	fprintf(genmbfp,"#!/bin/bash\n%s/mb_for_vis.sh %s %f %d %f %f\n",
-		basepath.c_str(),deltaT_dir.c_str(),mb_grd_res,spline_dist,start_time,stop_time);
+	char bkarg[2048];
+	
+	if(background_mb.c_str() > 0)
+	  sprintf(bkarg," %s ",background_mb.c_str());
+	else
+	  sprintf(bkarg," ");
+	fprintf(genmbfp,"#!/bin/bash\n%s/mb_for_vis.sh %s %f %d %f %f %s\n",
+		basepath.c_str(),deltaT_dir.c_str(),mb_grd_res,spline_dist,start_time,stop_time,bkarg);
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
 	sysres=system("./genmb.sh");

@@ -410,7 +410,7 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
 
 
    // Check if the subsets need to be recursively split
-   if( bounds1.area() > max_cell_area_even || poses1.size() > max_cell_poses_even  )
+   if( bounds1.area() > max_cell_area_even )
    {   
       recursive_split_area( poses1, bounds1, depth+1, cells );
    }
@@ -419,13 +419,13 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
       Cell_Data new_cell( poses1, bounds1 );
       cells.push_back( new_cell );
 #if VERBOSE
-      printf( "Cell %d at depth %d area: %f, poses: %d\n", cells.size(), depth,
+      printf( "Area Cell %d at depth %d area: %f, poses: %d\n", cells.size(), depth,
               bounds1.area(), poses1.size() );
 #endif
    }
 
 
-   if( bounds2.area() > max_cell_area_even || poses2.size() > max_cell_poses_even)
+   if( bounds2.area() > max_cell_area_even )
    {   
       recursive_split_area( poses2, bounds2, depth+1, cells );
    }
@@ -434,7 +434,7 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
       Cell_Data new_cell( poses2, bounds2 );
       cells.push_back( new_cell );
 #if VERBOSE
-      printf( "Cell %d at depth %d area: %f, poses: %d\n", cells.size(), depth,
+      printf( "Area Cell %d at depth %d area: %f, poses: %d\n", cells.size(), depth,
               bounds2.area(), poses2.size() );
 #endif
    }
@@ -536,7 +536,7 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,double x1,do
        node_poses[i] = &poses[i];
 
 
-   max_cell_area=   bounds.area()/numcells;
+   max_cell_area_even=   bounds.area()/numcells;
 
    // Perform binary division until termination criteria
    vector<Cell_Data> cells;

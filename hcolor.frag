@@ -69,6 +69,22 @@ vec4 rainbowColorMap(float hue) {
   return HSV_to_RGB(vec4(hue, 1.0f, 1.0f,1.0));
 }
 
+vec4 bone(float val){
+ val= clamp(val,0.0,1.0);
+  const int iMapSize=4;
+  vec3  map[4];
+  map[0]= vec3(0.    , 0.    , 0.    );
+  map[1]=vec3(0.3194, 0.3194, 0.4444);
+  map[2]=vec3(0.6528, 0.7778, 0.7778);
+  map[3]=vec3(1.    , 1.    , 1.    );
+  float x = val * (iMapSize - 1);
+  float x0 =floor(x);
+  int i= int(x0);
+  if(i== iMapSize -1)
+    return vec4(1,0,0,1);
+  float dx=x - x0;
+  return vec4( (map[i+1] *dx),1);//vec4(map[i] * (1.0 - dx) + map[i +1] *dx,1);
+}
 
 vec4 jetColorMap(float val) {
   val= clamp(val,0.0,1.0);
@@ -179,27 +195,29 @@ void main()
   vec4 aux= vec4(0.0,vC.y,0.0,1.0);
   vec4 auxratio = vec4(0.0,0.5,0.0,1.0);
   vec4 class_color =rainbowColorMap(classid);
-  if(shaderOut == 0 && !untex){
-    
-    gl_FragColor = texture2D( colorMap, gl_TexCoord[0].st);
-    // gl_FragColor =  (((vec4(1.0,1.0,1.0,0.0)-auxratio)*texture2D( colorMap, gl_TexCoord[0].st)) + (auxratio * aux));
-  }else if(shaderOut == 1 && !untex){
-   if(classid == 0.0)
-      gl_FragColor =vec4(0,0,0,0);
-    else
-    gl_FragColor = class_color;
-  
-  }
-  else if(shaderOut == 2 && !untex){
- 
-    float alpha=0.3;
-    if(classid ==0.0)
-      gl_FragColor =texture2D( colorMap, gl_TexCoord[0].st);
-    else
-      gl_FragColor =((1-alpha)*texture2D( colorMap, gl_TexCoord[0].st))+(alpha*class_color);
+  if(!untex){
+    if(shaderOut == 0){
+      
+      gl_FragColor = texture2D( colorMap, gl_TexCoord[0].st);
+      // gl_FragColor =  (((vec4(1.0,1.0,1.0,0.0)-auxratio)*texture2D( colorMap, gl_TexCoord[0].st)) + (auxratio * aux));
+    }else if(shaderOut == 1 && !untex){
+      if(classid == 0.0)
+	gl_FragColor =vec4(0,0,0,0);
+      else
+	gl_FragColor = class_color;
+      
+    }
+    else if(shaderOut == 2){
+      
+      float alpha=0.3;
+      if(classid ==0.0)
+	gl_FragColor =texture2D( colorMap, gl_TexCoord[0].st);
+      else
+	gl_FragColor =((1-alpha)*texture2D( colorMap, gl_TexCoord[0].st))+(alpha*class_color);
+    }
   }else{
-     vec3 NNormal = normalize(normal.xyz);
-     vec3 Light  = normalize(vec3(1,  2.5,  -1));
+      vec3 NNormal = normalize(normal.xyz);
+      vec3 Light  = normalize(vec3(1,  2.5,  -1));
 //normalize(vec3(0,0,-1 ));
      vec4 specular_val=vec4( 0.18, 0.18, 0.18, 0.18 );
     
@@ -223,14 +241,23 @@ void main()
      float range= zrange.y-zrange.x;
      float val =(height-zrange.x)/range;
     
-    vec4 jet=jetColorMap(val);
+    vec4 jet=jetColorMap(1-val);
     vec4 ran=rainbowColorMap(val);
     vec4 shadow = vec4(1.0-vC.x,1.0-vC.x,1.0-vC.x,1.0);
-    vec4 auxC = hotColorMap(vC.y);//coldColorMap(vC.y);
-    //if(shaderOut == 1)
+    vec4 cold = coldColorMap(vC.y);
+    vec4 boneC=bone(vC.y);
+    vec4 height_color;
+    if(shaderOut == 0)
+      height_color=jet* (ambient + diffuse + specular);
+    else if(shaderOut == 1)
+      height_color=vec4(1,1,1,1)* (ambient + diffuse + specular);
+    else if(shaderOut == 2)
+      height_color=cold* (ambient + diffuse + specular);
+    
+    
     //  gl_FragColor = ran* shadow* (ambient + diffuse + specular);
     // else
-    gl_FragColor = jet   * (ambient + diffuse + specular);
+    gl_FragColor = height_color   ;
     
   }
 }

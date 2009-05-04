@@ -22,6 +22,7 @@
 #include "auv_gts_utils.hpp"
 #include "auv_tex_projection.hpp"
 #include "adt_image_norm.hpp"
+#include "colormaps.h"
 using namespace libpolyp;
 typedef struct _GHashNode      GHashNode;
 using namespace libsnapper;

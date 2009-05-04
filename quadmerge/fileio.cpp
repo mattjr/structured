@@ -89,8 +89,13 @@ bool bound_grd( mesh_input &m,double &zmin, double &zmax,double local_easting, d
   const int falsev=(1==0);
   argc=GMT_begin(argc,(char **)argv); /* Sets crazy globals */
   GMT_grd_init (&gmtheader, argc,(char **) argv, falsev); /* Initialize grd header structure  */
-  if(GMT_read_grd_info ((char *)m.name.c_str(),&gmtheader)){
+  if(GMT_read_grd_info ((char *)m.name.c_str(),&gmtheader) == -1){
     fprintf(stderr,"Cant open %s\n",m.name.c_str());
+    return false;
+  }
+
+  if(gmtheader.type == -1 || gmtheader.nx == 0 || gmtheader.ny == 0){
+   fprintf(stderr,"Cant open %s type appears invalid\n",m.name.c_str());
     return false;
   }
   UF::GeographicConversions::Redfearn gpsConversion;
@@ -152,7 +157,10 @@ bool read_grd_data(const char *name,short &nx,short &ny,float *&data){
   const int falsev=(1==0);
   argc=GMT_begin(argc,(char **)argv); /* Sets crazy globals */
   GMT_grd_init (&gmtheader, argc,(char **) argv, falsev); /* Initialize grd header structure  */
-  GMT_read_grd_info ((char *)name,&gmtheader);
+ if(GMT_read_grd_info ((char *)name,&gmtheader) == -1 || gmtheader.type == -1 || gmtheader.nx == 0 || gmtheader.ny == 0){
+   fprintf(stderr,"Cant open %s type appears invalid\n",name);
+    return false;
+  }
   nx=gmtheader.nx;  
   ny=gmtheader.ny;
 

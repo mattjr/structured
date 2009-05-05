@@ -252,7 +252,7 @@ void main()
     else if(shaderOut == 1)
       height_color=vec4(1,1,1,1)* (ambient + diffuse + specular);
     else if(shaderOut == 2)
-      height_color=cold* (ambient + diffuse + specular);
+      height_color=vec4(0,0,0.0,1);
     
     
     //  gl_FragColor = ran* shadow* (ambient + diffuse + specular);

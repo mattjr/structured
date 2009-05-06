@@ -1030,6 +1030,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	if(!run_higher_res){
 	  calcHists(mtgcm,textures,histCalc);
 	  histCalc.get_hist(finalhist);
+	  // cvSave("hist1.xml",finalhist);
 	}
 	if(gpuNovelty)
 	  histTex= getTextureHists(finalhist);

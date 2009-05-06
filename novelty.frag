@@ -18,13 +18,13 @@ vec3 jet_colormap(float val)
   return rgb;
 }
 
-float planeDist(vec3 p,vec4 plane){
+float planeDist(vec3 p,vec4 plane,float height_weight){
   
   vec3 u=plane.xyz;
   float d0=plane.w;
   
   float val=(u[0]*p.x+u[1]*p.y+u[2]*p.z+d0);
-  return min(abs(val)*weights.x,1.0);
+  return min(abs(val)*height_weight,1.0);
 
 
 }
@@ -32,30 +32,33 @@ float planeDist(vec3 p,vec4 plane){
 
 void main()
 {
+  vec3 actual_weights;
   if(weights.x == 0.0 && weights.y == 0.0 && weights.z == 0.0)
-    weights=vec3(1.1, 0.66, 0.26);
+    actual_weights=vec3(1.1, 0.66, 0.26);
+  else
+    actual_weights=weights;
 
   float dist=0.0;
   if(planeCoord.x >= 0 && planeCoord.y >= 0){
     vec4 plane=texelFetch2DRect(planes,planeCoord);
-    dist = planeDist(vpos,plane);
+    dist = planeDist(vpos,plane,actual_weights.x);
   }
    float nov=texture2D(rtex,gl_TexCoord[0].xy).w;
    vec4 src= texture2D(rtex,gl_TexCoord[0].xy);
 
    vec4 color;
-   float total=mix(dist,nov,weights.y);
+   float total=mix(dist,nov,actual_weights.y);
 
    if(shaderOut == 0)
     color= vec4(src.xyz,1);
    else if(shaderOut ==1){
-    if(nov > weights.z)
+    if(nov > actual_weights.z)
       color=mix(vec4(0.0,1.0,0.0,1.0),src,0.6);
     else
       color=src;
    }
    else if(shaderOut ==2){
-    if(total > weights.z)
+    if(total > actual_weights.z)
       color=mix(vec4(1.0,0.0,0.0,1.0),src,0.6);
     else
       color=src;

@@ -75,7 +75,7 @@ static bool interp_quad=false;
 static bool run_pos=true;
 static bool do_novelty=false;
 static double dense_scale;
-static int desired_cells=100;
+static int desired_area=250.0;
 static bool have_max_frame_count = false;
 static bool do_shader_color=false;
 static unsigned int max_frame_count=INT_MAX;
@@ -338,7 +338,7 @@ static bool parse_args( int argc, char *argv[ ] )
 
   dir_name = "img/";
   strcpy(cachedtexdir,"cache-tex/");
-  argp.read("--cells",desired_cells);
+  argp.read("--split-area",desired_area);
   rugosity=argp.read("--rugosity");
   argp.read("--stereo-calib",stereo_calib_file_name);
   argp.read("--z-cutoff",dense_z_cutoff);
@@ -2141,7 +2141,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
       fclose(quadmerge_seg_fp);
       //int numcells= total_env.width() *total_env.height() / 50.0;
-         std::vector<Cell_Data> quad_cells=calc_cells(tasks,total_env.minx(),total_env.maxx(),total_env.miny(),total_env.maxy(),desired_cells);
+         std::vector<Cell_Data> quad_cells=calc_cells(tasks,total_env.minx(),total_env.maxx(),total_env.miny(),total_env.maxy(),desired_area);
 
     for(int i=0; i <(int)quad_cells.size(); i++){
 

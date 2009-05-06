@@ -519,7 +519,7 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,int method,d
 }
                    
 
-vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,double x1,double x2,double y1 ,double y2,int numcells ) 
+vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,double x1,double x2,double y1 ,double y2,double area ) 
 {
    // Calculate the bounds of the stereo data
    Bounds bounds;
@@ -536,7 +536,7 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,double x1,do
        node_poses[i] = &poses[i];
 
 
-   max_cell_area_even=   bounds.area()/numcells;
+   max_cell_area_even=   area;
 
    // Perform binary division until termination criteria
    vector<Cell_Data> cells;

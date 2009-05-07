@@ -1,13 +1,10 @@
-#extension GL_ARB_texture_rectangle : enable
 
 
-varying vec2 planeCoord;
+varying vec4 planeData;
 varying vec3 vpos;
 uniform sampler2D rtex;
-uniform sampler2DRect planes;
 uniform int shaderOut;
 uniform vec3 weights;
-uniform vec4 planeArray[];
 
 vec4 jet_colormap(float val_un)
 {
@@ -34,7 +31,8 @@ float planeDist(vec3 p,vec4 plane,float height_weight){
 
 void main()
 {
-  ivec2 iplaneCoord=ivec2(planeCoord);
+
+ 
   vec3 actual_weights;
   if(weights.x == 0.0 && weights.y == 0.0 && weights.z == 0.0)
     actual_weights=vec3(1.1, 0.66, 0.26);
@@ -42,9 +40,8 @@ void main()
     actual_weights=weights;
 
   float dist=0.0;
-  if(iplaneCoord.x >= 0 && iplaneCoord.y >= 0){
-   vec4 plane=texture2DRect(planes,planeCoord);
-   dist = planeDist(vpos,plane,actual_weights.x);
+  if(planeData != vec4(0,0,0,0) ){
+    dist = planeDist(vpos,planeData,actual_weights.x);
   }
    
    vec4 src= texture2D(rtex,gl_TexCoord[0].xy);
@@ -53,7 +50,8 @@ void main()
    float total=mix(dist,nov,actual_weights.y);
 
    if(shaderOut == 0)
-    color= vec4(src.xyz,1);
+     //    color= vec4(src.xyz,1);
+        color=jet_colormap(planeData.w+58.3079+1.0);
    else if(shaderOut ==1){
     if(nov > actual_weights.z)
       color=mix(vec4(0.0,1.0,0.0,1.0),src,0.6);

@@ -86,7 +86,7 @@ for(int i=0; i<4; i++)
 
 osg::TextureRectangle*  getPlaneTex( vector<Plane3D> planes,int size){
  
-  
+ 
   if(size*size < (int)planes.size()){
     fprintf(stderr,"Not enought tex space for planes gonna fail\n");
     return NULL;

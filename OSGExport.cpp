@@ -222,7 +222,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   int planeTexSize=(long int)data[7];
   
   map<int,int> *texnum2arraynum=(map<int,int> *)data[9];
-
+  vector<Plane3D> *planes=(vector<Plane3D> *)data[10];
   osg::PrimitiveSet::Mode mode;
   
   mode = osg::PrimitiveSet::TRIANGLES;
@@ -240,21 +240,21 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   (*gc._vertices++).set(GTS_VERTEX(v2)->p.x,GTS_VERTEX(v2)->p.y,GTS_VERTEX(v2)->p.z);
   (*gc._vertices++).set(GTS_VERTEX(v3)->p.x,GTS_VERTEX(v3)->p.y,GTS_VERTEX(v3)->p.z);
 
-  if(gc._planeTexValid){
+  if(gc._planeTexValid && planes){
     if(v1->plane >= 0)
-      (*gc._texcoordsPlane++).set(v1->plane %planeTexSize, v1->plane / planeTexSize);    
+      (*gc._texcoordsPlane++).set((*planes)[v1->plane].u[0], (*planes)[v1->plane].u[1],(*planes)[v1->plane].u[2],(*planes)[v1->plane].d0);
     else
-      (*gc._texcoordsPlane++).set(-1.0,-1.0);    
-
- if(v2->plane >= 0)
-      (*gc._texcoordsPlane++).set(v2->plane %planeTexSize, v2->plane / planeTexSize);    
-    else
-      (*gc._texcoordsPlane++).set(-1.0,-1.0);    
-
+      (*gc._texcoordsPlane++).set(-1.0,-1.0,-1.0,-1.0);    
+    
+    if(v2->plane >= 0)
+   (*gc._texcoordsPlane++).set((*planes)[v2->plane].u[0], (*planes)[v2->plane].u[1],(*planes)[v2->plane].u[2],(*planes)[v2->plane].d0); 
+ else
+   (*gc._texcoordsPlane++).set(-1.0,-1.0,-1.0,-1.0);   
+ 
  if(v3->plane >= 0)
-      (*gc._texcoordsPlane++).set(v3->plane %planeTexSize, v3->plane / planeTexSize);    
+   (*gc._texcoordsPlane++).set((*planes)[v3->plane].u[0], (*planes)[v3->plane].u[1],(*planes)[v3->plane].u[2],(*planes)[v3->plane].d0); 
     else
-      (*gc._texcoordsPlane++).set(-1.0,-1.0);    
+      (*gc._texcoordsPlane++).set(-1.0,-1.0,-1.0,-1.0);   
     
   
   
@@ -736,7 +736,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   gpuNovelty=false;
    _tex_size=tex_size;
    map<int,int> texnum2arraynum;
-  gpointer data[10];
+  gpointer data[11];
   gint n=0;
   data[0]=&mtgcm;
   data[1] = &n;
@@ -750,6 +750,11 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
     data[9]=&texnum2arraynum;
   else
     data[9]=NULL;
+
+  if(usePlaneDist)
+    data[10]=&planes;
+  else
+    data[10]=NULL;
 
   if(classes && num_class_id != 0)
     useClasses=true;
@@ -981,7 +986,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    gc._texcoordArray = texcoordArray;
 	    gc._geom->setTexCoordArray(0,texcoordArray);
 	    if(computeHists){
-	      osg::Vec2Array* texcoordPlanes = new osg::Vec2Array(gc._numPoints);
+	      osg::Vec4Array* texcoordPlanes = new osg::Vec4Array(gc._numPoints);
 	      gc._texcoordsPlane = texcoordPlanes->begin();
 	      gc._geom->setTexCoordArray(TEXUNIT_PLANES,texcoordPlanes);
 	      gc._planeTexValid=true;
@@ -1216,17 +1221,40 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	textured->getOrCreateStateSet()->setAttribute( point, osg::StateAttribute::ON );
       }
       
-      if(computeHists){
-	osg::Vec4Array* planeArray = new osg::Vec4Array(planes.size());
+  	    if(computeHists){
+	      /*	int max_planes=32;
+	if(max_planes < planes.size()){
+	  fprintf(stderr,"Max planes to small\n");
+	  exit(-1);
+	}
+	osg::Vec4Array* planeArray = new osg::Vec4Array(max_planes);
 	
 	if(usePlaneDist){
-	  for(int i=0; i <(int) planes.size(); i++){
-	    osg::Vec4 plane( planes[i].u[0],planes[i].u[1],planes[i].u[2],planes[i].d0);
-	    planeArray->push_back(plane);
-	  }
-	  textured->getOrCreateStateSet()->addUniform(new osg::Uniform("planesArr", 
-								       planeArray) );
-	}
+	  for(int i=0; i <max_planes; i++){
+	    osg::Vec4 plane;
+	      if(i < planes.size()){
+		plane[0]= planes[i].u[0];
+		plane[1]=planes[i].u[1];
+		plane[2]=planes[i].u[2];
+		plane[3]=planes[i].d0;
+	      }
+	      else{
+		plane[0]=0;
+		plane[1]=0;
+		plane[2]=0;
+		plane[3]=0;
+	      }
+	      
+	      cout << plane<<endl;
+	  planeArray->push_back(plane);
+	  }	      
+
+	
+	 
+	  textured->getOrCreateStateSet()->addUniform(new osg::Uniform("planeArray", 
+	  planeArray) );
+      }*/
+
 	  if(gpuNovelty){
 	    textured->getOrCreateStateSet()->addUniform(new osg::Uniform("hist", 
 							       TEXUNIT_HIST) );
@@ -1243,8 +1271,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  
 	 textured->getOrCreateStateSet()->addUniform(new osg::Uniform("planes", 
 							       TEXUNIT_PLANES) );
-	 textured->getOrCreateStateSet()->setTextureAttribute(TEXUNIT_PLANES,
-							      planeTex);
+	 //	 textured->getOrCreateStateSet()->setTextureAttribute(TEXUNIT_PLANES,
+	 //					      planeTex);
 	 textured->getOrCreateStateSet()->setAttributeAndModes(novelty_program,
 								osg::StateAttribute::ON );
       }else if(shader_coloring){     

@@ -81,7 +81,7 @@ struct GeometryCollection
   osg::Vec2Array::iterator    _texcoords;
   osg::Vec2Array *    _texcoordArray;
   osg::Vec3Array::iterator    _texcoordsTexArray[NUM_TEX_BLEND_COORDS];
-  osg::Vec2Array::iterator    _texcoordsPlane;
+  osg::Vec4Array::iterator    _texcoordsPlane;
   int                         _coordCount;
   osg::Geometry*              _geom;
   bool _planeTexValid;

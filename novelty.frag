@@ -50,8 +50,8 @@ void main()
    float total=mix(dist,nov,actual_weights.y);
 
    if(shaderOut == 0)
-     //    color= vec4(src.xyz,1);
-        color=jet_colormap(planeData.w+58.3079+1.0);
+         color= vec4(src.xyz,1);
+   //   color=jet_colormap(planeData.w+58.3079+1.0);
    else if(shaderOut ==1){
     if(nov > actual_weights.z)
       color=mix(vec4(0.0,1.0,0.0,1.0),src,0.6);

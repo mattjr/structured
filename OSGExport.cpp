@@ -1043,7 +1043,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  addNoveltyTextures(mtgcm,textures,histCalc,finalhist);
 	
 	// add everthing into the Geode.   
-	planeTex=getPlaneTex(planes,_planeTexSize);
+	//	planeTex=getPlaneTex(planes,_planeTexSize);
       }
       
       
@@ -1265,12 +1265,12 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	  }
 	  
 	  //textured->getOrCreateStateSet()->addUniform(new osg::Uniform("rtex",0));
-	 textured->getOrCreateStateSet()->addUniform(new osg::Uniform("infoT",
-							       TEXUNIT_INFO));
+	  //	 textured->getOrCreateStateSet()->addUniform(new osg::Uniform("infoT",
+	  //	       TEXUNIT_INFO));
 	  
 	  
-	 textured->getOrCreateStateSet()->addUniform(new osg::Uniform("planes", 
-							       TEXUNIT_PLANES) );
+	 //	 textured->getOrCreateStateSet()->addUniform(new osg::Uniform("planes", 
+	 //				       TEXUNIT_PLANES) );
 	 //	 textured->getOrCreateStateSet()->setTextureAttribute(TEXUNIT_PLANES,
 	 //					      planeTex);
 	 textured->getOrCreateStateSet()->setAttributeAndModes(novelty_program,

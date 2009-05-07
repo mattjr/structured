@@ -314,8 +314,8 @@ vector<int> * DepthStats::getPlaneFits(vector<Plane3D> &planes, vector<TriMesh::
   int nv = _mesh->vertices.size();
 
   BEST_FIT::computeBestFitOBB(_mesh->vertices.size(),
-			      &_mesh->vertices.data()[0][0],
-			      sizeof(_mesh->vertices.data()[0]),
+			      &_mesh->vertices[0][0],
+			      sizeof(_mesh->vertices[0]),
 			      sides,matrix,BEST_FIT::FS_SLOW_FIT);
 
   int widthSplits=max((int)round(sides[0]/widthTargetSize),1);

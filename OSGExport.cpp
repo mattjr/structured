@@ -1217,7 +1217,16 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       }
       
       if(computeHists){
+	osg::Vec4Array* planeArray = new osg::Vec4Array(planes.size());
 	
+	if(usePlaneDist){
+	  for(int i=0; i <(int) planes.size(); i++){
+	    osg::Vec4 plane( planes[i].u[0],planes[i].u[1],planes[i].u[2],planes[i].d0);
+	    planeArray->push_back(plane);
+	  }
+	  textured->getOrCreateStateSet()->addUniform(new osg::Uniform("planesArr", 
+								       planeArray) );
+	}
 	  if(gpuNovelty){
 	    textured->getOrCreateStateSet()->addUniform(new osg::Uniform("hist", 
 							       TEXUNIT_HIST) );

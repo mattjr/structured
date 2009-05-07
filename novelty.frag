@@ -1,21 +1,23 @@
 #extension GL_ARB_texture_rectangle : enable
-#extension GL_EXT_gpu_shader4 : enable
-uniform sampler2D infoT;
-flat varying ivec2 planeCoord;
+
+
+varying vec2 planeCoord;
 varying vec3 vpos;
 uniform sampler2D rtex;
 uniform sampler2DRect planes;
 uniform int shaderOut;
 uniform vec3 weights;
+uniform vec4 planeArray[];
 
-
-vec3 jet_colormap(float val)
+vec4 jet_colormap(float val_un)
 {
-  vec3 rgb;
-  rgb.x = min(4.0 * val - 1.5,-4.0 * val + 4.5) ;
-  rgb.y = min(4.0 * val - 0.5,-4.0 * val + 3.5) ;
-  rgb.z = min(4.0 * val + 0.5,-4.0 * val + 2.5) ;
-  return rgb;
+  float val=clamp(val_un,0.0,1.0);
+  vec4 rgba;
+  rgba.r = min(4.0 * val - 1.5,-4.0 * val + 4.5) ;
+  rgba.g = min(4.0 * val - 0.5,-4.0 * val + 3.5) ;
+  rgba.b = min(4.0 * val + 0.5,-4.0 * val + 2.5) ;
+  rgba.a=0.0;
+return rgba;
 }
 
 float planeDist(vec3 p,vec4 plane,float height_weight){
@@ -32,6 +34,7 @@ float planeDist(vec3 p,vec4 plane,float height_weight){
 
 void main()
 {
+  ivec2 iplaneCoord=ivec2(planeCoord);
   vec3 actual_weights;
   if(weights.x == 0.0 && weights.y == 0.0 && weights.z == 0.0)
     actual_weights=vec3(1.1, 0.66, 0.26);
@@ -39,13 +42,13 @@ void main()
     actual_weights=weights;
 
   float dist=0.0;
-  if(planeCoord.x >= 0 && planeCoord.y >= 0){
-    vec4 plane=texelFetch2DRect(planes,planeCoord);
-    dist = planeDist(vpos,plane,actual_weights.x);
+  if(iplaneCoord.x >= 0 && iplaneCoord.y >= 0){
+   vec4 plane=texture2DRect(planes,planeCoord);
+   dist = planeDist(vpos,plane,actual_weights.x);
   }
-   float nov=texture2D(rtex,gl_TexCoord[0].xy).w;
+   
    vec4 src= texture2D(rtex,gl_TexCoord[0].xy);
-
+   float nov=src.w;
    vec4 color;
    float total=mix(dist,nov,actual_weights.y);
 
@@ -63,11 +66,12 @@ void main()
     else
       color=src;
    }else if(shaderOut ==3)
-     color=vec4(jet_colormap(nov),1);
+     color=jet_colormap(nov);
    else if(shaderOut ==4)
-     color=vec4(jet_colormap(dist*0.75),1);
+     color=jet_colormap(dist*0.75);
    else if(shaderOut ==5)
-     color=vec4(jet_colormap(total),1.0);
+     color=jet_colormap(total);
+
 
    gl_FragColor =color;
 

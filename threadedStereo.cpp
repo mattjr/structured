@@ -523,8 +523,7 @@ static bool parse_args( int argc, char *argv[ ] )
       even_split= true;
   argp.read("--cellscale",cell_scale );
 
-  if(  argp.read("--noquad"))
-    no_quadmerge=true;
+
 
 
   if(argp.read("--pos")){
@@ -542,6 +541,8 @@ static bool parse_args( int argc, char *argv[ ] )
       if( argp.read("--vrip"))
 	no_vrip=false;
   }
+  if(  argp.read("--noquad"))
+    no_quadmerge=true;
   
   if(vrip_on ){
     run_pos=false;

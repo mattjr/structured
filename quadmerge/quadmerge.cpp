@@ -746,7 +746,7 @@ void load_mesh_nointerp( mesh_input &m){
   
    
   //  root->AddHeightMap(RootCornerData, hm);
-  root->AddHeightMap(RootCornerData, hm);
+  root->AddHeightMap(RootCornerData,hm);
   delete [] hm.Data;
   delete mesh;  
 
@@ -758,11 +758,29 @@ void load_grd( mesh_input &m){
     exit(-1);
   }
   short nx,ny;
+  short nx2,ny2;
+
   int level;
   double actual_res;
   float *data_grd;
+  float *aug_data;
+  bool valid_aug=use_aug;
   if(!read_grd_data(m.name.c_str(),nx,ny,data_grd))
   return;
+
+
+  if(valid_aug){
+    if(!read_grd_data((m.name.substr(0,m.name.size()-3)+"aug.grd").c_str(),nx2,ny2,aug_data)){
+      fprintf(stderr,"Aug Grd Read Error\n");
+      valid_aug=false;
+    }else{
+      if(nx2 != nx || ny2 !=ny){
+	fprintf(stderr,"Aug Grd wrong size Error\n");
+	valid_aug=false;
+      }
+    }
+  }
+
   ge.get_downsample_res_level(m.res,level,actual_res);
   if(actual_res < min_cell_size)
     min_cell_size=actual_res;
@@ -775,12 +793,20 @@ void load_grd( mesh_input &m){
   }
 
   float *data =new float[nnx*nny];
+  float *aug=NULL;
+  if(valid_aug)
+    aug=new float[nnx*nny];
   //printf("New/Old  X: %d/%d Y: %d/%d  %f/%f\n",nx,nnx,ny,nny,m.res,actual_res);
  
   bool flipx=true;
   
   downsampleArray(data_grd,nx,ny,data,nnx,nny,flipx);
   GMT_free ((void *)data_grd);
+
+  if(valid_aug){
+    downsampleArray(aug_data,nx,ny,aug,nnx,nny,flipx);
+    GMT_free ((void *)aug_data);
+  }
  
   HeightMapInfo	hm;
   if(flipx){
@@ -802,17 +828,27 @@ void load_grd( mesh_input &m){
   hm.RowWidth = hm.XSize;
   hm.Scale =level;
   hm.Data = new float[hm.XSize * hm.YSize];
+  if(valid_aug)
+    hm.AugData = new float[hm.XSize * hm.YSize];
   hm.index=m.index;
 
-    for(int i=0; i < hm.XSize * hm.YSize; i++){
+  for(int i=0; i < hm.XSize * hm.YSize; i++){
     if(std::isnan(data[i]))
       hm.Data[i]=0;
-    else
+    else{
       hm.Data[i]= ge.toUINTz(data[i]);
+    }
+    if(valid_aug){
+      if(std::isnan(aug[i]))
+	hm.AugData[i]=0;
+      else
+	hm.AugData[i]= aug[i];
+    }
   }
     
     root->AddHeightMap(RootCornerData, hm,true); 
   delete [] hm.Data;
+  delete [] hm.AugData;
   delete data;
 }
 void	LoadData(std::vector<mesh_input> &meshes)

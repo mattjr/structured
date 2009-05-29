@@ -49,6 +49,7 @@ using namespace libsnapper;
 
 static int meshNum;
 static double start_time = 0.0;
+static bool apply_aug=false;
 static double stop_time = numeric_limits<double>::max();
 //
 // Command-line arguments
@@ -343,6 +344,7 @@ static bool parse_args( int argc, char *argv[ ] )
   argp.read("--stereo-calib",stereo_calib_file_name);
   argp.read("--z-cutoff",dense_z_cutoff);
   argp.read("--poses",contents_file_name );
+  apply_aug =argp.read("--apply_aug");
   argp.read("--skipsparse",skip_sparse);
   argp.read("--bkmb",background_mb);
   deltaT_config_name=base_dir+string("/")+"localiser.cfg";
@@ -585,12 +587,12 @@ static bool parse_args( int argc, char *argv[ ] )
       classes.push_back(tmp);
     }
     fclose(fp);
-    printf("Loaded %d class labels\n",classes.size());
+    printf("Loaded %d class labels\n",(int)classes.size());
     if(do_classes_interp){
       int last_class=-1;
       int last_idx=-1;
       int left_unknown=0;
-      for(int i=0; i < classes.size(); i++){
+      for(int i=0; i < (int)classes.size(); i++){
 	if(classes[i].class_id == 0){
 	  if(last_class != -1 && i-last_idx <= interp_stride  )
 	    classes[i].class_id=last_class;
@@ -609,7 +611,7 @@ static bool parse_args( int argc, char *argv[ ] )
       exit(-1);
     }
     
-    for(int i=0; i < classes.size(); i++)
+    for(int i=0; i < (int)classes.size(); i++)
       fprintf(fp,"%f %s %d\n",classes[i].time,classes[i].name.c_str(),
 	      classes[i].class_id);
     
@@ -1427,9 +1429,18 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
 	     name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);
   
+  
+    if(apply_aug &&    mesh->confidences.empty()){
+      //   mesh->confidences.empty();
+      int nv = mesh->vertices.size();
+      mesh->confidences.resize(nv, 1);
+      for(int i=0; i< nv; i++)
+	mesh->confidences[i]=sqrt(pow(mesh->vertices[i][0],2)+
+				  pow(mesh->vertices[i][1],2)+
+				  pow(mesh->vertices[i][2],2));
+    }
     apply_xform(mesh,xf);
     mesh->need_bbox();
-
     mesh->write(filename);
 
  
@@ -1488,7 +1499,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     }
     delete mesh;
   }
-  
+    
 
 
 	 
@@ -1981,7 +1992,7 @@ int main( int argc, char *argv[ ] )
     }
     else
       vrip_cells=calc_cells(tasks,AUV_SPLIT,cell_scale);
-    printf("Split into %d cells for VRIP\n",vrip_cells.size());
+    printf("Split into %d cells for VRIP\n",(int)vrip_cells.size());
 
     for(int i=0; i <(int)vrip_cells.size(); i++){
       if(vrip_cells[i].poses.size() == 0)

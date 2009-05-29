@@ -40,7 +40,7 @@ float sub_cross2d(float *v0, float *v1, float *v2)
 }
 
 void get_grid_height(hmap_t *hmap, const sub_grid_t *sub_grid,
-		     const fmatrix_t verts, const int num_verts) 
+		     const fmatrix_t verts, const int num_verts,const fmatrix_t aug) 
 {
 	assert(num_verts > 0);
 
@@ -99,9 +99,14 @@ void get_grid_height(hmap_t *hmap, const sub_grid_t *sub_grid,
 				poly_min = fmin(poly_min, verts[2][2]);
 				height = fmin(height,poly_max);
 				height = fmax(height,poly_min);
-
+				float aug_avg=0;
+				if(aug)
+				  aug_avg=aug[0][0];
 				// set to hmap is greater than current value
 				hmap->map[i][j] = fmax(hmap->map[i][j],height);
+				if(aug)
+				  hmap->aug_map[i][j] = fmax(hmap->map[i][j],aug_avg);
+				//				printf("map aug %f\n",aug[0][0]);
 			} else same_sign = 1;
 		}
 	}
@@ -191,6 +196,10 @@ void mesh2hmap(hmap_t *hmap, const mesh_t *mesh,
 		exit(1);
 		}*/
 	hmap->map = fmatrix_create(hmap->rows,hmap->cols);
+	if(mesh->num_aug)
+	  hmap->aug_map = fmatrix_create(hmap->rows,hmap->cols);
+	else
+	  hmap->aug_map=NULL;
 	if(!hmap->map){
 	  	perror("Error: requested size hmap cannot be allocated .\n");
 		exit(-1);
@@ -206,7 +215,9 @@ void mesh2hmap(hmap_t *hmap, const mesh_t *mesh,
 	for(i = 0; i < hmap->rows; i++) {
 		sub_grid.grid_row[i] = (0.5+i)*y_m_pix;
 		for(j = 0; j < hmap->cols; j++) {
-			hmap->map[i][j] = -HUGE_VAL;
+		  hmap->map[i][j] = -HUGE_VAL;
+		  if(hmap->aug_map)
+		    hmap->aug_map[i][j] = -HUGE_VAL;
 		}
 	}
 
@@ -217,7 +228,14 @@ void mesh2hmap(hmap_t *hmap, const mesh_t *mesh,
 
 	int p, v;
 	int num_verts = 3;
+
 	fmatrix_t verts = fmatrix_create(num_verts,3);
+	int num_aug=0;
+	fmatrix_t aug=NULL;
+	if(mesh->num_aug){
+	  num_aug=3;
+	  aug= fmatrix_create(num_aug,1);
+	}
 	float polyl, polyr, polyb, polyt;
 	for(p = 0; p < mesh->num_poly; p++) {
 		v = 0;
@@ -227,12 +245,16 @@ void mesh2hmap(hmap_t *hmap, const mesh_t *mesh,
 			verts[v][0] = mesh->vert[mesh->poly[p][v]][x];
 			verts[v][1] = mesh->vert[mesh->poly[p][v]][y];
 			verts[v][2] = mesh->vert[mesh->poly[p][v]][z];
+			if(aug)
+			  aug[v][0] = mesh->aug_vert[mesh->poly[p][v]][0];
 			polyl = fmin(polyl,verts[v][0]);
 			polyr = fmax(polyr,verts[v][0]);
 			polyb = fmin(polyb,verts[v][1]);
 			polyt = fmax(polyt,verts[v][1]);
 			if (++v >= num_verts) {
 				fmatrix_resize(&verts,++num_verts,3);
+				if(mesh->num_aug)
+				  fmatrix_resize(&aug,++num_aug,1);
 			}
 		} while ( mesh->poly[p][v] != -1 );
 
@@ -244,7 +266,8 @@ void mesh2hmap(hmap_t *hmap, const mesh_t *mesh,
 		// Check to make sure bounding box contains a grid point
 		if ( (sub_grid.gridl <= sub_grid.gridr) && 
 		     (sub_grid.gridb <= sub_grid.gridt) ) {
-			get_grid_height(hmap, &sub_grid, verts, v);
+		  get_grid_height(hmap, &sub_grid, verts, v,aug);
+
 		}
 			
 	}

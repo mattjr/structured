@@ -82,12 +82,14 @@ public:
 extern global_extents ge;
 struct HeightMapInfo {
 	float*	Data;
+	float*	AugData;
 	int	x_origin, y_origin;
 	int	XSize, YSize;
 	int	RowWidth;
 	int	Scale;
   int index;
 	float	Sample(int x, int y) const;
+float	AugSample(int x, int y) const;
 };
 
 
@@ -98,6 +100,7 @@ struct	VertInfo {
   float *Zsamples;
   unsigned short *Zsource;
   float aux;
+  
   //	unsigned char	Lightness;	// For simple precomputed vertex lighting for purposes of the demo.  It's a waste of 2 bytes if we're texturing.
 
 };
@@ -193,10 +196,12 @@ extern int color_metric;
 extern int merge_metric;
 extern bool apply_color_wf;
 extern bool render_no_data;
+extern bool onlycompare;
 extern char *wf_fname;
 extern double max_stat_val;
 extern double min_stat_val;
 extern std::vector<double> stat_vals;
+extern std::vector<double> aug_vals;
 extern bool save_stats;
 enum {Z_SAMPLES,Z_ERR,SHADOWED,SIGNED_ERR,Z_VAR,RUGOSITY};
 float mest(const VertInfo &vert);
@@ -208,7 +213,7 @@ typedef struct _RECT{
   int left,right,top,bottom;
 }RECT;
 
-
+extern bool use_aug;
 void	DrawQuadTree(osg::Node* root,	RECT	r, quadsquare* quad, int xorigin, int yorigin, int BlockPixels, const quadcornerdata& pd, bool NoClip);
 void	DrawContourBox(osg::Node* root, int x, int y, int BlockPixels, VertInfo samples[4]);
 #endif

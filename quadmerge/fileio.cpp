@@ -6,7 +6,7 @@
 using namespace std;
 using mapnik::Envelope;
 
-void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii,bool color){
+void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii,bool color,bool conf){
   fseek(fp, 0, SEEK_SET); 
   fprintf(fp,"ply\n");
   if(ascii)
@@ -22,6 +22,9 @@ void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii,bool color){
     fprintf(fp,"property float diffuse_green\n");
     fprintf(fp,"property float diffuse_blue\n");
   }
+  if(conf)
+    fprintf(fp,"property float confidence\n");
+  
     
   fprintf(fp,"element face %012d\n",num_tris);
   fprintf(fp,"property list uchar int vertex_indices\n");

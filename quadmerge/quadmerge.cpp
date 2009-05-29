@@ -47,7 +47,6 @@ double edge_thresh;
 bool no_interp=false;
 using  std::cout;
 using  std::endl;
-
 #define PI 3.141592654
 double maxMemoryUsage=0.0;
 double MemoryUsage(void){
@@ -55,7 +54,6 @@ double MemoryUsage(void){
 	if(mem>maxMemoryUsage){maxMemoryUsage=mem;}
 	return mem;
 }
-
 bool display_tree=false;
 bool dump_stats=false;
 std::vector<mesh_input> meshes;
@@ -159,6 +157,9 @@ int	main(int argc, char *argv[])
   bool input_stat=false;
   if(  argp.read("-lod"))
     lod=true;
+
+  if(  argp.read("-onlycompare"))
+    onlycompare=true;
   if(argp.read("-nointerp"))
     no_interp=true;
 
@@ -183,6 +184,9 @@ int	main(int argc, char *argv[])
   }
 
 
+
+ if(argp.read("-aug"))
+    use_aug=true;
 
 
   if(argp.read("-zerr"))
@@ -388,6 +392,10 @@ int	main(int argc, char *argv[])
     fp=fopen(total_stat_file.c_str(),"w");
     for(int i=0; i< (int)stat_vals.size(); i++)
       fprintf(fp,"%f\n",stat_vals[i]);
+    fclose(fp);
+    fp=fopen(("aug-"+total_stat_file).c_str(),"w");
+    for(int i=0; i< (int)aug_vals.size(); i++)
+      fprintf(fp,"%f\n",aug_vals[i]);
     fclose(fp);
 
   }
@@ -695,6 +703,9 @@ void load_mesh_nointerp( mesh_input &m){
   hmap.cols = width;
   mesh2hmap(&hmap, &hmmesh, x, y, z, invert, x_m_pix, y_m_pix);
   fmatrix_free(hmmesh.vert);
+  if(hmmesh.num_aug)
+    fmatrix_free(hmmesh.aug_vert);
+
   irowarray_free(hmmesh.poly, hmmesh.num_poly);
   
   HeightMapInfo	hm;
@@ -706,6 +717,11 @@ void load_mesh_nointerp( mesh_input &m){
   hm.RowWidth = hm.XSize;
   hm.Scale =level;
   hm.Data = new float[hm.XSize * hm.YSize];
+  if(hmmesh.num_aug)
+    hm.AugData = new float[hm.XSize * hm.YSize];
+  else
+    hm.AugData=NULL;
+
   hm.index=m.index;
   int cnt=0;
   for(int i=0; i < hm.YSize; i++){
@@ -715,7 +731,14 @@ void load_mesh_nointerp( mesh_input &m){
       hm.Data[cnt]=0;
     else
       hm.Data[cnt]= (hmap.map[i][j] + hmap.z_min);
-    //     printf("%f\n",hm.Data[cnt]);
+
+    if(hm.AugData){
+      if(hmap.map[i][j] == -HUGE_VAL)
+	hm.AugData[cnt]=0;
+      else
+	hm.AugData[cnt]=hmap.aug_map[i][j];
+      //  printf("aug %f\n",hm.AugData[cnt]);
+    }
     //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
     cnt++;
     }

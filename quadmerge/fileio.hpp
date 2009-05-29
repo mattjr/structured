@@ -11,4 +11,4 @@ bool bound_grd( mesh_input &m,double &zmin, double &zmax,double local_easting,do
 
 extern UF::GeographicConversions::Redfearn gpsConversion;
 bool read_grd_data(const char *name,short &nx,short &ny,float *&data);
-void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii=false,bool color=false);
+void ply_header(FILE *fp,int num_tris,int num_verts,bool ascii=false,bool color=false,bool conf=false);

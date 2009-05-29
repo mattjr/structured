@@ -43,12 +43,18 @@ int color_metric=Z_ERR;
 using namespace ul;
 bool render_no_data=false;
 bool apply_color_wf=false;
+bool use_aug=false;
+
 //
 // quadsquare functions.
 //
 char *wf_fname;
+bool onlycompare=false;
+
 bool save_stats=false;
 std::vector<double> stat_vals;
+std::vector<double> aug_vals;
+
 double	max_stat_val=DBL_MIN;
 double	min_stat_val=DBL_MAX;
 quadsquare::quadsquare(quadcornerdata* pcd)
@@ -390,8 +396,8 @@ float	quadsquare::RecomputeErrorAndLighting(const quadcornerdata& cd)
 				    (v - Vertex[0].Z) * OneOverSize);
 	*/
 
-	for(int i=0; i <5; i++)
-	  Vertex[i].aux=0;
+	//	for(int i=0; i <5; i++)
+	//Vertex[i].aux=0;
 
 	// The error, MinZ/MaxZ, and lighting values for this node and descendants are correct now.
 	Dirty = false;
@@ -1234,12 +1240,22 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm,
 	
 	// Deviate vertex heights based on data sampled from heightmap.
 	float	s[5];
+	float	saug[5];
+
 	s[0] = hm.Sample(cd.xorg + half, cd.yorg + half);
 	s[1] = hm.Sample(cd.xorg + half*2, cd.yorg + half);
 	s[2] = hm.Sample(cd.xorg + half, cd.yorg);
 	s[3] = hm.Sample(cd.xorg, cd.yorg + half);
 	s[4] = hm.Sample(cd.xorg + half, cd.yorg + half*2);
-
+	if(hm.AugData){
+	  
+	  saug[0] = hm.AugSample(cd.xorg + half, cd.yorg + half);
+	  saug[1] = hm.AugSample(cd.xorg + half*2, cd.yorg + half);
+	  saug[2] = hm.AugSample(cd.xorg + half, cd.yorg);
+	  saug[3] = hm.AugSample(cd.xorg, cd.yorg + half);
+	  saug[4] = hm.AugSample(cd.xorg + half, cd.yorg + half*2);
+	  //printf("here %f\n",saug[0]);	
+	}
 	// Modify the vertex heights if necessary, and set the dirty
 	// flag if any modifications occur, so that we know we need to
 	// recompute error data later.
@@ -1253,8 +1269,10 @@ void	quadsquare::AddHeightMap(const quadcornerdata& cd, const HeightMapInfo& hm,
 			Vertex[i].Zsource[Vertex[i].num_samples-1]=source_idx;
 			  
 			Vertex[i].Z = s[i];
-		
-		
+			if(hm.AugData && saug[i] != 0.0){
+			  Vertex[i].aux = saug[i];
+			  // printf("aug %f\n",Vertex[i].aux);
+			}
 		}
 	}
 
@@ -1396,6 +1414,41 @@ float	HeightMapInfo::Sample(int x, int z) const
 	return (s00 * (1-fx) + s01 * fx) * (1-fz) +
 		(s10 * (1-fx) + s11 * fx) * fz;
 }
+
+float	HeightMapInfo::AugSample(int x, int z) const
+// Returns the height (y-value) of a point in this heightmap.  The given (x,z) are in
+// world coordinates.  Heights outside this heightmap are considered to be 0.  Heights
+// between sample points are bilinearly interpolated from surrounding points.
+// xxx deal with edges: either force to 0 or over-size the query region....
+{
+	// Break coordinates into grid-relative coords (ix,iz) and remainder (rx,rz).
+	
+	int	ix = (x - x_origin) >> Scale;
+	int	iz = (z - y_origin) >> Scale;
+
+	int	mask = (1 << Scale) - 1;
+
+	int	rx = (x - x_origin) & mask;
+	int	rz = (z - y_origin) & mask;
+ 
+	if (ix < 0 || ix >= XSize-1 || iz < 0 || iz >= YSize-1) return 0;	// Outside the grid.
+
+	float	fx = float(rx) / (mask + 1);
+	float	fz = float(rz) / (mask + 1);
+
+	float	s00 = AugData[ix + iz * RowWidth];
+	float	s01 = AugData[(ix+1) + iz * RowWidth];
+	float	s10 = AugData[ix + (iz+1) * RowWidth];
+	float	s11 = AugData[(ix+1) + (iz+1) * RowWidth];
+
+	//Don't interpolate from no data
+	if(s00 ==NO_DATA || s01 == NO_DATA ||s10 == NO_DATA ||s11==NO_DATA)
+	  return 0;
+	
+	//	return (s00 * (1-fx) + s01 * fx) * (1-fz) +
+	//(s10 * (1-fx) + s11 * fx) * fz;
+	return max(max(s00,s01),max(s10,s11));
+}
 void quadsquare::UpdateStats(const quadcornerdata& cd)
 {
     
@@ -1435,8 +1488,13 @@ void quadsquare::UpdateStats(const quadcornerdata& cd)
 		       Vertex[i].num_samples);
       }
 
-      if(Vertex[i].num_samples  >1 && save_stats)
+      if(Vertex[i].num_samples  >1 && save_stats){
 	stat_vals.push_back(val);
+	if(use_aug){
+	  //	  printf("%f %f\n",Vertex[i].Z ,Vertex[i].aux);
+	  aug_vals.push_back(Vertex[i].aux);
+	}
+      }
       if( val > max_stat_val )
 	max_stat_val=val;
       if(val < min_stat_val)
@@ -1528,12 +1586,12 @@ void quadsquare::UpdateDiffs(const quadcornerdata& cd)
 //  RenderToWF().
 //  20-Jul-00   floh    created
 //-------------------------------------------------------------------
-int	quadsquare::RenderToWF(const quadcornerdata& cd)
+int quadsquare::RenderToWF(const quadcornerdata& cd)
 {
   wf_num_tris=0;
   int vnum=0;
   wf_fp=fopen(wf_fname,"wb");
-  ply_header(wf_fp,wf_num_tris,vnum,false,apply_color_wf);
+  ply_header(wf_fp,wf_num_tris,vnum,false,apply_color_wf,use_aug);
   RenderToWFAux(cd);
   vnum = wf_num_tris * 3;
   int i;
@@ -1549,7 +1607,7 @@ int	quadsquare::RenderToWF(const quadcornerdata& cd)
 
     //  fp->PutS(buf);
   }
-  ply_header(wf_fp,wf_num_tris,vnum,false,apply_color_wf);
+  ply_header(wf_fp,wf_num_tris,vnum,false,apply_color_wf,use_aug);
   fclose(wf_fp);
   printf("Wrote %d Faces %d Vertcies\n",wf_num_tris,vnum);
   return 0;
@@ -1710,13 +1768,22 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
     int i;
     float buf[3];
     
-    //if(!render_non_static){
+
     if(!render_no_data){ for (i=0; i<3; i++) {
 	nFlatTriangleCorner *tc = tc_array[i];
 	if(tc->vi->Z == 0 )
 	  return;
       }
+    }
+
+    if(onlycompare){ 
+      for (i=0; i<3; i++) {
+	nFlatTriangleCorner *tc = tc_array[i];
+	if(tc->vi->num_samples < 2 )
+	  return;
       }
+    }
+
     for (i=0; i<3; i++) {
         nFlatTriangleCorner *tc = tc_array[i];
 	ul::vector p = ul::vector(float(tc->x),float(tc->y),tc->vi->Z);
@@ -1815,6 +1882,8 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	  fwrite((char *)buf,sizeof(float),3,wf_fp);
 
 	}
+	if(use_aug)
+	  fwrite(&tc->vi->aux,sizeof(float),1,wf_fp);
 	//}
 	
 	//        fp->PutS(buf);

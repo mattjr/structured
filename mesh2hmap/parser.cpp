@@ -36,10 +36,18 @@ void trimesh2mesh(mesh_t *mesh,	TriMesh *tmesh )
     return;
     
   }
+	int i;
 	mesh->num_vert=tmesh->vertices.size();
 	mesh->vert = fmatrix_create(mesh->num_vert, 3);
-	
-	int i;
+	mesh->num_aug=tmesh->confidences.size();
+	if(   !tmesh->confidences.empty()){
+
+	  mesh->aug_vert = fmatrix_create(tmesh->confidences.size(), 1);
+	  for(i = 0; i < tmesh->confidences.size(); i++) {
+	      mesh->aug_vert[i][0]= tmesh->confidences[i];
+	    }
+		}
+
 	for(i = 0; i < mesh->num_vert; i++) {
 	  /*reverse x and y */
 	  mesh->vert[i][0]= tmesh->vertices[i][1];

@@ -188,15 +188,6 @@ static bool parse_args( int argc, char *argv[ ] )
       }
    }
 
-
-#ifndef HAVE_LIBKEYPOINT
-   if( use_sift_features || use_surf_features || use_gpu_sift_features || use_cuda_sift_features)
-   {
-      cerr << "ERROR - libsnapper was compiled without sift support" << endl;
-      return false;
-   }
-#endif
-
    return (have_left_name && have_right_name &&have_stereo_config_file_name);
 }
 
@@ -466,12 +457,10 @@ int main( int argc, char *argv[ ] )
    Stereo_Feature_Finder *finder = NULL;
    if( use_sift_features || use_surf_features || use_gpu_sift_features || use_cuda_sift_features)
    {
-#ifdef HAVE_LIBKEYPOINT
       finder = new Stereo_Keypoint_Finder( *config_file, 
                                             use_undistorted_images, 
                                             image_scale, 
                                             calib );
-#endif
    }
    /*
    else if( use_ncc )

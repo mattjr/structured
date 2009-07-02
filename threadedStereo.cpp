@@ -676,13 +676,6 @@ static bool parse_args( int argc, char *argv[ ] )
   recon_config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
   recon_config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
 
-#ifndef HAVE_LIBKEYPOINT
-  if( use_sift_features || use_surf_features )
-    {
-      cerr << "ERROR - libsnapper was compiled without sift support" << endl;
-      return false;
-    }
-#endif
   if (argp.errors())
     {
       argp.writeErrorMessages(std::cout);
@@ -873,12 +866,10 @@ public:
     finder = NULL;
     finder_dense = NULL;
     if( use_sift_features || use_surf_features ){
-#ifdef HAVE_LIBKEYPOINT
       finder = new Stereo_Keypoint_Finder( *recon_config_file, 
 					   use_undistorted_images, 
 					   image_scale, 
 					   calib );
-#endif
     }
     /*
     else if( use_ncc )

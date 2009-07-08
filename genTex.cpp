@@ -7,7 +7,6 @@
 // Each line of the contents file should have the following format:
 //    <timestamp> <left_image_name> <right_image_name>
 //
-// Ian Mahon
 // 06-03-05
 //
 

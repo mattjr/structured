@@ -1351,7 +1351,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       surf = auv_mesh_pts(localV,mult,0); 
     }
     
-   
+    
     FILE *fp = fopen(meshfilename, "w" );
     if(!fp){
       fprintf(stderr,"Can't open %s\n",meshfilename);
@@ -1548,6 +1548,7 @@ bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks
     name.valid=true;
     name.radius=5;
     name.alt=-1.0;
+    name.mesh_name = "surface-"+osgDB::getStrippedName(name.left_name)+".tc.ply";
     name.id=stereo_pair_count++;
     fill_gts_matrix(name.pose,name.m);
     tasks.push_back(name);

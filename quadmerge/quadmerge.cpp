@@ -127,7 +127,7 @@ void bound_mesh( mesh_input &m,double &zmin, double &zmax){
 int	main(int argc, char *argv[])
 {
   libplankton::ArgumentParser argp(&argc,argv);
-
+  
   if(argp.argc() < 4){
     fprintf(stderr,"Usage quadmerge meshlistfile.txt edgethreshold outfile.ply\n");
     exit(-1);
@@ -203,6 +203,10 @@ int	main(int argc, char *argv[])
 
   if(argp.read("-zvar"))
     color_metric=Z_VAR;
+
+  if(argp.read("-zdepth"))
+    color_metric=Z_DEPTH;
+
 
   if(argp.read("-dumpstat",total_stat_file)){
     save_stats=true;
@@ -830,6 +834,9 @@ void load_grd( mesh_input &m){
   hm.Data = new float[hm.XSize * hm.YSize];
   if(valid_aug)
     hm.AugData = new float[hm.XSize * hm.YSize];
+  else 
+    hm.AugData = NULL;
+    
   hm.index=m.index;
 
   for(int i=0; i < hm.XSize * hm.YSize; i++){

@@ -203,7 +203,7 @@ extern double min_stat_val;
 extern std::vector<double> stat_vals;
 extern std::vector<double> aug_vals;
 extern bool save_stats;
-enum {Z_SAMPLES,Z_ERR,SHADOWED,SIGNED_ERR,Z_VAR,RUGOSITY};
+enum {Z_SAMPLES,Z_ERR,SHADOWED,SIGNED_ERR,Z_VAR,RUGOSITY,Z_DEPTH};
 float mest(const VertInfo &vert);
 #define USE_OSG 1
 #ifdef USE_OSG

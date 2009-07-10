@@ -1486,6 +1486,8 @@ void quadsquare::UpdateStats(const quadcornerdata& cd)
       }else if(color_metric == SIGNED_ERR){
 	val=signed_err(Vertex[i].Zsamples,Vertex[i].Zsource,
 		       Vertex[i].num_samples);
+      }else if(color_metric == Z_DEPTH){
+	val=mest(Vertex[i]);
       }
 
       if(Vertex[i].num_samples  >1 && save_stats){
@@ -1853,7 +1855,9 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	    val=signed_err(tc->vi->Zsamples,tc->vi->Zsource,
 			   tc->vi->num_samples);
 	    break;
-
+	  case Z_DEPTH:
+	    val=mest(*tc->vi);
+	    break;
 	  case RUGOSITY:
 	    val=tc->vi->aux;
 	    break;

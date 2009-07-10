@@ -515,6 +515,9 @@ int	main(int argc, char *argv[])
 	case Z_VAR:
 	  title << "Var Z [m]";
 	  break;
+      case Z_DEPTH:
+	  title << "Depth [m]";
+	  break;
 	  
       }
       FILE *fp = fopen(statfile.c_str(),"w");

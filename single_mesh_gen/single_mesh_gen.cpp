@@ -23,7 +23,8 @@
 
 #include "auv_image_distortion.hpp"
 #include "auv_stereo_geometry.hpp"
-
+#include "auv_stereo_dense_new.hpp"
+ 
 #include "auv_stereo_corner_finder.hpp"
 //#include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
@@ -32,7 +33,9 @@
 using namespace std;
 using namespace libplankton;
 using namespace libsnapper;
-
+#ifdef USE_DENSE_STEREO
+Stereo_Dense_New *sdense=NULL;
+#endif
 
 //
 // Command-line arguments
@@ -40,8 +43,10 @@ using namespace libsnapper;
 static string stereo_config_file_name;
 static string left_file_name;
 static string right_file_name;
+static double dense_scale;
+static string dense_method;
 
-
+static double dense_z_cutoff=4.0;
 static bool use_undistorted_images = false;
 static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
@@ -51,7 +56,7 @@ static bool have_max_frame_count = false;
 static unsigned int max_frame_count;
 
 static bool display_debug_images = true;
-
+static bool use_dense_stereo=false;
 static bool use_sift_features = false;
 static bool use_surf_features = false;
 static bool use_gpu_sift_features = false;
@@ -113,6 +118,17 @@ static bool parse_args( int argc, char *argv[ ] )
       {
          use_undistorted_images = true;
          i+=1;
+      }
+      else if( strcmp( argv[i], "--ds" ) == 0 )
+      {
+	use_dense_stereo = true;
+         i+=1;
+      }
+  else if( strcmp( argv[i], "--cutoff" ) == 0 )
+      {
+
+       dense_z_cutoff = strtod( argv[i+1], NULL );
+         i+=2; 
       }
       else if( strcmp( argv[i], "-d" ) == 0 )
       {
@@ -210,6 +226,7 @@ static void print_usage( void )
    cout << "   --surf                  Find SURF features." << endl;
    cout << "   -d                      Do not display debug images." << endl;
    cout << "   -p                      Pause after each frame." << endl;
+   cout << "   --ds                    Dense Stereo" << endl;
    cout << endl;
 }
 
@@ -411,7 +428,15 @@ int main( int argc, char *argv[ ] )
    }
    config_file->set_value( "SKF_SHOW_DEBUG_IMAGES"    , display_debug_images );
    config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"    , display_debug_images );
+   config_file->set_value( "SD_SHOW_DEBUG_IMAGES"    , display_debug_images );
+
    //config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
+   if(dense_method == "")
+    config_file->get_value( "SD_METHOD", dense_method);
+  else
+    config_file->set_value( "SD_METHOD", dense_method);
+
+
 
    if( use_sift_features )
       config_file->set_value( "SKF_KEYPOINT_TYPE", "SIFT" );
@@ -421,6 +446,8 @@ int main( int argc, char *argv[ ] )
       config_file->set_value( "SKF_KEYPOINT_TYPE", "GPU-SIFT" );
    else if( use_cuda_sift_features )   
      config_file->set_value( "SKF_KEYPOINT_TYPE", "CUDA-SIFT" );
+   
+   config_file->get_value( "SD_SCALE", dense_scale,1.0);
 
 
    //
@@ -470,6 +497,13 @@ int main( int argc, char *argv[ ] )
                                               calib );
    }
    */
+
+   else if(!sdense && use_dense_stereo){
+     sdense= new Stereo_Dense_New(*config_file,
+			      dense_scale ,
+			      calib  );
+   }
+
    else
    {
       finder = new Stereo_Corner_Finder( *config_file, 
@@ -506,6 +540,8 @@ int main( int argc, char *argv[ ] )
       
       cout << "Loaded images: " << left_file_name << " and "
            << right_file_name << endl;
+
+
       
       //
       // Find the features
@@ -513,68 +549,107 @@ int main( int argc, char *argv[ ] )
       cout << "Finding features..." << endl;
       double find_start_time = get_time( );
       list<Feature *> features;
-      finder->find( left_frame,
-                    right_frame,
-                    left_frame_id,
-                    right_frame_id,
-                    max_feature_count,
-                    features,
-                    feature_depth_guess );
-      double find_end_time = get_time( );
-      
-      double tri_start_time = get_time( );
-      //
-      // Triangulate the features if requested
-      //
-      if( triangulate )
-      {
-         cout << "Saving triangulation to file: "
-              << triangulation_file_name << endl;
-         
-         Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
-         SymMatrix *image_coord_covar = NULL;
+      if(!use_dense_stereo){   
 
-         list<Stereo_Feature_Estimate> feature_positions;
-         stereo_triangulate( *calib,
-                             ref_frame,
-                             features,
-                             left_frame_id,
-                             right_frame_id,
-                             image_coord_covar,
-                             feature_positions );
-                             
-         static ofstream out_file( triangulation_file_name.c_str( ) );
-         list<Stereo_Feature_Estimate>::iterator itr;
-	TVertex *vert;
-      GPtrArray *localV= g_ptr_array_new ();
-         for( itr  = feature_positions.begin( ) ;
-              itr != feature_positions.end( ) ;
-              itr++ )
-         {
-  vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
-					     itr->x[0],itr->x[1],itr->x[2]);
- g_ptr_array_add(localV,GTS_VERTEX(vert));
-          
-         }     
-	 GtsSurface *surf= auv_mesh_pts(localV,0.0,0); 
-	 FILE *fp = fopen(triangulation_file_name.c_str(), "w" );
-	 auv_write_ply(surf, fp,false,"test");
-	 fflush(fp);   
-	 fclose(fp);
+	finder->find( left_frame,
+		      right_frame,
+		      left_frame_id,
+		      right_frame_id,
+		      max_feature_count,
+		      features,
+		      feature_depth_guess );
+      }
+	
+      else{ 
+	
+	sdense->dense_stereo(left_frame,right_frame);  
+	
       }
 
-      double tri_end_time = get_time( );
-      //
+      double find_end_time = get_time( );
+  //
       // Display useful info 
       //
       cout << endl;
       cout << "Left Image : " << left_file_name << endl;
       cout << "Right Image: " << right_file_name << endl;
       cout << endl;
-      cout << "Number of features found: " << features.size( ) << endl;
-      cout << endl;
+    
       cout << "Image loading time     : " << load_end_time-load_start_time << endl;
       cout << "Feature finding time   : " << find_end_time-find_start_time << endl;
+
+      double tri_start_time = get_time( );
+      //
+      // Triangulate the features if requested
+      //
+
+      if( triangulate )
+      {
+	
+	GPtrArray *localV=NULL;
+         cout << "Saving triangulation to file: "
+              << triangulation_file_name << endl;
+
+	 if(!use_dense_stereo) {
+	   Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
+	   SymMatrix *image_coord_covar = NULL;
+	   
+	   list<Stereo_Feature_Estimate> feature_positions;
+	   stereo_triangulate( *calib,
+			       ref_frame,
+			       features,
+			       left_frame_id,
+			       right_frame_id,
+			       image_coord_covar,
+			       feature_positions );
+	   cout << "Number of features found: " << features.size( ) << endl;
+	   cout << endl;
+	   static ofstream out_file( triangulation_file_name.c_str( ) );
+	   list<Stereo_Feature_Estimate>::iterator itr;
+	   TVertex *vert;
+	   localV= g_ptr_array_new ();
+	   for( itr  = feature_positions.begin( ) ;
+		itr != feature_positions.end( ) ;
+		itr++ )
+	     {
+	       vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+						itr->x[0],itr->x[1],itr->x[2]);
+	       g_ptr_array_add(localV,GTS_VERTEX(vert));
+	       
+	     }
+	 }else{ 
+	   
+	   std::vector<libplankton::Vector> points;   
+	   sdense->get_points(points);
+	   cout << "Number of points found: " << points.size( ) << endl;
+	  
+	   localV = g_ptr_array_new ();
+	   TVertex *vert;
+	   for(int i=0; i<(int)points.size(); i++){
+	     //	  printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
+	     //  if(-points[i](2) > dense_z_cutoff )
+	     //    continue;
+	     
+	     vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+					      points[i](0),points[i](1),
+					      points[i](2));
+	     //	     printf("%f %f %f\n",  points[i](0),points[i](1),
+	     //    points[i](2));
+	     g_ptr_array_add(localV,GTS_VERTEX(vert));
+	   }
+	 }
+	 if(localV->len){
+	   GtsSurface *surf= auv_mesh_pts(localV,0.0,0); 
+	   FILE *fp = fopen(triangulation_file_name.c_str(), "w" );
+	   auv_write_ply(surf, fp,false,"test");
+	   fflush(fp);   
+	   fclose(fp);
+	 }else
+	   fprintf(stderr,"No pts found\n");
+      }
+
+      double tri_end_time = get_time( );
+    
       cout << endl;
       cout << "------------------------------------" << endl;
       cout << endl;

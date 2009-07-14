@@ -56,6 +56,7 @@ static bool have_max_frame_count = false;
 static unsigned int max_frame_count;
 
 static bool display_debug_images = true;
+static bool save_debug_images = false;
 static bool use_dense_stereo=false;
 static bool use_sift_features = false;
 static bool use_surf_features = false;
@@ -105,6 +106,12 @@ static bool parse_args( int argc, char *argv[ ] )
          if( i == argc-1 ) return false;
          dense_method = string( argv[i+1] );
          i+=2;
+      }
+    else if( strcmp( argv[i], "--save" ) == 0 )
+      {
+
+	save_debug_images=true;
+         i+=1;
       }
       else if( strcmp( argv[i], "-n" ) == 0 )
       {
@@ -435,6 +442,9 @@ int main( int argc, char *argv[ ] )
    config_file->set_value( "SKF_SHOW_DEBUG_IMAGES"    , display_debug_images );
    config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"    , display_debug_images );
    config_file->set_value( "SD_SHOW_DEBUG_IMAGES"    , display_debug_images );
+   config_file->set_value( "SD_SAVE_DEBUG_IMAGES"    , save_debug_images );
+   config_file->set_value( "SKF_SAVE_DEBUG_IMAGES"    , save_debug_images );
+   config_file->set_value( "SCF_SAVE_DEBUG_IMAGES"    , save_debug_images );
 
    //config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
    if(dense_method == "")

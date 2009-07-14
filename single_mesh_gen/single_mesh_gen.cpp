@@ -100,6 +100,12 @@ static bool parse_args( int argc, char *argv[ ] )
          feature_depth_guess = atof( argv[i+1] );
          i+=2;
       }
+      else if( strcmp( argv[i], "--method" ) == 0 )
+      {
+         if( i == argc-1 ) return false;
+         dense_method = string( argv[i+1] );
+         i+=2;
+      }
       else if( strcmp( argv[i], "-n" ) == 0 )
       {
          if( i == argc-1 ) return false;

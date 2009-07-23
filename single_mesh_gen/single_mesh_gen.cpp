@@ -66,6 +66,7 @@ static bool use_cuda_sift_features = false;
 
 static bool triangulate = false;
 static string triangulation_file_name;
+static float subsample_ratio=1.0;
 static bool dump_timing=false;
 string timing_filename;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
@@ -118,6 +119,13 @@ static bool parse_args( int argc, char *argv[ ] )
          if( i == argc-1 ) return false;
          have_max_frame_count = true;
          max_frame_count = atoi( argv[i+1] );
+         i+=2;
+      }
+      else if( strcmp( argv[i], "--subsample" ) == 0 )
+      {
+         if( i == argc-1 ) return false;
+        
+         subsample_ratio = atof( argv[i+1] );
          i+=2;
       }
       else if( strcmp( argv[i], "-t" ) == 0 )
@@ -636,7 +644,7 @@ int main( int argc, char *argv[ ] )
 	 }else{ 
 	   
 	   std::vector<libplankton::Vector> points;   
-	   sdense->get_points(points);
+	   sdense->get_points(points,subsample_ratio);
 	   cout << "Number of points found: " << points.size( ) << endl;
 	  
 	   localV = g_ptr_array_new ();

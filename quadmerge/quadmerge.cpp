@@ -297,8 +297,14 @@ int	main(int argc, char *argv[])
   }
   int idx=0;
   while(1){
-    if(fscanf(fp,"%s %f %d",meshname,&res,&interp)!=3 || feof(fp))
+    if(fscanf(fp,"%s %f %d",meshname,&res,&interp)!=3 ){
+      fprintf(stderr,"Cannot parse file correctly\n");
       break;
+    }
+    if(feof(fp)){
+      
+      break;
+    }
     mesh_input m;
     m.name=meshname;
     m.res=res;
@@ -389,7 +395,7 @@ int	main(int argc, char *argv[])
 
     if(isnan(medianV))
       medianV=0.0;
-    FILE *fp=fopen("statfile.txt","w");
+    FILE *fp=fopen((total_stat_file+std::string("-avg.txt")).c_str(),"w");
     //    fprintf(fp,"%f %f\n",min_stat_val,max_stat_val);
     fprintf(fp,"%f %f\n",meanV,medianV);
     fclose(fp);

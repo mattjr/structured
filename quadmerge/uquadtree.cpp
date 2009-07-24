@@ -1447,7 +1447,7 @@ float	HeightMapInfo::AugSample(int x, int z) const
 	
 	//	return (s00 * (1-fx) + s01 * fx) * (1-fz) +
 	//(s10 * (1-fx) + s11 * fx) * fz;
-	return max(max(s00,s01),max(s10,s11));
+	return std::max(std::max(s00,s01),std::max(s10,s11));
 }
 void quadsquare::UpdateStats(const quadcornerdata& cd)
 {

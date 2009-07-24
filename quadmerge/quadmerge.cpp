@@ -568,6 +568,7 @@ int	main(int argc, char *argv[])
   return 0;
 
 }
+#if 0
 void load_xyz( mesh_input &m,bool ascii){
   float *xyzdata=new float[m.count];
   float *ptr=xyzdata;
@@ -584,7 +585,7 @@ void load_xyz( mesh_input &m,bool ascii){
     memcpy(ptr,data,sizeof(float)*3);
     ptr+=3;
   }
-  point_nn*pout;
+  point*pout;
   int nout;
   int nx,ny;
   float cx,cy;
@@ -621,6 +622,8 @@ HeightMapInfo	hm;
   free(pout);
   delete xyzdata;
 }
+
+#endif 
 void load_mesh( mesh_input &m){
 
   TriMesh::verbose=0;
@@ -630,16 +633,27 @@ void load_mesh( mesh_input &m){
     return;
   }
   edge_len_thresh(mesh,edge_thresh);
-  point_nn*pout;
+  //  point*pout;
   int nout;
   int nx,ny;
   float cx,cy;
   int level;
   double actual_res;
-  interpolate_grid(mesh,m,pout,nout,nx,ny,cx,cy,actual_res,level);
+  ge.get_closest_res_level(m.res,level,actual_res);
+  int nin=mesh->vertices.size();
+  float *xyzdata=new float[nin*3];
+  int cnt=0;
+  for(int i=0;i < nin; i++){
+    xyzdata[cnt++]=mesh->vertices[i][0];
+    xyzdata[cnt++]=mesh->vertices[i][1];
+    xyzdata[cnt++]=mesh->vertices[i][2];
+  }
+  float *pout=NULL;
   if(actual_res < min_cell_size)
     min_cell_size=actual_res;
-  char fname[255];
+  interpolate_grid(xyzdata,nin,pout,nout,m,nx,ny,cx,cy,level,actual_res);
+
+  /*char fname[255];
   std::string::size_type slash = m.name.rfind('/');
   if (slash == std::string::npos)
     slash = 0;
@@ -647,12 +661,12 @@ void load_mesh( mesh_input &m){
     slash++;
 
   sprintf(fname,"tmp/%s",m.name.substr(slash).c_str());
-  write_mesh(pout,nout,fname,true);
+  write_mesh(pout,nout,fname,true);*/
   //cout << fname <<endl;
 
   // points_to_quadtree(nout,pout,qt);
   //free(&pout);
-  //   printf("Nx %d Ny %d Cx %f Cy %f\n",nx,ny,cx,cy);
+  printf("Nx %d Ny %d Cx %f Cy %f Nout %d Pout 0x%x\n",nx,ny,cx,cy,nout,pout);
   HeightMapInfo	hm;
   hm.x_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
   hm.y_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);
@@ -662,13 +676,16 @@ void load_mesh( mesh_input &m){
   hm.RowWidth = hm.XSize;
   hm.Scale =level;
   hm.Data = new float[hm.XSize * hm.YSize];
+  hm.AugData=NULL;
   hm.index=m.index;
+
+  
   for(int i=0; i < hm.XSize * hm.YSize; i++){
-    // printf("%f ",pout[i].z);
-    if(std::isnan(pout[i].z))
+  
+    if(std::isnan(pout[(i*3) +2]))
       hm.Data[i]=0;
     else
-      hm.Data[i]= ge.toUINTz(pout[i].z);
+      hm.Data[i]= ge.toUINTz(pout[(i*3) +2]);
     //  printf("%d %d\n",hm.Data[i],UINT16_MAX_MINUS_ONE);
     //  printf("Final %d Source %f Rescaled %f\n",hm.Data[i],pout[i].z,(pout[i].z-zmin)/(zmax-zmin));
   }
@@ -678,7 +695,8 @@ void load_mesh( mesh_input &m){
   root->AddHeightMap(RootCornerData, hm);
   delete [] hm.Data;
   delete mesh;  
-  free(pout);
+  if(pout)
+    delete pout;
 }
 
 
@@ -882,11 +900,15 @@ void	LoadData(std::vector<mesh_input> &meshes)
     }
     else    if(meshes[i].name.substr(meshes[i].name.size()-3) == "grd")
       load_grd(meshes[i]);
-    else   if(meshes[i].name.substr(meshes[i].name.size()-3) == "txt")
+    else{
+      fprintf(stderr,"Unknown type of input file\n");
+      exit(-1);
+    }
+    /*    else   if(meshes[i].name.substr(meshes[i].name.size()-3) == "txt")
       load_xyz(meshes[i],true);
     else
       load_xyz(meshes[i],false);
-
+    */
   }
  
   printf("\r %03d/%03d\n",(int)meshes.size(),(int)meshes.size());

@@ -1,10 +1,17 @@
 #include "raster.hpp"
-#include "uquadtree.hpp"
+#
 #include <float.h>
 float kill_threshold_squared = 2500.0f; // 50*50 units
 #include "nn/delaunay.h"
 #include <sys/time.h>
 #include "fileio.hpp"
+
+#include <math.h>
+#include "nn/nn.h"
+
+void interpolate_grid(float *xyzdata,const mesh_input &mesh_data, point *&pout,int &nout,int &nx,int &ny,float &cx,float &cy,double &res,int &level);
+//void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point *&pout,int &nout,int &nx, int &ny,float &cx,float &cy,double &res,int &level,bool extrap=false);
+//void write_mesh(point_nn *pin, int nin,const char *fn,bool ascii=false);
 //----------------------------------------------------------------------------
 // CLAMP TO RASTER INT THAT IS INSIDE TRIANGLE BIASED TOWARDS MIN (INCLUSIVE)
 //----------------------------------------------------------------------------
@@ -159,6 +166,7 @@ static inline int Floor(const float x)
   }
 }*/
 
+#if 0
  void write_mesh(point_nn *pin, int nin,const char *fn,bool ascii){
    if(nin < 3 ){
      fprintf(stderr,"Less than three interpolated points\n");
@@ -206,6 +214,7 @@ static inline int Floor(const float x)
 
 }
 
+
 void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny,float &cx,float &cy,double &res,int &level,bool extrap){
   point_nn* pin = NULL;
  
@@ -216,15 +225,15 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
   //struct timezone tz;
   int nv = mesh->vertices.size();
   pin = (point_nn *)malloc(nv * sizeof(point_nn));
-
+  /*
     char fname[255];
   std::string::size_type slash = mesh_data.name.rfind('/');
   if (slash == std::string::npos)
     slash = 0;
   else
     slash++;
-
-  sprintf(fname,"tmp2/%s",mesh_data.name.substr(slash).c_str());
+  */
+  /*  sprintf(fname,"tmp2/%s",mesh_data.name.substr(slash).c_str());
   FILE *fp=fopen(fname,"w");
 
   for (int i = 0; i < nv; i++){
@@ -236,9 +245,10 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
 
     fprintf(fp,"%f %f %f\n",p->x,p->y,p->z);
   }
-  fclose(fp);
+  fclose(fp);*/
   int nin=nv;
-  points_thinlin(&nin,&pin,0.1);
+  //  points_thinlin(&nin,&pin,0.1);
+ 
   double actual_res;
   ge.get_closest_res_level(mesh_data.res,level,actual_res);
   printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
@@ -250,7 +260,7 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
   ny=(int)floor(mesh_data.envelope.height()/actual_res);
    printf("%f %f %d %d\n",nx,ny,cx,cy);
   // std::cout << mesh_data.envelope<<std::endl;
-   double wmin =0;// -1;
+   double wmin = -1;
   //  if(extrap)
   //  wmin=-DBL_MAX;
   points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
@@ -259,33 +269,55 @@ void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout
 
   free(pin);
 }
+ ge.get_closest_res_level(mesh_data.res,level,actual_res);
+#endif
+static void points_write(int n, point* points)
+{
+    int i;
 
+    for (i = 0; i < n; ++i) {
+        point* p = &points[i];
 
-void interpolate_grid(float *xyzdata,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny,float &cx,float &cy,double &res,int &level){
-  point_nn* pin = NULL;
+        if (isnan(p->z))
+            printf("%.15g %.15g NaN\n", p->x, p->y);
+        else
+            printf("%.15g %.15g %.15g\n", p->x, p->y, p->z);
+    }
+}
+
+void interpolate_grid(float *xyzdata,int numin,float *&dataout,int &nout,const mesh_input &mesh_data,int &nx,int &ny,float &cx,float &cy,int level,double actual_res){
+  point* pin = NULL;
  
-  pout = NULL;
+  point *pout = NULL;
   
-  nout = 0;
+
   //struct timeval tv0, tv1, tv2;
   //struct timezone tz;
-  int nv = mesh_data.count;
-  pin = (point_nn *)malloc(nv * sizeof(point_nn));
+  int nv = numin/3;
+  pin = (point *)malloc(nv * sizeof(point));
   int cnt=0;
+
   for (int i = 0; i < nv; i++){
-    point_nn* p = &pin[i];
+    while(!std::isfinite(xyzdata[cnt+2] )){
+      printf("FEak %f\n",xyzdata[cnt+2]);
+      cnt+=3;
+
+    }
+
+    point* p = &pin[i];
     
     p->x = xyzdata[cnt];
     p->y = xyzdata[cnt+1];
     p->z = xyzdata[cnt+2];
+
     cnt +=3;
     
   }
-  int nin=nv;
-  points_thinlin(&nin,&pin,0.1);
-  double actual_res;
-  ge.get_closest_res_level(mesh_data.res,level,actual_res);
-  //  printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
+  int nin=cnt/3;
+  //  points_thinlin(&nin,&pin,0.1);
+  //  double actual_res;
+  //  points_write(nin,pin);
+    printf("Target Res %f Actual Res %f Level %d\n",mesh_data.res,actual_res,level);
   cx=mesh_data.envelope.center().x;
   cy=mesh_data.envelope.center().y;
 
@@ -293,6 +325,19 @@ void interpolate_grid(float *xyzdata,const mesh_input &mesh_data, point_nn *&pou
   ny=(int)floor(mesh_data.envelope.height()/actual_res);
   double wmin = 0;//-DBL_MAX;
   points_generate(mesh_data.envelope.minx(),mesh_data.envelope.maxx(),mesh_data.envelope.miny(),mesh_data.envelope.maxy(),nx,ny,&nout, &pout);
-  nnpi_interpolate_points(nin, pin, wmin, nout, pout);
+  //nnpi_interpolate_points(nin, pin, wmin, nout, pout);
+   lpi_interpolate_points(nin, pin, nout, pout);
+  dataout=new float[nout*3];
+ 
+  int cnt2=0;
+  for(int i=0; i < nout; i++){
+      point* p = &pout[i];
+    dataout[cnt2++]=p->x;
+    dataout[cnt2++]=p->y;
+    dataout[cnt2++]=p->z;
+  }
+  //  points_write(nout,pout);
   free(pin);
+  free(pout);
+
 }

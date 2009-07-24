@@ -10,12 +10,12 @@
 #include "raster.hpp"
 
 using namespace std;
-static void points_to_quadtree(int n, point_nn* points, terrain_tree &qt)
+static void points_to_quadtree(int n, point* points, terrain_tree &qt)
 {
     int i;
 
     for (i = 0; i < n; ++i) {
-        point_nn* p = &points[i];
+        point* p = &points[i];
 	terrain_data data;
 	data.z=p->z;
 	data.x=p->x;
@@ -97,7 +97,7 @@ int main( int argc, char **argv ) {
    TriMesh::verbose=0;
    TriMesh *mesh = TriMesh::read(meshes[i].name.c_str());
 
-   point_nn*pout;
+   point*pout;
    int nout;
    int nx,ny;
    float cx,cy;

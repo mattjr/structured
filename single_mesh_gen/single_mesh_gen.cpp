@@ -504,6 +504,7 @@ int main( int argc, char *argv[ ] )
  
    // Create the stereo feature finder
    //
+     double load_start_time = get_time( );
    Stereo_Feature_Finder *finder = NULL;
    if( use_sift_features || use_surf_features || use_gpu_sift_features || use_cuda_sift_features)
    {
@@ -552,7 +553,7 @@ int main( int argc, char *argv[ ] )
       // Load the images
       //
       cout << "Loading images..." << endl;
-      double load_start_time = get_time( );
+ 
       if( !get_stereo_pair(  calib,
                             left_frame, right_frame,
                             left_frame_id, right_frame_id,
@@ -646,7 +647,7 @@ int main( int argc, char *argv[ ] )
 	   std::vector<libplankton::Vector> points;   
 	   sdense->get_points(points,subsample_ratio);
 	   cout << "Number of points found: " << points.size( ) << endl;
-	  
+
 	   localV = g_ptr_array_new ();
 	   TVertex *vert;
 	   for(int i=0; i<(int)points.size(); i++){
@@ -679,7 +680,7 @@ int main( int argc, char *argv[ ] )
       cout << endl;
       if(dump_timing){
 	FILE *fp=fopen(timing_filename.c_str(),"w");
-	double total= (find_end_time-find_start_time)+(tri_end_time-tri_start_time);
+	double total= (load_end_time-load_start_time)+(find_end_time-find_start_time)+(tri_end_time-tri_start_time);
 	fprintf(fp,"%f\n",total);
 	fclose(fp);
       }

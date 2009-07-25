@@ -24,7 +24,7 @@
 #include "auv_image_distortion.hpp"
 #include "auv_stereo_geometry.hpp"
 #include "auv_stereo_dense_new.hpp"
- 
+#include "adt_cvutils.hpp" 
 #include "auv_stereo_corner_finder.hpp"
 //#include "auv_stereo_ncc_corner_finder.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
@@ -56,6 +56,7 @@ static bool have_max_frame_count = false;
 static unsigned int max_frame_count;
 
 static bool display_debug_images = true;
+static bool save_disp=false;
 static bool save_debug_images = false;
 static bool use_dense_stereo=false;
 static bool use_sift_features = false;
@@ -110,7 +111,7 @@ static bool parse_args( int argc, char *argv[ ] )
       }
     else if( strcmp( argv[i], "--save" ) == 0 )
       {
-
+	save_disp=true;
 	save_debug_images=true;
          i+=1;
       }
@@ -684,7 +685,14 @@ int main( int argc, char *argv[ ] )
 	fprintf(fp,"%f\n",total);
 	fclose(fp);
       }
-	
+      
+      if(save_disp){
+	char tmp[1024];
+	sprintf(tmp,"%s-subsampled-disp-%f.png",dense_method.c_str(),subsample_ratio);
+	IplImage *cdisp=cvNewColor(left_frame);
+	sdense->get_disp_color(cdisp,(int)round(1.0/subsample_ratio));
+	cvSaveImage(tmp,cdisp);
+      }
 
       //
       // Pause between frames if requested.

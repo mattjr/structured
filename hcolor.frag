@@ -195,28 +195,7 @@ void main()
   vec4 aux= vec4(0.0,vC.y,0.0,1.0);
   vec4 auxratio = vec4(0.0,0.5,0.0,1.0);
   vec4 class_color =rainbowColorMap(classid);
-  if(!untex){
-    if(shaderOut == 0){
-      
-      gl_FragColor = texture2D( colorMap, gl_TexCoord[0].st);
-      // gl_FragColor =  (((vec4(1.0,1.0,1.0,0.0)-auxratio)*texture2D( colorMap, gl_TexCoord[0].st)) + (auxratio * aux));
-    }else if(shaderOut == 1 && !untex){
-      if(classid == 0.0)
-	gl_FragColor =vec4(0,0,0,0);
-      else
-	gl_FragColor = class_color;
-      
-    }
-    else if(shaderOut == 2){
-      
-      float alpha=0.3;
-      if(classid ==0.0)
-	gl_FragColor =texture2D( colorMap, gl_TexCoord[0].st);
-      else
-	gl_FragColor =((1-alpha)*texture2D( colorMap, gl_TexCoord[0].st))+(alpha*class_color);
-    }
-  }else{
-      vec3 NNormal = normalize(normal.xyz);
+  vec3 NNormal = normalize(normal.xyz);
       vec3 Light  = normalize(vec3(1,  2.5,  -1));
 //normalize(vec3(0,0,-1 ));
      vec4 specular_val=vec4( 0.18, 0.18, 0.18, 0.18 );
@@ -247,17 +226,34 @@ void main()
     vec4 cold = coldColorMap(vC.y);
     vec4 boneC=bone(vC.y);
     vec4 height_color;
-    if(shaderOut == 0)
-      height_color=jet* (ambient + diffuse + specular);
-    else if(shaderOut == 1)
+
+
+    if(untex){
+      if(shaderOut == 0)
+	height_color=jet* (ambient + diffuse + specular);
+      else if(shaderOut == 1)
       height_color=vec4(1,1,1,1)* (ambient + diffuse + specular);
-    else if(shaderOut == 2)
-      height_color=vec4(0,0,0.0,1);
+      else if(shaderOut == 2)
+	height_color=vec4(0,0,0.0,1);
+      gl_FragColor = height_color   ;
+      return;
+    }
     
-    
-    //  gl_FragColor = ran* shadow* (ambient + diffuse + specular);
-    // else
-    gl_FragColor = height_color   ;
-    
-  }
+    if(shaderOut == 0){
+      gl_FragColor = texture2D( colorMap, gl_TexCoord[0].st);
+    }else if(shaderOut == 1){
+      if(classid == 0.0)
+	gl_FragColor =vec4(0,0,0,0);
+      else
+	gl_FragColor = class_color;
+    }
+    else if(shaderOut == 2){
+      float alpha=0.3;
+      if(classid ==0.0)
+	gl_FragColor =texture2D( colorMap, gl_TexCoord[0].st);
+      else
+	gl_FragColor =((1-alpha)*texture2D( colorMap, gl_TexCoord[0].st))+(alpha*class_color);
+    }else if(shaderOut == 3){
+      gl_FragColor=jet* (ambient + diffuse + specular);
+    }
 }

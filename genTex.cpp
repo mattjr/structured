@@ -515,7 +515,7 @@ int main( int argc, char *argv[ ] )
     if(do_novelty)
       fprintf(fpp,"%d\n",6);
     else
-      fprintf(fpp,"%d\n",2);
+      fprintf(fpp,"%d\n",4);
     
     fclose(fpp);
   }

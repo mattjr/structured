@@ -688,7 +688,7 @@ int main( int argc, char *argv[ ] )
       
       if(save_disp){
 	char tmp[1024];
-	sprintf(tmp,"%s-subsampled-disp-%04f.png",dense_method.c_str(),subsample_ratio);
+	sprintf(tmp,"%s-subsampled-disp-%g.png",dense_method.c_str(),subsample_ratio);
 	IplImage *cdisp=cvNewColor(left_frame);
 	sdense->get_disp_color(cdisp,(int)round(1.0/subsample_ratio));
 	cvSaveImage(tmp,cdisp);

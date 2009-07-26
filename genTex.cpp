@@ -519,6 +519,8 @@ int main( int argc, char *argv[ ] )
     
     fclose(fpp);
   }
+
+
   string fulllodpath=string(mdir) + "/"+string(subdir);
   auv_data_tools::makedir(fulllodpath.c_str());
   chmod(fulllodpath.c_str(),   0777);
@@ -536,7 +538,12 @@ int main( int argc, char *argv[ ] )
   }
   fscanf(fp,"%*f %*f %f\n%*f %*f %f\n",&(zrange[0]),&(zrange[1]));
   fclose(fp);
-
+ fpp=fopen(string(string(mdir)+"/scalarbar.txt").c_str(),"w");
+  if(fpp){
+    fprintf(fpp,"%d %d Depth_[m]\n",(int)zrange[0],(int)zrange[1]);
+    
+    fclose(fpp);
+  }
   if(do_classes){
     FILE *fp =fopen(classes_file.c_str(),"r");
     if(!fp){

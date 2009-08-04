@@ -8,7 +8,7 @@ float kill_threshold_squared = 2500.0f; // 50*50 units
 
 #include <math.h>
 #include "nn/nn.h"
-
+#include "uquadtree.hpp"
 void interpolate_grid(float *xyzdata,const mesh_input &mesh_data, point *&pout,int &nout,int &nx,int &ny,float &cx,float &cy,double &res,int &level);
 //void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point *&pout,int &nout,int &nx, int &ny,float &cx,float &cy,double &res,int &level,bool extrap=false);
 //void write_mesh(point_nn *pin, int nin,const char *fn,bool ascii=false);
@@ -165,6 +165,25 @@ static inline int Floor(const float x)
     }
   }
 }*/
+void run_fixed_grid_interp(void){
+   int nx=(int)floor(ge.range[0]/min_cell_size);
+   int ny=(int)floor(ge.range[1]/min_cell_size);
+   point *pout=NULL;
+   int nout;
+   double wmin = -1;
+   //wmin=-DBL_MAX;
+   int nin=fixed_grid_data.size();
+   point *pin=(point*) &(fixed_grid_data[0]);
+   points_generate(ge.min[0],ge.max[0],ge.min[1],ge.max[1],nx,ny,&nout, &pout);
+   if(natural_neigbor)
+     nnpi_interpolate_points(nin, pin, wmin, nout, pout);
+   else if(nearest_neigbor)
+     lpi_interpolate_points(nin, pin, nout, pout);
+   else 
+     fprintf(stderr,"Not natural or nearest neigbor bugout!!!!\n");
+   delaunay* d = delaunay_build(nin, pin, 0, NULL, 0, NULL);
+
+}
 
 #if 0
  void write_mesh(point_nn *pin, int nin,const char *fn,bool ascii){

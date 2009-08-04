@@ -164,7 +164,7 @@ static double vrip_mb_clip_margin;
 static double vrip_mb_clip_margin_extra;
 static bool do_hw_blend=false;
 // Image normalisation
-#define USE_IMAGE_NORMALISATION true
+bool image_norm=true;
 int normalised_mean;
 int normalised_var;
 static Stereo_Calib *calib;
@@ -635,6 +635,9 @@ static bool parse_args( int argc, char *argv[ ] )
  
   use_dense_feature = argp.read("--dense-features");
   use_surf_features = argp.read("--surf");
+  if(argp.read("-no_norm"))
+    image_norm=false;
+
   argp.read("--start",start_time);
   argp.read("--stop",stop_time);
   output_3ds=  argp.read("--3ds");
@@ -829,7 +832,7 @@ static bool get_stereo_pair( const string left_image_name,
   //
   // Normalise the mean and variance of the pixel intensity values
   //
-  if( USE_IMAGE_NORMALISATION )
+  if( image_norm )
     {
       normalise_image( normalised_mean, normalised_var, left_image  );
       normalise_image( normalised_mean, normalised_var, right_image );
@@ -1529,7 +1532,7 @@ void runC(Stereo_Pose_Data &name){
 }
 bool gen_stereo_from_mono(std::vector<Mono_Image_Name> &mono_names,Slices &tasks,Camera_Calib *cam_calib,unsigned int &stereo_pair_count){
 
-  for(int i=0; i <(int) mono_names.size()-mono_skip; i+=3){
+  for(int i=0; i <(int) mono_names.size()-mono_skip; i++){
     Stereo_Pose_Data name;
     name.time=mono_names[i].time;
     //name.index=mono_names[i].index;

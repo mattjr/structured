@@ -49,6 +49,8 @@ using  std::cout;
 using  std::endl;
 #define PI 3.141592654
 double maxMemoryUsage=0.0;
+void	LoadDataFixedGrid(std::vector<mesh_input> &meshes);
+void run_fixed_grid_interp(void);
 double MemoryUsage(void){
 	double mem=MemoryInfo::Usage()/(1<<20);
 	if(mem>maxMemoryUsage){maxMemoryUsage=mem;}
@@ -57,9 +59,12 @@ double MemoryUsage(void){
 bool display_tree=false;
 bool dump_stats=false;
 std::vector<mesh_input> meshes;
+std::vector<point_nn> fixed_grid_data;
 void	LoadData(std::vector<mesh_input> &meshes);
 void	LoadData(char  *filename);
 bool compute_shadows=false;
+bool nearest_neigbor=false;
+bool natural_neigbor=false;
 quadsquare*	root = NULL;
 quadcornerdata	RootCornerData = { NULL, NULL, 0, 0, 0, 0, { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } } };
 int	TriangleCounter = 0;
@@ -162,6 +167,13 @@ int	main(int argc, char *argv[])
     onlycompare=true;
   if(argp.read("-nointerp"))
     no_interp=true;
+
+  if(argp.read("-natn"))
+    natural_neigbor=true;
+
+  if(argp.read("-nearn"))
+    nearest_neigbor=true;
+
 
   if(  argp.read("-shadow"))
     compute_shadows=true;
@@ -359,6 +371,13 @@ int	main(int argc, char *argv[])
       fprintf(stderr,"Couldn't open %s\n",rangefile.c_str());
   }
   std::cout << ge;
+
+  if(nearest_neigbor || natural_neigbor){
+    LoadDataFixedGrid(meshes);
+    run_fixed_grid_interp();
+    return 0;
+  }
+   
 
   RootCornerData.xorg=ge.get_in_cells(tree_bounds.minx()-tree_bounds.minx(),ge.max_Level);
   RootCornerData.yorg=ge.get_in_cells(tree_bounds.miny()-tree_bounds.miny(),ge.max_Level);
@@ -914,6 +933,61 @@ void	LoadData(std::vector<mesh_input> &meshes)
   printf("\r %03d/%03d\n",(int)meshes.size(),(int)meshes.size());
 	
 
+}
+
+
+void load_mesh_fixed( mesh_input &m){
+
+  TriMesh::verbose=0;
+  TriMesh *mesh = TriMesh::read(m.name.c_str());
+  if(!mesh){
+    fprintf(stderr, "Quadmerge: %s cannot be opened\n",m.name.c_str());
+    return;
+  }
+  
+  edge_len_thresh(mesh,edge_thresh);
+  if(m.res < min_cell_size)
+    min_cell_size=m.res;
+  int nin=mesh->vertices.size();
+
+  for(int i=0;i < nin; i++){
+    point_nn p;
+    p.x=    mesh->vertices[i][0];
+    p.y=    mesh->vertices[i][1];
+    p.z=    mesh->vertices[i][2];    
+    fixed_grid_data.push_back(p);
+
+  }
+  
+  delete mesh;  
+
+}
+
+
+void	LoadDataFixedGrid(std::vector<mesh_input> &meshes)
+// Load some data and put it into the quadtree.
+{
+ 
+  for(unsigned int i=0; i< meshes.size(); i++){
+    printf("\r %03d/%03d",i,(int)meshes.size());
+    fflush(stdout);
+    if(meshes[i].name.substr(meshes[i].name.size()-3) == "ply"){
+	load_mesh_fixed(meshes[i]);
+    }
+    else    if(meshes[i].name.substr(meshes[i].name.size()-3) == "grd"){
+      fprintf(stderr,"Not implmented yet\n"); //      load_grd(meshes[i]);
+      exit(-1);
+    }
+    else{
+      fprintf(stderr,"Unknown type of input file\n");
+      exit(-1);
+    }
+  
+ 
+   
+    
+  }
+  printf("\r %03d/%03d\n",(int)meshes.size(),(int)meshes.size());
 }
 
 

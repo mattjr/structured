@@ -32,6 +32,8 @@ typedef struct {
     double y;
     double z;
 } point;
+
+
 #endif
 
 /* Constructors for interpolators in this package require Delaunay

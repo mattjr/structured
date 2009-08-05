@@ -165,7 +165,7 @@ static inline int Floor(const float x)
     }
   }
 }*/
-void run_fixed_grid_interp(void){
+void run_fixed_grid_interp(std::vector<tri_t> &tris){
    int nx=(int)floor(ge.range[0]/min_cell_size);
    int ny=(int)floor(ge.range[1]/min_cell_size);
    point *pout=NULL;
@@ -182,7 +182,12 @@ void run_fixed_grid_interp(void){
    else 
      fprintf(stderr,"Not natural or nearest neigbor bugout!!!!\n");
    delaunay* d = delaunay_build(nin, pin, 0, NULL, 0, NULL);
-
+   for(int i=0; i < d->ntriangles; i++){
+     tri_t t;
+     for(int j=0; j<3; j++)
+       t.vids[j]=d->triangles[i].vids[j];
+     tris.push_back(t);
+   }
 }
 
 #if 0

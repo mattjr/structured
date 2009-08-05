@@ -10,6 +10,10 @@ typedef struct {
     double z;
 } point_nn;
 
+typedef struct {
+  int vids[3];
+} tri_t;
+
 typedef struct _mesh_input{
   std::string name;
   float res;

@@ -165,23 +165,23 @@ static inline int Floor(const float x)
     }
   }
 }*/
-void run_fixed_grid_interp(std::vector<tri_t> &tris){
+ void run_fixed_grid_interp(std::vector<tri_t> &tris,point_nn *&pout,int &nout){
    int nx=(int)floor(ge.range[0]/min_cell_size);
    int ny=(int)floor(ge.range[1]/min_cell_size);
-   point *pout=NULL;
-   int nout;
+
    double wmin = -1;
    //wmin=-DBL_MAX;
    int nin=fixed_grid_data.size();
    point *pin=(point*) &(fixed_grid_data[0]);
-   points_generate(ge.min[0],ge.max[0],ge.min[1],ge.max[1],nx,ny,&nout, &pout);
+
+   points_generate(ge.min[0],ge.max[0],ge.min[1],ge.max[1],nx,ny,&nout, (point**)&pout);
    if(natural_neigbor)
-     nnpi_interpolate_points(nin, pin, wmin, nout, pout);
+     nnpi_interpolate_points(nin, pin, wmin, nout, (point*) pout);
    else if(nearest_neigbor)
-     lpi_interpolate_points(nin, pin, nout, pout);
+     lpi_interpolate_points(nin, pin, nout, (point*)pout);
    else 
      fprintf(stderr,"Not natural or nearest neigbor bugout!!!!\n");
-   delaunay* d = delaunay_build(nin, pin, 0, NULL, 0, NULL);
+   delaunay* d = delaunay_build(nout,  (point*)pout, 0, NULL, 0, NULL);
    for(int i=0; i < d->ntriangles; i++){
      tri_t t;
      for(int j=0; j<3; j++)

@@ -50,7 +50,7 @@ using  std::endl;
 #define PI 3.141592654
 double maxMemoryUsage=0.0;
 void	LoadDataFixedGrid(std::vector<mesh_input> &meshes);
-void run_fixed_grid_interp(std::vector<tri_t> &tris);
+void run_fixed_grid_interp(std::vector<tri_t> &tris,point_nn *&pout,int &nout);
 double MemoryUsage(void){
 	double mem=MemoryInfo::Usage()/(1<<20);
 	if(mem>maxMemoryUsage){maxMemoryUsage=mem;}
@@ -375,24 +375,28 @@ int	main(int argc, char *argv[])
   if(nearest_neigbor || natural_neigbor){
     LoadDataFixedGrid(meshes);
     std::vector<tri_t> tris;
-    run_fixed_grid_interp(tris);
+    point_nn *pout;
+    int nout;
+    run_fixed_grid_interp(tris,pout,nout);
     FILE *fg_fp=fopen(wf_fname,"wb");
-    int vnum=fixed_grid_data.size();
+    int vnum=nout;
     int num_tri=tris.size();
 
-    ply_header(fg_fp,num_tri,vnum,false,false,false);
+    ply_header(fg_fp,num_tri,vnum,true,false,false);
     float buf[3];
-    for (int i=0; i<vnum; i++) {
-      buf[0]=fixed_grid_data[i].x;
-      buf[1]=fixed_grid_data[i].y;
-      buf[2]=fixed_grid_data[i].z;
-      fwrite((char *)buf,sizeof(float),3,fg_fp);
+       for (int i=0; i<vnum; i++) {
+      buf[0]=pout[i].x;
+      buf[1]=pout[i].y;
+      buf[2]=pout[i].z;
+      //  fwrite((char *)buf,sizeof(float),3,fg_fp);
+      fprintf(fg_fp,"%f %f %f\n",buf[0],buf[1],buf[2]);
     }
 
     for (int i=0; i<num_tri; i++) {
       unsigned char fc=3;
-      fwrite((char *)&fc,sizeof(unsigned char),1,fg_fp);
-      fwrite((char *)&(tris[i].vids[0]),sizeof(int),3,fg_fp);
+      //fwrite((char *)&fc,sizeof(unsigned char),1,fg_fp);
+      //      fwrite((char *)&(tris[i].vids[0]),sizeof(int),3,fg_fp);
+      fprintf(fg_fp,"3 %d %d %d\n",tris[i].vids[0],tris[i].vids[1],tris[i].vids[2]);
     }
     fclose(fg_fp);
     return 0;

@@ -181,6 +181,25 @@ static inline int Floor(const float x)
      lpi_interpolate_points(nin, pin, nout, (point*)pout);
    else 
      fprintf(stderr,"Not natural or nearest neigbor bugout!!!!\n");
+   int valid_count=0;
+   for(int i=0; i < nout; i++){
+     if(!isnan(pout[i].z)){
+       valid_count++;
+     }
+   }
+   int cnt=0;
+   point_nn *val_pts=new point_nn[valid_count];
+   for(int i=0; i < nout; i++){
+     if(!isnan(pout[i].z)){
+       val_pts[cnt].x=pout[i].x;
+       val_pts[cnt].y=pout[i].y;
+       val_pts[cnt].z=pout[i].z;
+       cnt++;
+     }
+   }
+   delete pout;
+   pout=val_pts;
+   nout=valid_count;
    delaunay* d = delaunay_build(nout,  (point*)pout, 0, NULL, 0, NULL);
    for(int i=0; i < d->ntriangles; i++){
      tri_t t;

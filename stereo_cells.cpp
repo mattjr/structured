@@ -508,6 +508,9 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,int method,d
    max_cell_area*=cell_scale;
    max_cell_poses*=cell_scale;
 
+   max_cell_area_even *= cell_scale;
+   max_cell_poses_even *= cell_scale;
+
    // Perform binary division until termination criteria
    vector<Cell_Data> cells;
    if(method==AUV_SPLIT)

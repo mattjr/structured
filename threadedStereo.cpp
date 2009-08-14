@@ -70,12 +70,14 @@ static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
 static bool use_poisson_recon=true;
 static int max_feature_count;
+static bool use_mb_ply =false;
 static double eps=1.0;
 static double subvol;
 static bool interp_quad=false;
-static bool run_pos=true;
+static bool run_pos=false;
 static bool do_novelty=false;
 static double dense_scale;
+static vector<string> mb_xyz_files;
 static int desired_area=250.0;
 static bool have_max_frame_count = false;
 static bool do_shader_color=false;
@@ -347,7 +349,9 @@ static bool parse_args( int argc, char *argv[ ] )
   apply_aug =argp.read("--apply_aug");
   argp.read("--skipsparse",skip_sparse);
   argp.read("--bkmb",background_mb);
-  deltaT_config_name=base_dir+string("/")+"localiser.cfg";
+  if(argp.read("--mbply"))
+    use_mb_ply=true;
+deltaT_config_name=base_dir+string("/")+"localiser.cfg";
     double lat_orig,lon_orig;
 
      try {
@@ -1417,7 +1421,10 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       return false;
     
     edge_len_thresh(mesh,edgethresh);
-    
+    if(!mesh->faces.size()){
+      fprintf(stderr,"Edge threshold clipped %s\n",meshfilename);
+      return false;    
+    }
     xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
 	     name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
 	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
@@ -1964,18 +1971,34 @@ int main( int argc, char *argv[ ] )
 		basepath.c_str(),deltaT_config_name.c_str(),
 		deltaT_dir.c_str());
 	*/
-	char bkarg[2048];
+	/*	char bkarg[2048];
 	
 	if(background_mb.c_str() > 0)
 	  sprintf(bkarg," %s ",background_mb.c_str());
 	else
-	  sprintf(bkarg," ");
-	fprintf(genmbfp,"#!/bin/bash\n%s/mb_for_vis.sh %s %f %d %f %f %s\n",
-		basepath.c_str(),deltaT_dir.c_str(),mb_grd_res,spline_dist,start_time,stop_time,bkarg);
+	sprintf(bkarg," ");*/
+	string mb_extension = use_mb_ply ? "ply" : "xyz";
+	fprintf(genmbfp,"#!/bin/bash\nmkdir -p mb_proc; cd mb_proc; mbgsf_to_xyz -start %f -stop %f %s  %s/mb ;ls *.%s > mbxyzlist\n",
+
+		start_time,stop_time,deltaT_config_name.c_str(),deltaT_dir.c_str(),mb_extension.c_str());
+
+	if(use_mb_ply){
+	  fprintf(genmbfp,"for i in `ls *.xyz`; do\n"
+		  "echo auv_tri $i $i.ply >> tricmds\n"
+		  "done\n"
+		  "%s/runtp.py tricmds %d Tri\n",basepath.c_str(),num_threads);
+	}
 	fchmod(fileno(genmbfp),   0777);
 	fclose(genmbfp);
 	sysres=system("./genmb.sh");
-      }
+	FILE *dtfp=fopen("mb_proc/mbxyzlist","r");
+	char tmp[1024];
+	while(dtfp && !feof(dtfp)){
+	  if(fgets(tmp,1024,dtfp))
+	    mb_xyz_files.push_back(tmp);
+	}
+	fclose(dtfp);
+   }
 
 
 
@@ -2108,6 +2131,10 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f %d\n",tasks[i].mesh_name.c_str(),vrip_res,interp_quad);
     }
     //    cout << total_env <<endl;
+
+    for(int i=0; i< mb_xyz_files.size(); i++)
+      fprintf(quadmerge_seg_fp,"../mb_proc/%s  %f 0\n",mb_xyz_files[i].c_str(),mb_grd_res);
+
     if(have_mb_grd){
 
       int count=0;

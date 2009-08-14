@@ -21,7 +21,7 @@ fi
 if [ -n "$EXISTS2" ]; then
     echo "Allready have cached grd files delete mb_grd if you want to regen"
 else
-    echo "y\n" | mbm_processDT.sh $GSF_FLAG -POS  -UNGRD -E $2/$2/m -SPLINE_DIST $3 -O $PWD/mb_grd $START_STRING $STOP_STRING $BKSTR $1
-
+#    echo "y\n" | mbm_processDT.sh $GSF_FLAG -POS  -UNGRD -E $2/$2/m -SPLINE_DIST $3 -O $PWD/mb_grd $START_STRING $STOP_STRING $BKSTR $1
+    mbm_processDT.sh  -E $2/$2/m -SPLINE_DIST $3 -O $PWD/mb_grd $START_STRING $STOP_STRING $BKSTR $1
 fi
 #-NP 

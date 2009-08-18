@@ -1170,9 +1170,10 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 			  left_frame, right_frame,
 			  color_frame))
       {
-	printf("Failed to get pair %s %s\n",name.left_name.c_str(),name.right_name.c_str());
 	int progCount=doneCount.increment();
 	image_count_verbose (progCount, totalTodoCount);
+	fprintf(stderr,"\nWARNING - Failed to get imagepair %s %s\n",name.left_name.c_str(),name.right_name.c_str());
+	fflush(stderr);
 	return false;
       } 
 
@@ -1351,6 +1352,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       if(!localV->len){
 	int progCount=doneCount.increment();
 	image_count_verbose (progCount, totalTodoCount);
+        fprintf(stderr,"\nWARNING - Empty vertex array %s\n",meshfilename);
+        fflush(stderr);
 	return false;
       }
       double mult=0.00;
@@ -1361,7 +1364,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     
     FILE *fp = fopen(meshfilename, "w" );
     if(!fp){
-      fprintf(stderr,"Can't open %s\n",meshfilename);
+      fprintf(stderr,"\nWARNING - Can't open mesh file %s\n",meshfilename);
+      fflush(stderr);
       return false;
     }
     auv_write_ply(surf, fp,have_cov_file,"test");
@@ -1417,13 +1421,17 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   if(output_ply_and_conf){
     TriMesh::verbose=0;
     TriMesh *mesh = TriMesh::read(meshfilename);
-    if(!mesh)
-      return false;
+    if(!mesh){
+        fprintf(stderr,"\nWARNING - No cached mesh file %s\n",meshfilename);
+        fflush(stderr);
+        return false;
+    }
     
     edge_len_thresh(mesh,edgethresh);
     if(!mesh->faces.size()){
-      fprintf(stderr,"Edge threshold clipped %s\n",meshfilename);
-      return false;    
+        fprintf(stderr,"\nWARNING - Mesh empty after edge threshold clipping %s\n",meshfilename);
+        fflush(stderr);
+        return false;    
     }
     xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
 	     name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
@@ -1816,9 +1824,10 @@ int main( int argc, char *argv[ ] )
     printf("Threads %d Time: %.2f sec\n", num_threads, secs);
     fprintf(timing_fp,"Stereo %f\n",secs);
     for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++)
-      if(!itr->valid)
-	tasks.erase(itr);
-
+        if(!itr->valid){
+            fprintf(stderr,"%s Not valid\n",itr->mesh_name.c_str());
+            tasks.erase(itr);
+        }
   }
 
 

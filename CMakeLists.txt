@@ -346,3 +346,10 @@ ADD_EXECUTABLE( lodgen lodgen.cpp )
 TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf)
 TARGET_LINK_LIBRARIES( genTex ts plankton)
 TARGET_LINK_LIBRARIES( lodgen ts )
+
+# Disabled by DJLM. 
+# Threaded stereo expects access to a large bunch of other executables
+# and scripts and is expecting to in the same directory as these other
+# tools. To do this  properly you need to know all of the external utilities
+# that T.S. calls and these all need to appear in /usr/local/bin
+# INSTALL_TARGETS( /bin threadedStereo )

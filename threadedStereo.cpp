@@ -495,6 +495,9 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
  if(argp.read("--genmb") || argp.read("--mb")){
     gen_mb_ply=true;
     have_mb_grd=true;
+    no_vrip=true;
+    no_quadmerge=false;
+    do_shader_color=true;
     //    have_mb_ply=true;
     //  mb_ply_filenames.push_back(string("mb.ply")) ;
   }
@@ -2003,7 +2006,7 @@ int main( int argc, char *argv[ ] )
 	FILE *dtfp=fopen("mb_proc/mbxyzlist","r");
 	char tmp[1024];
 	while(dtfp && !feof(dtfp)){
-	  if(fgets(tmp,1024,dtfp))
+	  if(fscanf(dtfp,"%s\n",tmp))
 	    mb_xyz_files.push_back(tmp);
 	}
 	fclose(dtfp);
@@ -2141,7 +2144,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     //    cout << total_env <<endl;
 
-    for(int i=0; i< mb_xyz_files.size(); i++)
+    for(int i=0; i<(int) mb_xyz_files.size(); i++)
       fprintf(quadmerge_seg_fp,"../mb_proc/%s  %f 0\n",mb_xyz_files[i].c_str(),mb_grd_res);
 
     if(have_mb_grd){

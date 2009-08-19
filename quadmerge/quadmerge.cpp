@@ -657,7 +657,7 @@ void load_xyz( mesh_input &m,bool ascii){
 
   // points_to_quadtree(nout,pout,qt);
   //free(&pout);
-  printf("Nx %d Ny %d Cx %f Cy %f Nout %d Pout 0x%x\n",nx,ny,cx,cy,nout,pout);
+  //  printf("Nx %d Ny %d Cx %f Cy %f Nout %d Pout 0x%x\n",nx,ny,cx,cy,nout,pout);
   HeightMapInfo	hm;
   hm.x_origin = ge.get_in_cells(m.envelope.minx()-ge.min[0],ge.max_Level);
   hm.y_origin = ge.get_in_cells(m.envelope.miny()-ge.min[1],ge.max_Level);

@@ -259,6 +259,10 @@ static inline int Floor(const float x)
 
 
 void interpolate_grid(TriMesh *mesh,const mesh_input &mesh_data, point_nn *&pout,int &nout,int &nx,int &ny,float &cx,float &cy,double &res,int &level,bool extrap){
+  if( !mesh || mesh->vertices.size() <=0 ){
+    nout=0;
+    return;  
+  }
   point_nn* pin = NULL;
  
   pout = NULL;
@@ -332,7 +336,11 @@ void interpolate_grid(float *xyzdata,int numin,float *&dataout,int &nout,const m
   point* pin = NULL;
  
   point *pout = NULL;
-  
+  if(numin <=0 || !xyzdata ){
+    nout=0;
+    dataout=NULL;
+    return;
+  }
 
   //struct timeval tv0, tv1, tv2;
   //struct timezone tz;

@@ -193,6 +193,8 @@ int	main(int argc, char *argv[])
       merge_metric=AVG_MERGE;
     else if(tmp == "clippedavg")
       merge_metric=CLIPPED_AVG_MERGE;
+    else if(tmp == "flat")
+      merge_metric=FLAT_MERGE;
   }
 
 

@@ -1808,6 +1808,8 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	    if(tc->vi->num_samples > 2){
 	      
 	      Z=mest(*tc->vi);
+	    }else if(merge_metric == FLAT_MERGE){
+	      Z=10; 
 	    }else{
 	      double maxZ=get_max_Z(tc->vi->Zsamples,tc->vi->num_samples);
 	      Z=get_clipped_avg_Z(tc->vi->Zsamples,tc->vi->num_samples,maxZ,

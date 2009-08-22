@@ -191,7 +191,7 @@ void AddTriangleToWF(quadsquare * /* usused qs */,
 		     nFlatTriangleCorner *tc2);
 
 };
-enum{ AVG_MERGE,ROBUST_MERGE,CLIPPED_AVG_MERGE};
+enum{ AVG_MERGE,ROBUST_MERGE,CLIPPED_AVG_MERGE,FLAT_MERGE};
 extern int color_metric;
 extern int merge_metric;
 extern bool apply_color_wf;

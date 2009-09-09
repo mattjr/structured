@@ -373,7 +373,7 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
 
 
     cout << "Lat Origin "<<lat_orig << " Long Ori " << lon_orig<<endl;
-    UF::GeographicConversions::Redfearn gpsConversion;
+    UF::GeographicConversions::Redfearn gpsConversion("WGS84","UTM");
   
     double gridConvergence, pointScale;
     std::string zone;

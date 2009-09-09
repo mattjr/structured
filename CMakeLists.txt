@@ -155,7 +155,7 @@ IF( NOT GTS_FOUND )
 ENDIF( NOT GTS_FOUND )   
 
 # UF
-SET( UF_INC ${UF_PREFIX}/include/uf-1.1 )
+SET( UF_INC ${UF_PREFIX}/include/uf-3.1 )
 SET( UF_LIBRARY ufGeographicConversions ufGPSParser )
 
 

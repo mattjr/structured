@@ -101,7 +101,7 @@ bool bound_grd( mesh_input &m,double &zmin, double &zmax,double local_easting, d
    fprintf(stderr,"Cant open %s type appears invalid\n",m.name.c_str());
     return false;
   }
-  UF::GeographicConversions::Redfearn gpsConversion;
+  UF::GeographicConversions::Redfearn gpsConversion("WGS84","UTM");
   
   double gridConvergence, pointScale;
   std::string zone;

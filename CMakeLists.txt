@@ -29,6 +29,7 @@ INCLUDE( ${CMAKE_ROOT}/Modules/CheckIncludeFileCXX.cmake )
 INCLUDE( ${CMAKE_ROOT}/Modules/CheckLibraryExists.cmake )
 INCLUDE( ${CMAKE_ROOT}/Modules/FindPkgConfig.cmake )
 
+INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindUF.cmake ) 
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOSG.cmake )
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOpenCV.cmake ) 
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindLapack.cmake ) 
@@ -92,10 +93,6 @@ IF( NOT GMT_PREFIX )
    SET( GMT_PREFIX /usr/include/ )
 ENDIF( NOT GMT_PREFIX )
 
-IF( NOT UF_PREFIX )
-   SET( UF_PREFIX /usr/local )
-ENDIF( NOT UF_PREFIX )
-
 #-----------------------#
 # Installation Options  #
 #-----------------------#
@@ -155,7 +152,6 @@ IF( NOT GTS_FOUND )
 ENDIF( NOT GTS_FOUND )   
 
 # UF
-SET( UF_INC ${UF_PREFIX}/include/uf-3.1 )
 SET( UF_LIBRARY ufGeographicConversions ufGPSParser )
 
 
@@ -242,15 +238,18 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${LIBKEYPOINT_INCLUDE_DIR}
                      ${LIBSEABEDCOMMON_INCLUDE_DIR}
 		     ${OSG_INCLUDE_DIR}
-      ${UF_INC}
+      ${UF_INCLUDE_DIRS}
 ${GMT_INC}
 
 		     )
 
 LINK_DIRECTORIES( ${OPENCV_LIBRARY_DIRS}
                   ${GTS_LIBRARY_DIRS}
-		  ${GMT_DIR}
-		  ${PROJECT_SOURCE_DIR}/quadmerge/nn)
+                  ${UF_LIBRARY_DIRS}
+		          ${GMT_DIR}
+		          ${PROJECT_SOURCE_DIR}
+                  /quadmerge/nn
+                )
 
 LINK_LIBRARIES(	${OSG_LIBRARY}
 		${OSGDB_LIBRARY}
@@ -265,9 +264,8 @@ LINK_LIBRARIES(	${OSG_LIBRARY}
 		${LIBSNAPPER_LIBRARY}
 		${GTS_LIBRARIES}
 		${LAPACK_LIBRARY}
-
-                ${LIBKEYPOINT_LIB}
-                ${LIBSEABEDCOMMON_LIB}
+        ${LIBKEYPOINT_LIB}
+        ${LIBSEABEDCOMMON_LIB}
 		-l3ds    		
 		${LIBPOLYP_LIBRARY}
 		${UF_LIBRARY}

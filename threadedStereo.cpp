@@ -1754,10 +1754,10 @@ int main( int argc, char *argv[ ] )
     
     
   }else{
-    vector<Stereo_Pose> poses=read_stereo_pose_est_file(contents_file_name );
+    Stereo_Pose_File pose_data=read_stereo_pose_est_file(contents_file_name );
     vector<Stereo_Pose>::const_iterator cii;
-    cii=poses.begin();
-    while( cii != poses.end() && (!have_max_frame_count || stereo_pair_count < max_frame_count) ){
+    cii=pose_data.poses.begin();
+    while( cii != pose_data.poses.end() && (!have_max_frame_count || stereo_pair_count < max_frame_count) ){
    
 
 	

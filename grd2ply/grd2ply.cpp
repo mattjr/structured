@@ -34,8 +34,6 @@ bool localframe=false;
 
 #include <auv_config_file.hpp>
 
-#include <GeographicConversions/ufRedfearn.h>
-
 #include <cv.h>
 #include <highgui.h>
 #include <TriMesh.h>

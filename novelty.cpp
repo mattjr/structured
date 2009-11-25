@@ -1,4 +1,7 @@
 #include "novelty.h"
+
+#include <cstdio>
+
 osg::TextureRectangle*  getTextureHists(  CvHistogram *&finalhist){
 
    

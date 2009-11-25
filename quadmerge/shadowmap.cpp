@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <string.h>
+#include <stdio.h>
 void IntersectMap(float *heightmap, unsigned char *lightmap, unsigned char shadowColor[3], int sizex,int sizey, float lightDir[3])
  {
         // create flag buffer to indicate where we've been

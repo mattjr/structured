@@ -106,24 +106,13 @@ ENDIF( NOT CMAKE_INSTALL_PREFIX )
 # Dependencies          #
 #-----------------------#
 
+
 # Boost 
-FIND_PACKAGE(Boost)
+FIND_PACKAGE(Boost COMPONENTS thread)
 IF( NOT Boost_FOUND )
    MESSAGE( FATAL_ERROR  "ERROR - Can't find boost" )
-ENDIF( NOT Boost_FOUND )      
+ENDIF( NOT Boost_FOUND )     
 SET( CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR} )
-# boost threads
-CHECK_INCLUDE_FILE_CXX( "boost/thread.hpp" HAVE_BOOST_THREAD )
-IF( NOT HAVE_BOOST_THREAD )
-   MESSAGE( FATAL_ERROR  "ERROR - Can't find boost threads" )
-ENDIF( NOT HAVE_BOOST_THREAD )    
-
-IF(APPLE)
-SET( BOOST_THREAD_LIBRARY boost_thread-mt )
-else(APPLE)
-SET( BOOST_THREAD_LIBRARY boost_thread )
-ENDIF(APPLE)
-
 
 # OpenGL and GLU
 FIND_PACKAGE( OpenGL )

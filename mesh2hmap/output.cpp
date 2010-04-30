@@ -328,7 +328,7 @@ void write_hmap_file(const char *filename, const hmap_t *hmap)
 
 void print_gmt_hmap(const char *filename, const hmap_t *hmap,double dx,double dy,const char *config_name)
 {
-  int  pad[4];
+  GMT_LONG pad[4];
   assert( hmap != NULL );
   int argc = 0;
   char *argv = "mesh2hmap";

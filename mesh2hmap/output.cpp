@@ -328,8 +328,11 @@ void write_hmap_file(const char *filename, const hmap_t *hmap)
 
 void print_gmt_hmap(const char *filename, const hmap_t *hmap,double dx,double dy,const char *config_name)
 {
-  //GMT_LONG pad[4];
+#if( GMT_MAJOR_VERSION>4 || (GMT_MAJOR_VERSION==4 &&GMT_MINOR_VERSION>=5) )
+  GMT_LONG pad[4];
+#else
   int pad[4];
+#endif
   assert( hmap != NULL );
   int argc = 0;
   char *argv = "mesh2hmap";

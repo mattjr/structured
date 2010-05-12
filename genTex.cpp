@@ -141,6 +141,7 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--projtex" ) == 0 )
 	{
 	  use_proj_tex=true;
+	  do_atlas=false;
 	  i+=1;
 	}
       else if( strcmp( argv[i], "--classes" ) == 0 )
@@ -645,7 +646,7 @@ int main( int argc, char *argv[ ] )
     OSGExporter *osgExp=new OSGExporter(dir_name,false,compress_textures,
 					num_threads,verbose,hardware_compress,tex_array_blend,do_novelty,basepath,usePlaneDist,(applyNonVisMat && i == nonvisidx),use_proj_tex,do_atlas,shader_color);
 
-
+    osgExp->setCalib(&calib->left_calib);
     osg::Node * lod0Node[2];
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;
@@ -767,7 +768,7 @@ int main( int argc, char *argv[ ] )
 	  osg::Matrixd osgm;
 	  for(int i=0; i < 4; i++){
 	    for(int j=0; j <4; j++){
-	      osgm(j,i)=m[i][j];
+	      osgm(i,j)=m[i][j];
 	    }
 	  }
 	  (*camMatrices)[iter->first]=osgm;

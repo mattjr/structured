@@ -130,7 +130,7 @@ public:
  
   bool outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *group,osg::Group *toggle_ptr=NULL);
 ~OSGExporter();
-
+  
   std::map<string,IplImage *> tex_image_cache;
   std::map<string,IplImage *> novelty_image_cache;
   std::map<string,osg::Image * > compressed_img_cache;
@@ -141,6 +141,7 @@ public:
   bool convertGtsSurfListToGeometry(GtsSurface *s, std::map<int,string> textures,ClippingMap *cm,int tex_size, osg::ref_ptr<osg::Geode >* group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,osg::Matrix *rot,VerboseMeshFunc vmcallback=NULL,float *zrange=NULL,std::map<int,osg::Matrixd> *camMatrices=NULL,std::map<string,int> *classes=NULL,int num_class_id=0,osg::Group *toggle_ptr=NULL) ;  
   
   bool Export3DS(GtsSurface *s,const char *c3DSFile,map<int,string> material_names,int tex_size,VerboseMeshFunc vmcallback=NULL);
+  void setCalib(Camera_Calib *calib){_calib=calib;}
 
 protected:
   
@@ -154,8 +155,7 @@ protected:
 
   MaterialToGeometryCollectionMap mtgcm;
 
-
-
+  Camera_Calib *_calib;
   string prefixdir;
   bool tex_saved;
   int _tex_size;

@@ -13,6 +13,7 @@
 #include <osg/ShapeDrawable>
 #include <cv.h>
 #include <glib.h>
+#include <osg/io_utils>
 #include <highgui.h>
 #include <boost/thread/thread.hpp>
 #include "novelty.h"
@@ -946,33 +947,30 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    }
 	    
 	    if(use_proj_tex){
-	      printf("Using proj texture\n");
-	      texture->setWrap(osg::Texture::WRAP_S,
-			       osg::Texture::CLAMP_TO_BORDER);
-	      texture->setWrap(osg::Texture::WRAP_T,
-			       osg::Texture::CLAMP_TO_BORDER);
-	      texture->setWrap(osg::Texture::WRAP_R,
-			       osg::Texture::CLAMP_TO_BORDER);
-
-	      // set up tex gens
-	      stateset->setTextureMode(baseTexUnit, 
-				       GL_TEXTURE_GEN_S, 
-				       osg::StateAttribute::ON);
-	      stateset->setTextureMode(baseTexUnit,
-				       GL_TEXTURE_GEN_T,
-				       osg::StateAttribute::ON);
-	      stateset->setTextureMode(baseTexUnit, GL_TEXTURE_GEN_R,
-				       osg::StateAttribute::ON);
-	      stateset->setTextureMode(baseTexUnit, GL_TEXTURE_GEN_Q,
-				       osg::StateAttribute::ON);
-
-	      osg::TexGen* texgen = new osg::TexGen();
-	      texgen->setMode(osg::TexGen::EYE_LINEAR);
-	      texgen->setPlanesFromMatrix((*camMatrices)[tidx]*osg::Matrixd::scale(0.5,0.5,0.5));
-	      stateset->setTextureAttributeAndModes(baseTexUnit,texgen,
-						    osg::StateAttribute::ON);
-
-    
+	      //	      printf("Using proj texture\n");
+	   
+	      /* set Texture matrix*/
+	       osg::TexMat* texMat = new osg::TexMat;
+	      osg::Matrix mat;
+	      
+	    
+	      texMat->setMatrix((*camMatrices)[tidx]);
+	      stateset->setTextureAttributeAndModes(baseTexUnit, texMat, osg::StateAttribute::ON);
+	      stateset->addUniform( new osg::Uniform( "fc", osg::Vec4(_calib->fcx,_calib->fcy,_calib->ccx,_calib->ccy)));
+	    
+	osg::Program* program=NULL;
+	program = new osg::Program;
+	program->setName( "colorshaderasdas" );
+	//  printf("Here\n");
+	osg::Shader *hcolorf=new osg::Shader( osg::Shader::FRAGMENT);
+	osg::Shader *hcolorv=new osg::Shader( osg::Shader::VERTEX);
+	loadShaderSource( hcolorf, basedir+"proj.frag" );
+	loadShaderSource( hcolorv, basedir+ "proj.vert" );
+	program->addShader(  hcolorf );
+	program->addShader(  hcolorv );
+	stateset->setAttributeAndModes( program,
+					osg::StateAttribute::ON );
+	
 	    }
 
 	   
@@ -1006,6 +1004,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
  
   
     gts_surface_foreach_face (s, (GtsFunc) add_face_mat_osg , data);
+
     osg::ref_ptr<osg::Geode> untextured = new osg::Geode;
     osg::ref_ptr<osg::Geode> textured = new osg::Geode;
     osg::TextureRectangle* histTex=NULL;
@@ -1057,8 +1056,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       GeometryCollection& gc = *(gcAndTexIds[i].first);
       if (gc._geom)
         {
-	  gc._geom->setUseDisplayList(true);
-	  //	  gc._geom->setUseDisplayList(false);
+	   gc._geom->setUseDisplayList(true);
+	   //	  gc._geom->setUseDisplayList(false);
           //  tessellator.retessellatePolygons(*gc._geom);
         
 	  smoother.smooth(*gc._geom);
@@ -1823,14 +1822,12 @@ OSGExporter::~OSGExporter(){
    if(resize_data_ptrs[i])
      delete resize_data_ptrs[i];
   }
-
  for(unsigned int i=0; i<downsampled_img_ptrs.size(); i++){
    // printf(" %d\n",downsampled_img_ptrs[i]->referenceCount());  
    do{
      downsampled_img_ptrs[i]->unref();
    }while(downsampled_img_ptrs[i]->referenceCount()> 0);
-  }
-  
+ }
   decompressed_ptrs.clear();
  {
    std::map<string,osg::Image * >::const_iterator itr;

@@ -2449,6 +2449,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  strcat(argstr," --no-hardware-compress ");
 	if(no_simp)
 	  strcat(argstr," --nosimp");
+	if(use_proj_tex)
+	  strcat(argstr," --projtex");
 	if(have_mb_ply){
 	  char tp[2048];
 	  if(i ==quad_idx)

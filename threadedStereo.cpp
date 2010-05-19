@@ -1810,17 +1810,17 @@ int main( int argc, char *argv[ ] )
     display_debug_images = false;
     boost::xtime_get(&xt, boost::TIME_UTC);
      int th_id;
-     threadedStereo *ts_arr[num_threads];
-     for(int i=0; i<num_threads; i++)
+  /*  for(int i=0; i<num_threads; i++)
          ts_arr[i]= new threadedStereo(recon_config_file_name,"semi-dense.cfg");
-
-#pragma omp parallel private(th_id) num_threads(num_threads)
+*/
+#pragma omp parallel num_threads(num_threads)
     {
+              threadedStereo *ts=new threadedStereo(recon_config_file_name,"semi-dense.cfg");
              cvSetNumThreads(1);
-            th_id = omp_get_thread_num();
-#pragma omp for schedule(dynamic, 3)
+           // th_id = omp_get_thread_num();
+#pragma omp for
         for(unsigned int i=0; i < tasks.size(); i++){
-            if(!ts_arr[th_id]->runP(tasks[i])){
+            if(!ts->runP(tasks[i])){
                 tasks[i].valid=false;
             }
         }

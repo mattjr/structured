@@ -1805,6 +1805,9 @@ int main( int argc, char *argv[ ] )
   //unsigned int taskSize=tasks.size();
   //if(num_threads > 1){
   {
+
+      g_thread_init (NULL);
+    display_debug_images = false;
     boost::xtime_get(&xt, boost::TIME_UTC);
      int th_id;
      threadedStereo *ts_arr[num_threads];

@@ -737,12 +737,12 @@ int main( int argc, char *argv[ ] )
       
 	boost::xtime_get(&xt, boost::TIME_UTC);
     
-	gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,
-			   lodTexSize[j],num_threads,verbose,tex_array_blend,margins[j],use_dist_coords);
+		gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,
+		   lodTexSize[j],num_threads,verbose,tex_array_blend,margins[j],use_dist_coords);
 	boost::xtime_get(&xt2, boost::TIME_UTC);
 	time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
 	secs=time/1000.0;
-	if(verbose)
+	//	if(verbose)
 	  printf("Done Took %.2f secs\n",secs);
       }
       if(verbose)

@@ -155,9 +155,15 @@ proc bmeshxf args {
     global useNorm
 
     
-    eval vrip_rangescanxfrle  $args
-   
+    set status [catch {eval vrip_rangescanxfrle  $args} msg];
+    if { $status == 0 } {
     update_slice
+    } else {
+      puts $msg
+    }
+    #eval vrip_rangescanxfrle  $args
+   
+
 }
 
 proc bmeshlin args {
@@ -779,8 +785,14 @@ proc newfromlist {listfile res} {
 	 # puts "Cant find $bboxfile $index $curmesh or $xfFile"
 	  
 	  set cmd "exec plybbox $curmesh"
-	  catch {eval $cmd} msg;
-	  
+          set status [catch {eval $cmd} msg];
+          if { $status == 0 } {
+
+                 # The command succeeded, and wrote nothing to stderr.
+                   # $result contains what it wrote to stdout, unless you
+                      # redirected it
+
+
 	  #puts $msg
 	  scan $msg "%f %f %f %f %f %f" newMinx newMiny newMinz newMaxx newMaxy newMaxz;
   
@@ -791,6 +803,11 @@ proc newfromlist {listfile res} {
 	  set maxx [max $maxx $newMaxx]
 	  set maxy [max $maxy $newMaxy]
 	  set maxz [max $maxz $newMaxz]
+         } else {
+               puts "Failed "
+               puts $msg
+               puts "Mesh $curmesh"
+            }
       }
    }
     

@@ -1177,6 +1177,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	image_count_verbose (progCount, totalTodoCount);
 	fprintf(stderr,"\nWARNING - Failed to get imagepair %s %s\n",name.left_name.c_str(),name.right_name.c_str());
 	fflush(stderr);
+        name.valid=false;
 	return false;
       } 
 
@@ -1357,6 +1358,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	image_count_verbose (progCount, totalTodoCount);
         fprintf(stderr,"\nWARNING - Empty vertex array %s\n",meshfilename);
         fflush(stderr);
+        name.valid=false;
+
 	return false;
       }
       double mult=0.00;
@@ -1369,6 +1372,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     if(!fp){
       fprintf(stderr,"\nWARNING - Can't open mesh file %s\n",meshfilename);
       fflush(stderr);
+      name.valid=false;
+
       return false;
     }
     auv_write_ply(surf, fp,have_cov_file,"test");
@@ -1427,6 +1432,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     if(!mesh){
         fprintf(stderr,"\nWARNING - No cached mesh file %s\n",meshfilename);
         fflush(stderr);
+        name.valid=false;
+
         return false;
     }
     
@@ -1434,6 +1441,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     if(!mesh->faces.size()){
         fprintf(stderr,"\nWARNING - Mesh empty after edge threshold clipping %s\n",meshfilename);
         fflush(stderr);
+        name.valid=false;
+
         return false;    
     }
     xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
@@ -1538,7 +1547,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   // printf("\rStereo processing on image %u/%u complete.",progCount,totalTodoCount);
   //fflush(stdout);
   // doneCount.increment();
-      
+  name.valid=true;
+
   return true;
 }
 
@@ -1771,7 +1781,7 @@ int main( int argc, char *argv[ ] )
 	break;
 
       name.id= single_run_start+stereo_pair_count++;
-      name.valid=true;
+      name.valid=false;
       tasks.push_back(name);
       
     }
@@ -1791,24 +1801,27 @@ int main( int argc, char *argv[ ] )
   boost::xtime xt, xt2;
   long time_num;
   // consumer pool model...
-  if(num_threads == 1){
-     
+  unsigned int taskSize=tasks.size();
+  //if(num_threads > 1){
+  {
     boost::xtime_get(&xt, boost::TIME_UTC);
     threadedStereo *ts= new threadedStereo(recon_config_file_name,"semi-dense.cfg");
+#pragma omp parallel for num_threads(num_threads)
     for(unsigned int i=0; i < tasks.size(); i++){
-      if(!ts->runP(tasks[i]))
-	tasks.erase(tasks.begin()+i);
-    }    
+        if(!ts->runP(tasks[i])){
+           tasks[i].valid=false;
+       }
+    }
     boost::xtime_get(&xt2, boost::TIME_UTC);
     time_num = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
      
      
     double secs=time_num/1000.0;
-    printf("Single Thread Time: %.2f sec\n", secs);
+    printf("Threads %d Time: %.2f sec\n", num_threads, secs);
     fprintf(timing_fp,"Stereo %f\n",secs);
     delete ts;
   }
-  else{
+/*  else{
     g_thread_init (NULL);
     display_debug_images = false; 
     boost::xtime_get(&xt, boost::TIME_UTC);
@@ -1826,14 +1839,18 @@ int main( int argc, char *argv[ ] )
     double secs=time_num/1000.0;
     printf("Threads %d Time: %.2f sec\n", num_threads, secs);
     fprintf(timing_fp,"Stereo %f\n",secs);
-    for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++)
-        if(!itr->valid){
-            fprintf(stderr,"%s Not valid\n",itr->mesh_name.c_str());
-            tasks.erase(itr);
-        }
+
+
   }
-
-
+for(Slices::iterator itr=tasks.begin(); itr != tasks.end(); itr++){
+    if(!itr->valid){
+        fprintf(stderr,"%s Not valid\n",itr->mesh_name.c_str());
+        tasks.erase(itr);
+    }
+    //printf("%s %d\n",itr->mesh_name.c_str(),itr->valid);
+}
+printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)taskSize-tasks.size());
+*/
   fclose(timing_fp);
  
   if(!single_run){
@@ -1886,8 +1903,9 @@ int main( int argc, char *argv[ ] )
 		,osgDB::getStrippedName(tasks[i].left_name).c_str(),vrip_res);
 	valid++;
 
-      }
-      
+    }else{
+fprintf(stderr,"Not valid %s\n", osgDB::getStrippedName(tasks[i].left_name).c_str()     );
+}
     }
  
     fclose(conf_ply_file);
@@ -2095,6 +2113,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       
       for(unsigned int j=0; j <vrip_cells[i].poses.size(); j++){
 	const Stereo_Pose_Data *pose=vrip_cells[i].poses[j];
+        if(!pose->valid)
+            continue;
 	//Vrip List
 	fprintf(vrip_seg_fp,"%s %f 1\n",pose->mesh_name.c_str(),vrip_res);
 	//Gen Tex File bbox
@@ -2140,6 +2160,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
     for(int i=0; i < (int)tasks.size(); i++){    
     //Quadmerge List
+        if(tasks[i].valid)
       fprintf(quadmerge_seg_fp,"../mesh-agg/%s %f %d\n",tasks[i].mesh_name.c_str(),vrip_res,interp_quad);
     }
     //    cout << total_env <<endl;

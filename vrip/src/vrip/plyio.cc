@@ -126,9 +126,10 @@ readPlyFile(const char *filename)
     PlyFile *ply = 
 	ply_open_for_reading(filename, &nelems, &elist, &file_type, &version);
 
-    if (!ply)
-	exit(1);
-
+    if (!ply){
+        fprintf(stderr,"Can't open %s\n",filename);
+        return NULL;
+    }
     int nvp = 0;
 
     if (ply_is_valid_property(ply, "vertex", vert_prop_x.name)) {

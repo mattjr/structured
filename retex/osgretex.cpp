@@ -32,6 +32,7 @@ using namespace libsnapper;
 SnapImageDrawCallback* snapImageDrawCallback;
 
 void argConvGLcpara2( double cparam[3][4], int width, int height, double gnear, double gfar, double m[16] );
+#include <osgDB/FileNameUtils>
 
 int main(int argc, char** argv)
 {
@@ -39,7 +40,11 @@ int main(int argc, char** argv)
   string config_file_name("stereo.cfg");
   bool aa;
   double scale=2.0;
-
+  string path=string(argv[0]);
+  unsigned int loc=path.rfind("/");
+   
+  string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
+  basepath= osgDB::getRealPath (basepath);
   // use an ArgumentParser object to manage the program arguments.
   osg::ArgumentParser arguments(&argc,argv);
   arguments.read("-pathfile",p);
@@ -61,7 +66,7 @@ int main(int argc, char** argv)
     }
   catch( string error )
     {
-      cerr << "ERROR - " << error << endl;
+      cerr << "recon  ERROR - " << error << endl;
       exit( 1 );
     }
 
@@ -70,22 +75,20 @@ int main(int argc, char** argv)
   //
   Stereo_Calib *calib = NULL;
   bool have_stereo_calib = false;
-  string stereo_calib_file_name;
-
-  if( config_file->get_value( "STEREO_CALIB_FILE", stereo_calib_file_name) )
-    {
-      stereo_calib_file_name = config_dir_name+stereo_calib_file_name;
+  string stereo_calib_file_name="stereo.calib";
       try
-	{
-	  calib = new Stereo_Calib( stereo_calib_file_name );
+	
+{	  cout <<config_dir_name+"/"+ stereo_calib_file_name <<endl;
+	  calib = new Stereo_Calib( config_dir_name+"/"+ stereo_calib_file_name );
+
 	}
       catch( string error )
 	{
-	  cerr << "ERROR - " << error << endl;
+	  cerr << "stereo ERROR - " << error << endl;
 	  exit( 1 );
 	}
       have_stereo_calib = true;
-    }      
+
 
 
   aa=arguments.read("-aa");

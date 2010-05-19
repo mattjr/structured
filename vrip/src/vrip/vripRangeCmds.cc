@@ -452,9 +452,10 @@ Vrip_RangeScanXFRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *arg
 	mesh = readMeshFromPly(argv[1], FALSE, FALSE);
     }
 
-    if (mesh == NULL)
+    if (mesh == NULL){
+        fprintf(stderr,"Freakout VRIPRANGECMds.cc can't find %s\n",argv[1]);
 	return TCL_ERROR;
-
+    }
     //fprintf(stderr, "Not assigning confidence!!\n");
     if (!mesh->hasConfidence)
        doConfidence(mesh);

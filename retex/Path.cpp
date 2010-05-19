@@ -32,7 +32,12 @@ void PathLoader::createPath(const char *path, std::vector<osg::Matrixd> &camMat,
     osg::Matrixd m;
     double timestamp;
     bbox b;
+    int idx;
+      string ln,rn;
+    camfile >> idx ;
     camfile >> timestamp ;
+    camfile >> ln;
+    camfile >> rn;
     camfile >> b.x1;
     camfile >> b.y1;
     camfile >> b.z1;

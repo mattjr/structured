@@ -899,10 +899,10 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	fflush(stdout); 
 	
 	osg::ref_ptr<osg::Image> image;
-	if(do_atlas)
+	//	if(do_atlas)
 	 image=getCachedImage(filename,tex_size);
-	else
-	  image=getCachedCompressedImage(filename,tex_size);
+	//	else
+	// image=getCachedCompressedImage(filename,tex_size);
 	int baseTexUnit=0;
 	
 	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);

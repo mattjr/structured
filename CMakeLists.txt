@@ -143,7 +143,17 @@ ENDIF( NOT GTS_FOUND )
 # UF
 SET( UF_LIBRARY ufGeographicConversions ufGPSParser )
 
+#
+# find OpenMP
+#
 
+find_package( OpenMP )
+
+IF (OPENMP_FOUND)
+    MESSAGE(STATUS "found OpenMP, compiling with flags: " ${OpenMP_CXX_FLAGS} )
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    MESSAGE(STATUS "flags are now: " ${CMAKE_CXX_FLAGS})
+ENDIF(OPENMP_FOUND)
 
 # ulapack 
 SET( ULAPACK_INCLUDE_DIR ${ULAPACK_PREFIX}/include/ulapack )

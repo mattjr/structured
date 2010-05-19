@@ -8,7 +8,6 @@
 #include <fstream>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <omp.h>
 
 #include "auv_args.hpp"
 #include "Clean.h"
@@ -1809,25 +1808,20 @@ int main( int argc, char *argv[ ] )
       g_thread_init (NULL);
     display_debug_images = false;
     boost::xtime_get(&xt, boost::TIME_UTC);
-     int th_id;
-  /*  for(int i=0; i<num_threads; i++)
-         ts_arr[i]= new threadedStereo(recon_config_file_name,"semi-dense.cfg");
-*/
+
 #pragma omp parallel num_threads(num_threads)
     {
               threadedStereo *ts=new threadedStereo(recon_config_file_name,"semi-dense.cfg");
              cvSetNumThreads(1);
-           // th_id = omp_get_thread_num();
 #pragma omp for
         for(unsigned int i=0; i < tasks.size(); i++){
             if(!ts->runP(tasks[i])){
                 tasks[i].valid=false;
             }
         }
-
+        //delete ts;
     }
-    // for(int i=0; i<num_threads; i++)
-      //   delete ts_arr[i];
+
 
     boost::xtime_get(&xt2, boost::TIME_UTC);
     time_num = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;

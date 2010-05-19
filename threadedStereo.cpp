@@ -1801,7 +1801,7 @@ int main( int argc, char *argv[ ] )
   boost::xtime xt, xt2;
   long time_num;
   // consumer pool model...
-  unsigned int taskSize=tasks.size();
+  //unsigned int taskSize=tasks.size();
   //if(num_threads > 1){
   {
     boost::xtime_get(&xt, boost::TIME_UTC);

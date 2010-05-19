@@ -1813,8 +1813,9 @@ int main( int argc, char *argv[ ] )
 
 #pragma omp parallel private(th_id) num_threads(num_threads)
     {
+             cvSetNumThreads(1);
             th_id = omp_get_thread_num();
-#pragma omp for
+#pragma omp for schedule(dynamic, 3)
         for(unsigned int i=0; i < tasks.size(); i++){
             if(!ts_arr[th_id]->runP(tasks[i])){
                 tasks[i].valid=false;

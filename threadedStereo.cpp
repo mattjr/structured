@@ -1805,12 +1805,17 @@ int main( int argc, char *argv[ ] )
   //if(num_threads > 1){
   {
     boost::xtime_get(&xt, boost::TIME_UTC);
-    threadedStereo *ts= new threadedStereo(recon_config_file_name,"semi-dense.cfg");
-#pragma omp parallel for num_threads(num_threads)
-    for(unsigned int i=0; i < tasks.size(); i++){
-        if(!ts->runP(tasks[i])){
-           tasks[i].valid=false;
-       }
+      threadedStereo *ts=NULL;
+#pragma omp parallel private(ts) num_threads(num_threads)
+    {
+      ts = new threadedStereo(recon_config_file_name,"semi-dense.cfg");
+#pragma omp for
+        for(unsigned int i=0; i < tasks.size(); i++){
+            if(!ts->runP(tasks[i])){
+                tasks[i].valid=false;
+            }
+        }
+            //delete ts;
     }
     boost::xtime_get(&xt2, boost::TIME_UTC);
     time_num = (xt2.sec*1000000000 + xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
@@ -1819,7 +1824,6 @@ int main( int argc, char *argv[ ] )
     double secs=time_num/1000.0;
     printf("Threads %d Time: %.2f sec\n", num_threads, secs);
     fprintf(timing_fp,"Stereo %f\n",secs);
-    delete ts;
   }
 /*  else{
     g_thread_init (NULL);

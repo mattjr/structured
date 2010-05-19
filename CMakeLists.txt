@@ -28,6 +28,7 @@ ENDIF(COMMAND CMAKE_POLICY)
 INCLUDE( ${CMAKE_ROOT}/Modules/CheckIncludeFileCXX.cmake )
 INCLUDE( ${CMAKE_ROOT}/Modules/CheckLibraryExists.cmake )
 INCLUDE( ${CMAKE_ROOT}/Modules/FindPkgConfig.cmake )
+INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOpenMP.cmake ) 
 
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindUF.cmake ) 
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOSG.cmake )

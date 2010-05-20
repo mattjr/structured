@@ -733,7 +733,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 
 bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,osg::Matrix *rot,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes,int num_class_id,osg::Group *toggle_ptr)
 {
-  
+
   gpuNovelty=false;
    _tex_size=tex_size;
    map<int,int> texnum2arraynum;
@@ -945,19 +945,10 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      
 	      stateset->setDataVariance(osg::Object::STATIC);
 	    }
-	    
 	    if(use_proj_tex){
-	      //	      printf("Using proj texture\n");
+                      //printf("Using proj texture\n");
 	   
-	      /* set Texture matrix*/
-	       osg::TexMat* texMat = new osg::TexMat;
-	      osg::Matrix mat;
-	      
-	    
-	      texMat->setMatrix((*camMatrices)[tidx]);
-	      stateset->setTextureAttributeAndModes(baseTexUnit, texMat, osg::StateAttribute::ON);
-	      stateset->addUniform( new osg::Uniform( "fc", osg::Vec4(_calib->fcx,_calib->fcy,_calib->ccx,_calib->ccy)));
-	    
+
 	osg::Program* program=NULL;
 	program = new osg::Program;
 	program->setName( "colorshaderasdas" );
@@ -970,6 +961,19 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	program->addShader(  hcolorv );
 	stateset->setAttributeAndModes( program,
 					osg::StateAttribute::ON );
+        /* set Texture matrix*/
+               osg::TexMat* texMat = new osg::TexMat;
+              osg::Matrixf mat=(*camMatrices)[tidx];
+              texMat->setMatrix(mat);
+                      std::cout<<"TEXMAX "<<texMat->getMatrix();
+                       osg::Vec4 v1(-133.381,74.1,15.0319,0);
+                      std::cout <<"BUG " <<v1 << " \n RES " << v1*mat<<endl;
+                 osg::Uniform *u=new osg::Uniform(osg::Uniform::FLOAT_MAT4, "teMat",1);
+                      u->setElement(0,mat);
+stateset->addUniform(u);
+             // stateset->setTextureAttributeAndModes(baseTexUnit, texMat, osg::StateAttribute::ON);
+              stateset->addUniform( new osg::Uniform( "fc", osg::Vec4(_calib->fcx,_calib->fcy,_calib->ccx,_calib->ccy)));
+
 	
 	    }
 
@@ -1056,8 +1060,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       GeometryCollection& gc = *(gcAndTexIds[i].first);
       if (gc._geom)
         {
-	   gc._geom->setUseDisplayList(true);
-	   //	  gc._geom->setUseDisplayList(false);
+           gc._geom->setUseDisplayList(true);
+           //       gc._geom->setUseDisplayList(false);
           //  tessellator.retessellatePolygons(*gc._geom);
         
 	  smoother.smooth(*gc._geom);
@@ -1630,7 +1634,8 @@ static void texcoord_foreach_face (T_Face * f,
       libpolyp::tex_add_verbose(data->count++,data->total,data->reject++);
     return;
   }
-    
+
+
   if(apply_tex_to_tri(f,data->calib,data->back_trans[indexClosest],indexClosest,data->tex_size,data->margin,data->use_dist_coords))
     data->validCount++;
   else{
@@ -1640,6 +1645,33 @@ static void texcoord_foreach_face (T_Face * f,
 			  data->back_trans,data->calib,bboxes_all,data->margin);
   }
  
+  if(data->verbose)
+    tex_add_verbose(data->count++,data->total,data->reject);
+
+}
+
+
+static void findimg_foreach_face (T_Face * f,
+                                   texGenData *data)
+{
+
+  int indexClosest=find_first_bbox(&GTS_FACE(f)->triangle,
+                                         data->bboxTree);
+  //fprintf(ffp,"%d\n",indexClosest);
+  if(indexClosest == INT_MAX){
+    /*fprintf(errFP,"Failed traingle\n");
+      gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
+      fflush(errFP);*/
+    if(data->verbose)
+      libpolyp::tex_add_verbose(data->count++,data->total,data->reject++);
+    return;
+  }
+
+
+  if(apply_texid_to_tri(f,indexClosest))
+    data->validCount++;
+
+
   if(data->verbose)
     tex_add_verbose(data->count++,data->total,data->reject);
 
@@ -1803,6 +1835,30 @@ if(verbose)
  
 	   
   
+}
+
+void gen_mesh_tex_id(GtsSurface *s ,GNode * bboxTree,int num_threads,int verbose){
+
+
+
+  gts_surface_foreach_vertex(s,(GtsFunc)set_tex_id_unknown,NULL);
+
+  texGenData tex_data;
+  tex_data.bboxTree=bboxTree;
+
+  tex_data.validCount=0;
+  tex_data.count=1;
+  tex_data.reject=0;
+  tex_data.total=gts_surface_face_number(s);
+  tex_data.verbose=verbose;
+
+
+    if(num_threads > 1)
+      threaded_surface_foreach_face (s, (GtsFunc)findimg_foreach_face ,
+                                     &tex_data ,num_threads);
+    else
+      gts_surface_foreach_face (s, (GtsFunc)findimg_foreach_face ,&tex_data);
+
 }
 
 OSGExporter::~OSGExporter(){

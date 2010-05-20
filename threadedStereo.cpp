@@ -589,7 +589,9 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
 
     while(!feof(fp)){
       class_id_t tmp;
-      fscanf(fp,"%lf %s %d\n",&tmp.time,img_name,&tmp.class_id);
+      int ret=fscanf(fp,"%lf %s %d\n",&tmp.time,img_name,&tmp.class_id);
+      if(ret !=3)
+          printf("Read error %s\n",classes_file.c_str());
       tmp.name=img_name;
       classes.push_back(tmp);
     }
@@ -1445,6 +1447,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 
         return false;    
     }
+    
     xform xf(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
 	     name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
 	     name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
@@ -2185,7 +2188,9 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       if(lafp){
 	while(!feof(lafp)){
 	  char tmp[2048];
-	  fscanf(lafp,"%s\n",tmp);
+          int ret=fscanf(lafp,"%s\n",tmp);
+          if(ret != 1)
+          fprintf(stderr,"Read error lowalt\n");
 	
 	  mesh_input m;
 	  double zmin,zmax;
@@ -2551,14 +2556,22 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
 	  FILE *rgfp=fopen("regen.sh","w");
 	  fprintf(rgfp,"#!/bin/bash\necho 'Regen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\n",basepath.c_str());
-	  fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
+	  /*fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
 		  "chmod 777 mesh-regen-tex\n"
 		  "cd mesh-regen-tex\n"
 		  "$BASEPATH/osgretex -pathfile ../mesh/campath.txt -config %s ../mesh/final.ive\n"
 		  "cd $RUNDIR\ntime $BASEPATH/genTex --regen --dicedir %s --margins 10 10 1000000000000000 %s -f %s\n"
 		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",
 		  recon_config_file_name.c_str(), dicedir,
-		  recon_config_file_name.c_str(),"mesh-regen-tex/",dicedir);
+		  recon_config_file_name.c_str(),"mesh-regen-tex/",dicedir);*/
+          fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
+		  "chmod 777 mesh-regen-tex\n"
+		  "cd mesh-regen-tex\n"
+                  "$BASEPATH/texture_image/texture_image --color 1.0 0 0 --tilesize 512 512  --finalsize 512 512 --disable-output-poster  --tiledir %s ../mesh/final.ive\n"
+                  "cd $RUNDIR\ntime $BASEPATH/genTex %s %s --regen --projtex --stereo-calib %s --dicedir %s -f %s\n"
+		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",
+                  ".",recon_config_file_name.c_str(), recon_config_file_name.c_str(),stereo_calib_file_name.c_str(),dicedir,
+                  "mesh-regen-tex/",dicedir);
 	  
 	  fchmod(fileno(rgfp),0777);
 	  fclose (rgfp);

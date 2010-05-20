@@ -11,7 +11,7 @@
 #  * libsnapper
 #  * libpolyp
 #  * gts
-PROJECT(libpolyp)
+PROJECT(threadedStereo)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 

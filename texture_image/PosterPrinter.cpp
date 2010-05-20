@@ -585,7 +585,7 @@ void PosterPrinter::writeMats(){
 cout << _validMats[i]<<endl;
         for(int j=0; j < 4; j++){
             for(int k=0; k <4; k++){
-                mfile << _validMats[i](k,j) << " ";
+                mfile << _validMats[i](j,k) << " ";
             }
         }
          mfile<<std::endl;

@@ -1,5 +1,6 @@
 #version 120
 varying vec4 projCord;
+uniform mat4 teMat;
 
 uniform sampler2D colorMap;
 void main()

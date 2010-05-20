@@ -307,8 +307,10 @@ GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
       if(eof0 == EOF)
 	break;
       for(int i=0; i < 4; i++)
-	for(int j=0; j < 4; j++)
+          for(int j=0; j < 4; j++){
 	  eof1 = fscanf(bboxfp," %lf",&mtmp[i][j]);
+
+      }
       eof2 = fscanf(bboxfp,"\n");
       
    
@@ -318,9 +320,15 @@ GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
       bbox->bounded=(void *)count;
       bboxes= g_slist_prepend (bboxes,bbox);
       bboxes_all.push_back(bbox);
-      gts_trans_map[count]=gts_matrix_inverse(mtmp);
+      if(use_regen_tex){
+            gts_trans_map[count]=gts_matrix_identity(NULL);
+            for(int i=0; i < 4; i++)
+                for(int j=0; j<4; j++)
+                   gts_trans_map[count][i][j]=mtmp[i][j];
+        }
+        else
+            gts_trans_map[count]=gts_matrix_inverse(mtmp);
       frame_count++;
-    
     }
     gts_matrix_destroy(mtmp);
     fclose(bboxfp);
@@ -561,7 +569,7 @@ int main( int argc, char *argv[ ] )
 	max_class_id=class_id;
     }
     fclose(fp);
-    printf("Loaded %d class labels with max id %d\n",classes.size(),max_class_id);
+    printf("Loaded %d class labels with max id %d\n",(int)classes.size(),max_class_id);
   }
   char dicefname[255];
   sprintf(dicefname,"%s/valid.txt",diceddir);
@@ -623,7 +631,6 @@ int main( int argc, char *argv[ ] )
 			gts_trans_map);
     else 
       bboxTree=NULL;   
-
     /*if(!bboxTree){ 
       fprintf(stderr,"Failed to load bboxtree\n");
       exit(-1);
@@ -736,9 +743,15 @@ int main( int argc, char *argv[ ] )
 
       
 	boost::xtime_get(&xt, boost::TIME_UTC);
-    
+        if(!use_regen_tex){
 		gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,
 		   lodTexSize[j],num_threads,verbose,tex_array_blend,margins[j],use_dist_coords);
+            }
+        else{
+             gen_mesh_tex_id(surf,bboxTree,num_threads,verbose);
+        }
+
+
 	boost::xtime_get(&xt2, boost::TIME_UTC);
 	time = (xt2.sec*1000000000+xt2.nsec - xt.sec*1000000000 - xt.nsec) / 1000000;
 	secs=time/1000.0;
@@ -762,6 +775,7 @@ int main( int argc, char *argv[ ] )
       std::map<int,GtsMatrix *>::iterator iter;
       std::map<int,osg::Matrixd> *camMatrices=NULL;
       if(use_proj_tex){
+          printf("Proj TEx\n");
 	camMatrices= new  std::map<int,osg::Matrixd>;
 	for(iter=gts_trans_map.begin(); iter!=gts_trans_map.end(); iter++){
 	  GtsMatrix *m=iter->second;

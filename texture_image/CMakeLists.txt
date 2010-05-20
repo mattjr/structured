@@ -20,7 +20,7 @@ add_definitions("-g")
 #--------------------------------------------------------------------------------
 file(GLOB SRCS *.cpp)
 include_directories(../ .)
-set(OSG_COMPONENTS osg osgUtil osgViewer osgGA osgManipulator osgText osgDB osgWidget)
+set(OSG_COMPONENTS osg osgUtil osgViewer osgGA osgManipulator osgText osgDB osgWidget osgShadow)
 find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
 #-------------------------------------------------------------------------------
 

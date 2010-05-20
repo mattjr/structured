@@ -27,8 +27,11 @@
 #include <osgViewer/ViewerEventHandlers>
 #include <iostream>
 #include "PosterPrinter.h"
+#include <osg/ComputeBoundsVisitor>
+
 #include <osgUtil/PolytopeIntersector>
 #include <osg/io_utils>
+using namespace std;
 /* Computing view matrix helpers */
 template<class T>
 class FindTopMostNodeOfTypeVisitor : public osg::NodeVisitor
@@ -88,7 +91,33 @@ osgUtil::IntersectionVisitor iv(picker);
 //  exit(0);
 }
 
+void getAutoHome(osg::Camera *camera,osg::Node *node){
+    const osg::BoundingSphere& boundingSphere=node->getBound();
 
+    osg::Vec3 eye= boundingSphere._center+osg::Vec3( 0.0,-3.5f * boundingSphere._radius,0.0f);
+
+    osg::Vec3 center=boundingSphere._center;
+    osg::Vec3 up= osg::Vec3(0.0f,0.0f,1.0f);
+
+    osg::Vec3 lv(center-eye);
+
+    osg::Vec3 f(lv);
+    f.normalize();
+    osg::Vec3 s(f^up);
+    s.normalize();
+    osg::Vec3 u(s^f);
+    u.normalize();
+
+    osg::Matrix rotation_matrix(s[0],     u[0],     -f[0],     0.0f,
+                                s[1],     u[1],     -f[1],     0.0f,
+                                s[2],     u[2],     -f[2],     0.0f,
+                                0.0f,     0.0f,     0.0f,      1.0f);
+
+  //  _center = center;
+    //_distance = lv.length();
+    camera->setViewMatrixAsLookAt(eye,center,up);//( osg::Matrix::inverse(rotation_matrix));
+
+}
 /* Computing view matrix functions */
 void computeViewMatrix( osg::Camera* camera, const osg::Vec3d& eye, const osg::Vec3d& hpr )
 {
@@ -180,8 +209,8 @@ public:
 class PrintPosterHandler : public osgGA::GUIEventHandler
 {
 public:
-    PrintPosterHandler( PosterPrinter* printer,osg::Matrix model )
-    : _printer(printer),_model(model) {}
+    PrintPosterHandler( PosterPrinter* printer,osg::BoundingBox bbox)
+    : _printer(printer),_bbox(bbox){}
     
     bool handle( const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa )
     {
@@ -209,7 +238,7 @@ public:
                int c=(int)ceil(_printer->getPosterSize().x() / _printer->getTileSize().x());
 std::vector<std::pair<unsigned int,unsigned int> > valid;
                checkIntersection(view,r,c,valid);
-                  _printer->init( view->getCamera(),valid ,_model);
+                  _printer->init( view->getCamera(),valid,_bbox );
                // if ( _printer.valid() )
                  //   _printer->init( view->getCamera() );
                 return true;
@@ -224,7 +253,7 @@ std::vector<std::pair<unsigned int,unsigned int> > valid;
 
 protected:
     osg::ref_ptr<PosterPrinter> _printer;
-    osg::Matrix _model;
+    osg::BoundingBox _bbox;
 };
 
 osg::Camera *drawTileLines(  int tileWidth, int tileHeight,
@@ -319,6 +348,9 @@ int main( int argc, char** argv )
     }
     
     // Poster arguments
+    bool auto_size=true;
+    double targetRes=2.0/500.0;
+
     bool activeMode = true;
     bool outputPoster = false, outputTiles = true;
     int tileWidth = 510, tileHeight = 510;
@@ -329,13 +361,17 @@ int main( int argc, char** argv )
     std::string dir;
     std::string basename;
     bool outputEmpty=false;
+    while ( arguments.read("--target-res",targetRes) ) {}
     while ( arguments.read("--basename",basename) ) {}
     while ( arguments.read("--tiledir",dir) ) {}
     while ( arguments.read("--outputempty") ) {outputEmpty=true;}
     while ( arguments.read("--inactive") ) { activeMode = false; }
     while ( arguments.read("--color", bgColor.r(), bgColor.g(), bgColor.b()) ) {}
     while ( arguments.read("--tilesize", tileWidth, tileHeight) ) {}
-    while ( arguments.read("--finalsize", posterWidth, posterHeight) ) {}
+    if ( arguments.read("--finalsize", posterWidth, posterHeight) )
+    {
+        auto_size=false;
+    }
     while ( arguments.read("--poster", posterName) ) {}
     while ( arguments.read("--ext", extName) ) {}
     while ( arguments.read("--enable-output-poster") ) { outputPoster = true; }
@@ -346,7 +382,6 @@ int main( int argc, char** argv )
     while ( arguments.read("--use-pbuffer")) { renderImplementation = osg::Camera::PIXEL_BUFFER; }
     while ( arguments.read("--use-pbuffer-rtt")) { renderImplementation = osg::Camera::PIXEL_BUFFER_RTT; }
     while ( arguments.read("--use-fb")) { renderImplementation = osg::Camera::FRAME_BUFFER; }
-    std::cout << bgColor <<std::endl;
     // Camera settings for inactive screenshot
     bool useLatLongHeight = true;
     osg::Vec3d eye;
@@ -388,7 +423,24 @@ int main( int argc, char** argv )
     camera->setRenderTargetImplementation( renderImplementation );
     camera->setViewport( 0, 0, tileWidth, tileHeight );
     camera->addChild( scene );
-    
+    osg::BoundingBox sceneSize;
+        osg::ref_ptr<osg::ComputeBoundsVisitor> bb = new osg::ComputeBoundsVisitor;
+        scene->accept(*bb);
+        sceneSize=bb->getBoundingBox();
+    if(auto_size){
+
+        //x and z in this coordframe are what we want
+        double longSize=max(sceneSize.xMax()-sceneSize.xMin(),sceneSize.zMax()-sceneSize.zMin());
+        double tileResSize=ceil(((1.0/targetRes)*longSize)/tileWidth);
+        double roundSize=tileResSize*tileWidth;
+        cout <<"Long Size: "<<longSize << "m resolution: " << targetRes << " m/pix " << "image size: "<<roundSize <<"x"<<roundSize<<endl;
+        cout <<"Tiles: "<<tileResSize << "x"<<tileResSize<<endl ;
+        // cout << sceneSize.xMax() << " " << sceneSize.yMax() << " "<< sceneSize.zMax()<<endl;
+        // cout << sceneSize.xMin() << " "<<sceneSize.yMin() <<  " "<<sceneSize.zMin()<<endl;
+        posterWidth=roundSize;
+        posterHeight=roundSize;
+    }
+
     // Set the printer
     osg::ref_ptr<PosterPrinter> printer = new PosterPrinter;
     printer->setTileSize( tileWidth, tileHeight );
@@ -423,20 +475,10 @@ int main( int argc, char** argv )
     viewer.setSceneData( root.get() );
     viewer.getDatabasePager()->setDoPreCompile( false );
 
-    osg::Matrix modelM;
-    osg::MatrixList worldMatrices=scene->getWorldMatrices();
-   for(osg::MatrixList::iterator itr = worldMatrices.begin();
-       itr != worldMatrices.end();
-       ++itr)
-   {
-        modelM.preMult(*itr);
-        std::cout << "A" <<*itr;
-    }
-           std::cout <<modelM<<"size " << worldMatrices.size()<<std::endl;
 
     if ( activeMode )
     {
-        viewer.addEventHandler( new PrintPosterHandler(printer.get(),modelM) );
+        viewer.addEventHandler( new PrintPosterHandler(printer.get(),sceneSize) );
         viewer.addEventHandler( new osgViewer::StatsHandler );
         viewer.addEventHandler( new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()) );
         viewer.setCameraManipulator( new osgGA::TrackballManipulator );
@@ -445,8 +487,9 @@ int main( int argc, char** argv )
     else
     {
         osg::Camera* camera = viewer.getCamera();
-        if ( !useLatLongHeight ) computeViewMatrix( camera, eye, hpr );
-        else computeViewMatrixOnEarth( camera, scene, latLongHeight, hpr );
+        getAutoHome(camera,scene);
+     //   if ( !useLatLongHeight ) computeViewMatrix( camera, eye, hpr );
+     //   else computeViewMatrixOnEarth( camera, scene, latLongHeight, hpr );
         
         osg::ref_ptr<CustomRenderer> renderer = new CustomRenderer( camera );
         camera->setRenderer( renderer.get() );
@@ -459,7 +502,7 @@ int main( int argc, char** argv )
                  int r=(int)ceil(printer->getPosterSize().y() / printer->getTileSize().y());
                int c=(int)ceil(printer->getPosterSize().x() / printer->getTileSize().x());
                checkIntersection(dynamic_cast<osgViewer::View *>(&viewer),r,c,valid);
-        printer->init( camera ,valid,modelM);
+        printer->init( camera ,valid,sceneSize);
         while ( !printer->done() )
         {
             viewer.advance();

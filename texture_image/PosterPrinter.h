@@ -155,7 +155,7 @@ public:
     
     bool done() const { return !_isRunning && !_isFinishing; }
     void setOutputEmpty(bool b){_outputEmpty=b;}
-    void init( const osg::Camera* camera ,std::vector<TilePosition> &valid,osg::Matrix model);
+    void init( const osg::Camera* camera ,std::vector<TilePosition> &valid,osg::BoundingBox bbox);
     void frame( const osg::FrameStamp* fs, osg::Node* node );
     void setTileOutputDir(const std::string &dir){_dir=dir; osgDB::makeDirectory(_dir);}
     void copyNeigborPixels(IplImage *img_overlap,int level, int col, int row,CvRect &src,CvRect &dst);
@@ -187,6 +187,7 @@ protected:
     int _currentRow;
     int _currentColumn;
     int _validCurrent;
+    osg::BoundingBox _bbox;
     std::string _baseName;
     std::string _tmpbase;
     osg::ref_ptr<PosterIntersector> _intersector;

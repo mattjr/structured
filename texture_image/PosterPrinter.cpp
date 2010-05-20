@@ -23,6 +23,9 @@
 #include "PosterPrinter.h"
 #include <GL/glu.h>
 #include <osg/io_utils>
+#include <osg/ComputeBoundsVisitor>
+#include <osgShadow/ConvexPolyhedron>
+
 using std::cout;
 using std::endl;
 class MyGraphicsContext {
@@ -191,7 +194,7 @@ void PosterVisitor::apply( osg::PagedLOD& node )
 /* PosterIntersector: A simple polytope intersector for updating pagedLODs in each image-tile */
 PosterIntersector::PosterIntersector( const osg::Polytope& polytope,osg::Camera *camera,osg::Matrix &modelMatrix )
 :   _parent(0), _polytope(polytope),_camera(camera),_modelMatrix(modelMatrix)
-{printf("RESET\n");
+{
 }
 
 PosterIntersector::PosterIntersector( double xMin, double yMin, double xMax, double yMax,osg::Camera *camera,osg::Matrix &modelMatrix)
@@ -239,20 +242,6 @@ void PosterIntersector::intersect( osgUtil::IntersectionVisitor& iv, osg::Drawab
     if (iv.getModelMatrix()) matrix.preMult( *iv.getModelMatrix() );
      if (iv.getModelMatrix())
             _modelMatrix=*iv.getModelMatrix();
-    cout << "GOOD "<<matrix;
-    cout <<"needed " << *iv.getModelMatrix()<<endl;
-    cout <<"WHY "<< _modelMatrix;
-/*    osg::Matrix inverse;
-  inverse.invert(matrix);
-
-      osg::Vec3 v1( -133.401 ,72.6815 ,14.4479);
-
-      cout <<     "SDASD"<<v1 << " "<<v1*matrix<<endl;
-
-      cout <<     "SDASD"<<v1 << " "<<v1*inverse<<endl;
-
-      cout <<     "SDASD"<<v1 << " "<<inverse*v1<<endl;
-*/
 
     for ( osg::NodePath::iterator itr=nodePath.begin(); itr!=nodePath.end(); ++itr )
     {
@@ -291,14 +280,14 @@ PosterPrinter::PosterPrinter()
 _visitor = new PosterVisitor;
 }
 
-void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &valid,osg::Matrix model )
+void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &valid,osg::BoundingBox bbox)
 {
-        _intersector = new PosterIntersector(-1.0, -1.0, 1.0, 1.0,_camera,_model);
-//_model=model;
+    _intersector = new PosterIntersector(-1.0, -1.0, 1.0, 1.0,_camera,_model);
     _intersector->setPosterVisitor( _visitor.get() );
     if ( _isRunning || !_camera.valid() )
         return;
     _images.clear();
+    _bbox=bbox;
     _visitor->clearNames();
     if(valid.size() && !_outputEmpty){
         _validTiles=valid;
@@ -308,7 +297,6 @@ void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &v
 
         _currentRow=_validTiles[_validCurrent].second;
         _currentColumn=_validTiles[_validCurrent].first;
-        printf("Here %d %d\n",_currentRow,_currentColumn);
     }else{
         _currentRow = 0;
         _currentColumn = 0;
@@ -374,8 +362,8 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
             
             if ( _camera.valid() )
             {
-                std::cout << "Binding sub-camera " << _currentRow << "_" << _currentColumn
-                          << " to image..." << std::endl;
+               // std::cout << "Binding sub-camera " << _currentRow << "_" << _currentColumn
+                 //         << " to image..." << std::endl;
                 bindCameraToImage( _camera.get(), _currentRow, _currentColumn,_validCurrent );
                 if(_validTiles.size() == 0 || _outputEmpty){
                     printf("\r%d,%d / (%d/%d)",_currentColumn,_currentRow,_tileRows,_tileColumns);
@@ -449,8 +437,50 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col, in
              osg::Matrix::translate(_tileColumns-1-2*col, /*flip rows*/-1*(_tileRows-1-2*row), 0.0);
     camera->setViewMatrix( _currentViewMatrix );
     camera->setProjectionMatrix( _currentProjectionMatrix * offsetMatrix );
+/*    double deltaRowBBox =(_bbox.zMax()-_bbox.zMin())/(double)_tileRows;
+    double deltaColBBox =(_bbox.xMax()-_bbox.xMin())/(double)_tileColumns;
+  */  osg::Polytope  frustum;
 
-    _validBbox[idx]=osg::BoundingBox(-1000,-1000,-1000,1000,1000,1000);
+    frustum.setToUnitFrustum();
+    frustum.transformProvidingInverse(
+            camera->getViewMatrix() *
+            camera->getProjectionMatrix());
+ /*osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN);
+     //   cbbv.setTraversalMask(_st->getShadowedScene()->getCastsShadowTraversalMask());
+        camera->traverse(cbbv);
+*/
+        //osg::BoundingBox bb= cbbv.getBoundingBox();
+         osgShadow::ConvexPolyhedron shaved;
+        /*frustum2.setToUnitFrustum();
+        osg::Matrix m=camera->getViewMatrix() *
+            camera->getProjectionMatrix();
+        frustum2.transform( osg::Matrix::inverse( m ), m );
+
+        osg::BoundingSphere bs=camera->getBound();
+        osg::BoundingBox bb2;
+        bb2.expandBy( bs );
+        osg::Polytope box;
+        box.setToBoundingBox( bb2 );
+
+        frustum2.cut( box );
+
+        // approximate sphere with octahedron. Ie first cut by box then
+        // additionaly cut with the same box rotated 45, 45, 45 deg.
+        box.transform( // rotate box around its center
+            osg::Matrix::translate( -bs.center() ) *
+            osg::Matrix::rotate( osg::PI_4, 0, 0, 1 ) *
+            osg::Matrix::rotate( osg::PI_4, 1, 1, 0 ) *
+            osg::Matrix::translate( bs.center() ) );*/
+    shaved.setToBoundingBox(_bbox);
+       shaved.cut( frustum );
+osg::BoundingBox bb2 =shaved.computeBoundingBox();
+
+        cout << "Cenere"<<bb2.xMin()<<" " <<bb2.zMin()<<endl;
+   /* osg::Polytope::PlaneList pl=frustum.getPlaneList();
+    for(int i=0; i< pl.size(); i++){
+        cout << (pl[i])<<endl;
+    }*/
+    _validBbox[idx]=osg::BoundingBox(bb2.zMin(),bb2.zMax(),bb2.yMin(),bb2.yMax(),bb2.xMin(),bb2.xMax());//col*deltaColBBox,_bbox.yMin(),row*deltaRowBBox,(col+1)*deltaColBBox,_bbox.yMax(),(row+1)*deltaRowBBox);
     // Check intersections between the image-tile box and the model
     osgUtil::IntersectionVisitor iv( _intersector.get() );
     iv.setReadCallback( g_pagedLoadingCallback.get() );
@@ -480,23 +510,17 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col, in
         }
     }
 
-      osg::Matrix matrix;
-   //matrix.preMult( camera->getWindowMatrix());
-
-          cout <<"Inter"<<_model;
-   matrix.preMult(camera->getProjectionMatrix() );
+    osg::Matrix matrix;
+    matrix.preMult(camera->getProjectionMatrix() );
     matrix.preMult( camera->getViewMatrix() );
-              matrix.preMult(_model);
+    matrix.preMult(_model);
 
     if(camera->getViewport())
         matrix.postMult(camera->getViewport()->computeWindowMatrix());
- //    camera->getmatrix.preMult( camera->getModelMatrix() );
 
-    cout <<"BAD "<<matrix<<endl;
-    _validMats[idx]=matrix;//*osg::Matrix(1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1); * camera->getProjectionMatrix()//osg::Matrix::rotate(osg::DegreesToRadians(90.0f),0,0,-1);//
-
+    _validMats[idx]=matrix;
     //printf("Has %d %d valid node\n",row,col);
-      std::stringstream stream;
+    std::stringstream stream;
     stream << "image_" << col << "_" << row;
 
     osg::ref_ptr<osg::Image> image = new osg::Image;
@@ -520,15 +544,14 @@ void PosterPrinter::recordImages()
         unsigned int row = itr->first.first, col = itr->first.second;
 
         if ( _outputTiles ){
-            printf("herer\n");
             std::stringstream ss;
             ss<<_dir<<"/";//<<_baseName<<"_files/";
 
-           // osgDB::makeDirectory(ss.str());
+            // osgDB::makeDirectory(ss.str());
 
             ss<<"/"<<col<<"_"<<(row) <<"."<<_tmpTileExt;
             osgDB::writeImageFile( *image,  ss.str());
-            cout << "Writing "<<ss.str();
+            //cout << "Writing "<<ss.str();
         }
         if(_finalPoster && _finalPoster->imageData){
             int w=_tileSize.x();

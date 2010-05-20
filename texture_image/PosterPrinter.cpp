@@ -189,13 +189,14 @@ void PosterVisitor::apply( osg::PagedLOD& node )
 }
 
 /* PosterIntersector: A simple polytope intersector for updating pagedLODs in each image-tile */
-PosterIntersector::PosterIntersector( const osg::Polytope& polytope,osg::Camera *camera )
-:   _parent(0), _polytope(polytope),_camera(camera)
-{}
+PosterIntersector::PosterIntersector( const osg::Polytope& polytope,osg::Camera *camera,osg::Matrix &modelMatrix )
+:   _parent(0), _polytope(polytope),_camera(camera),_modelMatrix(modelMatrix)
+{printf("RESET\n");
+}
 
-PosterIntersector::PosterIntersector( double xMin, double yMin, double xMax, double yMax,osg::Camera *camera)
+PosterIntersector::PosterIntersector( double xMin, double yMin, double xMax, double yMax,osg::Camera *camera,osg::Matrix &modelMatrix)
 :   Intersector(osgUtil::Intersector::PROJECTION),_camera(camera),
-    _parent(0)
+    _parent(0),_modelMatrix(modelMatrix)
 {
     _polytope.add( osg::Plane( 1.0, 0.0, 0.0,-xMin) );
     _polytope.add( osg::Plane(-1.0, 0.0, 0.0, xMax) );
@@ -213,7 +214,7 @@ osgUtil::Intersector* PosterIntersector::clone( osgUtil::IntersectionVisitor& iv
     osg::Polytope transformedPolytope;
     transformedPolytope.setAndTransformProvidingInverse( _polytope, matrix );
     
-    osg::ref_ptr<PosterIntersector> pi = new PosterIntersector( transformedPolytope,_camera );
+    osg::ref_ptr<PosterIntersector> pi = new PosterIntersector( transformedPolytope,_camera,_modelMatrix );
     pi->_parent = this;
     return pi.release();
 }
@@ -230,10 +231,28 @@ void PosterIntersector::intersect( osgUtil::IntersectionVisitor& iv, osg::Drawab
     
     // Find and collect all paged LODs in the node path
     osg::NodePath& nodePath = iv.getNodePath();
-   osg::Matrix m=osg::computeLocalToWorld(nodePath) *_camera->getViewMatrix()*_camera->getProjectionMatrix();
-      osg::Vec3 v1( -133.401 ,71.6815 ,13.4479);
+    osg::Matrix matrix;//=osg::computeLocalToWorld(nodePath) *_camera->getViewMatrix() *_camera->getProjectionMatrix();
 
-      cout <<     "SDASD"<<  m << v1 << "\n"<< m*v1<<" "<<v1*m<<endl;
+    if (iv.getWindowMatrix()) matrix.preMult( *iv.getWindowMatrix());
+    if (iv.getProjectionMatrix()) matrix.preMult(*iv.getProjectionMatrix() );
+    if (iv.getViewMatrix()) matrix.preMult( *iv.getViewMatrix() );
+    if (iv.getModelMatrix()) matrix.preMult( *iv.getModelMatrix() );
+     if (iv.getModelMatrix())
+            _modelMatrix=*iv.getModelMatrix();
+    cout << "GOOD "<<matrix;
+    cout <<"needed " << *iv.getModelMatrix()<<endl;
+    cout <<"WHY "<< _modelMatrix;
+/*    osg::Matrix inverse;
+  inverse.invert(matrix);
+
+      osg::Vec3 v1( -133.401 ,72.6815 ,14.4479);
+
+      cout <<     "SDASD"<<v1 << " "<<v1*matrix<<endl;
+
+      cout <<     "SDASD"<<v1 << " "<<v1*inverse<<endl;
+
+      cout <<     "SDASD"<<v1 << " "<<inverse*v1<<endl;
+*/
 
     for ( osg::NodePath::iterator itr=nodePath.begin(); itr!=nodePath.end(); ++itr )
     {
@@ -272,10 +291,10 @@ PosterPrinter::PosterPrinter()
 _visitor = new PosterVisitor;
 }
 
-void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &valid )
+void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &valid,osg::Matrix model )
 {
-        _intersector = new PosterIntersector(-1.0, -1.0, 1.0, 1.0,_camera);
-
+        _intersector = new PosterIntersector(-1.0, -1.0, 1.0, 1.0,_camera,_model);
+//_model=model;
     _intersector->setPosterVisitor( _visitor.get() );
     if ( _isRunning || !_camera.valid() )
         return;
@@ -430,7 +449,7 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col, in
              osg::Matrix::translate(_tileColumns-1-2*col, /*flip rows*/-1*(_tileRows-1-2*row), 0.0);
     camera->setViewMatrix( _currentViewMatrix );
     camera->setProjectionMatrix( _currentProjectionMatrix * offsetMatrix );
-    _validMats[idx]=camera->getViewMatrix();//*osg::Matrix(1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1); * camera->getProjectionMatrix()//osg::Matrix::rotate(osg::DegreesToRadians(90.0f),0,0,-1);//
+
     _validBbox[idx]=osg::BoundingBox(-1000,-1000,-1000,1000,1000,1000);
     // Check intersections between the image-tile box and the model
     osgUtil::IntersectionVisitor iv( _intersector.get() );
@@ -460,8 +479,23 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col, in
             return ;
         }
     }
-    //printf("Has %d %d valid node\n",row,col);
 
+      osg::Matrix matrix;
+   //matrix.preMult( camera->getWindowMatrix());
+
+          cout <<"Inter"<<_model;
+   matrix.preMult(camera->getProjectionMatrix() );
+    matrix.preMult( camera->getViewMatrix() );
+              matrix.preMult(_model);
+
+    if(camera->getViewport())
+        matrix.postMult(camera->getViewport()->computeWindowMatrix());
+ //    camera->getmatrix.preMult( camera->getModelMatrix() );
+
+    cout <<"BAD "<<matrix<<endl;
+    _validMats[idx]=matrix;//*osg::Matrix(1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1); * camera->getProjectionMatrix()//osg::Matrix::rotate(osg::DegreesToRadians(90.0f),0,0,-1);//
+
+    //printf("Has %d %d valid node\n",row,col);
       std::stringstream stream;
     stream << "image_" << col << "_" << row;
 

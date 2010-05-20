@@ -24,7 +24,7 @@
 #include <osgDB/FileUtils>
 #include <osgUtil/IntersectionVisitor>
 #include <string.h>
-
+#include <osg/io_utils>
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 /** PosterVisitor: A visitor for adding culling callbacks to newly allocated paged nodes */
@@ -85,8 +85,8 @@ class PosterIntersector : public osgUtil::Intersector
 public:
     typedef std::set<std::string> PagedNodeNameSet;
     
-    PosterIntersector( const osg::Polytope& polytope,osg::Camera * camera);
-    PosterIntersector( double xMin, double yMin, double xMax, double yMax ,osg::Camera *camera);
+    PosterIntersector( const osg::Polytope& polytope,osg::Camera * camera,osg::Matrix &modelMatrix);
+    PosterIntersector( double xMin, double yMin, double xMax, double yMax ,osg::Camera *camera,osg::Matrix &modelMatrix);
     
     void setPosterVisitor( PosterVisitor* pcv ) { _visitor = pcv; }
     PosterVisitor* getPosterVisitor() { return _visitor.get(); }
@@ -103,8 +103,8 @@ public:
     virtual void leave() {}
     virtual void reset();
     virtual void intersect( osgUtil::IntersectionVisitor& iv, osg::Drawable* drawable );
-    
 protected:
+    osg::Matrix &_modelMatrix;
     osg::ref_ptr<PosterVisitor> _visitor;
     PosterIntersector* _parent;
     osg::Polytope _polytope;
@@ -155,7 +155,7 @@ public:
     
     bool done() const { return !_isRunning && !_isFinishing; }
     void setOutputEmpty(bool b){_outputEmpty=b;}
-    void init( const osg::Camera* camera ,std::vector<TilePosition> &valid);
+    void init( const osg::Camera* camera ,std::vector<TilePosition> &valid,osg::Matrix model);
     void frame( const osg::FrameStamp* fs, osg::Node* node );
     void setTileOutputDir(const std::string &dir){_dir=dir; osgDB::makeDirectory(_dir);}
     void copyNeigborPixels(IplImage *img_overlap,int level, int col, int row,CvRect &src,CvRect &dst);
@@ -199,7 +199,7 @@ protected:
     osg::ref_ptr<osg::Image> _emptyImage;
     std::vector<TilePosition>   _validTiles;
     std::string _tmpTileExt;
-
+osg::Matrix _model;
     TileImages _images;
 };
 

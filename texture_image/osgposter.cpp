@@ -79,6 +79,7 @@ osgUtil::IntersectionVisitor iv(picker);
             if(picker->containsIntersections()){
    valid.push_back(std::make_pair(c,/*flip row*/numR-r-1));
              //  printf("%d_%d\n",valid.back().second-1,valid.back()    .first);
+ //  std::cout <<"haveit" << iv.getModelMatrix();
 }
 }
  // printf("\n");
@@ -179,8 +180,8 @@ public:
 class PrintPosterHandler : public osgGA::GUIEventHandler
 {
 public:
-    PrintPosterHandler( PosterPrinter* printer )
-    : _printer(printer) {}
+    PrintPosterHandler( PosterPrinter* printer,osg::Matrix model )
+    : _printer(printer),_model(model) {}
     
     bool handle( const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa )
     {
@@ -208,7 +209,7 @@ public:
                int c=(int)ceil(_printer->getPosterSize().x() / _printer->getTileSize().x());
 std::vector<std::pair<unsigned int,unsigned int> > valid;
                checkIntersection(view,r,c,valid);
-                  _printer->init( view->getCamera(),valid );
+                  _printer->init( view->getCamera(),valid ,_model);
                // if ( _printer.valid() )
                  //   _printer->init( view->getCamera() );
                 return true;
@@ -223,6 +224,7 @@ std::vector<std::pair<unsigned int,unsigned int> > valid;
 
 protected:
     osg::ref_ptr<PosterPrinter> _printer;
+    osg::Matrix _model;
 };
 
 osg::Camera *drawTileLines(  int tileWidth, int tileHeight,
@@ -281,6 +283,7 @@ osg::Camera *drawTileLines(  int tileWidth, int tileHeight,
     camera->addChild(geode);
     return camera;
 }
+
 
 /* The main entry */
 int main( int argc, char** argv )
@@ -419,10 +422,21 @@ int main( int argc, char** argv )
     viewer.setUpViewInWindow( 100, 100, tileWidth, tileHeight );
     viewer.setSceneData( root.get() );
     viewer.getDatabasePager()->setDoPreCompile( false );
-    
+
+    osg::Matrix modelM;
+    osg::MatrixList worldMatrices=scene->getWorldMatrices();
+   for(osg::MatrixList::iterator itr = worldMatrices.begin();
+       itr != worldMatrices.end();
+       ++itr)
+   {
+        modelM.preMult(*itr);
+        std::cout << "A" <<*itr;
+    }
+           std::cout <<modelM<<"size " << worldMatrices.size()<<std::endl;
+
     if ( activeMode )
     {
-        viewer.addEventHandler( new PrintPosterHandler(printer.get()) );
+        viewer.addEventHandler( new PrintPosterHandler(printer.get(),modelM) );
         viewer.addEventHandler( new osgViewer::StatsHandler );
         viewer.addEventHandler( new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()) );
         viewer.setCameraManipulator( new osgGA::TrackballManipulator );
@@ -445,7 +459,7 @@ int main( int argc, char** argv )
                  int r=(int)ceil(printer->getPosterSize().y() / printer->getTileSize().y());
                int c=(int)ceil(printer->getPosterSize().x() / printer->getTileSize().x());
                checkIntersection(dynamic_cast<osgViewer::View *>(&viewer),r,c,valid);
-        printer->init( camera ,valid);
+        printer->init( camera ,valid,modelM);
         while ( !printer->done() )
         {
             viewer.advance();

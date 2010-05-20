@@ -54,6 +54,7 @@ static double stop_time = numeric_limits<double>::max();
 //
 // Command-line arguments
 //
+int proj_tex_size=512;
 static bool rugosity=false;
 static int dist_gentex_range=0;
 static int vrip_split;
@@ -2567,10 +2568,10 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
           fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
 		  "chmod 777 mesh-regen-tex\n"
 		  "cd mesh-regen-tex\n"
-                  "$BASEPATH/texture_image/texture_image --color 1.0 0 0 --tilesize 512 512  --finalsize 512 512 --disable-output-poster  --tiledir %s ../mesh/final.ive\n"
-                  "cd $RUNDIR\ntime $BASEPATH/genTex %s %s --regen --projtex --stereo-calib %s --dicedir %s -f %s\n"
+                  "$BASEPATH/texture_image/texture_image --color 1.0 0 0 --tilesize %d %d  --finalsize 512 512 --disable-output-poster  --tiledir %s ../mesh/final.ive\n"
+                  "cd $RUNDIR\ntime $BASEPATH/genTex %s %s --projtexsize %d --regen --projtex --stereo-calib %s --dicedir %s -f %s\n"
 		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",
-                  ".",recon_config_file_name.c_str(), recon_config_file_name.c_str(),stereo_calib_file_name.c_str(),dicedir,
+                  proj_tex_size,proj_tex_size,".",recon_config_file_name.c_str(), recon_config_file_name.c_str(),proj_tex_size,stereo_calib_file_name.c_str(),dicedir,
                   "mesh-regen-tex/",dicedir);
 	  
 	  fchmod(fileno(rgfp),0777);

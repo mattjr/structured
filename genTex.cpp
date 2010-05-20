@@ -37,6 +37,7 @@ using namespace libplankton;
 using namespace libsnapper;
 
 static bool tex_array_blend=false;
+int proj_tex_size=512;
 //
 // Command-line arguments
 //
@@ -144,6 +145,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	  do_atlas=false;
 	  i+=1;
 	}
+          else if( strcmp( argv[i], "--projtexsize" ) == 0 )
+        {
+
+          proj_tex_size=atoi(argv[i+1]);
+          i+=2;
+        }
       else if( strcmp( argv[i], "--classes" ) == 0 )
 	{
 	  do_classes=true;
@@ -775,8 +782,7 @@ int main( int argc, char *argv[ ] )
       std::map<int,GtsMatrix *>::iterator iter;
       std::map<int,osg::Matrixd> *camMatrices=NULL;
       if(use_proj_tex){
-          printf("Proj TEx\n");
-	camMatrices= new  std::map<int,osg::Matrixd>;
+          camMatrices= new  std::map<int,osg::Matrixd>;
 	for(iter=gts_trans_map.begin(); iter!=gts_trans_map.end(); iter++){
 	  GtsMatrix *m=iter->second;
 	  osg::Matrixd osgm;
@@ -796,7 +802,7 @@ int main( int argc, char *argv[ ] )
       if(usePlaneDist)
 	toggle_ptr=new osg::Group();
       osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
-					   lodTexSize[j],group,planes,bounds,rot,
+                                           proj_tex_size,lodTexSize[j],group,planes,bounds,rot,
 					   texcallback,zrange,camMatrices,
 					   class_ptr,max_class_id,toggle_ptr);
     

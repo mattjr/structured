@@ -582,7 +582,7 @@ void PosterPrinter::writeMats(){
         mfile << _validBbox[i]._min[0] << " " << _validBbox[i]._min[1] << " "<<_validBbox[i]._min[2] << " ";
                 mfile << _validBbox[i]._max[0] << " " << _validBbox[i]._max[1] << " "<<_validBbox[i]._max[2] << " ";
 
-cout << _validMats[i]<<endl;
+//cout << _validMats[i]<<endl;
         for(int j=0; j < 4; j++){
             for(int k=0; k <4; k++){
                 mfile << _validMats[i](j,k) << " ";

@@ -220,7 +220,7 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
   ClippingMap *cm=(ClippingMap *)data[2];
   GeometryCollection& gc = *(*mtgcm)[f->material];
   osg::BoundingBox &texLimits=(*cm)[osgDB::getSimpleFileName((*textures)[f->material])];
-  int planeTexSize=(long int)data[7];
+  //int planeTexSize=(long int)data[7];
   
   map<int,int> *texnum2arraynum=(map<int,int> *)data[9];
   vector<Plane3D> *planes=(vector<Plane3D> *)data[10];
@@ -731,7 +731,7 @@ void OSGExporter::addNoveltyTextures( MaterialToGeometryCollectionMap &mtgcm, ma
 
 
 
-bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,osg::Matrix *rot,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes,int num_class_id,osg::Group *toggle_ptr)
+bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> textures,ClippingMap *cm,int proj_tex_size,int tex_size,osg::ref_ptr<osg::Geode>*group,vector<Plane3D> planes,vector<TriMesh::BBox> bounds,osg::Matrix *rot,VerboseMeshFunc vmcallback,float *zrange,std::map<int,osg::Matrixd> *camMatrices,std::map<string,int> *classes,int num_class_id,osg::Group *toggle_ptr)
 {
 
   gpuNovelty=false;
@@ -958,24 +958,24 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	loadShaderSource( hcolorf, basedir+"proj.frag" );
 	loadShaderSource( hcolorv, basedir+ "proj.vert" );
 	program->addShader(  hcolorf );
-	program->addShader(  hcolorv );
-	stateset->setAttributeAndModes( program,
-					osg::StateAttribute::ON );
-        /* set Texture matrix*/
-               osg::TexMat* texMat = new osg::TexMat;
-              osg::Matrixf mat=(*camMatrices)[tidx];
-              texMat->setMatrix(mat);
-                      std::cout<<"TEXMAX "<<texMat->getMatrix();
-                       osg::Vec4 v1(-133.381,74.1,15.0319,0);
-                      std::cout <<"BUG " <<v1 << " \n RES " << v1*mat<<endl;
-                 osg::Uniform *u=new osg::Uniform(osg::Uniform::FLOAT_MAT4, "teMat",1);
-                      u->setElement(0,mat);
-stateset->addUniform(u);
-             // stateset->setTextureAttributeAndModes(baseTexUnit, texMat, osg::StateAttribute::ON);
-              stateset->addUniform( new osg::Uniform( "fc", osg::Vec4(_calib->fcx,_calib->fcy,_calib->ccx,_calib->ccy)));
+        program->addShader(  hcolorv );
+        stateset->setAttributeAndModes( program,
+                                        osg::StateAttribute::ON );
+        osg::Matrix mat=(*camMatrices)[tidx];
+        osg::Matrix texScale(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1);
+        texScale(0,0)=1.0/(double)proj_tex_size;
+        texScale(1,1)=1.0/(double)proj_tex_size;
+        //cout << "tex Scale "<<texScale <<endl;
+       /*  osg::Vec3 v1(-133.381,74.1,15.0319);*/
+         osg::Matrix mat2=mat;
+         mat2.postMult(texScale);
+      //   std::cout <<"BUG " <<v1*mat << " \n RES " << v1*mat2<<endl;
+        stateset->addUniform( new osg::Uniform( "teMat",mat2));
+        // stateset->setTextureAttributeAndModes(baseTexUnit, texMat, osg::StateAttribute::ON);
+        //    stateset->addUniform( new osg::Uniform( "fc", osg::Vec4(_calib->fcx,_calib->fcy,_calib->ccx,_calib->ccy)));
 
-	
-	    }
+
+    }
 
 	   
 	    gc._texturesActive=true;
@@ -1031,7 +1031,7 @@ stateset->addUniform(u);
       
       novelty_program->addShader(  novelty );
       novelty_program->addShader( distNovelty );
-       osg::TextureRectangle* planeTex=NULL;
+       //osg::TextureRectangle* planeTex=NULL;
       if(computeHists){
 	Hist_Calc histCalc(_tex_size,_tex_size,16,1);
 

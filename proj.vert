@@ -25,24 +25,26 @@ void main()
  pixelcoord*=vec2(multU,multV);
  vec2 texcoord= pixelcoord/vec2(512.0,512.0);
  projCord = vec4(texcoord.x,1-texcoord.y,0,0);*/
-vec3 v1=gl_Vertex.xyz;
-vec3 p=preMult(teMat,v1);//=gl_TextureMatrix[0];
-//vec4 p2=teMat*v1;
-projCord.xyz=p.xyz/vec3(512,512,1);
+
+
+vec3 p=preMult(teMat,gl_Vertex.xyz);//=gl_TextureMatrix[0];
+projCord.xyz=p;
+
+
  //projCord=gl_Vertex*gl_TextureMatrix[0];
 
 //vec3 texcoord=gl_Vertex*gl_TextureMatrix[0];
- // normal.xyz = normalize( /*gl_NormalMatrix * */gl_Normal);
-  //  normal.w = gl_Vertex.z;
+  normal.xyz = normalize( /*gl_NormalMatrix * */gl_Normal);
+    normal.w = gl_Vertex.z;
 
     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-    //vec4 eyePosition = gl_ModelViewMatrix * gl_Vertex;
-    //vec4 eyeLightPos = gl_LightSource[0].position;
+   vec4 eyePosition = gl_ModelViewMatrix * gl_Vertex;
+   vec4 eyeLightPos = gl_LightSource[0].position;
 
-    //L = normalize(eyeLightPos.xyz - eyePosition.xyz);
-    //E = -normalize(eyePosition.xyz);
-    //H = normalize(L + E);
-    //vC=gl_Color;
-    //gl_TexCoord[0] = gl_MultiTexCoord0;
+   L = normalize(eyeLightPos.xyz - eyePosition.xyz);
+   E = -normalize(eyePosition.xyz);
+   H = normalize(L + E);
+   vC=gl_Color;
+   //gl_TexCoord[0] = gl_MultiTexCoord0;
  
 }

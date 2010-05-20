@@ -77,7 +77,7 @@ int main(int argc, char** argv)
     fscanf(fp,"%*f %*f %f\n%*f %*f %f\n",&(zrange[0]),&(zrange[1]));
     fclose(fp);
 
-    printf("\rMB: %d/%d LOD: %d/%d",1,mb_filenames.size(),1,3);
+    printf("\rMB: %d/%d LOD: %d/%d",1,(int)mb_filenames.size(),1,3);
     fflush(stdout);
     
     OSGExporter *osgExp=new OSGExporter(dir,false,true,512);    
@@ -110,11 +110,11 @@ int main(int argc, char** argv)
 	vector<Plane3D> planes;
 	vector<TriMesh::BBox> bounds;
 	osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
-					     512,group,planes,bounds,NULL,
+                                             0,512,group,planes,bounds,NULL,
 					     NULL,zrange,NULL);
 	
 	osgExp->outputModelOSG(out_name,group);
-	printf("\rMB: %d/%d LOD: %d/%d",i+1,mb_filenames.size(),j+1,3);
+        printf("\rMB: %d/%d LOD: %d/%d",i+1,(int)mb_filenames.size(),j+1,3);
 	fflush(stdout);
       }
     }

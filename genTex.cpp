@@ -750,7 +750,7 @@ int main( int argc, char *argv[ ] )
 
       
 	boost::xtime_get(&xt, boost::TIME_UTC);
-        if(!use_regen_tex){
+        if(!use_proj_tex){
 		gen_mesh_tex_coord(surf,&calib->left_calib,gts_trans_map,bboxTree,
 		   lodTexSize[j],num_threads,verbose,tex_array_blend,margins[j],use_dist_coords);
             }

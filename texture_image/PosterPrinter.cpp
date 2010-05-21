@@ -437,50 +437,15 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col, in
              osg::Matrix::translate(_tileColumns-1-2*col, /*flip rows*/-1*(_tileRows-1-2*row), 0.0);
     camera->setViewMatrix( _currentViewMatrix );
     camera->setProjectionMatrix( _currentProjectionMatrix * offsetMatrix );
-/*    double deltaRowBBox =(_bbox.zMax()-_bbox.zMin())/(double)_tileRows;
-    double deltaColBBox =(_bbox.xMax()-_bbox.xMin())/(double)_tileColumns;
-  */  osg::Polytope  frustum;
+    osg::Polytope  frustum;
 
     frustum.setToUnitFrustum();
     frustum.transformProvidingInverse(
             camera->getViewMatrix() *
             camera->getProjectionMatrix());
- /*osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN);
-     //   cbbv.setTraversalMask(_st->getShadowedScene()->getCastsShadowTraversalMask());
-        camera->traverse(cbbv);
-*/
-        //osg::BoundingBox bb= cbbv.getBoundingBox();
-         osgShadow::ConvexPolyhedron shaved;
-        /*frustum2.setToUnitFrustum();
-        osg::Matrix m=camera->getViewMatrix() *
-            camera->getProjectionMatrix();
-        frustum2.transform( osg::Matrix::inverse( m ), m );
 
-        osg::BoundingSphere bs=camera->getBound();
-        osg::BoundingBox bb2;
-        bb2.expandBy( bs );
-        osg::Polytope box;
-        box.setToBoundingBox( bb2 );
+    osgShadow::ConvexPolyhedron shaved;
 
-        frustum2.cut( box );
-
-        // approximate sphere with octahedron. Ie first cut by box then
-        // additionaly cut with the same box rotated 45, 45, 45 deg.
-        box.transform( // rotate box around its center
-            osg::Matrix::translate( -bs.center() ) *
-            osg::Matrix::rotate( osg::PI_4, 0, 0, 1 ) *
-            osg::Matrix::rotate( osg::PI_4, 1, 1, 0 ) *
-            osg::Matrix::translate( bs.center() ) );*/
-    shaved.setToBoundingBox(_bbox);
-       shaved.cut( frustum );
-osg::BoundingBox bb2 =shaved.computeBoundingBox();
-
-        cout << "Cenere"<<bb2.xMin()<<" " <<bb2.zMin()<<endl;
-   /* osg::Polytope::PlaneList pl=frustum.getPlaneList();
-    for(int i=0; i< pl.size(); i++){
-        cout << (pl[i])<<endl;
-    }*/
-    _validBbox[idx]=osg::BoundingBox(bb2.zMin(),bb2.zMax(),bb2.yMin(),bb2.yMax(),bb2.xMin(),bb2.xMax());//col*deltaColBBox,_bbox.yMin(),row*deltaRowBBox,(col+1)*deltaColBBox,_bbox.yMax(),(row+1)*deltaRowBBox);
     // Check intersections between the image-tile box and the model
     osgUtil::IntersectionVisitor iv( _intersector.get() );
     iv.setReadCallback( g_pagedLoadingCallback.get() );
@@ -517,8 +482,21 @@ osg::BoundingBox bb2 =shaved.computeBoundingBox();
 
     if(camera->getViewport())
         matrix.postMult(camera->getViewport()->computeWindowMatrix());
-
     _validMats[idx]=matrix;
+
+    /* cout <<"Min "<< minV << " Max "<< maxV <<endl;
+cout << "In World "<<_bbox.contains(vt)<<endl;*/
+    shaved.setToBoundingBox(_bbox);
+    shaved.cut( frustum );
+    osg::BoundingBox bb2 =shaved.computeBoundingBox();
+    bb2._min=_model*bb2._min;
+    bb2._max=_model*bb2._max;
+    //cout <<"BBS Min "<< bb2._min << " Max "<< bb2._max <<endl;
+
+    _validBbox[idx]=bb2;
+
+  //  cout << "Ouput pixel "<<vt*matrix<< "IDX "<<idx <<"Working " <<    bb2.contains(vt)<<endl;
+
     //printf("Has %d %d valid node\n",row,col);
     std::stringstream stream;
     stream << "image_" << col << "_" << row;

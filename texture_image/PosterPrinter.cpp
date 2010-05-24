@@ -483,7 +483,7 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col, in
     if(camera->getViewport())
         matrix.postMult(camera->getViewport()->computeWindowMatrix());
     _validMats[idx]=matrix;
-
+cout << matrix<<endl;
     /* cout <<"Min "<< minV << " Max "<< maxV <<endl;
 cout << "In World "<<_bbox.contains(vt)<<endl;*/
     shaved.setToBoundingBox(_bbox);
@@ -529,6 +529,10 @@ void PosterPrinter::recordImages()
 
             ss<<"/"<<col<<"_"<<(row) <<"."<<_tmpTileExt;
             osgDB::writeImageFile( *image,  ss.str());
+            // _emptyImage =osgDB::readImageFile("/home/mattjr/pattern.png");// new osg::Image;
+               // _emptyImage->allocateImage( (int)_tileSize.x(), (int)_tileSize.y(), 1, GL_RGBA, GL_UNSIGNED_BYTE );
+                 //      osgDB::writeImageFile( *_emptyImage,  ss.str());
+
             //cout << "Writing "<<ss.str();
         }
         if(_finalPoster && _finalPoster->imageData){

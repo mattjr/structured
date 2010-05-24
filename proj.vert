@@ -28,8 +28,8 @@ void main()
 
 
 vec3 p=preMult(teMat,gl_Vertex.xyz);//=gl_TextureMatrix[0];
+//projCord.xyz=clamp(p,0.0,1.0);
 projCord.xyz=p;
-
 
  //projCord=gl_Vertex*gl_TextureMatrix[0];
 
@@ -45,6 +45,6 @@ projCord.xyz=p;
    E = -normalize(eyePosition.xyz);
    H = normalize(L + E);
    vC=gl_Color;
-   //gl_TexCoord[0] = gl_MultiTexCoord0;
+   gl_TexCoord[0] = gl_MultiTexCoord0;
  
 }

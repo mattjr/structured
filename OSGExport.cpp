@@ -928,6 +928,10 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      texture->setUnRefImageDataAfterApply( false );
 	    */
 	    texture->setImage(image.get());
+            texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
+            texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
+           texture->setBorderColor(osg::Vec4(0.0,1.0,0.0,1.0));
+            //texture->setBorderWidth(1.0);
 	    //texture->setInternalFormatMode(internalFormatMode);
 	    stateset->setTextureAttributeAndModes(baseTexUnit,texture,
 						  osg::StateAttribute::ON);
@@ -963,8 +967,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
                                         osg::StateAttribute::ON );
         osg::Matrix mat=(*camMatrices)[tidx];
         osg::Matrix texScale(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1);
-        texScale(0,0)=1.0/(double)proj_tex_size;
-        texScale(1,1)=1.0/(double)proj_tex_size;
+        texScale(0,0)=1.0/(double)(proj_tex_size);
+        texScale(1,1)=1.0/(double)(proj_tex_size);
         //cout << "tex Scale "<<texScale <<endl;
        /*  osg::Vec3 v1(-133.381,74.1,15.0319);*/
          osg::Matrix mat2=mat;
@@ -1060,8 +1064,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       GeometryCollection& gc = *(gcAndTexIds[i].first);
       if (gc._geom)
         {
-           gc._geom->setUseDisplayList(true);
-           //       gc._geom->setUseDisplayList(false);
+           //gc._geom->setUseDisplayList(true);
+                  gc._geom->setUseDisplayList(false);
           //  tessellator.retessellatePolygons(*gc._geom);
         
 	  smoother.smooth(*gc._geom);
@@ -1656,7 +1660,7 @@ static void findimg_foreach_face (T_Face * f,
 {
 
   int indexClosest=find_first_bbox(&GTS_FACE(f)->triangle,
-                                         data->bboxTree);
+                                         data->bboxTree,bboxes_all,data->back_trans);
   //fprintf(ffp,"%d\n",indexClosest);
   if(indexClosest == INT_MAX){
     /*fprintf(errFP,"Failed traingle\n");
@@ -1667,7 +1671,8 @@ static void findimg_foreach_face (T_Face * f,
     return;
   }
 
-
+//if(indexClosest != 93)
+//    return;
   if(apply_texid_to_tri(f,indexClosest))
     data->validCount++;
 
@@ -1837,7 +1842,7 @@ if(verbose)
   
 }
 
-void gen_mesh_tex_id(GtsSurface *s ,GNode * bboxTree,int num_threads,int verbose){
+void gen_mesh_tex_id(GtsSurface *s ,GNode * bboxTree, std::map<int,GtsMatrix *> back_trans,int num_threads,int verbose){
 
 
 
@@ -1851,6 +1856,7 @@ void gen_mesh_tex_id(GtsSurface *s ,GNode * bboxTree,int num_threads,int verbose
   tex_data.reject=0;
   tex_data.total=gts_surface_face_number(s);
   tex_data.verbose=verbose;
+  tex_data.back_trans=back_trans;
 
 
     if(num_threads > 1)

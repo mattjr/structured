@@ -142,7 +142,7 @@ static bool parse_args( int argc, char *argv[ ] )
       else if( strcmp( argv[i], "--projtex" ) == 0 )
 	{
 	  use_proj_tex=true;
-	  do_atlas=false;
+          do_atlas=false;
 	  i+=1;
 	}
           else if( strcmp( argv[i], "--projtexsize" ) == 0 )
@@ -755,7 +755,7 @@ int main( int argc, char *argv[ ] )
 		   lodTexSize[j],num_threads,verbose,tex_array_blend,margins[j],use_dist_coords);
             }
         else{
-             gen_mesh_tex_id(surf,bboxTree,num_threads,verbose);
+             gen_mesh_tex_id(surf,bboxTree,gts_trans_map,num_threads,verbose);
         }
 
 

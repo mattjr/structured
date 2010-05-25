@@ -62,33 +62,42 @@ T* findTopMostNodeOfType( osg::Node* node )
     return fnotv._foundNode;
 }
 
-void  checkIntersection(osgViewer::View *viewer,int numC,int numR,std::vector<std::pair<unsigned int,unsigned int> > &valid){
+void  checkIntersection(osgViewer::View *viewer,int numC,int numR,std::vector<std::pair<unsigned int,unsigned int> > &valid,std::pair<unsigned int,unsigned int> &empty){
     osgUtil::PolytopeIntersector* picker;
     // use window coordinates
     // remap the mouse x,y into viewport coordinates.
     osg::Viewport* viewport = viewer->getCamera()->getViewport();
-  double width= viewport->width();
-  double height=viewport->height();
-double deltaW=width/numC;
-double deltaH=height/numR;
-//printf("here %d %d\n",numC,numR);
-  for(int c=0; c < numC; c++){
-      for(int r=0; r<numR; r++){
-    picker = new osgUtil::PolytopeIntersector( osgUtil::Intersector::WINDOW, deltaW*c, deltaH*r, deltaW*(c+1), deltaH*(r+1) );
-  //  printf("checking %f %f %f %f\n",deltaW*c, deltaH*r, deltaW*(c+1), deltaH*(r+1));
-osgUtil::IntersectionVisitor iv(picker);
+    double width= viewport->width();
+    double height=viewport->height();
+    double deltaW=width/numC;
+    double deltaH=height/numR;
+    //printf("here %d %d\n",numC,numR);
+    bool gotempty=false;
+    for(int c=0; c < numC; c++){
+        for(int r=0; r<numR; r++){
+            picker = new osgUtil::PolytopeIntersector( osgUtil::Intersector::WINDOW, deltaW*c, deltaH*r, deltaW*(c+1), deltaH*(r+1) );
+            //  printf("checking %f %f %f %f\n",deltaW*c, deltaH*r, deltaW*(c+1), deltaH*(r+1));
+            osgUtil::IntersectionVisitor iv(picker);
 
             viewer->getCamera()->accept(iv);
             if(picker->containsIntersections()){
-   valid.push_back(std::make_pair(c,/*flip row*/numR-r-1));
-             //  printf("%d_%d\n",valid.back().second-1,valid.back()    .first);
- //  std::cout <<"haveit" << iv.getModelMatrix();
-}
-}
- // printf("\n");
-}
-  printf("Done checking valid size %d/%d\n",(int)valid.size(),numC*numR);
-//  exit(0);
+                //Get one empty
+                valid.push_back(std::make_pair(c,/*flip row*/numR-r-1));
+                //  printf("%d_%d\n",valid.back().second-1,valid.back()    .first);
+                //  std::cout <<"haveit" << iv.getModelMatrix();
+            }else if(!gotempty){
+                gotempty=true;
+                empty=std::make_pair(c,/*flip row*/numR-r-1);
+
+            }
+        }
+        // printf("\n");
+    }
+    if(!gotempty)
+        empty=std::make_pair(-1,-1);
+
+    printf("Done checking valid size %d/%d\n",(int)valid.size(),numC*numR);
+    //  exit(0);
 }
 
 void getAutoHome(osg::Camera *camera,osg::Node *node){
@@ -236,9 +245,10 @@ public:
             {
                int r=(int)ceil(_printer->getPosterSize().y() / _printer->getTileSize().y());
                int c=(int)ceil(_printer->getPosterSize().x() / _printer->getTileSize().x());
-std::vector<std::pair<unsigned int,unsigned int> > valid;
-               checkIntersection(view,r,c,valid);
-                  _printer->init( view->getCamera(),valid,_bbox );
+               std::vector<std::pair<unsigned int,unsigned int> > valid;
+               std::pair<unsigned int,unsigned int> empty;
+               checkIntersection(view,r,c,valid,empty);
+                  _printer->init( view->getCamera(),valid,_bbox ,empty);
                // if ( _printer.valid() )
                  //   _printer->init( view->getCamera() );
                 return true;
@@ -360,6 +370,7 @@ int main( int argc, char** argv )
     osg::Camera::RenderTargetImplementation renderImplementation = osg::Camera::FRAME_BUFFER;
     std::string dir;
     std::string basename;
+    int overlap=1;
     bool outputEmpty=false;
     while ( arguments.read("--target-res",targetRes) ) {}
     while ( arguments.read("--basename",basename) ) {}
@@ -368,6 +379,9 @@ int main( int argc, char** argv )
     while ( arguments.read("--inactive") ) { activeMode = false; }
     while ( arguments.read("--color", bgColor.r(), bgColor.g(), bgColor.b()) ) {}
     while ( arguments.read("--tilesize", tileWidth, tileHeight) ) {}
+
+    while (arguments.read("--overlap", overlap) ) {}
+
     if ( arguments.read("--finalsize", posterWidth, posterHeight) )
     {
         auto_size=false;
@@ -447,6 +461,7 @@ int main( int argc, char** argv )
     printer->setPosterSize( posterWidth, posterHeight );
     printer->setCamera( camera.get() );
     printer->setTileOutputDir(dir);
+    printer->setOverlap(overlap);
     printer->setOutputEmpty(outputEmpty);
     if(basename.size())
         printer->setBaseName(basename);
@@ -499,10 +514,12 @@ int main( int argc, char** argv )
         viewer.realize();
         viewer.frame();
         std::vector<std::pair<unsigned int,unsigned int> > valid;
-                 int r=(int)ceil(printer->getPosterSize().y() / printer->getTileSize().y());
-               int c=(int)ceil(printer->getPosterSize().x() / printer->getTileSize().x());
-               checkIntersection(dynamic_cast<osgViewer::View *>(&viewer),r,c,valid);
-        printer->init( camera ,valid,sceneSize);
+        std::pair<unsigned int,unsigned int> empty;
+
+        int r=(int)ceil(printer->getPosterSize().y() / printer->getTileSize().y());
+        int c=(int)ceil(printer->getPosterSize().x() / printer->getTileSize().x());
+        checkIntersection(dynamic_cast<osgViewer::View *>(&viewer),r,c,valid,empty);
+        printer->init( camera ,valid,sceneSize,empty);
         while ( !printer->done() )
         {
             viewer.advance();

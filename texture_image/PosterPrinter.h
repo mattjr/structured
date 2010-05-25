@@ -126,6 +126,7 @@ public:
     bool getOutputTiles() const { return _outputTiles; }
     void setBaseName(std::string baseName){_baseName=baseName;}
     void writeMats(void);
+    void setOverlap(int overlap){_tileOverlap=overlap;}
     /** Set the output sub-image-tile extension, e.g. bmp */
     void setOutputTileExtension( const std::string& ext ) { _outputTileExt = ext; }
     const std::string& getOutputTileExtension() const { return _outputTileExt; }
@@ -155,13 +156,15 @@ public:
     
     bool done() const { return !_isRunning && !_isFinishing; }
     void setOutputEmpty(bool b){_outputEmpty=b;}
-    void init( const osg::Camera* camera ,std::vector<TilePosition> &valid,osg::BoundingBox bbox);
+    void init( const osg::Camera* camera ,std::vector<TilePosition> &valid,osg::BoundingBox bbox,std::pair<unsigned int,unsigned int> empty);
     void frame( const osg::FrameStamp* fs, osg::Node* node );
     void setTileOutputDir(const std::string &dir){_dir=dir; osgDB::makeDirectory(_dir);}
     void copyNeigborPixels(IplImage *img_overlap,int level, int col, int row,CvRect &src,CvRect &dst);
+
 protected:
     virtual ~PosterPrinter() {}
-    
+    void doDeepZoom(void);
+    void RecordXML(void);
     bool addCullCallbacks( const osg::FrameStamp* fs, osg::Node* node );
     void removeCullCallbacks( osg::Node* node );
     void bindCameraToImage( osg::Camera* camera, int row, int col,int idx );
@@ -170,6 +173,7 @@ protected:
     bool _outputTiles;
     bool _outputEmpty;
     int _maxLevel;
+    std::pair<unsigned int,unsigned int> _emptyPair;
     std::string empty_name;
     bool _haveSavedFirstEmpty;
     std::string _outputTileExt;

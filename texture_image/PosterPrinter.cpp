@@ -272,15 +272,15 @@ void PosterIntersector::intersect( osgUtil::IntersectionVisitor& iv, osg::Drawab
 /* PosterPrinter: The implementation class of high-res rendering */
 PosterPrinter::PosterPrinter()
 :   _isRunning(false), _isFinishing(false), _lastBindingFrame(0),
-    _outputTiles(true), _tmpTileExt("png"), _outputTileExt("jpg"),_tileOverlap(1),_tileSize(254,254),
-    _currentRow(0), _currentColumn(0),
+    _outputTiles(true), _tmpTileExt("png"), _outputTileExt("png"),_tileOverlap(1),_tileSize(254,254),
+    _currentRow(0), _currentColumn(0),_emptyImage(0),
     _camera(0), _finalPoster(0),_baseName("mesh"),_outputEmpty(false),_haveSavedFirstEmpty(false)
 {
 
 _visitor = new PosterVisitor;
 }
 
-void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &valid,osg::BoundingBox bbox)
+void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &valid,osg::BoundingBox bbox,std::pair<unsigned int,unsigned int> empty)
 {
     _intersector = new PosterIntersector(-1.0, -1.0, 1.0, 1.0,_camera,_model);
     _intersector->setPosterVisitor( _visitor.get() );
@@ -290,6 +290,7 @@ void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &v
     _bbox=bbox;
     _visitor->clearNames();
     if(valid.size() && !_outputEmpty){
+        _emptyPair =empty;
         _validTiles=valid;
         _validCurrent=0;
         _validMats.resize(valid.size());
@@ -341,8 +342,10 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
 
             _isFinishing = false;
             std::cout << "Recording images finished." << std::endl;
-            if(_outputTiles)
+            if(_outputTiles){
                 writeMats();
+                doDeepZoom();
+            }
 
         }
     }
@@ -395,6 +398,12 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
                         _currentRow=_validTiles[_validCurrent].second;
                         _currentColumn=_validTiles[_validCurrent].first;
 
+                    }else if(!_haveSavedFirstEmpty && _emptyPair.second >= 0 && _emptyPair.first >= 0){
+                        _haveSavedFirstEmpty=true;
+                        _currentRow=_emptyPair.second;
+                        _currentColumn=_emptyPair.first;
+                        _validCurrent=-1;
+
                     }else{
                         _isRunning = false;
                         _isFinishing = true;
@@ -428,7 +437,7 @@ void PosterPrinter::removeCullCallbacks( osg::Node* node )
     _camera->accept( *_visitor );
 }
 
-void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col, int idx )
+void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col, int idx)
 {
 
     // Calculate projection matrix offset of each tile
@@ -452,12 +461,12 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col, in
     _intersector->reset();
     camera->accept( iv );
     if(!_outputEmpty){
-        if (! _intersector->containsIntersections())
+        if (! _intersector->containsIntersections() || idx <0)
         {
-            if(!_outputEmpty)
+            if(!_outputEmpty && _emptyImage)
             printf("image %d_%d empty but thought to be valid\n",col,row);
 
-            if(!_haveSavedFirstEmpty){
+            if(!_emptyImage){
 
                 _emptyImage = new osg::Image;
                 _emptyImage->allocateImage( (int)_tileSize.x(), (int)_tileSize.y(), 1, GL_RGBA, GL_UNSIGNED_BYTE );
@@ -476,14 +485,59 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col, in
     }
 
     osg::Matrix matrix;
+
     matrix.preMult(camera->getProjectionMatrix() );
     matrix.preMult( camera->getViewMatrix() );
     matrix.preMult(_model);
+osg::Matrix win=camera->getViewport()->computeWindowMatrix();
+    //if(camera->getViewport())
+//printf("Neede %f %f\n,",camera->getViewport()->x(),camera->getViewport()->y());
+    int offsetL = (col == 0 ? 0 : _tileOverlap);
+    int offsetT = (row == 0 ? 0 : _tileOverlap);
+    int offsetR = (col == (_tileColumns-1) ? 0 : _tileOverlap);
+    int offsetB = (row == (_tileRows-1) ? 0 : _tileOverlap);
+    double offsetW=_tileSize.x()+offsetL+offsetR;
+    double offsetH=_tileSize.y()+offsetT+offsetB;
+  //  printf("offsetW %f offsetH %f\n",offsetW,offsetH);
+//    printf("Width Hiehgt %d %d %d %d\n",offsetL,offsetT,offsetR,offsetB);
+ //   osg::Matrix win=osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*offsetW,0.5*offsetH,0.5f)*osg::Matrix::translate(camera->getViewport()->x(),camera->getViewport()->y(),0.0f);
 
-    if(camera->getViewport())
-        matrix.postMult(camera->getViewport()->computeWindowMatrix());
+//printf("MFFER %f \n",offsetW/_tileSize.x());
+    matrix.postMult(win);
+    matrix.postMult(osg::Matrix::translate(offsetL,offsetB,0)*osg::Matrix::scale(_tileSize.x()/offsetW,
+                                        _tileSize.y()/offsetH,0.0));
+//cout <<win <<endl;
+/*    double scaledOffsetL=offsetL *((_tileSize.x()+offsetL+offsetR)/(double)_tileSize.x());
+        double scaledOffsetB=offsetB *((_tileSize.y()+offsetT+offsetB)/(double)_tileSize.y());*/
+double scaledOffsetL=offsetL;//(_tileSize.x()/(double)(_tileSize.x()+offsetL+offsetR));
+    double scaledOffsetB=offsetB ;
+    //printf("%f CGECJ\n",(_tileSize.y()/(double)(_tileSize.y()+offsetT+offsetB)));
+  //  printf("%f CGECJ\n",(_tileSize.x()/(double)(_tileSize.x()+offsetL+offsetR)));
+
+//printf("col %d row %d %d %d %f %f\n",col,row ,offsetL,offsetB,scaledOffsetL,scaledOffsetB);
+
+  //  matrix.postMult(osg::Matrix::translate(scaledOffsetL,
+    //                                     scaledOffsetB,0.0));
+    //  matrix.postMult(osg::Matrix::translate(20,
+       //                                  40,0.0));
+osg::Vec3 v1(-39.7 ,45, 31.0);
+//cout << "Heter "<< v1*matrix <<endl;
+osg::Matrix texScale(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1);
+    texScale(0,0)=1.0/(double)(_tileSize.x());
+    texScale(1,1)=1.0/(double)(_tileSize.y());
+    matrix.postMult(texScale);
+ // osg::Vec3 v1(-133.381,74.1,15.0319);
+ //  osg::Vec3 v1(-7.381,-8.0,26.0319);
+
+   // cout << texScale<<endl;
+   // cout <<matrix<<endl;
+/*if(!(row == 0 && col == 0)){
+matrix=osg::Matrix::identity();
+printf("ADASDAS\n");
+}*/
+//    cout << "current "<<idx<<endl;
     _validMats[idx]=matrix;
-cout << matrix<<endl;
+//cout << matrix<<endl;
     /* cout <<"Min "<< minV << " Max "<< maxV <<endl;
 cout << "In World "<<_bbox.contains(vt)<<endl;*/
     shaved.setToBoundingBox(_bbox);
@@ -495,7 +549,7 @@ cout << "In World "<<_bbox.contains(vt)<<endl;*/
 
     _validBbox[idx]=bb2;
 
-  //  cout << "Ouput pixel "<<vt*matrix<< "IDX "<<idx <<"Working " <<    bb2.contains(vt)<<endl;
+    //  cout << "Ouput pixel "<<vt*matrix<< "IDX "<<idx <<"Working " <<    bb2.contains(vt)<<endl;
 
     //printf("Has %d %d valid node\n",row,col);
     std::stringstream stream;
@@ -522,16 +576,25 @@ void PosterPrinter::recordImages()
         unsigned int row = itr->first.first, col = itr->first.second;
 
         if ( _outputTiles ){
+
             std::stringstream ss;
-            ss<<_dir<<"/";//<<_baseName<<"_files/";
+            ss<<_dir<<"/"<<_baseName<<"_files/";
 
-            // osgDB::makeDirectory(ss.str());
+            osgDB::makeDirectory(ss.str());
+            ss << _maxLevel;
+            osgDB::makeDirectory(ss.str());
 
-            ss<<"/"<<col<<"_"<<(row) <<"."<<_tmpTileExt;
-            osgDB::writeImageFile( *image,  ss.str());
+            //ss<<"/"<<col<<"_"<<(row) <<"."<<_tmpTileExt;
+
+            std::stringstream  tmpss;
+            tmpss<<_dir<<"/"<<_tmpbase<<_baseName<<"_files/"<<_maxLevel;
+            osgDB::makeDirectory(tmpss.str());
+
+            tmpss<<"/"<<col<<"_"<<(row) <<"."<<_tmpTileExt;
+            osgDB::writeImageFile( *image,  tmpss.str());
             // _emptyImage =osgDB::readImageFile("/home/mattjr/pattern.png");// new osg::Image;
-               // _emptyImage->allocateImage( (int)_tileSize.x(), (int)_tileSize.y(), 1, GL_RGBA, GL_UNSIGNED_BYTE );
-                 //      osgDB::writeImageFile( *_emptyImage,  ss.str());
+            // _emptyImage->allocateImage( (int)_tileSize.x(), (int)_tileSize.y(), 1, GL_RGBA, GL_UNSIGNED_BYTE );
+            //      osgDB::writeImageFile( *_emptyImage,  ss.str());
 
             //cout << "Writing "<<ss.str();
         }
@@ -568,34 +631,404 @@ void PosterPrinter::recordImages()
 }
 
 void PosterPrinter::writeMats(){
+    double width = _posterSize.x();
+    double height = _posterSize.y();
+    for(int lod=0; lod< 3; lod++){
+        std::stringstream bname;
+        bname << "re-bbox-"<<lod <<".txt";
 
+        std::string fname=(_dir+"/"+bname.str());
+        std::ofstream mfile(fname.c_str(),std::ios_base::trunc);
+        if(!mfile.is_open()){
+            std::cerr<< "Couldn't open meshes txt  "<<fname<<std::endl;
+            return;
+        }
 
-    std::string fname=(_dir+"/"+"re-bbox.txt");
-    std::ofstream mfile(fname.c_str(),std::ios_base::trunc);
-    if(!mfile.is_open()){
-        std::cerr<< "Couldn't open meshes txt  "<<fname<<std::endl;
-        return;
-    }
-    for(int i=0; i<_validTiles.size(); i++){
-        mfile<< i << " ";
-        int row=_validTiles[i].second;
-        int col=_validTiles[i].first;
-        std::stringstream ss;
+        if(lod == 0){
+            for(int i=0; i<_validTiles.size(); i++){
+                mfile<< i << " ";
+                int row=_validTiles[i].second;
+                int col=_validTiles[i].first;
+                //  std::stringstream ss;
 
-        ss<<col<<"_"<<row <<"."<<_tmpTileExt;
-        mfile << ss.str() << " ";
-        mfile << _validBbox[i]._min[0] << " " << _validBbox[i]._min[1] << " "<<_validBbox[i]._min[2] << " ";
+                //ss<<col<<"_"<<row <<"."<<_tmpTileExt;
+                std::stringstream ss;
+                ss<<_baseName<<"_files/"<<_maxLevel<<"/s";
+                ss<<col<<"_"<<row <<"."<<_outputTileExt;
+                //   ss<<_tmpbase<<_baseName<<"_files/"<<_maxLevel<<"/"<<col<<"_"<<row <<"."<<_tmpTileExt;
+
+                mfile << ss.str() << " ";
+                mfile << _validBbox[i]._min[0] << " " << _validBbox[i]._min[1] << " "<<_validBbox[i]._min[2] << " ";
                 mfile << _validBbox[i]._max[0] << " " << _validBbox[i]._max[1] << " "<<_validBbox[i]._max[2] << " ";
 
-//cout << _validMats[i]<<endl;
-        for(int j=0; j < 4; j++){
-            for(int k=0; k <4; k++){
-                mfile << _validMats[i](j,k) << " ";
-            }
-        }
-         mfile<<std::endl;
+                //cout << _validMats[i]<<endl;
+                for(int j=0; j < 4; j++){
+                    for(int k=0; k <4; k++){
+                        mfile << _validMats[i](j,k) << " ";
+                    }
+                }
+                mfile<<std::endl;
 
+            }
+        }else{
+            width/=2.0;
+            height/=2.0;
+
+
+            int nCols = (int)ceil(width / _tileSize.x());
+            int nRows = (int)ceil(height / _tileSize.y());
+            for (int col = 0; col < nCols; col++) {
+                for (int row = 0; row < nRows; row++) {
+
+                }
+            }
+
+        }
+        mfile.close();
+    }
+}
+
+void PosterPrinter::copyNeigborPixels(IplImage *img_overlap,int level, int col, int row,CvRect &srcrect,CvRect &dstrect){
+    std::stringstream L;
+    L<<_dir<<"/"<<_tmpbase<<_baseName<<"_files/"<<level<<"/"<<col<<"_"<<row<<"."<<_tmpTileExt;
+    IplImage *imgsrc =NULL;
+    bool exists=osgDB::fileExists(L.str());
+    cvSetImageROI(img_overlap, dstrect);
+
+    if(exists){
+        imgsrc = cvLoadImage(L.str().c_str(), -1);
+        cvSetImageROI(imgsrc, srcrect);
+        cvCopy(imgsrc,img_overlap);
+        cvReleaseImage(&imgsrc);
+
+    }else if(!_outputEmpty){
+        unsigned char color[3];
+
+        if(_emptyImage && _emptyImage->s() && _emptyImage->t()){
+            unsigned char *ptr=_emptyImage->data(0,0);
+            //Get osg/opengl bgr and set rgb opencv
+            color[0]= *(ptr+2);
+            color[1]= *(ptr+1);
+            color[2]= *(ptr);
+        }else{
+            fprintf(stderr,"Empty image null\n");
+        }
+
+        cvSet(img_overlap,cvScalar(color[0],color[1],color[2]));
+   //     printf("using empty image for %d %d level %d\n",col,row,level);
+    }else{
+    printf("Can't find %s\n",L.str().c_str());
 
     }
-    mfile.close();
+}
+void PosterPrinter::addOverlap(int level,int row, int col,double width,double height){
+    int levelColumns = (int)ceil(width / _tileSize.x());
+    int levelRows = (int)ceil(height / _tileSize.y());
+    std::stringstream origName;
+    origName<<_dir<<"/"<<_tmpbase<<_baseName<<"_files/"<<level<<"/"<<col<<"_"<<row<<"."<<_tmpTileExt;
+    if(!osgDB::fileExists(origName.str())){
+         // cout << "Doesnt " << origName.str()<<endl;
+        return;
+    }
+
+
+
+    int offsetL = (col == 0 ? 0 : _tileOverlap);
+    int offsetT = (row == 0 ? 0 : _tileOverlap);
+
+    int offsetR = (col == (levelColumns-1) ? 0 : _tileOverlap);
+    int offsetB = (row == (levelRows-1) ? 0 : _tileOverlap);
+
+    int offsetTL = ((offsetL == 0 || offsetT == 0) ? 0 : _tileOverlap);
+    int offsetTR = ((offsetR == 0 || offsetT == 0) ? 0 : _tileOverlap);
+
+    int offsetBL = ((offsetL == 0 || offsetB == 0) ? 0 : _tileOverlap);
+    int offsetBR = ((offsetR == 0 || offsetB == 0) ? 0 : _tileOverlap);
+
+
+    //printf("col  %d row %d L %d R %d T %d B%d TL %d TR %d BL %d BR %d\n",col,row,offsetL,offsetR,offsetT,offsetB,
+    //offsetTL,offsetTR,offsetBL,offsetBR);
+
+   int w = _tileSize.x() + offsetL + offsetR;
+    int h = _tileSize.y() + offsetT + offsetB;
+ //      int w = _tileSize.x() + (col == 0 ? 1 : 2) * _tileOverlap;
+   //     int h = _tileSize.y() + (row == 0 ? 1 : 2) * _tileOverlap;
+
+
+    int x = col * _tileSize.x() - (col == 0 ? 0 : _tileOverlap);
+    int y = row * _tileSize.y() - (row == 0 ? 0 : _tileOverlap);
+    if (x + w > width)
+        w = width - x;
+    if (y + h > height)
+        h = height - y;
+//printf("getTile: row=%d, col=%d, x=%d, y=%d, w=%d, h=%d\n",row,col,x,y,w,h);
+
+//    cout << "Adding offset level" << level<< " " << origName.str() << " h " << h << " w " <<w<<endl;
+    IplImage *img1 = cvLoadImage(origName.str().c_str(), -1);
+     IplImage *img_overlap = cvCreateImage(cvSize(w,h),IPL_DEPTH_8U,3);
+    cvSet(img_overlap,cvScalar(rand()%255,rand()%255,rand()%255));
+
+    if(offsetL > 0 ){
+        int pullh=std::min((int)_tileSize.y(),h-offsetT);
+
+        CvRect srcrect = cvRect(_tileSize.x()-offsetL, 0, offsetL, pullh);
+        CvRect dstrect = cvRect(0, offsetT, offsetL, pullh);
+        copyNeigborPixels(img_overlap,level,col-1,row,srcrect,dstrect);
+    }
+    if(offsetR > 0 ){
+        int pullh=std::min((int)_tileSize.y(),h-offsetT);
+        CvRect srcrect = cvRect(0, 0, offsetR, pullh);
+        CvRect dstrect = cvRect(img_overlap->width-offsetR, offsetT, offsetR, pullh);
+        copyNeigborPixels(img_overlap,level,col+1,row,srcrect,dstrect);
+    }
+    if(offsetT > 0 ){
+        int pullw=std::min((int)_tileSize.x(),w-offsetL);
+
+        CvRect srcrect = cvRect(0, _tileSize.x()-offsetT, pullw, offsetT);
+        CvRect dstrect = cvRect(offsetL, 0, pullw, offsetT);
+        copyNeigborPixels(img_overlap,level,col,row-1,srcrect,dstrect);
+    }
+    if(offsetB > 0 ){
+                int pullw=std::min((int)_tileSize.y(),w-offsetL);
+
+        CvRect srcrect = cvRect(0,0 , pullw, offsetB);
+        CvRect dstrect = cvRect(offsetL, img_overlap->height-offsetB, pullw, offsetB);
+        copyNeigborPixels(img_overlap,level,col,row+1,srcrect,dstrect);
+    }
+
+    if(offsetBL > 0 ){
+        CvRect srcrect = cvRect(_tileSize.y()-offsetBL,0 , offsetBL, offsetBL);
+        CvRect dstrect = cvRect(0, img_overlap->height-offsetBL, offsetBL, offsetBL);
+        copyNeigborPixels(img_overlap,level,col-1,row+1,srcrect,dstrect);
+    }
+    if(offsetBR > 0 ){
+        CvRect srcrect = cvRect(0,0 , offsetBR, offsetBR);
+        CvRect dstrect = cvRect(img_overlap->width-offsetBR, img_overlap->height-offsetBR, offsetBR, offsetBR);
+        copyNeigborPixels(img_overlap,level,col+1,row+1,srcrect,dstrect);
+    }
+    if(offsetTL > 0 ){
+        CvRect srcrect = cvRect(_tileSize.y()-offsetTL,_tileSize.x()-offsetTL , offsetTL, offsetTL);
+        CvRect dstrect = cvRect(0, 0, offsetTL, offsetTL);
+        copyNeigborPixels(img_overlap,level,col-1,row-1,srcrect,dstrect);
+    }
+    if(offsetTR > 0 ){
+        CvRect srcrect = cvRect(0,_tileSize.x()-offsetTR , offsetTR, offsetTR);
+        CvRect dstrect = cvRect(img_overlap->width-offsetTR, 0, offsetTR, offsetTR);
+        copyNeigborPixels(img_overlap,level,col+1,row-1,srcrect,dstrect);
+    }
+
+    std::stringstream newName;
+    newName<<_dir<<"/"<<_baseName<<"_files/"<<level<<"/"<<col<<"_"<<row<<"."<<_outputTileExt;
+
+     std::stringstream nameSquare;
+    nameSquare<<_dir<<"/"<<_baseName<<"_files/"<<level<<"/s"<<col<<"_"<<row<<"."<<_outputTileExt;
+    int pasteH=std::min((int)_tileSize.y(),h-offsetT);
+
+        int pasteW=std::min((int)_tileSize.x(),w-offsetL);
+
+    CvRect srcrect = cvRect(0, 0, pasteW,pasteH);
+    CvRect dstrect = cvRect(offsetL, offsetT, pasteW,pasteH);
+    cvSetImageROI(img1, srcrect);
+    cvSetImageROI(img_overlap, dstrect);
+    cvCopy(img1,img_overlap);
+    cvResetImageROI(img_overlap);
+    cvResetImageROI(img1);
+    cvSaveImage(newName.str().c_str(),img_overlap);
+         IplImage *img_square= cvCreateImage(cvSize(_tileSize.x(),_tileSize.y()),IPL_DEPTH_8U,3);
+cvResize(img_overlap,img_square);
+    cvSaveImage(nameSquare.str().c_str(),img_square);
+
+    cvReleaseImage(&img_square);
+
+    cvReleaseImage(&img_overlap);
+    cvReleaseImage(&img1);
+   // cout << newName.str() <<endl;
+}
+
+void PosterPrinter::doDeepZoom(){
+    MyGraphicsContext gc;
+    double width = _posterSize.x();
+    double height = _posterSize.y();
+    int tileSizeLevel=-1;
+
+    int nCols = (int)ceil(width / _tileSize.x());
+    int nRows = (int)ceil(height / _tileSize.y());
+    if(_validTiles.size()){
+        for(int i=0; i<(int)_validTiles.size();i++){
+            addOverlap(_maxLevel,_validTiles[i].second,_validTiles[i].first,width,height);
+        }
+    }else{
+        for (int col = 0; col < nCols; col++) {
+            for (int row = 0; row < nRows; row++) {
+            //    printf("call addoverlap %d %d\n",row,col);
+                addOverlap(_maxLevel,row,col,width,height);
+            }
+        }
+    }
+    width/=2.0;
+    height/=2.0;
+    for (int level = _maxLevel-1; level >= 0; level--) {
+        nCols = (int)ceil(width / _tileSize.x());
+        nRows = (int)ceil(height / _tileSize.y());
+        cout << "Level " << level << " rows: " << nRows << " cols: " << nCols<< " processing.. \n";
+
+        std::stringstream ss;
+        ss<<_dir<<"/"<<_baseName<<"_files/"<<level;
+        osgDB::makeDirectory(ss.str());
+        std::stringstream tmpss;
+        tmpss<<_dir<<"/"<<_tmpbase<<_baseName<<"_files/"<<level;
+        osgDB::makeDirectory(tmpss.str());
+
+         for (int col = 0; col < nCols; col++) {
+            for (int row = 0; row < nRows; row++) {
+                //Combine four smaller images into this one
+                int tParents=(int)std::min(ceil(width*2.0 / _tileSize.x()),2.0);
+                int sParents= (int)std::min(ceil(height*2.0 / _tileSize.y()),2.0);
+                int parentWidth=_tileSize.x();//(int)std::min((int)_tileSize.x()),(int)width);
+                int parentHeight=_tileSize.y();//(int)std::min((int)_tileSize.y(),(int)height);
+
+                IplImage *parentImage=cvCreateImage(cvSize(parentWidth,parentHeight),IPL_DEPTH_8U,3);//parentImage->allocateImage(parentWidth,parentHeight,1,GL_RGBA,GL_UNSIGNED_BYTE);
+                IplImage *downSized=cvCreateImage(cvSize(parentWidth/(float)tParents,parentHeight/(float)sParents),IPL_DEPTH_8U,3);
+                bool validForOutput=_outputEmpty;
+             //   printf("Width %f PArnet Width %d downWidth %d\n",width,parentWidth,downSized->width);
+                cvZero(parentImage);
+                for(int t=0; t<tParents; t++){
+                    for(int s=0; s<sParents; s++){
+                        std::stringstream ssmall;
+                        ssmall<<_dir<<"/"<<_tmpbase<<_baseName<<"_files/"<<(level+1)<<"/"<<((col*2)+t)<<"_"<<((row*2)+s)<<"."<<_tmpTileExt;
+                        //osg::ref_ptr<osg::Image> image;
+                        IplImage *image=NULL;
+                        unsigned char color[3];
+                        int down_w = downSized->width;
+                        int down_h = downSized->height;
+                        int x = t*(parentImage->width/tParents);
+                        int y = s*(parentImage->height/sParents);
+                        if (x + down_w > width)
+                            down_w = width - x;
+                        if (y + down_h > height)
+                            down_h = height - y;
+                        bool thisImageHere=false;
+                        if(osgDB::fileExists(ssmall.str())){
+                            validForOutput=true;
+                            thisImageHere=true;
+                            //image = osgDB::readImageFile(ssmall.str());
+                            image=cvLoadImage(ssmall.str().c_str(),-1);
+                            if(!image){
+                                std::cout <<"Can't open corrupt image or loader doesn't work"<<ssmall.str()<<std::endl;
+                                exit(-1);
+                            }
+                        }else{
+                            if(_outputEmpty){
+                                int cc=ceil(width*2.0 / _tileSize.x());
+                                int rc=ceil(height*2.0 / _tileSize.y());
+                                if(((col*2)+t) < cc && ((row*2)+s) < cc){
+                                std::cout <<"Can't open "<<((col*2)+t)<<"_"<<((row*2)+s)<< "Should be there columns above " <<cc <<" rows above "<< rc<<" "<<ssmall.str()<<std::endl;
+                                exit(-1);
+                            }
+                            }
+                         if(_emptyImage && _emptyImage->s() && _emptyImage->t()){
+                                unsigned char *ptr=_emptyImage->data(0,0);
+                                //Get osg/opengl bgr and set rgb opencv
+                                color[0]= *(ptr+2);
+                                color[1]= *(ptr+1);
+                                color[2]= *(ptr);
+                            }
+                        }
+
+                        CvRect srcrect = cvRect(0,0, down_w,down_h);
+                        CvRect dstrect = cvRect(x,y, down_w,down_h);
+                        cvSetImageROI(parentImage,dstrect);
+                        //printf("Copyind x %d y %d w %d h %d\n",x,y,down_w,down_h);
+                        // printf("Level %d Tparents %d/%d Sparents %d/%d parent size %d %d child offsset %d %d \n",
+                        //    level,tParents,t,sParents,s,parentImage->width,parentImage->height,t*(parentImage->width/tParents),s*(parentImage->height/sParents));
+                        if(image){
+
+                            cvResize(image,downSized);
+
+                            cvSetImageROI(downSized,srcrect);
+
+                            cvCopy(downSized,parentImage);
+                            cvResetImageROI(downSized);
+
+                        }else{
+                            cvSet(parentImage,cvScalar(color[0],color[1],color[2]));
+                        }
+
+                        cvResetImageROI(parentImage);
+
+
+                    }
+                }
+                if(validForOutput){
+                    std::stringstream par_ss;
+                    par_ss<<_dir<<"/"<<_tmpbase<<_baseName<<"_files/"<<level<<"/"<<col<<"_"<<row <<"."<<_tmpTileExt;
+                    //osgDB::writeImageFile( *parentImage,  par_ss.str());
+                    cvSaveImage(  par_ss.str().c_str(),parentImage);
+                    //cout << "Writing out level " << level << "h " << parentImage->s() << " w" <<parentImage->t()<< par_ss.str()<<endl;
+                }
+                cvReleaseImage(&parentImage);
+                cvReleaseImage(&downSized);
+            }
+        }
+
+        //Add overlap for level just completed if needed
+        for (int col = 0; col < nCols; col++) {
+            for (int row = 0; row < nRows; row++) {
+                    addOverlap(level,row,col,width,height);
+                }
+            }
+
+        if(width <= _tileSize.x() && height <= _tileSize.y()){
+            tileSizeLevel=level;
+            break;
+        }
+        // Scale down image for next level
+        width = ceil(width / 2);
+        height = ceil(height / 2);
+    }
+    printf("Exit level %d\n",tileSizeLevel);
+    for (int level = tileSizeLevel; level >= 0; level--) {
+        std::stringstream origName;
+        origName<<_dir<<"/"<<_tmpbase<<_baseName<<"_files/"<<level<<"/"<<0<<"_"<<0<<"."<<_tmpTileExt;
+        std::stringstream newName;
+        newName<<_dir<<"/"<<_baseName<<"_files/"<<level;
+        osgDB::makeDirectory(newName.str());
+        newName<<"/"<<0<<"_"<<0<<"."<<_outputTileExt;
+        IplImage *output_image=cvCreateImage(cvSize(width,height),IPL_DEPTH_8U,3);
+        IplImage *imgsrc = cvLoadImage(origName.str().c_str(), -1);
+        if(level==tileSizeLevel){
+            CvRect srcrect = cvRect(0, 0, width,height);
+            cvSetImageROI(imgsrc,srcrect);
+        }
+        cvResize(imgsrc,output_image);
+        if(level > 0){
+            std::stringstream newTmp;
+            newTmp<<_dir<<"/"<<_tmpbase<<_baseName<<"_files/"<<level-1;
+        osgDB::makeDirectory(newTmp.str());
+            newTmp<<"/"<<0<<"_"<<0<<"."<<_tmpTileExt;
+            cvSaveImage(newTmp.str().c_str(),output_image);
+        }
+        cvSaveImage(newName.str().c_str(),output_image);
+        cvReleaseImage(&imgsrc);
+         width = ceil(width / 2);
+        height = ceil(height / 2);
+    }
+    RecordXML();
+}
+void PosterPrinter::RecordXML(){
+    std::string xmlHeader = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+    std::string schemaName = "http://schemas.microsoft.com/deepzoom/2009";
+    std::string fname=(_dir+"/"+_baseName+".xml");
+    std::ofstream dzifile(fname.c_str());
+    if(!dzifile.is_open()){
+        std::cerr<< "Couldn't open dzi "<<fname<<std::endl;
+        return;
+    }
+    dzifile <<xmlHeader;
+    dzifile <<"<Image TileSize=\"" << _tileSize.x() << "\" Overlap=\"" << _tileOverlap <<
+            "\" Format=\"" << _outputTileExt << "\" ServerFormat=\"Default\" xmnls=\"" <<
+            schemaName << "\">" <<std::endl;
+    dzifile << "<Size Width=\"" << _posterSize.x() << "\" Height=\"" << _posterSize.y() << "\" />"<<std::endl;
+    dzifile << "</Image>"<<std::endl;
+    dzifile.close();
 }

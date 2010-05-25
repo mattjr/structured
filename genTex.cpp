@@ -291,10 +291,10 @@ static bool parse_args( int argc, char *argv[ ] )
 }
 
 GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
-  char conf_name[255];
+  char conf_name[255];  //  sprintf(conf_name,"mesh-regen-tex/re-bbox.txt");
+
   if(use_regen_tex)
-    sprintf(conf_name,"mesh-regen-tex/re-bbox.txt");
-  // sprintf(conf_name,"mesh-regen-tex/re-bbox-%s.txt",str);
+  sprintf(conf_name,"mesh-regen-tex/re-bbox-%s.txt",str);
   else
     sprintf(conf_name,"%s/bbox-%s.txt",diceddir,str);
 
@@ -633,7 +633,7 @@ int main( int argc, char *argv[ ] )
   int i;
   for( i=startRun; i < (int) totalMeshCount; i++){
     GNode *bboxTree=NULL;
-    if(!no_tex)
+    if(!no_tex && !use_regen_tex)
       bboxTree=loadBBox(osgDB::getSimpleFileName(meshNames[i]).c_str(),
 			gts_trans_map);
     else 
@@ -667,6 +667,13 @@ int main( int argc, char *argv[ ] )
     char out_name[255];
 
     for(int j=lodStart; j < lodNum; j++){
+
+        if(use_regen_tex){
+            char tmpnum[255];
+            sprintf(tmpnum,"%d",j);
+            bboxTree=loadBBox(tmpnum,
+                        gts_trans_map);
+        }
       boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
       string str=meshNames[i];
       if(!no_simp){

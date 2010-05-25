@@ -969,11 +969,12 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
         osg::Matrix texScale(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1);
         texScale(0,0)=1.0/(double)(proj_tex_size);
         texScale(1,1)=1.0/(double)(proj_tex_size);
-        //cout << "tex Scale "<<texScale <<endl;
-       /*  osg::Vec3 v1(-133.381,74.1,15.0319);*/
+       // cout << "tex Scale "<<texScale <<endl;
+        osg::Vec3 v1(-133.381,74.1,15.0319);
          osg::Matrix mat2=mat;
-         mat2.postMult(texScale);
-      //   std::cout <<"BUG " <<v1*mat << " \n RES " << v1*mat2<<endl;
+      //  mat2.postMult(texScale);
+        //std::cout <<"BUG " <<v1*mat << " \n
+         //std::cout <<"RES " << v1*mat2<<endl;
         stateset->addUniform( new osg::Uniform( "teMat",mat2));
         // stateset->setTextureAttributeAndModes(baseTexUnit, texMat, osg::StateAttribute::ON);
         //    stateset->addUniform( new osg::Uniform( "fc", osg::Vec4(_calib->fcx,_calib->fcy,_calib->ccx,_calib->ccy)));
@@ -1663,9 +1664,9 @@ static void findimg_foreach_face (T_Face * f,
                                          data->bboxTree,bboxes_all,data->back_trans);
   //fprintf(ffp,"%d\n",indexClosest);
   if(indexClosest == INT_MAX){
-    /*fprintf(errFP,"Failed traingle\n");
-      gts_write_triangle(&GTS_FACE(f)->triangle,NULL,errFP);
-      fflush(errFP);*/
+    fprintf(stderr,"Failed traingle\n");
+      //gts_write_triangle(&GTS_FACE(f)->triangle,NULL,stderr);
+      fflush(stderr);
     if(data->verbose)
       libpolyp::tex_add_verbose(data->count++,data->total,data->reject++);
     return;

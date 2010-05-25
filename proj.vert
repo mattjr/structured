@@ -29,7 +29,7 @@ void main()
 
 vec3 p=preMult(teMat,gl_Vertex.xyz);//=gl_TextureMatrix[0];
 //projCord.xyz=clamp(p,0.0,1.0);
-projCord.xyz=p;
+projCord.xyz=p+vec3(0.0,0.0,0);
 
  //projCord=gl_Vertex*gl_TextureMatrix[0];
 

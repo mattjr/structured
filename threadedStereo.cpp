@@ -179,6 +179,7 @@ static bool hmap_method=false;
 static  int tex_size;
 static float mb_grd_res=0.1;
 static int spline_dist=max((int)round(1.0/mb_grd_res),5);
+static int overlap=50;
 static   double local_easting, local_northing;
 using mapnik::Envelope;
 Envelope<double> total_env;
@@ -350,6 +351,8 @@ static bool parse_args( int argc, char *argv[ ] )
   apply_aug =argp.read("--apply_aug");
   argp.read("--skipsparse",skip_sparse);
   argp.read("--bkmb",background_mb);
+  argp.read("--overlap",overlap);
+
   if(argp.read("--mbply"))
     use_mb_ply=true;
 deltaT_config_name=base_dir+string("/")+"localiser.cfg";
@@ -2568,10 +2571,10 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
           fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
 		  "chmod 777 mesh-regen-tex\n"
 		  "cd mesh-regen-tex\n"
-                  "$BASEPATH/texture_image/texture_image --color 1.0 0 0 --inactive --tilesize %d %d --disable-output-poster  --tiledir %s ../mesh/final.ive\n"
+                  "$BASEPATH/texture_image/texture_image --color 1.0 0 0 --inactive --tilesize %d %d --disable-output-poster  --overlap %d --tiledir %s ../mesh/final.ive\n"
                   "cd $RUNDIR\ntime $BASEPATH/genTex %s %s --projtexsize %d --regen --projtex --stereo-calib %s --dicedir %s -f %s\n"
 		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",
-                  proj_tex_size,proj_tex_size,".",recon_config_file_name.c_str(), recon_config_file_name.c_str(),proj_tex_size,stereo_calib_file_name.c_str(),dicedir,
+                  proj_tex_size,proj_tex_size,overlap,".",recon_config_file_name.c_str(), recon_config_file_name.c_str(),proj_tex_size,stereo_calib_file_name.c_str(),dicedir,
                   "mesh-regen-tex/",dicedir);
 	  
 	  fchmod(fileno(rgfp),0777);

@@ -164,6 +164,8 @@ public:
 protected:
     virtual ~PosterPrinter() {}
     void doDeepZoom(void);
+    osg::BoundingBox computeBoundingBox(int level, int col,int row);
+
     void RecordXML(void);
     bool addCullCallbacks( const osg::FrameStamp* fs, osg::Node* node );
     void removeCullCallbacks( osg::Node* node );
@@ -191,6 +193,7 @@ protected:
     int _currentRow;
     int _currentColumn;
     int _validCurrent;
+    osg::BoundingBox ** _bboxMatrix;
     osg::BoundingBox _bbox;
     std::string _baseName;
     std::string _tmpbase;

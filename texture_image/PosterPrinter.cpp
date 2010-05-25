@@ -304,7 +304,8 @@ void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &v
     }
     _tileRows = (int)ceil(_posterSize.y() / _tileSize.y());
     _tileColumns = (int)ceil(_posterSize.x() / _tileSize.x());
-
+    _bboxMatrix = new osg::BoundingBox *[_tileColumns*_tileRows];
+    bzero(_bboxMatrix,_tileColumns*_tileRows*sizeof(osg::BoundingBox *));
     _currentViewMatrix = camera->getViewMatrix();
     _currentProjectionMatrix = camera->getProjectionMatrix();
     _lastBindingFrame = 0;
@@ -546,7 +547,7 @@ cout << "In World "<<_bbox.contains(vt)<<endl;*/
     bb2._min=_model*bb2._min;
     bb2._max=_model*bb2._max;
     //cout <<"BBS Min "<< bb2._min << " Max "<< bb2._max <<endl;
-
+    _bboxMatrix[col * _tileColumns + row]=new osg::BoundingBox(bb2);
     _validBbox[idx]=bb2;
 
     //  cout << "Ouput pixel "<<vt*matrix<< "IDX "<<idx <<"Working " <<    bb2.contains(vt)<<endl;
@@ -629,10 +630,23 @@ void PosterPrinter::recordImages()
 
 
 }
+osg::BoundingBox PosterPrinter::computeBoundingBox(int level, int col,int row){
+    osg::BoundingBox *parent=_bboxMatrix[(col*2) * _tileColumns + (row*2)];
+    if(parent){
 
+        osg::Vec3 diff=parent->_max-parent->_min;
+        parent->_max+=diff;
+        parent->_min-=diff;
+        return *parent;
+    }else{
+       fprintf(stderr,"Not found %d %d\n",row,col);
+    }
+
+}
 void PosterPrinter::writeMats(){
     double width = _posterSize.x();
     double height = _posterSize.y();
+    int level=_maxLevel;
     for(int lod=0; lod< 3; lod++){
         std::stringstream bname;
         bname << "re-bbox-"<<lod <<".txt";
@@ -653,7 +667,7 @@ void PosterPrinter::writeMats(){
 
                 //ss<<col<<"_"<<row <<"."<<_tmpTileExt;
                 std::stringstream ss;
-                ss<<_baseName<<"_files/"<<_maxLevel<<"/s";
+                ss<<_baseName<<"_files/"<<level<<"/s";
                 ss<<col<<"_"<<row <<"."<<_outputTileExt;
                 //   ss<<_tmpbase<<_baseName<<"_files/"<<_maxLevel<<"/"<<col<<"_"<<row <<"."<<_tmpTileExt;
 
@@ -673,13 +687,60 @@ void PosterPrinter::writeMats(){
         }else{
             width/=2.0;
             height/=2.0;
-
+            level--;
+            int cnt=0;
 
             int nCols = (int)ceil(width / _tileSize.x());
             int nRows = (int)ceil(height / _tileSize.y());
             for (int col = 0; col < nCols; col++) {
                 for (int row = 0; row < nRows; row++) {
+                    mfile<< cnt++ << " ";
+                    std::stringstream ss;
+                    ss<<_baseName<<"_files/"<<level<<"/s";
+                    ss<<col<<"_"<<row <<"."<<_outputTileExt;
+                    mfile << ss.str() << " ";
+                    osg::BoundingBox bbox=computeBoundingBox(level,col,row);
+                    mfile << bbox._min[0] << " " << bbox._min[1] << " "<<bbox._min[2] << " ";
+                    mfile << bbox._max[0] << " " << bbox._max[1] << " "<<bbox._max[2] << " ";
+                    osg::Matrix matrix;
+                     osg::Matrix offsetMatrix =
+                             osg::Matrix::scale(nCols, nRows, 1.0) *
+                             osg::Matrix::translate(nCols-1-2*col, /*flip rows*/-1*(nRows-1-2*row), 0.0);
 
+
+                     matrix.preMult(_currentProjectionMatrix * offsetMatrix );
+                     matrix.preMult( _currentViewMatrix );
+                     matrix.preMult(_model);
+                     osg::Matrix win=_camera->getViewport()->computeWindowMatrix();
+
+                     int offsetL = (col == 0 ? 0 : _tileOverlap);
+                     int offsetT = (row == 0 ? 0 : _tileOverlap);
+                     int offsetR = (col == (nCols-1) ? 0 : _tileOverlap);
+                     int offsetB = (row == (nRows-1) ? 0 : _tileOverlap);
+                     double offsetW=_tileSize.x()+offsetL+offsetR;
+                     double offsetH=_tileSize.y()+offsetT+offsetB;
+                     //  printf("offsetW %f offsetH %f\n",offsetW,offsetH);
+                     //    printf("Width Hiehgt %d %d %d %d\n",offsetL,offsetT,offsetR,offsetB);
+                     //   osg::Matrix win=osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*offsetW,0.5*offsetH,0.5f)*osg::Matrix::translate(camera->getViewport()->x(),camera->getViewport()->y(),0.0f);
+
+                     //printf("MFFER %f \n",offsetW/_tileSize.x());
+                     matrix.postMult(win);
+                     matrix.postMult(osg::Matrix::translate(offsetL,offsetB,0)*osg::Matrix::scale(_tileSize.x()/offsetW,
+                                                                                                  _tileSize.y()/offsetH,0.0));
+                     osg::Vec3 a(-40.8,55.2,31.9);
+                     cout << "A966A " << a*matrix<<endl;
+                     osg::Matrix texScale(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1);
+                     texScale(0,0)=1.0/(double)(_tileSize.x());
+                     texScale(1,1)=1.0/(double)(_tileSize.y());
+                     matrix.postMult(texScale);
+
+                    //cout << _validMats[i]<<endl;
+                    for(int j=0; j < 4; j++){
+                        for(int k=0; k <4; k++){
+                            mfile << matrix(j,k) << " ";
+                        }
+                    }
+                    mfile<<std::endl;
                 }
             }
 

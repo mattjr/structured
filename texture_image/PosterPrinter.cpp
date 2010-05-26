@@ -25,7 +25,7 @@
 #include <osg/io_utils>
 #include <osg/ComputeBoundsVisitor>
 #include <osgShadow/ConvexPolyhedron>
-
+#include <osg/Version>
 using std::cout;
 using std::endl;
 class MyGraphicsContext {
@@ -110,23 +110,44 @@ public:
             }
             
             // Request for new child
-            if ( !pagedLOD->getDisableExternalChildrenPaging() &&
+            bool ret=false;
+#if OSG_MIN_VERSION_REQUIRED(2,9,0)
+            ret=pagedLOD->getDisableExternalChildrenPaging();
+#endif
+            if ( !ret &&
                  nv->getDatabaseRequestHandler() &&
                  numChildren<pagedLOD->getNumRanges() )
             {
                 if ( pagedLOD->getDatabasePath().empty() )
                 {
+#if OSG_MIN_VERSION_REQUIRED(2,9,0)
+
                     nv->getDatabaseRequestHandler()->requestNodeFile(
                         pagedLOD->getFileName(numChildren), pagedLOD,
                         1.0, nv->getFrameStamp(),
                         pagedLOD->getDatabaseRequest(numChildren), pagedLOD->getDatabaseOptions() );
+#else
+                       nv->getDatabaseRequestHandler()->requestNodeFile(
+                        pagedLOD->getFileName(numChildren), pagedLOD,
+                        1.0, nv->getFrameStamp(),
+                        pagedLOD->getDatabaseRequest(numChildren));
+#endif
+
                 }
                 else
                 {
+#if OSG_MIN_VERSION_REQUIRED(2,9,0)
+
                     nv->getDatabaseRequestHandler()->requestNodeFile(
                         pagedLOD->getDatabasePath()+pagedLOD->getFileName(numChildren), pagedLOD,
                         1.0, nv->getFrameStamp(),
                         pagedLOD->getDatabaseRequest(numChildren), pagedLOD->getDatabaseOptions() );
+#else
+                     nv->getDatabaseRequestHandler()->requestNodeFile(
+                        pagedLOD->getDatabasePath()+pagedLOD->getFileName(numChildren), pagedLOD,
+                        1.0, nv->getFrameStamp(),
+                        pagedLOD->getDatabaseRequest(numChildren) );
+#endif
                 }
             }
         }

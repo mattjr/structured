@@ -111,7 +111,7 @@ public:
             
             // Request for new child
             bool ret=false;
-#if OSG_MIN_VERSION_REQUIRED(2,9,0)
+#if OPENSCENEGRAPH_MAJOR_VERSION>2 || OPENSCENEGRAPH_MAJOR_VERSION==2&&OPENSCENEGRAPH_MINOR_VERSION>=9
             ret=pagedLOD->getDisableExternalChildrenPaging();
 #endif
             if ( !ret &&
@@ -120,7 +120,7 @@ public:
             {
                 if ( pagedLOD->getDatabasePath().empty() )
                 {
-#if OSG_MIN_VERSION_REQUIRED(2,9,0)
+#if OPENSCENEGRAPH_MAJOR_VERSION>2 || OPENSCENEGRAPH_MAJOR_VERSION==2&&OPENSCENEGRAPH_MINOR_VERSION>=9
 
                     nv->getDatabaseRequestHandler()->requestNodeFile(
                         pagedLOD->getFileName(numChildren), pagedLOD,
@@ -136,7 +136,7 @@ public:
                 }
                 else
                 {
-#if OSG_MIN_VERSION_REQUIRED(2,9,0)
+#if OPENSCENEGRAPH_MAJOR_VERSION>2 || OPENSCENEGRAPH_MAJOR_VERSION==2&&OPENSCENEGRAPH_MINOR_VERSION>=9
 
                     nv->getDatabaseRequestHandler()->requestNodeFile(
                         pagedLOD->getDatabasePath()+pagedLOD->getFileName(numChildren), pagedLOD,

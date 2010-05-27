@@ -1664,9 +1664,9 @@ static void findimg_foreach_face (T_Face * f,
                                          data->bboxTree,bboxes_all,data->back_trans);
   //fprintf(ffp,"%d\n",indexClosest);
   if(indexClosest == INT_MAX){
-    fprintf(stderr,"Failed traingle\n");
+   // fprintf(stderr,"Failed traingle\n");
       //gts_write_triangle(&GTS_FACE(f)->triangle,NULL,stderr);
-      fflush(stderr);
+     // fflush(stderr);
     if(data->verbose)
       libpolyp::tex_add_verbose(data->count++,data->total,data->reject++);
     return;

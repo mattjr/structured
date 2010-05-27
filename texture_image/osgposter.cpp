@@ -478,15 +478,42 @@ int main( int argc, char** argv )
             printer->setOutputPosterName( posterName );
         }
     }
-    
-    // Create root and start the viewer
     osg::ref_ptr<osg::Group> root = new osg::Group;
     root->addChild( scene );
     root->addChild( camera.get() );
     osg::ref_ptr<osg::Camera> hud_camera =drawTileLines(tileWidth,tileHeight,posterWidth,posterHeight);
     root->addChild(hud_camera.get());
     osgViewer::Viewer viewer;
-    viewer.setUpViewInWindow( 100, 100, tileWidth, tileHeight );
+    // Create root and start the viewer
+
+    if(!activeMode){
+        int x=0;
+        int y=0;
+
+        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+        traits->x =x;
+        traits->y = y;
+        traits->width = tileWidth;
+        traits->height = tileHeight;
+        traits->windowDecoration = false;
+        traits->doubleBuffer = false;
+        traits->sharedContext = 0;
+        traits->pbuffer = true;
+
+        osg::GraphicsContext* _gc= osg::GraphicsContext::createGraphicsContext(traits.get());
+
+        if (!_gc)
+        {
+            osg::notify(osg::NOTICE)<<"Failed to create pbuffer, failing back to normal graphics window."<<std::endl;
+
+            traits->pbuffer = false;
+            _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+        }
+        viewer.getCamera()->setGraphicsContext(_gc);
+        viewer.getCamera()->setViewport(new osg::Viewport(x,y,tileWidth,tileHeight));
+    }else{
+        viewer.setUpViewInWindow( 100, 100, tileWidth, tileHeight );
+    }
     viewer.setSceneData( root.get() );
     viewer.getDatabasePager()->setDoPreCompile( false );
 

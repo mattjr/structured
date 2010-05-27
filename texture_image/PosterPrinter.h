@@ -74,8 +74,9 @@ protected:
     }
     
     PagedNodeNameSet _pagedNodeNames;
-    unsigned int _needToApplyCount;
     unsigned int _appliedCount;
+    unsigned int _needToApplyCount;
+
     bool _addingCallbacks;
 };
 
@@ -104,11 +105,11 @@ public:
     virtual void reset();
     virtual void intersect( osgUtil::IntersectionVisitor& iv, osg::Drawable* drawable );
 protected:
+    PosterIntersector* _parent;
+    osg::Camera *_camera;
+    osg::Polytope _polytope;
     osg::Matrix &_modelMatrix;
     osg::ref_ptr<PosterVisitor> _visitor;
-    PosterIntersector* _parent;
-    osg::Polytope _polytope;
-    osg::Camera *_camera;
 };
 
 /** PosterPrinter: The implementation class of high-res rendering */
@@ -193,6 +194,7 @@ protected:
     int _currentRow;
     int _currentColumn;
     int _validCurrent;
+    int _tileSizeLevel;
     osg::BoundingBox ** _bboxMatrix;
     osg::BoundingBox _bbox;
     std::string _baseName;

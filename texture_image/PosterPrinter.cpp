@@ -214,7 +214,7 @@ void PosterVisitor::apply( osg::PagedLOD& node )
 
 /* PosterIntersector: A simple polytope intersector for updating pagedLODs in each image-tile */
 PosterIntersector::PosterIntersector( const osg::Polytope& polytope,osg::Camera *camera,osg::Matrix &modelMatrix )
-:   _parent(0), _polytope(polytope),_camera(camera),_modelMatrix(modelMatrix)
+:   _parent(0), _camera(camera),_polytope(polytope),_modelMatrix(modelMatrix)
 {
 }
 
@@ -295,7 +295,7 @@ PosterPrinter::PosterPrinter()
 :   _isRunning(false), _isFinishing(false), _lastBindingFrame(0),
     _outputTiles(true), _tmpTileExt("png"), _outputTileExt("png"),_tileOverlap(1),_tileSize(254,254),
     _currentRow(0), _currentColumn(0),_emptyImage(0),
-    _camera(0), _finalPoster(0),_baseName("mesh"),_outputEmpty(false),_haveSavedFirstEmpty(false)
+    _camera(0), _outputEmpty(false),_haveSavedFirstEmpty(false),_baseName("mesh"),_finalPoster(0)
 {
 
 _visitor = new PosterVisitor;
@@ -326,7 +326,8 @@ void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &v
     _tileRows = (int)ceil(_posterSize.y() / _tileSize.y());
     _tileColumns = (int)ceil(_posterSize.x() / _tileSize.x());
     _bboxMatrix = new osg::BoundingBox *[_tileColumns*_tileRows];
-    bzero(_bboxMatrix,_tileColumns*_tileRows*sizeof(osg::BoundingBox *));
+    for(int i=0; i < _tileColumns*_tileRows; i++)
+        _bboxMatrix[i]=NULL;
     _currentViewMatrix = camera->getViewMatrix();
     _currentProjectionMatrix = camera->getProjectionMatrix();
     _lastBindingFrame = 0;
@@ -363,10 +364,12 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
             _visitor->clearNames();
 
             _isFinishing = false;
-            std::cout << "Recording images finished." << std::endl;
+            std::cout << "Recording images finished. Max Level: " << _maxLevel << " Rows: "<< _tileRows << " Cols: "<<_tileColumns<<std::endl;
             if(_outputTiles){
-                writeMats();
+
                 doDeepZoom();
+                writeMats();
+
             }
 
         }
@@ -412,8 +415,8 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
                         }
                     }
                 }else{
-                    if ( _validCurrent < _validTiles.size()-1){
-                        printf("\r%d/%d",_validCurrent,(int)_validTiles.size());
+                    if ( _validCurrent < (int)_validTiles.size()-1){
+                        printf("\r%d/%d",_validCurrent+1,(int)_validTiles.size());
                         fflush(stdout);
                         _validCurrent++;
 
@@ -424,7 +427,7 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
                         _haveSavedFirstEmpty=true;
                         _currentRow=_emptyPair.second;
                         _currentColumn=_emptyPair.first;
-                        _validCurrent=-1;
+                        printf("\r%d/%d",(int)_validTiles.size(),(int)_validTiles.size());
 
                     }else{
                         _isRunning = false;
@@ -466,6 +469,8 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col, in
     osg::Matrix offsetMatrix =
         osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *
              osg::Matrix::translate(_tileColumns-1-2*col, /*flip rows*/-1*(_tileRows-1-2*row), 0.0);
+          //    cout << "Level "<< _maxLevel << " Col " << col << " Row : "<<row<<endl;
+            //         cout <<              osg::Matrix::translate(_tileColumns-1-2*col, /*flip rows*/-1*(_tileRows-1-2*row), 0.0)<<endl;
     camera->setViewMatrix( _currentViewMatrix );
     camera->setProjectionMatrix( _currentProjectionMatrix * offsetMatrix );
     osg::Polytope  frustum;
@@ -531,8 +536,8 @@ osg::Matrix win=camera->getViewport()->computeWindowMatrix();
 //cout <<win <<endl;
 /*    double scaledOffsetL=offsetL *((_tileSize.x()+offsetL+offsetR)/(double)_tileSize.x());
         double scaledOffsetB=offsetB *((_tileSize.y()+offsetT+offsetB)/(double)_tileSize.y());*/
-double scaledOffsetL=offsetL;//(_tileSize.x()/(double)(_tileSize.x()+offsetL+offsetR));
-    double scaledOffsetB=offsetB ;
+//double scaledOffsetL=offsetL;//(_tileSize.x()/(double)(_tileSize.x()+offsetL+offsetR));
+  //  double scaledOffsetB=offsetB ;
     //printf("%f CGECJ\n",(_tileSize.y()/(double)(_tileSize.y()+offsetT+offsetB)));
   //  printf("%f CGECJ\n",(_tileSize.x()/(double)(_tileSize.x()+offsetL+offsetR)));
 
@@ -569,6 +574,7 @@ cout << "In World "<<_bbox.contains(vt)<<endl;*/
     bb2._max=_model*bb2._max;
     //cout <<"BBS Min "<< bb2._min << " Max "<< bb2._max <<endl;
     _bboxMatrix[col * _tileColumns + row]=new osg::BoundingBox(bb2);
+    //printf ("ADDED %d\n",col * _tileColumns + row);
     _validBbox[idx]=bb2;
 
     //  cout << "Ouput pixel "<<vt*matrix<< "IDX "<<idx <<"Working " <<    bb2.contains(vt)<<endl;
@@ -652,19 +658,46 @@ void PosterPrinter::recordImages()
 
 }
 osg::BoundingBox PosterPrinter::computeBoundingBox(int level, int col,int row){
-    osg::BoundingBox *parent=_bboxMatrix[(col*2) * _tileColumns + (row*2)];
-    if(parent){
+    osg::BoundingBox *parent=NULL;
+    osg::BoundingBox includeAll;
+    bool setAny=false;
+    int mult=_maxLevel-level;
 
-        osg::Vec3 diff=parent->_max-parent->_min;
-        parent->_max+=diff;
-        parent->_min-=diff;
-        return *parent;
-    }else{
-       fprintf(stderr,"Not found %d %d\n",row,col);
+    for(int i=0; i<(2*mult); i++){
+        for(int j=0; j<(2*mult); j++){
+            int idx=(((col*(2*mult))+i) * _tileColumns) + ((row*(2*mult))+j);
+            if(((col*(2*mult))+i) < _tileColumns &&  ((row*(2*mult))+j) < _tileRows)
+                parent=_bboxMatrix[idx];
+            else
+                parent=NULL;
+
+            if(parent){
+             //   printf("Level %d %d_%d base col %d base row %d ,%d %d\n",_maxLevel,((col*(2*mult))+i),((row*(2*mult))+j),col*(2*mult),row*(2*mult),2*mult,2*mult);
+                if(!setAny){
+                    includeAll.set(parent->_min,parent->_max);
+                    setAny=true;
+
+                }else{
+                    includeAll.expandBy(*parent);
+
+                }
+            }
+        }
     }
+//cout << "Computing bounding box col: " << col << " row: " << row << " level: " << level <<endl;
+     //       cout << "Using: col: "<< saved_i << " row: "<< saved_j <<endl;
+    if(setAny){
+          //  cout << "orig: " << parent->_min << " -- " << parent->_max << "\nnow : " << includeAll._min << " -- "<<includeAll._max <<endl;
+        return includeAll;
+    }else{
+     //  fprintf(stdout,"Not found %d + 1 %d +1\n",row*(2*mult),col*(2*mult));
+          // printf ("ADDED %d 0x%x\n",saved_i * _tileColumns + saved_j, _bboxMatrix[saved_i * _tileColumns + saved_j]);
 
+    }
+return osg::BoundingBox(0,0,0,0,0,0);
 }
 void PosterPrinter::writeMats(){
+    const int lodSkip[]={0,1,1};
     double width = _posterSize.x();
     double height = _posterSize.y();
     int level=_maxLevel;
@@ -680,7 +713,7 @@ void PosterPrinter::writeMats(){
         }
 
         if(lod == 0){
-            for(int i=0; i<_validTiles.size(); i++){
+            for(unsigned int i=0; i<_validTiles.size(); i++){
                 mfile<< i << " ";
                 int row=_validTiles[i].second;
                 int col=_validTiles[i].first;
@@ -706,29 +739,41 @@ void PosterPrinter::writeMats(){
 
             }
         }else{
-            width/=2.0;
-            height/=2.0;
-            level--;
+
+            for(int i=0; i<lodSkip[lod] ; i++){
+                width/=2.0;
+                height/=2.0;
+                level--;
+            }
+
+//printf("New Level %d %f %f\n",level,width,height);
             int cnt=0;
 
             int nCols = (int)ceil(width / _tileSize.x());
             int nRows = (int)ceil(height / _tileSize.y());
+            double dCols=width / _tileSize.x();
+            double dRows =height / _tileSize.y();
             for (int col = 0; col < nCols; col++) {
                 for (int row = 0; row < nRows; row++) {
+                    osg::BoundingBox bbox=computeBoundingBox(level,col,row);
+                    if(bbox.radius() == 0)
+                        continue;
+
                     mfile<< cnt++ << " ";
                     std::stringstream ss;
                     ss<<_baseName<<"_files/"<<level<<"/s";
                     ss<<col<<"_"<<row <<"."<<_outputTileExt;
                     mfile << ss.str() << " ";
-                    osg::BoundingBox bbox=computeBoundingBox(level,col,row);
                     mfile << bbox._min[0] << " " << bbox._min[1] << " "<<bbox._min[2] << " ";
                     mfile << bbox._max[0] << " " << bbox._max[1] << " "<<bbox._max[2] << " ";
                     osg::Matrix matrix;
                      osg::Matrix offsetMatrix =
-                             osg::Matrix::scale(nCols, nRows, 1.0) *
-                             osg::Matrix::translate(nCols-1-2*col, /*flip rows*/-1*(nRows-1-2*row), 0.0);
+                             osg::Matrix::scale(dCols, dRows, 1.0) *
+                             osg::Matrix::translate(dCols-1-2*col, /*flip rows*/-1*(dRows-1-2*row), 0.0);
 
-
+//printf("Level %d trans %d %d\n",level,nCols-1-2*col,-1*(nRows-1-2*row));
+                  //   cout << "Level "<< level << " Col " << col << " Row : "<<row<<endl;
+                    // cout << osg::Matrix::translate(nCols-1-2*col, /*flip rows*/-1*(nRows-1-2*row),0.0)<<endl;
                      matrix.preMult(_currentProjectionMatrix * offsetMatrix );
                      matrix.preMult( _currentViewMatrix );
                      matrix.preMult(_model);
@@ -738,18 +783,15 @@ void PosterPrinter::writeMats(){
                      int offsetT = (row == 0 ? 0 : _tileOverlap);
                      int offsetR = (col == (nCols-1) ? 0 : _tileOverlap);
                      int offsetB = (row == (nRows-1) ? 0 : _tileOverlap);
-                     double offsetW=_tileSize.x()+offsetL+offsetR;
-                     double offsetH=_tileSize.y()+offsetT+offsetB;
-                     //  printf("offsetW %f offsetH %f\n",offsetW,offsetH);
-                     //    printf("Width Hiehgt %d %d %d %d\n",offsetL,offsetT,offsetR,offsetB);
-                     //   osg::Matrix win=osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*offsetW,0.5*offsetH,0.5f)*osg::Matrix::translate(camera->getViewport()->x(),camera->getViewport()->y(),0.0f);
-
-                     //printf("MFFER %f \n",offsetW/_tileSize.x());
+                     double offsetW=(_tileSize.x())+offsetL+offsetR;
+                     double offsetH=(_tileSize.y())+offsetT+offsetB;
+                //     printf("Offset %d\n",offsetL,offsetB);
                      matrix.postMult(win);
                      matrix.postMult(osg::Matrix::translate(offsetL,offsetB,0)*osg::Matrix::scale(_tileSize.x()/offsetW,
-                                                                                                  _tileSize.y()/offsetH,0.0));
-                     osg::Vec3 a(-40.8,55.2,31.9);
-                     cout << "A966A " << a*matrix<<endl;
+                                                                                                          _tileSize.y()/offsetH,0.0));
+                     //osg::Vec3 a(-50.0,48.9,31.9);
+                     //cout << "col " <<col<<"Row " << row <<endl;
+                     //cout << "A966A " << a*matrix<<endl;
                      osg::Matrix texScale(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1);
                      texScale(0,0)=1.0/(double)(_tileSize.x());
                      texScale(1,1)=1.0/(double)(_tileSize.y());
@@ -785,7 +827,7 @@ void PosterPrinter::copyNeigborPixels(IplImage *img_overlap,int level, int col, 
 
     }else if(!_outputEmpty){
         unsigned char color[3];
-
+        memset(&color[0],255,3*sizeof(unsigned char));
         if(_emptyImage && _emptyImage->s() && _emptyImage->t()){
             unsigned char *ptr=_emptyImage->data(0,0);
             //Get osg/opengl bgr and set rgb opencv
@@ -931,7 +973,7 @@ void PosterPrinter::doDeepZoom(){
     MyGraphicsContext gc;
     double width = _posterSize.x();
     double height = _posterSize.y();
-    int tileSizeLevel=-1;
+     _tileSizeLevel=-1;
 
     int nCols = (int)ceil(width / _tileSize.x());
     int nRows = (int)ceil(height / _tileSize.y());
@@ -981,6 +1023,7 @@ void PosterPrinter::doDeepZoom(){
                         //osg::ref_ptr<osg::Image> image;
                         IplImage *image=NULL;
                         unsigned char color[3];
+                        memset(&color[0],255,3*sizeof(unsigned char));
                         int down_w = downSized->width;
                         int down_h = downSized->height;
                         int x = t*(parentImage->width/tParents);
@@ -1061,15 +1104,15 @@ void PosterPrinter::doDeepZoom(){
             }
 
         if(width <= _tileSize.x() && height <= _tileSize.y()){
-            tileSizeLevel=level;
+            _tileSizeLevel=level;
             break;
         }
         // Scale down image for next level
         width = ceil(width / 2);
         height = ceil(height / 2);
     }
-    printf("Exit level %d\n",tileSizeLevel);
-    for (int level = tileSizeLevel; level >= 0; level--) {
+    printf("Exit level %d\n",_tileSizeLevel);
+    for (int level = _tileSizeLevel; level >= 0; level--) {
         std::stringstream origName;
         origName<<_dir<<"/"<<_tmpbase<<_baseName<<"_files/"<<level<<"/"<<0<<"_"<<0<<"."<<_tmpTileExt;
         std::stringstream newName;
@@ -1078,7 +1121,7 @@ void PosterPrinter::doDeepZoom(){
         newName<<"/"<<0<<"_"<<0<<"."<<_outputTileExt;
         IplImage *output_image=cvCreateImage(cvSize(width,height),IPL_DEPTH_8U,3);
         IplImage *imgsrc = cvLoadImage(origName.str().c_str(), -1);
-        if(level==tileSizeLevel){
+        if(level==_tileSizeLevel){
             CvRect srcrect = cvRect(0, 0, width,height);
             cvSetImageROI(imgsrc,srcrect);
         }

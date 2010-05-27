@@ -292,7 +292,6 @@ static bool parse_args( int argc, char *argv[ ] )
 
 GNode *loadBBox(const char *str,std::map<int,GtsMatrix *> &gts_trans_map){
   char conf_name[255];  //  sprintf(conf_name,"mesh-regen-tex/re-bbox.txt");
-
   if(use_regen_tex)
   sprintf(conf_name,"mesh-regen-tex/re-bbox-%s.txt",str);
   else
@@ -671,6 +670,8 @@ int main( int argc, char *argv[ ] )
         if(use_regen_tex){
             char tmpnum[255];
             sprintf(tmpnum,"%d",j);
+            gts_trans_map.clear();
+            bboxes_all.clear();
             bboxTree=loadBBox(tmpnum,
                         gts_trans_map);
         }
@@ -808,12 +809,19 @@ int main( int argc, char *argv[ ] )
        	class_ptr=&classes;
       if(usePlaneDist)
 	toggle_ptr=new osg::Group();
+              if(!use_regen_tex){
+
       osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
                                            proj_tex_size,lodTexSize[j],group,planes,bounds,rot,
 					   texcallback,zrange,camMatrices,
 					   class_ptr,max_class_id,toggle_ptr);
     
-
+  }else{
+          osgExp->convertGtsSurfListToGeometry(surf,texture_file_names,&cm,
+                                           proj_tex_size,proj_tex_size,group,planes,bounds,rot,
+                                           texcallback,zrange,camMatrices,
+                                           class_ptr,max_class_id,toggle_ptr);
+      }
       
       osgExp->outputModelOSG(out_name,group,toggle_ptr);
 

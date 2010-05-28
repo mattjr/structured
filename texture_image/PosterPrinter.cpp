@@ -662,17 +662,18 @@ osg::BoundingBox PosterPrinter::computeBoundingBox(int level, int col,int row){
     osg::BoundingBox includeAll;
     bool setAny=false;
     int mult=_maxLevel-level;
-
-    for(int i=0; i<(2*mult); i++){
-        for(int j=0; j<(2*mult); j++){
-            int idx=(((col*(2*mult))+i) * _tileColumns) + ((row*(2*mult))+j);
-            if(((col*(2*mult))+i) < _tileColumns &&  ((row*(2*mult))+j) < _tileRows)
+int range=(int)pow(2,mult);
+    for(int i=0; i<range; i++){
+        for(int j=0; j<range; j++){
+        //  printf("range %d Col %d Row %d , %d %d\n",range,col,row,col*range,row*range);
+            int idx=(((col*range)+i) * _tileColumns) + ((row*range)+j);
+            if(((col*range)+i) < _tileColumns &&  ((row*range)+j) < _tileRows)
                 parent=_bboxMatrix[idx];
             else
                 parent=NULL;
 
             if(parent){
-             //   printf("Level %d %d_%d base col %d base row %d ,%d %d\n",_maxLevel,((col*(2*mult))+i),((row*(2*mult))+j),col*(2*mult),row*(2*mult),2*mult,2*mult);
+               // printf(" %d_%d include %d_%d base col %d base row %d\n",col,row,(col*range)+i,((row*range)+j),(row*range),col*range);
                 if(!setAny){
                     includeAll.set(parent->_min,parent->_max);
                     setAny=true;
@@ -697,7 +698,7 @@ osg::BoundingBox PosterPrinter::computeBoundingBox(int level, int col,int row){
 return osg::BoundingBox(0,0,0,0,0,0);
 }
 void PosterPrinter::writeMats(){
-    const int lodSkip[]={0,1,1};
+    const int lodSkip[]={0,2,2};
     double width = _posterSize.x();
     double height = _posterSize.y();
     int level=_maxLevel;
@@ -785,25 +786,41 @@ void PosterPrinter::writeMats(){
                      int offsetB = (row == (nRows-1) ? 0 : _tileOverlap);
                      double offsetW=(_tileSize.x())+offsetL+offsetR;
                      double offsetH=(_tileSize.y())+offsetT+offsetB;
-                //     printf("Offset %d\n",offsetL,offsetB);
+                     double w = _tileSize.x() + offsetL + offsetR;
+                     double h = _tileSize.y() + offsetT + offsetB;
+
+
+                     int x = col * _tileSize.x() - (col == 0 ? 0 : _tileOverlap);
+                     int y = row * _tileSize.y() - ((nRows-1) == 0 ? 0 : _tileOverlap);
+                     if (x + w > width)
+                         w = width - x;
+                     if (y + h > height)
+                         h = height - y;
+
                      matrix.postMult(win);
-                     matrix.postMult(osg::Matrix::translate(offsetL,offsetB,0)*osg::Matrix::scale(_tileSize.x()/offsetW,
-                                                                                                          _tileSize.y()/offsetH,0.0));
-                     //osg::Vec3 a(-50.0,48.9,31.9);
-                     //cout << "col " <<col<<"Row " << row <<endl;
-                     //cout << "A966A " << a*matrix<<endl;
+
+
+                     //Top left vs. Bottom left scaling must flip y coord orgin to get correct scaling
+                     matrix.postMult(osg::Matrix::scale(1.0,-1.0,1.0));
+                     matrix.postMult(osg::Matrix::translate(0,_tileSize.y(),0));
+                     matrix.postMult(osg::Matrix::translate(offsetL,offsetT,0)*osg::Matrix::scale(_tileSize.x()/w,
+                                                                                                  _tileSize.y()/h,1.0));
+                     //Flip back
+                     matrix.postMult(osg::Matrix::scale(1.0,-1.0,1.0));
+                     matrix.postMult(osg::Matrix::translate(0,_tileSize.y(),0));
+
                      osg::Matrix texScale(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1);
                      texScale(0,0)=1.0/(double)(_tileSize.x());
                      texScale(1,1)=1.0/(double)(_tileSize.y());
                      matrix.postMult(texScale);
 
-                    //cout << _validMats[i]<<endl;
-                    for(int j=0; j < 4; j++){
-                        for(int k=0; k <4; k++){
-                            mfile << matrix(j,k) << " ";
-                        }
-                    }
-                    mfile<<std::endl;
+                     //cout << _validMats[i]<<endl;
+                     for(int j=0; j < 4; j++){
+                         for(int k=0; k <4; k++){
+                             mfile << matrix(j,k) << " ";
+                         }
+                     }
+                     mfile<<std::endl;
                 }
             }
 

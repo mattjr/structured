@@ -21,7 +21,7 @@
 #include <iostream>
 #include <sstream>
 #include "PosterPrinter.h"
-#include <GL/glu.h>
+//#include <GL/glu.h>
 #include <osg/io_utils>
 #include <osg/ComputeBoundsVisitor>
 #include <osgShadow/ConvexPolyhedron>

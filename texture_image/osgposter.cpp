@@ -31,6 +31,12 @@
 
 #include <osgUtil/PolytopeIntersector>
 #include <osg/io_utils>
+#if __APPLE__
+//Broken Pbuffer cocoa implemtation
+const bool pBufferWorks=false;
+#else
+const bool pBufferWorks=true;
+#endif
 using namespace std;
 /* Computing view matrix helpers */
 template<class T>
@@ -486,7 +492,7 @@ int main( int argc, char** argv )
     osgViewer::Viewer viewer;
     // Create root and start the viewer
 
-    if(!activeMode){
+    if(!activeMode && pBufferWorks){
         int x=0;
         int y=0;
 

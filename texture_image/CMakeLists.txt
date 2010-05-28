@@ -31,5 +31,5 @@ add_executable(texture_image ${SRCS} )
 
 ##message("libs:  ${ALL_QT_OSG_LIBS}")
 
-target_link_libraries(texture_image ${OPENSCENEGRAPH_LIBRARIES} cv highgui )
+target_link_libraries(texture_image ${OPENSCENEGRAPH_LIBRARIES} cv highgui cxcore)
 SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR} )

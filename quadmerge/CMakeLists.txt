@@ -20,7 +20,7 @@ ADD_EXECUTABLE( nnbathy nn/nnbathy.c)
 #ADD_EXECUTABLE( oldmerge oldmerge.cpp envelope.cpp raster.cpp )
 ADD_EXECUTABLE( quadmerge quadmerge.cpp  )
 
-TARGET_LINK_LIBRARIES( quadmerge quadm ${GMT_LIBRARY} ${OPENGL_gl_LIBRARY} nn ${LIBPLANKTON_LIB} hmap )
+TARGET_LINK_LIBRARIES( quadmerge quadm ${GMT_LIBRARY} ${OPENGL_gl_LIBRARY} nn ${LIBPLANKTON_LIB} hmap ufGeographicConversions)
 #TARGET_LINK_LIBRARIES( oldmerge quadm  ${GMT_LIBRARY} nn  ${LIBPLANKTON_LIB} ${OPENGL_gl_LIBRARY})
 
 TARGET_LINK_LIBRARIES( nnbathy nn )

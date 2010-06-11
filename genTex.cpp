@@ -667,7 +667,7 @@ int main( int argc, char *argv[ ] )
 
     for(int j=lodStart; j < lodNum; j++){
 
-        if(use_regen_tex){
+        if(use_regen_tex && !no_tex){
             char tmpnum[255];
             sprintf(tmpnum,"%d",j);
             gts_trans_map.clear();

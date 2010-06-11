@@ -956,6 +956,10 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	osg::Program* program=NULL;
 	program = new osg::Program;
 	program->setName( "colorshaderasdas" );
+        program->setParameter(GL_GEOMETRY_VERTICES_OUT_EXT,4);
+        program->setParameter(GL_GEOMETRY_INPUT_TYPE_EXT,GL_POINTS);
+        program->setParameter(GL_GEOMETRY_OUTPUT_TYPE_EXT,GL_POINTS);
+
 	//  printf("Here\n");
 	osg::Shader *hcolorf=new osg::Shader( osg::Shader::FRAGMENT);
 	osg::Shader *hcolorv=new osg::Shader( osg::Shader::VERTEX);
@@ -1065,8 +1069,9 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       GeometryCollection& gc = *(gcAndTexIds[i].first);
       if (gc._geom)
         {
-           //gc._geom->setUseDisplayList(true);
-                  gc._geom->setUseDisplayList(false);
+           gc._geom->setUseDisplayList(true);
+          // gc._geom->setUseVertexBufferObjects(true);
+                //  gc._geom->setUseDisplayList(false);
           //  tessellator.retessellatePolygons(*gc._geom);
         
 	  smoother.smooth(*gc._geom);

@@ -230,6 +230,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
 		     "tridecimator/vcg"
 		     "tridecimator/"
 		     "mesh2hmap/"
+		     "/opt/local/include"
                      ${ULAPACK_INCLUDE_DIR}
 		     ${LIBADT_INCLUDE_DIR}
   		     ${LIBSNAPPER_INC}
@@ -264,6 +265,7 @@ LINK_LIBRARIES(	${OSG_LIBRARY}
 		${LIBSNAPPER_LIBRARY}
 		${GTS_LIBRARIES}
 		${LAPACK_LIBRARY}
+		${Boost_LIBRARIES}
         ${LIBKEYPOINT_LIB}
         ${LIBSEABEDCOMMON_LIB}
 		-l3ds    		

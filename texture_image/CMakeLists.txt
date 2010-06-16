@@ -8,7 +8,7 @@
 #  
 
 project(texture_image)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -20,12 +20,11 @@ add_definitions("-g")
 #--------------------------------------------------------------------------------
 file(GLOB SRCS *.cpp)
 include_directories(../ .)
-set(OSG_COMPONENTS osg osgUtil osgViewer osgGA osgManipulator osgText osgDB osgWidget osgShadow)
-find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
 #-------------------------------------------------------------------------------
 
 
 add_executable(texture_image ${SRCS} )
+
 #--------------------------------------------------------------------------------
 
 

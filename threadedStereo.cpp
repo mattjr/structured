@@ -27,6 +27,7 @@
 #include "auv_stereo_keypoint_finder.hpp"
 #include "adt_image_norm.hpp"
 #include "auv_stereo_dense.hpp"
+
 #include "auv_concurrency.hpp"
 #include "OSGExport.h"
 #include "keypoint.hpp"
@@ -54,7 +55,7 @@ static double stop_time = numeric_limits<double>::max();
 //
 // Command-line arguments
 //
-int proj_tex_size=512;
+int proj_tex_size;
 static bool rugosity=false;
 static int dist_gentex_range=0;
 static int vrip_split;
@@ -74,6 +75,7 @@ static int max_feature_count;
 static bool use_mb_ply =false;
 static double eps=1.0;
 static double subvol;
+static double longOrigin,latOrigin;
 static bool interp_quad=false;
 static bool run_pos=false;
 static bool do_novelty=false;
@@ -161,6 +163,7 @@ static string deltaT_pose;
 static string dense_method="";
 static bool use_new_mb;
 bool dist_run=false;
+static int lodTexSize[3];
 static bool mono_cam=false;
 static       int sysres=0;
 static double vrip_mb_clip_margin;
@@ -183,9 +186,7 @@ static int overlap=50;
 static   double local_easting, local_northing;
 using mapnik::Envelope;
 Envelope<double> total_env;
-#ifdef USE_DENSE_STEREO
-Stereo_Dense *sdense=NULL;
-#endif
+
 int pos_lod0_min_depth,pos_lod2_min_depth;
 int pos_lod0_depth,pos_lod2_depth;
 void runC(Stereo_Pose_Data &name);
@@ -342,7 +343,7 @@ static bool parse_args( int argc, char *argv[ ] )
   contents_file_name = "stereo_pose_est.data";
 
   dir_name = "img/";
-  strcpy(cachedtexdir,"cache-tex/");
+ 
   argp.read("--split-area",desired_area);
   rugosity=argp.read("--rugosity");
   argp.read("--stereo-calib",stereo_calib_file_name);
@@ -420,7 +421,7 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
 
   
   //recon_config_file->set_value( "NCC_SCF_SHOW_DEBUG_IMAGES", display_debug_images );
-  recon_config_file->set_value( "MESH_TEX_SIZE", tex_size );
+  //recon_config_file->set_value( "MESH_TEX_SIZE", tex_size );
   recon_config_file->get_value( "SD_SCALE", dense_scale,0.5);
  
   
@@ -467,9 +468,11 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
   recon_config_file->get_value("POS_MIN_CLIP",pos_clip,true);
   recon_config_file->get_value("VRIP_MB_CLIP_MARGIN",vrip_mb_clip_margin,0.1);
   recon_config_file->get_value("VRIP_MB_CLIP_MARGIN_EXTRA",vrip_mb_clip_margin_extra,0.1);
-  
-  
- 
+
+  recon_config_file->get_value( "TEX_SIZE_LOD0", lodTexSize[0],
+                                512);
+  proj_tex_size=lodTexSize[0];
+  sprintf(cachedtexdir,"cache-tex-%d/",lodTexSize[0]);
 
   string mbfile;
 
@@ -691,6 +694,7 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
 
   recon_config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
   recon_config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
+  recon_config_file->set_value( "SD_SHOW_DEBUG_IMAGES"  , display_debug_images );
 
   if (argp.errors())
     {
@@ -877,7 +881,7 @@ typedef class threadedStereo{
 public:
   threadedStereo(const string config_file_name, const string dense_config_file_name ){
     frame_id=0;
-    tex_size=512;
+    tex_size=lodTexSize[0];
   
     finder = NULL;
     finder_dense = NULL;
@@ -887,6 +891,17 @@ public:
 					   image_scale, 
 					   calib );
     }
+
+
+#ifdef USE_DENSE_STEREO
+  if(use_dense_stereo){
+    sdense= new Stereo_Dense(*recon_config_file,
+                             dense_scale ,
+                             calib  );
+    //printf("Dense Scale %f\n",dense_scale);
+  }
+#endif
+
     /*
     else if( use_ncc )
       {
@@ -933,7 +948,9 @@ private:
   Stereo_Feature_Finder *finder;
   Stereo_Feature_Finder *finder_dense;
 
- 
+#ifdef USE_DENSE_STEREO
+Stereo_Dense *sdense;
+#endif
  
   
   OSGExporter *osgExp;
@@ -1110,15 +1127,6 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
   if(mono_cam)
     calib=name.calib;
 
-#ifdef USE_DENSE_STEREO
-  if(!sdense && use_dense_stereo){
-    sdense= new Stereo_Dense(*recon_config_file,
-			     dense_scale ,
-			     calib  );
-    printf("Dense Scale %f\n",dense_scale);
-  }
-#endif
-  
   /*  FILE *fp;
       sprintf(filename,"%s/surface-%s.xf",
       aggdir,osgDB::getStrippedName(name.left_name).c_str());
@@ -1151,6 +1159,8 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 	    cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str());
 
   //printf("Mesh cached check %s\n",meshfilename);
+  TriMesh *mesh=NULL;
+  TriMesh::verbose=0;
 
   if(!use_cached){
  
@@ -1158,7 +1168,14 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     meshcached=false;
     texcached=false;
   }else{
-    meshcached=FileExists(meshfilename);
+      if(FileExists(meshfilename)){
+          mesh = TriMesh::read(meshfilename);
+          if(!mesh){
+              meshcached=false;
+              fprintf(stderr,"\nWARNING - %s invalid redoing\n",meshfilename);
+          }else
+              meshcached=true;
+      }
     texcached=FileExists(texfilename);
   }
  
@@ -1190,13 +1207,14 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     if(!texcached){
       //      printf("\nCaching texture %s\n",texfilename);
       if(!no_atlas)
-	osgExp->cacheImage(color_frame,texfilename,512,false);
+        osgExp->cacheImage(color_frame,texfilename,tex_size,false);
       else
-	osgExp->cacheCompressedImage(color_frame,texfilename,512);
+        osgExp->cacheCompressedImage(color_frame,texfilename,tex_size);
     }
-    
+
+
     if(!meshcached){
-    
+    int mesh_verts=0;
       //printf("Not cached creating\n");
       non_cached_meshes++;
       
@@ -1333,13 +1351,41 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 		 }
 		 }
 	*/
+        mesh_verts=localV->len;
+        double mult=0.00;
+        if(mesh_verts){
+            surf = auv_mesh_pts(localV,mult,0);
+            FILE *fp = fopen(meshfilename, "w" );
+            if(!fp){
+                fprintf(stderr,"\nWARNING - Can't open mesh file %s\n",meshfilename);
+                fflush(stderr);
+                name.valid=false;
+
+                return false;
+            }
+            auv_write_ply(surf, fp,have_cov_file,"test");
+            fflush(fp);
+            fclose(fp);
+            //Destory Surf
+            mesh = TriMesh::read(meshfilename);
+            if(!mesh)
+                fprintf(stderr,"\nWARNING - mesh null after doing dense stereo\n");
+        }
       }else{ 
 #ifdef USE_DENSE_STEREO   
+          
 	sdense->dense_stereo(left_frame,right_frame);
-	std::vector<libplankton::Vector> points;   
-	sdense->get_points(points);
-	localV = g_ptr_array_new ();
-	TVertex *vert;
+        std::vector<libplankton::Vector> points;
+        IplImage *mask =cvCreateImage(cvSize(sdense->getDisp16()->width,sdense->getDisp16()->height),IPL_DEPTH_8U,1);
+        cvZero(mask);
+        sdense->get_points(points,mask);
+        mesh=get_dense_grid(mask,points);
+        cvReleaseImage(&mask);
+        mesh_verts = points.size();
+        if(mesh && mesh_verts)
+            mesh->write(meshfilename);
+
+        /*TVertex *vert;
 	for(int i=0; i<(int)points.size(); i++){
 	  //	  printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
 	  if(points[i](2) > dense_z_cutoff )
@@ -1349,7 +1395,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 					   points[i](0),points[i](1),
 					   points[i](2));
 	  g_ptr_array_add(localV,GTS_VERTEX(vert));
-	} 
+        } */
 #else 
 	fprintf(stderr,"Dense support not compiled\n");
 	exit(0);
@@ -1358,36 +1404,24 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       }
     
       
-      //printf("Valid %d\n",localV->len);
-      if(!localV->len){
+      //printf("Valid %d\n",mesh_verts);
+      if(!mesh_verts){
 	int progCount=doneCount.increment();
 	image_count_verbose (progCount, totalTodoCount);
         fprintf(stderr,"\nWARNING - Empty vertex array %s\n",meshfilename);
         fflush(stderr);
         name.valid=false;
-
+        if( display_debug_images && pause_after_each_frame )
+            cvWaitKey( 0 );
 	return false;
       }
-      double mult=0.00;
-      
-      surf = auv_mesh_pts(localV,mult,0); 
     }
     
-    
-    FILE *fp = fopen(meshfilename, "w" );
-    if(!fp){
-      fprintf(stderr,"\nWARNING - Can't open mesh file %s\n",meshfilename);
-      fflush(stderr);
-      name.valid=false;
 
-      return false;
-    }
-    auv_write_ply(surf, fp,have_cov_file,"test");
-    fflush(fp);   
-    fclose(fp);
-    //Destory Surf
- 
-  }
+
+
+}
+
 
 
   if(output_3ds){
@@ -1425,7 +1459,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 
     std::vector<string> lodnames;
  
-    osgExp->Export3DS(surf,fname_3ds,textures,512,NULL);
+    osgExp->Export3DS(surf,fname_3ds,textures,tex_size,NULL);
     gts_matrix_destroy (invM);
   }
 
@@ -1433,8 +1467,6 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     gts_object_destroy (GTS_OBJECT (surf)); 
   
   if(output_ply_and_conf){
-    TriMesh::verbose=0;
-    TriMesh *mesh = TriMesh::read(meshfilename);
     if(!mesh){
         fprintf(stderr,"\nWARNING - No cached mesh file %s\n",meshfilename);
         fflush(stderr);
@@ -1531,14 +1563,16 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 
 
 	 
-  if(!meshcached){
+  if(!meshcached || !texcached){
     
     // Pause between frames if requested.
     //
-    if( display_debug_images && pause_after_each_frame )
-      cvWaitKey( 0 );
-    else if( display_debug_images )
-      cvWaitKey( 100 );
+      if(!meshcached){
+          if( display_debug_images && pause_after_each_frame )
+              cvWaitKey( 0 );
+          else if( display_debug_images )
+              cvWaitKey( 100 );
+      }
     //
     // Clean-up
     //
@@ -1675,11 +1709,19 @@ int main( int argc, char *argv[ ] )
       }
   }
   if(!single_run){
+   
     fpp=fopen("mesh/campath.txt","w");
     if(!fpp ){
       fprintf(stderr,"Cannot open mesh/campath.txt\n");
       exit(-1);
     }
+    FILE *imgpathfp=fopen("mesh/imgpath.txt","w");
+    if(!imgpathfp ){
+      fprintf(stderr,"Cannot open mesh/imgpath.txt\n");
+      exit(-1);
+    }
+    fprintf(imgpathfp,"%s\n","../img");
+    fclose(imgpathfp);
   }
   if(output_pts_cov)
     pts_cov_fp=  fopen("pts_cov.txt","w");
@@ -1772,6 +1814,16 @@ int main( int argc, char *argv[ ] )
     
   }else{
     Stereo_Pose_File pose_data=read_stereo_pose_est_file(contents_file_name );
+    latOrigin=pose_data.origin_latitude;
+    longOrigin=pose_data.origin_longitude;
+    FILE *fpp1=fopen("mesh/origin.txt","w");
+    if(!fpp1 ){
+      fprintf(stderr,"Cannot open mesh/origin.txt\n");
+      exit(-1);
+    }
+    fprintf(fpp1,"%f %f\n",latOrigin,longOrigin);
+    fclose(fpp1);
+
     vector<Stereo_Pose>::const_iterator cii;
     cii=pose_data.poses.begin();
     while( cii != pose_data.poses.end() && (!have_max_frame_count || stereo_pair_count < max_frame_count) ){
@@ -1811,9 +1863,10 @@ int main( int argc, char *argv[ ] )
   //unsigned int taskSize=tasks.size();
   //if(num_threads > 1){
   {
-
-      g_thread_init (NULL);
-    display_debug_images = false;
+    g_thread_init (NULL);
+    if(num_threads > 1){
+      display_debug_images = false;
+    }
     boost::xtime_get(&xt, boost::TIME_UTC);
 
 #pragma omp parallel num_threads(num_threads)
@@ -2571,10 +2624,10 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
           fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
 		  "chmod 777 mesh-regen-tex\n"
 		  "cd mesh-regen-tex\n"
-                  "$BASEPATH/texture_image/texture_image --color 1.0 0 0 --inactive --tilesize %d %d --disable-output-poster  --overlap %d --tiledir %s ../mesh/final.ive\n"
+                  "$BASEPATH/texture_image/texture_image --color 1.0 0 0 --inactive --tilesize %d %d --disable-output-poster  --overlap %d --tiledir %s ../mesh/final.%s\n"
                   "cd $RUNDIR\ntime $BASEPATH/genTex %s %s --projtexsize %d --regen --projtex --stereo-calib %s --dicedir %s -f %s\n"
 		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",
-                  proj_tex_size,proj_tex_size,overlap,".",recon_config_file_name.c_str(), recon_config_file_name.c_str(),proj_tex_size,stereo_calib_file_name.c_str(),dicedir,
+                  proj_tex_size,proj_tex_size,overlap,".",OSG_EXT,recon_config_file_name.c_str(), recon_config_file_name.c_str(),proj_tex_size,stereo_calib_file_name.c_str(),dicedir,
                   "mesh-regen-tex/",dicedir);
 	  
 	  fchmod(fileno(rgfp),0777);

@@ -612,6 +612,13 @@ void PosterPrinter::recordImages()
             ss << _maxLevel;
             osgDB::makeDirectory(ss.str());
 
+
+            std::stringstream ssquare;
+            ssquare<<_dir<<"/tmpsquare/";
+
+            osgDB::makeDirectory(ssquare.str());
+            ssquare << _maxLevel;
+            osgDB::makeDirectory(ssquare.str());
             //ss<<"/"<<col<<"_"<<(row) <<"."<<_tmpTileExt;
 
             std::stringstream  tmpss;
@@ -654,8 +661,6 @@ void PosterPrinter::recordImages()
 
     }
     _images.clear();
-
-
 }
 osg::BoundingBox PosterPrinter::computeBoundingBox(int level, int col,int row){
     osg::BoundingBox *parent=NULL;
@@ -722,7 +727,7 @@ void PosterPrinter::writeMats(){
 
                 //ss<<col<<"_"<<row <<"."<<_tmpTileExt;
                 std::stringstream ss;
-                ss<<_baseName<<"_files/"<<level<<"/s";
+                ss<<"/tmpsquare/"<<level<<"/s";
                 ss<<col<<"_"<<row <<"."<<_outputTileExt;
                 //   ss<<_tmpbase<<_baseName<<"_files/"<<_maxLevel<<"/"<<col<<"_"<<row <<"."<<_tmpTileExt;
 
@@ -762,7 +767,7 @@ void PosterPrinter::writeMats(){
 
                     mfile<< cnt++ << " ";
                     std::stringstream ss;
-                    ss<<_baseName<<"_files/"<<level<<"/s";
+                    ss<<"/tmpsquare/"<<level<<"/s";
                     ss<<col<<"_"<<row <<"."<<_outputTileExt;
                     mfile << ss.str() << " ";
                     mfile << bbox._min[0] << " " << bbox._min[1] << " "<<bbox._min[2] << " ";
@@ -961,8 +966,8 @@ void PosterPrinter::addOverlap(int level,int row, int col,double width,double he
     std::stringstream newName;
     newName<<_dir<<"/"<<_baseName<<"_files/"<<level<<"/"<<col<<"_"<<row<<"."<<_outputTileExt;
 
-     std::stringstream nameSquare;
-    nameSquare<<_dir<<"/"<<_baseName<<"_files/"<<level<<"/s"<<col<<"_"<<row<<"."<<_outputTileExt;
+    std::stringstream nameSquare;
+    nameSquare<<_dir<<"/tmpsquare/"<<level<<"/s"<<col<<"_"<<row<<"."<<_outputTileExt;
     int pasteH=std::min((int)_tileSize.y(),h-offsetT);
 
         int pasteW=std::min((int)_tileSize.x(),w-offsetL);
@@ -1012,10 +1017,15 @@ void PosterPrinter::doDeepZoom(){
         nCols = (int)ceil(width / _tileSize.x());
         nRows = (int)ceil(height / _tileSize.y());
         cout << "Level " << level << " rows: " << nRows << " cols: " << nCols<< " processing.. \n";
+        std::stringstream ssquare;
+        ssquare<<_dir<<"/tmpsquare/"<<level;
+        osgDB::makeDirectory(ssquare.str());
 
         std::stringstream ss;
         ss<<_dir<<"/"<<_baseName<<"_files/"<<level;
         osgDB::makeDirectory(ss.str());
+
+
         std::stringstream tmpss;
         tmpss<<_dir<<"/"<<_tmpbase<<_baseName<<"_files/"<<level;
         osgDB::makeDirectory(tmpss.str());

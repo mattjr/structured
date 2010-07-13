@@ -169,19 +169,21 @@ int main( int argc, char *argv[ ] )
     lod0Node[0]=NULL;
     lod0Node[1]=NULL;   
     char out_name[255];
-    sprintf(out_name,"%s/%s/%s-%04d-lod2-t.ive",mdir,subdir,prefix,i);
+    sprintf(out_name,"%s/%s/%s-%04d-lod2-t.%s",mdir,subdir,prefix,i,OSG_EXT);
     lod0Node[0]=   osgDB::readNodeFile(string(out_name));
-    sprintf(out_name,"%s/%s/%s-%04d-lod2-u.ive",mdir,subdir,prefix,i);
+    sprintf(out_name,"%s/%s/%s-%04d-lod2-u.%s",mdir,subdir,prefix,i,OSG_EXT);
     lod0Node[1]=osgDB::readNodeFile(string(out_name));
   
-    sprintf(out_name,"%s/%s/%s-%04d-lod2-t.ive",mdir,subdir,prefix,i);
+    sprintf(out_name,"%s/%s/%s-%04d-lod2-t.%s",mdir,subdir,prefix,i,OSG_EXT);
  
   
   
     char text[2][255];
-    strcpy(text[0],"-t.ive");
-    strcpy(text[1],"-u.ive");
-  
+    strcpy(text[0],"-t.");
+    strcpy(text[1],"-u.");
+   strcat(text[0],OSG_EXT);
+   strcat(text[1],OSG_EXT);
+
     for(int k=0; k <2; k++){
       if(lod0Node[k]){  
     
@@ -193,7 +195,7 @@ int main( int argc, char *argv[ ] )
 
 	  if(FileExists(out_name)){
 	    setnames.push_back(string(subdir)+"/"+osgDB::getSimpleFileName(out_name));
-	  }
+          }
 	}
 	if(setnames.size() != 3 || lod0Node[k] == NULL){
 	  if(i==0)
@@ -209,8 +211,8 @@ int main( int argc, char *argv[ ] )
     }
   }
   
-  genPagedLod(outNodes,outNames,mdir);
+  genPagedLod(outNodes,outNames,mdir,OSG_EXT);
   
- 
+
   return 0;
 }

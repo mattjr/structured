@@ -274,9 +274,11 @@ static void add_face_mat_osg (T_Face * f, gpointer * data){
       (*gc._texcoords++).set(v3->u,1-v3->v); 
     }
     if(texnum2arraynum != NULL){
-      
+
       for(int i=0; i< 4; i++){
-	if(f->materialB[i] == -1){
+      //    if((*texnum2arraynum)[f->materialB[i]] == 0 && f->materialB[i] >= 0)
+        //      printf("Broken %d %d\n",f->materialB[i],f->material);
+        if(f->materialB[i] == -1 || texnum2arraynum->count(f->materialB[i]) <=0 ){
 	  (*gc._texcoordsTexArray[i]++).set(-1,-1,-1); 
 	  (*gc._texcoordsTexArray[i]++).set(-1,-1,-1); 
 	  (*gc._texcoordsTexArray[i]++).set(-1,-1,-1); 
@@ -772,7 +774,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
  
   int numimgpertex;
   if(_tex_array_blend)
-    numimgpertex=150;
+    numimgpertex=2048;
   else
     numimgpertex=1;
   //int overlap=max(1,(int)(numimgpertex * 0.1));
@@ -785,7 +787,42 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   int count=0;
   bool first=true;
   GeometryCollection *curGC=NULL;
-  
+/*
+    //New broken load
+  int numGeom=mtgcm.size();
+  int numSeg=(int)ceil(numGeom/(double)numimgpertex);
+  printf("Num Geom %d %d\n",numGeom,numSeg);
+  gcAndTexIds.resize(numSeg);
+int c=0;
+ for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr,c++){
+
+     if(itr->second == 0){
+         printf("Invalid %d\n",c);
+     }
+ }
+ itr=mtgcm.begin();
+  int overlap=1;
+  for(int i=0; i < gcAndTexIds.size(); i++){
+      gcAndTexIds[i].first=NULL;
+      for(int j=0; j < numimgpertex && itr!=mtgcm.end(); j++){
+        //  printf("Seg: %d/%d j: %d/%d\n",i,gcAndTexIds.size(),j,numimgpertex);
+          if(!gcAndTexIds[i].first){
+               gcAndTexIds[i].first=itr->second;
+               if(itr->first >= 0)
+                   gcAndTexIds[i].second.push_back(itr->first);
+           }else{
+              GeometryCollection& gc = *(itr->second);
+              gcAndTexIds[i].first->_numPoints += gc._numPoints;
+              gcAndTexIds[i].first->_numPrimitives += gc._numPrimitives;
+              gcAndTexIds[i].first->_numPrimitivesWithTexCoords += gc._numPrimitivesWithTexCoords;
+              if(itr->first >= 0)
+                  gcAndTexIds[i].second.push_back(itr->first);
+            ///Reset mtgcm to new merged geom
+              itr->second=gcAndTexIds[i].first;
+          }
+          itr++;
+      }
+  }*/
   for(itr=mtgcm.begin(); itr!=mtgcm.end(); ++itr){
     GeometryCollection& gc = *(itr->second);
     if(count % numimgpertex == 0 || first){
@@ -856,8 +893,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	
 	
 	stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
-	stateset->addUniform( new osg::Uniform( "weights", osg::Vec3(0.640f, 0.370f, 0.770f) ));
-	stateset->addUniform( new osg::Uniform( "shaderOut", 0));
+//	stateset->addUniform( new osg::Uniform( "weights", osg::Vec3(0.640f, 0.370f, 0.770f) ));
+  //      stateset->addUniform( new osg::Uniform( "shaderOut", 1));
 	
 	stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
 	stateset->setDataVariance(osg::Object::STATIC);
@@ -867,7 +904,10 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	gc._texturesActive=true;
 	for(int i=0; i< NUM_TEX_BLEND_COORDS; i++){
 	  osg::Vec3Array* texcoordBlendArray =new osg::Vec3Array(gc._numPoints);
-	  gc._texcoordsTexArray[i] = texcoordBlendArray->begin();
+          for(unsigned int j=0; j <texcoordBlendArray->size(); j++)
+              (*texcoordBlendArray)[i]=osg::Vec3(-1,-1,-1);
+          gc._texcoordsTexArray[i] = texcoordBlendArray->begin();
+
 	  gc._geom->setTexCoordArray(i+1,texcoordBlendArray);
 	}
 	gc._geom->setStateSet(stateset);
@@ -881,8 +921,8 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
       // set up texture if needed.
       for(int j=0; j < (int)gcAndTexIds[gci].second.size(); j++){
 	int tidx=gcAndTexIds[gci].second[j];
-	if(tidx < 0 ||  textures.count(tidx) <= 0){
-	  printf("Really should never get here !!!!!\n");
+        if(tidx < 0 ||  textures.count(tidx) <= 0){
+          printf("Really should never get here  %d!!!!!\n",j);
 	}
 
 	std::string filename=prefixdir+textures[tidx];
@@ -900,93 +940,106 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	
 	osg::ref_ptr<osg::Image> image;
 	//	if(do_atlas)
-	 image=getCachedImage(filename,tex_size);
+        image=getCachedImage(filename,tex_size);
 	//	else
 	// image=getCachedCompressedImage(filename,tex_size);
 	int baseTexUnit=0;
 	
-	  //LoadResizeSave(filename,fname, (!ive_out),tex_size);
+        //LoadResizeSave(filename,fname, (!ive_out),tex_size);
 	if (image.valid()){	   
 
 
-	  if(_tex_array_blend){
+            if(_tex_array_blend){
 
-	    texnum2arraynum[tidx]=j;
-	    textureArray->setImage(imgNum,image.get());
-	    textureArray->setUnRefImageDataAfterApply(false);
-	    osg_tex_arr_ptrs.push_back(textureArray);
-	    imgNum++;
-	  }else{
-  
-	    // create state
-	    osg::StateSet* stateset = new osg::StateSet;
-	    // create texture
-	    osg::Texture2D* texture = new osg::Texture2D;
-	    /*   if(do_atlas || compress_tex) 
+                texnum2arraynum[tidx]=j;
+                osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
+                texture->setImage(image.get());
+
+                compress(texture.get());
+                textureArray->setImage(imgNum,image.get());
+
+                textureArray->setUnRefImageDataAfterApply(false);
+                osg_tex_arr_ptrs.push_back(textureArray);
+                imgNum++;
+            }else{
+
+                // create state
+                osg::StateSet* stateset = new osg::StateSet;
+                // create texture
+                osg::Texture2D* texture = new osg::Texture2D;
+                /*   if(do_atlas || compress_tex)
 	      texture->setUnRefImageDataAfterApply( true );
 	    else
 	      texture->setUnRefImageDataAfterApply( false );
 	    */
-	    texture->setImage(image.get());
-            texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
-            texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
-           texture->setBorderColor(osg::Vec4(0.0,1.0,0.0,1.0));
-            //texture->setBorderWidth(1.0);
-	    //texture->setInternalFormatMode(internalFormatMode);
-	    stateset->setTextureAttributeAndModes(baseTexUnit,texture,
-						  osg::StateAttribute::ON);
-
-	   
-	    if(shader_coloring){
-	   
-	      
-	      if(useClasses && classes){
-		int class_id=-1;
-		if(classes->count(osgDB::getNameLessExtension(textures[tidx])))
-		  class_id=(*classes)[osgDB::getNameLessExtension(textures[tidx])];
-		stateset->addUniform( new osg::Uniform( "classid", class_id/(float)(num_class_id)));
-	      }
-	      
-	      stateset->setDataVariance(osg::Object::STATIC);
-	    }
-	    if(use_proj_tex){
-                      //printf("Using proj texture\n");
-	   
-
-	osg::Program* program=NULL;
-	program = new osg::Program;
-	program->setName( "colorshaderasdas" );
-        program->setParameter(GL_GEOMETRY_VERTICES_OUT_EXT,4);
-        program->setParameter(GL_GEOMETRY_INPUT_TYPE_EXT,GL_POINTS);
-        program->setParameter(GL_GEOMETRY_OUTPUT_TYPE_EXT,GL_POINTS);
-
-	//  printf("Here\n");
-	osg::Shader *hcolorf=new osg::Shader( osg::Shader::FRAGMENT);
-	osg::Shader *hcolorv=new osg::Shader( osg::Shader::VERTEX);
-	loadShaderSource( hcolorf, basedir+"proj.frag" );
-	loadShaderSource( hcolorv, basedir+ "proj.vert" );
-	program->addShader(  hcolorf );
-        program->addShader(  hcolorv );
-        stateset->setAttributeAndModes( program,
-                                        osg::StateAttribute::ON );
-        osg::Matrix mat=(*camMatrices)[tidx];
-        osg::Matrix texScale(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1);
-        texScale(0,0)=1.0/(double)(proj_tex_size);
-        texScale(1,1)=1.0/(double)(proj_tex_size);
-       // cout << "tex Scale "<<texScale <<endl;
-        osg::Vec3 v1(-133.381,74.1,15.0319);
-         osg::Matrix mat2=mat;
-      //  mat2.postMult(texScale);
-        //std::cout <<"BUG " <<v1*mat << " \n
-         //std::cout <<"RES " << v1*mat2<<endl;
-        stateset->addUniform( new osg::Uniform( "teMat",mat2));
-        // stateset->setTextureAttributeAndModes(baseTexUnit, texMat, osg::StateAttribute::ON);
-        //    stateset->addUniform( new osg::Uniform( "fc", osg::Vec4(_calib->fcx,_calib->fcy,_calib->ccx,_calib->ccy)));
+                texture->setImage(image.get());
+                texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
+                texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
+                texture->setBorderColor(osg::Vec4(0.0,1.0,0.0,1.0));
+                //texture->setBorderWidth(1.0);
+                //texture->setInternalFormatMode(internalFormatMode);
+                stateset->setTextureAttributeAndModes(baseTexUnit,texture,
+                                                      osg::StateAttribute::ON);
 
 
-    }
+                if(shader_coloring&& !_tex_array_blend){
 
-	   
+
+                    if(useClasses && classes){
+                        int class_id=-1;
+                        if(classes->count(osgDB::getNameLessExtension(textures[tidx])))
+                            class_id=(*classes)[osgDB::getNameLessExtension(textures[tidx])];
+                        stateset->addUniform( new osg::Uniform( "classid", class_id/(float)(num_class_id)));
+                    }
+
+                    stateset->setDataVariance(osg::Object::STATIC);
+
+                string shader_base;
+                if(use_proj_tex)
+                    shader_base="proj";
+                else
+                    shader_base="hcolor";
+
+                //printf("Using proj texture\n");
+
+
+                osg::Program* program=NULL;
+                program = new osg::Program;
+                program->setName( "colorshaderasdas" );
+                program->setParameter(GL_GEOMETRY_VERTICES_OUT_EXT,4);
+                program->setParameter(GL_GEOMETRY_INPUT_TYPE_EXT,GL_POINTS);
+                program->setParameter(GL_GEOMETRY_OUTPUT_TYPE_EXT,GL_POINTS);
+
+                //  printf("Here\n");
+                osg::Shader *hcolorf=new osg::Shader( osg::Shader::FRAGMENT);
+                osg::Shader *hcolorv=new osg::Shader( osg::Shader::VERTEX);
+                loadShaderSource( hcolorf, basedir+shader_base+".frag" );
+                loadShaderSource( hcolorv, basedir+shader_base+".vert" );
+                program->addShader(  hcolorf );
+                program->addShader(  hcolorv );
+                stateset->setAttributeAndModes( program,
+                                                osg::StateAttribute::ON );
+
+                if(use_proj_tex){
+                    osg::Matrix mat=(*camMatrices)[tidx];
+                    //  osg::Matrix texScale(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1);
+                    //texScale(0,0)=1.0/(double)(proj_tex_size);
+                    /// texScale(1,1)=1.0/(double)(proj_tex_size);
+                    // cout << "tex Scale "<<texScale <<endl;
+                    // osg::Vec3 v1(-133.381,74.1,15.0319);
+                    //osg::Matrix mat2=mat;
+                    //  mat2.postMult(texScale);
+                    //std::cout <<"BUG " <<v1*mat << " \n
+                    //std::cout <<"RES " << v1*mat2<<endl;
+                    stateset->addUniform( new osg::Uniform( "teMat",mat));
+                    // stateset->setTextureAttributeAndModes(baseTexUnit, texMat, osg::StateAttribute::ON);
+                    //    stateset->addUniform( new osg::Uniform( "fc", osg::Vec4(_calib->fcx,_calib->fcy,_calib->ccx,_calib->ccy)));
+
+                }
+            }
+
+
+
 	    gc._texturesActive=true;
 	    stateset->setDataVariance(osg::Object::STATIC);
 	    
@@ -997,10 +1050,10 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	    gc._texcoordArray = texcoordArray;
 	    gc._geom->setTexCoordArray(0,texcoordArray);
 	    if(computeHists){
-	      osg::Vec4Array* texcoordPlanes = new osg::Vec4Array(gc._numPoints);
-	      gc._texcoordsPlane = texcoordPlanes->begin();
-	      gc._geom->setTexCoordArray(TEXUNIT_PLANES,texcoordPlanes);
-	      gc._planeTexValid=true;
+                osg::Vec4Array* texcoordPlanes = new osg::Vec4Array(gc._numPoints);
+                gc._texcoordsPlane = texcoordPlanes->begin();
+                gc._geom->setTexCoordArray(TEXUNIT_PLANES,texcoordPlanes);
+                gc._planeTexValid=true;
 	    }
 	    
 	  
@@ -1100,7 +1153,7 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
 	      loadShaderSource( hcolorv, basedir+"hcolor.vert" );
 	      program->addShader(  hcolorf );
 	      program->addShader(  hcolorv );
-	      utstateset->setAttributeAndModes( program, osg::StateAttribute::ON );
+              utstateset->setAttributeAndModes( program, osg::StateAttribute::ON );
 
 	      utstateset->addUniform( new osg::Uniform( "zrange", osg::Vec3(zrange[0], zrange[1], 0.0f) ));
 	      //	      utstateset->addUniform( new osg::Uniform( "shaderOut", 0));
@@ -1475,8 +1528,8 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
   
   osg::ref_ptr<osg::MatrixTransform> positioned2= new osg::MatrixTransform(trans);
 
-   
-  if(do_atlas && tex){
+  if(!_tex_array_blend&& do_atlas && tex){
+
  
     if(verbose)
       printf("Texture Atlas Creation\n"); 
@@ -1516,8 +1569,7 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
     positioned1->addChild(tex);
     if(toggle_ptr)
       positioned1->addChild(toggle_ptr);
-    strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-t.ive")).c_str());
-    
+    strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-t."+string(OSG_EXT))).c_str());
     result = osgDB::Registry::instance()->writeNode(*positioned1,outtex,osgDB::Registry::instance()->getOptions());
     if (result.success())	{
       if(verbose)
@@ -1532,7 +1584,7 @@ bool OSGExporter::outputModelOSG(char *out_name,  osg::ref_ptr<osg::Geode> *grou
 
   if(untex && untex->getNumDrawables()){
     positioned2->addChild(untex);
-    strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-u.ive")).c_str());
+    strcpy(outtex,(outname_str.substr(0,outname_str.length()-4)+string("-u."+string(OSG_EXT))).c_str());
     
     
     result = osgDB::Registry::instance()->writeNode(*positioned2,outtex,osgDB::Registry::instance()->getOptions());

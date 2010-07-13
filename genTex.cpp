@@ -37,14 +37,14 @@ using namespace libplankton;
 using namespace libsnapper;
 
 static bool tex_array_blend=false;
-int proj_tex_size=512;
+int proj_tex_size;
 //
 // Command-line arguments
 //
 static bool applyNonVisMat=false;
 static string stereo_config_file_name;
 static string recon_config_file_name;
-static bool shader_color=false;
+static bool shader_color=true;
 static string contents_file_name;
 static string dir_name;
 static int verbose=false;
@@ -115,6 +115,12 @@ static bool parse_args( int argc, char *argv[ ] )
 	  shader_color=true;
 	  i+=1;
 	}
+  else if( strcmp( argv[i], "--noshader" ) == 0 )
+        {
+
+          shader_color=false;
+          i+=1;
+        }
       else if( strcmp( argv[i], "--notex" ) == 0 )
 	{
      
@@ -468,7 +474,7 @@ int main( int argc, char *argv[ ] )
 
   recon_config_file->get_value( "TEX_SIZE_LOD0", lodTexSize[0],
 				max((int)(512*tex_scale),4) );
-
+  proj_tex_size=lodTexSize[0];
   recon_config_file->get_value( "TEX_SIZE_LOD1", lodTexSize[1],
 				max((int)(256*tex_scale),4) );
   

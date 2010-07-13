@@ -58,8 +58,7 @@ vec4 distI(){
   return grayV(texture2DArray(theTexture,gl_TexCoord[1].xyz)-texture2DArrayLod(theTexture,gl_TexCoord[1].xyz,3));
 }
 
-vec4 freq3Blend(){
-  vec3 Cb=weights;
+vec4 freq3Blend(vec3 Cb){
   vec3 mipmapL = vec3(0,2,4);
   float rmax=0.70710678;
   vec3 WSum =vec3(0.0,0.0,0.0);
@@ -70,8 +69,8 @@ vec4 freq3Blend(){
   for(int j=0; j < 3; j++){
     for(int i=1;i<5; i++){
       //If no valid texture at this pixel don't blend it
-      if(gl_TexCoord[i].z < 0)
-	continue;
+      if(gl_TexCoord[i].z < 0 || gl_TexCoord[i].x < 0 || gl_TexCoord[i].x > 1.0 ||gl_TexCoord[i].y <0||gl_TexCoord[i].y >1.0)
+            continue;
       validPix=true;
       float r = length(gl_TexCoord[i].xy - vec2(0.5,0.5));
       // float num=exp(-((r/rmax)-Cb[j])/Cb[j]);
@@ -93,7 +92,6 @@ vec4 freq3Blend(){
   //No valid texture at all put color
   if(!validPix)
     return gl_Color;
-
   outComp[0]=outComp[0]/WSum[0];
   outComp[1]=outComp[1]/WSum[1];
   outComp[2]=outComp[2]/WSum[2];
@@ -183,10 +181,10 @@ vec4 lin3Blend(){
 
 }
 
-vec4 freqBlend(){
-  float hiCb=weights.x;
+vec4 freqBlend(vec3 usedWeights){
+  float hiCb=usedWeights.x;
   float mipmapL=4;
-  float lowCb=weights.y;
+  float lowCb=usedWeights.y;
   float rmax=0.70710678;
   float lowWSum=0.0;
   float hiWSum=0.0;
@@ -258,19 +256,43 @@ return   texture2DArray(theTexture,gl_TexCoord[i].xyz);
 void main()
 {
   vec4 color;
-  
-  if(shaderOut == 1)
-    color= freqBlend();
+  vec3 usedWeights;
+  usedWeights=weights;
+  if(usedWeights.x==0 && usedWeights.y==0 &&usedWeights.z==0)
+    usedWeights=vec3(0.710000,0.650000,0.070000);
+  /*  vec3 v=gl_TexCoord[shaderOut+1].xyz;
+  // if(gl_TexCoord[shaderOut].x >= 0 && gl_TexCoord[shaderOut].x <= 1.0 &&gl_TexCoord[shaderOut].y >= 0 && gl_TexCoord[shaderOut].y < 1.0 &&
+    //gl_TexCoord[shaderOut].z >=0 )
+    color=texture2DArray(theTexture,v);
+    //else
+   // color=vec4(1,0,0,1);
+//   color= freq3Blend(usedWeights);
+*/
+/*vec3 v=gl_TexCoord[shaderOut].xyz;
+if(shaderOut < 2){
+//if(gl_TexCoord[shaderOut].z ==0 )
+ //color=vec4(0,1,0,1);
+   if(gl_TexCoord[shaderOut].z <0)
+    color=vec4(1,0,0,1);
+  else
+    color=texture2DArray(theTexture,v);
+}else{
+ color= freq3Blend(usedWeights);
+ }
+  color= freq3Blend(usedWeights);*/
+
+  if(shaderOut == 0)
+    color= freq3Blend(usedWeights);
+  else if(shaderOut ==1)
+    color=pass();
   else if(shaderOut ==2)
-    color=freq3Blend();
+    color=freqBlend(usedWeights);
   else if(shaderOut ==3)
     color=gl_Color;
-  else if(shaderOut ==4)
-    color=imDebug1();	
   else
     color=pass();
-  
-
+/*
+//color=vec4(weights.y,0,0,1);
   /* if(shaderOut == 1)
    color= freq3Blend();	//tt(1);
   else if(shaderOut ==2)

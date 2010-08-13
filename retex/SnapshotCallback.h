@@ -33,7 +33,7 @@
 #include <osg/Image>
 #include <osg/io_utils>
 
-#include <osgGA/MatrixManipulator>
+//#include <osgGA/MatrixManipulator>
 #include "adt_dataio.hpp"
 #include "adt_cvutils.hpp"
 #include "Path.h"

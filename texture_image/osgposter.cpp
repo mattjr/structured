@@ -372,19 +372,23 @@ int main( int argc, char** argv )
     int tileWidth = 510, tileHeight = 510;
     int posterWidth = 512*10, posterHeight = 512*10;
     std::string posterName = "poster.bmp", extName = "bmp";
-    osg::Vec4 bgColor(0.2f, 0.2f, 0.6f, 1.0f);
+    //    osg::Vec4 bgColor(0.2f, 0.2f, 0.6f, 1.0f);
+    osg::Vec4 bgColor(1.0f, 1.0f, 1.0f, 1.0f);
     osg::Camera::RenderTargetImplementation renderImplementation = osg::Camera::FRAME_BUFFER;
     std::string dir;
     std::string basename;
     int overlap=1;
-    bool outputEmpty=false;
+    bool outputEmpty=true;
+    bool untex=false;
     while ( arguments.read("--target-res",targetRes) ) {}
     while ( arguments.read("--basename",basename) ) {}
     while ( arguments.read("--tiledir",dir) ) {}
     while ( arguments.read("--outputempty") ) {outputEmpty=true;}
+    while ( arguments.read("--sparse") ) {outputEmpty=false;}
     while ( arguments.read("--inactive") ) { activeMode = false; }
     while ( arguments.read("--color", bgColor.r(), bgColor.g(), bgColor.b()) ) {}
     while ( arguments.read("--tilesize", tileWidth, tileHeight) ) {}
+    while ( arguments.read("--notex") ) {untex=true;}
 
     while (arguments.read("--overlap", overlap) ) {}
 
@@ -433,6 +437,11 @@ int main( int argc, char** argv )
     {
         std::cout << arguments.getApplicationName() <<": No data loaded" << std::endl;
         return 1;
+    }
+    if(untex){
+      //Set shader out to 3 untex
+      osg::Uniform* shared_shader_out = new osg::Uniform("shaderOut",3);
+      scene->getOrCreateStateSet()->addUniform(shared_shader_out);
     }
     // Create camera for rendering tiles offscreen. FrameBuffer is recommended because it requires less memory.
     osg::ref_ptr<osg::Camera> camera = new osg::Camera;

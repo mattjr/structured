@@ -310,6 +310,8 @@ void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &v
     _images.clear();
     _bbox=bbox;
     _visitor->clearNames();
+   _tileRows = (int)ceil(_posterSize.y() / _tileSize.y());
+    _tileColumns = (int)ceil(_posterSize.x() / _tileSize.x());
     if(valid.size() && !_outputEmpty){
         _emptyPair =empty;
         _validTiles=valid;
@@ -322,9 +324,10 @@ void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &v
     }else{
         _currentRow = 0;
         _currentColumn = 0;
+	_validMats.resize(_tileRows*_tileColumns);
+        _validBbox.resize(_tileRows*_tileColumns);
     }
-    _tileRows = (int)ceil(_posterSize.y() / _tileSize.y());
-    _tileColumns = (int)ceil(_posterSize.x() / _tileSize.x());
+ 
     _bboxMatrix = new osg::BoundingBox *[_tileColumns*_tileRows];
     for(int i=0; i < _tileColumns*_tileRows; i++)
         _bboxMatrix[i]=NULL;

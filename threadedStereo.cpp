@@ -353,6 +353,7 @@ static bool parse_args( int argc, char *argv[ ] )
   argp.read("--skipsparse",skip_sparse);
   argp.read("--bkmb",background_mb);
   argp.read("--overlap",overlap);
+ 
 
   if(argp.read("--mbply"))
     use_mb_ply=true;
@@ -479,7 +480,9 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
   argp.read("--grdres",mb_grd_res);	 
   spline_dist=max((int)round(1.0/mb_grd_res),5);
   argp.read("--spline_dist",spline_dist);	 
-  
+   if(  argp.read("--clean"))
+    further_clean=true;
+
   argp.read("-r",image_scale);	  
   argp.read( "--edgethresh" ,edgethresh);
   argp.read("-m", max_feature_count );
@@ -2011,6 +2014,7 @@ fprintf(stderr,"Not valid %s\n", osgDB::getStrippedName(tasks[i].left_name).c_st
     string vripcmd_fn="mesh-agg/vripcmds";
     FILE *vripcmds_fp=fopen(vripcmd_fn.c_str(),"w");
     FILE *diced_fp=fopen("mesh-diced/diced.txt","w");
+    FILE *diced_lod_fp=fopen("mesh-diced/dicedld.txt","w");
 
     if(!vripcmds_fp){
       printf("Can't open vripcmds\n");
@@ -2132,6 +2136,7 @@ fprintf(stderr,"Not valid %s\n", osgDB::getStrippedName(tasks[i].left_name).c_st
 	sprintf(redirstr," ");
 
       fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
+      fprintf(diced_lod_fp,"clipped-diced-%08d-lod0.ply\n",i);
       fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
 
       if(have_mb_ply){
@@ -2204,6 +2209,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(vripcmds_fp);
     fclose(diced_fp);
+    fclose(diced_lod_fp);
  
     FILE *quadmerge_seg_fp;
     char quadmerge_seg_fname[2048];
@@ -2225,8 +2231,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       shadowstr="-shadow -color";
     
     quadmerge_seg_fp=fopen(quadmerge_seg_fname,"w");    
-
-    sprintf(quadprecmd,"cd mesh-quad;%s/bin/quadmerge -geoconf %s -lod %s -input ../%s -edgethresh %f -output ../mesh-quad/quad.ply -range ../mesh-quad/range.txt;",basepath.c_str(),deltaT_config_name.c_str(),shadowstr.c_str(),quadmerge_seg_fname,edgethresh);
+    //mv ../mesh-quad/quad-lod0.ply ../mesh-quad/quad-lod0.uncleaned.ply; %s/tridecimator/bin/tridecimator ../mesh-quad/quad-lod0.uncleaned.ply ../mesh-quad/quad-lod0.ply 0 -e20%%; 
+    sprintf(quadprecmd,"cd mesh-quad;%s/bin/quadmerge -geoconf %s -lod %s -input ../%s -edgethresh %f -output ../mesh-quad/quad.ply -range ../mesh-quad/range2.txt;%s/vrip/bin/plybbox ../mesh-quad/quad-lod0.ply > range.txt;",basepath.c_str(),deltaT_config_name.c_str(),shadowstr.c_str(),quadmerge_seg_fname,edgethresh,basepath.c_str(),basepath.c_str());
 
     for(int i=0; i < (int)tasks.size(); i++){    
     //Quadmerge List
@@ -2459,7 +2465,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		
 	char simpargstr[2048];
 	if(further_clean)
-	  sprintf(simpargstr," -H%f -S%f ",hole_fill_size,connected_comp_size_clean);
+	  sprintf(simpargstr," -S%f ",connected_comp_size_clean);
 	else
 	  sprintf(simpargstr," ");
 	fprintf(dicefp, "LOGDIR=%s\n"
@@ -2499,7 +2505,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		  "cd $DICEDIR\n",basepath.c_str(),num_threads,"Simp");
 	}
 
-	fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");
+	fprintf(dicefp,"cat dicedld.txt | xargs plybbox > range.txt\n");
 	fchmod(fileno(dicefp),0777);
 	fclose(dicefp);
 	if(!no_simp && !no_vrip)

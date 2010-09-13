@@ -36,7 +36,7 @@ using namespace std;
 using namespace libplankton;
 using namespace libsnapper;
 
-static bool tex_array_blend=false;
+static int tex_array_blend=0;
 int proj_tex_size;
 //
 // Command-line arguments
@@ -561,7 +561,7 @@ int main( int argc, char *argv[ ] )
   fclose(fp);
  fpp=fopen(string(string(mdir)+"/scalarbar.txt").c_str(),"w");
   if(fpp){
-    fprintf(fpp,"%d %d Depth_[m]\n",(int)zrange[0],(int)zrange[1]);
+    fprintf(fpp,"%0.2f %0.2f Depth_[m]\n",zrange[0],zrange[1]);
     
     fclose(fpp);
   }

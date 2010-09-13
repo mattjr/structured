@@ -1478,6 +1478,8 @@ void quadsquare::UpdateStats(const quadcornerdata& cd)
 	val = Vertex[i].num_samples;
       }else if(color_metric == Z_ERR){
 	val=stddev(Vertex[i].Zsamples,Vertex[i].num_samples);
+      }else if(color_metric == Z_LOG_ERR){
+	val=stddevlog(Vertex[i].Zsamples,Vertex[i].num_samples);
       }
       else if(color_metric == Z_VAR){
 	//	val=var(Vertex[i].Zsamples,Vertex[i].num_samples);
@@ -1845,6 +1847,10 @@ void quadsquare::AddTriangleToWF(quadsquare * /* usused qs */,
 	    break;
 	  case Z_ERR:
 	    val=stddev(tc->vi->Zsamples,tc->vi->num_samples);
+
+	    break;
+	  case Z_LOG_ERR:
+	    val=stddevlog(tc->vi->Zsamples,tc->vi->num_samples);
 
 	    break;
 	  case Z_VAR:

@@ -2,7 +2,28 @@
 #extension GL_EXT_gpu_shader4 : enable
 uniform vec3 weights;
 uniform int shaderOut;
+varying vec4 normal;
+uniform vec3 zrange;
+ varying vec3 L;
+ varying vec3 E;
+ varying vec3 H;
+
 uniform sampler2DArray theTexture;
+vec4 jetColorMap(float val) {
+  val= clamp(val,0.0,1.0);
+  
+  vec4 jet;
+        jet.x = min(4.0f * val - 1.5f,-4.0f * val + 4.5f) ;
+        jet.y = min(4.0f * val - 0.5f,-4.0f * val + 3.5f) ;
+        jet.z = min(4.0f * val + 0.5f,-4.0f * val + 2.5f) ;
+
+
+        jet.x = clamp(jet.x, 0.0f, 1.0f);
+        jet.y = clamp(jet.y, 0.0f, 1.0f);
+        jet.z = clamp(jet.z, 0.0f, 1.0f);
+	jet.w = 1.0;
+        return jet;
+}
 
 vec4 grayV(vec4 total){
   return vec4(max(max(total.x,total.y),total.z),max(max(total.x,total.y),total.z),max(max(total.x,total.y),total.z),1.0);
@@ -287,10 +308,34 @@ if(shaderOut < 2){
     color=pass();
   else if(shaderOut ==2)
     color=freqBlend(usedWeights);
-  else if(shaderOut ==3)
-    color=gl_Color;
+  else if(shaderOut ==3){
+    // color=gl_Color;
+    vec3 NNormal = normalize(normal.xyz);
+    vec3 Light  = normalize(vec3(1,  2.5,  -1));
+    vec4 specular_val=vec4( 0.18, 0.18, 0.18, 0.18 );
+    
+    float mat_shininess = 64.0f ;
+    vec4 ambient_val = vec4(0.92, 0.92, 0.92, 0.95 );
+    vec4 diffuse_val =vec4( 0.8, 0.8, 0.8, 0.85 );
+    vec3 Eye    = normalize(E);
+    vec3 Half   = normalize(E + Light);
+    float Kd = max(dot(NNormal, Light), 0.0);
+    float Ks = pow(max(dot(Half, NNormal), 0.0),
+		   mat_shininess);
+    float Ka = 1.0;
+    
+    vec4 diffuse  = Kd * diffuse_val;
+    vec4 specular = Ks * specular_val;
+    vec4 ambient  = Ka * vec4(0.35,0.35,0.35,1.0) ;
+    float height = normal.w;;
+    float range= zrange.y-zrange.x;
+    float val =(height-zrange.x)/range;
+    vec4 jet=jetColorMap(1-val);
+    color = jet * (ambient + diffuse + specular);
+  }
   else
     color=pass();
+
 /*
 //color=vec4(weights.y,0,0,1);
   /* if(shaderOut == 1)

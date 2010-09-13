@@ -221,6 +221,8 @@ int	main(int argc, char *argv[])
   if(argp.read("-zdepth"))
     color_metric=Z_DEPTH;
 
+  if(argp.read("-zlogerr"))
+    color_metric=Z_LOG_ERR;
 
   if(argp.read("-dumpstat",total_stat_file)){
     save_stats=true;

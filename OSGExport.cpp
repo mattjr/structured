@@ -773,8 +773,19 @@ bool OSGExporter::convertGtsSurfListToGeometry(GtsSurface *s, map<int,string> te
   //tempFF=getPlaneTex(planes);
  
   int numimgpertex;
-  if(_tex_array_blend)
-    numimgpertex=2048;
+  if(_tex_array_blend){
+    const osg::Texture2DArray::Extensions* extensions =osg::Texture2DArray::getExtensions(0,true);
+    if (!extensions->isTexture2DArraySupported()){
+      numimgpertex=1;
+      _tex_array_blend=false;
+      std::cerr<<"Warning: Texture2DArray::apply(..) failed, 2D texture arrays are not support by OpenGL driver."<<std::endl;
+    }else{
+      int maxLayers=extensions->maxLayerCount();
+      if(verbose)
+	fprintf(stdout,"Max Layers for Blending %d\n",maxLayers);
+      numimgpertex=maxLayers;
+    }
+  }
   else
     numimgpertex=1;
   //int overlap=max(1,(int)(numimgpertex * 0.1));
@@ -884,9 +895,12 @@ int c=0;
 	osg::Program* program=NULL;
 	program = new osg::Program;
 	program->setName( "microshader" );
-	osg::Shader *lerp=new osg::Shader( osg::Shader::FRAGMENT);
-	loadShaderSource( lerp, basedir+"lerp.frag" );
-	program->addShader(  lerp );
+	osg::Shader *lerpF=new osg::Shader( osg::Shader::FRAGMENT);
+	osg::Shader *lerpV=new osg::Shader( osg::Shader::VERTEX);
+	loadShaderSource( lerpF, basedir+"lerp.frag" );
+	loadShaderSource( lerpV, basedir+"lerp.vert" );
+	program->addShader(  lerpF );
+	program->addShader(  lerpV );
 	textureArray->setTextureSize(tex_size,tex_size,gcAndTexIds[gci].second.size());
 	osg::StateSet* stateset = new osg::StateSet;
 	stateset->setAttributeAndModes( program, osg::StateAttribute::ON );

@@ -322,6 +322,7 @@ void PosterPrinter::init( const osg::Camera* camera,std::vector<TilePosition> &v
         _currentRow=_validTiles[_validCurrent].second;
         _currentColumn=_validTiles[_validCurrent].first;
     }else{
+        _validCurrent=0;
         _currentRow = 0;
         _currentColumn = 0;
 	_validMats.resize(_tileRows*_tileColumns);

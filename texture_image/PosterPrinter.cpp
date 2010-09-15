@@ -360,6 +360,7 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
             {
                 std::cout << "Writing final result to file..." << std::endl;
            //     osgDB::writeImageFile( *_finalPoster, _outputPosterName );
+
                 cvSaveImage(_outputPosterName.c_str(),_finalPoster);
             }
 
@@ -649,8 +650,28 @@ void PosterPrinter::recordImages()
                 h = _posterSize.y() - y;
             image->flipVertical();
             IplImage *localImage=  cvCreateImage(cvSize(_tileSize.x(),_tileSize.y()),IPL_DEPTH_8U,4);
-            memcpy(localImage->imageData,image->data(),image->getImageSizeInBytes());
+	    memcpy(localImage->imageData,image->data(),image->getImageSizeInBytes());
+	    /*  int cnt=0;
+          for(y=0; y<localImage->height; y++){
+		for(x=0; x<localImage->width; x++){
+		  CV_IMAGE_ELEM(localImage,uchar,y,x*4)=255;
+		  CV_IMAGE_ELEM(localImage,uchar,y,x*4+1)=0;
+		  CV_IMAGE_ELEM(localImage,uchar,y,x*4+2)=0;
+		  CV_IMAGE_ELEM(localImage,uchar,y,x*4+3)=255;
 
+		}
+		}*/
+    IplImage *localImage2=  cvCreateImage(cvSize(_tileSize.x(),_tileSize.y()),IPL_DEPTH_8U,3);
+IplImage *localImage3=  cvCreateImage(cvSize(_tileSize.x(),_tileSize.y()),IPL_DEPTH_8U,1);
+   cvCvtColor(localImage,localImage2,CV_BGRA2BGR);
+   cvCvtColor(localImage2,localImage2,CV_BGR2RGB);
+   
+   cvSetImageCOI(localImage,4);
+   cvCopy(localImage,localImage3);
+   cvCvtColor(localImage2,localImage,CV_BGR2BGRA);
+   cvSetImageCOI(localImage,4);
+   cvCopy(localImage3,localImage);
+   cvSetImageCOI(localImage,0);
             CvRect srcrect = cvRect(0, 0, w ,h);
             CvRect dstrect = cvRect(x, y, w, h);
             cvSetImageROI(localImage,srcrect);
@@ -658,6 +679,9 @@ void PosterPrinter::recordImages()
             cvCopy(localImage,_finalPoster);
 
             cvReleaseImage(&localImage);
+            cvReleaseImage(&localImage2);
+            cvReleaseImage(&localImage3);
+
             cvResetImageROI(_finalPoster);
 
         }

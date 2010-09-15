@@ -442,6 +442,9 @@ int main( int argc, char** argv )
       //Set shader out to 3 untex
       osg::Uniform* shared_shader_out = new osg::Uniform("shaderOut",3);
       scene->getOrCreateStateSet()->addUniform(shared_shader_out);
+      //   osg::Uniform* shared_shader_out2 = new osg::Uniform("zrange",3.444950,1.817355
+      //							 ,0);
+      //scene->getOrCreateStateSet()->addUniform(shared_shader_out2);
     }
     // Create camera for rendering tiles offscreen. FrameBuffer is recommended because it requires less memory.
     osg::ref_ptr<osg::Camera> camera = new osg::Camera;

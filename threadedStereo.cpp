@@ -1364,6 +1364,10 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
                 fflush(stderr);
                 name.valid=false;
 
+                // clean up
+                cvReleaseImage( &left_frame );
+                cvReleaseImage( &right_frame );
+                cvReleaseImage( &color_frame);
                 return false;
             }
             auv_write_ply(surf, fp,have_cov_file,"test");
@@ -1373,6 +1377,9 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
             mesh = TriMesh::read(meshfilename);
             if(!mesh)
                 fprintf(stderr,"\nWARNING - mesh null after doing dense stereo\n");
+
+            // delete the vertices
+            g_ptr_array_free( localV, true );
         }
       }else{ 
 #ifdef USE_DENSE_STEREO   
@@ -1416,6 +1423,11 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
         name.valid=false;
         if( display_debug_images && pause_after_each_frame )
             cvWaitKey( 0 );
+        // clean up
+        cvReleaseImage( &left_frame );
+        cvReleaseImage( &right_frame );
+        cvReleaseImage( &color_frame);
+
 	return false;
       }
     }
@@ -1475,6 +1487,10 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
         fflush(stderr);
         name.valid=false;
 
+        // clean up
+        cvReleaseImage( &left_frame );
+        cvReleaseImage( &right_frame );
+        cvReleaseImage( &color_frame);
         return false;
     }
     
@@ -1484,6 +1500,10 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
         fflush(stderr);
         name.valid=false;
 
+        // clean up
+        cvReleaseImage( &left_frame );
+        cvReleaseImage( &right_frame );
+        cvReleaseImage( &color_frame);
         return false;    
     }
     

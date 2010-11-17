@@ -284,6 +284,8 @@ int main( int argc, char** argv )
     while ( arguments.read("--tilesize", tileWidth, tileHeight) ) {}
     while ( arguments.read("--finalsize", posterWidth, posterHeight) ) {}
     while ( arguments.read("--poster", posterName) ) {}
+    while ( arguments.read("--heightmap", heightMapName) ) {}
+
     while ( arguments.read("--ext", extName) ) {}
     while ( arguments.read("--enable-output-heightmap") ) { outputHeightMap = true; }
 

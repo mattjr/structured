@@ -27,7 +27,12 @@
 #include <osgViewer/ViewerEventHandlers>
 #include <iostream>
 #include "PosterPrinter.h"
-
+#if __APPLE__
+//Broken Pbuffer cocoa implemtation
+const bool pBufferWorks=false;
+#else
+const bool pBufferWorks=true;
+#endif
 /* Computing view matrix helpers */
 template<class T>
 class FindTopMostNodeOfTypeVisitor : public osg::NodeVisitor
@@ -97,33 +102,7 @@ void  checkIntersection(osgViewer::View *viewer,int numC,int numR,std::vector<st
     //  exit(0);
 }
 
-void getAutoHome(osg::Camera *camera,osg::Node *node){
-    const osg::BoundingSphere& boundingSphere=node->getBound();
 
-    osg::Vec3 eye= boundingSphere._center+osg::Vec3( 0.0,-3.5f * boundingSphere._radius,0.0f);
-
-    osg::Vec3 center=boundingSphere._center;
-    osg::Vec3 up= osg::Vec3(0.0f,0.0f,1.0f);
-
-    osg::Vec3 lv(center-eye);
-
-    osg::Vec3 f(lv);
-    f.normalize();
-    osg::Vec3 s(f^up);
-    s.normalize();
-    osg::Vec3 u(s^f);
-    u.normalize();
-
-    osg::Matrix rotation_matrix(s[0],     u[0],     -f[0],     0.0f,
-                                s[1],     u[1],     -f[1],     0.0f,
-                                s[2],     u[2],     -f[2],     0.0f,
-                                0.0f,     0.0f,     0.0f,      1.0f);
-
-  //  _center = center;
-    //_distance = lv.length();
-    camera->setViewMatrixAsLookAt(eye,center,up);//( osg::Matrix::inverse(rotation_matrix));
-
-}
 /* Computing view matrix functions */
 void computeViewMatrix( osg::Camera* camera, const osg::Vec3d& eye, const osg::Vec3d& hpr )
 {
@@ -385,7 +364,43 @@ int main( int argc, char** argv )
     root->addChild( camera.get() );
     
     osgViewer::Viewer viewer;
-    viewer.setUpViewInWindow( 100, 100, tileWidth, tileHeight );
+       if(!activeMode && pBufferWorks){
+        int x=0;
+        int y=0;
+
+        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+        traits->x =x;
+        traits->y = y;
+        traits->width = tileWidth;
+        traits->height = tileHeight;
+        traits->windowDecoration = false;
+        traits->doubleBuffer = false;
+        traits->sharedContext = 0;
+        traits->pbuffer = true;
+
+        osg::GraphicsContext* _gc= osg::GraphicsContext::createGraphicsContext(traits.get());
+
+        if (!_gc)
+        {
+            osg::notify(osg::NOTICE)<<"Failed to create pbuffer, failing back to normal graphics window."<<std::endl;
+
+            traits->pbuffer = false;
+            _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+        }
+        viewer.getCamera()->setGraphicsContext(_gc);
+        double fovy, aspectRatio, zNear, zFar;
+           viewer.getCamera()->getProjectionMatrixAsPerspective(fovy, aspectRatio, zNear, zFar);
+
+           double newAspectRatio = double(traits->width) / double(traits->height);
+           double aspectRatioChange = newAspectRatio / aspectRatio;
+           if (aspectRatioChange != 1.0)
+           {
+               viewer.getCamera()->getProjectionMatrix() *= osg::Matrix::scale(1.0/aspectRatioChange,1.0,1.0);
+           }
+        viewer.getCamera()->setViewport(new osg::Viewport(x,y,tileWidth,tileHeight));
+    }else{
+        viewer.setUpViewInWindow( 100, 100, tileWidth, tileHeight );
+    }
     viewer.setSceneData( root.get() );
     viewer.getDatabasePager()->setDoPreCompile( false );
     

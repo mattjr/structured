@@ -120,6 +120,9 @@ public:
     void setOutputTiles( bool b ) { _outputTiles = b; }
     bool getOutputTiles() const { return _outputTiles; }
     
+    void setUseDepth( bool b ) { _useDepth = b; }
+    bool getUseDepth() const { return _useDepth; }
+
     /** Set the output sub-image-tile extension, e.g. bmp */
     void setOutputTileExtension( const std::string& ext ) { _outputTileExt = ext; }
     const std::string& getOutputTileExtension() const { return _outputTileExt; }
@@ -127,6 +130,12 @@ public:
     /** Set the output poster name, e.g. output.bmp */
     void setOutputPosterName( const std::string& name ) { _outputPosterName = name; }
     const std::string& getOutputPosterName() const { return _outputPosterName; }
+
+
+    /** Set the output poster name, e.g. output.bmp */
+    void setOutputHeightMapName( const std::string& name ) { _outputHeightMapName = name; }
+    const std::string& getOutputHeightMapName() const { return _outputHeightMapName; }
+
     
     /** Set the size of each sub-image-tile, e.g. 640x480 */
     void setTileSize( int w, int h ) { _tileSize.set(w, h); }
@@ -143,6 +152,11 @@ public:
     /** Set the final poster image, should be already allocated */
     void setFinalPoster( osg::Image* image ) { _finalPoster = image; }
     const osg::Image* getFinalPoster() const { return _finalPoster.get(); }
+
+    /** Set the final poster image, should be already allocated */
+    void setFinalHeightMap( osg::Image* image ) { _finalHeightMap = image; }
+    const osg::Image* getFinalHeightMap() const { return _finalHeightMap.get(); }
+
     
     PosterVisitor* getPosterVisitor() { return _visitor.get(); }
     const PosterVisitor* getPosterVisitor() const { return _visitor.get(); }
@@ -163,11 +177,14 @@ protected:
     bool _outputTiles;
     std::string _outputTileExt;
     std::string _outputPosterName;
+    std::string _outputHeightMapName;
+
     osg::Vec2 _tileSize;
     osg::Vec2 _posterSize;
     
     bool _isRunning;
     bool _isFinishing;
+    bool _useDepth;
     int _lastBindingFrame;
     int _tileRows;
     int _tileColumns;
@@ -180,7 +197,11 @@ protected:
     osg::Matrixd _currentProjectionMatrix;
     osg::ref_ptr<osg::Camera> _camera;
     osg::ref_ptr<osg::Image> _finalPoster;
+    osg::ref_ptr<osg::Image> _finalHeightMap;
+
     TileImages _images;
+    TileImages _depthImages;
+
 };
 
 #endif

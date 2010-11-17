@@ -239,7 +239,7 @@ void PosterIntersector::intersect( osgUtil::IntersectionVisitor& iv, osg::Drawab
 
 /* PosterPrinter: The implementation class of high-res rendering */
 PosterPrinter::PosterPrinter()
-:   _isRunning(false), _isFinishing(false), _lastBindingFrame(0),
+:   _isRunning(false), _isFinishing(false), _useDepth(false), _lastBindingFrame(0),
     _outputTiles(false), _outputTileExt("bmp"),
     _currentRow(0), _currentColumn(0),
     _camera(0), _finalPoster(0)
@@ -255,6 +255,7 @@ void PosterPrinter::init( const osg::Camera* camera )
         return;
     
     _images.clear();
+    _depthImages.clear();
     _visitor->clearNames();
     _tileRows = (int)(_posterSize.y() / _tileSize.y());
     _tileColumns = (int)(_posterSize.x() / _tileSize.x());
@@ -284,8 +285,12 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
 			{
 			    std::cout << "Writing final result to file..." << std::endl;
 			    osgDB::writeImageFile( *_finalPoster, _outputPosterName );
-			}
-			
+                        }
+                        if ( _finalHeightMap.valid() )
+                        {
+                            std::cout << "Writing final result to file..." << std::endl;
+                            osgDB::writeImageFile( *_finalHeightMap, _outputHeightMapName );
+                        }
 			// Release all cull callbacks to free unused paged nodes
             removeCullCallbacks( node );
             _visitor->clearNames();
@@ -368,7 +373,14 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col )
     image->setName( stream.str() );
     image->allocateImage( (int)_tileSize.x(), (int)_tileSize.y(), 1, GL_RGBA, GL_UNSIGNED_BYTE );
     _images[TilePosition(row,col)] = image.get();
-    
+
+    osg::ref_ptr<osg::Image> depthImage;
+    if(_useDepth){
+        depthImage=new osg::Image;;
+        depthImage->setName( stream.str() );
+        depthImage->allocateImage( (int)_tileSize.x(), (int)_tileSize.y(), 1,GL_DEPTH_COMPONENT, GL_FLOAT );
+        _depthImages[TilePosition(row,col)] = depthImage.get();
+    }
     // Calculate projection matrix offset of each tile
     osg::Matrix offsetMatrix =
         osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *
@@ -391,6 +403,11 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col )
     camera->setRenderingCache( NULL );  // FIXME: Uses for reattaching camera with image, maybe inefficient?
     camera->detach( osg::Camera::COLOR_BUFFER );
     camera->attach( osg::Camera::COLOR_BUFFER, image.get(), 0, 0 );
+    if(_useDepth){
+        camera->detach(osg::Camera::DEPTH_BUFFER);
+        camera->attach(osg::Camera::DEPTH_BUFFER, depthImage.get(),0,0);
+    }
+
 }
 
 void PosterPrinter::recordImages()
@@ -415,4 +432,22 @@ void PosterPrinter::recordImages()
             osgDB::writeImageFile( *image, image->getName()+"."+_outputTileExt );
     }
     _images.clear();
+
+    if(_useDepth){
+        for ( TileImages::iterator itr=_depthImages.begin(); itr!=_depthImages.end(); ++itr )
+        {
+            osg::Image* image = (itr->second).get();
+            if ( _finalHeightMap.valid() ){
+
+                unsigned int row = _tileRows-itr->first.first+1, col = -itr->first.second;
+                for ( int t=0; t<image->t(); ++t )
+                {
+                    unsigned char* source = image->data( 0, t );
+                    unsigned char* target = _finalHeightMap->data( col*(int)_tileSize.x(), t + row*(int)_tileSize.y() );
+                    memcpy( target, source, image->s() * 4 * sizeof(unsigned char) );
+                }
+            }
+        }
+    }
+    _depthImages.clear();
 }

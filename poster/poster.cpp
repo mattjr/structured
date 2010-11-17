@@ -39,7 +39,7 @@ class FindTopMostNodeOfTypeVisitor : public osg::NodeVisitor
 {
 public:
     FindTopMostNodeOfTypeVisitor()
-    :   osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        :   osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
         _foundNode(0)
     {}
     
@@ -123,13 +123,13 @@ void computeViewMatrixOnEarth( osg::Camera* camera, osg::Node* scene,
     // Compute eye point in world coordiantes
     osg::Vec3d eye;
     csn->getEllipsoidModel()->convertLatLongHeightToXYZ(
-        latLongHeight.x(), latLongHeight.y(), latLongHeight.z(), eye.x(), eye.y(), eye.z() );
+            latLongHeight.x(), latLongHeight.y(), latLongHeight.z(), eye.x(), eye.y(), eye.z() );
     
     // Build matrix for computing target vector
     osg::Matrixd target_matrix =
-        osg::Matrixd::rotate( -hpr.x(), osg::Vec3d(1,0,0),
-                              -latLongHeight.x(), osg::Vec3d(0,1,0),
-                               latLongHeight.y(), osg::Vec3d(0,0,1) );
+            osg::Matrixd::rotate( -hpr.x(), osg::Vec3d(1,0,0),
+                                  -latLongHeight.x(), osg::Vec3d(0,1,0),
+                                  latLongHeight.y(), osg::Vec3d(0,0,1) );
     
     // Compute tangent vector
     osg::Vec3d tangent = target_matrix.preMult( osg::Vec3d(0,0,1) );
@@ -155,7 +155,7 @@ class CustomRenderer : public osgViewer::Renderer
 {
 public:
     CustomRenderer( osg::Camera* camera )
-    : osgViewer::Renderer(camera), _cullOnly(true)
+        : osgViewer::Renderer(camera), _cullOnly(true)
     {
         setTargetFrameRate(1);
         setMinimumTimeAvailableForGLCompileAndDeletePerFrame(1);
@@ -195,7 +195,7 @@ class PrintPosterHandler : public osgGA::GUIEventHandler
 {
 public:
     PrintPosterHandler( PosterPrinter* printer )
-    : _printer(printer) {}
+        : _printer(printer) {}
     
     bool handle( const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa )
     {
@@ -215,7 +215,7 @@ public:
             if ( _printer.valid() )
                 _printer->frame( view->getFrameStamp(), view->getSceneData() );
             break;
-        
+
         case osgGA::GUIEventAdapter::KEYDOWN:
             if ( ea.getKey()=='p' || ea.getKey()=='P' )
             {
@@ -224,7 +224,7 @@ public:
                 return true;
             }
             break;
-        
+
         default:
             break;
         }
@@ -271,10 +271,11 @@ int main( int argc, char** argv )
     // Poster arguments
     bool activeMode = true;
     bool untex=false;
-    bool outputPoster = true, outputTiles = false;
+
+    bool outputPoster = true, outputTiles = false,outputHeightMap=false;
     int tileWidth = 512, tileHeight = 512;
     int posterWidth = 512*10, posterHeight = 512*10;
-    std::string posterName = "poster.bmp", extName = "bmp";
+    std::string posterName = "poster.tif", extName = "tif",heightMapName="height.tif";
     osg::Vec4 bgColor(0.2f, 0.2f, 0.6f, 1.0f);
     osg::Camera::RenderTargetImplementation renderImplementation = osg::Camera::FRAME_BUFFER;
     
@@ -284,6 +285,8 @@ int main( int argc, char** argv )
     while ( arguments.read("--finalsize", posterWidth, posterHeight) ) {}
     while ( arguments.read("--poster", posterName) ) {}
     while ( arguments.read("--ext", extName) ) {}
+    while ( arguments.read("--enable-output-heightmap") ) { outputHeightMap = true; }
+
     while ( arguments.read("--enable-output-poster") ) { outputPoster = true; }
     while ( arguments.read("--disable-output-poster") ) { outputPoster = false; }
     while ( arguments.read("--enable-output-tiles") ) { outputTiles = true; }
@@ -292,7 +295,8 @@ int main( int argc, char** argv )
     while ( arguments.read("--use-pbuffer")) { renderImplementation = osg::Camera::PIXEL_BUFFER; }
     while ( arguments.read("--use-pbuffer-rtt")) { renderImplementation = osg::Camera::PIXEL_BUFFER_RTT; }
     while ( arguments.read("--use-fb")) { renderImplementation = osg::Camera::FRAME_BUFFER; }
-        while ( arguments.read("--notex") ) {untex=true;}
+    while ( arguments.read("--notex") ) {untex=true;}
+
     // Camera settings for inactive screenshot
     bool useLatLongHeight = true;
     osg::Vec3d eye;
@@ -325,13 +329,13 @@ int main( int argc, char** argv )
         std::cout << arguments.getApplicationName() <<": No data loaded" << std::endl;
         return 1;
     }
-      if(untex){
-      //Set shader out to 3 untex
-      osg::Uniform* shared_shader_out = new osg::Uniform("shaderOut",3);
-      scene->getOrCreateStateSet()->addUniform(shared_shader_out);
-      //   osg::Uniform* shared_shader_out2 = new osg::Uniform("zrange",3.444950,1.817355
-      //							 ,0);
-      //scene->getOrCreateStateSet()->addUniform(shared_shader_out2);
+    if(untex){
+        //Set shader out to 3 untex
+        osg::Uniform* shared_shader_out = new osg::Uniform("shaderOut",3);
+        scene->getOrCreateStateSet()->addUniform(shared_shader_out);
+        //   osg::Uniform* shared_shader_out2 = new osg::Uniform("zrange",3.444950,1.817355
+        //							 ,0);
+        //scene->getOrCreateStateSet()->addUniform(shared_shader_out2);
     }
     // Create camera for rendering tiles offscreen. FrameBuffer is recommended because it requires less memory.
     osg::ref_ptr<osg::Camera> camera = new osg::Camera;
@@ -348,8 +352,11 @@ int main( int argc, char** argv )
     printer->setTileSize( tileWidth, tileHeight );
     printer->setPosterSize( posterWidth, posterHeight );
     printer->setCamera( camera.get() );
-    
+    printer->setUseDepth(outputHeightMap);
+
     osg::ref_ptr<osg::Image> posterImage = 0;
+    osg::ref_ptr<osg::Image> heightmapImage = 0;
+
     if ( outputPoster )
     {
         posterImage = new osg::Image;
@@ -357,6 +364,14 @@ int main( int argc, char** argv )
         printer->setFinalPoster( posterImage.get() );
         printer->setOutputPosterName( posterName );
     }
+    if ( outputHeightMap )
+    {
+        heightmapImage = new osg::Image;
+        heightmapImage->allocateImage( posterWidth, posterHeight, 1, GL_DEPTH_COMPONENT, GL_FLOAT );
+        printer->setFinalHeightMap( heightmapImage.get() );
+        printer->setOutputHeightMapName( heightMapName );
+    }
+
     
     // Create root and start the viewer
     osg::ref_ptr<osg::Group> root = new osg::Group;
@@ -364,7 +379,7 @@ int main( int argc, char** argv )
     root->addChild( camera.get() );
     
     osgViewer::Viewer viewer;
-       if(!activeMode && pBufferWorks){
+    if(!activeMode && pBufferWorks){
         int x=0;
         int y=0;
 
@@ -389,14 +404,14 @@ int main( int argc, char** argv )
         }
         viewer.getCamera()->setGraphicsContext(_gc);
         double fovy, aspectRatio, zNear, zFar;
-           viewer.getCamera()->getProjectionMatrixAsPerspective(fovy, aspectRatio, zNear, zFar);
+        viewer.getCamera()->getProjectionMatrixAsPerspective(fovy, aspectRatio, zNear, zFar);
 
-           double newAspectRatio = double(traits->width) / double(traits->height);
-           double aspectRatioChange = newAspectRatio / aspectRatio;
-           if (aspectRatioChange != 1.0)
-           {
-               viewer.getCamera()->getProjectionMatrix() *= osg::Matrix::scale(1.0/aspectRatioChange,1.0,1.0);
-           }
+        double newAspectRatio = double(traits->width) / double(traits->height);
+        double aspectRatioChange = newAspectRatio / aspectRatio;
+        if (aspectRatioChange != 1.0)
+        {
+            viewer.getCamera()->getProjectionMatrix() *= osg::Matrix::scale(1.0/aspectRatioChange,1.0,1.0);
+        }
         viewer.getCamera()->setViewport(new osg::Viewport(x,y,tileWidth,tileHeight));
     }else{
         viewer.setUpViewInWindow( 100, 100, tileWidth, tileHeight );
@@ -418,8 +433,8 @@ int main( int argc, char** argv )
         viewer.addEventHandler( new osgViewer::StatsHandler );
         viewer.addEventHandler( new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()) );
         viewer.setCameraManipulator( new osgGA::TrackballManipulator );
-       // if ( !useLatLongHeight ) computeViewMatrix( camera, eye, hpr );
-       // else computeViewMatrixOnEarth( camera, scene, latLongHeight, hpr );
+        // if ( !useLatLongHeight ) computeViewMatrix( camera, eye, hpr );
+        // else computeViewMatrixOnEarth( camera, scene, latLongHeight, hpr );
 
         osg::ref_ptr<CustomRenderer> renderer = new CustomRenderer( camera );
         camera->setRenderer( renderer.get() );

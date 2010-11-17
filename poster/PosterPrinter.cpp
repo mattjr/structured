@@ -439,12 +439,12 @@ void PosterPrinter::recordImages()
             osg::Image* image = (itr->second).get();
             if ( _finalHeightMap.valid() ){
 
-                unsigned int row = _tileRows-itr->first.first+1, col = -itr->first.second;
+                unsigned int row = itr->first.first, col = itr->first.second;
                 for ( int t=0; t<image->t(); ++t )
                 {
                     unsigned char* source = image->data( 0, t );
                     unsigned char* target = _finalHeightMap->data( col*(int)_tileSize.x(), t + row*(int)_tileSize.y() );
-                    memcpy( target, source, image->s() * 4 * sizeof(unsigned char) );
+                    memcpy( target, source, image->s() * sizeof(float) );
                 }
             }
         }

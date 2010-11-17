@@ -326,7 +326,7 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS(texture_image retex mbosg tridecimator mesh2hmap mesh2xy grd2ply clip_delaunay quadmerge single_mesh_gen)
+SUBDIRS(poster texture_image retex mbosg tridecimator mesh2hmap mesh2xy grd2ply clip_delaunay quadmerge single_mesh_gen)
 SET( SRCS OSGExport.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp
@@ -334,7 +334,7 @@ SET( SRCS OSGExport.cpp
 		Clean.cpp
 		novelty.cpp
 		stereo_cells.cpp
-		tridecimator/plylib.cpp
+                tridecimator/plylib.cpp
 		quadmerge/envelope.cpp
 		quadmerge/fileio.cpp
 		)

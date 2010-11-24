@@ -71,8 +71,9 @@ protected:
     }
     
     PagedNodeNameSet _pagedNodeNames;
-    unsigned int _needToApplyCount;
     unsigned int _appliedCount;
+    unsigned int _needToApplyCount;
+
     bool _addingCallbacks;
 };
 
@@ -113,7 +114,8 @@ class PosterPrinter : public osg::Referenced
 public:
     typedef std::pair<unsigned int, unsigned int> TilePosition;
     typedef std::map< TilePosition, osg::ref_ptr<osg::Image> > TileImages;
-    
+    typedef std::map< TilePosition, osg::Matrix> TileMats;
+
     PosterPrinter();
     
     /** Set to output each sub-image-tile to disk */
@@ -165,16 +167,17 @@ public:
     
     void init( const osg::Camera* camera );
     void frame( const osg::FrameStamp* fs, osg::Node* node );
-    
+    osg::Vec3 unprojectFromScreen( const osg::Vec3 screen, osg::ref_ptr< osg::Camera > camera );
+
 protected:
     virtual ~PosterPrinter() {}
-    
     bool addCullCallbacks( const osg::FrameStamp* fs, osg::Node* node );
     void removeCullCallbacks( osg::Node* node );
     void bindCameraToImage( osg::Camera* camera, int row, int col );
     void recordImages();
-    
-    bool _outputTiles;
+    osg::Matrix getFromScreenMatrix( osg::ref_ptr< osg::Camera > camera );
+
+    bool getClosestZValue(int x,int y,float &z);
     std::string _outputTileExt;
     std::string _outputPosterName;
     std::string _outputHeightMapName;
@@ -185,6 +188,8 @@ protected:
     bool _isRunning;
     bool _isFinishing;
     bool _useDepth;
+    bool _outputTiles;
+
     int _lastBindingFrame;
     int _tileRows;
     int _tileColumns;
@@ -201,7 +206,7 @@ protected:
 
     TileImages _images;
     TileImages _depthImages;
-
+    TileMats _depthMats;
 };
 
 #endif

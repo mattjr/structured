@@ -20,7 +20,9 @@
 #include <osgDB/WriteFile>
 #include <iostream>
 #include <sstream>
+#include <osg/io_utils>
 #include "PosterPrinter.h"
+#include<osgUtil/LineSegmentIntersector>
 #include <string.h>
 /* PagedLoadingCallback: Callback for loading paged nodes while doing intersecting test */
 struct PagedLoadingCallback : public osgUtil::IntersectionVisitor::ReadCallback
@@ -143,7 +145,15 @@ void PosterVisitor::apply( osg::LOD& node )
     }*/
     traverse( node );
 }
+osg::Vec3 PosterPrinter::unprojectFromScreen( const osg::Vec3 screen, osg::ref_ptr< osg::Camera > camera )
+{
+    return screen * osg::Matrix::inverse( camera->getViewMatrix() * camera->getProjectionMatrix() * camera->getViewport()->computeWindowMatrix() );
+}
 
+osg::Matrix PosterPrinter::getFromScreenMatrix(  osg::ref_ptr< osg::Camera > camera )
+{
+    return osg::Matrix::inverse( camera->getViewMatrix() * camera->getProjectionMatrix() * camera->getViewport()->computeWindowMatrix() );
+}
 void PosterVisitor::apply( osg::PagedLOD& node )
 {
     if ( !hasCullCallback(node.getCullCallback(), g_pagedCullingCallback.get()) )
@@ -239,8 +249,9 @@ void PosterIntersector::intersect( osgUtil::IntersectionVisitor& iv, osg::Drawab
 
 /* PosterPrinter: The implementation class of high-res rendering */
 PosterPrinter::PosterPrinter()
-:   _isRunning(false), _isFinishing(false), _useDepth(false), _lastBindingFrame(0),
-    _outputTiles(false), _outputTileExt("bmp"),
+    :_outputTileExt("bmp"),_isRunning(false), _isFinishing(false), _useDepth(false),
+    _outputTiles(false),_lastBindingFrame(0),
+
     _currentRow(0), _currentColumn(0),
     _camera(0), _finalPoster(0)
 {
@@ -343,7 +354,22 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
         }
     }
 }
+bool PosterPrinter::getClosestZValue(int x,int y,float &z)
+{
+        osg::ref_ptr<osgUtil::LineSegmentIntersector> picker = new osgUtil::LineSegmentIntersector(osgUtil::Intersector::WINDOW, x,y);
+        osgUtil::IntersectionVisitor iv( picker );
+        _camera->accept(iv);
 
+
+    if (picker->containsIntersections()) {
+        osgUtil::LineSegmentIntersector::Intersection intersection = picker->getFirstIntersection();
+        z=intersection.getLocalIntersectPoint()[2];
+        return true;
+      }
+
+    return false;
+
+}
 bool PosterPrinter::addCullCallbacks( const osg::FrameStamp* fs, osg::Node* node )
 {
     if ( !_visitor->inQueue() || done() )
@@ -406,6 +432,8 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col )
     if(_useDepth){
         camera->detach(osg::Camera::DEPTH_BUFFER);
         camera->attach(osg::Camera::DEPTH_BUFFER, depthImage.get(),0,0);
+        camera->setComputeNearFarMode(osg::Camera::DO_NOT_COMPUTE_NEAR_FAR);
+        _depthMats[TilePosition(row,col)]=getFromScreenMatrix(camera);
     }
 
 }
@@ -440,11 +468,20 @@ void PosterPrinter::recordImages()
             if ( _finalHeightMap.valid() ){
 
                 unsigned int row = itr->first.first, col = itr->first.second;
+                osg::Matrix screenToWorld=_depthMats[TilePosition(row,col)];
+                std::cout << row << " " << col << " " <<screenToWorld<<std::endl;
                 for ( int t=0; t<image->t(); ++t )
                 {
-                    unsigned char* source = image->data( 0, t );
-                    unsigned char* target = _finalHeightMap->data( col*(int)_tileSize.x(), t + row*(int)_tileSize.y() );
-                    memcpy( target, source, image->s() * sizeof(float) );
+                    float* source = (float*)image->data( 0, t );
+                    float* target = (float*)_finalHeightMap->data( col*(int)_tileSize.x(), t + row*(int)_tileSize.y() );
+                    for(int i=0; i <image->s(); i++){
+                        float depth=*(source+i);
+                        osg::Vec3 screen(t,i,depth);
+                        osg::Vec3 world=(screen*screenToWorld);
+                       // if(depth != 1.0)
+                        //    printf("V: %f %f %f depth %f\n",world[0],world[1],world[2],depth);
+                        *(target+i)=world[1];
+                    }
                 }
             }
         }

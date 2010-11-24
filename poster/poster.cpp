@@ -26,6 +26,7 @@
 #include <osgViewer/Viewer>
 #include <osgViewer/ViewerEventHandlers>
 #include <iostream>
+#include <osg/io_utils>
 #include "PosterPrinter.h"
 #if __APPLE__
 //Broken Pbuffer cocoa implemtation
@@ -348,7 +349,18 @@ int main( int argc, char** argv )
     camera->setRenderTargetImplementation( renderImplementation );
     camera->setViewport( 0, 0, tileWidth, tileHeight );
     camera->addChild( scene );
-    
+  //  camera->setComputeNearFarMode(osg::Camera::DO_NOT_COMPUTE_NEAR_FAR);
+
+    const osg::BoundingSphere& bs = scene->getBound();
+    float znear = 1.0f*bs.radius();
+    float zfar  = 3.0f*bs.radius();
+
+
+    camera->setProjectionMatrixAsOrtho(-bs.radius(),bs.radius(),-bs.radius(),bs.radius(),znear,zfar);
+    camera->setViewMatrixAsLookAt(bs.center(), osg::Vec3d(0.0f,0.0f,0.0f),osg::Vec3(0.0,0.0,1.0));
+
+
+
     // Set the printer
     osg::ref_ptr<PosterPrinter> printer = new PosterPrinter;
     printer->setTileSize( tileWidth, tileHeight );
@@ -379,7 +391,14 @@ int main( int argc, char** argv )
     osg::ref_ptr<osg::Group> root = new osg::Group;
     root->addChild( scene );
     root->addChild( camera.get() );
-    
+    osg::Vec3 corners[4];
+
+    corners[0]=printer->unprojectFromScreen(osg::Vec3(0,0,0.0),camera);
+    corners[1]=printer->unprojectFromScreen(osg::Vec3(tileWidth,0,0.0),camera);
+    corners[2]=printer->unprojectFromScreen(osg::Vec3(tileWidth,tileHeight,0.0),camera);
+    corners[3]=printer->unprojectFromScreen(osg::Vec3(0,tileHeight,0.0),camera);
+for(int i=0; i < 4; i++)
+    std::cout << "Corners " << i << corners[i] <<"\n";
     osgViewer::Viewer viewer;
     if(!activeMode && pBufferWorks){
         int x=0;
@@ -405,7 +424,7 @@ int main( int argc, char** argv )
             _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
         }
         viewer.getCamera()->setGraphicsContext(_gc);
-        double fovy, aspectRatio, zNear, zFar;
+        /*double fovy, aspectRatio, zNear, zFar;
         viewer.getCamera()->getProjectionMatrixAsPerspective(fovy, aspectRatio, zNear, zFar);
 
         double newAspectRatio = double(traits->width) / double(traits->height);
@@ -413,20 +432,22 @@ int main( int argc, char** argv )
         if (aspectRatioChange != 1.0)
         {
             viewer.getCamera()->getProjectionMatrix() *= osg::Matrix::scale(1.0/aspectRatioChange,1.0,1.0);
-        }
+        }*/
         viewer.getCamera()->setViewport(new osg::Viewport(x,y,tileWidth,tileHeight));
     }else{
         viewer.setUpViewInWindow( 100, 100, tileWidth, tileHeight );
     }
     viewer.setSceneData( root.get() );
     viewer.getDatabasePager()->setDoPreCompile( false );
-    
+    viewer.getDatabasePager()->setTargetMaximumNumberOfPageLOD(1);
+    viewer.getCamera()->setProjectionMatrixAsOrtho(-bs.radius(),bs.radius(),-bs.radius(),bs.radius(),znear,zfar);
+    viewer.getCamera()->setViewMatrixAsLookAt(bs.center(), osg::Vec3d(0.0f,0.0f,0.0f), osg::Vec3(0.0,0.0,1.0));
     if ( activeMode )
     {
         viewer.addEventHandler( new PrintPosterHandler(printer.get()) );
         viewer.addEventHandler( new osgViewer::StatsHandler );
         viewer.addEventHandler( new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()) );
-        viewer.setCameraManipulator( new osgGA::TrackballManipulator );
+     //   viewer.setCameraManipulator( new osgGA::TrackballManipulator );
         viewer.run();
     }
     else
@@ -434,7 +455,7 @@ int main( int argc, char** argv )
         osg::Camera* camera = viewer.getCamera();
         viewer.addEventHandler( new osgViewer::StatsHandler );
         viewer.addEventHandler( new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()) );
-        viewer.setCameraManipulator( new osgGA::TrackballManipulator );
+      //  viewer.setCameraManipulator( new osgGA::TrackballManipulator );
         // if ( !useLatLongHeight ) computeViewMatrix( camera, eye, hpr );
         // else computeViewMatrixOnEarth( camera, scene, latLongHeight, hpr );
 

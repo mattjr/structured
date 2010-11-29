@@ -45,7 +45,7 @@
 #include "Depth.h"
 #include "auv_texture_utils.hpp"
 #include "auv_lut.hpp"
-#define OSG_EXT "osgb"
+#define OSG_EXT "ive"
 
 using namespace auv_data_tools;
 using namespace std;

@@ -129,6 +129,7 @@ int main( int argc, char *argv[ ] )
     }
 
   std::vector<vector<string > > outNames;
+  std::vector<vector<string > > outNames2step;
   std::vector<osg::ref_ptr<osg::Node>  > outNodes;
   if(!have_max_mesh_count){
     char tmp[255];
@@ -190,11 +191,15 @@ int main( int argc, char *argv[ ] )
 	int filecount=0;
 	char out_name[255];
 	vector<string> setnames;
+	vector<string> setnames2step;
+
 	for(int  j=0; j < lodNum; j++){
 	  sprintf(out_name,"%s/%s/%s-%04d-lod%d%s",mdir,subdir,prefix,i,j,text[k]);
 
 	  if(FileExists(out_name)){
 	    setnames.push_back(string(subdir)+"/"+osgDB::getSimpleFileName(out_name));
+	    setnames2step.push_back(osgDB::getSimpleFileName(out_name));
+
           }
 	}
 	if(setnames.size() != 3 || lod0Node[k] == NULL){
@@ -206,13 +211,15 @@ int main( int argc, char *argv[ ] )
 	}else{
 	  outNodes.push_back(lod0Node[k]);
 	  outNames.push_back(setnames);
+	  outNames2step.push_back(setnames2step);
 	}
       }
     }
   }
   
-  genPagedLod(outNodes,outNames,mdir,OSG_EXT);
-  
+  genPagedLod(outNodes,outNames,mdir,3,OSG_EXT);
+  genPagedLod(outNodes,outNames2step,mdir,2,OSG_EXT);
+
 
   return 0;
 }

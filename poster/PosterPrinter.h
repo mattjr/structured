@@ -22,6 +22,7 @@
 #include <osg/Camera>
 #include <osg/PagedLOD>
 #include <osgUtil/IntersectionVisitor>
+#include <auv_map_projection.hpp>
 
 /** PosterVisitor: A visitor for adding culling callbacks to newly allocated paged nodes */
 class PosterVisitor : public osg::NodeVisitor
@@ -159,7 +160,8 @@ public:
     void setFinalHeightMap( osg::Image* image ) { _finalHeightMap = image; }
     const osg::Image* getFinalHeightMap() const { return _finalHeightMap.get(); }
 
-    
+    void applyGeoTags(const char* filename,osg::Matrix viewMatrix,osg::Matrix projMatrix,osg::Camera *camera);
+
     PosterVisitor* getPosterVisitor() { return _visitor.get(); }
     const PosterVisitor* getPosterVisitor() const { return _visitor.get(); }
     
@@ -168,7 +170,8 @@ public:
     void init( const osg::Camera* camera );
     void frame( const osg::FrameStamp* fs, osg::Node* node );
     osg::Vec3 unprojectFromScreen( const osg::Vec3 screen, osg::ref_ptr< osg::Camera > camera );
-
+    void setGeoOrigin(osg::Vec2d ori){_geoOrigin=ori;}
+    osg::Vec2d getGeoOrigin(void){return _geoOrigin;}
 protected:
     virtual ~PosterPrinter() {}
     bool addCullCallbacks( const osg::FrameStamp* fs, osg::Node* node );
@@ -184,7 +187,7 @@ protected:
 
     osg::Vec2 _tileSize;
     osg::Vec2 _posterSize;
-    
+    osg::Vec2d _geoOrigin;
     bool _isRunning;
     bool _isFinishing;
     bool _useDepth;

@@ -279,13 +279,14 @@ int main( int argc, char** argv )
     std::string posterName = "poster.tif", extName = "tif",heightMapName="height.tif";
     osg::Vec4 bgColor(0.2f, 0.2f, 0.6f, 1.0f);
     osg::Camera::RenderTargetImplementation renderImplementation = osg::Camera::FRAME_BUFFER;
-    
+    osg::Vec2d origin(0,0);
     while ( arguments.read("--inactive") ) { activeMode = false; }
     while ( arguments.read("--color", bgColor.r(), bgColor.g(), bgColor.b()) ) {}
     while ( arguments.read("--tilesize", tileWidth, tileHeight) ) {}
     while ( arguments.read("--finalsize", posterWidth, posterHeight) ) {}
     while ( arguments.read("--poster", posterName) ) {}
     while ( arguments.read("--heightmap", heightMapName) ) {}
+    while ( arguments.read("--origin", origin.x(),origin.y()) ) {}
 
     while ( arguments.read("--ext", extName) ) {}
     while ( arguments.read("--enable-output-heightmap") ) { outputHeightMap = true; }
@@ -299,6 +300,8 @@ int main( int argc, char** argv )
     while ( arguments.read("--use-pbuffer-rtt")) { renderImplementation = osg::Camera::PIXEL_BUFFER_RTT; }
     while ( arguments.read("--use-fb")) { renderImplementation = osg::Camera::FRAME_BUFFER; }
     while ( arguments.read("--notex") ) {untex=true;}
+    if(origin.x() == 0 && origin.y() == 0)
+        fprintf(stderr,"Warning origin not defined but generating geotiffs!\n");
 
     // Camera settings for inactive screenshot
     bool useLatLongHeight = true;
@@ -367,7 +370,7 @@ int main( int argc, char** argv )
     printer->setPosterSize( posterWidth, posterHeight );
     printer->setCamera( camera.get() );
     printer->setUseDepth(outputHeightMap);
-
+    printer->setGeoOrigin(origin);
     osg::ref_ptr<osg::Image> posterImage = 0;
     osg::ref_ptr<osg::Image> heightmapImage = 0;
 
@@ -391,14 +394,7 @@ int main( int argc, char** argv )
     osg::ref_ptr<osg::Group> root = new osg::Group;
     root->addChild( scene );
     root->addChild( camera.get() );
-    osg::Vec3 corners[4];
 
-    corners[0]=printer->unprojectFromScreen(osg::Vec3(0,0,0.0),camera);
-    corners[1]=printer->unprojectFromScreen(osg::Vec3(tileWidth,0,0.0),camera);
-    corners[2]=printer->unprojectFromScreen(osg::Vec3(tileWidth,tileHeight,0.0),camera);
-    corners[3]=printer->unprojectFromScreen(osg::Vec3(0,tileHeight,0.0),camera);
-for(int i=0; i < 4; i++)
-    std::cout << "Corners " << i << corners[i] <<"\n";
     osgViewer::Viewer viewer;
     if(!activeMode && pBufferWorks){
         int x=0;

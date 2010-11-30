@@ -28,7 +28,7 @@
 #include <geotiff/geotiff.h>
 #include <geotiff/xtiffio.h>
 #include <GeographicConversions/ufRedfearn.h>
-
+#include <limits>
 #include <adt_write_gtiff.hpp>
 #include <adt_file_utils.hpp>
 /* PagedLoadingCallback: Callback for loading paged nodes while doing intersecting test */
@@ -445,6 +445,9 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col )
         camera->detach(osg::Camera::DEPTH_BUFFER);
         camera->attach(osg::Camera::DEPTH_BUFFER, depthImage.get(),0,0);
         camera->setComputeNearFarMode(osg::Camera::DO_NOT_COMPUTE_NEAR_FAR);
+      //  double l,r,b,t,n,f;
+        //camera->getProjectionMatrixAsOrtho(l,r,b,t,n,f);
+        //printf("%f %f\n",n,f);
         _depthMats[TilePosition(row,col)]=getFromScreenMatrix(camera);
     }
 
@@ -492,7 +495,10 @@ void PosterPrinter::recordImages()
                         osg::Vec3 world=(screen*screenToWorld);
                        // if(depth != 1.0)
                         //    printf("V: %f %f %f depth %f\n",world[0],world[1],world[2],depth);
-                        *(target+i)=world[1];
+                        if(depth != 1.0)
+                            *(target+i)=world[1];
+                        else
+                            *(target+i)=std::numeric_limits<double>::quiet_NaN();//99999.0;//FLT_MAX;
                     }
                 }
             }
@@ -568,22 +574,20 @@ void PosterPrinter::applyGeoTags(const char* filename,osg::Matrix viewMatrix,osg
     double easting_ctr, northing_ctr;
 
     double gridConvergence, pointScale;
+    if(_geoOrigin.x() != 0 || _geoOrigin.y() !=0){
+        gpsConversion.GetGridCoordinates(latTL, longTL
+                                         , zone, easting_ctr, northing_ctr, gridConvergence, pointScale);
+        pos.UTMZone=zone;
+        gtiffspace::tie_point tie;
+        tie.pt[0]=tl.x();
+        tie.pt[1]=tl.y();
+        tie.pt[2]=0;
+        tie.pt[3]=easting_ctr;
+        tie.pt[4]=northing_ctr;
+        tie.pt[5]=0;
+        pos.tie_points.push_back(tie);
 
-    gpsConversion.GetGridCoordinates(latTL, longTL
-                                     , zone, easting_ctr, northing_ctr, gridConvergence, pointScale);
-    pos.UTMZone=zone;
-    gtiffspace::tie_point tie;
-    tie.pt[0]=tl.x();
-    tie.pt[1]=tl.y();
-    tie.pt[2]=0;
-    tie.pt[3]=easting_ctr;
-    tie.pt[4]=northing_ctr;
-    tie.pt[5]=0;
-    pos.tie_points.push_back(tie);
-    pos.pixscale[0]=scalePix.x();
-    pos.pixscale[1]=scalePix.y();
-    pos.pixscale[2]=0;
-
+    }
     /*std::cout << "world " <<(test*worldtoScreen)<<"Grab Iron\n";
     osg::Matrix transScreen;
     Transpose(transScreen,screenToWorld);
@@ -612,6 +616,10 @@ void PosterPrinter::applyGeoTags(const char* filename,osg::Matrix viewMatrix,osg
     std::cout<<"Trans Scren" << (transScreen*test) << std::endl;
     std::cout<<"View" << transScreen << std::endl;
     std::cout<<"CAm" << camera->getViewport()->computeWindowMatrix() << std::endl;*/
+
+    pos.pixscale[0]=scalePix.x();
+    pos.pixscale[1]=scalePix.y();
+    pos.pixscale[2]=0;
     gtiffspace::append_gtiff_tags(filename,pos);
     // std::cout<<"Screen to World" << screenToWorlds << std::endl;
 

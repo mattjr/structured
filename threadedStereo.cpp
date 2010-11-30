@@ -56,6 +56,7 @@ static double stop_time = numeric_limits<double>::max();
 // Command-line arguments
 //
 int proj_tex_size;
+int poster_tiles=10;
 static bool rugosity=false;
 static int dist_gentex_range=0;
 static int vrip_split;
@@ -472,6 +473,9 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
 
   recon_config_file->get_value( "TEX_SIZE_LOD0", lodTexSize[0],
                                 512);
+
+  recon_config_file->get_value( "POSTER_TILE_SCALE", poster_tiles,
+                                10);
   proj_tex_size=lodTexSize[0];
   sprintf(cachedtexdir,"cache-tex-%d/",lodTexSize[0]);
 
@@ -482,6 +486,7 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
   argp.read("--spline_dist",spline_dist);	 
    if(  argp.read("--clean"))
     further_clean=true;
+   argp.read("-poster-scale",poster_tiles);
 
   argp.read("-r",image_scale);	  
   argp.read( "--edgethresh" ,edgethresh);
@@ -2252,7 +2257,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     
     quadmerge_seg_fp=fopen(quadmerge_seg_fname,"w");    
     //mv ../mesh-quad/quad-lod0.ply ../mesh-quad/quad-lod0.uncleaned.ply; %s/tridecimator/bin/tridecimator ../mesh-quad/quad-lod0.uncleaned.ply ../mesh-quad/quad-lod0.ply 0 -e20%%; 
-    sprintf(quadprecmd,"cd mesh-quad;%s/bin/quadmerge -geoconf %s -lod %s -input ../%s -edgethresh %f -output ../mesh-quad/quad.ply -range ../mesh-quad/range2.txt;%s/vrip/bin/plybbox ../mesh-quad/quad-lod0.ply > range.txt;",basepath.c_str(),deltaT_config_name.c_str(),shadowstr.c_str(),quadmerge_seg_fname,edgethresh,basepath.c_str(),basepath.c_str());
+    sprintf(quadprecmd,"cd mesh-quad;%s/bin/quadmerge -geoconf %s -lod %s -input ../%s -edgethresh %f -output ../mesh-quad/quad.ply -range ../mesh-quad/range2.txt;%s/vrip/bin/plybbox ../mesh-quad/quad-lod0.ply > range.txt;",
+            basepath.c_str(),deltaT_config_name.c_str(),shadowstr.c_str(),quadmerge_seg_fname,edgethresh,basepath.c_str());
 
     for(int i=0; i < (int)tasks.size(); i++){    
     //Quadmerge List
@@ -2650,11 +2656,10 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
           fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
 		  "chmod 777 mesh-regen-tex\n"
 		  "cd mesh-regen-tex\n"
-                  "$BASEPATH/texture_image/texture_image --color 1.0 0 0 --inactive --tilesize %d %d --disable-output-poster  --overlap %d --tiledir %s ../mesh/final.%s\n"
-                  "cd $RUNDIR\ntime $BASEPATH/genTex %s %s --projtexsize %d --regen --projtex --stereo-calib %s --dicedir %s -f %s\n"
-		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",
-                  proj_tex_size,proj_tex_size,overlap,".",OSG_EXT,recon_config_file_name.c_str(), recon_config_file_name.c_str(),proj_tex_size,stereo_calib_file_name.c_str(),dicedir,
-                  "mesh-regen-tex/",dicedir);
+                  "$BASEPATH/poster/poster --color 1.0 1.0 1.0 --inactive --tilesize %d %d --finalsize %d %d --enable-output-heightmap --enable-output-poster --depth  --poster poster.tif --heightmap height.tif ../mesh/lod/twostep.%s\n"
+
+                  ,proj_tex_size,proj_tex_size,proj_tex_size*poster_tiles,proj_tex_size*poster_tiles,OSG_EXT);/*recon_config_file_name.c_str(), recon_config_file_name.c_str(),proj_tex_size,stereo_calib_file_name.c_str(),dicedir,
+                  "mesh-regen-tex/",dicedir);*/
 	  
 	  fchmod(fileno(rgfp),0777);
 	  fclose (rgfp);

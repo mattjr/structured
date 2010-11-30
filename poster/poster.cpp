@@ -28,6 +28,7 @@
 #include <iostream>
 #include <osg/io_utils>
 #include "PosterPrinter.h"
+#include <osg/ComputeBoundsVisitor>
 #if __APPLE__
 //Broken Pbuffer cocoa implemtation
 const bool pBufferWorks=false;
@@ -353,12 +354,12 @@ int main( int argc, char** argv )
     camera->setViewport( 0, 0, tileWidth, tileHeight );
     camera->addChild( scene );
   //  camera->setComputeNearFarMode(osg::Camera::DO_NOT_COMPUTE_NEAR_FAR);
-
+    osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+    scene->traverse(cbbv);
+    osg::BoundingBox bb = cbbv.getBoundingBox();
     const osg::BoundingSphere& bs = scene->getBound();
-    float znear = 1.0f*bs.radius();
-    float zfar  = 3.0f*bs.radius();
-
-
+    float znear = 0;
+    float zfar  = (bb.yMax()-bb.yMin())*2;
     camera->setProjectionMatrixAsOrtho(-bs.radius(),bs.radius(),-bs.radius(),bs.radius(),znear,zfar);
     camera->setViewMatrixAsLookAt(bs.center(), osg::Vec3d(0.0f,0.0f,0.0f),osg::Vec3(0.0,0.0,1.0));
 
@@ -430,13 +431,15 @@ int main( int argc, char** argv )
             viewer.getCamera()->getProjectionMatrix() *= osg::Matrix::scale(1.0/aspectRatioChange,1.0,1.0);
         }*/
         viewer.getCamera()->setViewport(new osg::Viewport(x,y,tileWidth,tileHeight));
+       // viewer.setUpViewInWindow( 100, 100, tileWidth, tileHeight );
+
     }else{
         viewer.setUpViewInWindow( 100, 100, tileWidth, tileHeight );
     }
     viewer.setSceneData( root.get() );
     viewer.getDatabasePager()->setDoPreCompile( false );
     viewer.getDatabasePager()->setTargetMaximumNumberOfPageLOD(1);
-    viewer.getCamera()->setProjectionMatrixAsOrtho(-bs.radius(),bs.radius(),-bs.radius(),bs.radius(),znear,zfar);
+    viewer.getCamera()->setProjectionMatrixAsOrtho(-bs.radius(),bs.radius(),-bs.radius(),bs.radius(),495,503);//0,1000);
     viewer.getCamera()->setViewMatrixAsLookAt(bs.center(), osg::Vec3d(0.0f,0.0f,0.0f), osg::Vec3(0.0,0.0,1.0));
     if ( activeMode )
     {
@@ -451,7 +454,10 @@ int main( int argc, char** argv )
         osg::Camera* camera = viewer.getCamera();
         viewer.addEventHandler( new osgViewer::StatsHandler );
         viewer.addEventHandler( new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()) );
-      //  viewer.setCameraManipulator( new osgGA::TrackballManipulator );
+        viewer.setCameraManipulator( new osgGA::TrackballManipulator );
+        camera->setProjectionMatrixAsOrtho(-bs.radius(),bs.radius(),-bs.radius(),bs.radius(),znear,zfar);
+        camera->setViewMatrixAsLookAt(bs.center(), osg::Vec3d(0.0f,0.0f,0.0f), osg::Vec3(0.0,0.0,1.0));
+        camera->setComputeNearFarMode(osg::Camera::DO_NOT_COMPUTE_NEAR_FAR);
         // if ( !useLatLongHeight ) computeViewMatrix( camera, eye, hpr );
         // else computeViewMatrixOnEarth( camera, scene, latLongHeight, hpr );
 

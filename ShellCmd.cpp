@@ -1,5 +1,5 @@
 #include "ShellCmd.h"
-void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds){
+void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds,int thread_override){
   FILE *fp=fopen(filename.c_str(),"w");
   fprintf(fp,"#!/usr/bin/python\n");
   fprintf(fp,"import sys\n");
@@ -7,14 +7,16 @@ void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const
   fprintf(fp,"import setupts\n");
   fprintf(fp,"setupts.setup(os)\n");
   fprintf(fp,"print 'Running %s...'\n",cmdname.c_str());
-
+int loc_num_threads=num_threads;
+if(thread_override >0)
+    loc_num_threads=thread_override;
   if(precmds){
     for(int i=0; i< (int)precmds->size(); i++)
       fprintf(fp,"os.system('%s')\n",(*precmds)[i].c_str());
   }
   
   fprintf(fp,"os.system(setupts.basepath +'/runtp.py %s %d %s')\n",
-	  cmdfile.c_str(),num_threads,cmdname.c_str());
+          cmdfile.c_str(),loc_num_threads,cmdname.c_str());
   
   if(postcmds){
     for(int i=0; i<(int) postcmds->size(); i++)

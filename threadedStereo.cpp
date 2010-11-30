@@ -135,7 +135,7 @@ static bool no_vrip=false;
 static bool quad_integration=true;
 static bool no_quadmerge=true;
 static double vrip_res;
-static bool regen_tex=false;
+static bool poster=false;
 static string basepath;
 static bool single_run=false;
 static int single_run_start=0;
@@ -646,7 +646,7 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
   if( argp.read("-d"))
     display_debug_images = false;
 
-  regen_tex=argp.read("--regen");
+  poster=argp.read("--poster");
   pause_after_each_frame = argp.read("-p");
   //use_ncc=argp.read("-c");
   argp.read("--split",vrip_split);
@@ -2604,7 +2604,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
 
 	fclose(dicefp);
-	shellcm.write_generic(gentexnames[i],gentexcmd_fn,"Gentex",&precmds,NULL);
+        int thread_override= do_hw_blend ? (num_threads/2):0;
+        shellcm.write_generic(gentexnames[i],gentexcmd_fn,"Gentex",&precmds,NULL,thread_override);
 	if(no_gen_tex)
 	  continue;
 	if(i==0 && !no_vrip)
@@ -2643,7 +2644,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  else
 	    strcpy(dicedir,"mesh-diced/");
 
-	  FILE *rgfp=fopen("regen.sh","w");
+          FILE *rgfp=fopen("poster.sh","w");
 	  fprintf(rgfp,"#!/bin/bash\necho 'Regen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\n",basepath.c_str());
 	  /*fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
 		  "chmod 777 mesh-regen-tex\n"
@@ -2656,15 +2657,15 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
           fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
 		  "chmod 777 mesh-regen-tex\n"
 		  "cd mesh-regen-tex\n"
-                  "$BASEPATH/poster/poster --color 1.0 1.0 1.0 --inactive --tilesize %d %d --finalsize %d %d --enable-output-heightmap --enable-output-poster --depth  --poster poster.tif --heightmap height.tif ../mesh/lod/twostep.%s\n"
+                  "$BASEPATH/poster/poster --color 1.0 1.0 1.0 --inactive --tilesize %d %d --finalsize %d %d --enable-output-heightmap --enable-output-poster --depth --origin %.18g %.18g --poster poster.tif --heightmap height.tif ../mesh/lod/twostep.%s\n"
 
-                  ,proj_tex_size,proj_tex_size,proj_tex_size*poster_tiles,proj_tex_size*poster_tiles,OSG_EXT);/*recon_config_file_name.c_str(), recon_config_file_name.c_str(),proj_tex_size,stereo_calib_file_name.c_str(),dicedir,
+                  ,proj_tex_size,proj_tex_size,proj_tex_size*poster_tiles,proj_tex_size*poster_tiles,latOrigin,longOrigin,OSG_EXT);/*recon_config_file_name.c_str(), recon_config_file_name.c_str(),proj_tex_size,stereo_calib_file_name.c_str(),dicedir,
                   "mesh-regen-tex/",dicedir);*/
 	  
 	  fchmod(fileno(rgfp),0777);
 	  fclose (rgfp);
-	  if(regen_tex)
-	    sysres=system("./regen.sh"); 
+          if(poster)
+            sysres=system("./poster.sh");
 	}
       }
     }

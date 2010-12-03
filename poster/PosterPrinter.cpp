@@ -493,12 +493,14 @@ void PosterPrinter::recordImages()
                         float depth=*(source+i);
                         osg::Vec3 screen(t,i,depth);
                         osg::Vec3 world=(screen*screenToWorld);
+                        osg::Vec3 minWorld=(osg::Vec3(0,0,0)*screenToWorld);
+
                        // if(depth != 1.0)
                         //    printf("V: %f %f %f depth %f\n",world[0],world[1],world[2],depth);
                         if(depth != 1.0)
-                            *(target+i)=world[1];
+                            *(target+i)= 1*world[1];
                         else
-                            *(target+i)=std::numeric_limits<double>::quiet_NaN();//99999.0;//FLT_MAX;
+                            *(target+i)= 1*minWorld[1];//std::numeric_limits<double>::quiet_NaN();//99999.0;//FLT_MAX;
                     }
                 }
             }
@@ -537,18 +539,18 @@ void PosterPrinter::applyGeoTags(const char* filename,osg::Matrix viewMatrix,osg
     osg::Vec3 br(_posterSize.x(),_posterSize.y(),0);
 
     osg::Vec3 tlGlobal=tl*screenToWorld;
-    // cout << "TL Global" << tlGlobal<<endl;
+    cout << "TL Global" << tlGlobal<<endl;
     double latTL,longTL;
     map_projection->calc_geo_coords(tlGlobal.x(),tlGlobal.y(),latTL,longTL);
 
 
     osg::Vec3 blGlobal=bl*screenToWorld;
-    //cout << "bl Global" << blGlobal<<endl;
+    cout << "bl Global" << blGlobal<<endl;
     double latbl,longbl;
     map_projection->calc_geo_coords(blGlobal.x(),blGlobal.y(),latbl,longbl);
 
     osg::Vec3 trGlobal=tr*screenToWorld;
-    //cout << "tr Global" << trGlobal<<endl;
+    cout << "tr Global" << trGlobal<<endl;
     double lattr,longtr;
     map_projection->calc_geo_coords(trGlobal.x(),trGlobal.y(),lattr,longtr);
 
@@ -568,7 +570,7 @@ void PosterPrinter::applyGeoTags(const char* filename,osg::Matrix viewMatrix,osg
     osg::Vec3 diff=(brGlobal-tlGlobal);
     //cout << "Diff " << diff<<endl;
     osg::Vec2 scalePix( fabs(diff.x()/_posterSize.x()), fabs(diff.y()/_posterSize.y()));
-    //cout << "Pix Scale "<<scalePix<<endl;
+    cout << "Pix Scale "<<scalePix<<endl;
     UF::GeographicConversions::Redfearn gpsConversion("WGS84","UTM");
     string zone;
     double easting_ctr, northing_ctr;

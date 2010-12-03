@@ -15,7 +15,7 @@ SnapImageDrawCallback::SnapImageDrawCallback(std::vector<osg::Matrixd> passedM,s
   depthFrameBuffer=NULL;
   snapcount=0;
   use_png=true;
-  _expDelay=_dp->getExpiryDelay();
+  //_expDelay=_dp->getExpiryDelay();
   bool ch,onoff;
   coarseDepthMethod=true;
  osg::Texture::setMinimumNumberOfTextureObjectsToRetainInCache(2);

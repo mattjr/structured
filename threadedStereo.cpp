@@ -56,7 +56,7 @@ static double stop_time = numeric_limits<double>::max();
 // Command-line arguments
 //
 int proj_tex_size;
-int poster_tiles=20;
+int poster_tiles=40;
 static bool rugosity=false;
 static int dist_gentex_range=0;
 static int vrip_split;

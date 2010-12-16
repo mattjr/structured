@@ -330,9 +330,11 @@ SUBDIRS(poster texture_image retex mbosg tridecimator mesh2hmap mesh2xy grd2ply 
 SET( SRCS OSGExport.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp
+                Extents.cpp
 		auv_3ds.cpp
 		Clean.cpp
 		novelty.cpp
+Clipper.cpp
 		stereo_cells.cpp
                 tridecimator/plylib.cpp
 		quadmerge/envelope.cpp
@@ -344,8 +346,9 @@ ADD_LIBRARY( ts STATIC ${SRCS} )
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
 ADD_EXECUTABLE( genTex genTex.cpp )
 ADD_EXECUTABLE( lodgen lodgen.cpp )
+LINK_LIBRARIES(osgTerrain vpbd osgFX osg)
 TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf)
-TARGET_LINK_LIBRARIES( genTex ts plankton)
+TARGET_LINK_LIBRARIES( genTex ts plankton )
 TARGET_LINK_LIBRARIES( lodgen ts )
 
 # Disabled by DJLM. 

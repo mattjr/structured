@@ -69,9 +69,13 @@ public:
    Cell_Data( );
 
    Cell_Data( const std::vector<const Stereo_Pose_Data*> &poses,
-              const Bounds                               &bounds );
+              const Bounds                               &bounds ,
+              const std::pair<int,int> &idx);
               
+   Cell_Data( const std::vector<const Stereo_Pose_Data*> &poses,
+              const Bounds                               &bounds );
   Bounds bounds;
+  std::pair<int,int> idx;
    std::vector<const Stereo_Pose_Data*> poses;
  
 };

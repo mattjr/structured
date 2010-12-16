@@ -10,10 +10,12 @@
 #include <cstdlib>
 
 #include "stereo_cells.hpp"
-
+#include "Extents.h"
+#include <vpb/Commandline>
+#include <osgDB/ReadFile>
 using namespace std;
 
-#define VERBOSE 0
+#define VERBOSE 1
 
 #define POSE_INDEX_X 0 
 #define POSE_INDEX_Y 1
@@ -98,13 +100,22 @@ Cell_Data::Cell_Data( )
 }
 
 Cell_Data::Cell_Data( const vector<const Stereo_Pose_Data*> &poses,
-                      const Bounds                          &bounds )
+                      const Bounds                          &bounds,
+                      const std::pair<int,int> &idx)
   : bounds( bounds),
-    poses( poses )
+    poses( poses ),
+    idx(idx)
 { 
 
 }               
 
+Cell_Data::Cell_Data( const vector<const Stereo_Pose_Data*> &poses,
+                      const Bounds                          &bounds)
+  : bounds( bounds),
+    poses( poses )
+{
+
+}
 
 
 //----------------------------------------------------------------------------//
@@ -376,8 +387,8 @@ static void recursive_split_even( const vector<const Stereo_Pose_Data *> &poses,
 
 static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
                              const Bounds &bounds,
-                             unsigned int depth,
-                             vector<Cell_Data> &cells )
+                             unsigned int depth,int row,int col,
+                             vector<Cell_Data> &cells)
 {
    if( depth > max_tree_depth )
    {
@@ -385,10 +396,11 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
       exit(1);
    }
 
+int dM=4;
 
 
-   if(bounds.area() < max_cell_area_even ){
-     Cell_Data new_cell( poses, bounds );
+  if(bounds.area() < max_cell_area_even ){
+      Cell_Data new_cell( poses, bounds,std::make_pair<int,int>(row,col) );
      cells.push_back( new_cell );
      return ;
    }
@@ -410,33 +422,33 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
 
 
    // Check if the subsets need to be recursively split
-   if( bounds1.area() > max_cell_area_even )
+   if( bounds1.area() > max_cell_area_even && depth <dM)
    {   
-      recursive_split_area( poses1, bounds1, depth+1, cells );
+      recursive_split_area( poses1, bounds1, depth+1,row,col, cells );
    }
    else
    {
-      Cell_Data new_cell( poses1, bounds1 );
-      cells.push_back( new_cell );
+      Cell_Data new_cell( poses1, bounds1 ,std::make_pair<int,int>(row,col));
+      cells.push_back( new_cell  );
 #if VERBOSE
-      printf( "Area Cell %d at depth %d area: %f, poses: %d\n", cells.size(), depth,
-              bounds1.area(), poses1.size() );
+      printf( "Area Cell %d at depth %d area: %f %f %f %f %f, poses: %d %04d_%04d\n", cells.size(), depth,
+              bounds1.area(), bounds1.min_x,bounds1.max_x,bounds1.min_y,bounds1.max_y,poses2.size() ,row,col);
 #endif
    }
 
 
-   if( bounds2.area() > max_cell_area_even )
+   if( bounds2.area() > max_cell_area_even &&  depth <dM)
    {   
-      recursive_split_area( poses2, bounds2, depth+1, cells );
+      recursive_split_area( poses2, bounds2, depth+1,row,col+1, cells );
    }
    else
    {
-      Cell_Data new_cell( poses2, bounds2 );
+      Cell_Data new_cell( poses2, bounds2 ,std::make_pair<int,int>(row,col+1) );
       cells.push_back( new_cell );
 #if VERBOSE
-      printf( "Area Cell %d at depth %d area: %f, poses: %d\n", cells.size(), depth,
-              bounds2.area(), poses2.size() );
-#endif
+      printf( "Area Cell %d at depth %d area: %f %f %f %f %f, poses: %d %04d_%04d\n", cells.size(), depth,
+              bounds2.area(), bounds2.min_x,bounds2.max_x,bounds2.min_y,bounds2.max_y,poses2.size() ,row,col);
+     #endif
    }
 
 }                                  
@@ -499,6 +511,30 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,int method,d
    printf( "Bounds: %f %f %f %f\n", bounds.min_x, bounds.max_x ,
                                     bounds.min_y, bounds.max_y );
 #endif
+   vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
+   string filename= "/home/mattjr/data/new2/mesh-diced/clipped-diced-0000_0000.ply";
+
+   vpb::Source *sourceModel=new vpb::Source(vpb::Source::MODEL,filename);
+   sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
+   osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
+   if (model)
+   {
+       vpb::SourceData* data = new vpb::SourceData(sourceModel);
+       data->_model = model;
+       data->_extents.expandBy(model->getBound());
+       sourceModel->setSourceData(data);
+
+   }
+
+       vpb::MyDataSet *m=new vpb::MyDataSet();
+           m->setLogFileName("tmp.log");
+   m->addSource(sourceModel,1);
+
+   m->createNewDestinationGraph(geo,256,128,3);
+   m->_buildDestination(false);
+  // vpb::Commandline cl;
+   //cl.processFile(vpb::Source::MODEL,"/home/mattjr/data/new2/mesh-diced/clipped-diced-0000_0000.ply", vpb::Commandline::ADD);
+
 
    // Root node of the binary tree has all poses
    vector<const Stereo_Pose_Data *> node_poses( poses.size() );
@@ -516,7 +552,7 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,int method,d
    if(method==AUV_SPLIT)
      recursive_split( node_poses, bounds, 1, cells );
    else
-     recursive_split_area( node_poses, bounds, 1, cells );
+     recursive_split_area( node_poses, bounds, 1,0,0, cells );
    
    return cells;
 }
@@ -544,7 +580,7 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,double x1,do
    // Perform binary division until termination criteria
    vector<Cell_Data> cells;
  
-   recursive_split_area( node_poses, bounds, 1, cells );
+   recursive_split_area( node_poses, bounds, 1,0,0, cells );
 
    return cells;
 }

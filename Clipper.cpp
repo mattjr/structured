@@ -1775,7 +1775,8 @@ Clipper::Clipper(osg::BoundingBox bb):
             osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
           _bb(bb),
             _triStrip(true),
-            _smoothing(true)
+            _smoothing(true),
+            _applyColor(false)
             
 {
 }

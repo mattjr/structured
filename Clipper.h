@@ -29,10 +29,10 @@ class  Clipper : public osg::NodeVisitor
     Clipper(osg::BoundingBox bb);
 
         META_NodeVisitor("osgUtil","Clipper")
-
+                void setColor(osg::Vec4 c){_color=c;}
         void setSampleRatio(float sampleRatio) { _sampleRatio = sampleRatio; }
         float getSampleRatio() const { return _sampleRatio; }
-
+        void setApplyColor(bool b){_applyColor=b;}
         /** Set the maximum point error that all point removals must be less than to permit removal of a point.
           * Note, Only used when down sampling. i.e. sampleRatio < 1.0*/
         void setMaximumError(float error) { _maximumError = error; }
@@ -88,6 +88,12 @@ class  Clipper : public osg::NodeVisitor
                 if (geometry)
                 {
                     simplify(*geometry);
+                    if(_applyColor){
+                         osg::Vec4Array* colours = new osg::Vec4Array(1);
+                         (*colours)[0] = _color;
+                         geometry->setColorArray(colours);
+
+                    }
                 }
             }
         }
@@ -108,6 +114,8 @@ class  Clipper : public osg::NodeVisitor
         double _maximumLength;
         bool  _triStrip;
         bool  _smoothing;
+        osg::Vec4 _color;
+        bool _applyColor;
         osg::BoundingBox _bb;
         
         osg::ref_ptr<ContinueSimplificationCallback> _continueSimplificationCallback;

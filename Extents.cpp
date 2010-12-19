@@ -18,6 +18,7 @@
 #include <osg/io_utils>
 
 #include <osg/GLU>
+#include <osgUtil/SmoothingVisitor>
 
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
@@ -1105,14 +1106,26 @@ void MyDataSet::_readRow(Row& row)
                 {
                     log(osg::NOTICE,"    %s",(*itr)->getFileName().c_str());
                     log(osg::NOTICE,"    %x",(*itr)->getSourceData()->_model.get());
-                    Clipper clipper(osg::BoundingBox(osg::Vec3d(tile->_extents._min.x(),
-                                                               tile->_extents._min.y(),
-                                                               DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
-                                                                                   tile->_extents._max.y(),
-                                                                                   DBL_MAX)));
-                            osg::ref_ptr<osg::Node> root = (osg::Node*)(*itr)->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
+                    osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
+                                                                                   tile->_extents._min.y(),
+                                                                                   DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
+                                                                                                       tile->_extents._max.y(),
+                                                                                                       DBL_MAX));
+                    Clipper clipper(ext_bbox);
+                    if(tile->_level == 1)
+                        clipper.setColor(osg::Vec4(1,0,0,1));
+                    else if(tile->_level == 2)
+                        clipper.setColor(osg::Vec4(0,1,0,1));
+                    else if(tile->_level == 3)
+                            clipper.setColor(osg::Vec4(0,0.5,0.5,1));
+                    else if(tile->_level == 0)
+                            clipper.setColor(osg::Vec4(0,0,1,1));
+                    clipper.setApplyColor(true);
+                          //  osg::ref_ptr<osg::Node> root = (osg::Node*)(*itr)->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
 
-                    root->accept(clipper);
+                 //   root->accept(clipper);
+                    ClippedCopy cl_cp(ext_bbox);
+osg::ref_ptr<osg::Node> root =cl_cp.makeCopy((osg::Geode*)(*itr)->getSourceData()->_model.get());
                 //    tile->_models->
                     if(!tile->_models){
                         tile->_models = new DestinationData(NULL);
@@ -1126,6 +1139,98 @@ void MyDataSet::_readRow(Row& row)
         }
     }
 }
+
+void ClippedCopy::AnalyzePrimSet(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts)
+  {
+     std::cout  << "Prim set type "<< prset.getMode() << std::endl;
+     std::vector<int> vertRemap(verts.size(),-1);
+     if(!_triangles.valid())
+           _triangles = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
+     if(1)
+     {
+        unsigned int ic;
+        unsigned int nprim=0;
+        unsigned int numValid=0;
+        for (ic=0; ic < prset.getNumIndices(); ic++)
+        {
+           // NB the vertices are held in the drawable -
+          /*std::cout  <<  "vertex "<< ic << " is index "<<prset.index(ic) << " at " <<
+           (verts)[prset.index(ic)].x() << "," <<
+           (verts)[prset.index(ic)].y() << "," <<
+           (verts)[prset.index(ic)].z() << std::endl;*/
+            if(_bbox.contains( (verts)[prset.index(ic)])){
+                vertRemap[prset.index(ic)]=_vertices->size();
+                _vertices->push_back((verts)[prset.index(ic)]);
+            }
+
+
+
+        }
+        // you might want to handle each type of primset differently: such as:
+
+        switch (prset.getMode())
+        {
+           case osg::PrimitiveSet::TRIANGLES: // get vertices of triangle
+           {
+                   std::cout << "Triangles "<< nprim << " is index "<<prset.index(ic) << std::endl;
+              for(unsigned int i2=0; i2<prset.getNumIndices()-2; i2+=3)
+              {
+                  std::vector<bool> outside(3,false);
+                  for(int k=0; k <3; k++){
+                      outside[k]=(vertRemap[prset.index(i2+k)]>= 0);
+                      }
+
+                  if(outside[0] && outside[1] && outside[2]){
+                      for(int k=0; k <3; k++){
+                              _triangles->push_back(vertRemap[prset.index(i2+k)]);
+                          }
+                      }
+              }
+           }
+           break;
+
+           default:
+           break;
+        }
+     }
+  }
+
+osg::Geode* ClippedCopy::makeCopy(osg::Geode *geode){
+    osg::Geode *newGeode=new osg::Geode;
+    osg::Geometry *new_geom=new osg::Geometry;
+    _vertices=new osg::Vec3Array;
+    for (unsigned int i=0; i<geode->getNumDrawables(); i++)
+            {
+                osg::Drawable *drawable = geode->getDrawable(i);
+                osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+    osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
+     osg::Geometry::PrimitiveSetList::iterator itr;
+
+
+    for(itr=primitiveSets.begin(); itr!=primitiveSets.end(); ++itr){
+        switch((*itr)->getMode()){
+
+        case(osg::PrimitiveSet::TRIANGLES):
+          //  for( unsigned int j = 0; j < (*itr)->getNumPrimitives(); j++ )
+           // {
+            //   const osg::PrimitiveSet* prset = (*itr);//geom->getPrimitiveSet(j);
+AnalyzePrimSet(*(*itr), *static_cast<const osg::Vec3Array*>(geom->getVertexArray()));
+
+            break;
+
+                          default:
+            fprintf(stderr,"ERRROR Only supported for TRIANGLES\n");
+        }
+        }
+    }
+    new_geom->addPrimitiveSet(_triangles);
+    new_geom->setVertexArray(_vertices.get());
+        osgUtil::SmoothingVisitor::smooth(*new_geom);
+newGeode->addDrawable(new_geom);
+return newGeode;
+}
+
+
 class MyGraphicsContext : public osg::Referenced {
     public:
         MyGraphicsContext(BuildLog* buildLog)

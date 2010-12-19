@@ -512,7 +512,7 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,int method,d
                                     bounds.min_y, bounds.max_y );
 #endif
    vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
-   string filename= "/home/mattjr/data/new2/mesh-diced/clipped-diced-0000_0000.ply";
+   string filename= "/home/mattjr/data/new2/mesh-quad/quad-lod0.ply";
 
    vpb::Source *sourceModel=new vpb::Source(vpb::Source::MODEL,filename);
    sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
@@ -527,7 +527,7 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,int method,d
    }
 
        vpb::MyDataSet *m=new vpb::MyDataSet();
-       m->setDestinationName("test.ive");
+       m->setDestinationName("real.ive");
 
            m->setLogFileName("tmp.log");
    m->addSource(sourceModel,1);

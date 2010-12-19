@@ -43,6 +43,7 @@
 #include <vpb/ObjectPlacer>
 #include <vpb/ThreadPool>
 #include <vpb/DataSet>
+#include <osgUtil/MeshOptimizers>
 
 // forward declare so we can avoid tieing vpb to GDAL.
 class GDALDataset;
@@ -53,6 +54,15 @@ namespace vpb
     class MyDestinationTile : public DestinationTile{
     public:
          osg::Node * createScene(void);
+    };
+    class ClippedCopy{
+    public:
+        ClippedCopy(osg::BoundingBox bbox):_bbox(bbox){}
+        osg::Geode* makeCopy(osg::Geode *geode);
+        osg::BoundingBox _bbox;
+        void AnalyzePrimSet(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
+        osg::ref_ptr<osg::DrawElementsUInt> _triangles;
+        osg::ref_ptr<osg::Vec3Array>   _vertices;
     };
 
     class MyCompositeDestination : public CompositeDestination{

@@ -15,7 +15,7 @@
 #include <osgDB/ReadFile>
 using namespace std;
 
-#define VERBOSE 1
+#define VERBOSE 0
 
 #define POSE_INDEX_X 0 
 #define POSE_INDEX_Y 1
@@ -527,11 +527,15 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,int method,d
    }
 
        vpb::MyDataSet *m=new vpb::MyDataSet();
+       m->setDestinationName("test.ive");
+
            m->setLogFileName("tmp.log");
    m->addSource(sourceModel,1);
 
    m->createNewDestinationGraph(geo,256,128,3);
-   m->_buildDestination(false);
+m->_run();
+  // m->_buildDestination(true);
+
   // vpb::Commandline cl;
    //cl.processFile(vpb::Source::MODEL,"/home/mattjr/data/new2/mesh-diced/clipped-diced-0000_0000.ply", vpb::Commandline::ADD);
 

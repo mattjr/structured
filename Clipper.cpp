@@ -651,7 +651,7 @@ public:
 //            OSG_NOTICE<<"testTriangle("<<triangle<<") _p1==NULL"<<std::endl;
             ++result;
         }
-        std::cout  << triangle->_p2->_vertex<<std::endl;
+       // std::cout  << triangle->_p2->_vertex<<std::endl;
         if (!bbox.contains(triangle->_p2->_vertex))
         {
 //            OSG_NOTICE<<"testTriangle("<<triangle<<") _p1==NULL"<<std::endl;
@@ -1771,11 +1771,9 @@ void EdgeCollapse::copyBackToGeometry()
 }
 
 
-Clipper::Clipper(double sampleRatio, double maximumError, double maximumLength):
+Clipper::Clipper(osg::BoundingBox bb):
             osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-            _sampleRatio(sampleRatio),
-            _maximumError(maximumError),
-            _maximumLength(maximumLength),
+          _bb(bb),
             _triStrip(true),
             _smoothing(true)
             
@@ -1799,7 +1797,7 @@ void Clipper::simplify(osg::Geometry& geometry, const IndexList& protectedPoints
    // ec.setComputeErrorMetricUsingLength(getSampleRatio()>=1.0);
     ec.setGeometry(&geometry, protectedPoints);
     //ec.updateErrorMetricForAllEdges();
-    std::cout<<"Number of triangles= "<<ec._triangleSet.size()<<std::endl;
+   // std::cout<<"Number of triangles= "<<ec._triangleSet.size()<<std::endl;
 
     unsigned int numOriginalPrimitives = ec._triangleSet.size();
     
@@ -1827,9 +1825,8 @@ void Clipper::simplify(osg::Geometry& geometry, const IndexList& protectedPoints
         }
         OSG_INFO<<"******* AFTER EDGE DIVIDE *********"<<ec._triangleSet.size()<<std::endl;
     }*/
-    osg::BoundingBox bbox(1970.798267,3876.212105,FLT_MIN,1973.574991,3895.467857,FLT_MAX);
 
-    ec.clipTriangles(bbox);
+    ec.clipTriangles(_bb);
 
     OSG_INFO<<"Number of triangle errors after edge collapse= "<<ec.testAllTriangles()<<std::endl;
     OSG_INFO<<"Number of edge errors before edge collapse= "<<ec.testAllEdges()<<std::endl;

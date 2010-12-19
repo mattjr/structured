@@ -83,11 +83,6 @@ static bool use_dist_coords=true;
 int lodTexSize[3];
 int lodStart=0;
 bool passed_calib=false;
-typedef struct _meshCell{
-    std::string name;
-    std::pair<int,int> idx;
-}meshCell;
-
 //
 // Parse command line arguments into global variables
 //
@@ -562,9 +557,7 @@ int main( int argc, char *argv[ ] )
     fprintf(stderr,"No range.txt file Quitting\n");
     exit(-1);
   }
-  int ret=fscanf(fp,"%*f %*f %f\n%*f %*f %f\n",&(zrange[0]),&(zrange[1]));
-  if(ret !=6)
-      fprintf(stderr,"Didn't read 6 elements from range.txt\n");
+  fscanf(fp,"%*f %*f %f\n%*f %*f %f\n",&(zrange[0]),&(zrange[1]));
   fclose(fp);
  fpp=fopen(string(string(mdir)+"/scalarbar.txt").c_str(),"w");
   if(fpp){
@@ -581,11 +574,8 @@ int main( int argc, char *argv[ ] )
     int class_id;
    
     char img_name[2048];
-   int retV=0;
-           while(!feof(fp)){
-      retV=fscanf(fp,"%*f %s %d\n",img_name,&class_id);
-      if(retV!=3)
-          fprintf(stderr,"Failed to read 3 elements from class file\n");
+    while(!feof(fp)){
+      fscanf(fp,"%*f %s %d\n",img_name,&class_id);
       classes[string(img_name)]=class_id;
       if(class_id > max_class_id)
 	max_class_id=class_id;
@@ -596,7 +586,7 @@ int main( int argc, char *argv[ ] )
   char dicefname[255];
   sprintf(dicefname,"%s/valid.txt",diceddir);
   string dicefile(dicefname);
-  std::vector<meshCell> meshNames;
+  std::vector<string> meshNames;
   std::vector<vector<string >   > outNames;
   std::vector<osg::ref_ptr<osg::Node>  > outNodes;
 
@@ -616,23 +606,12 @@ int main( int argc, char *argv[ ] )
     FILE *dicefp=fopen(dicefile.c_str(),"r");
     char tmp[255];
     int eof=0;
-    int r,c;
-    r=c=0;
     while(eof != EOF){
       eof=fscanf(dicefp,"%s\n",tmp);
       if(eof != EOF){
 	if(verbose)
 	  printf("Diced files %s\n",tmp);
-        meshCell cell;
-        string sn(tmp);
-        string rs=sn.substr(sn.size()-13,4);
-        string cs=sn.substr(sn.size()-8,4);
-        printf("%s %s\n",cs.c_str(),rs.c_str());
-        r=atoi(rs.c_str());
-        c=atoi(cs.c_str());
-        cell.name=diceddir+string(tmp);
-        cell.idx=std::make_pair<int,int>(r,c);
-        meshNames.push_back(cell);
+	meshNames.push_back(diceddir+string(tmp));
       }
     }
   }
@@ -660,7 +639,7 @@ int main( int argc, char *argv[ ] )
   for( i=startRun; i < (int) totalMeshCount; i++){
     GNode *bboxTree=NULL;
     if(!no_tex && !use_regen_tex)
-      bboxTree=loadBBox(osgDB::getSimpleFileName(meshNames[i].name).c_str(),
+      bboxTree=loadBBox(osgDB::getSimpleFileName(meshNames[i]).c_str(),
 			gts_trans_map);
     else 
       bboxTree=NULL;   
@@ -703,7 +682,7 @@ int main( int argc, char *argv[ ] )
                         gts_trans_map);
         }
       boost::function< bool(int) > coarsecallback = boost::bind(mesh_count,i,totalMeshCount,j,lodNum,_1,0,0);
-      string str=meshNames[i].name;
+      string str=meshNames[i];
       if(!no_simp){
 	char tmp[255];
 	sprintf(tmp,"-lod%d.ply",j);
@@ -746,7 +725,7 @@ int main( int argc, char *argv[ ] )
       delete planeIdx;
       if(!res ){
 	printf("Failed to load surface %s\n",
-               meshNames[i].name.c_str());
+	       meshNames[i].c_str());
 	exit(-1);
       }
       if(verbose)
@@ -811,7 +790,7 @@ int main( int argc, char *argv[ ] )
 	strcpy(ext,"3ds");
       else
 	strcpy(ext,"ive");
-      sprintf(out_name,"%s/%s/blended-%04d_%04d-lod%d.%s",mdir,subdir,meshNames[i].idx.first,meshNames[i].idx.second,j,ext);
+      sprintf(out_name,"%s/%s/blended-%04d-lod%d.%s",mdir,subdir,i,j,ext);
       osg::ref_ptr<osg::Geode> group[2];
       ClippingMap cm;
       std::map<int,GtsMatrix *>::iterator iter;

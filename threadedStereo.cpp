@@ -47,7 +47,7 @@ using namespace ulapack;
 using namespace libsnapper;
 #define DEFAULT_NUM_THREADS (int)(get_num_processors( )*1.5)
 
-#include "Extents.h"
+
 static int meshNum;
 static double start_time = 0.0;
 static bool apply_aug=false;
@@ -115,7 +115,7 @@ static int num_threads=1;
 static FILE *fpp,*fpp2,*pos_fp;
 static double connected_comp_size_clean;
 static double hole_fill_size;
-static bool even_split=true;
+static bool even_split=false;
 static double cell_scale=1.0;
 static bool do_classes=false;
 static bool do_classes_interp=false;
@@ -2145,8 +2145,8 @@ fprintf(stderr,"Not valid %s\n", osgDB::getStrippedName(tasks[i].left_name).c_st
       if(vrip_cells[i].poses.size() == 0)
 	continue;
       
-      sprintf(vrip_seg_fname,"mesh-agg/vripseg-%04d_%04d.txt",vrip_cells[i].idx.first,vrip_cells[i].idx.second);
-      sprintf(conf_name,"mesh-diced/bbox-clipped-diced-%04d_%04d.ply.txt",vrip_cells[i].idx.first,vrip_cells[i].idx.second);
+      sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
+      sprintf(conf_name,"mesh-diced/bbox-clipped-diced-%08d.ply.txt",i);
 
       vrip_seg_fp=fopen(vrip_seg_fname,"w");
       bboxfp = fopen(conf_name,"w");
@@ -2156,12 +2156,12 @@ fprintf(stderr,"Not valid %s\n", osgDB::getStrippedName(tasks[i].left_name).c_st
  	
       char redirstr[2048];
       if(!dist_run)
-        sprintf(redirstr,">  vripsurflog-%04d_%04d.txt",vrip_cells[i].idx.first,vrip_cells[i].idx.second);
+	sprintf(redirstr,">  vripsurflog-%08d.txt",i);
       else
 	sprintf(redirstr," ");
 
-      fprintf(diced_fp,"clipped-diced-%04d_%04d.ply\n",vrip_cells[i].idx.first,vrip_cells[i].idx.second);
-      fprintf(diced_lod_fp,"clipped-diced-%04d_%04d-lod0.ply\n",vrip_cells[i].idx.first,vrip_cells[i].idx.second);
+      fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
+      fprintf(diced_lod_fp,"clipped-diced-%08d-lod0.ply\n",i);
       fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
 
       if(have_mb_ply){
@@ -2182,21 +2182,21 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	
       }
       if(!no_merge)
-        fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%04d_%04d.vri ../%s ../%s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%04d_%04d.vri ../mesh-agg/seg-%04d_%04d.ply %s ;",vrip_cells[i].idx.first,vrip_cells[i].idx.second,vrip_seg_fname,vrip_seg_fname,vrip_res,vrip_ramp,vrip_cells[i].idx.first,vrip_cells[i].idx.second,vrip_cells[i].idx.first,vrip_cells[i].idx.second,redirstr);
+	fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,vrip_ramp,i,i,redirstr);
       else
-        fprintf(vripcmds_fp,"cat ../%s | cut -f1 -d\" \" | xargs $BASEDIR/vrip/bin/plymerge > ../mesh-agg/seg-%04d_%04d.ply;",vrip_seg_fname,vrip_cells[i].idx.first,vrip_cells[i].idx.second);
+	fprintf(vripcmds_fp,"cat ../%s | cut -f1 -d\" \" | xargs $BASEDIR/vrip/bin/plymerge > ../mesh-agg/seg-%08d.ply;",vrip_seg_fname,i);
 
-      fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%04d_%04d.ply > ../mesh-diced/clipped-diced-%04d_%04d.ply;",
+      fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",
 	      vrip_cells[i].bounds.min_x,
 	      vrip_cells[i].bounds.min_y,
 	      FLT_MIN,
 	      vrip_cells[i].bounds.max_x,
 	      vrip_cells[i].bounds.max_y,
 	      FLT_MAX,
-              eps,vrip_cells[i].idx.first,vrip_cells[i].idx.second,vrip_cells[i].idx.first,vrip_cells[i].idx.second);
+	      eps,i,i);
 
      if(have_mb_ply){
-       fprintf(vripcmds_fp,"mv ../mesh-diced/clipped-diced-%04d_%04d.ply ../mesh-diced/nomb-diced-%04d_%04d.ply;",vrip_cells[i].idx.first,vrip_cells[i].idx.second,vrip_cells[i].idx.first,vrip_cells[i].idx.second);
+       fprintf(vripcmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply;",i,i);
 	for(int k=0; k < (int)mb_ply_filenames.size(); k++){
 	  fprintf(vripcmds_fp,"plysubtract  ../mesh-agg/clipped-mb-%08d-%08d.ply ../mesh-agg/vis-mb-%08d-%08d.ply >  ../mesh-agg/tmp-mb-%08d-%08d.ply ;",k,i,k,i,k,i);
 	  fprintf(vripcmds_fp,"clip_delaunay  ../mesh-diced/nomb-diced-%08d.ply ../mesh-agg/tmp-mb-%08d-%08d.ply  ../mesh-agg/unclean-inv-mb-%08d-%08d.ply ;",i,k,i,k,i);
@@ -2206,7 +2206,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	fprintf(vripcmds_fp,"plymerge ../mesh-diced/nomb-diced-%08d.ply ",i );
 	for(int k=0; k < (int)mb_ply_filenames.size(); k++)
 	  fprintf(vripcmds_fp," ../mesh-agg/inv-mb-%08d-%08d.ply ",k,i);
-        fprintf(vripcmds_fp,"> ../mesh-diced/clipped-diced-%04d_%04d.ply;",vrip_cells[i].idx.first,vrip_cells[i].idx.second);
+	fprintf(vripcmds_fp,"> ../mesh-diced/clipped-diced-%08d.ply;",i);
      }
       fprintf(vripcmds_fp,"cd ..\n");
     
@@ -2318,7 +2318,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
       
      
-      sprintf(conf_name,"mesh-quad/bbox-clipped-diced-%04d_%04d.ply.txt",vrip_cells[i].idx.first,vrip_cells[i].idx.second);
+      sprintf(conf_name,"mesh-quad/bbox-clipped-diced-%08d.ply.txt",i);
 
      
       bboxfp = fopen(conf_name,"w");
@@ -2327,7 +2327,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       }	
     
 
-      fprintf(diced_fp,"clipped-diced-%04d_%04d.ply\n",vrip_cells[i].idx.first,vrip_cells[i].idx.second);
+      fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
       fprintf(quadmergecmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-quad/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
 
    

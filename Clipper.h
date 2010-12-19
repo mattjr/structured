@@ -26,7 +26,7 @@ class  Clipper : public osg::NodeVisitor
 {
     public:
 
-        Clipper(double sampleRatio=1.0, double maximumError=FLT_MAX, double maximumLength=0.0);
+    Clipper(osg::BoundingBox bb);
 
         META_NodeVisitor("osgUtil","Clipper")
 
@@ -108,6 +108,7 @@ class  Clipper : public osg::NodeVisitor
         double _maximumLength;
         bool  _triStrip;
         bool  _smoothing;
+        osg::BoundingBox _bb;
         
         osg::ref_ptr<ContinueSimplificationCallback> _continueSimplificationCallback;
     

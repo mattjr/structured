@@ -68,7 +68,225 @@ void MyDataSet::init()
     _newDestinationGraph = false;
 
 }
+class CollectClusterCullingCallbacks : public osg::NodeVisitor
+{
+public:
 
+
+    struct Triple
+    {
+        Triple():
+            _object(0),
+            _callback(0) {}
+
+        Triple(osg::NodePath nodePath, osg::Object* object, osg::ClusterCullingCallback* callback):
+            _nodePath(nodePath),
+            _object(object),
+            _callback(callback) {}
+
+        Triple(const Triple& t):
+            _nodePath(t._nodePath),
+            _object(t._object),
+            _callback(t._callback) {}
+
+        Triple& operator = (const Triple& t)
+        {
+            _nodePath = t._nodePath;
+            _object = t._object;
+            _callback = t._callback;
+            return *this;
+        }
+
+        osg::NodePath                   _nodePath;
+        osg::Object*                    _object;
+        osg::ClusterCullingCallback*    _callback;
+    };
+
+    typedef std::vector<Triple> ClusterCullingCallbackList;
+
+    CollectClusterCullingCallbacks():
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {}
+
+    virtual void apply(osg::Group& group)
+    {
+        osgTerrain::Terrain* terrain = dynamic_cast<osgTerrain::Terrain*>(&group);
+        if (terrain)
+        {
+            osg::ClusterCullingCallback* callback = dynamic_cast<osg::ClusterCullingCallback*>(terrain->getCullCallback());
+            if (callback)
+            {
+                _callbackList.push_back(Triple(getNodePath(),terrain,callback));
+            }
+            return;
+        }
+
+        osgTerrain::TerrainTile* terrainTile = dynamic_cast<osgTerrain::TerrainTile*>(&group);
+        if (terrainTile)
+        {
+            osg::ClusterCullingCallback* callback = dynamic_cast<osg::ClusterCullingCallback*>(terrainTile->getCullCallback());
+            if (callback)
+            {
+                _callbackList.push_back(Triple(getNodePath(),terrain,callback));
+            }
+            return;
+        }
+        else
+        {
+            osg::NodeVisitor::apply(group);
+        }
+    }
+
+    virtual void apply(osg::Geode& geode)
+    {
+        for(unsigned int i=0; i<geode.getNumDrawables();++i)
+        {
+            osg::ClusterCullingCallback* callback = dynamic_cast<osg::ClusterCullingCallback*>(geode.getDrawable(i)->getCullCallback());
+            if (callback)
+            {
+                _callbackList.push_back(Triple(getNodePath(),geode.getDrawable(i),callback));
+            }
+        }
+    }
+
+    ClusterCullingCallbackList _callbackList;
+
+};
+osg::Node* MyCompositeDestination::createPagedLODScene()
+{
+    if (_children.empty() && _tiles.empty()) return 0;
+
+    if (_children.empty() && _tiles.size()==1) { DestinationTile *t= _tiles.front();
+
+        MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(t);
+
+       return myt?myt->createScene(): 0;
+    }
+    if (_tiles.empty() && _children.size()==1)  {
+        CompositeDestination *c=_children.front();
+        MyCompositeDestination *child=dynamic_cast<MyCompositeDestination*>(c);
+      if(child)return child->createPagedLODScene();
+  else return 0;}
+
+    if (_type==GROUP)
+    {
+        osg::Group* group = new osg::Group;
+        for(TileList::iterator titr=_tiles.begin();
+            titr!=_tiles.end();
+            ++titr)
+        {
+            DestinationTile *t=*titr;
+
+            MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(t);
+
+            osg::Node* node = myt?myt->createScene(): 0;
+
+            if (node) group->addChild(node);
+        }
+
+        // handle chilren
+        for(ChildList::iterator citr=_children.begin();
+            citr!=_children.end();
+            ++citr)
+        {
+            CompositeDestination *c=*citr;
+            MyCompositeDestination *child=dynamic_cast<MyCompositeDestination*>(c);
+            osg::Node* node = child ? child->createScene() : 0;
+            if (node) group->addChild(node);
+        }
+        return group;
+    }
+
+    // must be either a LOD or a PagedLOD
+
+    typedef std::vector<osg::Node*>  NodeList;
+
+    // collect all the local tiles
+    NodeList tileNodes;
+    for(TileList::iterator titr=_tiles.begin();
+        titr!=_tiles.end();
+        ++titr)
+    {
+        DestinationTile *t=*titr;
+
+        MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(t);
+
+        osg::Node* node = myt?myt->createScene(): 0;
+        if (node) tileNodes.push_back(node);
+    }
+
+    float cutOffDistance = -FLT_MAX;
+    for(ChildList::iterator citr=_children.begin();
+        citr!=_children.end();
+        ++citr)
+    {
+        cutOffDistance = osg::maximum(cutOffDistance,(*citr)->_maxVisibleDistance);
+    }
+
+
+    osg::PagedLOD* pagedLOD = new osg::PagedLOD;
+
+    float farDistance = _dataSet->getMaximumVisibleDistanceOfTopLevel();
+    if (tileNodes.size()==1)
+    {
+        pagedLOD->addChild(tileNodes.front());
+    }
+    else if (tileNodes.size()>1)
+    {
+        osg::Group* group = new osg::Group;
+        for(NodeList::iterator itr=tileNodes.begin();
+            itr != tileNodes.end();
+            ++itr)
+        {
+            group->addChild(*itr);
+        }
+        pagedLOD->addChild(group);
+    }
+
+
+    // find cluster culling callbacks on drawables and move them to the PagedLOD level.
+    {
+        CollectClusterCullingCallbacks collect;
+        pagedLOD->accept(collect);
+
+        if (!collect._callbackList.empty())
+        {
+            if (collect._callbackList.size()==1)
+            {
+                CollectClusterCullingCallbacks::Triple& triple = collect._callbackList.front();
+
+                osg::Matrixd matrix = osg::computeLocalToWorld(triple._nodePath);
+
+                triple._callback->transform(matrix);
+
+                log(osg::INFO,"cluster culling matrix %f\t%f\t%f\t%f",matrix(0,0),matrix(0,1),matrix(0,2),matrix(0,3));
+                log(osg::INFO,"                       %f\t%f\t%f\t%f",matrix(1,0),matrix(1,1),matrix(1,2),matrix(1,3));
+                log(osg::INFO,"                       %f\t%f\t%f\t%f",matrix(2,0),matrix(2,1),matrix(2,2),matrix(2,3));
+                log(osg::INFO,"                       %f\t%f\t%f\t%f",matrix(3,0),matrix(3,1),matrix(3,2),matrix(3,3));
+
+                // moving cluster culling callback pagedLOD node.
+                pagedLOD->setCullCallback(triple._callback);
+
+                osg::Drawable* drawable = dynamic_cast<osg::Drawable*>(triple._object);
+                if (drawable) drawable->setCullCallback(0);
+
+                osg::Node* node = dynamic_cast<osg::Node*>(triple._object);
+                if (node) node->setCullCallback(0);
+            }
+        }
+    }
+
+    cutOffDistance = osg::maximum(cutOffDistance,(float)(pagedLOD->getBound().radius()*_dataSet->getRadiusToMaxVisibleDistanceRatio()));
+
+    pagedLOD->setRange(0,cutOffDistance,farDistance);
+
+    pagedLOD->setFileName(1,getExternalSubTileName());
+    pagedLOD->setRange(1,0,cutOffDistance);
+
+    if (pagedLOD->getNumChildren()>0)
+        pagedLOD->setCenter(pagedLOD->getBound().center());
+
+    return pagedLOD;
+}
 void MyDataSet::_buildDestination(bool writeToDisk)
 {
     if (!_state) _state = new osg::State;
@@ -212,7 +430,69 @@ void MyDataSet::_buildDestination(bool writeToDisk)
     osgDB::Registry::instance()->setOptions(previous_options.get());
 
 }
+osg::Node* MyDestinationTile::createScene()
+{
+printf("BLLLLLLALAAAA\n");
+    if (_createdScene.valid()) return _createdScene.get();
+/*
+    if (_dataSet->getGeometryType()==DataSet::HEIGHT_FIELD)
+    {
+        _createdScene = createHeightField();
+    }
+    else if (_dataSet->getGeometryType()==DataSet::TERRAIN)
+    {
+        _createdScene = createTerrainTile();
+    }
+    else
+    {*/
+       // _createdScene = createPolygonal();
+    //}
 
+    if (_models.valid())
+    {
+      /*  if (_dataSet->getModelPlacer())
+        {
+            for(ModelList::iterator itr = _models->_models.begin();
+                itr != _models->_models.end();
+                ++itr)
+            {
+                _dataSet->getModelPlacer()->place(*this, itr->get());
+            }
+        }
+        else*/
+        {
+            for(ModelList::iterator itr = _models->_models.begin();
+                itr != _models->_models.end();
+                ++itr)
+            {
+                addNodeToScene(itr->get());
+            }
+        }
+
+      /*  if (_dataSet->getShapeFilePlacer())
+        {
+            for(ModelList::iterator itr = _models->_shapeFiles.begin();
+                itr != _models->_shapeFiles.end();
+                ++itr)
+            {
+                _dataSet->getShapeFilePlacer()->place(*this, itr->get());
+            }
+        }
+        else
+        {
+            for(ModelList::iterator itr = _models->_shapeFiles.begin();
+                itr != _models->_shapeFiles.end();
+                ++itr)
+            {
+                addNodeToScene(itr->get());
+            }
+        }*/
+    }else {
+           if (!_createdScene) _createdScene = new osg::Group;
+    }
+
+    return _createdScene.get();
+}
 /*
 
 bool MyDataSet::computeCoverage(const GeospatialExtents& extents, int level, int& minX, int& minY, int& maxX, int& maxY)
@@ -370,7 +650,7 @@ bool MyDataSet::computeOptimumLevel(Source* source, int maxLevel, int& level)
     return true;
 }
 */
-CompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int currentX, int currentY)
+MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int currentX, int currentY)
 {
     CompositeDestination* parent = 0;
     GeospatialExtents extents;
@@ -411,7 +691,7 @@ CompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int cur
 
     }
 
-    CompositeDestination* destinationGraph = new CompositeDestination(_intermediateCoordinateSystem.get(),extents);
+    MyCompositeDestination* destinationGraph = new MyCompositeDestination(_intermediateCoordinateSystem.get(),extents);
 
     if (currentLevel==0) _destinationGraph = destinationGraph;
 
@@ -439,15 +719,15 @@ CompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int cur
     destinationGraph->_level = currentLevel;
     destinationGraph->_tileX = currentX;
     destinationGraph->_tileY = currentY;
-    //destinationGraph->_MyDataSet = this;
+    destinationGraph->_dataSet = this;
 
 
-    DestinationTile* tile = new DestinationTile;
+    MyDestinationTile* tile = new MyDestinationTile;
     tile->_name = destinationGraph->_name;
     tile->_level = currentLevel;
     tile->_tileX = currentX;
     tile->_tileY = currentY;
-    //tile->_MyDataSet = this;
+    tile->_dataSet = this;
     tile->_cs = destinationGraph->_cs;
     tile->_extents = extents;
     tile->_parent = destinationGraph;
@@ -825,11 +1105,409 @@ void MyDataSet::_readRow(Row& row)
                 {
                     log(osg::NOTICE,"    %s",(*itr)->getFileName().c_str());
                     log(osg::NOTICE,"    %x",(*itr)->getSourceData()->_model.get());
+                    Clipper clipper(osg::BoundingBox(osg::Vec3d(tile->_extents._min.x(),
+                                                               tile->_extents._min.y(),
+                                                               DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
+                                                                                   tile->_extents._max.y(),
+                                                                                   DBL_MAX)));
+                            osg::ref_ptr<osg::Node> root = (osg::Node*)(*itr)->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
+
+                    root->accept(clipper);
+                //    tile->_models->
+                    if(!tile->_models){
+                        tile->_models = new DestinationData(NULL);
+                    }
+                    tile->_models->_models.push_back(root.get());
+
+
 
                 }
             }
         }
     }
+}
+class MyGraphicsContext : public osg::Referenced {
+    public:
+        MyGraphicsContext(BuildLog* buildLog)
+        {
+            osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+            traits->readDISPLAY();
+            traits->x = 0;
+            traits->y = 0;
+            traits->width = 1;
+            traits->height = 1;
+            traits->windowDecoration = false;
+            traits->doubleBuffer = false;
+            traits->sharedContext = 0;
+            traits->pbuffer = true;
+
+            _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+
+            if (!_gc)
+            {
+                if (buildLog) buildLog->log(osg::NOTICE,"Failed to create pbuffer, failing back to normal graphics window.");
+
+                traits->pbuffer = false;
+                _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+            }
+
+            if (_gc.valid())
+
+
+            {
+                _gc->realize();
+                _gc->makeCurrent();
+
+                if (buildLog) buildLog->log(osg::NOTICE,"Realized window");
+            }
+        }
+
+        bool valid() const { return _gc.valid() && _gc->isRealized(); }
+
+    private:
+        osg::ref_ptr<osg::GraphicsContext> _gc;
+};
+
+int MyDataSet::_run()
+{
+
+    log(osg::NOTICE,"MyDataSet::_run() %i %i",getDistributedBuildSplitLevel(),getDistributedBuildSecondarySplitLevel());
+
+#ifdef HAVE_NVTT
+    bool requiresGraphicsContextInMainThread = (getCompressionMethod() == vpb::BuildOptions::GL_DRIVER);
+    bool requiresGraphicsContextInWritingThread = (getCompressionMethod() == vpb::BuildOptions::GL_DRIVER);
+#else
+    bool requiresGraphicsContextInMainThread = true;
+    bool requiresGraphicsContextInWritingThread = true;
+#endif
+
+    int numProcessors = OpenThreads::GetNumberOfProcessors();
+/*#if 0
+    if (numProcessors>1)
+#endif
+    {
+        int numReadThreads = int(ceilf(getNumReadThreadsToCoresRatio() * float(numProcessors)));
+        if (numReadThreads>=1)
+        {
+            log(osg::NOTICE,"Starting %i read threads.",numReadThreads);
+            _readThreadPool = new ThreadPool(numReadThreads, false);
+            _readThreadPool->startThreads();
+        }
+
+        int numWriteThreads = int(ceilf(getNumWriteThreadsToCoresRatio() * float(numProcessors)));
+        if (numWriteThreads>=1)
+        {
+            log(osg::NOTICE,"Starting %i write threads.",numWriteThreads);
+            _writeThreadPool = new ThreadPool(numWriteThreads, requiresGraphicsContextInWritingThread);
+            _writeThreadPool->startThreads();
+
+            //requiresGraphicsContextInMainThread = false;
+        }
+    }
+
+
+    //loadSources();
+
+    int numLevels = getMaximumNumOfLevels();
+    if (getRecordSubtileFileNamesOnLeafTile()) ++numLevels;
+
+    createDestination(numLevels);
+
+    if (!_destinationGraph)
+    {
+        log(osg::WARN, "Error: no destination graph built, cannot proceed with build.");
+        return 1;
+    }
+
+*/
+    bool requiresGenerationOfTiles = getGenerateTiles();
+
+  /*  if (!getIntermediateBuildName().empty())
+    {
+        osg::ref_ptr<osgTerrain::TerrainTile> terrainTile = createTerrainRepresentation();
+        if (terrainTile.valid())
+        {
+            DatabaseBuilder* db = dynamic_cast<DatabaseBuilder*>(terrainTile->getTerrainTechnique());
+            if (db && db->getBuildOptions())
+            {
+                db->getBuildOptions()->setIntermediateBuildName("");
+            }
+            _writeNodeFile(*terrainTile,getIntermediateBuildName());
+            requiresGenerationOfTiles = false;
+        }
+    }
+
+
+    bool printOutContributingSources = true;
+    if (printOutContributingSources)
+    {
+        CompositeDestination* startPoint = _destinationGraph.get();
+        if (getGenerateSubtile())
+        {
+            startPoint = getComposite(getSubtileLevel(), getSubtileX(), getSubtileY());
+        }
+
+        if (startPoint)
+        {
+            DestinationTile::Sources sources = startPoint->getAllContributingSources();
+            log(osg::NOTICE,"There are %d contributing source files:",sources.size());
+
+            for(DestinationTile::Sources::iterator itr = sources.begin();
+                itr != sources.end();
+                ++itr)
+            {
+                log(osg::NOTICE,"    %s",(*itr)->getFileName().c_str());
+            }
+        }
+        else
+        {
+            log(osg::NOTICE,"Warning: No destination graph generated.");
+        }
+    }
+*/
+    if (requiresGenerationOfTiles)
+    {
+        // dummy Viewer to get round silly Windows autoregistration problem for GraphicsWindowWin32.cpp
+        osgViewer::Viewer viewer;
+/*
+        osg::ref_ptr<MyGraphicsContext> context;
+
+        if (requiresGraphicsContextInMainThread)
+        {
+            context  = new MyGraphicsContext(getBuildLog());
+            if (!context || !context->valid())
+            {
+                log(osg::NOTICE,"Error: Unable to create graphis context, problem with running osgViewer-%s, cannot run compression.",osgViewerGetVersion());
+                return 1;
+            }
+        }
+*/
+        int result = 0;
+        osgDB::FileType type = osgDB::fileType(getDirectory());
+        if (type==osgDB::DIRECTORY)
+        {
+            log(osg::NOTICE,"   Base Directory already created");
+        }
+        else if (type==osgDB::REGULAR_FILE)
+        {
+            log(osg::NOTICE,"   Error cannot create directory as a conventional file already exists with that name");
+            return 1;
+        }
+        else // FILE_NOT_FOUND
+        {
+            // need to create directory.
+            result = vpb::mkpath(getDirectory().c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+        }
+
+        if (result)
+        {
+            log(osg::NOTICE,"Error: could not create directory, errorno=%i",errno);
+            return 1;
+        }
+
+
+        if (getOutputTaskDirectories())
+        {
+            _taskOutputDirectory = getDirectory() + getTaskName(getSubtileLevel(), getSubtileX(), getSubtileY());
+            log(osg::NOTICE,"Need to create output task directory = %s", _taskOutputDirectory.c_str());
+            result = 0;
+            type = osgDB::fileType(_taskOutputDirectory);
+            if (type==osgDB::DIRECTORY)
+            {
+                log(osg::NOTICE,"   Directory already created");
+            }
+            else if (type==osgDB::REGULAR_FILE)
+            {
+                log(osg::NOTICE,"   Error cannot create directory as a conventional file already exists with that name");
+                return 1;
+            }
+            else // FILE_NOT_FOUND
+            {
+                // need to create directory.
+                result = vpb::mkpath(_taskOutputDirectory.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+            }
+
+            if (result)
+            {
+                log(osg::NOTICE,"Error: could not create directory, errorno=%i",errno);
+                return 1;
+            }
+
+#ifdef WIN32
+            _taskOutputDirectory.push_back('\\');
+#else
+            _taskOutputDirectory.push_back('/');
+#endif
+
+            if (getGenerateSubtile()) log(osg::NOTICE,"We are a subtile");
+            if (getRecordSubtileFileNamesOnLeafTile()) log(osg::NOTICE,"We have to record ../task/name");
+        }
+        else
+        {
+            _taskOutputDirectory = getDirectory();
+        }
+
+        log(osg::NOTICE,"Task output directory = %s", _taskOutputDirectory.c_str());
+
+        writeDestination();
+    }
+
+    return 0;
+}
+
+osg::Node* MyCompositeDestination::createSubTileScene()
+{
+    if (_type==GROUP ||
+        _children.empty() ||
+        _tiles.empty()) return 0;
+
+    // handle chilren
+    typedef std::vector<osg::Node*>  NodeList;
+    NodeList nodeList;
+    for(ChildList::iterator citr=_children.begin();
+        citr!=_children.end();
+        ++citr)
+    {
+        CompositeDestination *c=*citr;
+        MyCompositeDestination *child=dynamic_cast<MyCompositeDestination*>(c);
+        osg::Node* node = child ? child->createPagedLODScene() : 0;
+        if (node) nodeList.push_back(node);
+    }
+
+    if (nodeList.size()==1)
+    {
+        return nodeList.front();
+    }
+    else if (nodeList.size()>1)
+    {
+        osg::Group* group = new osg::Group;
+        for(NodeList::iterator itr=nodeList.begin();
+            itr!=nodeList.end();
+            ++itr)
+        {
+            group->addChild(*itr);
+        }
+        return group;
+    }
+    else
+    {
+        return 0;
+    }
+}
+void MyDataSet::_writeRow(Row& row)
+{
+    log(osg::NOTICE, "_writeRow %u",row.size());
+    for(Row::iterator citr=row.begin();
+        citr!=row.end();
+        ++citr)
+    {
+        MyCompositeDestination* cd = dynamic_cast<MyCompositeDestination*>(citr->second);
+        MyCompositeDestination* parent =  dynamic_cast<MyCompositeDestination*>(cd->_parent);
+
+        if (parent)
+        {
+            if (!parent->getSubTilesGenerated() && parent->areSubTilesComplete())
+            {
+                parent->setSubTilesGenerated(true);
+
+#ifdef NEW_NAMING
+                std::string filename = cd->getTileFileName();
+#else
+                std::string filename = _taskOutputDirectory+parent->getSubTileName();
+#endif
+                log(osg::NOTICE, "       _taskOutputDirectory= %s",_taskOutputDirectory.c_str());
+
+              /*  if (_writeThreadPool.valid())
+                {
+                    _writeThreadPool->run(new WriteOperation(_writeThreadPool.get(), this, parent, filename));
+                }
+                else*/
+                {
+                    osg::ref_ptr<osg::Node> node = parent->createSubTileScene();
+                    if (node.valid())
+                    {
+                        log(osg::NOTICE, "   writeSubTile filename= %s",filename.c_str());
+                        _writeNodeFileAndImages(*node,filename);
+
+
+                        parent->setSubTilesGenerated(true);
+                        parent->unrefSubTileData();
+
+                    }
+                    else
+                    {
+                        log(osg::WARN, "   failed to writeSubTile node for tile, filename=%s",filename.c_str());
+                    }
+                }
+            }
+        }
+        else
+        {
+            osg::ref_ptr<osg::Node> node = cd->createPagedLODScene();
+
+#ifdef NEW_NAMING
+            std::string filename = cd->getTileFileName();
+#else
+            std::string filename;
+#endif
+
+            if (cd->_level==0)
+            {
+
+#ifndef NEW_NAMING
+                filename = getDirectory() + _tileBasename + _tileExtension;
+#endif
+                if (_decorateWithMultiTextureControl)
+                {
+                    node = decorateWithMultiTextureControl(node.get());
+                }
+
+                if (getGeometryType()==TERRAIN)
+                {
+                    node = decorateWithTerrain(node.get());
+                }
+                else if (_decorateWithCoordinateSystemNode)
+                {
+                    node = decorateWithCoordinateSystemNode(node.get());
+                }
+
+                if (!_comment.empty())
+                {
+                    node->addDescription(_comment);
+                }
+
+                log(osg::NOTICE, "       getDirectory()= %s",getDirectory().c_str());
+            }
+            else
+            {
+#ifndef NEW_NAMING
+                filename = _taskOutputDirectory + _tileBasename + _tileExtension;
+#endif
+
+                log(osg::NOTICE, "       _taskOutputDirectory= %s",_taskOutputDirectory.c_str());
+            }
+
+            if (node.valid())
+            {
+                log(osg::NOTICE, "   writeNodeFile = %u X=%u Y=%u filename=%s",cd->_level,cd->_tileX,cd->_tileY,filename.c_str());
+
+                _writeNodeFileAndImages(*node,filename);
+            }
+            else
+            {
+                log(osg::WARN, "   faild to write node for tile = %u X=%u Y=%u filename=%s",cd->_level,cd->_tileX,cd->_tileY,filename.c_str());
+            }
+
+            // record the top nodes as the rootNode of the database
+            _rootNode = node;
+
+        }
+    }
+
+#if 0
+    if (_writeThreadPool.valid()) _writeThreadPool->waitForCompletion();
+#endif
+
 }
 #if 0
 CompositeDestination* MyDataSet::createDestinationGraph(CompositeDestination* parent,

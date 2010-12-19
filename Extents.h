@@ -50,6 +50,25 @@ class GDALRasterBand;
 
 namespace vpb
 {
+    class MyDestinationTile : public DestinationTile{
+    public:
+         osg::Node * createScene(void);
+    };
+
+    class MyCompositeDestination : public CompositeDestination{
+    public:
+        MyCompositeDestination(osg::CoordinateSystemNode* cs, const GeospatialExtents& extents):
+                CompositeDestination(cs, extents){}
+        osg::Node* createPagedLODScene();
+        osg::Node* createSubTileScene();
+
+        typedef std::vector< osg::ref_ptr<MyDestinationTile> > MyTileList;
+    //    MyTileList                _tiles;
+        //typedef std::vector< osg::ref_ptr<MyCompositeDestination> > MyChildList;
+
+      //  MyChildList               _children;
+
+    };
 
 class TaskManager;
 
@@ -183,7 +202,7 @@ class MyDataSet :  public DataSet
         // helper functions for handling optional archive
         void _writeNodeFile(osg::Node& node,const std::string& filename);
         void _writeImageFile(osg::Image& image,const std::string& filename);
-        void _writeNodeFileAndImages(osg::Node& node,const std::string& filename);
+       // void _writeNodeFileAndImages(osg::Node& node,const std::string& filename);
 
         void setState(osg::State* state) { _state = state; }
         osg::State* getState() { return _state.get(); }
@@ -203,9 +222,7 @@ class MyDataSet :  public DataSet
         ObjectPlacer* getShapeFilePlacer() { return _shapeFilePlacer.get(); }
 
 
-        std::string getTaskName(unsigned int level, unsigned int X, unsigned int Y) const;
-        std::string getSubtileName(unsigned int level, unsigned int X, unsigned int Y) const;
-        const std::string getTaskOutputDirectory() const { return _taskOutputDirectory; }
+
 
         /** Check the build validity, return an empty string if everything is OK, on error return the error string.*/
         std::string checkBuildValidity();
@@ -216,6 +233,7 @@ class MyDataSet :  public DataSet
 
         const std::string getDatabaseRevisionBaseFileName(unsigned int level, unsigned int x, unsigned y) const;
         void _buildDestination(bool writeToDisk);
+        int _run();
 
     protected:
 
@@ -227,11 +245,11 @@ class MyDataSet :  public DataSet
         osg::ref_ptr<ThreadPool> _writeThreadPool;
 
         void _readRow(Row& row);
+         void _writeRow(Row& row);
        /* void _equalizeRow(Row& row);
         void _writeRow(Row& row);*/
-        int _run();
          void init();
-         CompositeDestination* createDestinationTile(int level, int tileX, int tileY);
+         MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
 
 /*
         void init();

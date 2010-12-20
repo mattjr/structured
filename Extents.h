@@ -44,7 +44,7 @@
 #include <vpb/ThreadPool>
 #include <vpb/DataSet>
 #include <osgUtil/MeshOptimizers>
-
+#include "TexturingQuery.h"
 // forward declare so we can avoid tieing vpb to GDAL.
 class GDALDataset;
 class GDALRasterBand;
@@ -126,10 +126,7 @@ class MyDataSet :  public DataSet
 
         MyDataSet();
 
-        void setTask(Task* taskFile) { _taskFile = taskFile; }
-        Task* getTask() { return _taskFile.get(); }
-        const Task* getTask() const { return _taskFile.get(); }
-
+        TexturingQuery *_tq;
         CompositeSource* getSourceGraph() { return _sourceGraph.get(); }
 
 

@@ -1126,7 +1126,9 @@ void MyDataSet::_readRow(Row& row)
                  //   root->accept(clipper);
                     ClippedCopy cl_cp(ext_bbox);
                     osg::ref_ptr<osg::Node> root =cl_cp.makeCopy((osg::Geode*)(*itr)->getSourceData()->_model.get());
-                //    tile->_models->
+                    _tq->projectModel(dynamic_cast<osg::Geode*>(root.get()));
+                    //(*itr)->getSourceData()->
+                    //    tile->_models->
                     if(!tile->_models){
                         tile->_models = new DestinationData(NULL);
                     }
@@ -1200,34 +1202,34 @@ osg::Geode* ClippedCopy::makeCopy(osg::Geode *geode){
     osg::Geometry *new_geom=new osg::Geometry;
     _vertices=new osg::Vec3Array;
     for (unsigned int i=0; i<geode->getNumDrawables(); i++)
-            {
-                osg::Drawable *drawable = geode->getDrawable(i);
-                osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
-    osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
-     osg::Geometry::PrimitiveSetList::iterator itr;
+    {
+        osg::Drawable *drawable = geode->getDrawable(i);
+        osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+        osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
+        osg::Geometry::PrimitiveSetList::iterator itr;
 
 
-    for(itr=primitiveSets.begin(); itr!=primitiveSets.end(); ++itr){
-        switch((*itr)->getMode()){
+        for(itr=primitiveSets.begin(); itr!=primitiveSets.end(); ++itr){
+            switch((*itr)->getMode()){
 
-        case(osg::PrimitiveSet::TRIANGLES):
-          //  for( unsigned int j = 0; j < (*itr)->getNumPrimitives(); j++ )
-           // {
-            //   const osg::PrimitiveSet* prset = (*itr);//geom->getPrimitiveSet(j);
-AnalyzePrimSet(*(*itr), *static_cast<const osg::Vec3Array*>(geom->getVertexArray()));
+            case(osg::PrimitiveSet::TRIANGLES):
+                //  for( unsigned int j = 0; j < (*itr)->getNumPrimitives(); j++ )
+                // {
+                //   const osg::PrimitiveSet* prset = (*itr);//geom->getPrimitiveSet(j);
+                AnalyzePrimSet(*(*itr), *static_cast<const osg::Vec3Array*>(geom->getVertexArray()));
 
-            break;
+                break;
 
-                          default:
-            fprintf(stderr,"ERRROR Only supported for TRIANGLES\n");
-        }
+            default:
+                fprintf(stderr,"ERRROR Only supported for TRIANGLES\n");
+            }
         }
     }
     new_geom->addPrimitiveSet(_triangles);
     new_geom->setVertexArray(_vertices.get());
-        //osgUtil::SmoothingVisitor::smooth(*new_geom);
-newGeode->addDrawable(new_geom);
-return newGeode;
+    //osgUtil::SmoothingVisitor::smooth(*new_geom);
+    newGeode->addDrawable(new_geom);
+    return newGeode;
 }
 
 

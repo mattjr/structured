@@ -337,6 +337,7 @@ SET( SRCS OSGExport.cpp
 Clipper.cpp
 VPBInterface.cpp
 TexPyrAtlas.cpp
+TexturingQuery.cpp
 		stereo_cells.cpp
                 tridecimator/plylib.cpp
 		quadmerge/envelope.cpp
@@ -348,7 +349,7 @@ ADD_LIBRARY( ts STATIC ${SRCS} )
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
 ADD_EXECUTABLE( genTex genTex.cpp )
 ADD_EXECUTABLE( lodgen lodgen.cpp )
-LINK_LIBRARIES(osgTerrain vpbd osgFX osg)
+LINK_LIBRARIES(osgTerrain vpbd osgFX osg spatialindex)
 TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf)
 TARGET_LINK_LIBRARIES( genTex ts plankton )
 TARGET_LINK_LIBRARIES( lodgen ts )

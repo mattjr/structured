@@ -2316,6 +2316,24 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       //int numcells= total_env.width() *total_env.height() / 50.0;
          std::vector<Cell_Data> quad_cells=calc_cells(tasks,total_env.minx(),total_env.maxx(),total_env.miny(),total_env.maxy(),desired_area);
 
+
+         FILE *bboxfp_total = fopen("mesh-quad/bbox.txt","w");
+         if( !bboxfp_total){
+           printf("Unable to open mesh-quad/bbox.txt\n");
+         }
+         for(unsigned int j=0; j <tasks.size(); j++){
+           const Stereo_Pose_Data *pose=&(tasks[j]);
+
+           //Gen Tex File bbox
+           fprintf(bboxfp_total, "%d %s " ,pose->id,pose->left_name.c_str());
+           save_bbox_frame(pose->bbox,bboxfp_total);
+           for(int k=0; k < 4; k++)
+             for(int n=0; n < 4; n++)
+               fprintf(bboxfp_total," %lf",pose->m[k][n]);
+           fprintf(bboxfp_total,"\n");
+         }
+         fclose(bboxfp_total);
+
     for(int i=0; i <(int)quad_cells.size(); i++){
 
       
@@ -2360,6 +2378,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	fprintf(bboxfp,"\n");
       }
    
+
 
       fclose(bboxfp);
     }

@@ -5,7 +5,7 @@ void doQuadTreeVPB(Bounds bounds){
 
 vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
 char filename[1024];
-int numlod=3;
+int numlod=5;
 vpb::MyDataSet *m=new vpb::MyDataSet();
 m->setDestinationName("real.ive");
 

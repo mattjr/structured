@@ -800,7 +800,7 @@ computeOptimumTileSystemDimensions(_C1,_R1);
 
         if (k>highestLevelFound) highestLevelFound = k;
 */
-        int k=3;
+        int k=maxNumLevels;
         int startLevel = 0; // getGenerateSubtile() ? getSubtileLevel() : 0;
 
         for(int l=startLevel; l<=k; l++)
@@ -972,7 +972,7 @@ printf("Total Size %d\n",_quadMap.size());
             continue;
         }
 
-        int k = 3;
+        int k = maxNumLevels;
 
        /* if (source->getType()==Source::IMAGE || source->getType()==Source::HEIGHT_FIELD)
         {
@@ -1125,7 +1125,7 @@ void MyDataSet::_readRow(Row& row)
 
                  //   root->accept(clipper);
                     ClippedCopy cl_cp(ext_bbox);
-osg::ref_ptr<osg::Node> root =cl_cp.makeCopy((osg::Geode*)(*itr)->getSourceData()->_model.get());
+                    osg::ref_ptr<osg::Node> root =cl_cp.makeCopy((osg::Geode*)(*itr)->getSourceData()->_model.get());
                 //    tile->_models->
                     if(!tile->_models){
                         tile->_models = new DestinationData(NULL);
@@ -1225,7 +1225,7 @@ AnalyzePrimSet(*(*itr), *static_cast<const osg::Vec3Array*>(geom->getVertexArray
     }
     new_geom->addPrimitiveSet(_triangles);
     new_geom->setVertexArray(_vertices.get());
-        osgUtil::SmoothingVisitor::smooth(*new_geom);
+        //osgUtil::SmoothingVisitor::smooth(*new_geom);
 newGeode->addDrawable(new_geom);
 return newGeode;
 }

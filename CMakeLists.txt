@@ -335,6 +335,7 @@ SET( SRCS OSGExport.cpp
 		Clean.cpp
 		novelty.cpp
 Clipper.cpp
+VPBInterface.cpp
 		stereo_cells.cpp
                 tridecimator/plylib.cpp
 		quadmerge/envelope.cpp

@@ -1029,14 +1029,14 @@ printf("Total Size %d\n",_quadMap.size());
                     for(int i=i_min; i<i_max;++i)
                     {
                         CompositeDestination* cd = getComposite(l,i,j);
-                        if (!cd || !cd->intersects(sp)) continue;
+                        if (!cd || !cd->intersects(sp) || (l <source->getMinLevel() || l > source->getMaxLevel())) continue;
 
 printf("Tile %d %d_%d %s\n",l ,i,j,source->getFileName().c_str());
-                        if (l==k)
+                      /*  if (l==k)
                         {
                             cd->addSource(source);
                         }
-                        else
+                        else*/
                         {
                             for(CompositeDestination::TileList::iterator titr = cd->_tiles.begin();
                                 titr != cd->_tiles.end();

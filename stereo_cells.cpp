@@ -10,8 +10,7 @@
 #include <cstdlib>
 
 #include "stereo_cells.hpp"
-#include "Extents.h"
-#include <vpb/Commandline>
+
 #include <osgDB/ReadFile>
 using namespace std;
 
@@ -511,29 +510,7 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,int method,d
    printf( "Bounds: %f %f %f %f\n", bounds.min_x, bounds.max_x ,
                                     bounds.min_y, bounds.max_y );
 #endif
-   vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
-   string filename= "/home/mattjr/data/new2/mesh-quad/quad-lod0.ply";
 
-   vpb::Source *sourceModel=new vpb::Source(vpb::Source::MODEL,filename);
-   sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
-   osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
-   if (model)
-   {
-       vpb::SourceData* data = new vpb::SourceData(sourceModel);
-       data->_model = model;
-       data->_extents.expandBy(model->getBound());
-       sourceModel->setSourceData(data);
-
-   }
-
-       vpb::MyDataSet *m=new vpb::MyDataSet();
-       m->setDestinationName("real.ive");
-
-           m->setLogFileName("tmp.log");
-   m->addSource(sourceModel,1);
-
-   m->createNewDestinationGraph(geo,256,128,3);
-m->_run();
   // m->_buildDestination(true);
 
   // vpb::Commandline cl;

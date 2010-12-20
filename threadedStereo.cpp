@@ -40,6 +40,7 @@
 #include "mesh2hmap.h"
 #include "output.h"
 #include "quadmerge/envelope.hpp"
+#include "VPBInterface.hpp"
 #include "quadmerge/fileio.hpp"
 using namespace std;
 using namespace libplankton;
@@ -2132,6 +2133,7 @@ fprintf(stderr,"Not valid %s\n", osgDB::getStrippedName(tasks[i].left_name).c_st
 
 
     string mbfile=mbdir+"/"+"mb-total.ply";
+    Bounds bounds( tasks );
     std::vector<Cell_Data> vrip_cells;
     if(even_split){
       vrip_cells=calc_cells(tasks,EVEN_SPLIT,cell_scale);
@@ -2483,6 +2485,11 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	if(!no_vrip)
 	  sysres=system("./runvrip.py");
 	
+
+        doQuadTreeVPB(bounds);
+
+
+
 	FILE *dicefp=fopen("./simp.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\n");

@@ -3,6 +3,7 @@
 #include <string>
 #include <spatialindex/SpatialIndex.h>
 #include <osg/Geode>
+#include <osg/BoundingBox>
 class ObjVisitor : public SpatialIndex::IVisitor
 {
 private:
@@ -24,6 +25,7 @@ public:
     void visitData(std::vector<const SpatialIndex::IData*>& v);
 };
 class MyDataStream;
+typedef std::vector<std::pair<SpatialIndex::id_type,double> > CamDists;
 
 class TexturingQuery
 {
@@ -35,10 +37,20 @@ public:
     public:
         osg::Matrix m;
         std::string filename;
+        long id;
+        osg::BoundingBox bb;
     };
     typedef std::map<SpatialIndex::id_type,ProjectionCamera>  CameraVector;
+    struct sort_pred {
+        bool operator()(const std::pair<SpatialIndex::id_type,double> &left, const std::pair<SpatialIndex::id_type,double> &right) {
+            return left.second < right.second;
+        }
+    };
 
 protected:
+    typedef std::multimap<int,ProjectionCamera> ProjectsToMap;
+    double getDistToCenter(osg::Vec3 v, ProjectionCamera cam);
+    const CamDists getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts,ProjectsToMap &reproj);
 
     std::string _bbox_file;
     SpatialIndex::ISpatialIndex* tree;
@@ -48,8 +60,7 @@ protected:
     double utilization;
     int capacity;
     MyDataStream *stream;
-    typedef std::multimap<int,ProjectionCamera> ProjectsToMap;
-    void projectAllTriangles(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts,ProjectsToMap &reproj);
+    osg::Vec4Array* projectAllTriangles(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts,ProjectsToMap &reproj);
 
     CameraVector _cameras;
 

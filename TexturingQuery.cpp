@@ -159,25 +159,25 @@ public:
 
     void readNextEntry()
     {
-        id_type id;
         double low[3], high[3];
         TexturingQuery::ProjectionCamera cam;
 
-        m_fin >> id >> cam.filename >> low[0] >> low[1] >> low[2] >> high[0] >> high[1] >> high[2]
+        m_fin >> cam.id >> cam.filename >> low[0] >> low[1] >> low[2] >> high[0] >> high[1] >> high[2]
                 >> cam.m(0,0) >>cam.m(0,1)>>cam.m(0,2) >>cam.m(0,3)
                 >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
                 >> cam.m(2,0) >>cam.m(2,1)>>cam.m(2,2) >>cam.m(2,3)
                 >> cam.m(3,0) >>cam.m(3,1)>>cam.m(3,2) >>cam.m(3,3);
         if (m_fin.good())
         {
-            m_camVec[id]=cam;
+            cam.bb = osg::BoundingBox(low[0],low[1],low[2],high[0],high[1],high[2]);
+            m_camVec[cam.id]=cam;
             /*if (op != INSERT)
                                 throw Tools::IllegalArgumentException(
                                         "The data input should contain insertions only."
                                 );*/
 
             Region r(low, high, 3);
-            m_pNext = new RTree::Data(sizeof(double), reinterpret_cast<byte*>(low), r, id);
+            m_pNext = new RTree::Data(sizeof(double), reinterpret_cast<byte*>(low), r, cam.id);
             // Associate a bogus data array with every entry for testing purposes.
             // Once the data array is given to RTRee:Data a local copy will be created.
             // Hence, the input data array can be deleted after this operation if not
@@ -227,28 +227,93 @@ TexturingQuery::~TexturingQuery(){
     delete diskfile;
     delete stream;
 }
-void TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts,ProjectsToMap &reproj){
+const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts,ProjectsToMap &reproj){
+    CamDists orderedProj;
+
+    if(tri_v.size() != 3){
+        fprintf(stderr,"Error not 3 verts\n");
+        return orderedProj;
+    }
+    osg::Vec3 avgV;
+    std::multimap<SpatialIndex::id_type,int> cam_counter;
+    for(unsigned int i=0; i<tri_v.size(); i++){
+        avgV += verts[tri_v[i]];
+        pair<multimap<int, ProjectionCamera>::iterator, multimap<int, ProjectionCamera>::iterator> ppp;
+        ppp=reproj.equal_range(tri_v[i]);
+        for (multimap<int, ProjectionCamera>::iterator it2 = ppp.first;
+             it2 != ppp.second;
+             ++it2){
+         //   printf("here %d %d\n",(*it2).second.id,i);
+            cam_counter.insert(make_pair<long,int>((*it2).second.id,i));
+        }
+    }
+    avgV.x()/=3.0;
+    avgV.y()/=3.0;
+    avgV.z()/=3.0;
+
+   // printf("Size of original %d %d\n",cam_counter.size(),tri_v.size());
+    set<SpatialIndex::id_type> seeninalltri;
+    for (multimap<SpatialIndex::id_type, int>::iterator it = cam_counter.begin();
+    it != cam_counter.end();
+    ++it){
+        if(cam_counter.count((*it).first) == 3){
+            seeninalltri.insert((*it).first);
+        }
+    }
+
+    for(set<SpatialIndex::id_type>::iterator it=seeninalltri.begin(); it != seeninalltri.end(); ++it){
+        orderedProj.push_back(make_pair<SpatialIndex::id_type,double>((*it),getDistToCenter(avgV,_cameras[(*it)])));
+    }
+    std::sort(orderedProj.begin(), orderedProj.end(), sort_pred());
+  /* printf("New Tri %d\n",orderedProj.size());
+    for(int i=0; i < orderedProj.size(); i++)
+        printf("ID: %d Dist: %f\n",orderedProj[i].first,orderedProj[i].second);
+   // printf("Size of reproject %d\n",seeninalltri.size());
+*/
+    return orderedProj;
+}
+
+double TexturingQuery::getDistToCenter(osg::Vec3 v, ProjectionCamera cam){
+    return (v-cam.bb.center()).length2();
+}
+
+
+osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts,ProjectsToMap &reproj){
     int numIdx=prset.getNumIndices();
+
     if(numIdx < 3)
-        return;
-    for(int i=0; i<numIdx-2; i+=3){
-        for(int k=0; k <3; k++){
-            int ptIdx=i+k;
-            double pt[3];
-            pt[0]=verts[prset.index(ptIdx)].x();
-            pt[1]=verts[prset.index(ptIdx)].y();
-            pt[2]=verts[prset.index(ptIdx)].z();
-            Point p = Point(pt, 3);
-            ObjVisitor vis;
-           // cout << p <<endl;
-            tree->intersectsWithQuery(p,vis);
-            if(vis.GetResultCount()){
-                for(unsigned int r=0; r < vis.GetResults().size(); r++){
-                    if(_cameras.count(vis.GetResults()[r]))
-                        reproj.insert(std::pair<int,ProjectionCamera>(ptIdx,_cameras[vis.GetResults()[r]]));
-                }
+        return NULL;
+    osg::Vec4Array* camIdxArr = new osg::Vec4Array;
+
+    //Reproject all verticies
+    for(unsigned int i=0; i<verts.size(); i++){
+        double pt[3];
+        pt[0]=verts[i].x();
+        pt[1]=verts[i].y();
+        pt[2]=verts[i].z();
+        Point p = Point(pt, 3);
+        ObjVisitor vis;
+       // cout << p <<endl;
+        tree->intersectsWithQuery(p,vis);
+        if(vis.GetResultCount()){
+            for(unsigned int r=0; r < vis.GetResults().size(); r++){
+                if(_cameras.count(vis.GetResults()[r]))
+                    reproj.insert(std::pair<int,ProjectionCamera>(i,_cameras[vis.GetResults()[r]]));
             }
         }
+    }
+
+    for(int i=0; i<numIdx-2; i+=3){
+        vector<int> tri_v;
+        for(int k=0; k <3; k++){
+            tri_v.push_back(prset.index(i+k));
+        }
+        const CamDists d=getClosest(tri_v,verts,reproj);
+        osg::Vec4 camIdx(-1,-1,-1,-1);
+        for(int v=0; v<(int)d.size() && v <4; v++){
+            camIdx[v]=d[v].first;
+        }
+        camIdxArr->push_back(camIdx);
     }
  /*   cout << "Elements in m: " << endl;
 
@@ -260,6 +325,7 @@ void TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prset, const o
               cout << "  [" << (*it).first << ": " << reproj.count((*it).first) << "]" << endl;
        }
 */
+    return camIdxArr;
 }
 
 
@@ -275,10 +341,15 @@ void TexturingQuery::projectModel(osg::Geode *geode){
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
         osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
         osg::Geometry::PrimitiveSetList::iterator itr;
+         osg::Vec4Array *v=NULL;
         for(itr=primitiveSets.begin(); itr!=primitiveSets.end(); ++itr){
             switch((*itr)->getMode()){
             case(osg::PrimitiveSet::TRIANGLES):
-                projectAllTriangles(*(*itr), *static_cast<const osg::Vec3Array*>(geom->getVertexArray()),reproj);
+                v=projectAllTriangles(*(*itr), *static_cast<const osg::Vec3Array*>(geom->getVertexArray()),reproj);
+                geom->setColorArray(v);
+                break;
+            default:
+                OSG_FATAL << "Freakout shouldn't be anything but triangles\n";
             }
         }
     }

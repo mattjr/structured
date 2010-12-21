@@ -60,7 +60,7 @@ MyDataSet::MyDataSet()
 void MyDataSet::init()
 {
     // make sure GDAL etc. are initialized
- System::instance();
+    System::instance();
     _C1 = 0;
     _R1 = 0;
 
@@ -77,21 +77,21 @@ public:
     struct Triple
     {
         Triple():
-            _object(0),
-            _callback(0) {}
+                _object(0),
+                _callback(0) {}
 
         Triple(osg::NodePath nodePath, osg::Object* object, osg::ClusterCullingCallback* callback):
-            _nodePath(nodePath),
-            _object(object),
-            _callback(callback) {}
+                _nodePath(nodePath),
+                _object(object),
+                _callback(callback) {}
 
         Triple(const Triple& t):
-            _nodePath(t._nodePath),
-            _object(t._object),
-            _callback(t._callback) {}
+                _nodePath(t._nodePath),
+                _object(t._object),
+                _callback(t._callback) {}
 
         Triple& operator = (const Triple& t)
-        {
+                           {
             _nodePath = t._nodePath;
             _object = t._object;
             _callback = t._callback;
@@ -106,7 +106,7 @@ public:
     typedef std::vector<Triple> ClusterCullingCallbackList;
 
     CollectClusterCullingCallbacks():
-        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {}
+            osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {}
 
     virtual void apply(osg::Group& group)
     {
@@ -152,6 +152,7 @@ public:
     ClusterCullingCallbackList _callbackList;
 
 };
+
 osg::Node* MyCompositeDestination::createPagedLODScene()
 {
     if (_children.empty() && _tiles.empty()) return 0;
@@ -160,20 +161,20 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
 
         MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(t);
 
-       return myt?myt->createScene(): 0;
+        return myt?myt->createScene(): 0;
     }
     if (_tiles.empty() && _children.size()==1)  {
         CompositeDestination *c=_children.front();
         MyCompositeDestination *child=dynamic_cast<MyCompositeDestination*>(c);
-      if(child)return child->createPagedLODScene();
-  else return 0;}
+        if(child)return child->createPagedLODScene();
+        else return 0;}
 
     if (_type==GROUP)
     {
         osg::Group* group = new osg::Group;
         for(TileList::iterator titr=_tiles.begin();
-            titr!=_tiles.end();
-            ++titr)
+        titr!=_tiles.end();
+        ++titr)
         {
             DestinationTile *t=*titr;
 
@@ -186,8 +187,8 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
 
         // handle chilren
         for(ChildList::iterator citr=_children.begin();
-            citr!=_children.end();
-            ++citr)
+        citr!=_children.end();
+        ++citr)
         {
             CompositeDestination *c=*citr;
             MyCompositeDestination *child=dynamic_cast<MyCompositeDestination*>(c);
@@ -204,8 +205,8 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
     // collect all the local tiles
     NodeList tileNodes;
     for(TileList::iterator titr=_tiles.begin();
-        titr!=_tiles.end();
-        ++titr)
+    titr!=_tiles.end();
+    ++titr)
     {
         DestinationTile *t=*titr;
 
@@ -217,8 +218,8 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
 
     float cutOffDistance = -FLT_MAX;
     for(ChildList::iterator citr=_children.begin();
-        citr!=_children.end();
-        ++citr)
+    citr!=_children.end();
+    ++citr)
     {
         cutOffDistance = osg::maximum(cutOffDistance,(*citr)->_maxVisibleDistance);
     }
@@ -235,8 +236,8 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
     {
         osg::Group* group = new osg::Group;
         for(NodeList::iterator itr=tileNodes.begin();
-            itr != tileNodes.end();
-            ++itr)
+        itr != tileNodes.end();
+        ++itr)
         {
             group->addChild(*itr);
         }
@@ -328,7 +329,7 @@ void MyDataSet::_buildDestination(bool writeToDisk)
             log(osg::NOTICE, "started MyDataSet::writeDestination(%s)",filename.c_str());
         }
 
-       /* if (_databaseType==LOD_DATABASE)
+        /* if (_databaseType==LOD_DATABASE)
         {
             populateDestinationGraphFromSources();
             _rootNode = _destinationGraph->createScene();
@@ -433,7 +434,6 @@ void MyDataSet::_buildDestination(bool writeToDisk)
 }
 osg::Node* MyDestinationTile::createScene()
 {
-printf("BLLLLLLALAAAA\n");
     if (_createdScene.valid()) return _createdScene.get();
 /*
     if (_dataSet->getGeometryType()==DataSet::HEIGHT_FIELD)
@@ -446,12 +446,12 @@ printf("BLLLLLLALAAAA\n");
     }
     else
     {*/
-       // _createdScene = createPolygonal();
+    // _createdScene = createPolygonal();
     //}
 
     if (_models.valid())
     {
-      /*  if (_dataSet->getModelPlacer())
+        /*  if (_dataSet->getModelPlacer())
         {
             for(ModelList::iterator itr = _models->_models.begin();
                 itr != _models->_models.end();
@@ -463,14 +463,14 @@ printf("BLLLLLLALAAAA\n");
         else*/
         {
             for(ModelList::iterator itr = _models->_models.begin();
-                itr != _models->_models.end();
-                ++itr)
+            itr != _models->_models.end();
+            ++itr)
             {
                 addNodeToScene(itr->get());
             }
         }
 
-      /*  if (_dataSet->getShapeFilePlacer())
+        /*  if (_dataSet->getShapeFilePlacer())
         {
             for(ModelList::iterator itr = _models->_shapeFiles.begin();
                 itr != _models->_shapeFiles.end();
@@ -489,7 +489,7 @@ printf("BLLLLLLALAAAA\n");
             }
         }*/
     }else {
-           if (!_createdScene) _createdScene = new osg::Group;
+        if (!_createdScene) _createdScene = new osg::Group;
     }
 
     return _createdScene.get();
@@ -754,21 +754,21 @@ MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int c
 }
 
 void MyDataSet::createNewDestinationGraph(
-                               const GeospatialExtents& extents,
-                               unsigned int maxImageSize,
-                               unsigned int maxTerrainSize,
-                               unsigned int maxNumLevels)
+        const GeospatialExtents& extents,
+        unsigned int maxImageSize,
+        unsigned int maxTerrainSize,
+        unsigned int maxNumLevels)
 {
 
 
-    int highestLevelFound = 0;
-_destinationExtents=extents;
-computeOptimumTileSystemDimensions(_C1,_R1);
+    //int highestLevelFound = 0;
+    _destinationExtents=extents;
+    computeOptimumTileSystemDimensions(_C1,_R1);
 
     // first populate the destination graph from imagery and DEM sources extents/resolution
     //for(CompositeSource::source_iterator itr(_sourceGraph.get());itr.valid();++itr)
     {
-      /*  Source* source = (*itr).get();
+        /*  Source* source = (*itr).get();
 
 
 
@@ -808,7 +808,7 @@ computeOptimumTileSystemDimensions(_C1,_R1);
             int i_min, i_max, j_min, j_max;
             if (computeCoverage(extents, l, i_min, j_min, i_max, j_max))
             {
-               printf("     level=%i i_min=%i i_max=%i j_min=%i j_max=%i\n",l, i_min, i_max, j_min, j_max);
+                printf("     level=%i i_min=%i i_max=%i j_min=%i j_max=%i\n",l, i_min, i_max, j_min, j_max);
 
                 if (getGenerateSubtile())
                 {
@@ -853,11 +853,11 @@ computeOptimumTileSystemDimensions(_C1,_R1);
             }
         }
     }
-printf("Total Size %d\n",_quadMap.size());
+    printf("Total Size %d\n",(int)_quadMap.size());
     // now extend the sources upwards where required.
     for(QuadMap::iterator qitr = _quadMap.begin();
-        qitr != _quadMap.end();
-        ++qitr)
+    qitr != _quadMap.end();
+    ++qitr)
     {
         QuadMap::iterator temp_itr = qitr;
         ++temp_itr;
@@ -867,13 +867,13 @@ printf("Total Size %d\n",_quadMap.size());
 
         Level& level = qitr->second;
         for(Level::iterator litr = level.begin();
-            litr != level.end();
-            ++litr)
+        litr != level.end();
+        ++litr)
         {
             Row& row = litr->second;
             for(Row::iterator ritr = row.begin();
-                ritr != row.end();
-                ++ritr)
+            ritr != row.end();
+            ++ritr)
             {
                 CompositeDestination* cd = ritr->second;
 
@@ -882,8 +882,8 @@ printf("Total Size %d\n",_quadMap.size());
                 if (numChildren!=0 && numChildren!=numChildrenExpected)
                 {
 #if 0
-                   printf("  tile (%i,%i,%i) numTiles=%i numChildren=%i\n",
-                        cd->_level, cd->_tileX, cd->_tileY, cd->_tiles.size(), cd->_children.size());
+                    printf("  tile (%i,%i,%i) numTiles=%i numChildren=%i\n",
+                           cd->_level, cd->_tileX, cd->_tileY, cd->_tiles.size(), cd->_children.size());
 #endif
                     int i_min = (l==0) ? 0   : (cd->_tileX * 2);
                     int j_min = (l==0) ? 0   : (cd->_tileY * 2);
@@ -974,7 +974,7 @@ printf("Total Size %d\n",_quadMap.size());
 
         int k = maxNumLevels;
 
-       /* if (source->getType()==Source::IMAGE || source->getType()==Source::HEIGHT_FIELD)
+        /* if (source->getType()==Source::IMAGE || source->getType()==Source::HEIGHT_FIELD)
         {
             if (!computeOptimumLevel(source, maxNumLevels-1, k)) continue;
         }
@@ -1029,18 +1029,18 @@ printf("Total Size %d\n",_quadMap.size());
                     for(int i=i_min; i<i_max;++i)
                     {
                         CompositeDestination* cd = getComposite(l,i,j);
-                        if (!cd || !cd->intersects(sp) || (l <source->getMinLevel() || l > source->getMaxLevel())) continue;
+                        if (!cd || !cd->intersects(sp) || (l <(int)source->getMinLevel() || l > (int)source->getMaxLevel())) continue;
 
-printf("Tile %d %d_%d %s\n",l ,i,j,source->getFileName().c_str());
-                      /*  if (l==k)
+                        printf("Tile %d %d_%d %s\n",l ,i,j,source->getFileName().c_str());
+                        /*  if (l==k)
                         {
                             cd->addSource(source);
                         }
                         else*/
                         {
                             for(CompositeDestination::TileList::iterator titr = cd->_tiles.begin();
-                                titr != cd->_tiles.end();
-                                ++titr)
+                            titr != cd->_tiles.end();
+                            ++titr)
                             {
                                 DestinationTile* tile = titr->get();
                                 tile->_sources.push_back(source);
@@ -1065,9 +1065,9 @@ void MyDataSet::_readRow(Row& row)
 {
     log(osg::NOTICE, "_readRow %u",row.size());
 
-    CompositeSource* sourceGraph = _newDestinationGraph ? 0 : _sourceGraph.get();
+    //CompositeSource* sourceGraph = _newDestinationGraph ? 0 : _sourceGraph.get();
 
-  /*  if (_readThreadPool.valid())
+    /*  if (_readThreadPool.valid())
     {
         for(Row::iterator citr=row.begin();
             citr!=row.end();
@@ -1089,41 +1089,41 @@ void MyDataSet::_readRow(Row& row)
     else*/
     {
         for(Row::iterator citr=row.begin();
-            citr!=row.end();
-            ++citr)
+        citr!=row.end();
+        ++citr)
         {
             CompositeDestination* cd = citr->second;
             for(CompositeDestination::TileList::iterator titr=cd->_tiles.begin();
-                titr!=cd->_tiles.end();
-                ++titr)
+            titr!=cd->_tiles.end();
+            ++titr)
             {
                 DestinationTile* tile = titr->get();
                 log(osg::NOTICE, "   reading tile level=%u X=%u Y=%u",tile->_level,tile->_tileX,tile->_tileY);
                 //tile->readFrom(sourceGraph);
                 for(DestinationTile::Sources::iterator itr = tile->_sources.begin();
-                    itr != tile->_sources.end();
-                    ++itr)
+                itr != tile->_sources.end();
+                ++itr)
                 {
                     log(osg::NOTICE,"    %s",(*itr)->getFileName().c_str());
                     log(osg::NOTICE,"    %x",(*itr)->getSourceData()->_model.get());
                     osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
-                                                                                   tile->_extents._min.y(),
-                                                                                   DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
-                                                                                                       tile->_extents._max.y(),
-                                                                                                       DBL_MAX));
+                                                         tile->_extents._min.y(),
+                                                         DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
+                                                                             tile->_extents._max.y(),
+                                                                             DBL_MAX));
                     Clipper clipper(ext_bbox);
                     if(tile->_level == 1)
                         clipper.setColor(osg::Vec4(1,0,0,1));
                     else if(tile->_level == 2)
                         clipper.setColor(osg::Vec4(0,1,0,1));
                     else if(tile->_level == 3)
-                            clipper.setColor(osg::Vec4(0,0.5,0.5,1));
+                        clipper.setColor(osg::Vec4(0,0.5,0.5,1));
                     else if(tile->_level == 0)
-                            clipper.setColor(osg::Vec4(0,0,1,1));
+                        clipper.setColor(osg::Vec4(0,0,1,1));
                     clipper.setApplyColor(true);
-                          //  osg::ref_ptr<osg::Node> root = (osg::Node*)(*itr)->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
+                    //  osg::ref_ptr<osg::Node> root = (osg::Node*)(*itr)->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
 
-                 //   root->accept(clipper);
+                    //   root->accept(clipper);
                     ClippedCopy cl_cp(ext_bbox);
                     osg::ref_ptr<osg::Node> root =cl_cp.makeCopy((osg::Geode*)(*itr)->getSourceData()->_model.get());
                     _tq->projectModel(dynamic_cast<osg::Geode*>(root.get()));
@@ -1143,20 +1143,20 @@ void MyDataSet::_readRow(Row& row)
 }
 
 void ClippedCopy::AnalyzePrimSet(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts)
-  {
-     std::cout  << "Prim set type "<< prset.getMode() << std::endl;
-     std::vector<int> vertRemap(verts.size(),-1);
-     if(!_triangles.valid())
-           _triangles = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
-     if(1)
-     {
+{
+    std::cout  << "Prim set type "<< prset.getMode() << std::endl;
+    std::vector<int> vertRemap(verts.size(),-1);
+    if(!_triangles.valid())
+        _triangles = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
+    if(1)
+    {
         unsigned int ic;
         unsigned int nprim=0;
-        unsigned int numValid=0;
+        //unsigned int numValid=0;
         for (ic=0; ic < prset.getNumIndices(); ic++)
         {
-           // NB the vertices are held in the drawable -
-          /*std::cout  <<  "vertex "<< ic << " is index "<<prset.index(ic) << " at " <<
+            // NB the vertices are held in the drawable -
+            /*std::cout  <<  "vertex "<< ic << " is index "<<prset.index(ic) << " at " <<
            (verts)[prset.index(ic)].x() << "," <<
            (verts)[prset.index(ic)].y() << "," <<
            (verts)[prset.index(ic)].z() << std::endl;*/
@@ -1172,30 +1172,30 @@ void ClippedCopy::AnalyzePrimSet(const osg::PrimitiveSet& prset, const osg::Vec3
 
         switch (prset.getMode())
         {
-           case osg::PrimitiveSet::TRIANGLES: // get vertices of triangle
-           {
-                   std::cout << "Triangles "<< nprim << " is index "<<prset.index(ic) << std::endl;
-              for(unsigned int i2=0; i2<prset.getNumIndices()-2; i2+=3)
-              {
-                  std::vector<bool> outside(3,false);
-                  for(int k=0; k <3; k++){
-                      outside[k]=(vertRemap[prset.index(i2+k)]>= 0);
-                      }
+        case osg::PrimitiveSet::TRIANGLES: // get vertices of triangle
+            {
+                std::cout << "Triangles "<< nprim << " is index "<<prset.index(ic) << std::endl;
+                for(unsigned int i2=0; i2<prset.getNumIndices()-2; i2+=3)
+                {
+                    std::vector<bool> outside(3,false);
+                    for(int k=0; k <3; k++){
+                        outside[k]=(vertRemap[prset.index(i2+k)]>= 0);
+                    }
 
-                  if(outside[0] && outside[1] && outside[2]){
-                      for(int k=0; k <3; k++){
-                              _triangles->push_back(vertRemap[prset.index(i2+k)]);
-                          }
-                      }
-              }
-           }
-           break;
+                    if(outside[0] && outside[1] && outside[2]){
+                        for(int k=0; k <3; k++){
+                            _triangles->push_back(vertRemap[prset.index(i2+k)]);
+                        }
+                    }
+                }
+            }
+            break;
 
-           default:
-           break;
+        default:
+            break;
         }
-     }
-  }
+    }
+}
 
 osg::Geode* ClippedCopy::makeCopy(osg::Geode *geode){
     osg::Geode *newGeode=new osg::Geode;
@@ -1234,52 +1234,52 @@ osg::Geode* ClippedCopy::makeCopy(osg::Geode *geode){
 
 
 class MyGraphicsContext : public osg::Referenced {
-    public:
-        MyGraphicsContext(BuildLog* buildLog)
+public:
+    MyGraphicsContext(BuildLog* buildLog)
+    {
+        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+        traits->readDISPLAY();
+        traits->x = 0;
+        traits->y = 0;
+        traits->width = 1;
+        traits->height = 1;
+        traits->windowDecoration = false;
+        traits->doubleBuffer = false;
+        traits->sharedContext = 0;
+        traits->pbuffer = true;
+
+        _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+
+        if (!_gc)
         {
-            osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-            traits->readDISPLAY();
-            traits->x = 0;
-            traits->y = 0;
-            traits->width = 1;
-            traits->height = 1;
-            traits->windowDecoration = false;
-            traits->doubleBuffer = false;
-            traits->sharedContext = 0;
-            traits->pbuffer = true;
+            if (buildLog) buildLog->log(osg::NOTICE,"Failed to create pbuffer, failing back to normal graphics window.");
 
+            traits->pbuffer = false;
             _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-
-            if (!_gc)
-            {
-                if (buildLog) buildLog->log(osg::NOTICE,"Failed to create pbuffer, failing back to normal graphics window.");
-
-                traits->pbuffer = false;
-                _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-            }
-
-            if (_gc.valid())
-
-
-            {
-                _gc->realize();
-                _gc->makeCurrent();
-
-                if (buildLog) buildLog->log(osg::NOTICE,"Realized window");
-            }
         }
 
-        bool valid() const { return _gc.valid() && _gc->isRealized(); }
+        if (_gc.valid())
 
-    private:
-        osg::ref_ptr<osg::GraphicsContext> _gc;
+
+        {
+            _gc->realize();
+            _gc->makeCurrent();
+
+            if (buildLog) buildLog->log(osg::NOTICE,"Realized window");
+        }
+    }
+
+    bool valid() const { return _gc.valid() && _gc->isRealized(); }
+
+private:
+    osg::ref_ptr<osg::GraphicsContext> _gc;
 };
 
 int MyDataSet::_run()
 {
 
     log(osg::NOTICE,"MyDataSet::_run() %i %i",getDistributedBuildSplitLevel(),getDistributedBuildSecondarySplitLevel());
-
+/*
 #ifdef HAVE_NVTT
     bool requiresGraphicsContextInMainThread = (getCompressionMethod() == vpb::BuildOptions::GL_DRIVER);
     bool requiresGraphicsContextInWritingThread = (getCompressionMethod() == vpb::BuildOptions::GL_DRIVER);
@@ -1289,7 +1289,7 @@ int MyDataSet::_run()
 #endif
 
     int numProcessors = OpenThreads::GetNumberOfProcessors();
-/*#if 0
+    #if 0
     if (numProcessors>1)
 #endif
     {
@@ -1329,7 +1329,7 @@ int MyDataSet::_run()
 */
     bool requiresGenerationOfTiles = getGenerateTiles();
 
-  /*  if (!getIntermediateBuildName().empty())
+    /*  if (!getIntermediateBuildName().empty())
     {
         osg::ref_ptr<osgTerrain::TerrainTile> terrainTile = createTerrainRepresentation();
         if (terrainTile.valid())
@@ -1376,7 +1376,7 @@ int MyDataSet::_run()
     {
         // dummy Viewer to get round silly Windows autoregistration problem for GraphicsWindowWin32.cpp
         osgViewer::Viewer viewer;
-/*
+        /*
         osg::ref_ptr<MyGraphicsContext> context;
 
         if (requiresGraphicsContextInMainThread)
@@ -1472,8 +1472,8 @@ osg::Node* MyCompositeDestination::createSubTileScene()
     typedef std::vector<osg::Node*>  NodeList;
     NodeList nodeList;
     for(ChildList::iterator citr=_children.begin();
-        citr!=_children.end();
-        ++citr)
+    citr!=_children.end();
+    ++citr)
     {
         CompositeDestination *c=*citr;
         MyCompositeDestination *child=dynamic_cast<MyCompositeDestination*>(c);
@@ -1489,8 +1489,8 @@ osg::Node* MyCompositeDestination::createSubTileScene()
     {
         osg::Group* group = new osg::Group;
         for(NodeList::iterator itr=nodeList.begin();
-            itr!=nodeList.end();
-            ++itr)
+        itr!=nodeList.end();
+        ++itr)
         {
             group->addChild(*itr);
         }
@@ -1505,8 +1505,8 @@ void MyDataSet::_writeRow(Row& row)
 {
     log(osg::NOTICE, "_writeRow %u",row.size());
     for(Row::iterator citr=row.begin();
-        citr!=row.end();
-        ++citr)
+    citr!=row.end();
+    ++citr)
     {
         MyCompositeDestination* cd = dynamic_cast<MyCompositeDestination*>(citr->second);
         MyCompositeDestination* parent =  dynamic_cast<MyCompositeDestination*>(cd->_parent);
@@ -1524,7 +1524,7 @@ void MyDataSet::_writeRow(Row& row)
 #endif
                 log(osg::NOTICE, "       _taskOutputDirectory= %s",_taskOutputDirectory.c_str());
 
-              /*  if (_writeThreadPool.valid())
+                /*  if (_writeThreadPool.valid())
                 {
                     _writeThreadPool->run(new WriteOperation(_writeThreadPool.get(), this, parent, filename));
                 }
@@ -1618,14 +1618,14 @@ void MyDataSet::_writeRow(Row& row)
 }
 #if 0
 CompositeDestination* MyDataSet::createDestinationGraph(CompositeDestination* parent,
-                                                      osg::CoordinateSystemNode* cs,
-                                                      const GeospatialExtents& extents,
-                                                      unsigned int maxImageSize,
-                                                      unsigned int maxTerrainSize,
-                                                      unsigned int currentLevel,
-                                                      unsigned int currentX,
-                                                      unsigned int currentY,
-                                                      unsigned int maxNumLevels)
+                                                        osg::CoordinateSystemNode* cs,
+                                                        const GeospatialExtents& extents,
+                                                        unsigned int maxImageSize,
+                                                        unsigned int maxTerrainSize,
+                                                        unsigned int currentLevel,
+                                                        unsigned int currentX,
+                                                        unsigned int currentY,
+                                                        unsigned int maxNumLevels)
 {
 
     if (getGenerateSubtile() && (currentLevel == getSubtileLevel()))
@@ -1725,51 +1725,51 @@ CompositeDestination* MyDataSet::createDestinationGraph(CompositeDestination* pa
             GeospatialExtents top_right(xCenter,yCenter,extents.xMax(),extents.yMax(), extents._isGeographic);
 
             destinationGraph->addChild(createDestinationGraph(destinationGraph,
-                                                                         cs,
-                                                                         bottom_left,
-                                                                         maxImageSize,
-                                                                         maxTerrainSize,
-                                                                         newLevel,
-                                                                         newX,
-                                                                         newY,
-                                                                         maxNumLevels));
+                                                              cs,
+                                                              bottom_left,
+                                                              maxImageSize,
+                                                              maxTerrainSize,
+                                                              newLevel,
+                                                              newX,
+                                                              newY,
+                                                              maxNumLevels));
 
             destinationGraph->addChild(createDestinationGraph(destinationGraph,
-                                                                         cs,
-                                                                         bottom_right,
-                                                                         maxImageSize,
-                                                                         maxTerrainSize,
-                                                                         newLevel,
-                                                                         newX+1,
-                                                                         newY,
-                                                                         maxNumLevels));
+                                                              cs,
+                                                              bottom_right,
+                                                              maxImageSize,
+                                                              maxTerrainSize,
+                                                              newLevel,
+                                                              newX+1,
+                                                              newY,
+                                                              maxNumLevels));
 
             destinationGraph->addChild(createDestinationGraph(destinationGraph,
-                                                                         cs,
-                                                                         top_left,
-                                                                         maxImageSize,
-                                                                         maxTerrainSize,
-                                                                         newLevel,
-                                                                         newX,
-                                                                         newY+1,
-                                                                         maxNumLevels));
+                                                              cs,
+                                                              top_left,
+                                                              maxImageSize,
+                                                              maxTerrainSize,
+                                                              newLevel,
+                                                              newX,
+                                                              newY+1,
+                                                              maxNumLevels));
 
             destinationGraph->addChild(createDestinationGraph(destinationGraph,
-                                                                         cs,
-                                                                         top_right,
-                                                                         maxImageSize,
-                                                                         maxTerrainSize,
-                                                                         newLevel,
-                                                                         newX+1,
-                                                                         newY+1,
-                                                                         maxNumLevels));
+                                                              cs,
+                                                              top_right,
+                                                              maxImageSize,
+                                                              maxTerrainSize,
+                                                              newLevel,
+                                                              newX+1,
+                                                              newY+1,
+                                                              maxNumLevels));
 
             // Set all there max distance to the same value to ensure the same LOD bining.
             float cutOffDistance = destinationGraph->_maxVisibleDistance*0.5f;
 
             for(CompositeDestination::ChildList::iterator citr=destinationGraph->_children.begin();
-                citr!=destinationGraph->_children.end();
-                ++citr)
+            citr!=destinationGraph->_children.end();
+            ++citr)
             {
                 (*citr)->_maxVisibleDistance = cutOffDistance;
             }
@@ -1784,32 +1784,32 @@ CompositeDestination* MyDataSet::createDestinationGraph(CompositeDestination* pa
             GeospatialExtents right(xCenter,extents.yMin(),extents.xMax(),extents.yMax(), extents._isGeographic);
 
             destinationGraph->addChild(createDestinationGraph(destinationGraph,
-                                                                         cs,
-                                                                         left,
-                                                                         maxImageSize,
-                                                                         maxTerrainSize,
-                                                                         newLevel,
-                                                                         newX,
-                                                                         newY,
-                                                                         maxNumLevels));
+                                                              cs,
+                                                              left,
+                                                              maxImageSize,
+                                                              maxTerrainSize,
+                                                              newLevel,
+                                                              newX,
+                                                              newY,
+                                                              maxNumLevels));
 
             destinationGraph->addChild(createDestinationGraph(destinationGraph,
-                                                                         cs,
-                                                                         right,
-                                                                         maxImageSize,
-                                                                         maxTerrainSize,
-                                                                         newLevel,
-                                                                         newX+1,
-                                                                         newY,
-                                                                         maxNumLevels));
+                                                              cs,
+                                                              right,
+                                                              maxImageSize,
+                                                              maxTerrainSize,
+                                                              newLevel,
+                                                              newX+1,
+                                                              newY,
+                                                              maxNumLevels));
 
 
             // Set all there max distance to the same value to ensure the same LOD bining.
             float cutOffDistance = destinationGraph->_maxVisibleDistance*0.5f;
 
             for(CompositeDestination::ChildList::iterator citr=destinationGraph->_children.begin();
-                citr!=destinationGraph->_children.end();
-                ++citr)
+            citr!=destinationGraph->_children.end();
+            ++citr)
             {
                 (*citr)->_maxVisibleDistance = cutOffDistance;
             }
@@ -1824,31 +1824,31 @@ CompositeDestination* MyDataSet::createDestinationGraph(CompositeDestination* pa
             GeospatialExtents bottom(extents.xMin(),extents.yMin(),extents.xMax(),yCenter, extents._isGeographic);
 
             destinationGraph->addChild(createDestinationGraph(destinationGraph,
-                                                                         cs,
-                                                                         bottom,
-                                                                         maxImageSize,
-                                                                         maxTerrainSize,
-                                                                         newLevel,
-                                                                         newX,
-                                                                         newY,
-                                                                         maxNumLevels));
+                                                              cs,
+                                                              bottom,
+                                                              maxImageSize,
+                                                              maxTerrainSize,
+                                                              newLevel,
+                                                              newX,
+                                                              newY,
+                                                              maxNumLevels));
 
             destinationGraph->addChild(createDestinationGraph(destinationGraph,
-                                                                         cs,
-                                                                         top,
-                                                                         maxImageSize,
-                                                                         maxTerrainSize,
-                                                                         newLevel,
-                                                                         newX,
-                                                                         newY+1,
-                                                                         maxNumLevels));
+                                                              cs,
+                                                              top,
+                                                              maxImageSize,
+                                                              maxTerrainSize,
+                                                              newLevel,
+                                                              newX,
+                                                              newY+1,
+                                                              maxNumLevels));
 
             // Set all there max distance to the same value to ensure the same LOD bining.
             float cutOffDistance = destinationGraph->_maxVisibleDistance*0.5f;
 
             for(CompositeDestination::ChildList::iterator citr=destinationGraph->_children.begin();
-                citr!=destinationGraph->_children.end();
-                ++citr)
+            citr!=destinationGraph->_children.end();
+            ++citr)
             {
                 (*citr)->_maxVisibleDistance = cutOffDistance;
             }
@@ -2016,10 +2016,10 @@ void MyDataSet::computeDestinationGraphFromSources(unsigned int numLevels)
     {
         // new default scheme.
         createNewDestinationGraph(
-                                  _destinationExtents,
-                                  _maximumTileImageSize,
-                                  _maximumTileTerrainSize,
-                                  numLevels);
+                _destinationExtents,
+                _maximumTileImageSize,
+                _maximumTileTerrainSize,
+                numLevels);
     }
 
     osg::Timer_t after = osg::Timer::instance()->tick();
@@ -2205,8 +2205,8 @@ void MyDataSet::updateSourcesForDestinationGraphNeeds()
                 log(osg::INFO, "    { ");
                 Source::ResolutionList::const_iterator itr;
                 for(itr=resolutions.begin();
-                    itr!=resolutions.end();
-                    ++itr)
+                itr!=resolutions.end();
+                ++itr)
                 {
                     log(osg::INFO, "        resX=%f resY=%f",itr->_resX,itr->_resY);
                 }
@@ -2217,8 +2217,8 @@ void MyDataSet::updateSourcesForDestinationGraphNeeds()
                 log(osg::INFO, "    consolodated resolutions.size() %u",resolutions.size());
                 log(osg::INFO, "    consolodated { ");
                 for(itr=resolutions.begin();
-                    itr!=resolutions.end();
-                    ++itr)
+                itr!=resolutions.end();
+                ++itr)
                 {
                     log(osg::INFO, "        resX=%f resY=%f",itr->_resX,itr->_resY);
                 }
@@ -2284,21 +2284,21 @@ void MyDataSet::populateDestinationGraphFromSources()
 
 class ReadFromOperation : public BuildOperation
 {
-    public:
+public:
 
-        ReadFromOperation(ThreadPool* threadPool, BuildLog* buildLog, DestinationTile* tile, CompositeSource* sourceGraph):
+    ReadFromOperation(ThreadPool* threadPool, BuildLog* buildLog, DestinationTile* tile, CompositeSource* sourceGraph):
             BuildOperation(threadPool, buildLog, "ReadFromOperation", false),
             _tile(tile),
             _sourceGraph(sourceGraph) {}
 
-        virtual void build()
-        {
-            log(osg::NOTICE, "   ReadFromOperation: reading tile level=%u X=%u Y=%u",_tile->_level,_tile->_tileX,_tile->_tileY);
-            _tile->readFrom(_sourceGraph.get());
-        }
+    virtual void build()
+    {
+        log(osg::NOTICE, "   ReadFromOperation: reading tile level=%u X=%u Y=%u",_tile->_level,_tile->_tileX,_tile->_tileY);
+        _tile->readFrom(_sourceGraph.get());
+    }
 
-        osg::ref_ptr<DestinationTile> _tile;
-        osg::ref_ptr<CompositeSource> _sourceGraph;
+    osg::ref_ptr<DestinationTile> _tile;
+    osg::ref_ptr<CompositeSource> _sourceGraph;
 };
 
 
@@ -2307,13 +2307,13 @@ void MyDataSet::_equalizeRow(Row& row)
 {
     log(osg::NOTICE, "_equalizeRow %d",row.size());
     for(Row::iterator citr=row.begin();
-        citr!=row.end();
-        ++citr)
+    citr!=row.end();
+    ++citr)
     {
         CompositeDestination* cd = citr->second;
         for(CompositeDestination::TileList::iterator titr=cd->_tiles.begin();
-            titr!=cd->_tiles.end();
-            ++titr)
+        titr!=cd->_tiles.end();
+        ++titr)
         {
             DestinationTile* tile = titr->get();
             log(osg::NOTICE, "   equalizing tile level=%u X=%u Y=%u",tile->_level,tile->_tileX,tile->_tileY);
@@ -2337,7 +2337,7 @@ void MyDataSet::_writeNodeFile(osg::Node& node,const std::string& filename)
             bool fileExistedBeforeWrite = osgDB::fileExists(filename);
 
             osgDB::ReaderWriter::WriteResult result =
-                osgDB::Registry::instance()->writeNode(node, filename,osgDB::Registry::instance()->getOptions());
+                    osgDB::Registry::instance()->writeNode(node, filename,osgDB::Registry::instance()->getOptions());
 
 
             if (result.success())
@@ -2361,23 +2361,23 @@ void MyDataSet::_writeNodeFile(osg::Node& node,const std::string& filename)
                 {
                     switch(result.status())
                     {
-                        case(osgDB::ReaderWriter::WriteResult::NOT_IMPLEMENTED):
-                        case(osgDB::ReaderWriter::WriteResult::FILE_NOT_HANDLED):
-                            log(notifylevel, "Error, write support for data type not available for node file %s",filename.c_str());
-                            break;
-                        case(osgDB::ReaderWriter::WriteResult::ERROR_IN_WRITING_FILE):
-                            log(notifylevel, "Error, in writing node file %s",filename.c_str());
-                            break;
-                        default:
-                            log(notifylevel, "Error, in writing node file %s",filename.c_str());
-                            break;
+                    case(osgDB::ReaderWriter::WriteResult::NOT_IMPLEMENTED):
+                    case(osgDB::ReaderWriter::WriteResult::FILE_NOT_HANDLED):
+                        log(notifylevel, "Error, write support for data type not available for node file %s",filename.c_str());
+                        break;
+                    case(osgDB::ReaderWriter::WriteResult::ERROR_IN_WRITING_FILE):
+                        log(notifylevel, "Error, in writing node file %s",filename.c_str());
+                        break;
+                    default:
+                        log(notifylevel, "Error, in writing node file %s",filename.c_str());
+                        break;
                     }
                 }
             }
         }
         else
         {
-           log(notifylevel, "Error: do not have write permission to write out file %s",filename.c_str());
+            log(notifylevel, "Error: do not have write permission to write out file %s",filename.c_str());
         }
     }
 }
@@ -2401,7 +2401,7 @@ void MyDataSet::_writeImageFile(osg::Image& image,const std::string& filename)
             bool fileExistedBeforeWrite = osgDB::fileExists(filename);
 
             osgDB::ReaderWriter::WriteResult result =
-                osgDB::Registry::instance()->writeImage(image, simpliedFileName,osgDB::Registry::instance()->getOptions());
+                    osgDB::Registry::instance()->writeImage(image, simpliedFileName,osgDB::Registry::instance()->getOptions());
 
             if (result.success())
             {
@@ -2424,16 +2424,16 @@ void MyDataSet::_writeImageFile(osg::Image& image,const std::string& filename)
                 {
                     switch(result.status())
                     {
-                        case(osgDB::ReaderWriter::WriteResult::NOT_IMPLEMENTED):
-                        case(osgDB::ReaderWriter::WriteResult::FILE_NOT_HANDLED):
-                            log(notifylevel, "Error, write support for data type not available for image file %s",filename.c_str());
-                            break;
-                        case(osgDB::ReaderWriter::WriteResult::ERROR_IN_WRITING_FILE):
-                            log(notifylevel, "Error, in writing image file %s",filename.c_str());
-                            break;
-                        default:
-                            log(notifylevel, "Error, in writing image file %s",filename.c_str());
-                            break;
+                    case(osgDB::ReaderWriter::WriteResult::NOT_IMPLEMENTED):
+                    case(osgDB::ReaderWriter::WriteResult::FILE_NOT_HANDLED):
+                        log(notifylevel, "Error, write support for data type not available for image file %s",filename.c_str());
+                        break;
+                    case(osgDB::ReaderWriter::WriteResult::ERROR_IN_WRITING_FILE):
+                        log(notifylevel, "Error, in writing image file %s",filename.c_str());
+                        break;
+                    default:
+                        log(notifylevel, "Error, in writing image file %s",filename.c_str());
+                        break;
                     }
                 }
             }
@@ -2450,10 +2450,10 @@ class WriteImageFilesVisitor : public osg::NodeVisitor
 public:
 
     WriteImageFilesVisitor(vpb::MyDataSet* MyDataSet, const std::string& directory):
-        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-        _MyDataSet(MyDataSet),
-        _directory(directory),
-        _writeHint(osg::Image::STORE_INLINE)
+            osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+            _MyDataSet(MyDataSet),
+            _directory(directory),
+            _writeHint(osg::Image::STORE_INLINE)
     {
         if (!_directory.empty())
         {
@@ -2602,37 +2602,37 @@ void MyDataSet::_writeNodeFileAndImages(osg::Node& node,const std::string& filen
 
 class WriteOperation : public BuildOperation
 {
-    public:
+public:
 
-        WriteOperation(ThreadPool* threadPool, MyDataSet* MyDataSet,CompositeDestination* cd, const std::string& filename):
+    WriteOperation(ThreadPool* threadPool, MyDataSet* MyDataSet,CompositeDestination* cd, const std::string& filename):
             BuildOperation(threadPool, MyDataSet->getBuildLog(), "WriteOperation", false),
             _MyDataSet(MyDataSet),
             _cd(cd),
             _filename(filename) {}
 
-        virtual void build()
+    virtual void build()
+    {
+        //notify(osg::NOTICE)<<"   WriteOperation"<<std::endl;
+
+        osg::ref_ptr<osg::Node> node = _cd->createSubTileScene();
+        if (node.valid())
         {
-            //notify(osg::NOTICE)<<"   WriteOperation"<<std::endl;
+            if (_buildLog.valid()) _buildLog->log(osg::NOTICE, "   writeSubTile filename= %s",_filename.c_str());
 
-            osg::ref_ptr<osg::Node> node = _cd->createSubTileScene();
-            if (node.valid())
-            {
-                if (_buildLog.valid()) _buildLog->log(osg::NOTICE, "   writeSubTile filename= %s",_filename.c_str());
+            _MyDataSet->_writeNodeFileAndImages(*node,_filename);
 
-                _MyDataSet->_writeNodeFileAndImages(*node,_filename);
-
-                _cd->setSubTilesGenerated(true);
-                _cd->unrefSubTileData();
-            }
-            else
-            {
-                log(osg::WARN, "   failed to writeSubTile node for tile, filename=%s",_filename.c_str());
-            }
+            _cd->setSubTilesGenerated(true);
+            _cd->unrefSubTileData();
         }
+        else
+        {
+            log(osg::WARN, "   failed to writeSubTile node for tile, filename=%s",_filename.c_str());
+        }
+    }
 
-        MyDataSet*                            _MyDataSet;
-        osg::ref_ptr<CompositeDestination>  _cd;
-        std::string                         _filename;
+    MyDataSet*                            _MyDataSet;
+    osg::ref_ptr<CompositeDestination>  _cd;
+    std::string                         _filename;
 };
 
 #define NEW_NAMING
@@ -2641,8 +2641,8 @@ void MyDataSet::_writeRow(Row& row)
 {
     log(osg::NOTICE, "_writeRow %u",row.size());
     for(Row::iterator citr=row.begin();
-        citr!=row.end();
-        ++citr)
+    citr!=row.end();
+    ++citr)
     {
         CompositeDestination* cd = citr->second;
         CompositeDestination* parent = cd->_parent;
@@ -2867,8 +2867,8 @@ bool MyDataSet::addModel(Source::Type type, osg::Node* model, unsigned int revis
 
     const osg::Node::DescriptionList& descriptions = model->getDescriptions();
     for(osg::Node::DescriptionList::const_iterator itr = descriptions.begin();
-        itr != descriptions.end();
-        ++itr)
+    itr != descriptions.end();
+    ++itr)
     {
         int value=0;
         const std::string& desc = *itr;
@@ -2919,8 +2919,8 @@ bool MyDataSet::addLayer(Source::Type type, osgTerrain::Layer* layer, unsigned l
         if (layer->getLocator() && !layer->getLocator()->getDefinedInFile())
         {
             vpb::Source::ParameterPolicy geoTransformPolicy = layer->getLocator()->getTransformScaledByResolution() ?
-                    vpb::Source::PREFER_CONFIG_SETTINGS :
-                    vpb::Source::PREFER_CONFIG_SETTINGS_BUT_SCALE_BY_FILE_RESOLUTION;
+                                                              vpb::Source::PREFER_CONFIG_SETTINGS :
+                                                              vpb::Source::PREFER_CONFIG_SETTINGS_BUT_SCALE_BY_FILE_RESOLUTION;
 
             source->setGeoTransformPolicy(geoTransformPolicy);
             source->setGeoTransform(layer->getLocator()->getTransform());
@@ -2946,8 +2946,8 @@ bool MyDataSet::addLayer(Source::Type type, osgTerrain::Layer* layer, unsigned l
         if (layer->getLocator() && !layer->getLocator()->getDefinedInFile())
         {
             vpb::Source::ParameterPolicy geoTransformPolicy = layer->getLocator()->getTransformScaledByResolution() ?
-                    vpb::Source::PREFER_CONFIG_SETTINGS :
-                    vpb::Source::PREFER_CONFIG_SETTINGS_BUT_SCALE_BY_FILE_RESOLUTION;
+                                                              vpb::Source::PREFER_CONFIG_SETTINGS :
+                                                              vpb::Source::PREFER_CONFIG_SETTINGS_BUT_SCALE_BY_FILE_RESOLUTION;
 
             source->setGeoTransformPolicy(geoTransformPolicy);
             source->setGeoTransform(layer->getLocator()->getTransform());
@@ -2975,8 +2975,8 @@ bool MyDataSet::addLayer(Source::Type type, osgTerrain::Layer* layer, unsigned l
         if (layer->getLocator() && !layer->getLocator()->getDefinedInFile())
         {
             vpb::Source::ParameterPolicy geoTransformPolicy = layer->getLocator()->getTransformScaledByResolution() ?
-                    vpb::Source::PREFER_CONFIG_SETTINGS :
-                    vpb::Source::PREFER_CONFIG_SETTINGS_BUT_SCALE_BY_FILE_RESOLUTION;
+                                                              vpb::Source::PREFER_CONFIG_SETTINGS :
+                                                              vpb::Source::PREFER_CONFIG_SETTINGS_BUT_SCALE_BY_FILE_RESOLUTION;
 
             source->setGeoTransformPolicy(geoTransformPolicy);
             source->setGeoTransform(layer->getLocator()->getTransform());
@@ -3119,11 +3119,11 @@ bool MyDataSet::addPatchedTerrain(osgTerrain::TerrainTile* previous_terrain, osg
             std::string status;
             switch(source->getPatchStatus())
             {
-                case(Source::UNASSIGNED): status = "UNASSIGNED"; break;
-                case(Source::UNCHANGED): status = "UNCHANGED"; break;
-                case(Source::MODIFIED): status = "MODIFIED"; break;
-                case(Source::ADDED): status = "ADDED"; break;
-                case(Source::REMOVED): status = "REMOVED"; break;
+            case(Source::UNASSIGNED): status = "UNASSIGNED"; break;
+            case(Source::UNCHANGED): status = "UNCHANGED"; break;
+            case(Source::MODIFIED): status = "MODIFIED"; break;
+            case(Source::ADDED): status = "ADDED"; break;
+            case(Source::REMOVED): status = "REMOVED"; break;
             }
 
             log(osg::NOTICE, "Source File %s\t%d\t%s",source->getFileName().c_str(), source->getRevisionNumber(), status.c_str());
@@ -3146,14 +3146,14 @@ osgTerrain::TerrainTile* MyDataSet::createTerrainRepresentation()
     {
         osg::ref_ptr<Source> source = (*itr);
 #if 0
-            osg::Locator* locator = new osg::Locator;
-            osg::ref_ptr<osg::CoordinateSystemNode>     _cs;
-            osg::Matrixd                                _geoTransform;
-            GeospatialExtents                           _extents;
-            DataType                                    _dataType;
-            unsigned int                                _numValuesX;
-            unsigned int                                _numValuesY;
-            unsigned int                                _numValuesZ;
+        osg::Locator* locator = new osg::Locator;
+        osg::ref_ptr<osg::CoordinateSystemNode>     _cs;
+        osg::Matrixd                                _geoTransform;
+        GeospatialExtents                           _extents;
+        DataType                                    _dataType;
+        unsigned int                                _numValuesX;
+        unsigned int                                _numValuesY;
+        unsigned int                                _numValuesZ;
 #endif
         unsigned int layerNum = source->getLayer();
 
@@ -3176,10 +3176,10 @@ osgTerrain::TerrainTile* MyDataSet::createTerrainRepresentation()
 
                     switch(getCoordinateSystemType(source->_cs.get()))
                     {
-                        case(GEOCENTRIC): locator->setCoordinateSystemType(osgTerrain::Locator::GEOCENTRIC); break;
-                        case(GEOGRAPHIC): locator->setCoordinateSystemType(osgTerrain::Locator::GEOGRAPHIC); break;
-                        case(PROJECTED): locator->setCoordinateSystemType(osgTerrain::Locator::PROJECTED); break;
-                        case(LOCAL): locator->setCoordinateSystemType(osgTerrain::Locator::PROJECTED); break;
+                    case(GEOCENTRIC): locator->setCoordinateSystemType(osgTerrain::Locator::GEOCENTRIC); break;
+                    case(GEOGRAPHIC): locator->setCoordinateSystemType(osgTerrain::Locator::GEOGRAPHIC); break;
+                    case(PROJECTED): locator->setCoordinateSystemType(osgTerrain::Locator::PROJECTED); break;
+                    case(LOCAL): locator->setCoordinateSystemType(osgTerrain::Locator::PROJECTED); break;
                     };
                 }
 
@@ -3242,45 +3242,45 @@ osgTerrain::TerrainTile* MyDataSet::createTerrainRepresentation()
 }
 
 class MyGraphicsContext : public osg::Referenced {
-    public:
-        MyGraphicsContext(BuildLog* buildLog)
+public:
+    MyGraphicsContext(BuildLog* buildLog)
+    {
+        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+        traits->readDISPLAY();
+        traits->x = 0;
+        traits->y = 0;
+        traits->width = 1;
+        traits->height = 1;
+        traits->windowDecoration = false;
+        traits->doubleBuffer = false;
+        traits->sharedContext = 0;
+        traits->pbuffer = true;
+
+        _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+
+        if (!_gc)
         {
-            osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-            traits->readDISPLAY();
-            traits->x = 0;
-            traits->y = 0;
-            traits->width = 1;
-            traits->height = 1;
-            traits->windowDecoration = false;
-            traits->doubleBuffer = false;
-            traits->sharedContext = 0;
-            traits->pbuffer = true;
+            if (buildLog) buildLog->log(osg::NOTICE,"Failed to create pbuffer, failing back to normal graphics window.");
 
+            traits->pbuffer = false;
             _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-
-            if (!_gc)
-            {
-                if (buildLog) buildLog->log(osg::NOTICE,"Failed to create pbuffer, failing back to normal graphics window.");
-
-                traits->pbuffer = false;
-                _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-            }
-
-            if (_gc.valid())
-
-
-            {
-                _gc->realize();
-                _gc->makeCurrent();
-
-                if (buildLog) buildLog->log(osg::NOTICE,"Realized window");
-            }
         }
 
-        bool valid() const { return _gc.valid() && _gc->isRealized(); }
+        if (_gc.valid())
 
-    private:
-        osg::ref_ptr<osg::GraphicsContext> _gc;
+
+        {
+            _gc->realize();
+            _gc->makeCurrent();
+
+            if (buildLog) buildLog->log(osg::NOTICE,"Realized window");
+        }
+    }
+
+    bool valid() const { return _gc.valid() && _gc->isRealized(); }
+
+private:
+    osg::ref_ptr<osg::GraphicsContext> _gc;
 };
 
 
@@ -3289,7 +3289,7 @@ class CollectSubtiles : public DestinationVisitor
 public:
 
     CollectSubtiles(unsigned int level):
-        _level(level) {}
+            _level(level) {}
 
     virtual void apply(CompositeDestination& cd)
     {
@@ -3384,8 +3384,8 @@ bool MyDataSet::createTileMap(unsigned int level, TilePairMap& tilepairMap)
 
 #if 0
     for(TilePairMap::iterator itr = tilepairMap.begin();
-        itr != tilepairMap.end();
-        ++itr)
+    itr != tilepairMap.end();
+    ++itr)
     {
         log(osg::NOTICE,"Level %d TilePair (%d, %d) %d",level, itr->first.first, itr->first.second, itr->second);
     }
@@ -3449,8 +3449,8 @@ void MyDataSet::selectAppropriateSplitLevels()
         {
             // need to compute just the seconary split level
             setDistributedBuildSecondarySplitLevel(
-                        getDistributedBuildSplitLevel() +
-                        (maxLevel-getDistributedBuildSplitLevel())/2 );
+                    getDistributedBuildSplitLevel() +
+                    (maxLevel-getDistributedBuildSplitLevel())/2 );
         }
         else
         {
@@ -3547,8 +3547,8 @@ bool MyDataSet::generateTasksImplementation(TaskManager* taskManager)
     if (getDistributedBuildSplitLevel()==0) return false;
 
     int bottomDistributedBuildLevel = getDistributedBuildSecondarySplitLevel()==0 ?
-                                        getDistributedBuildSplitLevel() :
-                                        getDistributedBuildSecondarySplitLevel();
+                                      getDistributedBuildSplitLevel() :
+                                      getDistributedBuildSecondarySplitLevel();
 
 
     if (!prepareForDestinationGraphCreation()) return false;
@@ -3669,8 +3669,8 @@ bool MyDataSet::generateTasksImplementation(TaskManager* taskManager)
         unsigned int level = getDistributedBuildSplitLevel()-1;
 
         for(TilePairMap::iterator itr = intermediateTileMap.begin();
-            itr != intermediateTileMap.end();
-            ++itr)
+        itr != intermediateTileMap.end();
+        ++itr)
         {
             unsigned int tileX = itr->first.first;
             unsigned int tileY = itr->first.second;
@@ -3717,8 +3717,8 @@ bool MyDataSet::generateTasksImplementation(TaskManager* taskManager)
         unsigned int level = bottomDistributedBuildLevel-1;
 
         for(TilePairMap::iterator itr = bottomTileMap.begin();
-            itr != bottomTileMap.end();
-            ++itr)
+        itr != bottomTileMap.end();
+        ++itr)
         {
             unsigned int tileX = itr->first.first;
             unsigned int tileY = itr->first.second;
@@ -3958,8 +3958,8 @@ int MyDataSet::_run()
             log(osg::NOTICE,"There are %d contributing source files:",sources.size());
 
             for(DestinationTile::Sources::iterator itr = sources.begin();
-                itr != sources.end();
-                ++itr)
+            itr != sources.end();
+            ++itr)
             {
                 log(osg::NOTICE,"    %s",(*itr)->getFileName().c_str());
             }

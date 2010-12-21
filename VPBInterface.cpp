@@ -6,7 +6,7 @@ void doQuadTreeVPB(Bounds bounds){
 
 vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
 char filename[1024];
-int numlod=5;
+int numlod=1;
 vpb::MyDataSet *m=new vpb::MyDataSet();
 m->_tq = new TexturingQuery("/home/mattjr/data/new2/mesh-quad/bbox.txt");
 

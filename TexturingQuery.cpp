@@ -3,6 +3,8 @@
 #include <osg/Geometry>
 #include <osg/PrimitiveSet>
 #include <map>
+#include <osg/Texture2DArray>
+#include <osgDB/FileUtils>
 using namespace SpatialIndex;
 using namespace std;
 // example of a Visitor pattern.
@@ -194,6 +196,9 @@ public:
 
 TexturingQuery::TexturingQuery(std::string bbox_file) : _bbox_file(bbox_file)
 {
+    _vertexAlias = AttributeAlias(0, "osg_Vertex");
+    _projCoordAlias = AttributeAlias(1, "osg_ProjCoord");
+
     baseName="tmpStore";
     utilization=0.7;
     capacity=4;
@@ -227,7 +232,7 @@ TexturingQuery::~TexturingQuery(){
     delete diskfile;
     delete stream;
 }
-const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts,ProjectsToMap &reproj){
+const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts){
     CamDists orderedProj;
 
     if(tri_v.size() != 3){
@@ -278,7 +283,7 @@ double TexturingQuery::getDistToCenter(osg::Vec3 v, ProjectionCamera cam){
 }
 
 
-osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts,ProjectsToMap &reproj){
+osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts){
     int numIdx=prset.getNumIndices();
 
     if(numIdx < 3)
@@ -308,7 +313,7 @@ osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prs
         for(int k=0; k <3; k++){
             tri_v.push_back(prset.index(i+k));
         }
-        const CamDists d=getClosest(tri_v,verts,reproj);
+        const CamDists d=getClosest(tri_v,verts);
         osg::Vec4 camIdx(-1,-1,-1,-1);
         for(int v=0; v<(int)d.size() && v <4; v++){
             camIdx[v]=d[v].first;
@@ -327,26 +332,127 @@ osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prs
 */
     return camIdxArr;
 }
+bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
+   {
+      std::string fqFileName = osgDB::findDataFile(fileName);
+      if( fqFileName.length() == 0 )
+      {
+         std::cout << "File \"" << fileName << "\" not found." << std::endl;
+         return false;
+      }
+      bool success = obj->loadShaderSourceFromFile( fqFileName.c_str());
+      if ( !success  )
+      {
+         std::cout << "Couldn't load file: " << fileName << std::endl;
+         return false;
+      }
+      else
+      {
+         return true;
+      }
+   }
+osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v){
+    if(!v)
+        return NULL;
 
+    map<int,int> allIds;
+    unsigned int uniqueIdCount=0;
+    vector<osg::Matrixf> arrayProjMat;
+    osg::StateSet *stateset= new osg::StateSet;
+    for(int i=0; i< (int)v->size(); i++){
+        for(int j=0; j< 4; j++){
+            int id=(int)((*v)[i][j]);
+            if(id < 0)
+                continue;
+            if(allIds.count(id) == 0){
+                allIds[id]=uniqueIdCount++;
+                arrayProjMat.push_back(_cameras[id].m);
+            }
+        }
+    }
+    osg::ref_ptr<osg::Uniform> arrayProjUniform = new osg::Uniform(osg::Uniform::FLOAT_MAT4,
+                                                                   "projMatrices", arrayProjMat.size());
+    for (unsigned int i = 0; i < arrayProjMat.size(); ++i)
+        arrayProjUniform->setElement(i, arrayProjMat[i]);
+    stateset->addUniform(arrayProjUniform);
 
+    //Remap
+    for(int i=0; i< (int)v->size(); i++){
+        for(int j=0; j< 4; j++){
+            int id=(int)((*v)[i][j]);
+            if(id >= 0){
+                (*v)[i][j]=allIds[id];
+              //  printf("%f\n", (*v)[i][j]);
+            }
+        }
+    }
+    int tex_size=512;
+
+    OSG_ALWAYS << "Texture Array Size: " <<uniqueIdCount <<endl;
+
+    osg::ref_ptr<osg::Texture2DArray> textureArray =new osg::Texture2DArray;
+    osg::Program* program = new osg::Program;
+    program->setName( "projective_tex" );
+    osg::ref_ptr<osg::Shader> lerpF=new osg::Shader( osg::Shader::FRAGMENT);
+    osg::ref_ptr<osg::Shader> lerpV=new osg::Shader( osg::Shader::VERTEX);
+    loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/projV.frag" );
+    loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/projV.vert" );
+    program->addShader(  lerpF );
+    program->addShader(  lerpV );
+    program->addBindAttribLocation(_projCoordAlias.second,_projCoordAlias.first);
+    textureArray->setTextureSize(tex_size,tex_size,uniqueIdCount);
+    stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
+
+    stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
+    stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
+    stateset->setDataVariance(osg::Object::STATIC);
+
+   /* map<int,int>::const_iterator end = allIds.end();
+    for (map<int,int>::const_iterator it = allIds.begin(); it != end; ++it)
+    {
+        std::cout << "Who(key = first): " << it->first;
+        std::cout << " Score(value = second): " << it->second << '\n';
+    }*/
+    return stateset;
+}
+void TexturingQuery::setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding)
+{
+    unsigned int index = alias.first;
+    const std::string& name = alias.second;
+    array->setName(name);
+    geom.setVertexAttribArray(index, array);
+    geom.setVertexAttribNormalize(index, normalize);
+    geom.setVertexAttribBinding(index, binding);
+
+    osg::notify(osg::NOTICE)<<"   vertex attrib("<<name<<", index="<<index<<", normalize="<<normalize<<" binding="<<binding<<")"<<std::endl;
+}
 void TexturingQuery::projectModel(osg::Geode *geode){
     if(!geode){
         fprintf(stderr,"Not valid geode\n");
         return;
     }
     for (unsigned int i=0; i<geode->getNumDrawables(); i++){
-        ProjectsToMap reproj;
+        reproj.clear();
 
         osg::Drawable *drawable = geode->getDrawable(i);
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+        geom->setUseDisplayList(false);
+        osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+        //setVertexAttrib(*geom, _vertexAlias, geom->getVertexArray(), false, osg::Geometry::BIND_PER_VERTEX);
+       // geom->setVertexArray(0);
+
         osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
         osg::Geometry::PrimitiveSetList::iterator itr;
          osg::Vec4Array *v=NULL;
+         osg::StateSet *stateset=NULL;
+
         for(itr=primitiveSets.begin(); itr!=primitiveSets.end(); ++itr){
             switch((*itr)->getMode()){
             case(osg::PrimitiveSet::TRIANGLES):
-                v=projectAllTriangles(*(*itr), *static_cast<const osg::Vec3Array*>(geom->getVertexArray()),reproj);
-                geom->setColorArray(v);
+                v=projectAllTriangles(*(*itr), *verts);
+                stateset=generateStateAndAtlasRemap(v);
+                setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
+                geom->setStateSet(stateset);
                 break;
             default:
                 OSG_FATAL << "Freakout shouldn't be anything but triangles\n";

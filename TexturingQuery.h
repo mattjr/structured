@@ -4,6 +4,7 @@
 #include <spatialindex/SpatialIndex.h>
 #include <osg/Geode>
 #include <osg/BoundingBox>
+#include <osg/Geometry>
 class ObjVisitor : public SpatialIndex::IVisitor
 {
 private:
@@ -35,7 +36,7 @@ public:
     void projectModel(osg::Geode *);
     class ProjectionCamera{
     public:
-        osg::Matrix m;
+        osg::Matrixf m;
         std::string filename;
         long id;
         osg::BoundingBox bb;
@@ -50,7 +51,7 @@ public:
 protected:
     typedef std::multimap<int,ProjectionCamera> ProjectsToMap;
     double getDistToCenter(osg::Vec3 v, ProjectionCamera cam);
-    const CamDists getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts,ProjectsToMap &reproj);
+    const CamDists getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts);
 
     std::string _bbox_file;
     SpatialIndex::ISpatialIndex* tree;
@@ -60,8 +61,16 @@ protected:
     double utilization;
     int capacity;
     MyDataStream *stream;
-    osg::Vec4Array* projectAllTriangles(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts,ProjectsToMap &reproj);
+    osg::Vec4Array* projectAllTriangles(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
+    osg::StateSet *generateStateAndAtlasRemap( osg::Vec4Array *v);
+    static const int TEXUNIT_ARRAY=0;
+    ProjectsToMap reproj;
 
+    typedef std::pair<unsigned int, std::string> AttributeAlias;
+    void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
+
+    AttributeAlias _vertexAlias;
+    AttributeAlias _projCoordAlias;
     CameraVector _cameras;
 
 

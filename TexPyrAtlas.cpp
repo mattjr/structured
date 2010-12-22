@@ -32,7 +32,7 @@ osg::ref_ptr<osg::Image> TexPyrAtlas::getImage(int index,int sizeIndex){
     osg::ref_ptr<osg::Image> img;
 
     if(index >= 0 && index < (int)_images.size() && _images[index].valid())
-        resizeImage(_images[index].get(),_downsampleSizes[sizeIndex],_downsampleSizes[sizeIndex],img,1);
+        resizeImage(_images[index].get(),_downsampleSizes[sizeIndex],_downsampleSizes[sizeIndex],img);
     return img;
 }
 bool

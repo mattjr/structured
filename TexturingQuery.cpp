@@ -410,7 +410,8 @@ osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v){
     }
     int tex_size=512;
 
-    loadTex(allIds);
+   std::vector<osg::ref_ptr<osg::Image> > textures= loadTex(allIds);
+
     OSG_ALWAYS << "Texture Array Size: " <<uniqueIdCount <<endl;
 
     osg::ref_ptr<osg::Texture2DArray> textureArray =new osg::Texture2DArray;
@@ -424,6 +425,10 @@ osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v){
     program->addShader(  lerpV );
     program->addBindAttribLocation(_projCoordAlias.second,_projCoordAlias.first);
     textureArray->setTextureSize(tex_size,tex_size,uniqueIdCount);
+
+    for(int i=0; i < (int)textures.size(); i++)
+        textureArray->setImage(i,textures[i].get());
+
     stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
 
     stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );

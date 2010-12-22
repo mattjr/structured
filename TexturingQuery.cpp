@@ -5,6 +5,7 @@
 #include <map>
 #include <osg/Texture2DArray>
 #include <osgDB/FileUtils>
+#include <osg/io_utils>
 using namespace SpatialIndex;
 using namespace std;
 // example of a Visitor pattern.
@@ -163,14 +164,15 @@ public:
     {
         double low[3], high[3];
         TexturingQuery::ProjectionCamera cam;
-
+        osg::Matrix m;
         m_fin >> cam.id >> cam.filename >> low[0] >> low[1] >> low[2] >> high[0] >> high[1] >> high[2]
-                >> cam.m(0,0) >>cam.m(0,1)>>cam.m(0,2) >>cam.m(0,3)
-                >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
-                >> cam.m(2,0) >>cam.m(2,1)>>cam.m(2,2) >>cam.m(2,3)
-                >> cam.m(3,0) >>cam.m(3,1)>>cam.m(3,2) >>cam.m(3,3);
+                >> m(0,0) >>m(0,1)>>m(0,2) >>m(0,3)
+                >> m(1,0) >>m(1,1)>>m(1,2) >>m(1,3)
+                >> m(2,0) >>m(2,1)>>m(2,2) >>m(2,3)
+                >> m(3,0) >>m(3,1)>>m(3,2) >>m(3,3);
         if (m_fin.good())
         {
+            cam.m=osg::Matrix::inverse(m);
             cam.bb = osg::BoundingBox(low[0],low[1],low[2],high[0],high[1],high[2]);
             m_camVec[cam.id]=cam;
             /*if (op != INSERT)
@@ -198,7 +200,7 @@ TexturingQuery::TexturingQuery(std::string bbox_file) : _bbox_file(bbox_file)
 {
     _vertexAlias = AttributeAlias(0, "osg_Vertex");
     _projCoordAlias = AttributeAlias(1, "osg_ProjCoord");
-
+    _atlasGen = new TexPyrAtlas("/home/mattjr/auvdata/r20090804_084719_scott_25_dense_repeat_auv5_deep/renav20090804/mesh/img");
     baseName="tmpStore";
     utilization=0.7;
     capacity=4;
@@ -351,6 +353,26 @@ bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
          return true;
       }
    }
+std::vector<osg::ref_ptr<osg::Image> >TexturingQuery::loadTex(map<int,int> allIds){
+   // _atlasGen->loadSources();
+    std::vector<osg::ref_ptr<osg::Image> > images(allIds.size());
+    std::vector<string> filenames;
+    map<int,int>::const_iterator end = allIds.end();
+        for (map<int,int>::const_iterator it = allIds.begin(); it != end; ++it)
+        {
+           filenames.push_back(_cameras[it->first].filename);
+      //      std::cout << " Score(value = second): " << it->second << '\n';
+        }
+
+        _atlasGen->loadSources(filenames);
+       end = allIds.end();
+            for (map<int,int>::const_iterator it = allIds.begin(); it != end; ++it)
+            {
+              images[it->second]=_atlasGen->getImage(it->second,0);
+          }
+        return images;
+}
+
 osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v){
     if(!v)
         return NULL;
@@ -370,6 +392,7 @@ osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v){
             }
         }
     }
+
     osg::ref_ptr<osg::Uniform> arrayProjUniform = new osg::Uniform(osg::Uniform::FLOAT_MAT4,
                                                                    "projMatrices", arrayProjMat.size());
     for (unsigned int i = 0; i < arrayProjMat.size(); ++i)
@@ -382,12 +405,12 @@ osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v){
             int id=(int)((*v)[i][j]);
             if(id >= 0){
                 (*v)[i][j]=allIds[id];
-              //  printf("%f\n", (*v)[i][j]);
             }
         }
     }
     int tex_size=512;
 
+    loadTex(allIds);
     OSG_ALWAYS << "Texture Array Size: " <<uniqueIdCount <<endl;
 
     osg::ref_ptr<osg::Texture2DArray> textureArray =new osg::Texture2DArray;

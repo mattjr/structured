@@ -1375,7 +1375,7 @@ int MyDataSet::_run()
     if (requiresGenerationOfTiles)
     {
         // dummy Viewer to get round silly Windows autoregistration problem for GraphicsWindowWin32.cpp
-        osgViewer::Viewer viewer;
+        //osgViewer::Viewer viewer;
         /*
         osg::ref_ptr<MyGraphicsContext> context;
 

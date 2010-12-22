@@ -2504,7 +2504,8 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	if(!no_vrip)
 	  sysres=system("./runvrip.py");
 	
-
+        if(!mgc)
+          mgc = new MyGraphicsContext();
         doQuadTreeVPB(bounds);
 
 

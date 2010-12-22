@@ -5,6 +5,7 @@
 #include <osg/Geode>
 #include <osg/BoundingBox>
 #include <osg/Geometry>
+#include "TexPyrAtlas.h"
 class ObjVisitor : public SpatialIndex::IVisitor
 {
 private:
@@ -68,9 +69,11 @@ protected:
 
     typedef std::pair<unsigned int, std::string> AttributeAlias;
     void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
+    std::vector<osg::ref_ptr<osg::Image> >loadTex(std::map<int,int> allIds);
 
     AttributeAlias _vertexAlias;
     AttributeAlias _projCoordAlias;
+    TexPyrAtlas *_atlasGen;
     CameraVector _cameras;
 
 

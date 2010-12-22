@@ -806,6 +806,7 @@ int main( int argc, char *argv[ ] )
 	    }
 	  }
 	  (*camMatrices)[iter->first]=osgm;
+         // std::cout << "S:" << osgm<<std::endl;
 	
 	}
       }

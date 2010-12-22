@@ -514,7 +514,6 @@ vector<Cell_Data> calc_cells( const vector<Stereo_Pose_Data> &poses,int method,d
   // m->_buildDestination(true);
 
   // vpb::Commandline cl;
-   //cl.processFile(vpb::Source::MODEL,"/home/mattjr/data/new2/mesh-diced/clipped-diced-0000_0000.ply", vpb::Commandline::ADD);
 
 
    // Root node of the binary tree has all poses

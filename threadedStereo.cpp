@@ -2506,7 +2506,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	
         if(!mgc)
           mgc = new MyGraphicsContext();
-        doQuadTreeVPB(bounds);
+        doQuadTreeVPB(bounds,calib->left_calib);
 
 
 

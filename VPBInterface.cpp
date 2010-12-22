@@ -2,13 +2,13 @@
 #include <string>
 #include <osgDB/ReadFile>
 #include "TexturingQuery.h"
-void doQuadTreeVPB(Bounds bounds){
+void doQuadTreeVPB(Bounds bounds,Camera_Calib &calib){
 
 vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
 char filename[1024];
-int numlod=1;
+int numlod=2;
 vpb::MyDataSet *m=new vpb::MyDataSet();
-m->_tq = new TexturingQuery("/home/mattjr/data/new2/mesh-quad/bbox.txt");
+m->_tq = new TexturingQuery("/home/mattjr/data/new3/mesh-quad/bbox.txt",calib);
 
 m->setDestinationName("real.ive");
 
@@ -16,7 +16,7 @@ m->setDestinationName("real.ive");
 
     for(int lod=0; lod < numlod+1; lod++){
 
-        sprintf(filename,"/home/mattjr/data/new2/mesh-quad/quad-lod%d.ply",lod);
+        sprintf(filename,"/home/mattjr/data/new3/mesh-quad/quad-lod%d.ply",lod);
 
         vpb::Source *sourceModel=new vpb::Source(vpb::Source::MODEL,std::string(filename));
         sourceModel->setMaxLevel(numlod-lod);

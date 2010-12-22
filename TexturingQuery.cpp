@@ -6,6 +6,7 @@
 #include <osg/Texture2DArray>
 #include <osgDB/FileUtils>
 #include <osg/io_utils>
+#include "libsnapper/auv_camera_geometry.hpp"
 using namespace SpatialIndex;
 using namespace std;
 // example of a Visitor pattern.
@@ -196,7 +197,7 @@ public:
 
 };
 
-TexturingQuery::TexturingQuery(std::string bbox_file) : _bbox_file(bbox_file)
+TexturingQuery::TexturingQuery(std::string bbox_file,Camera_Calib &calib) : _bbox_file(bbox_file),_calib(calib)
 {
     _vertexAlias = AttributeAlias(0, "osg_Vertex");
     _projCoordAlias = AttributeAlias(1, "osg_ProjCoord");
@@ -281,7 +282,12 @@ const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3
 }
 
 double TexturingQuery::getDistToCenter(osg::Vec3 v, ProjectionCamera cam){
-    return (v-cam.bb.center()).length2();
+    //return (v-cam.bb.center()).length2();
+    osg::Vec2 texC=reprojectPt(cam.m,v);
+    if(texC.x() < 0.0 || texC.x() > 1360.0 || texC.y() < 0.0 || texC.y() > 1024.0 )
+        return DBL_MAX;
+    else
+        return (texC-osg::Vec2(1360/2,1024/2)).length2();
 }
 
 
@@ -309,7 +315,7 @@ osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prs
             }
         }
     }
-
+    camIdxArr->resize(verts.size());
     for(int i=0; i<numIdx-2; i+=3){
         vector<int> tri_v;
         for(int k=0; k <3; k++){
@@ -318,9 +324,13 @@ osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prs
         const CamDists d=getClosest(tri_v,verts);
         osg::Vec4 camIdx(-1,-1,-1,-1);
         for(int v=0; v<(int)d.size() && v <4; v++){
-            camIdx[v]=d[v].first;
+            if(d[v].first >= 0)
+                camIdx[v]=d[v].first;
         }
-        camIdxArr->push_back(camIdx);
+ // if(d.size())
+   //    cout << "i: "<< tri_v[0] << " close "<< _cameras[d[0].first].m*verts[tri_v[0]] << " local " << d[0].first<<" " << verts[tri_v[0]] << "\n" <<_cameras[d[0].first].m <<"\n" << reprojectPt(_cameras[d[0].first].m,verts[tri_v[0]]) <<endl;
+    for(int k=0; k <3; k++)
+        camIdxArr->at(prset.index(i+k))=camIdx;
     }
  /*   cout << "Elements in m: " << endl;
 
@@ -353,31 +363,48 @@ bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
          return true;
       }
    }
-std::vector<osg::ref_ptr<osg::Image> >TexturingQuery::loadTex(map<int,int> allIds){
-   // _atlasGen->loadSources();
+std::vector<osg::ref_ptr<osg::Image> >TexturingQuery::loadTex(map<SpatialIndex::id_type,int> allIds){
     std::vector<osg::ref_ptr<osg::Image> > images(allIds.size());
-    std::vector<string> filenames;
-    map<int,int>::const_iterator end = allIds.end();
-        for (map<int,int>::const_iterator it = allIds.begin(); it != end; ++it)
+    std::vector<string> filenames(allIds.size());
+    map<SpatialIndex::id_type,int>::const_iterator end = allIds.end();
+        for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
         {
-           filenames.push_back(_cameras[it->first].filename);
-      //      std::cout << " Score(value = second): " << it->second << '\n';
+           filenames[it->second]=_cameras[it->first].filename;
+        //   std::cout << " loading " <<it->first << " : " << it->second << '\n';
         }
 
         _atlasGen->loadSources(filenames);
        end = allIds.end();
-            for (map<int,int>::const_iterator it = allIds.begin(); it != end; ++it)
+            for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
             {
               images[it->second]=_atlasGen->getImage(it->second,0);
           }
         return images;
+}
+osg::Vec2 TexturingQuery::reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v){
+
+    osg::Vec3 cam_frame=mat*v;
+    osg::Vec3 und_n;
+    und_n.x()=cam_frame.x()/cam_frame.z();
+    und_n.y()=cam_frame.y()/cam_frame.z();
+    double r_2 = pow(und_n.x(),2) + pow(und_n.y(),2);
+    double k_radial = 1 + _calib.kc1*r_2 + _calib.kc2*pow(r_2,2) + _calib.kc5*pow(r_2,3);
+    double delta_x = 2*_calib.kc3*und_n.x()*und_n.y() + _calib.kc4*(r_2 + 2*pow(und_n.x(),2));
+    double delta_y = _calib.kc3*(r_2 + 2*pow(und_n.y(),2)) + 2*_calib.kc4*und_n.x()*und_n.y();
+    osg::Matrix m1=osg::Matrix::scale(_calib.fcx,_calib.fcy,1);
+    osg::Matrix m2=osg::Matrix::translate(_calib.ccx,_calib.ccy,0);
+    osg::Matrix k1=osg::Matrix::scale(k_radial,k_radial,1);
+    osg::Matrix delta=osg::Matrix::translate(delta_x,delta_y,0);
+    osg::Vec3 norm_c=k1*und_n*delta;
+    osg::Vec3 pixel_c=(m1*norm_c*m2);
+    return osg::Vec2(pixel_c.x(),pixel_c.y());
 }
 
 osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v){
     if(!v)
         return NULL;
 
-    map<int,int> allIds;
+    map<SpatialIndex::id_type,int> allIds;
     unsigned int uniqueIdCount=0;
     vector<osg::Matrixf> arrayProjMat;
     osg::StateSet *stateset= new osg::StateSet;
@@ -392,8 +419,66 @@ osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v){
             }
         }
     }
+    //  osg::Matrix texScale(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1);
+    //texScale(0,0)=1.0/(double)(proj_tex_size);
+    /// texScale(1,1)=1.0/(double)(proj_tex_size);
+    // cout << "tex Scale "<<texScale <<endl;
+   // cout <<"Reproj for:\n";
+    for(int i=0; i< (int)arrayProjMat.size(); i++){
+        osg::Matrixf mat=arrayProjMat[i];
+        osg::Vec3 v1(1956.18,3939.21,47.655);
+//        std::cout << i <<": " <<mat*v1 <<" ";
+        osg::Vec3 cam_frame=mat*v1;
+        cam_frame=osg::Vec3(0.183594,1.43823,5.11908);
+        osg::Vec3 und_n;
+        und_n.x()=cam_frame.x()/cam_frame.z();
+        und_n.y()=cam_frame.y()/cam_frame.z();
+       // cout <<"Norm Undist" << und_n<<endl;
+        double r_2 = pow(und_n.x(),2) + pow(und_n.y(),2);
+        double k_radial = 1 + _calib.kc1*r_2 + _calib.kc2*pow(r_2,2) + _calib.kc5*pow(r_2,3);
+        double delta_x = 2*_calib.kc3*und_n.x()*und_n.y() + _calib.kc4*(r_2 + 2*pow(und_n.x(),2));
+        double delta_y = _calib.kc3*(r_2 + 2*pow(und_n.y(),2)) + 2*_calib.kc4*und_n.x()*und_n.y();
+        osg::Matrix m1=osg::Matrix::scale(_calib.fcx,_calib.fcy,1);
+        osg::Matrix m2=osg::Matrix::translate(_calib.ccx,_calib.ccy,0);
+        osg::Matrix k1=osg::Matrix::scale(k_radial,k_radial,1);
+        osg::Matrix delta=osg::Matrix::translate(delta_x,delta_y,0);
+        osg::Vec3 norm_c=k1*und_n*delta;
+        //cout <<"Norm dist" << norm_c<<endl;
 
-    osg::ref_ptr<osg::Uniform> arrayProjUniform = new osg::Uniform(osg::Uniform::FLOAT_MAT4,
+        osg::Vec3 pixel_c=(m1*norm_c*m2);
+
+
+       // cout << "pixel : "<< pixel_c;
+
+      /*  osg::Vec3 v1(1956.18,3939.21,47.655);
+        std::cout << i <<": " <<mat*v1 <<" ";
+        osg::Vec3 cam_frame=mat*v1;
+        osg::Vec3 und_n;
+        und_n.x()=cam_frame.x()/cam_frame.z();
+        und_n.y()=cam_frame.y()/cam_frame.z();
+        double r_2 = pow(und_n.x(),2) + pow(und_n.y(),2);
+          double k_radial = 1 + _calib.kc1*r_2 + _calib.kc2*pow(r_2,2) + _calib.kc5*pow(r_2,3);
+          double delta_x = 2*_calib.kc3*und_n.x()*und_n.y() + _calib.kc4*(r_2 + 2*pow(und_n.x(),2));
+          double delta_y = _calib.kc3*(r_2 + 2*pow(und_n.y(),2)) + 2*_calib.kc4*und_n.x()*und_n.y();
+
+          double x_nd = k_radial*und_n.x() + delta_x;
+          double y_nd = k_radial*und_n.y() + delta_y;
+          std::cout <<"inter 2 " << x_nd << " "<< y_nd<<endl;
+
+        osg::Vec3 pixel;
+        osg::Matrix normal_ro=(osg::Matrix::translate(_calib.ccx,_calib.ccy,0)*osg::Matrix::scale(_calib.fcx,
+                                                                                         _calib.fcy,1));
+
+        pixel.x()=_calib.fcx*x_nd  + _calib.ccx;
+        pixel.y()=_calib.fcy*y_nd  + _calib.ccy;
+        cout << "pixel : "<<pixel;*/
+        //double u,v;
+       // libsnapper::camera_frame_to_dist_pixel_coords(_calib,cam_frame.x(),cam_frame.y(),cam_frame.z(),
+         //                                 u,v);
+        //cout <<" good " << u << " " << v << endl;
+
+    }
+     osg::ref_ptr<osg::Uniform> arrayProjUniform = new osg::Uniform(osg::Uniform::FLOAT_MAT4,
                                                                    "projMatrices", arrayProjMat.size());
     for (unsigned int i = 0; i < arrayProjMat.size(); ++i)
         arrayProjUniform->setElement(i, arrayProjMat[i]);
@@ -403,18 +488,25 @@ osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v){
     for(int i=0; i< (int)v->size(); i++){
         for(int j=0; j< 4; j++){
             int id=(int)((*v)[i][j]);
-            if(id >= 0){
+            if(id >= 0 && allIds.count(id)){
                 (*v)[i][j]=allIds[id];
+               // printf("%f = %d\n",(*v)[i][j],id);
             }
         }
     }
+//for(int id=0; id <10; id++)
+  //  printf("Full %d=%d\n",id,allIds[id]);
+//cout << _cameras[8].m<< " 8 \n";
+
     int tex_size=512;
 
    std::vector<osg::ref_ptr<osg::Image> > textures= loadTex(allIds);
 
     OSG_ALWAYS << "Texture Array Size: " <<uniqueIdCount <<endl;
+    if(uniqueIdCount != textures.size())
+        OSG_FATAL << "uniqueIdCount != textures.size())" <<uniqueIdCount <<" "<< textures.size()<< endl;
 
-    osg::ref_ptr<osg::Texture2DArray> textureArray =new osg::Texture2DArray;
+osg::ref_ptr<osg::Texture2DArray> textureArray =new osg::Texture2DArray;
     osg::Program* program = new osg::Program;
     program->setName( "projective_tex" );
     osg::ref_ptr<osg::Shader> lerpF=new osg::Shader( osg::Shader::FRAGMENT);
@@ -430,8 +522,16 @@ osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v){
         textureArray->setImage(i,textures[i].get());
 
     stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
-
     stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
+
+    stateset->addUniform( new osg::Uniform("fc_cc", osg::Vec4(_calib.fcx,_calib.fcy,
+                                                              _calib.ccx,_calib.ccy)) );
+
+
+    stateset->addUniform( new osg::Uniform("kc1234", osg::Vec4(_calib.kc1,_calib.kc2,_calib.kc3,
+                                                              _calib.kc4)) );
+
+    stateset->addUniform( new osg::Uniform("kc5", (float)_calib.kc5 ));
     stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
     stateset->setDataVariance(osg::Object::STATIC);
 
@@ -445,6 +545,8 @@ osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v){
 }
 void TexturingQuery::setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding)
 {
+    if(!array)
+        return;
     unsigned int index = alias.first;
     const std::string& name = alias.second;
     array->setName(name);
@@ -478,8 +580,10 @@ void TexturingQuery::projectModel(osg::Geode *geode){
             switch((*itr)->getMode()){
             case(osg::PrimitiveSet::TRIANGLES):
                 v=projectAllTriangles(*(*itr), *verts);
-                stateset=generateStateAndAtlasRemap(v);
-                setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
+                if(v){
+                    stateset=generateStateAndAtlasRemap(v);
+                    setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
+                }
                 geom->setStateSet(stateset);
                 break;
             default:

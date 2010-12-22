@@ -6,6 +6,8 @@
 #include <osg/BoundingBox>
 #include <osg/Geometry>
 #include "TexPyrAtlas.h"
+#include <libsnapper/auv_camera_calib.hpp>
+using libsnapper::Camera_Calib;
 class ObjVisitor : public SpatialIndex::IVisitor
 {
 private:
@@ -32,7 +34,7 @@ typedef std::vector<std::pair<SpatialIndex::id_type,double> > CamDists;
 class TexturingQuery
 {
 public:
-    TexturingQuery(std::string bbox_file);
+    TexturingQuery(std::string bbox_file,Camera_Calib &calib);
     ~TexturingQuery();
     void projectModel(osg::Geode *);
     class ProjectionCamera{
@@ -53,8 +55,9 @@ protected:
     typedef std::multimap<int,ProjectionCamera> ProjectsToMap;
     double getDistToCenter(osg::Vec3 v, ProjectionCamera cam);
     const CamDists getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts);
-
     std::string _bbox_file;
+    Camera_Calib _calib;
+
     SpatialIndex::ISpatialIndex* tree;
     SpatialIndex::StorageManager::IBuffer* file;
     SpatialIndex::IStorageManager* diskfile;
@@ -69,8 +72,8 @@ protected:
 
     typedef std::pair<unsigned int, std::string> AttributeAlias;
     void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
-    std::vector<osg::ref_ptr<osg::Image> >loadTex(std::map<int,int> allIds);
-
+    std::vector<osg::ref_ptr<osg::Image> >loadTex(std::map<SpatialIndex::id_type,int> allIds);
+    osg::Vec2 reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v);
     AttributeAlias _vertexAlias;
     AttributeAlias _projCoordAlias;
     TexPyrAtlas *_atlasGen;

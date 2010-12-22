@@ -358,16 +358,7 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
                 texCoordsArray->at(prset.index(i+k))=d[0].uv;
         }
     }
-    /*   cout << "Elements in m: " << endl;
 
-      for (multimap<int, ProjectionCamera>::iterator it = reproj.begin();
-               it != reproj.end();
-           ++it)
-
-       {
-              cout << "  [" << (*it).first << ": " << reproj.count((*it).first) << "]" << endl;
-       }
-*/
     osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
 
     OSG_NOTICE << "Time for projectAllTriangles = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
@@ -543,6 +534,8 @@ void TexturingQuery::projectModel(osg::Geode *geode,int texSizeIdx){
             OSG_NOTICE << "Empty mesh continuing!" <<endl;
             continue;
         }
+        OSG_NOTICE << "\tModel Size: "<< verts->size()<<endl;
+
         osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
         osg::Geometry::PrimitiveSetList::iterator itr;
         osg::ref_ptr<osg::Vec4Array> v= new osg::Vec4Array;

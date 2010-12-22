@@ -1111,28 +1111,28 @@ void MyDataSet::_readRow(Row& row)
                                                          DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
                                                                              tile->_extents._max.y(),
                                                                              DBL_MAX));
-                    Clipper clipper(ext_bbox);
+                    //Clipper clipper(ext_bbox);
                     int texSizeIdx=0;
 
                     if(tile->_level == 1){
-                        texSizeIdx=0;
-                        clipper.setColor(osg::Vec4(1,0,0,1));
+                        texSizeIdx=1;
+          //              clipper.setColor(osg::Vec4(1,0,0,1));
                     }
                     else if(tile->_level == 2){
                         texSizeIdx=0;
-                        clipper.setColor(osg::Vec4(0,1,0,1));
+        //                clipper.setColor(osg::Vec4(0,1,0,1));
                     }
                     else if(tile->_level == 3){
                         texSizeIdx=0;
-                        clipper.setColor(osg::Vec4(0,0.5,0.5,1));
+      //                  clipper.setColor(osg::Vec4(0,0.5,0.5,1));
                     }
                     else if(tile->_level == 0){
                         texSizeIdx=2;
-                        clipper.setColor(osg::Vec4(0,0,1,1));
+    //                    clipper.setColor(osg::Vec4(0,0,1,1));
                     }else
                         texSizeIdx=0;
 
-                    clipper.setApplyColor(true);
+  //                  clipper.setApplyColor(true);
                     //  osg::ref_ptr<osg::Node> root = (osg::Node*)(*itr)->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
 
                     //   root->accept(clipper);

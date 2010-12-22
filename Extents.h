@@ -248,58 +248,12 @@ class MyDataSet :  public DataSet
 
         friend class DestinationTile;
 
-        osg::ref_ptr<ThreadPool> _readThreadPool;
-        osg::ref_ptr<ThreadPool> _writeThreadPool;
 
         void _readRow(Row& row);
          void _writeRow(Row& row);
-       /* void _equalizeRow(Row& row);
-        void _writeRow(Row& row);*/
          void init();
          MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
 
-/*
-        void init();
-
-        osg::Node* decorateWithTerrain(osg::Node* subgraph);
-        osg::Node* decorateWithCoordinateSystemNode(osg::Node* subgraph);
-        osg::Node* decorateWithMultiTextureControl(osg::Node* subgraph);
-
-        bool computeCoverage(const GeospatialExtents& extents, int level, int& minX, int& minY, int& maxX, int& maxY);
-        bool computeOptimumLevel(Source* source, int maxLevel, int& level);
-        bool computeOptimumTileSystemDimensions(int& C1, int& R1);
-        int computeMaximumLevel(int maxNumLevels);
-        bool prepareForDestinationGraphCreation();
-        void selectAppropriateSplitLevels();
-
-        osg::ref_ptr<CompositeSource>               _sourceGraph;
-
-        osg::ref_ptr<CompositeDestination>          _destinationGraph;
-
-        QuadMap                                     _quadMap;
-
-        osg::ref_ptr<osg::Node>                     _rootNode;
-        osg::ref_ptr<osg::State>                    _state;
-
-        osg::ref_ptr<osgDB::Archive>                _archive;
-
-        unsigned int                                _numTextureLevels;
-        osg::ref_ptr<osg::CoordinateSystemNode>     _intermediateCoordinateSystem;
-
-        osg::ref_ptr<Task>                          _taskFile;
-
-        osg::ref_ptr<ObjectPlacer>                  _modelPlacer;
-        osg::ref_ptr<ObjectPlacer>                  _shapeFilePlacer;
-
-        GeospatialExtents                           _destinationExtents;
-        int                                         _C1;
-        int                                         _R1;
-
-        bool                                        _newDestinationGraph;
-
-        std::string                                 _taskOutputDirectory;
-
-        osg::ref_ptr<osgDB::DatabaseRevision>       _databaseRevision;*/
 };
 
 }

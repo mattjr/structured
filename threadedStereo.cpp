@@ -2384,7 +2384,16 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(quadmergecmds_fp);
     fclose(diced_fp);
-    
+    std::vector<std::vector<string> > datalist_lod;
+    for(int lod=0; lod < 2; lod ++){
+        std::vector<string> level;
+        for(int i=0; i <(int)quad_cells.size(); i++){
+            char tmp[1024];
+            sprintf(tmp,"mesh-quad/clipped-diced-%08d-lod%d.ply",i,lod);
+            level.push_back(tmp);
+        }
+        datalist_lod.push_back(level);
+    }
     if(output_uv_file)
       fclose(uv_fp);
     if(output_3ds)
@@ -2506,7 +2515,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	
         if(!mgc)
           mgc = new MyGraphicsContext();
-        doQuadTreeVPB(bounds,calib->left_calib);
+        doQuadTreeVPB(datalist_lod,bounds,calib->left_calib);
 
 
 

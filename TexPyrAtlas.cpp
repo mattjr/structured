@@ -21,7 +21,10 @@ void TexPyrAtlas::loadSources(std::vector<std::string> imageList){
         if(_images[i].valid()){
             texture->setImage(_images[i]);
             bool resizePowerOfTwo=true;
+            osg::NotifySeverity saved_ns=osg::getNotifyLevel();
+            osg::setNotifyLevel(osg::FATAL);
             vpb::generateMipMap(*_state,*texture,resizePowerOfTwo,vpb::BuildOptions::GL_DRIVER);
+            osg::setNotifyLevel(saved_ns);
         }else{
             OSG_ALWAYS << imageList[i] << " not found or couldn't be loaded"<<std::endl;
         }

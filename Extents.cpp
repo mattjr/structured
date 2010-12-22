@@ -1112,21 +1112,31 @@ void MyDataSet::_readRow(Row& row)
                                                                              tile->_extents._max.y(),
                                                                              DBL_MAX));
                     Clipper clipper(ext_bbox);
-                    if(tile->_level == 1)
+                    int texSizeIdx=0;
+
+                    if(tile->_level == 1){
+                        texSizeIdx=1;
                         clipper.setColor(osg::Vec4(1,0,0,1));
-                    else if(tile->_level == 2)
+                    }
+                    else if(tile->_level == 2){
+                        texSizeIdx=0;
                         clipper.setColor(osg::Vec4(0,1,0,1));
-                    else if(tile->_level == 3)
+                    }
+                    else if(tile->_level == 3){
+                        texSizeIdx=2;
                         clipper.setColor(osg::Vec4(0,0.5,0.5,1));
-                    else if(tile->_level == 0)
+                    }
+                    else if(tile->_level == 0){
+                        texSizeIdx=2;
                         clipper.setColor(osg::Vec4(0,0,1,1));
+                    }
                     clipper.setApplyColor(true);
                     //  osg::ref_ptr<osg::Node> root = (osg::Node*)(*itr)->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
 
                     //   root->accept(clipper);
                     ClippedCopy cl_cp(ext_bbox);
                     osg::ref_ptr<osg::Node> root =cl_cp.makeCopy((osg::Geode*)(*itr)->getSourceData()->_model.get());
-                    _tq->projectModel(dynamic_cast<osg::Geode*>(root.get()));
+                    _tq->projectModel(dynamic_cast<osg::Geode*>(root.get()),texSizeIdx);
                     //(*itr)->getSourceData()->
                     //    tile->_models->
                     if(!tile->_models){

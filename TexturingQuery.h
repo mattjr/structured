@@ -36,7 +36,7 @@ class TexturingQuery
 public:
     TexturingQuery(std::string bbox_file,Camera_Calib &calib);
     ~TexturingQuery();
-    void projectModel(osg::Geode *);
+    void projectModel(osg::Geode *,int texSizeIdx);
     class ProjectionCamera{
     public:
         osg::Matrixf m;
@@ -66,13 +66,13 @@ protected:
     int capacity;
     MyDataStream *stream;
     osg::Vec4Array* projectAllTriangles(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
-    osg::StateSet *generateStateAndAtlasRemap( osg::Vec4Array *v);
+    osg::StateSet *generateStateAndAtlasRemap( osg::Vec4Array *v, int texSizeIdx);
     static const int TEXUNIT_ARRAY=0;
     ProjectsToMap reproj;
 
     typedef std::pair<unsigned int, std::string> AttributeAlias;
     void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
-    std::vector<osg::ref_ptr<osg::Image> >loadTex(std::map<SpatialIndex::id_type,int> allIds);
+    std::vector<osg::ref_ptr<osg::Image> >loadTex(std::map<SpatialIndex::id_type,int> allIds,int sizeIdx);
     osg::Vec2 reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v);
     AttributeAlias _vertexAlias;
     AttributeAlias _projCoordAlias;

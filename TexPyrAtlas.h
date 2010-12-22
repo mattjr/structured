@@ -9,7 +9,7 @@ public:
     TexPyrAtlas(std::string imgdir);
     void loadSources(std::vector<std::string> imageList);
     osg::ref_ptr<osg::Image> getImage(int index,int sizeIndex);
-
+    int getDownsampleSize(int idx){if(idx > (int) _downsampleSizes.size()) return 0; return _downsampleSizes[idx];}
 protected:
      osgUtil::Optimizer::TextureAtlasBuilder _tb;
      std::vector<int> _downsampleSizes;

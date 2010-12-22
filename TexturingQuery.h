@@ -29,7 +29,14 @@ public:
     void visitData(std::vector<const SpatialIndex::IData*>& v);
 };
 class MyDataStream;
-typedef std::vector<std::pair<SpatialIndex::id_type,double> > CamDists;
+class CamProjAndDist{
+public:
+    SpatialIndex::id_type id;
+    double dist;
+    osg::Vec2 uv;
+};
+
+typedef std::vector<CamProjAndDist> CamDists;
 
 class TexturingQuery
 {
@@ -46,14 +53,16 @@ public:
     };
     typedef std::map<SpatialIndex::id_type,ProjectionCamera>  CameraVector;
     struct sort_pred {
-        bool operator()(const std::pair<SpatialIndex::id_type,double> &left, const std::pair<SpatialIndex::id_type,double> &right) {
-            return left.second < right.second;
+        bool operator()(const CamProjAndDist &left, const CamProjAndDist &right) {
+            return left.dist < right.dist;
         }
     };
 
 protected:
     typedef std::multimap<int,ProjectionCamera> ProjectsToMap;
     double getDistToCenter(osg::Vec3 v, ProjectionCamera cam);
+    void findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,SpatialIndex::id_type id);
+
     const CamDists getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts);
     std::string _bbox_file;
     Camera_Calib _calib;
@@ -64,12 +73,14 @@ protected:
     std::string baseName;
     double utilization;
     int capacity;
+    bool _useTextureArray;
     MyDataStream *stream;
-    osg::Vec4Array* projectAllTriangles(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
-    osg::StateSet *generateStateAndAtlasRemap( osg::Vec4Array *v, int texSizeIdx);
+    bool projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Array* texCoordsArray,
+                                             const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
+    osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v, int texSizeIdx);
     static const int TEXUNIT_ARRAY=0;
     ProjectsToMap reproj;
-
+    osg::Vec2 _origImageSize;
     typedef std::pair<unsigned int, std::string> AttributeAlias;
     void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
     std::vector<osg::ref_ptr<osg::Image> >loadTex(std::map<SpatialIndex::id_type,int> allIds,int sizeIdx);

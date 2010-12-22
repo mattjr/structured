@@ -714,7 +714,7 @@ MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int c
     // create the name
     std::ostringstream os;
     os << _tileBasename << "_L"<<currentLevel<<"_X"<<currentX<<"_Y"<<currentY;
-    std::cout << os.str() << "extents " << extents._min  << " " << extents._max<<std::endl;
+    //std::cout << os.str() << "extents " << extents._min  << " " << extents._max<<std::endl;
     destinationGraph->_parent = parent;
     destinationGraph->_name = os.str();
     destinationGraph->_level = currentLevel;
@@ -853,7 +853,7 @@ void MyDataSet::createNewDestinationGraph(
             }
         }
     }
-    printf("Total Size %d\n",(int)_quadMap.size());
+   // printf("Total Size %d\n",(int)_quadMap.size());
     // now extend the sources upwards where required.
     for(QuadMap::iterator qitr = _quadMap.begin();
     qitr != _quadMap.end();
@@ -964,7 +964,7 @@ void MyDataSet::createNewDestinationGraph(
         osg::CoordinateSystemNode* cs = _intermediateCoordinateSystem.get();
 
         const SpatialProperties& sp = sd->computeSpatialProperties(cs);
-        std::cout << sp._extents._min << " " << sp._extents._max << " " << source->getFileName() <<std::endl;
+        //std::cout << sp._extents._min << " " << sp._extents._max << " " << source->getFileName() <<std::endl;
         if (!sp._extents.intersects(extents))
         {
             // skip this source since it doesn't overlap this tile.
@@ -984,7 +984,7 @@ void MyDataSet::createNewDestinationGraph(
         }
 */
 
-        log(osg::ALWAYS,"     opt level = %i",k);
+       // log(osg::ALWAYS,"     opt level = %i",k);
 
         int startLevel = 0; // getGenerateSubtile() ? getSubtileLevel() : 0;
 
@@ -1031,7 +1031,7 @@ void MyDataSet::createNewDestinationGraph(
                         CompositeDestination* cd = getComposite(l,i,j);
                         if (!cd || !cd->intersects(sp) || (l <(int)source->getMinLevel() || l > (int)source->getMaxLevel())) continue;
 
-                        printf("Tile %d %d_%d %s\n",l ,i,j,source->getFileName().c_str());
+                       // printf("Tile %d %d_%d %s\n",l ,i,j,source->getFileName().c_str());
                         /*  if (l==k)
                         {
                             cd->addSource(source);
@@ -1104,8 +1104,8 @@ void MyDataSet::_readRow(Row& row)
                 itr != tile->_sources.end();
                 ++itr)
                 {
-                    log(osg::NOTICE,"    %s",(*itr)->getFileName().c_str());
-                    log(osg::NOTICE,"    %x",(*itr)->getSourceData()->_model.get());
+                    log(osg::NOTICE,"   source:%s",(*itr)->getFileName().c_str());
+                 //   log(osg::NOTICE,"    %x",(*itr)->getSourceData()->_model.get());
                     osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
                                                          tile->_extents._min.y(),
                                                          DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
@@ -1115,7 +1115,7 @@ void MyDataSet::_readRow(Row& row)
                     int texSizeIdx=0;
 
                     if(tile->_level == 1){
-                        texSizeIdx=1;
+                        texSizeIdx=0;
                         clipper.setColor(osg::Vec4(1,0,0,1));
                     }
                     else if(tile->_level == 2){
@@ -1123,13 +1123,15 @@ void MyDataSet::_readRow(Row& row)
                         clipper.setColor(osg::Vec4(0,1,0,1));
                     }
                     else if(tile->_level == 3){
-                        texSizeIdx=2;
+                        texSizeIdx=0;
                         clipper.setColor(osg::Vec4(0,0.5,0.5,1));
                     }
                     else if(tile->_level == 0){
                         texSizeIdx=2;
                         clipper.setColor(osg::Vec4(0,0,1,1));
-                    }
+                    }else
+                        texSizeIdx=0;
+
                     clipper.setApplyColor(true);
                     //  osg::ref_ptr<osg::Node> root = (osg::Node*)(*itr)->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
 
@@ -1154,14 +1156,14 @@ void MyDataSet::_readRow(Row& row)
 
 void ClippedCopy::AnalyzePrimSet(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts)
 {
-    std::cout  << "Prim set type "<< prset.getMode() << std::endl;
+    //std::cout  << "Prim set type "<< prset.getMode() << std::endl;
     std::vector<int> vertRemap(verts.size(),-1);
     if(!_triangles.valid())
         _triangles = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
     if(1)
     {
         unsigned int ic;
-        unsigned int nprim=0;
+        //unsigned int nprim=0;
         //unsigned int numValid=0;
         for (ic=0; ic < prset.getNumIndices(); ic++)
         {
@@ -1184,7 +1186,7 @@ void ClippedCopy::AnalyzePrimSet(const osg::PrimitiveSet& prset, const osg::Vec3
         {
         case osg::PrimitiveSet::TRIANGLES: // get vertices of triangle
             {
-                std::cout << "Triangles "<< nprim << " is index "<<prset.index(ic) << std::endl;
+               // std::cout << "Triangles "<< nprim << " is index "<<prset.index(ic) << std::endl;
                 for(unsigned int i2=0; i2<prset.getNumIndices()-2; i2+=3)
                 {
                     std::vector<bool> outside(3,false);

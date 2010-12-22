@@ -39,7 +39,7 @@ void ObjVisitor::visitData(const SpatialIndex::IData& d)
     SpatialIndex::Region *r = new SpatialIndex::Region();
     pS->getMBR(*r);
      std::cout <<"found shape: " << *r << " dimension: " <<pS->getDimension() << std::endl;*/
-/*
+    /*
 
     // data should be an array of characters representing a Region as a string.
     uint8_t* data = 0;
@@ -197,21 +197,23 @@ public:
 
 };
 
-TexturingQuery::TexturingQuery(std::string bbox_file,Camera_Calib &calib) : _bbox_file(bbox_file),_calib(calib)
+TexturingQuery::TexturingQuery(std::string bbox_file,Camera_Calib &calib) : _bbox_file(bbox_file),_calib(calib),   _origImageSize(1360,1024)
 {
+    _useTextureArray=true;
     _vertexAlias = AttributeAlias(0, "osg_Vertex");
     _projCoordAlias = AttributeAlias(1, "osg_ProjCoord");
     _atlasGen = new TexPyrAtlas("/home/mattjr/auvdata/r20090804_084719_scott_25_dense_repeat_auv5_deep/renav20090804/mesh/img");
     baseName="tmpStore";
     utilization=0.7;
     capacity=4;
+
     diskfile = StorageManager::createNewDiskStorageManager(baseName, 4096);
     // Create a new storage manager with the provided base name and a 4K page size.
 
     file = StorageManager::createNewRandomEvictionsBuffer(*diskfile, 10, false);
     // applies a main memory random buffer on top of the persistent storage manager
     // (LRU buffer, etc can be created the same way).
-     stream = new MyDataStream(_bbox_file,_cameras);
+    stream = new MyDataStream(_bbox_file,_cameras);
 
     // Create and bulk load a new RTree with dimensionality 3, using "file" as
     // the StorageManager and the RSTAR splitting policy.
@@ -251,7 +253,7 @@ const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3
         for (multimap<int, ProjectionCamera>::iterator it2 = ppp.first;
              it2 != ppp.second;
              ++it2){
-         //   printf("here %d %d\n",(*it2).second.id,i);
+            //   printf("here %d %d\n",(*it2).second.id,i);
             cam_counter.insert(make_pair<long,int>((*it2).second.id,i));
         }
     }
@@ -259,7 +261,7 @@ const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3
     avgV.y()/=3.0;
     avgV.z()/=3.0;
 
-   // printf("Size of original %d %d\n",cam_counter.size(),tri_v.size());
+    // printf("Size of original %d %d\n",cam_counter.size(),tri_v.size());
     set<SpatialIndex::id_type> seeninalltri;
     for (multimap<SpatialIndex::id_type, int>::iterator it = cam_counter.begin();
     it != cam_counter.end();
@@ -270,10 +272,12 @@ const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3
     }
 
     for(set<SpatialIndex::id_type>::iterator it=seeninalltri.begin(); it != seeninalltri.end(); ++it){
-        orderedProj.push_back(make_pair<SpatialIndex::id_type,double>((*it),getDistToCenter(avgV,_cameras[(*it)])));
+        CamProjAndDist tmp;
+        findCamProjAndDist(tmp,avgV,(*it));
+        orderedProj.push_back(tmp);
     }
     std::sort(orderedProj.begin(), orderedProj.end(), sort_pred());
-  /* printf("New Tri %d\n",orderedProj.size());
+    /* printf("New Tri %d\n",orderedProj.size());
     for(int i=0; i < orderedProj.size(); i++)
         printf("ID: %d Dist: %f\n",orderedProj[i].first,orderedProj[i].second);
    // printf("Size of reproject %d\n",seeninalltri.size());
@@ -281,8 +285,23 @@ const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3
     return orderedProj;
 }
 
+void TexturingQuery::findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,SpatialIndex::id_type id){
+    cpad.id=id;
+    osg::Vec2 texC=reprojectPt(_cameras[id].m,v);
+    if(texC.x() < 0.0 || texC.x() > _origImageSize.x() || texC.y() < 0.0 || texC.y() > _origImageSize.y() )
+        cpad.dist=DBL_MAX;
+    else
+        cpad.dist=(texC-osg::Vec2(_origImageSize.x()/2,_origImageSize.y()/2)).length2();
+    osg::Vec2 ratioPow2;
+    ratioPow2.x()=(osg::Image::computeNearestPowerOfTwo(_origImageSize.x())/_origImageSize.x());
+    ratioPow2.y()=(osg::Image::computeNearestPowerOfTwo(_origImageSize.y())/_origImageSize.y());
+    texC.x()*=ratioPow2.x();
+    texC.y()*=ratioPow2.y();
+    cpad.uv.x()=texC.x()/_origImageSize.x();
+    cpad.uv.y()=texC.y()/_origImageSize.y();
+
+}
 double TexturingQuery::getDistToCenter(osg::Vec3 v, ProjectionCamera cam){
-    //return (v-cam.bb.center()).length2();
     osg::Vec2 texC=reprojectPt(cam.m,v);
     if(texC.x() < 0.0 || texC.x() > 1360.0 || texC.y() < 0.0 || texC.y() > 1024.0 )
         return DBL_MAX;
@@ -291,12 +310,15 @@ double TexturingQuery::getDistToCenter(osg::Vec3 v, ProjectionCamera cam){
 }
 
 
-osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prset, const osg::Vec3Array &verts){
+bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Array* texCoordsArray,
+                                         const osg::PrimitiveSet& prset, const osg::Vec3Array &verts){
     int numIdx=prset.getNumIndices();
+    osg::Timer_t before_computeMax = osg::Timer::instance()->tick();
 
-    if(numIdx < 3)
-        return NULL;
-    osg::Vec4Array* camIdxArr = new osg::Vec4Array;
+
+
+    if(numIdx < 3 || !camIdxArr)
+        return false;
 
     //Reproject all verticies
     for(unsigned int i=0; i<verts.size(); i++){
@@ -306,7 +328,7 @@ osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prs
         pt[2]=verts[i].z();
         Point p = Point(pt, 3);
         ObjVisitor vis;
-       // cout << p <<endl;
+        // cout << p <<endl;
         tree->intersectsWithQuery(p,vis);
         if(vis.GetResultCount()){
             for(unsigned int r=0; r < vis.GetResults().size(); r++){
@@ -316,6 +338,9 @@ osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prs
         }
     }
     camIdxArr->resize(verts.size());
+    if(texCoordsArray)
+        texCoordsArray->resize(verts.size());
+
     for(int i=0; i<numIdx-2; i+=3){
         vector<int> tri_v;
         for(int k=0; k <3; k++){
@@ -324,15 +349,16 @@ osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prs
         const CamDists d=getClosest(tri_v,verts);
         osg::Vec4 camIdx(-1,-1,-1,-1);
         for(int v=0; v<(int)d.size() && v <4; v++){
-            if(d[v].first >= 0)
-                camIdx[v]=d[v].first;
+            if(d[v].id >= 0)
+                camIdx[v]=d[v].id;
         }
- // if(d.size())
-   //    cout << "i: "<< tri_v[0] << " close "<< _cameras[d[0].first].m*verts[tri_v[0]] << " local " << d[0].first<<" " << verts[tri_v[0]] << "\n" <<_cameras[d[0].first].m <<"\n" << reprojectPt(_cameras[d[0].first].m,verts[tri_v[0]]) <<endl;
-    for(int k=0; k <3; k++)
-        camIdxArr->at(prset.index(i+k))=camIdx;
+        for(int k=0; k <3; k++){
+            camIdxArr->at(prset.index(i+k))=camIdx;
+            if(texCoordsArray)
+                texCoordsArray->at(prset.index(i+k))=d[0].uv;
+        }
     }
- /*   cout << "Elements in m: " << endl;
+    /*   cout << "Elements in m: " << endl;
 
       for (multimap<int, ProjectionCamera>::iterator it = reproj.begin();
                it != reproj.end();
@@ -342,44 +368,54 @@ osg::Vec4Array* TexturingQuery::projectAllTriangles(const osg::PrimitiveSet& prs
               cout << "  [" << (*it).first << ": " << reproj.count((*it).first) << "]" << endl;
        }
 */
-    return camIdxArr;
+    osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
+
+    OSG_NOTICE << "Time for projectAllTriangles = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
+
+    return true;
 }
 bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
-   {
-      std::string fqFileName = osgDB::findDataFile(fileName);
-      if( fqFileName.length() == 0 )
-      {
-         std::cout << "File \"" << fileName << "\" not found." << std::endl;
-         return false;
-      }
-      bool success = obj->loadShaderSourceFromFile( fqFileName.c_str());
-      if ( !success  )
-      {
-         std::cout << "Couldn't load file: " << fileName << std::endl;
-         return false;
-      }
-      else
-      {
-         return true;
-      }
-   }
+{
+    std::string fqFileName = osgDB::findDataFile(fileName);
+    if( fqFileName.length() == 0 )
+    {
+        std::cout << "File \"" << fileName << "\" not found." << std::endl;
+        return false;
+    }
+    bool success = obj->loadShaderSourceFromFile( fqFileName.c_str());
+    if ( !success  )
+    {
+        std::cout << "Couldn't load file: " << fileName << std::endl;
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
 std::vector<osg::ref_ptr<osg::Image> >TexturingQuery::loadTex(map<SpatialIndex::id_type,int> allIds,int sizeIdx){
+    osg::Timer_t before_computeMax = osg::Timer::instance()->tick();
+
     std::vector<osg::ref_ptr<osg::Image> > images(allIds.size());
     std::vector<string> filenames(allIds.size());
     map<SpatialIndex::id_type,int>::const_iterator end = allIds.end();
-        for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
-        {
-           filenames[it->second]=_cameras[it->first].filename;
+    for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
+    {
+        filenames[it->second]=_cameras[it->first].filename;
         //   std::cout << " loading " <<it->first << " : " << it->second << '\n';
-        }
+    }
 
-        _atlasGen->loadSources(filenames);
-       end = allIds.end();
-            for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
-            {
-              images[it->second]=_atlasGen->getImage(it->second,sizeIdx);
-          }
-        return images;
+    _atlasGen->loadSources(filenames);
+    end = allIds.end();
+    for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
+    {
+        images[it->second]=_atlasGen->getImage(it->second,sizeIdx);
+    }
+    osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
+
+    OSG_NOTICE << "Time for loadTex = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
+
+    return images;
 }
 osg::Vec2 TexturingQuery::reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v){
 
@@ -400,7 +436,7 @@ osg::Vec2 TexturingQuery::reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v
     return osg::Vec2(pixel_c.x(),pixel_c.y());
 }
 
-osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v,int texSizeIdx){
+osg::StateSet *TexturingQuery::generateStateAndArray2DRemap( osg::Vec4Array *v,int texSizeIdx){
     if(!v)
         return NULL;
     map<SpatialIndex::id_type,int> allIds;
@@ -438,13 +474,14 @@ osg::StateSet *TexturingQuery::generateStateAndAtlasRemap( osg::Vec4Array *v,int
 
     int tex_size=_atlasGen->getDownsampleSize(texSizeIdx);
 
-   std::vector<osg::ref_ptr<osg::Image> > textures= loadTex(allIds,texSizeIdx);
+    std::vector<osg::ref_ptr<osg::Image> > textures= loadTex(allIds,texSizeIdx);
 
-    OSG_ALWAYS << "Texture Array Size: " <<uniqueIdCount <<endl;
+    OSG_ALWAYS << "\tTexture Array Size: " <<uniqueIdCount <<endl;
+    OSG_ALWAYS << "\tImage Size: " <<tex_size <<endl;
     if(uniqueIdCount != textures.size())
         OSG_FATAL << "uniqueIdCount != textures.size())" <<uniqueIdCount <<" "<< textures.size()<< endl;
 
-osg::ref_ptr<osg::Texture2DArray> textureArray =new osg::Texture2DArray;
+    osg::ref_ptr<osg::Texture2DArray> textureArray =new osg::Texture2DArray;
     osg::Program* program = new osg::Program;
     program->setName( "projective_tex" );
     osg::ref_ptr<osg::Shader> lerpF=new osg::Shader( osg::Shader::FRAGMENT);
@@ -467,18 +504,12 @@ osg::ref_ptr<osg::Texture2DArray> textureArray =new osg::Texture2DArray;
 
 
     stateset->addUniform( new osg::Uniform("kc1234", osg::Vec4(_calib.kc1,_calib.kc2,_calib.kc3,
-                                                              _calib.kc4)) );
+                                                               _calib.kc4)) );
 
     stateset->addUniform( new osg::Uniform("kc5", (float)_calib.kc5 ));
     stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
     stateset->setDataVariance(osg::Object::STATIC);
 
-   /* map<int,int>::const_iterator end = allIds.end();
-    for (map<int,int>::const_iterator it = allIds.begin(); it != end; ++it)
-    {
-        std::cout << "Who(key = first): " << it->first;
-        std::cout << " Score(value = second): " << it->second << '\n';
-    }*/
     return stateset;
 }
 void TexturingQuery::setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding)
@@ -507,26 +538,42 @@ void TexturingQuery::projectModel(osg::Geode *geode,int texSizeIdx){
         geom->setUseDisplayList(false);
         osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
         //setVertexAttrib(*geom, _vertexAlias, geom->getVertexArray(), false, osg::Geometry::BIND_PER_VERTEX);
-       // geom->setVertexArray(0);
-
+        // geom->setVertexArray(0);
+        if(!verts || !verts->size()){
+            OSG_NOTICE << "Empty mesh continuing!" <<endl;
+            continue;
+        }
         osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
         osg::Geometry::PrimitiveSetList::iterator itr;
-         osg::Vec4Array *v=NULL;
-         osg::StateSet *stateset=NULL;
+        osg::ref_ptr<osg::Vec4Array> v= new osg::Vec4Array;
+
+        osg::ref_ptr<osg::Vec2Array> texCoords;
+        if(!_useTextureArray)
+            texCoords=new osg::Vec2Array;
+
+        osg::ref_ptr<osg::StateSet> stateset;
+        bool projectValid=false;
 
         for(itr=primitiveSets.begin(); itr!=primitiveSets.end(); ++itr){
             switch((*itr)->getMode()){
             case(osg::PrimitiveSet::TRIANGLES):
-                v=projectAllTriangles(*(*itr), *verts);
-                if(v){
-                    stateset=generateStateAndAtlasRemap(v,texSizeIdx);
-                    setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
+                projectValid=projectAllTriangles(v,texCoords.get(),*(*itr), *verts);
+                if(!v.valid()||!projectValid){
+                    OSG_FATAL << "Failed to create reprojection array" <<endl;
+                    continue;
                 }
-                geom->setStateSet(stateset);
-                break;
-            default:
-                OSG_FATAL << "Freakout shouldn't be anything but triangles\n";
-            }
+                if(_useTextureArray)
+                    stateset=generateStateAndArray2DRemap(v,texSizeIdx);
+                setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
+                if(stateset.valid())
+                    geom->setStateSet(stateset);
+                else
+                    OSG_FATAL << "Failed to create state set for texture array" <<endl;
+
+            break;
+        default:
+            OSG_FATAL << "Freakout shouldn't be anything but triangles\n";
         }
     }
+}
 }

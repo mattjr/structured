@@ -45,9 +45,7 @@
 #include <vpb/DataSet>
 #include <osgUtil/MeshOptimizers>
 #include "TexturingQuery.h"
-// forward declare so we can avoid tieing vpb to GDAL.
-class GDALDataset;
-class GDALRasterBand;
+
 
 namespace vpb
 {
@@ -73,182 +71,29 @@ namespace vpb
         osg::Node* createSubTileScene();
 
         typedef std::vector< osg::ref_ptr<MyDestinationTile> > MyTileList;
-    //    MyTileList                _tiles;
-        //typedef std::vector< osg::ref_ptr<MyCompositeDestination> > MyChildList;
-
-      //  MyChildList               _children;
-
     };
 
-class TaskManager;
 
 class MyDataSet :  public DataSet
 {
     public:
-
-        typedef std::map<unsigned int,CompositeDestination*> Row;
-        typedef std::map<unsigned int,Row> Level;
-        typedef std::map<unsigned int,Level> QuadMap;
-
-        void insertTileToQuadMap(CompositeDestination* tile)
-        {
-            _quadMap[tile->_level][tile->_tileY][tile->_tileX] = tile;
-        }
-
-        DestinationTile* getTile(unsigned int level,unsigned int X, unsigned int Y)
-        {
-            CompositeDestination* cd = getComposite(level,X,Y);
-            if (!cd) return 0;
-            if (cd->_tiles.empty()) return 0;
-            return (cd->_tiles).front().get();
-        }
-
-        CompositeDestination* getComposite(unsigned int level,unsigned int X, unsigned int Y)
-        {
-            QuadMap::iterator levelItr = _quadMap.find(level);
-            if (levelItr==_quadMap.end()) return 0;
-
-            Level::iterator rowItr = levelItr->second.find(Y);
-            if (rowItr==levelItr->second.end()) return 0;
-
-            Row::iterator columnItr = rowItr->second.find(X);
-            if (columnItr==rowItr->second.end()) return 0;
-            else return columnItr->second;
-        }
-
-        Row& getRow(unsigned int level,unsigned int Y)
-        {
-            return _quadMap[level][Y];
-        }
-
-    public:
-
-
         MyDataSet();
-
-        TexturingQuery *_tq;
-        CompositeSource* getSourceGraph() { return _sourceGraph.get(); }
-
-
-        //void addSource(Source* source, unsigned int revisionNumber);
-        // void addSource(CompositeSource* composite);
-
-        bool addModel(Source::Type type, osg::Node* node, unsigned int revisionNumber);
-        bool addLayer(Source::Type type, osgTerrain::Layer* layer, unsigned layerNum, unsigned int revisionNumber);
-        bool addTerrain(osgTerrain::TerrainTile* terrain, unsigned int revisionNumber);
-
-        bool addTerrain(osgTerrain::TerrainTile* terrain);
-        bool addPatchedTerrain(osgTerrain::TerrainTile* previous_terrain, osgTerrain::TerrainTile* new_terrain);
-
-        osgTerrain::TerrainTile* createTerrainRepresentation();
-
-        //void loadSources();
-
-        void mapReprojectedSourcesAvailableInFileCache();
-
-        void assignDestinationCoordinateSystem();
-
-        void assignIntermediateCoordinateSystem();
-        void setIntermediateCoordinateSystem(const std::string& wellKnownText) { setIntermediateCoordinateSystem(new osg::CoordinateSystemNode("WKT",wellKnownText)); }
-        void setIntermediateCoordinateSystem(osg::CoordinateSystemNode* cs) { _intermediateCoordinateSystem = cs; }
-        osg::CoordinateSystemNode* getIntermediateCoordinateSystem() { return _intermediateCoordinateSystem.get(); }
-
-        bool requiresReprojection();
-
-        bool mapLatLongsToXYZ() const;
-
-        static void setNotifyOffset(int level);
-        static int getNotifyOffset();
-
-
         void createNewDestinationGraph(
                                        const GeospatialExtents& extents,
                                        unsigned int maxImageSize,
                                        unsigned int maxTerrainSize,
                                        unsigned int maxNumLevels);
 
-        CompositeDestination* createDestinationGraph(CompositeDestination* parent,
-                                                     osg::CoordinateSystemNode* cs,
-                                                     const GeospatialExtents& extents,
-                                                     unsigned int maxImageSize,
-                                                     unsigned int maxTerrainSize,
-                                                     unsigned int currentLevel,
-                                                     unsigned int currentX,
-                                                     unsigned int currentY,
-                                                     unsigned int maxNumLevels);
-
-        void computeDestinationGraphFromSources(unsigned int numLevels);
-
-        void updateSourcesForDestinationGraphNeeds();
-
-        void reprojectSourcesAndGenerateOverviews();
-
-        void populateDestinationGraphFromSources();
-
-        void createDestination(unsigned int numLevels);
-
         void buildDestination() { _buildDestination(false); }
 
         void writeDestination() { _buildDestination(true); }
 
-        osg::Node* getDestinationRootNode() { return _rootNode.get(); }
-
-
-        typedef std::pair<unsigned int, unsigned int> TilePair;
-        typedef std::map<TilePair, unsigned int> TilePairMap;
-
-        bool createTileMap(unsigned int level, TilePairMap& tilepairMap);
-
-        bool generateTasks(TaskManager* taskManager);
-
-        bool generateTasksImplementation(TaskManager* taskManager);
-
-
-        int run();
-
-        // helper functions for handling optional archive
-        void _writeNodeFile(osg::Node& node,const std::string& filename);
-        void _writeImageFile(osg::Image& image,const std::string& filename);
-       // void _writeNodeFileAndImages(osg::Node& node,const std::string& filename);
-
-        void setState(osg::State* state) { _state = state; }
-        osg::State* getState() { return _state.get(); }
-
-        /** Set the Archive.*/
-        void setArchive(osgDB::Archive* archive) { _archive = archive; }
-
-        /** Get the Archive if one is to being used.*/
-        osgDB::Archive* getArchive() { return _archive.get(); }
-
-        unsigned int getNumOfTextureLevels() const { return _numTextureLevels; }
-
-        void setModelPlacer(ObjectPlacer* placer) { _modelPlacer = placer; }
-        ObjectPlacer* getModelPlacer() { return _modelPlacer.get(); }
-
-        void setShapeFilePlacer(ObjectPlacer* placer) { _shapeFilePlacer = placer; }
-        ObjectPlacer* getShapeFilePlacer() { return _shapeFilePlacer.get(); }
-
-
-
-
-        /** Check the build validity, return an empty string if everything is OK, on error return the error string.*/
-        std::string checkBuildValidity();
-
-        void setDatabaseRevision(osgDB::DatabaseRevision* db) { _databaseRevision = db; }
-        osgDB::DatabaseRevision* getDatabaseRevision() { return _databaseRevision.get(); }
-        const osgDB::DatabaseRevision* getDatabaseRevision() const { return _databaseRevision.get(); }
-
-        const std::string getDatabaseRevisionBaseFileName(unsigned int level, unsigned int x, unsigned y) const;
         void _buildDestination(bool writeToDisk);
         int _run();
+        TexturingQuery *_tq;
 
     protected:
-
         virtual ~MyDataSet() {}
-
-        friend class DestinationTile;
-
-
         void _readRow(Row& row);
          void _writeRow(Row& row);
          void init();

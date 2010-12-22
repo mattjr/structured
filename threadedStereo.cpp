@@ -59,6 +59,8 @@ static double stop_time = numeric_limits<double>::max();
 int proj_tex_size;
 int poster_tiles=40;
 static bool rugosity=false;
+static int vpdlod=3;
+
 static int dist_gentex_range=0;
 static int vrip_split;
 static FILE *pts_cov_fp;
@@ -498,6 +500,7 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
     mb_ply_filenames.push_back(mbfile) ;
       
   argp.read( "--monoskip" ,mono_skip);
+  argp.read( "--vpblod" ,vpdlod);
 
   if(argp.read(  "--noposclip"))
     pos_clip=false;
@@ -2385,7 +2388,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     fclose(quadmergecmds_fp);
     fclose(diced_fp);
     std::vector<std::vector<string> > datalist_lod;
-    for(int lod=0; lod < 2; lod ++){
+    for(int lod=0; lod < vpdlod; lod ++){
         std::vector<string> level;
         for(int i=0; i <(int)quad_cells.size(); i++){
             char tmp[1024];

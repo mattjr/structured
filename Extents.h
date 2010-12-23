@@ -77,7 +77,7 @@ namespace vpb
 class MyDataSet :  public DataSet
 {
     public:
-        MyDataSet();
+        MyDataSet(const Camera_Calib &calib);
         void createNewDestinationGraph(
                                        const GeospatialExtents& extents,
                                        unsigned int maxImageSize,
@@ -91,12 +91,15 @@ class MyDataSet :  public DataSet
         void _buildDestination(bool writeToDisk);
         int _run();
         TexturingQuery *_tq;
+        void processTile(DestinationTile *tile,Source *src);
 
     protected:
         virtual ~MyDataSet() {}
+
         void _readRow(Row& row);
          void _writeRow(Row& row);
          void init();
+         const Camera_Calib &_calib;
          MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
 
 };

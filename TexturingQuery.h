@@ -41,7 +41,7 @@ typedef std::vector<CamProjAndDist> CamDists;
 class TexturingQuery
 {
 public:
-    TexturingQuery(std::string bbox_file,Camera_Calib &calib);
+    TexturingQuery(std::string bbox_file,const Camera_Calib &calib);
     ~TexturingQuery();
     void projectModel(osg::Geode *,int texSizeIdx);
     class ProjectionCamera{
@@ -65,7 +65,7 @@ protected:
 
     const CamDists getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts);
     std::string _bbox_file;
-    Camera_Calib _calib;
+    const Camera_Calib _calib;
 
     SpatialIndex::ISpatialIndex* tree;
     SpatialIndex::StorageManager::IBuffer* file;

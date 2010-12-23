@@ -52,7 +52,7 @@
 using namespace vpb;
 using vpb::log;
 
-MyDataSet::MyDataSet()
+MyDataSet::MyDataSet(const Camera_Calib &calib): _calib(calib)
 {
     init();
 }
@@ -904,14 +904,83 @@ void MyDataSet::createNewDestinationGraph(
 
     log(osg::NOTICE,"Time for _destinationGraph->computeMaximumSourceResolution() = %f", osg::Timer::instance()->delta_s(before_computeMax, after_computeMax));
 }
+void MyDataSet::processTile(DestinationTile *tile,Source *src){
+    log(osg::NOTICE,"   source:%s",src->getFileName().c_str());
+ //   log(osg::NOTICE,"    %x",src->getSourceData()->_model.get());
+    osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
+                                         tile->_extents._min.y(),
+                                         DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
+                                                             tile->_extents._max.y(),
+                                                             DBL_MAX));
+    //Clipper clipper(ext_bbox);
+    int texSizeIdx=0;
+
+    if(tile->_level == 1){
+        texSizeIdx=1;
+//              clipper.setColor(osg::Vec4(1,0,0,1));
+    }
+    else if(tile->_level == 2){
+        texSizeIdx=0;
+//                clipper.setColor(osg::Vec4(0,1,0,1));
+    }
+    else if(tile->_level == 3){
+        texSizeIdx=0;
+//                  clipper.setColor(osg::Vec4(0,0.5,0.5,1));
+    }
+    else if(tile->_level == 0){
+        texSizeIdx=2;
+//                    clipper.setColor(osg::Vec4(0,0,1,1));
+    }else
+        texSizeIdx=0;
+
+//                  clipper.setApplyColor(true);
+    //  osg::ref_ptr<osg::Node> root = (osg::Node*)src->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
+
+    //   root->accept(clipper);
+    ClippedCopy cl_cp(ext_bbox);
+    osg::ref_ptr<osg::Node> root =cl_cp.makeCopy((osg::Geode*)src->getSourceData()->_model.get());
+
+    TexturingQuery *tq=new TexturingQuery("mesh-quad/bbox.txt",_calib);
+    tq->projectModel(dynamic_cast<osg::Geode*>(root.get()),texSizeIdx);
+    delete tq;
+    //src->getSourceData()->
+    //    tile->_models->
+    if(!tile->_models){
+        tile->_models = new DestinationData(NULL);
+    }
+    tile->_models->_models.push_back(root.get());
+
+}
+
+class MyReadFromOperation : public BuildOperation
+{
+    public:
+
+        MyReadFromOperation(ThreadPool* threadPool, BuildLog* buildLog, DestinationTile* tile, MyDataSet* dataSet):
+            BuildOperation(threadPool, buildLog, "ReadFromOperation", false),
+            _tile(tile),
+            _dataSet(dataSet) {}
+
+        virtual void build()
+        {
+            log(osg::NOTICE, "   ReadFromOperation: reading tile level=%u X=%u Y=%u",_tile->_level,_tile->_tileX,_tile->_tileY);
+            for(DestinationTile::Sources::iterator itr = _tile->_sources.begin();
+            itr != _tile->_sources.end();
+            ++itr)
+            {
+             _dataSet->processTile(_tile,*itr);
+            }
+        }
+
+        DestinationTile* _tile;
+        MyDataSet* _dataSet;
+};
 
 void MyDataSet::_readRow(Row& row)
 {
     log(osg::NOTICE, "_readRow %u",row.size());
 
-    //CompositeSource* sourceGraph = _newDestinationGraph ? 0 : _sourceGraph.get();
-
-    /*  if (_readThreadPool.valid())
+      if (_readThreadPool.valid())
     {
         for(Row::iterator citr=row.begin();
             citr!=row.end();
@@ -922,7 +991,7 @@ void MyDataSet::_readRow(Row& row)
                 titr!=cd->_tiles.end();
                 ++titr)
             {
-                _readThreadPool->run(new vpb::DataSet::ReadFromOperation(_readThreadPool.get(), getBuildLog(), titr->get(), sourceGraph));
+                _readThreadPool->run(new MyReadFromOperation(_readThreadPool.get(), getBuildLog(), titr->get(), this));
             }
         }
 
@@ -930,7 +999,7 @@ void MyDataSet::_readRow(Row& row)
         _readThreadPool->waitForCompletion();
 
     }
-    else*/
+    else
     {
         for(Row::iterator citr=row.begin();
         citr!=row.end();
@@ -948,50 +1017,7 @@ void MyDataSet::_readRow(Row& row)
                 itr != tile->_sources.end();
                 ++itr)
                 {
-                    log(osg::NOTICE,"   source:%s",(*itr)->getFileName().c_str());
-                 //   log(osg::NOTICE,"    %x",(*itr)->getSourceData()->_model.get());
-                    osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
-                                                         tile->_extents._min.y(),
-                                                         DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
-                                                                             tile->_extents._max.y(),
-                                                                             DBL_MAX));
-                    //Clipper clipper(ext_bbox);
-                    int texSizeIdx=0;
-
-                    if(tile->_level == 1){
-                        texSizeIdx=1;
-          //              clipper.setColor(osg::Vec4(1,0,0,1));
-                    }
-                    else if(tile->_level == 2){
-                        texSizeIdx=0;
-        //                clipper.setColor(osg::Vec4(0,1,0,1));
-                    }
-                    else if(tile->_level == 3){
-                        texSizeIdx=0;
-      //                  clipper.setColor(osg::Vec4(0,0.5,0.5,1));
-                    }
-                    else if(tile->_level == 0){
-                        texSizeIdx=2;
-    //                    clipper.setColor(osg::Vec4(0,0,1,1));
-                    }else
-                        texSizeIdx=0;
-
-  //                  clipper.setApplyColor(true);
-                    //  osg::ref_ptr<osg::Node> root = (osg::Node*)(*itr)->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
-
-                    //   root->accept(clipper);
-                    ClippedCopy cl_cp(ext_bbox);
-                    osg::ref_ptr<osg::Node> root =cl_cp.makeCopy((osg::Geode*)(*itr)->getSourceData()->_model.get());
-                    _tq->projectModel(dynamic_cast<osg::Geode*>(root.get()),texSizeIdx);
-                    //(*itr)->getSourceData()->
-                    //    tile->_models->
-                    if(!tile->_models){
-                        tile->_models = new DestinationData(NULL);
-                    }
-                    tile->_models->_models.push_back(root.get());
-
-
-
+                    processTile(tile,*itr);
                 }
             }
         }
@@ -1135,7 +1161,7 @@ int MyDataSet::_run()
 {
 
     log(osg::NOTICE,"MyDataSet::_run() %i %i",getDistributedBuildSplitLevel(),getDistributedBuildSecondarySplitLevel());
-/*
+
 #ifdef HAVE_NVTT
     bool requiresGraphicsContextInMainThread = (getCompressionMethod() == vpb::BuildOptions::GL_DRIVER);
     bool requiresGraphicsContextInWritingThread = (getCompressionMethod() == vpb::BuildOptions::GL_DRIVER);
@@ -1153,11 +1179,11 @@ int MyDataSet::_run()
         if (numReadThreads>=1)
         {
             log(osg::NOTICE,"Starting %i read threads.",numReadThreads);
-            _readThreadPool = new ThreadPool(numReadThreads, false);
+            _readThreadPool = new ThreadPool(numReadThreads, requiresGraphicsContextInWritingThread);
             _readThreadPool->startThreads();
         }
 
-        int numWriteThreads = int(ceilf(getNumWriteThreadsToCoresRatio() * float(numProcessors)));
+      /*  int numWriteThreads = int(ceilf(getNumWriteThreadsToCoresRatio() * float(numProcessors)));
         if (numWriteThreads>=1)
         {
             log(osg::NOTICE,"Starting %i write threads.",numWriteThreads);
@@ -1165,10 +1191,10 @@ int MyDataSet::_run()
             _writeThreadPool->startThreads();
 
             //requiresGraphicsContextInMainThread = false;
-        }
+        }*/
     }
 
-
+/*
     //loadSources();
 
     int numLevels = getMaximumNumOfLevels();

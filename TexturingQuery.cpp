@@ -197,16 +197,18 @@ public:
 
 };
 
-TexturingQuery::TexturingQuery(std::string bbox_file,Camera_Calib &calib) : _bbox_file(bbox_file),_calib(calib),   _origImageSize(1360,1024)
+TexturingQuery::TexturingQuery(std::string bbox_file,const Camera_Calib &calib) : _bbox_file(bbox_file),_calib(calib),   _origImageSize(1360,1024)
 {
     _useTextureArray=true;
     _vertexAlias = AttributeAlias(0, "osg_Vertex");
     _projCoordAlias = AttributeAlias(1, "osg_ProjCoord");
     _atlasGen = new TexPyrAtlas("/home/mattjr/auvdata/r20090804_084719_scott_25_dense_repeat_auv5_deep/renav20090804/mesh/img");
     baseName="tmpStore";
+    char tmp[1024];
+    sprintf(tmp,"%d",rand());
     utilization=0.7;
     capacity=4;
-
+baseName=tmp;
     diskfile = StorageManager::createNewDiskStorageManager(baseName, 4096);
     // Create a new storage manager with the provided base name and a 4K page size.
 

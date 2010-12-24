@@ -3,15 +3,28 @@
 #include <osgUtil/Optimizer>
 #include <string>
 #include <osg/State>
-class TexPyrAtlas
+
+class TexPyrAtlas : public osgUtil::Optimizer::TextureAtlasBuilder
 {
 public:
+    typedef long id_type;
+
     TexPyrAtlas(std::string imgdir);
-    void loadSources(std::vector<std::string> imageList);
+    void loadSources(std::vector<std::pair<id_type,std::string> > imageList);
+    int getAtlasId(id_type id);
     osg::ref_ptr<osg::Image> getImage(int index,int sizeIndex);
     int getDownsampleSize(int idx){if(idx > (int) _downsampleSizes.size()) return 0; return _downsampleSizes[idx];}
+    osg::ref_ptr<osg::Texture> getTexture(int index,int sizeIndex);
+    unsigned int getNumAtlases(){return _atlasList.size();}
+    osg::Image *getAtlasByNumber(unsigned int i){
+        if(i < _atlasList.size())
+            return _atlasList[i]->_image;
+        return NULL;
+    }
+    osg::Matrix getTextureMatrixByID(id_type id);
+
+    void computeImageNumberToAtlasMap(void);
 protected:
-     osgUtil::Optimizer::TextureAtlasBuilder _tb;
      std::vector<int> _downsampleSizes;
    osg::State *_state;
    std::vector<osg::ref_ptr<osg::Image> > _images;
@@ -36,6 +49,11 @@ protected:
                            osg::ref_ptr<osg::Image>& output,
                            unsigned int mipmapLevel=0 );
    std::string _imgdir;
+   std::map<id_type,int> _idToAtlas;
+   std::map<Source*,id_type> _sourceToId;
+   std::map<id_type,Source*> _idToSource;
+
+
 };
 
 #endif // TEXPYRATLAS_H

@@ -1166,7 +1166,7 @@ int MyDataSet::_run()
     bool requiresGraphicsContextInMainThread = (getCompressionMethod() == vpb::BuildOptions::GL_DRIVER);
     bool requiresGraphicsContextInWritingThread = (getCompressionMethod() == vpb::BuildOptions::GL_DRIVER);
 #else
-    bool requiresGraphicsContextInMainThread = true;
+    //bool requiresGraphicsContextInMainThread = true;
     bool requiresGraphicsContextInWritingThread = true;
 #endif
 

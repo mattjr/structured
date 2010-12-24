@@ -1,9 +1,10 @@
 #include "TexPyrAtlas.h"
 #include <osgDB/ReadFile>
-#include <vpb/TextureUtils>
+#include <string.h>
 TexPyrAtlas::TexPyrAtlas(std::string imgdir):_imgdir(imgdir)
 {
-    _tb.setMaximumAtlasSize(4096,4096);
+    setMaximumAtlasSize(1024,1024);
+    setMargin(0);
     _downsampleSizes.clear();
     _downsampleSizes.push_back(512);
     _downsampleSizes.push_back(256);
@@ -12,32 +13,70 @@ TexPyrAtlas::TexPyrAtlas(std::string imgdir):_imgdir(imgdir)
 
 
 }
+void TexPyrAtlas::computeImageNumberToAtlasMap(void){
+    for(int i=0; i < (int)_atlasList.size(); i++){
+        for(int j=0; j< (int)_atlasList[i]->_sourceList.size(); j++)
+            if(_sourceToId.count(_atlasList[i]->_sourceList[j]))
+                _idToAtlas[_sourceToId[_atlasList[i]->_sourceList[j]]]=i;
+    }
+}
 
-void TexPyrAtlas::loadSources(std::vector<std::string> imageList){
+int TexPyrAtlas::getAtlasId(id_type id){
+    if(_idToAtlas.count(id))
+        return _idToAtlas[id];
+    return -1;
+}
+osg::Matrix TexPyrAtlas::getTextureMatrixByID(id_type id){
+    if(_idToSource.count(id))
+        return _idToSource[id]->computeTextureMatrix();
+    return osg::Matrix::identity();
+}
+void TexPyrAtlas::loadSources(std::vector<std::pair<id_type ,std::string> > imageList){
     _images.resize(imageList.size());
     for(int i=0; i< (int)imageList.size(); i++){
-        osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
-        _images[i]=osgDB::readImageFile(_imgdir+"/"+imageList[i]);
+        //osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
+        osg::ref_ptr<osg::Image> img=osgDB::readImageFile(_imgdir+"/"+imageList[i].second);
+        resizeImage(img,_downsampleSizes[0],_downsampleSizes[0],_images[i]);
         if(_images[i].valid()){
-            texture->setImage(_images[i]);
+            //texture->setImage(_images[i]);
+           /* texture->setTextureSize(_downsampleSizes[0],_downsampleSizes[0]);
             bool resizePowerOfTwo=true;
             osg::NotifySeverity saved_ns=osg::getNotifyLevel();
-            osg::setNotifyLevel(osg::FATAL);
-            vpb::generateMipMap(*_state,*texture,resizePowerOfTwo,vpb::BuildOptions::GL_DRIVER);
-            osg::setNotifyLevel(saved_ns);
+           // osg::setNotifyLevel(osg::FATAL);
+            vpb::generateMipMap(*_state,*texture,resizePowerOfTwo,vpb::BuildOptions::GL_DRIVER);*/
+           // osg::setNotifyLevel(saved_ns);
+            if (!getSource(_images[i])) {
+                Source *s=new Source(_images[i]);
+                _sourceList.push_back(s);
+                _sourceToId[s]=imageList[i].first;
+                _idToSource[imageList[i].first]=s;
+            }
         }else{
-            OSG_ALWAYS << imageList[i] << " not found or couldn't be loaded"<<std::endl;
+            OSG_ALWAYS << imageList[i].second << " not found or couldn't be loaded"<<std::endl;
         }
     }
+    buildAtlas();
+    computeImageNumberToAtlasMap();
 
 }
 osg::ref_ptr<osg::Image> TexPyrAtlas::getImage(int index,int sizeIndex){
     osg::ref_ptr<osg::Image> img;
-
     if(index >= 0 && index < (int)_images.size() && _images[index].valid())
         resizeImage(_images[index].get(),_downsampleSizes[sizeIndex],_downsampleSizes[sizeIndex],img);
     return img;
+  /*  if(index >= 0 && index < (int)_images.size() && _images[index].valid())
+        return _tb.getImageAtlas(_images[index]);
+    else
+        return osg::ref_ptr<osg::Image> ();*/
 }
+osg::ref_ptr<osg::Texture> TexPyrAtlas::getTexture(int index,int sizeIndex){
+
+    if(index >= 0 && index < (int)_images.size() && _images[index].valid())
+        return getTextureAtlas(_images[index]);
+    else
+        return osg::ref_ptr<osg::Texture> ();
+}
+
 bool
         TexPyrAtlas::resizeImage(const osg::Image* input,
                                  unsigned int out_s, unsigned int out_t,
@@ -107,3 +146,4 @@ bool
 
     return true;
 }
+

@@ -68,8 +68,8 @@ protected:
     const Camera_Calib _calib;
 
     SpatialIndex::ISpatialIndex* tree;
-    SpatialIndex::StorageManager::IBuffer* file;
-    SpatialIndex::IStorageManager* diskfile;
+    SpatialIndex::IStorageManager* memstore;
+    SpatialIndex::IStorageManager* manager;
     std::string baseName;
     double utilization;
     int capacity;
@@ -79,11 +79,15 @@ protected:
                                              const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
     osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v, int texSizeIdx);
     static const int TEXUNIT_ARRAY=0;
+    static const int TEX_UNIT=0;
     ProjectsToMap reproj;
     osg::Vec2 _origImageSize;
     typedef std::pair<unsigned int, std::string> AttributeAlias;
     void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
     std::vector<osg::ref_ptr<osg::Image> >loadTex(std::map<SpatialIndex::id_type,int> allIds,int sizeIdx);
+    void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
+                                        osg::Vec2Array* texCoordsArray,
+                                        const osg::Vec3Array &verts,int texSizeIdx);
     osg::Vec2 reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v);
     AttributeAlias _vertexAlias;
     AttributeAlias _projCoordAlias;

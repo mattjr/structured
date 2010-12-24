@@ -939,8 +939,10 @@ void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
     //   root->accept(clipper);
     ClippedCopy cl_cp(ext_bbox);
     osg::ref_ptr<osg::Node> root =cl_cp.makeCopy((osg::Geode*)src->getSourceData()->_model.get());
-
-    TexturingQuery *tq=new TexturingQuery("mesh-quad/bbox.txt",_calib);
+    std::string mf=src->getFileName();
+    int npos=mf.find("/");
+    std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
+    TexturingQuery *tq=new TexturingQuery(bbox_name,_calib);
     tq->projectModel(dynamic_cast<osg::Geode*>(root.get()),texSizeIdx);
     delete tq;
     //src->getSourceData()->

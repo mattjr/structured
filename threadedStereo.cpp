@@ -2387,15 +2387,24 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(quadmergecmds_fp);
     fclose(diced_fp);
-    int lodPick[]={2,2,2,1,1,1};
+    int lodPick[]={0,1,1,2,2,2};
     std::vector<std::vector<string> > datalist_lod;
     for(int lod=0; lod < vpblod; lod ++){
         std::vector<string> level;
-        for(int i=0; i <(int)quad_cells.size(); i++){
-            char tmp[1024];
-            sprintf(tmp,"mesh-quad/clipped-diced-%08d-lod%d.ply",i,lodPick[lod]);//std::min(lod,2)
-            level.push_back(tmp);
+        if(!no_quadmerge){
+            for(int i=0; i <(int)quad_cells.size(); i++){
+                char tmp[1024];
+                sprintf(tmp,"mesh-quad/clipped-diced-%08d-lod%d.ply",i,lodPick[lod]);//std::min(lod,2)
+                level.push_back(tmp);
+            }
+        }else{
+            for(int i=0; i <(int)vrip_cells.size(); i++){
+                char tmp[1024];
+                sprintf(tmp,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,lodPick[lod]);//std::min(lod,2)
+                level.push_back(tmp);
+            }
         }
+
         datalist_lod.push_back(level);
     }
     if(output_uv_file)
@@ -2517,9 +2526,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	if(!no_vrip)
 	  sysres=system("./runvrip.py");
 	
-        if(!mgc)
-          mgc = new MyGraphicsContext();
-        doQuadTreeVPB(datalist_lod,bounds,calib->left_calib);
+
 
 
 
@@ -2576,6 +2583,14 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	fclose(dicefp);
 	if(!no_simp && !no_vrip)
 	  sysres=system("./simp.sh");
+
+
+
+        if(!mgc)
+          mgc = new MyGraphicsContext();
+        doQuadTreeVPB(datalist_lod,bounds,calib->left_calib);
+
+
 	vector<string> gentexnames;
 	gentexnames.push_back("./gentex.py");
 	gentexnames.push_back("./posgentex.py");

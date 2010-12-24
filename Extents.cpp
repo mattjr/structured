@@ -920,11 +920,11 @@ void MyDataSet::processTile(DestinationTile *tile,Source *src){
 //              clipper.setColor(osg::Vec4(1,0,0,1));
     }
     else if(tile->_level == 2){
-        texSizeIdx=0;
+        texSizeIdx=1;
 //                clipper.setColor(osg::Vec4(0,1,0,1));
     }
     else if(tile->_level == 3){
-        texSizeIdx=0;
+        texSizeIdx=1;
 //                  clipper.setColor(osg::Vec4(0,0.5,0.5,1));
     }
     else if(tile->_level == 0){

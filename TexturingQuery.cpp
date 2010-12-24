@@ -158,7 +158,7 @@ TexturingQuery::TexturingQuery(std::string bbox_file,const Camera_Calib &calib) 
     _useTextureArray=false;
     _vertexAlias = AttributeAlias(0, "osg_Vertex");
     _projCoordAlias = AttributeAlias(1, "osg_ProjCoord");
-    _atlasGen = new TexPyrAtlas("/home/mattjr/auvdata/r20090804_084719_scott_25_dense_repeat_auv5_deep/renav20090804/mesh/img");
+    _atlasGen = new TexPyrAtlas("/home/mattjr/auvdata/r20090804_084719_scott_25_dense_repeat_auv5_deep/renav20090804/mesh/img",!_useTextureArray);
     baseName="tmpStore";
     char tmp[1024];
     sprintf(tmp,"%d",rand());
@@ -194,6 +194,7 @@ TexturingQuery::~TexturingQuery(){
     delete manager;
     delete memstore;
     delete stream;
+    delete _atlasGen;
 }
 const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts){
     CamDists orderedProj;

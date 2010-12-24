@@ -1,7 +1,7 @@
 #include "TexPyrAtlas.h"
 #include <osgDB/ReadFile>
 #include <string.h>
-TexPyrAtlas::TexPyrAtlas(std::string imgdir):_imgdir(imgdir)
+TexPyrAtlas::TexPyrAtlas(std::string imgdir,bool doAtlas):_imgdir(imgdir),_doAtlas(doAtlas)
 {
     setMaximumAtlasSize(4096,4096);
     setMargin(0);
@@ -32,12 +32,17 @@ osg::Matrix TexPyrAtlas::getTextureMatrixByID(id_type id){
     return osg::Matrix::identity();
 }
 void TexPyrAtlas::loadSources(std::vector<std::pair<id_type ,std::string> > imageList,int sizeIdx){
-    _images.resize(imageList.size());
+
+    std::vector<osg::ref_ptr<osg::Image> > images;
+    images.resize(imageList.size());
+    if(!_doAtlas)
+        _images.resize(imageList.size());
+
     for(int i=0; i< (int)imageList.size(); i++){
         //osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
         osg::ref_ptr<osg::Image> img=osgDB::readImageFile(_imgdir+"/"+imageList[i].second);
-        resizeImage(img,_downsampleSizes[sizeIdx],_downsampleSizes[sizeIdx],_images[i]);
-        if(_images[i].valid()){
+        resizeImage(img,_downsampleSizes[sizeIdx],_downsampleSizes[sizeIdx],images[i]);
+        if(images[i].valid()){
             //texture->setImage(_images[i]);
            /* texture->setTextureSize(_downsampleSizes[0],_downsampleSizes[0]);
             bool resizePowerOfTwo=true;
@@ -45,8 +50,8 @@ void TexPyrAtlas::loadSources(std::vector<std::pair<id_type ,std::string> > imag
            // osg::setNotifyLevel(osg::FATAL);
             vpb::generateMipMap(*_state,*texture,resizePowerOfTwo,vpb::BuildOptions::GL_DRIVER);*/
            // osg::setNotifyLevel(saved_ns);
-            if (!getSource(_images[i])) {
-                Source *s=new Source(_images[i]);
+            if (!getSource(images[i])) {
+                Source *s=new Source(images[i]);
                 _sourceList.push_back(s);
                 _sourceToId[s]=imageList[i].first;
                 _idToSource[imageList[i].first]=s;
@@ -55,8 +60,10 @@ void TexPyrAtlas::loadSources(std::vector<std::pair<id_type ,std::string> > imag
             OSG_ALWAYS << imageList[i].second << " not found or couldn't be loaded"<<std::endl;
         }
     }
-    buildAtlas();
-    computeImageNumberToAtlasMap();
+    if(_doAtlas){
+        buildAtlas();
+        computeImageNumberToAtlasMap();
+    }
 
 }
 osg::ref_ptr<osg::Image> TexPyrAtlas::getImage(int index,int sizeIndex){

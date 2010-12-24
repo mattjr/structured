@@ -9,7 +9,7 @@ class TexPyrAtlas : public osgUtil::Optimizer::TextureAtlasBuilder
 public:
     typedef long id_type;
 
-    TexPyrAtlas(std::string imgdir);
+    TexPyrAtlas(std::string imgdir,bool doAtlas=true);
     void loadSources(std::vector<std::pair<id_type,std::string> > imageList,int sizeIdx);
     int getAtlasId(id_type id);
     osg::ref_ptr<osg::Image> getImage(int index,int sizeIndex);
@@ -25,11 +25,11 @@ public:
 
     void computeImageNumberToAtlasMap(void);
 protected:
-     std::vector<int> _downsampleSizes;
-   osg::State *_state;
-   std::vector<osg::ref_ptr<osg::Image> > _images;
+    std::vector<int> _downsampleSizes;
+    osg::ref_ptr<osg::State> _state;
+    std::vector<osg::ref_ptr<osg::Image> > _images;
 
-   /**
+    /**
           * Resizes an image using nearest-neighbor resampling. Returns a new image, leaving
           * the input image unaltered.
           *
@@ -43,15 +43,16 @@ protected:
           * If the output parameter is non-NULL, then the mipmapLevel is also considered.
           * This lets you resize directly into a particular mipmap level of the output image.
           */
-   bool
-   resizeImage(const osg::Image* input,
-                           unsigned int out_s, unsigned int out_t,
-                           osg::ref_ptr<osg::Image>& output,
-                           unsigned int mipmapLevel=0 );
-   std::string _imgdir;
-   std::map<id_type,int> _idToAtlas;
-   std::map<Source*,id_type> _sourceToId;
-   std::map<id_type,Source*> _idToSource;
+    bool
+            resizeImage(const osg::Image* input,
+                        unsigned int out_s, unsigned int out_t,
+                        osg::ref_ptr<osg::Image>& output,
+                        unsigned int mipmapLevel=0 );
+    std::string _imgdir;
+    std::map<id_type,int> _idToAtlas;
+    std::map<Source*,id_type> _sourceToId;
+    std::map<id_type,Source*> _idToSource;
+    bool _doAtlas;
 
 
 };

@@ -242,6 +242,18 @@ const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3
 */
     return orderedProj;
 }
+osg::Vec2 TexturingQuery::convertToUV(const osg::Vec2 &pix){
+    osg::Vec2 ratioPow2;
+    osg::Vec2 pow2size(osg::Image::computeNearestPowerOfTwo(_origImageSize.x()),osg::Image::computeNearestPowerOfTwo(_origImageSize.y()));
+    ratioPow2.x()=(pow2size.x()/_origImageSize.x());
+    ratioPow2.y()=(pow2size.y()/_origImageSize.y());
+    ratioPow2.x()*=pix.x();
+    ratioPow2.y()*=pix.y();
+    osg::Vec2 uv;
+    uv.x()=ratioPow2.x()/pow2size.x();
+    uv.y()=1.0-(ratioPow2.y()/pow2size.y());
+    return uv;
+}
 
 void TexturingQuery::findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,SpatialIndex::id_type id){
     cpad.id=id;
@@ -250,13 +262,7 @@ void TexturingQuery::findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,Spatial
         cpad.dist=DBL_MAX;
     else
         cpad.dist=(texC-osg::Vec2(_origImageSize.x()/2,_origImageSize.y()/2)).length2();
-    osg::Vec2 ratioPow2;
-    ratioPow2.x()=(osg::Image::computeNearestPowerOfTwo(_origImageSize.x())/_origImageSize.x());
-    ratioPow2.y()=(osg::Image::computeNearestPowerOfTwo(_origImageSize.y())/_origImageSize.y());
-    texC.x()*=ratioPow2.x();
-    texC.y()*=ratioPow2.y();
-    cpad.uv.x()=texC.x()/_origImageSize.x();
-    cpad.uv.y()=texC.y()/_origImageSize.y();
+    cpad.uv=convertToUV(texC);
 
 }
 double TexturingQuery::getDistToCenter(osg::Vec3 v, ProjectionCamera cam){
@@ -312,8 +318,9 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
         }
         for(int k=0; k <3; k++){
             camIdxArr->at(prset.index(i+k))=camIdx;
-            if(texCoordsArray && d.size())
-                texCoordsArray->at(prset.index(i+k))=d[0].uv;
+            if(texCoordsArray && d.size()) {
+                texCoordsArray->at(prset.index(i+k))=convertToUV(reprojectPt(_cameras[d[0].id].m,verts[tri_v[k]]));
+            }
         }
     }
 

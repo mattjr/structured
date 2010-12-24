@@ -62,7 +62,7 @@ protected:
     typedef std::multimap<int,ProjectionCamera> ProjectsToMap;
     double getDistToCenter(osg::Vec3 v, ProjectionCamera cam);
     void findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,SpatialIndex::id_type id);
-
+    osg::Vec2 convertToUV(const osg::Vec2 &pix);
     const CamDists getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts);
     std::string _bbox_file;
     const Camera_Calib _calib;

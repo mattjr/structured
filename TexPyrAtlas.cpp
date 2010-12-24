@@ -3,7 +3,7 @@
 #include <string.h>
 TexPyrAtlas::TexPyrAtlas(std::string imgdir):_imgdir(imgdir)
 {
-    setMaximumAtlasSize(1024,1024);
+    setMaximumAtlasSize(4096,4096);
     setMargin(0);
     _downsampleSizes.clear();
     _downsampleSizes.push_back(512);

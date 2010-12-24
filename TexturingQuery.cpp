@@ -361,7 +361,7 @@ std::vector<osg::ref_ptr<osg::Image> >TexturingQuery::loadTex(map<SpatialIndex::
         //   std::cout << " loading " <<it->first << " : " << it->second << '\n';
     }
 
-    _atlasGen->loadSources(files);
+    _atlasGen->loadSources(files,sizeIdx);
     end = allIds.end();
     for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
     {
@@ -625,7 +625,7 @@ void TexturingQuery::projectModel(osg::Geode *geode,int texSizeIdx){
         if(!_useTextureArray){
             vector<osg::Geometry*> geoms;
 
-            generateStateAndSplitDrawables(geoms,v,*(primitiveSets.begin()->get()),texCoords.get(),*verts,0);
+            generateStateAndSplitDrawables(geoms,v,*(primitiveSets.begin()->get()),texCoords.get(),*verts,texSizeIdx);
             geode->removeDrawables(0);
             for(int i=0; i < (int)geoms.size(); i++)
                 geode->addDrawable(geoms[i]);

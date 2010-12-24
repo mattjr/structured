@@ -31,12 +31,12 @@ osg::Matrix TexPyrAtlas::getTextureMatrixByID(id_type id){
         return _idToSource[id]->computeTextureMatrix();
     return osg::Matrix::identity();
 }
-void TexPyrAtlas::loadSources(std::vector<std::pair<id_type ,std::string> > imageList){
+void TexPyrAtlas::loadSources(std::vector<std::pair<id_type ,std::string> > imageList,int sizeIdx){
     _images.resize(imageList.size());
     for(int i=0; i< (int)imageList.size(); i++){
         //osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
         osg::ref_ptr<osg::Image> img=osgDB::readImageFile(_imgdir+"/"+imageList[i].second);
-        resizeImage(img,_downsampleSizes[0],_downsampleSizes[0],_images[i]);
+        resizeImage(img,_downsampleSizes[sizeIdx],_downsampleSizes[sizeIdx],_images[i]);
         if(_images[i].valid()){
             //texture->setImage(_images[i]);
            /* texture->setTextureSize(_downsampleSizes[0],_downsampleSizes[0]);

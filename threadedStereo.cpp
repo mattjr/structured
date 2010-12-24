@@ -2392,7 +2392,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
         std::vector<string> level;
         for(int i=0; i <(int)quad_cells.size(); i++){
             char tmp[1024];
-            sprintf(tmp,"mesh-quad/clipped-diced-%08d-lod%d.ply",i,lod);
+            sprintf(tmp,"mesh-quad/clipped-diced-%08d-lod%d.ply",i,std::min(lod,1));
             level.push_back(tmp);
         }
         datalist_lod.push_back(level);

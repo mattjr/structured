@@ -10,7 +10,7 @@ public:
     typedef long id_type;
 
     TexPyrAtlas(std::string imgdir);
-    void loadSources(std::vector<std::pair<id_type,std::string> > imageList);
+    void loadSources(std::vector<std::pair<id_type,std::string> > imageList,int sizeIdx);
     int getAtlasId(id_type id);
     osg::ref_ptr<osg::Image> getImage(int index,int sizeIndex);
     int getDownsampleSize(int idx){if(idx > (int) _downsampleSizes.size()) return 0; return _downsampleSizes[idx];}

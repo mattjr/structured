@@ -2387,12 +2387,13 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(quadmergecmds_fp);
     fclose(diced_fp);
+    int lodPick[]={2,2,2,1,1,1};
     std::vector<std::vector<string> > datalist_lod;
     for(int lod=0; lod < vpblod; lod ++){
         std::vector<string> level;
         for(int i=0; i <(int)quad_cells.size(); i++){
             char tmp[1024];
-            sprintf(tmp,"mesh-quad/clipped-diced-%08d-lod%d.ply",i,std::min(lod,2));
+            sprintf(tmp,"mesh-quad/clipped-diced-%08d-lod%d.ply",i,lodPick[lod]);//std::min(lod,2)
             level.push_back(tmp);
         }
         datalist_lod.push_back(level);

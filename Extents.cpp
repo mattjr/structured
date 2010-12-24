@@ -904,7 +904,7 @@ void MyDataSet::createNewDestinationGraph(
 
     log(osg::NOTICE,"Time for _destinationGraph->computeMaximumSourceResolution() = %f", osg::Timer::instance()->delta_s(before_computeMax, after_computeMax));
 }
-void MyDataSet::processTile(DestinationTile *tile,Source *src){
+void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
     log(osg::NOTICE,"   source:%s",src->getFileName().c_str());
  //   log(osg::NOTICE,"    %x",src->getSourceData()->_model.get());
     osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
@@ -945,10 +945,15 @@ void MyDataSet::processTile(DestinationTile *tile,Source *src){
     delete tq;
     //src->getSourceData()->
     //    tile->_models->
-    if(!tile->_models){
-        tile->_models = new DestinationData(NULL);
+    {
+
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_tileMutex);
+
+        if(!tile->_models){
+            tile->_models = new DestinationData(NULL);
+        }
+        tile->_models->_models.push_back(root.get());
     }
-    tile->_models->_models.push_back(root.get());
 
 }
 
@@ -956,24 +961,24 @@ class MyReadFromOperation : public BuildOperation
 {
     public:
 
-        MyReadFromOperation(ThreadPool* threadPool, BuildLog* buildLog, DestinationTile* tile, MyDataSet* dataSet):
+        MyReadFromOperation(ThreadPool* threadPool, BuildLog* buildLog, DestinationTile* tile, MyDataSet* dataSet,Source *src):
             BuildOperation(threadPool, buildLog, "ReadFromOperation", false),
             _tile(tile),
-            _dataSet(dataSet) {}
+            _dataSet(dataSet),
+            _src(src){}
 
         virtual void build()
         {
             log(osg::NOTICE, "   ReadFromOperation: reading tile level=%u X=%u Y=%u",_tile->_level,_tile->_tileX,_tile->_tileY);
-            for(DestinationTile::Sources::iterator itr = _tile->_sources.begin();
-            itr != _tile->_sources.end();
-            ++itr)
-            {
-             _dataSet->processTile(_tile,*itr);
-            }
+            MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(_tile);
+           _dataSet->processTile(myt,_src);
+           //  _dataSet->processTile(_tile,_src);
+
         }
 
         DestinationTile* _tile;
         MyDataSet* _dataSet;
+        Source *_src;
 };
 
 void MyDataSet::_readRow(Row& row)
@@ -991,7 +996,12 @@ void MyDataSet::_readRow(Row& row)
                 titr!=cd->_tiles.end();
                 ++titr)
             {
-                _readThreadPool->run(new MyReadFromOperation(_readThreadPool.get(), getBuildLog(), titr->get(), this));
+                for(DestinationTile::Sources::iterator itr = (*titr)->_sources.begin();
+                itr != (*titr)->_sources.end();
+                ++itr)
+                {
+                 _readThreadPool->run(new MyReadFromOperation(_readThreadPool.get(), getBuildLog(), titr->get(), this,(*itr).get()));
+                }
             }
         }
 
@@ -1017,7 +1027,8 @@ void MyDataSet::_readRow(Row& row)
                 itr != tile->_sources.end();
                 ++itr)
                 {
-                    processTile(tile,*itr);
+                    MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(tile);
+                    processTile(myt,*itr);
                 }
             }
         }

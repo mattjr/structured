@@ -45,13 +45,14 @@
 #include <vpb/DataSet>
 #include <osgUtil/MeshOptimizers>
 #include "TexturingQuery.h"
-
+#include <OpenThreads/ScopedLock>
 
 namespace vpb
 {
     class MyDestinationTile : public DestinationTile{
     public:
          osg::Node * createScene(void);
+         OpenThreads::Mutex _tileMutex;
     };
     class ClippedCopy{
     public:
@@ -91,7 +92,7 @@ class MyDataSet :  public DataSet
         void _buildDestination(bool writeToDisk);
         int _run();
         TexturingQuery *_tq;
-        void processTile(DestinationTile *tile,Source *src);
+        void processTile(MyDestinationTile *tile,Source *src);
 
     protected:
         virtual ~MyDataSet() {}

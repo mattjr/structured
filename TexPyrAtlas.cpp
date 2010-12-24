@@ -6,7 +6,7 @@ TexPyrAtlas::TexPyrAtlas(std::string imgdir,bool doAtlas):_imgdir(imgdir),_doAtl
     setMaximumAtlasSize(4096,4096);
     setMargin(0);
     _downsampleSizes.clear();
-    _downsampleSizes.push_back(256);
+    _downsampleSizes.push_back(512);
     _downsampleSizes.push_back(128);
     _downsampleSizes.push_back(32);
     _state = new osg::State;

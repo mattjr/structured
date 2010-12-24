@@ -198,7 +198,6 @@ TexturingQuery::~TexturingQuery(){
 }
 const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts){
     CamDists orderedProj;
-
     if(tri_v.size() != 3){
         fprintf(stderr,"Error not 3 verts\n");
         return orderedProj;
@@ -302,7 +301,7 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
             }
         }
     }
-    camIdxArr->resize(verts.size());
+    camIdxArr->resize(verts.size(),osg::Vec4(-1,-1,-1,-1));
     if(texCoordsArray)
         texCoordsArray->resize(verts.size());
 
@@ -357,9 +356,10 @@ std::vector<osg::ref_ptr<osg::Image> >TexturingQuery::loadTex(map<SpatialIndex::
     std::vector<std::pair<SpatialIndex::id_type,string> > files(allIds.size());
     map<SpatialIndex::id_type,int>::const_iterator end = allIds.end();
     for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
-    {
+    {   if(_cameras.count(it->first))
         files[it->second]=make_pair<SpatialIndex::id_type,string> (it->first,_cameras[it->first].filename);
-        //   std::cout << " loading " <<it->first << " : " << it->second << '\n';
+        else
+             OSG_ALWAYS << " Failed " <<it->first << " : " << it->second << '\n';
     }
 
     _atlasGen->loadSources(files,sizeIdx);

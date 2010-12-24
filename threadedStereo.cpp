@@ -118,7 +118,7 @@ static int num_threads=1;
 static FILE *fpp,*fpp2,*pos_fp;
 static double connected_comp_size_clean;
 static double hole_fill_size;
-static bool even_split=false;
+static bool even_split=true;
 static double cell_scale=1.0;
 static bool do_classes=false;
 static bool do_classes_interp=false;
@@ -2387,7 +2387,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(quadmergecmds_fp);
     fclose(diced_fp);
-    int lodPick[]={0,1,1,2,2,2};
+    int lodPick[]={0,2,2,2,2,2};
     std::vector<std::vector<string> > datalist_lod;
     for(int lod=0; lod < vpblod; lod ++){
         std::vector<string> level;

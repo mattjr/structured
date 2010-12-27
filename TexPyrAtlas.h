@@ -21,6 +21,10 @@ public:
             return _atlasList[i]->_image;
         return NULL;
     }
+    std::vector<osg::ref_ptr<osg::Image> > getImages(void){
+    return _images;
+    }
+
     osg::Matrix getTextureMatrixByID(id_type id);
 
     void computeImageNumberToAtlasMap(void);

@@ -79,6 +79,7 @@ static int max_feature_count;
 static bool use_mb_ply =false;
 static double eps=1.0;
 static double subvol;
+static bool useTextureArray=true;
 static double longOrigin,latOrigin;
 static bool interp_quad=false;
 static bool run_pos=false;
@@ -357,7 +358,9 @@ static bool parse_args( int argc, char *argv[ ] )
   argp.read("--skipsparse",skip_sparse);
   argp.read("--bkmb",background_mb);
   argp.read("--overlap",overlap);
- 
+ if(argp.read("--noarray"))
+     useTextureArray=false;
+
 
   if(argp.read("--mbply"))
     use_mb_ply=true;
@@ -2149,7 +2152,7 @@ fprintf(stderr,"Not valid %s\n", osgDB::getStrippedName(tasks[i].left_name).c_st
     for(int i=0; i <(int)vrip_cells.size(); i++){
       if(vrip_cells[i].poses.size() == 0)
 	continue;
-      
+
       sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
       sprintf(conf_name,"mesh-diced/bbox-clipped-diced-%08d.ply.txt",i);
 
@@ -2387,7 +2390,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(quadmergecmds_fp);
     fclose(diced_fp);
-    int lodPick[]={0,2,2,2,2,2};
+    int lodPick[]={0,0,0,2,2,0};
     std::vector<std::vector<string> > datalist_lod;
     for(int lod=0; lod < vpblod; lod ++){
         std::vector<string> level;
@@ -2588,7 +2591,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
         if(!mgc)
           mgc = new MyGraphicsContext();
-        doQuadTreeVPB(datalist_lod,bounds,calib->left_calib);
+        doQuadTreeVPB(datalist_lod,bounds,calib->left_calib,useTextureArray);
 
 
 	vector<string> gentexnames;

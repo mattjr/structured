@@ -52,7 +52,7 @@
 using namespace vpb;
 using vpb::log;
 
-MyDataSet::MyDataSet(const Camera_Calib &calib): _calib(calib)
+MyDataSet::MyDataSet(const Camera_Calib &calib,bool useTextureArray): _calib(calib),_useTextureArray(useTextureArray)
 {
     init();
 }
@@ -916,11 +916,11 @@ void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
     int texSizeIdx=0;
 
     if(tile->_level == 1){
-        texSizeIdx=1;
+        texSizeIdx=0;
 //              clipper.setColor(osg::Vec4(1,0,0,1));
     }
     else if(tile->_level == 2){
-        texSizeIdx=1;
+        texSizeIdx=0;
 //                clipper.setColor(osg::Vec4(0,1,0,1));
     }
     else if(tile->_level == 3){
@@ -942,7 +942,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
     std::string mf=src->getFileName();
     int npos=mf.find("/");
     std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-    TexturingQuery *tq=new TexturingQuery(bbox_name,_calib);
+    TexturingQuery *tq=new TexturingQuery(bbox_name,_calib,_useTextureArray);
     tq->projectModel(dynamic_cast<osg::Geode*>(root.get()),texSizeIdx);
     delete tq;
     //src->getSourceData()->

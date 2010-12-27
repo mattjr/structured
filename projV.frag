@@ -23,11 +23,10 @@ void main()
   //vec4 shadowCoordinateWdivide = projCord / projCord.w ;
   //shadowCoordinateWdivide.z += 0.0015;
     vec4 color;
-    if(projCord.s > 1.0 || projCord.s < 0.0)
+    if(projCord.s > 1.0 || projCord.s < 0.0 ||projCord.z <0.0 )
     color=vec4(1.0,0,0,1);
     else
-        color=vec4(0.0,0,0,0);
-  color = texture2DArray(theTexture,projCord.xyz);
+	color = texture2DArray(theTexture,projCord.xyz);
  //vec4 orig =texture2D( colorMap, gl_TexCoord[0].st)+vec4(0,0,0.4,1);
 float f=float(vC.x);
  gl_FragColor=color;

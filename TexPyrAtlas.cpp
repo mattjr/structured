@@ -31,18 +31,22 @@ osg::Matrix TexPyrAtlas::getTextureMatrixByID(id_type id){
         return _idToSource[id]->computeTextureMatrix();
     return osg::Matrix::identity();
 }
+
 void TexPyrAtlas::loadSources(std::vector<std::pair<id_type ,std::string> > imageList,int sizeIdx){
 
-    std::vector<osg::ref_ptr<osg::Image> > images;
-    images.resize(imageList.size());
+    std::vector<osg::ref_ptr<osg::Image> > loc_images;
+    loc_images.resize(imageList.size());
     if(!_doAtlas)
         _images.resize(imageList.size());
 
     for(int i=0; i< (int)imageList.size(); i++){
         //osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
         osg::ref_ptr<osg::Image> img=osgDB::readImageFile(_imgdir+"/"+imageList[i].second);
-        resizeImage(img,_downsampleSizes[sizeIdx],_downsampleSizes[sizeIdx],images[i]);
-        if(images[i].valid()){
+        resizeImage(img,_downsampleSizes[sizeIdx],_downsampleSizes[sizeIdx],loc_images[i]);
+        if(loc_images[i].valid()){
+          if(!_doAtlas) {
+              _images[i]=loc_images[i];
+          }else{
             //texture->setImage(_images[i]);
            /* texture->setTextureSize(_downsampleSizes[0],_downsampleSizes[0]);
             bool resizePowerOfTwo=true;
@@ -50,12 +54,13 @@ void TexPyrAtlas::loadSources(std::vector<std::pair<id_type ,std::string> > imag
            // osg::setNotifyLevel(osg::FATAL);
             vpb::generateMipMap(*_state,*texture,resizePowerOfTwo,vpb::BuildOptions::GL_DRIVER);*/
            // osg::setNotifyLevel(saved_ns);
-            if (!getSource(images[i])) {
-                Source *s=new Source(images[i]);
+            if (!getSource(loc_images[i])) {
+                Source *s=new Source(loc_images[i]);
                 _sourceList.push_back(s);
                 _sourceToId[s]=imageList[i].first;
                 _idToSource[imageList[i].first]=s;
             }
+        }
         }else{
             OSG_ALWAYS << imageList[i].second << " not found or couldn't be loaded"<<std::endl;
         }
@@ -63,14 +68,22 @@ void TexPyrAtlas::loadSources(std::vector<std::pair<id_type ,std::string> > imag
     if(_doAtlas){
         buildAtlas();
         computeImageNumberToAtlasMap();
+        for(int i=0; i < (int)getNumAtlases(); i++)
+            _images.push_back(getAtlasByNumber(i));
     }
 
 }
 osg::ref_ptr<osg::Image> TexPyrAtlas::getImage(int index,int sizeIndex){
     osg::ref_ptr<osg::Image> img;
-    if(index >= 0 && index < (int)_images.size() && _images[index].valid())
-        resizeImage(_images[index].get(),_downsampleSizes[sizeIndex],_downsampleSizes[sizeIndex],img);
+    if(!_doAtlas){
+        if(index >= 0 && index < (int)_images.size() && _images[index].valid()){
+            resizeImage(_images[index].get(),_downsampleSizes[sizeIndex],_downsampleSizes[sizeIndex],img);
+        }
+
     return img;
+}else{
+    return getAtlasByNumber(index);
+}
   /*  if(index >= 0 && index < (int)_images.size() && _images[index].valid())
         return _tb.getImageAtlas(_images[index]);
     else

@@ -3,11 +3,11 @@
 #include <osgDB/ReadFile>
 #include "TexturingQuery.h"
 using namespace std;
-void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib){
+void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,bool useTextureArray){
 
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
-    vpb::MyDataSet *m=new vpb::MyDataSet(calib);
+    vpb::MyDataSet *m=new vpb::MyDataSet(calib,useTextureArray);
     m->setNumReadThreadsToCoresRatio(1.5);
     m->setRadiusToMaxVisibleDistanceRatio(2.5);
    //  m->_tq = new TexturingQuery("mesh-quad/bbox.txt",calib);

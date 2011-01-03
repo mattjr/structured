@@ -574,23 +574,25 @@ osg::Node* MyDestinationTile::createScene()
             itr != _models->_models.end();
             ++itr,++cnt)
             {
-                if(cnt >= (int)texCoordIDIndexPerModel.size()){
-                    OSG_FATAL << "Not correct number of texCoordIDIndexPerModel in createScene()" <<endl;
-                    exit(0);
-                }else{
-                    osg::Vec4Array *tmp=texCoordIDIndexPerModel[cnt];
-                    osg::Vec2Array *tmp2=texCoordsPerModel[cnt];
-                    cout << tmp->size() << " ASS " << tmp2->size() << endl;
-                    if(tmp && tmp2){
-                        for(int i=0; i<(int)tmp->size(); i++)
-                            (*v).push_back(tmp->at(i));
-
-                        for(int i=0; i<(int)tmp2->size(); i++){
-                            osg::Vec2 a=tmp2->at(i);
-                            (*texCoords).push_back(a);
-                        }
+                if(_atlasGen.getNumSources()> 0 ){
+                    if(cnt >= (int)texCoordIDIndexPerModel.size()){
+                        OSG_FATAL << "Not correct number of texCoordIDIndexPerModel in createScene()" <<endl;
+                        exit(0);
                     }else{
-                        OSG_FATAL << "Null Ptr texCoordIDIndexPerModel" <<endl;
+                        osg::Vec4Array *tmp=texCoordIDIndexPerModel[cnt];
+                        osg::Vec2Array *tmp2=texCoordsPerModel[cnt];
+                        //cout << tmp->size() << " ASS " << tmp2->size() << endl;
+                        if(tmp && tmp2){
+                            for(int i=0; i<(int)tmp->size(); i++)
+                                (*v).push_back(tmp->at(i));
+
+                            for(int i=0; i<(int)tmp2->size(); i++){
+                                osg::Vec2 a=tmp2->at(i);
+                                (*texCoords).push_back(a);
+                            }
+                        }else{
+                            OSG_FATAL << "Null Ptr texCoordIDIndexPerModel" <<endl;
+                        }
                     }
                 }
                 addNodeToScene(itr->get());
@@ -598,7 +600,7 @@ osg::Node* MyDestinationTile::createScene()
 
 
             if(_createdScene){
-                 osgUtil::Optimizer::MergeGeodesVisitor visitor;
+                osgUtil::Optimizer::MergeGeodesVisitor visitor;
 
                 _createdScene->accept(visitor);
                 osgUtil::Optimizer::MergeGeometryVisitor mgv;
@@ -608,8 +610,10 @@ osg::Node* MyDestinationTile::createScene()
                 osgUtil::GeometryCollector gc(NULL,opt);
                 _createdScene->accept(gc);
                 osgUtil::GeometryCollector::GeometryList geomList = gc.getGeometryList();
-                OSG_ALWAYS << "Number of collected geometies " << geomList.size() << endl;
-                if(geomList.size()){
+                if(geomList.size() > 1){
+                OSG_ALWAYS << "Number of collected geometies " << geomList.size() << "problem "<<endl;
+            }
+                if(geomList.size() && _atlasGen.getNumSources()> 0 ){
                     osg::StateSet *stateset=generateStateAndArray2DRemap(v,texCoords,0);
                     osg::Geometry *geom=*geomList.begin();
                     setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);

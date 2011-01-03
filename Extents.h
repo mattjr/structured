@@ -58,6 +58,8 @@ levelToTextureLevel[0]=2;
 levelToTextureLevel[1]=2;
 levelToTextureLevel[2]=1;
 levelToTextureLevel[3]=0;
+levelToTextureLevel[4]=0;
+levelToTextureLevel[5]=0;
 
     }
         osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray,int texSizeIdx);

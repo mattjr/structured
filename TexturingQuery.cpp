@@ -434,7 +434,7 @@ void TexturingQuery::projectModel(osg::Geode *geode,int texSizeIdx){
         osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
 
         int origSize=tif.new_list.size();
-        verts->resize(origSize+tif.indices_double_counted.size());
+      //  verts->resize(origSize+tif.indices_double_counted.size());
         for(int i=0; i<origSize; i++){
             if(tif.indices_double_counted.count(tif.new_list[i])){
                verts->push_back(verts->at(tif.new_list[i]));

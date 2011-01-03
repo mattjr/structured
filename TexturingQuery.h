@@ -66,7 +66,7 @@ class TexturingQuery
 public:
     TexturingQuery(std::string bbox_file,const Camera_Calib &calib,TexPyrAtlas &atlasGen,bool useTextureArray);
     ~TexturingQuery();
-    void projectModel(osg::Geode *,int texSizeIdx);
+    bool projectModel(osg::Geode *);
     class ProjectionCamera{
     public:
         osg::Matrixf m;

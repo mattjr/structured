@@ -14,6 +14,8 @@ TexPyrAtlas::TexPyrAtlas(std::string imgdir,bool doAtlas):_imgdir(imgdir),_doAtl
 
 
 }
+
+
 void TexPyrAtlas::computeImageNumberToAtlasMap(void){
     for(int i=0; i < (int)_atlasList.size(); i++){
         for(int j=0; j< (int)_atlasList[i]->_sourceList.size(); j++)
@@ -29,10 +31,23 @@ int TexPyrAtlas::getAtlasId(id_type id){
 }
 osg::Matrix TexPyrAtlas::getTextureMatrixByID(id_type id){
     if(_idToSource.count(id))
-        return _idToSource[id]->computeTextureMatrix();
+return computeTextureMatrixFreedImage(_idToSource[id]);     //   return _idToSource[id]->computeTextureMatrix(); This was using images we had freed
+
     return osg::Matrix::identity();
 }
+osg::Matrix TexPyrAtlas::computeTextureMatrixFreedImage(Source *s)
+{
+    if (!s->_atlas) return osg::Matrix();
+    double image_t,image_s;
+    if(!_sourceToSize.count(s))return osg::Matrix();
+    image_s=_sourceToSize[s][0];
+    image_t=_sourceToSize[s][1];
 
+    if (!(s->_atlas->_image)) return osg::Matrix();
+
+    return osg::Matrix::scale(float(image_s)/float(s->_atlas->_image->s()), float(image_t)/float(s->_atlas->_image->t()), 1.0)*
+           osg::Matrix::translate(float(s->_x)/float(s->_atlas->_image->s()), float(s->_y)/float(s->_atlas->_image->t()), 0.0);
+}
 void TexPyrAtlas::addSources(std::vector<std::pair<id_type ,std::string> > imageList){
     for(int i=0; i< (int)imageList.size(); i++){
 
@@ -83,6 +98,7 @@ void TexPyrAtlas::loadTextureFiles(int sizeIndex){
                     _sourceList.push_back(s);
                     _sourceToId[s]=it->first;
                     _idToSource[it->first]=s;
+                    _sourceToSize[s]=osg::Vec2(loc_images[i]->s(),loc_images[i]->t());
                 }
             }
         }else{
@@ -95,8 +111,15 @@ void TexPyrAtlas::loadTextureFiles(int sizeIndex){
         computeImageNumberToAtlasMap();
         for(int i=0; i < (int)getNumAtlases(); i++)
             _images.push_back(getAtlasByNumber(i));
-    }
+        //Free ref created by source new above which is leaks after copy from sources
+        for(int i=0; i < (int)loc_images.size(); i++){
+            loc_images[i]->unref();
+        }
 
+    }
+       /* for(int i=0; i < loc_images.size(); i++){
+            OSG_ALWAYS << loc_images[i]->referenceCount() << endl;
+        }*/
 }
 osg::ref_ptr<osg::Texture> TexPyrAtlas::getTexture(int index,int sizeIndex){
 
@@ -179,7 +202,7 @@ bool
 
 void TexPyrAtlas::buildAtlas()
 {
-    printf("Number of sources %d\n",(int)_sourceList.size());
+    //printf("Number of sources %d\n",(int)_sourceList.size());
     // assign the source to the atlas
     _atlasList.clear();
     for(SourceList::iterator sitr = _sourceList.begin();

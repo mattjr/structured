@@ -330,10 +330,10 @@ public:
     }
 }*/
 
-void TexturingQuery::projectModel(osg::Geode *geode,int texSizeIdx){
+bool TexturingQuery::projectModel(osg::Geode *geode){
     if(!geode){
-        fprintf(stderr,"Not valid geode\n");
-        return;
+        OSG_ALWAYS << "Not valid geode\n";
+        return false;
     }
     for (unsigned int i=0; i<geode->getNumDrawables(); i++){
         reproj.clear();
@@ -345,7 +345,7 @@ void TexturingQuery::projectModel(osg::Geode *geode,int texSizeIdx){
 
       //  printf("Size %d",(int)tif.indices_double_counted.size());
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
-        geom->setUseDisplayList(false);
+        //geom->setUseDisplayList(false);
         osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
 
         int origSize=tif.new_list.size();
@@ -371,10 +371,10 @@ void TexturingQuery::projectModel(osg::Geode *geode,int texSizeIdx){
 
         osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
         osg::Geometry::PrimitiveSetList::iterator itr;
-        osg::Vec4Array *v= new osg::Vec4Array;
+        osg::ref_ptr<osg::Vec4Array> v= new osg::Vec4Array;
 
-        osg::Vec2Array* texCoords=new osg::Vec2Array;
-#warning "memory leak"
+        osg::ref_ptr<osg::Vec2Array> texCoords=new osg::Vec2Array;
+
         osg::ref_ptr<osg::StateSet> stateset;
         bool projectValid=false;
 
@@ -384,25 +384,17 @@ void TexturingQuery::projectModel(osg::Geode *geode,int texSizeIdx){
                 //remapSharedVert(*(*itr), *verts,tif.indices_double_counted);
                 projectValid=projectAllTriangles(v,texCoords,*(*itr), *verts);
                 if(!v||!projectValid){
-                    OSG_FATAL << "Failed to create reprojection array" <<endl;
+                    OSG_ALWAYS << "Failed to create reprojection array" <<endl;
                     continue;
                 }
                     _tile->texCoordIDIndexPerModel.push_back(v);
                     _tile->texCoordsPerModel.push_back(texCoords);
-
+                    return true;
                 break;
         default:
-                OSG_FATAL << "Freakout shouldn't be anything but triangles\n";
+                OSG_ALWAYS << "Freakout shouldn't be anything but triangles\n";
             }
         }
-        if(!_useTextureArray){
-            vector<osg::Geometry*> geoms;
-
-            /*generateStateAndSplitDrawables(geoms,v,*(primitiveSets.begin()->get()),texCoords,*verts,texSizeIdx);
-            geode->removeDrawables(0);
-            for(int i=0; i < (int)geoms.size(); i++)
-                geode->addDrawable(geoms[i]);*/
-            return;
-        }
     }
+    return false;
 }

@@ -67,8 +67,8 @@ namespace vpb
         std::vector<osg::ref_ptr<osg::Image> >getRemappedImages(idmap_t allIds,int sizeIdx);
         static const int TEXUNIT_ARRAY=0;
         typedef std::pair<unsigned int, std::string> AttributeAlias;
-        std::vector<osg::Vec4Array *> texCoordIDIndexPerModel;
-        std::vector<osg::Vec2Array *> texCoordsPerModel;
+        std::vector<osg::ref_ptr<osg::Vec4Array > > texCoordIDIndexPerModel;
+        std::vector<osg::ref_ptr<osg::Vec2Array > > texCoordsPerModel;
         void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
         void remapArrayForTexturing(osg::Vec4Array *v,osg::Vec2Array *texCoordsArray,idmap_t allIds);
 

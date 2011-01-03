@@ -287,7 +287,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         stateset->setDataVariance(osg::Object::STATIC);
     }
     int numIdx=prset.getNumIndices();
-    printf("Num idx %d\n",numIdx);
+  //  printf("Num idx %d\n",numIdx);
 
     for(int i=0; i<numIdx-2; i+=3){
         vector<osg::Vec3> vP;
@@ -651,10 +651,10 @@ osg::Node* MyDestinationTile::createScene()
         {
             int texSizeIdx=levelToTextureLevel[_level];
             _atlasGen.loadTextureFiles(texSizeIdx);
-            printf("tile Level %d texure level size %d\n",_level,_atlasGen.getDownsampleSize(levelToTextureLevel[_level]));
+            //printf("tile Level %d texure level size %d\n",_level,_atlasGen.getDownsampleSize(levelToTextureLevel[_level]));
             int cnt=0;
-            osg::Vec4Array* v=new osg::Vec4Array;
-            osg::Vec2Array * texCoords=new osg::Vec2Array;
+            osg::ref_ptr<osg::Vec4Array> v=new osg::Vec4Array;
+            osg::ref_ptr<osg::Vec2Array> texCoords=new osg::Vec2Array;
 
             for(ModelList::iterator itr = _models->_models.begin();
             itr != _models->_models.end();
@@ -662,8 +662,8 @@ osg::Node* MyDestinationTile::createScene()
             {
                 if(_atlasGen.getNumSources()> 0 ){
                     if(cnt >= (int)texCoordIDIndexPerModel.size()){
-                        OSG_FATAL << "Not correct number of texCoordIDIndexPerModel in createScene()" <<endl;
-                        exit(0);
+                        OSG_ALWAYS << "Not correct number of texCoordIDIndexPerModel in createScene()" <<endl;
+                        continue;
                     }else{
                         osg::Vec4Array *tmp=texCoordIDIndexPerModel[cnt];
                         osg::Vec2Array *tmp2=texCoordsPerModel[cnt];
@@ -684,13 +684,13 @@ osg::Node* MyDestinationTile::createScene()
                 addNodeToScene(itr->get());
             }
 
-
+            OSG_ALWAYS << "Number of coords "<< texCoords->size() << endl;
             if(_createdScene){
                 osgUtil::Optimizer::MergeGeodesVisitor visitor;
 
                 _createdScene->accept(visitor);
                 osgUtil::Optimizer::MergeGeometryVisitor mgv;
-                mgv.setTargetMaximumNumberOfVertices(1000000);
+                mgv.setTargetMaximumNumberOfVertices(INT_MAX);
                 _createdScene->accept(mgv);
                 osgUtil::Optimizer::OptimizationOptions  opt;
                 osgUtil::GeometryCollector gc(NULL,opt);
@@ -698,6 +698,8 @@ osg::Node* MyDestinationTile::createScene()
                 osgUtil::GeometryCollector::GeometryList geomList = gc.getGeometryList();
                 if(geomList.size() > 1){
                     OSG_ALWAYS << "Number of collected geometies " << geomList.size() << "problem "<<endl;
+                 //   OSG_FATAL << "Number of collected geometies " << geomList.size() << "problem "<<endl;
+
                 }
                 if(geomList.size() && _atlasGen.getNumSources()> 0 ){
                     osg::Geometry *geom=*geomList.begin();
@@ -1164,26 +1166,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
                                          DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
                                                              tile->_extents._max.y(),
                                                              DBL_MAX));
-    //Clipper clipper(ext_bbox);
-    int texSizeIdx=0;
 
-    if(tile->_level == 1){
-        texSizeIdx=0;
-        //              clipper.setColor(osg::Vec4(1,0,0,1));
-    }
-    else if(tile->_level == 2){
-        texSizeIdx=0;
-        //                clipper.setColor(osg::Vec4(0,1,0,1));
-    }
-    else if(tile->_level == 3){
-        texSizeIdx=1;
-        //                  clipper.setColor(osg::Vec4(0,0.5,0.5,1));
-    }
-    else if(tile->_level == 0){
-        texSizeIdx=2;
-        //                    clipper.setColor(osg::Vec4(0,0,1,1));
-    }else
-        texSizeIdx=0;
 
     //                  clipper.setApplyColor(true);
     //  osg::ref_ptr<osg::Node> root = (osg::Node*)src->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
@@ -1196,11 +1179,10 @@ void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
     std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
     TexturingQuery *tq=new TexturingQuery(bbox_name,_calib,tile->_atlasGen,_useTextureArray);
     tq->_tile=tile;
-    tq->projectModel(dynamic_cast<osg::Geode*>(root.get()),texSizeIdx);
+    bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(root.get()));
     delete tq;
-    //src->getSourceData()->
-    //    tile->_models->
-    {
+
+    if(projectSucess){
 
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_tileMutex);
 

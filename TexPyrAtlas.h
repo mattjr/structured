@@ -27,7 +27,7 @@ public:
     }
 
     osg::Matrix getTextureMatrixByID(id_type id);
-
+    osg::Matrix computeTextureMatrixFreedImage(Source *s) ;
     void computeImageNumberToAtlasMap(void);
 protected:
     void buildAtlas();
@@ -58,6 +58,8 @@ protected:
     std::map<id_type,int> _idToAtlas;
     std::map<Source*,id_type> _sourceToId;
     std::map<id_type,Source*> _idToSource;
+    std::map<Source*,osg::Vec2> _sourceToSize;
+
     bool _doAtlas;
 
 

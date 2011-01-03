@@ -72,7 +72,7 @@ void TexPyrAtlas::loadTextureFiles(int sizeIndex){
                 _images[i]=loc_images[i];
             }else{
                 //texture->setImage(_images[i]);
-             /*   texture->setTextureSize(_downsampleSizes[0],_downsampleSizes[0]);
+                /*   texture->setTextureSize(_downsampleSizes[0],_downsampleSizes[0]);
                 bool resizePowerOfTwo=true;
                 osg::NotifySeverity saved_ns=osg::getNotifyLevel();
                 // osg::setNotifyLevel(osg::FATAL);
@@ -211,8 +211,10 @@ void TexPyrAtlas::buildAtlas()
                 OSG_INFO<<"creating new Atlas for "<<source->_image->getFileName()<<std::endl;
 
                 osg::ref_ptr<Atlas> atlas = new Atlas(_maximumAtlasWidth,_maximumAtlasHeight,_margin);
+                if(_atlasList.size()){
                 atlas->_width=_maximumAtlasWidth;
                 atlas->_height=_maximumAtlasHeight;
+                }
                 _atlasList.push_back(atlas.get());
 
                 atlas->addSource(source);

@@ -101,7 +101,6 @@ protected:
     bool projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Array* texCoordsArray,
                                              const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
     osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray, int texSizeIdx);
-    static const int TEX_UNIT=0;
     ProjectsToMap reproj;
     osg::Vec2 _origImageSize;
     bool _useTextureArray;

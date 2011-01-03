@@ -54,21 +54,28 @@ namespace vpb
         MyDestinationTile(std::string imageDir):_atlasGen(imageDir){
         _projCoordAlias = AttributeAlias(1, "osg_ProjCoord");
         _texCoordsAlias = AttributeAlias(15, "osg_texCoord");
-levelToTextureLevel[0]=2;
-levelToTextureLevel[1]=2;
-levelToTextureLevel[2]=1;
-levelToTextureLevel[3]=0;
-levelToTextureLevel[4]=0;
-levelToTextureLevel[5]=0;
+        levelToTextureLevel[0]=2;
+        levelToTextureLevel[1]=2;
+        levelToTextureLevel[2]=1;
+        levelToTextureLevel[3]=0;
+        levelToTextureLevel[4]=0;
+        levelToTextureLevel[5]=0;
 
     }
+        typedef std::map<SpatialIndex::id_type,int> idmap_t;
         osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray,int texSizeIdx);
-        std::vector<osg::ref_ptr<osg::Image> >getRemappedImages(std::map<SpatialIndex::id_type,int> allIds,int sizeIdx);
+        std::vector<osg::ref_ptr<osg::Image> >getRemappedImages(idmap_t allIds,int sizeIdx);
         static const int TEXUNIT_ARRAY=0;
         typedef std::pair<unsigned int, std::string> AttributeAlias;
         std::vector<osg::Vec4Array *> texCoordIDIndexPerModel;
         std::vector<osg::Vec2Array *> texCoordsPerModel;
         void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
+        void remapArrayForTexturing(osg::Vec4Array *v,osg::Vec2Array *texCoordsArray,idmap_t allIds);
+
+        void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
+                                                            osg::Vec2Array* texCoordsArray,
+                                                            const osg::Vec3Array &verts,int texSizeIdx);
+        static const int TEX_UNIT=0;
 
         AttributeAlias _projCoordAlias;
         AttributeAlias _texCoordsAlias;

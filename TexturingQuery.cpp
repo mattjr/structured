@@ -202,7 +202,7 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
 
     map<SpatialIndex::id_type,int> allIds=calcAllIds(camIdxArr);
     addImagesToAtlasGen(allIds);
-    cout << "Number of prim" << prset.getNumIndices() << " " << prset.getNumPrimitives() << endl;
+    //cout << "Number of prim" << prset.getNumIndices() << " " << prset.getNumPrimitives() << endl;
 
     osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
 
@@ -281,92 +281,7 @@ map<SpatialIndex::id_type,int> calcAllIds(osg::Vec4Array *v){
 
 
 
-void TexturingQuery::generateStateAndSplitDrawables(vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
-                                                    osg::Vec2Array* texCoordsArray,
-                                                    const osg::Vec3Array &verts,int texSizeIdx){
-    if(!v)
-        return;
 
-    map<SpatialIndex::id_type,int> allIds;
-    unsigned int uniqueIdCount=0;
-    for(int i=0; i< (int)v->size(); i++){
-        int id=(int)((*v)[i][0]);
-        if(id < 0)
-            continue;
-        if(allIds.count(id) == 0){
-            allIds[id]=uniqueIdCount++;
-        }
-    }
-
-    //int tex_size=_atlasGen.getDownsampleSize(texSizeIdx);
-    std::vector<osg::ref_ptr<osg::Image> > textures;//= getRemappedImages(allIds,texSizeIdx);
-    std::vector<osg::DrawElementsUInt *>  primsets(_atlasGen.getNumAtlases());;
-    std::vector<osg::Vec3Array *>  vertSplit(_atlasGen.getNumAtlases());
-    std::vector<osg::Vec2Array *> texSplit(_atlasGen.getNumAtlases());
-    geoms.resize(_atlasGen.getNumAtlases());
-
-    for(int i=0; i< (int)geoms.size(); i++){
-        geoms[i]= new osg::Geometry;
-        vertSplit[i]=new osg::Vec3Array;
-        texSplit[i]=new osg::Vec2Array;
-        geoms[i]->setVertexArray(vertSplit[i]);
-        geoms[i]->setTexCoordArray(TEX_UNIT,texSplit[i]);
-        primsets[i] = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
-        geoms[i]->addPrimitiveSet(primsets[i]);
-        geoms[i]->setUseDisplayList(false);
-        osg::StateSet *stateset=geoms[i]->getOrCreateStateSet();
-        osg::Image *atlasTex=_atlasGen.getAtlasByNumber(i);
-        osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(atlasTex);
-        texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
-        texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
-        texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
-        texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
-        stateset->setTextureAttributeAndModes(TEX_UNIT,texture,osg::StateAttribute::ON);
-        stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
-
-        stateset->setDataVariance(osg::Object::STATIC);
-    }
-    int numIdx=prset.getNumIndices();
-    printf("Num idx %d\n",numIdx);
-
-    for(int i=0; i<numIdx-2; i+=3){
-        vector<osg::Vec3> vP;
-        vector<osg::Vec2> tP;
-        vector<unsigned int> iP;
-        int atlas=-1;
-        for(int k=0; k <3; k++){
-            int id=(int)((*v)[prset.index(i+k)][0]);
-            if(id < 0)
-                continue;
-            int tmp=_atlasGen.getAtlasId(id);
-            if(tmp < 0 || tmp >= (int)geoms.size()){
-                OSG_ALWAYS << "Atlas mapping incorrect id: " << id << " index: " << prset.index(i+k) << endl;
-                continue;
-            }
-            atlas=tmp;
-
-            osg::Vec2 tc = (*texCoordsArray)[prset.index(i+k)];
-            osg::Matrix matrix=_atlasGen.getTextureMatrixByID(id);
-            vP.push_back((verts)[prset.index(i+k)]);
-            tP.push_back(osg::Vec2(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
-                                   tc[0]*matrix(0,1) + tc[1]*matrix(1,1) + matrix(3,1)));
-            iP.push_back(vertSplit[atlas]->size()+k);
-        }
-        if(vP.size() == 3){
-            for(int k=0; k <3; k++){
-                vertSplit[atlas]->push_back(vP[k]);
-                texSplit[atlas]->push_back(tP[k]);
-                primsets[atlas]->push_back(iP[k]);
-            }
-        }
-    }
-    /*  for(int i=0; i< (int)v->size(); i++){
-        int id=(int)((*v)[i][0]);
-
-
-    }*/
-
-}
 
 class TriangleIndexVisitor
 {
@@ -472,13 +387,9 @@ void TexturingQuery::projectModel(osg::Geode *geode,int texSizeIdx){
                     OSG_FATAL << "Failed to create reprojection array" <<endl;
                     continue;
                 }
-                if(_useTextureArray){
                     _tile->texCoordIDIndexPerModel.push_back(v);
                     _tile->texCoordsPerModel.push_back(texCoords);
 
-                    //else
-                      //  OSG_FATAL << "Failed to create state set for texture array" <<endl;
-                }
                 break;
         default:
                 OSG_FATAL << "Freakout shouldn't be anything but triangles\n";
@@ -487,10 +398,10 @@ void TexturingQuery::projectModel(osg::Geode *geode,int texSizeIdx){
         if(!_useTextureArray){
             vector<osg::Geometry*> geoms;
 
-            generateStateAndSplitDrawables(geoms,v,*(primitiveSets.begin()->get()),texCoords,*verts,texSizeIdx);
+            /*generateStateAndSplitDrawables(geoms,v,*(primitiveSets.begin()->get()),texCoords,*verts,texSizeIdx);
             geode->removeDrawables(0);
             for(int i=0; i < (int)geoms.size(); i++)
-                geode->addDrawable(geoms[i]);
+                geode->addDrawable(geoms[i]);*/
             return;
         }
     }

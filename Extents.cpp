@@ -152,12 +152,12 @@ public:
     ClusterCullingCallbackList _callbackList;
 
 };
-std::vector<osg::ref_ptr<osg::Image> >MyDestinationTile::getRemappedImages(map<SpatialIndex::id_type,int> allIds,int sizeIdx){
+std::vector<osg::ref_ptr<osg::Image> >MyDestinationTile::getRemappedImages(idmap_t allIds,int sizeIdx){
     osg::Timer_t before_computeMax = osg::Timer::instance()->tick();
 
     std::vector<osg::ref_ptr<osg::Image> > images(allIds.size());
-    map<SpatialIndex::id_type,int>::const_iterator end = allIds.end();
-    for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
+    idmap_t::const_iterator end = allIds.end();
+    for (idmap_t::const_iterator it = allIds.begin(); it != end; ++it)
     {
         images[it->second]=_atlasGen.getImage(it->second,sizeIdx);
     }
@@ -168,20 +168,7 @@ std::vector<osg::ref_ptr<osg::Image> >MyDestinationTile::getRemappedImages(map<S
 
     return images;
 }
-osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray,int texSizeIdx){
-    if(!v)
-        return NULL;
-
-    osg::StateSet *stateset= new osg::StateSet;
-
-    int tex_size=  _atlasGen.getMaximumAtlasHeight();
-    map<SpatialIndex::id_type,int> allIds=calcAllIds(v);
-    std::vector<osg::ref_ptr<osg::Image> > texture_images= _atlasGen.getImages(); //getRemappedImages(allIds,texSizeIdx);
-unsigned int a=v->size();
-unsigned int b=texCoordsArray->size();
-
-assert(a == b);
-
+void MyDestinationTile::remapArrayForTexturing(osg::Vec4Array *v,osg::Vec2Array *texCoordsArray,idmap_t allIds){
     //Remap
     for(int i=0; i< (int)v->size(); i++){
         for(int j=0; j< 4; j++){
@@ -200,6 +187,24 @@ assert(a == b);
             }
         }
     }
+
+}
+
+osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray,int texSizeIdx){
+    if(!v)
+        return NULL;
+
+    osg::StateSet *stateset= new osg::StateSet;
+
+    int tex_size=  _atlasGen.getMaximumAtlasHeight();
+    idmap_t allIds=calcAllIds(v);
+    std::vector<osg::ref_ptr<osg::Image> > texture_images= _atlasGen.getImages(); //getRemappedImages(allIds,texSizeIdx);
+    unsigned int a=v->size();
+    unsigned int b=texCoordsArray->size();
+
+    assert(a == b);
+
+    remapArrayForTexturing(v,texCoordsArray,allIds);
 
     OSG_ALWAYS << "\tImage Size: " <<tex_size <<endl;
 
@@ -240,7 +245,88 @@ assert(a == b);
     return stateset;
 }
 
+void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
+                                                       osg::Vec2Array* texCoordsArray,
+                                                       const osg::Vec3Array &verts,int texSizeIdx){
+    if(!v)
+        return;
 
+    idmap_t allIds=calcAllIds(v);
+    std::vector<osg::ref_ptr<osg::Image> > texture_images= _atlasGen.getImages();
+    unsigned int a=v->size();
+    unsigned int b=texCoordsArray->size();
+
+    assert(a == b);
+
+    //remapArrayForTexturing(v,texCoordsArray,allIds);
+
+    std::vector<osg::DrawElementsUInt *>  primsets(_atlasGen.getNumAtlases());;
+    std::vector<osg::Vec3Array *>  vertSplit(_atlasGen.getNumAtlases());
+    std::vector<osg::Vec2Array *> texSplit(_atlasGen.getNumAtlases());
+    geoms.resize(_atlasGen.getNumAtlases());
+
+    for(int i=0; i< (int)geoms.size(); i++){
+        geoms[i]= new osg::Geometry;
+        vertSplit[i]=new osg::Vec3Array;
+        texSplit[i]=new osg::Vec2Array;
+        geoms[i]->setVertexArray(vertSplit[i]);
+        geoms[i]->setTexCoordArray(TEX_UNIT,texSplit[i]);
+        primsets[i] = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
+        geoms[i]->addPrimitiveSet(primsets[i]);
+        geoms[i]->setUseDisplayList(false);
+        osg::StateSet *stateset=geoms[i]->getOrCreateStateSet();
+        osg::Image *atlasTex=_atlasGen.getAtlasByNumber(i);
+        osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(atlasTex);
+        texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
+        texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
+        texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
+        texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
+        stateset->setTextureAttributeAndModes(TEX_UNIT,texture,osg::StateAttribute::ON);
+        stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+
+        stateset->setDataVariance(osg::Object::STATIC);
+    }
+    int numIdx=prset.getNumIndices();
+    printf("Num idx %d\n",numIdx);
+
+    for(int i=0; i<numIdx-2; i+=3){
+        vector<osg::Vec3> vP;
+        vector<osg::Vec2> tP;
+        vector<unsigned int> iP;
+        int atlas=-1;
+        for(int k=0; k <3; k++){
+            int id=(int)((*v)[prset.index(i+k)][0]);
+            if(id < 0)
+                continue;
+            int tmp=_atlasGen.getAtlasId(id);
+            if(tmp < 0 || tmp >= (int)geoms.size()){
+                OSG_ALWAYS << "Atlas mapping incorrect id: " << id << " index: " << prset.index(i+k) << endl;
+                continue;
+            }
+            atlas=tmp;
+
+            osg::Vec2 tc = (*texCoordsArray)[prset.index(i+k)];
+            osg::Matrix matrix=_atlasGen.getTextureMatrixByID(id);
+            vP.push_back((verts)[prset.index(i+k)]);
+            tP.push_back(osg::Vec2(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
+                                   tc[0]*matrix(0,1) + tc[1]*matrix(1,1) + matrix(3,1)));
+            iP.push_back(vertSplit[atlas]->size()+k);
+        }
+        if(vP.size() == 3){
+            for(int k=0; k <3; k++){
+                vertSplit[atlas]->push_back(vP[k]);
+                texSplit[atlas]->push_back(tP[k]);
+                primsets[atlas]->push_back(iP[k]);
+            }
+        }
+    }
+    /*  for(int i=0; i< (int)v->size(); i++){
+        int id=(int)((*v)[i][0]);
+
+
+    }*/
+
+}
 osg::Node* MyCompositeDestination::createPagedLODScene()
 {
     if (_children.empty() && _tiles.empty()) return 0;
@@ -563,8 +649,8 @@ osg::Node* MyDestinationTile::createScene()
         }
         else*/
         {
-
-            _atlasGen.loadTextureFiles(levelToTextureLevel[_level]);
+            int texSizeIdx=levelToTextureLevel[_level];
+            _atlasGen.loadTextureFiles(texSizeIdx);
             printf("tile Level %d texure level size %d\n",_level,_atlasGen.getDownsampleSize(levelToTextureLevel[_level]));
             int cnt=0;
             osg::Vec4Array* v=new osg::Vec4Array;
@@ -611,14 +697,27 @@ osg::Node* MyDestinationTile::createScene()
                 _createdScene->accept(gc);
                 osgUtil::GeometryCollector::GeometryList geomList = gc.getGeometryList();
                 if(geomList.size() > 1){
-                OSG_ALWAYS << "Number of collected geometies " << geomList.size() << "problem "<<endl;
-            }
+                    OSG_ALWAYS << "Number of collected geometies " << geomList.size() << "problem "<<endl;
+                }
                 if(geomList.size() && _atlasGen.getNumSources()> 0 ){
-                    osg::StateSet *stateset=generateStateAndArray2DRemap(v,texCoords,0);
                     osg::Geometry *geom=*geomList.begin();
-                    setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
-                    setVertexAttrib(*geom,_texCoordsAlias,texCoords,false,osg::Geometry::BIND_PER_VERTEX);
-                    geom->setStateSet(stateset);
+
+                    if(0){
+                        osg::StateSet *stateset=generateStateAndArray2DRemap(v,texCoords,0);
+                        setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
+                        setVertexAttrib(*geom,_texCoordsAlias,texCoords,false,osg::Geometry::BIND_PER_VERTEX);
+                        geom->setStateSet(stateset);
+                    }
+                    vector<osg::Geometry*> geoms;
+                    osg::Group *group=dynamic_cast<osg::Group*>(_createdScene.get());
+                    osg::ref_ptr<osg::Geode> geode = dynamic_cast<osg::Geode*> (group->getChild(0));
+                    osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+                    osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
+                    generateStateAndSplitDrawables(geoms,v,*(primitiveSets.begin()->get()),texCoords,*verts,texSizeIdx);
+                    geode->removeDrawables(0);
+                    for(int i=0; i < (int)geoms.size(); i++)
+                       geode->addDrawable(geoms[i]);
+
                 }
             }
         }
@@ -850,7 +949,7 @@ void MyDataSet::createNewDestinationGraph(
             }
         }
     }
-   // printf("Total Size %d\n",(int)_quadMap.size());
+    // printf("Total Size %d\n",(int)_quadMap.size());
     // now extend the sources upwards where required.
     for(QuadMap::iterator qitr = _quadMap.begin();
     qitr != _quadMap.end();
@@ -981,7 +1080,7 @@ void MyDataSet::createNewDestinationGraph(
         }
 */
 
-       // log(osg::ALWAYS,"     opt level = %i",k);
+        // log(osg::ALWAYS,"     opt level = %i",k);
 
         int startLevel = 0; // getGenerateSubtile() ? getSubtileLevel() : 0;
 
@@ -1028,7 +1127,7 @@ void MyDataSet::createNewDestinationGraph(
                         CompositeDestination* cd = getComposite(l,i,j);
                         if (!cd || !cd->intersects(sp) || (l <(int)source->getMinLevel() || l > (int)source->getMaxLevel())) continue;
 
-                       // printf("Tile %d %d_%d %s\n",l ,i,j,source->getFileName().c_str());
+                        // printf("Tile %d %d_%d %s\n",l ,i,j,source->getFileName().c_str());
                         /*  if (l==k)
                         {
                             cd->addSource(source);
@@ -1059,7 +1158,7 @@ void MyDataSet::createNewDestinationGraph(
 }
 void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
     log(osg::NOTICE,"   source:%s",src->getFileName().c_str());
- //   log(osg::NOTICE,"    %x",src->getSourceData()->_model.get());
+    //   log(osg::NOTICE,"    %x",src->getSourceData()->_model.get());
     osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
                                          tile->_extents._min.y(),
                                          DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
@@ -1070,23 +1169,23 @@ void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
 
     if(tile->_level == 1){
         texSizeIdx=0;
-//              clipper.setColor(osg::Vec4(1,0,0,1));
+        //              clipper.setColor(osg::Vec4(1,0,0,1));
     }
     else if(tile->_level == 2){
         texSizeIdx=0;
-//                clipper.setColor(osg::Vec4(0,1,0,1));
+        //                clipper.setColor(osg::Vec4(0,1,0,1));
     }
     else if(tile->_level == 3){
         texSizeIdx=1;
-//                  clipper.setColor(osg::Vec4(0,0.5,0.5,1));
+        //                  clipper.setColor(osg::Vec4(0,0.5,0.5,1));
     }
     else if(tile->_level == 0){
         texSizeIdx=2;
-//                    clipper.setColor(osg::Vec4(0,0,1,1));
+        //                    clipper.setColor(osg::Vec4(0,0,1,1));
     }else
         texSizeIdx=0;
 
-//                  clipper.setApplyColor(true);
+    //                  clipper.setApplyColor(true);
     //  osg::ref_ptr<osg::Node> root = (osg::Node*)src->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
 
     //   root->accept(clipper);
@@ -1115,48 +1214,48 @@ void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
 
 class MyReadFromOperation : public BuildOperation
 {
-    public:
+public:
 
-        MyReadFromOperation(ThreadPool* threadPool, BuildLog* buildLog, DestinationTile* tile, MyDataSet* dataSet,Source *src):
+    MyReadFromOperation(ThreadPool* threadPool, BuildLog* buildLog, DestinationTile* tile, MyDataSet* dataSet,Source *src):
             BuildOperation(threadPool, buildLog, "ReadFromOperation", false),
             _tile(tile),
             _dataSet(dataSet),
             _src(src){}
 
-        virtual void build()
-        {
-            log(osg::NOTICE, "   ReadFromOperation: reading tile level=%u X=%u Y=%u",_tile->_level,_tile->_tileX,_tile->_tileY);
-            MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(_tile);
-           _dataSet->processTile(myt,_src);
-           //  _dataSet->processTile(_tile,_src);
+    virtual void build()
+    {
+        log(osg::NOTICE, "   ReadFromOperation: reading tile level=%u X=%u Y=%u",_tile->_level,_tile->_tileX,_tile->_tileY);
+        MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(_tile);
+        _dataSet->processTile(myt,_src);
+        //  _dataSet->processTile(_tile,_src);
 
-        }
+    }
 
-        DestinationTile* _tile;
-        MyDataSet* _dataSet;
-        Source *_src;
+    DestinationTile* _tile;
+    MyDataSet* _dataSet;
+    Source *_src;
 };
 
 void MyDataSet::_readRow(Row& row)
 {
     log(osg::NOTICE, "_readRow %u",row.size());
 
-      if (_readThreadPool.valid())
+    if (_readThreadPool.valid())
     {
         for(Row::iterator citr=row.begin();
-            citr!=row.end();
-            ++citr)
+        citr!=row.end();
+        ++citr)
         {
             CompositeDestination* cd = citr->second;
             for(CompositeDestination::TileList::iterator titr=cd->_tiles.begin();
-                titr!=cd->_tiles.end();
-                ++titr)
+            titr!=cd->_tiles.end();
+            ++titr)
             {
                 for(DestinationTile::Sources::iterator itr = (*titr)->_sources.begin();
                 itr != (*titr)->_sources.end();
                 ++itr)
                 {
-                 _readThreadPool->run(new MyReadFromOperation(_readThreadPool.get(), getBuildLog(), titr->get(), this,(*itr).get()));
+                    _readThreadPool->run(new MyReadFromOperation(_readThreadPool.get(), getBuildLog(), titr->get(), this,(*itr).get()));
                 }
             }
         }
@@ -1225,7 +1324,7 @@ void ClippedCopy::AnalyzePrimSet(const osg::PrimitiveSet& prset, const osg::Vec3
         {
         case osg::PrimitiveSet::TRIANGLES: // get vertices of triangle
             {
-               // std::cout << "Triangles "<< nprim << " is index "<<prset.index(ic) << std::endl;
+                // std::cout << "Triangles "<< nprim << " is index "<<prset.index(ic) << std::endl;
                 for(unsigned int i2=0; i2<prset.getNumIndices()-2; i2+=3)
                 {
                     std::vector<bool> outside(3,false);
@@ -1340,7 +1439,7 @@ int MyDataSet::_run()
 #endif
 
     int numProcessors = OpenThreads::GetNumberOfProcessors();
-    #if 0
+#if 0
     if (numProcessors>1)
 #endif
     {
@@ -1352,7 +1451,7 @@ int MyDataSet::_run()
             _readThreadPool->startThreads();
         }
 
-      /*  int numWriteThreads = int(ceilf(getNumWriteThreadsToCoresRatio() * float(numProcessors)));
+        /*  int numWriteThreads = int(ceilf(getNumWriteThreadsToCoresRatio() * float(numProcessors)));
         if (numWriteThreads>=1)
         {
             log(osg::NOTICE,"Starting %i write threads.",numWriteThreads);
@@ -1363,7 +1462,7 @@ int MyDataSet::_run()
         }*/
     }
 
-/*
+    /*
     //loadSources();
 
     int numLevels = getMaximumNumOfLevels();

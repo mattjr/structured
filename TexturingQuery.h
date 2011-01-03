@@ -6,6 +6,7 @@
 #include <osg/BoundingBox>
 #include <osg/Geometry>
 #include "TexPyrAtlas.h"
+
 #include <libsnapper/auv_camera_calib.hpp>
 using libsnapper::Camera_Calib;
 class ObjVisitor : public SpatialIndex::IVisitor
@@ -48,6 +49,9 @@ public:
 
 };
 class MyDataStream;
+namespace vpb{
+    class MyDestinationTile;
+};
 class CamProjAndDist{
 public:
     SpatialIndex::id_type id;
@@ -60,7 +64,7 @@ typedef std::vector<CamProjAndDist> CamDists;
 class TexturingQuery
 {
 public:
-    TexturingQuery(std::string bbox_file,const Camera_Calib &calib,bool useTextureArray);
+    TexturingQuery(std::string bbox_file,const Camera_Calib &calib,TexPyrAtlas &atlasGen,bool useTextureArray);
     ~TexturingQuery();
     void projectModel(osg::Geode *,int texSizeIdx);
     class ProjectionCamera{
@@ -76,6 +80,7 @@ public:
             return left.dist < right.dist;
         }
     };
+    vpb::MyDestinationTile *_tile;
 
 protected:
     typedef std::multimap<int,ProjectionCamera> ProjectsToMap;
@@ -96,24 +101,22 @@ protected:
     bool projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Array* texCoordsArray,
                                              const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
     osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray, int texSizeIdx);
-    static const int TEXUNIT_ARRAY=0;
     static const int TEX_UNIT=0;
     ProjectsToMap reproj;
     osg::Vec2 _origImageSize;
     bool _useTextureArray;
-    bool _useAtlas;
+    TexPyrAtlas &_atlasGen;
 
+    bool _useAtlas;
+    void addImagesToAtlasGen(std::map<SpatialIndex::id_type,int> allIds);
     typedef std::pair<unsigned int, std::string> AttributeAlias;
-    void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
-    std::vector<osg::ref_ptr<osg::Image> >loadTex(std::map<SpatialIndex::id_type,int> allIds,int sizeIdx);
+    std::vector<osg::ref_ptr<osg::Image> >getRemappedImages(std::map<SpatialIndex::id_type,int> allIds,int sizeIdx);
     void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
                                         osg::Vec2Array* texCoordsArray,
                                         const osg::Vec3Array &verts,int texSizeIdx);
     osg::Vec2 reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v);
     AttributeAlias _vertexAlias;
-    AttributeAlias _projCoordAlias;
-    AttributeAlias _texCoordsAlias;
-    TexPyrAtlas *_atlasGen;
+
     CameraVector _cameras;
 
 
@@ -208,4 +211,8 @@ public:
 
 
 };
+
+std::map<SpatialIndex::id_type,int> calcAllIds(osg::Vec4Array *v);
+bool loadShaderSource(osg::Shader* obj, const std::string& fileName );
+
 #endif // TEXTURINGQUERY_H

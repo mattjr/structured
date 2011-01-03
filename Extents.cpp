@@ -16,7 +16,7 @@
 #include <osg/Texture2D>
 #include <osg/ComputeBoundsVisitor>
 #include <osg/io_utils>
-
+#include <osg/Texture2DArray>
 #include <osg/GLU>
 #include <osgUtil/SmoothingVisitor>
 
@@ -51,7 +51,7 @@
 
 using namespace vpb;
 using vpb::log;
-
+using namespace std;
 MyDataSet::MyDataSet(const Camera_Calib &calib,bool useTextureArray): _calib(calib),_useTextureArray(useTextureArray)
 {
     init();
@@ -152,6 +152,94 @@ public:
     ClusterCullingCallbackList _callbackList;
 
 };
+std::vector<osg::ref_ptr<osg::Image> >MyDestinationTile::getRemappedImages(map<SpatialIndex::id_type,int> allIds,int sizeIdx){
+    osg::Timer_t before_computeMax = osg::Timer::instance()->tick();
+
+    std::vector<osg::ref_ptr<osg::Image> > images(allIds.size());
+    map<SpatialIndex::id_type,int>::const_iterator end = allIds.end();
+    for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
+    {
+        images[it->second]=_atlasGen.getImage(it->second,sizeIdx);
+    }
+
+    osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
+
+    OSG_NOTICE << "Time for loadTex = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
+
+    return images;
+}
+osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray,int texSizeIdx){
+    if(!v)
+        return NULL;
+
+    osg::StateSet *stateset= new osg::StateSet;
+
+    int tex_size=  _atlasGen.getMaximumAtlasHeight();
+    map<SpatialIndex::id_type,int> allIds=calcAllIds(v);
+    std::vector<osg::ref_ptr<osg::Image> > texture_images= _atlasGen.getImages(); //getRemappedImages(allIds,texSizeIdx);
+unsigned int a=v->size();
+unsigned int b=texCoordsArray->size();
+
+assert(a == b);
+
+    //Remap
+    for(int i=0; i< (int)v->size(); i++){
+        for(int j=0; j< 4; j++){
+            int id=(int)((*v)[i][j]);
+            if(id >= 0 && allIds.count(id)){
+                (*v)[i][j]=_atlasGen.getAtlasId(id);
+                if(j ==0){
+                    osg::Matrix matrix=_atlasGen.getTextureMatrixByID(id);
+                    osg::Vec2 tc=(*texCoordsArray)[i];
+                    (*texCoordsArray)[i]=osg::Vec2(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
+                                                   tc[0]*matrix(0,1) + tc[1]*matrix(1,1) + matrix(3,1));
+                }
+                if(j==3)
+                    (*v)[i][j]=id;
+
+            }
+        }
+    }
+
+    OSG_ALWAYS << "\tImage Size: " <<tex_size <<endl;
+
+    OSG_ALWAYS << "\tArray Size: " <<texture_images.size()<<endl;
+
+    osg::ref_ptr<osg::Texture2DArray> textureArray =new osg::Texture2DArray;
+    osg::Program* program = new osg::Program;
+    program->setName( "projective_tex" );
+    osg::ref_ptr<osg::Shader> lerpF=new osg::Shader( osg::Shader::FRAGMENT);
+    osg::ref_ptr<osg::Shader> lerpV=new osg::Shader( osg::Shader::VERTEX);
+    loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/projV.frag" );
+    loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/projVatlas.vert" );
+    program->addShader(  lerpF );
+    program->addShader(  lerpV );
+    program->addBindAttribLocation(_projCoordAlias.second,_projCoordAlias.first);
+    program->addBindAttribLocation(_texCoordsAlias.second,_texCoordsAlias.first);
+
+    textureArray->setTextureSize(_atlasGen.getAtlasByNumber(0)->s(),_atlasGen.getAtlasByNumber(0)->t(),texture_images.size());
+
+    for(int i=0; i < (int)texture_images.size(); i++)
+        textureArray->setImage(i,texture_images[i]);
+
+
+    stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
+    stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
+
+    /*stateset->addUniform( new osg::Uniform("fc_cc", osg::Vec4(_calib.fcx,_calib.fcy,
+                                                              _calib.ccx,_calib.ccy)) );
+
+
+    stateset->addUniform( new osg::Uniform("kc1234", osg::Vec4(_calib.kc1,_calib.kc2,_calib.kc3,
+                                                               _calib.kc4)) );
+
+    stateset->addUniform( new osg::Uniform("kc5", (float)_calib.kc5 ));*/
+    stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
+    stateset->setDataVariance(osg::Object::STATIC);
+
+    return stateset;
+}
+
 
 osg::Node* MyCompositeDestination::createPagedLODScene()
 {
@@ -432,6 +520,19 @@ void MyDataSet::_buildDestination(bool writeToDisk)
     osgDB::Registry::instance()->setOptions(previous_options.get());
 
 }
+void MyDestinationTile::setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding)
+{
+    if(!array)
+        return;
+    unsigned int index = alias.first;
+    const std::string& name = alias.second;
+    array->setName(name);
+    geom.setVertexAttribArray(index, array);
+    geom.setVertexAttribNormalize(index, normalize);
+    geom.setVertexAttribBinding(index, binding);
+
+    osg::notify(osg::NOTICE)<<"   vertex attrib("<<name<<", index="<<index<<", normalize="<<normalize<<" binding="<<binding<<")"<<std::endl;
+}
 osg::Node* MyDestinationTile::createScene()
 {
     if (_createdScene.valid()) return _createdScene.get();
@@ -462,11 +563,59 @@ osg::Node* MyDestinationTile::createScene()
         }
         else*/
         {
+
+            _atlasGen.loadTextureFiles(levelToTextureLevel[_level]);
+            printf("tile Level %d texure level size %d\n",_level,_atlasGen.getDownsampleSize(levelToTextureLevel[_level]));
+            int cnt=0;
+            osg::Vec4Array* v=new osg::Vec4Array;
+            osg::Vec2Array * texCoords=new osg::Vec2Array;
+
             for(ModelList::iterator itr = _models->_models.begin();
             itr != _models->_models.end();
-            ++itr)
+            ++itr,++cnt)
             {
+                if(cnt >= (int)texCoordIDIndexPerModel.size()){
+                    OSG_FATAL << "Not correct number of texCoordIDIndexPerModel in createScene()" <<endl;
+                    exit(0);
+                }else{
+                    osg::Vec4Array *tmp=texCoordIDIndexPerModel[cnt];
+                    osg::Vec2Array *tmp2=texCoordsPerModel[cnt];
+                    cout << tmp->size() << " ASS " << tmp2->size() << endl;
+                    if(tmp && tmp2){
+                        for(int i=0; i<(int)tmp->size(); i++)
+                            (*v).push_back(tmp->at(i));
+
+                        for(int i=0; i<(int)tmp2->size(); i++){
+                            osg::Vec2 a=tmp2->at(i);
+                            (*texCoords).push_back(a);
+                        }
+                    }else{
+                        OSG_FATAL << "Null Ptr texCoordIDIndexPerModel" <<endl;
+                    }
+                }
                 addNodeToScene(itr->get());
+            }
+
+
+            if(_createdScene){
+                 osgUtil::Optimizer::MergeGeodesVisitor visitor;
+
+                _createdScene->accept(visitor);
+                osgUtil::Optimizer::MergeGeometryVisitor mgv;
+                mgv.setTargetMaximumNumberOfVertices(1000000);
+                _createdScene->accept(mgv);
+                osgUtil::Optimizer::OptimizationOptions  opt;
+                osgUtil::GeometryCollector gc(NULL,opt);
+                _createdScene->accept(gc);
+                osgUtil::GeometryCollector::GeometryList geomList = gc.getGeometryList();
+                OSG_ALWAYS << "Number of collected geometies " << geomList.size() << endl;
+                if(geomList.size()){
+                    osg::StateSet *stateset=generateStateAndArray2DRemap(v,texCoords,0);
+                    osg::Geometry *geom=*geomList.begin();
+                    setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
+                    setVertexAttrib(*geom,_texCoordsAlias,texCoords,false,osg::Geometry::BIND_PER_VERTEX);
+                    geom->setStateSet(stateset);
+                }
             }
         }
 
@@ -567,7 +716,7 @@ MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int c
     destinationGraph->_dataSet = this;
 
 
-    MyDestinationTile* tile = new MyDestinationTile;
+    MyDestinationTile* tile = new MyDestinationTile("/home/mattjr/auvdata/r20090804_084719_scott_25_dense_repeat_auv5_deep/renav20090804/mesh/img");
     tile->_name = destinationGraph->_name;
     tile->_level = currentLevel;
     tile->_tileX = currentX;
@@ -942,7 +1091,8 @@ void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
     std::string mf=src->getFileName();
     int npos=mf.find("/");
     std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-    TexturingQuery *tq=new TexturingQuery(bbox_name,_calib,_useTextureArray);
+    TexturingQuery *tq=new TexturingQuery(bbox_name,_calib,tile->_atlasGen,_useTextureArray);
+    tq->_tile=tile;
     tq->projectModel(dynamic_cast<osg::Geode*>(root.get()),texSizeIdx);
     delete tq;
     //src->getSourceData()->
@@ -1010,6 +1160,7 @@ void MyDataSet::_readRow(Row& row)
         // wait for the threads to complete.
         _readThreadPool->waitForCompletion();
 
+
     }
     else
     {
@@ -1032,6 +1183,7 @@ void MyDataSet::_readRow(Row& row)
                     MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(tile);
                     processTile(myt,*itr);
                 }
+
             }
         }
     }

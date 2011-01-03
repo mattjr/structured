@@ -10,12 +10,13 @@ public:
     typedef long id_type;
 
     TexPyrAtlas(std::string imgdir,bool doAtlas=true);
-    void loadSources(std::vector<std::pair<id_type,std::string> > imageList,int sizeIdx);
+    void addSources(std::vector<std::pair<id_type ,std::string> > imageList);
     int getAtlasId(id_type id);
     osg::ref_ptr<osg::Image> getImage(int index,int sizeIndex);
     int getDownsampleSize(int idx){if(idx > (int) _downsampleSizes.size()) return 0; return _downsampleSizes[idx];}
     osg::ref_ptr<osg::Texture> getTexture(int index,int sizeIndex);
     unsigned int getNumAtlases(){return _atlasList.size();}
+    void loadTextureFiles(int sizeIndex);
     osg::Image *getAtlasByNumber(unsigned int i){
         if(i < _atlasList.size())
             return _atlasList[i]->_image;
@@ -29,10 +30,11 @@ public:
 
     void computeImageNumberToAtlasMap(void);
 protected:
+    void buildAtlas();
     std::vector<int> _downsampleSizes;
     osg::ref_ptr<osg::State> _state;
     std::vector<osg::ref_ptr<osg::Image> > _images;
-
+            std::map<id_type ,std::string> _totalImageList;
     /**
           * Resizes an image using nearest-neighbor resampling. Returns a new image, leaving
           * the input image unaltered.

@@ -51,8 +51,30 @@ namespace vpb
 {
     class MyDestinationTile : public DestinationTile{
     public:
+        MyDestinationTile(std::string imageDir):_atlasGen(imageDir){
+        _projCoordAlias = AttributeAlias(1, "osg_ProjCoord");
+        _texCoordsAlias = AttributeAlias(15, "osg_texCoord");
+levelToTextureLevel[0]=2;
+levelToTextureLevel[1]=2;
+levelToTextureLevel[2]=1;
+levelToTextureLevel[3]=0;
+
+    }
+        osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray,int texSizeIdx);
+        std::vector<osg::ref_ptr<osg::Image> >getRemappedImages(std::map<SpatialIndex::id_type,int> allIds,int sizeIdx);
+        static const int TEXUNIT_ARRAY=0;
+        typedef std::pair<unsigned int, std::string> AttributeAlias;
+        std::vector<osg::Vec4Array *> texCoordIDIndexPerModel;
+        std::vector<osg::Vec2Array *> texCoordsPerModel;
+        void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
+
+        AttributeAlias _projCoordAlias;
+        AttributeAlias _texCoordsAlias;
          osg::Node * createScene(void);
          OpenThreads::Mutex _tileMutex;
+         TexPyrAtlas _atlasGen;
+         std::map<int,int> levelToTextureLevel;
+
     };
     class ClippedCopy{
     public:

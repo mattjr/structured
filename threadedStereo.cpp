@@ -2390,27 +2390,25 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(quadmergecmds_fp);
     fclose(diced_fp);
-    int lodPick[]={2,2,1,0,0,0};
-    std::vector<std::pair<string,int> > datalist_lod;
-    for(int lod=0; lod < vpblod+1; lod ++){
+    int lodPick[]={0,0,0,2,2,0};
+    std::vector<std::vector<string> > datalist_lod;
+    for(int lod=0; lod < vpblod; lod ++){
+        std::vector<string> level;
         if(!no_quadmerge){
             for(int i=0; i <(int)quad_cells.size(); i++){
                 char tmp[1024];
                 sprintf(tmp,"mesh-quad/clipped-diced-%08d-lod%d.ply",i,lodPick[lod]);//std::min(lod,2)
-                datalist_lod.push_back(make_pair<string,int>(tmp,lod));
-                printf("%s %d\n",tmp,lod);
-
+                level.push_back(tmp);
             }
         }else{
             for(int i=0; i <(int)vrip_cells.size(); i++){
                 char tmp[1024];
                 sprintf(tmp,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,lodPick[lod]);//std::min(lod,2)
-                datalist_lod.push_back(make_pair<string,int>(tmp,lod));
-                printf("%s %d\n",tmp,lod);
+                level.push_back(tmp);
             }
         }
 
-       // datalist_lod.push_back(level);
+        datalist_lod.push_back(level);
     }
     if(output_uv_file)
       fclose(uv_fp);

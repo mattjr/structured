@@ -5,6 +5,6 @@
 #include <vpb/Commandline>
 #include <vector>
 #include <string>
-void doQuadTreeVPB(std::vector<std::pair<std::string,int> > datalist_lod,Bounds bounds,Camera_Calib &calib,bool useTextureArray);
+void doQuadTreeVPB(std::vector<std::vector<std::string> > datalist_lod,Bounds bounds,Camera_Calib &calib,bool useTextureArray);
 
 #endif // VPBINTERFACE_HPP

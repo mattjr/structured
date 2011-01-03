@@ -2390,7 +2390,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(quadmergecmds_fp);
     fclose(diced_fp);
-    int lodPick[]={0,0,0,2,2,0};
+    int lodPick[]={0,1,2,2,2,2};
     std::vector<std::vector<string> > datalist_lod;
     for(int lod=0; lod < vpblod; lod ++){
         std::vector<string> level;

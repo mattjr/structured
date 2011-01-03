@@ -3,7 +3,7 @@
 #include <osgDB/ReadFile>
 #include "TexturingQuery.h"
 using namespace std;
-void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,bool useTextureArray){
+void doQuadTreeVPB(std::vector<std::pair<string,int> > datalist_lod,Bounds bounds,Camera_Calib &calib,bool useTextureArray){
 
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
@@ -15,11 +15,10 @@ void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,
     m->setDestinationName("real.ive");
 
     m->setLogFileName("tmp.log");
-        for(int lod=0; lod < (int)datalist_lod.size(); lod++){
-            for(int i=0; i<(int)datalist_lod[lod].size(); i++){
-            vpb::Source *sourceModel=new vpb::Source(vpb::Source::MODEL,datalist_lod[lod][i]);
-            sourceModel->setMaxLevel(numlod-lod);
-            sourceModel->setMinLevel(numlod-lod);
+            for(int i=0; i<(int)datalist_lod.size(); i++){
+            vpb::Source *sourceModel=new vpb::Source(vpb::Source::MODEL,datalist_lod[i].first);
+            sourceModel->setMaxLevel(datalist_lod[i].second);
+            sourceModel->setMinLevel(datalist_lod[i].second);
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
             osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
             if (model)
@@ -33,7 +32,7 @@ void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,
 
 
             m->addSource(sourceModel,1);
-        }
+
     }
     m->createNewDestinationGraph(geo,256,128,numlod);
     m->_run();

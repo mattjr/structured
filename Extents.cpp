@@ -273,7 +273,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         geoms[i]->setTexCoordArray(TEX_UNIT,texSplit[i]);
         primsets[i] = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
         geoms[i]->addPrimitiveSet(primsets[i]);
-        geoms[i]->setUseDisplayList(false);
+        //geoms[i]->setUseDisplayList(false);
         osg::StateSet *stateset=geoms[i]->getOrCreateStateSet();
         osg::Image *atlasTex=_atlasGen.getAtlasByNumber(i);
         osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(atlasTex);
@@ -692,8 +692,8 @@ osg::Node* MyDestinationTile::createScene()
                 osgUtil::Optimizer::MergeGeometryVisitor mgv;
                 mgv.setTargetMaximumNumberOfVertices(INT_MAX);
                 _createdScene->accept(mgv);
-                osgUtil::Optimizer::OptimizationOptions  opt;
-                osgUtil::GeometryCollector gc(NULL,opt);
+
+                osgUtil::GeometryCollector gc(NULL, osgUtil::Optimizer::DEFAULT_OPTIMIZATIONS);
                 _createdScene->accept(gc);
                 osgUtil::GeometryCollector::GeometryList geomList = gc.getGeometryList();
                 if(geomList.size() > 1){
@@ -1433,7 +1433,7 @@ int MyDataSet::_run()
             _readThreadPool->startThreads();
         }
 
-        /*  int numWriteThreads = int(ceilf(getNumWriteThreadsToCoresRatio() * float(numProcessors)));
+        int numWriteThreads = int(ceilf(getNumWriteThreadsToCoresRatio() * float(numProcessors)));
         if (numWriteThreads>=1)
         {
             log(osg::NOTICE,"Starting %i write threads.",numWriteThreads);
@@ -1441,7 +1441,7 @@ int MyDataSet::_run()
             _writeThreadPool->startThreads();
 
             //requiresGraphicsContextInMainThread = false;
-        }*/
+        }
     }
 
     /*
@@ -1633,6 +1633,41 @@ osg::Node* MyCompositeDestination::createSubTileScene()
         return 0;
     }
 }
+class WriteOperation : public BuildOperation
+{
+    public:
+
+        WriteOperation(ThreadPool* threadPool, MyDataSet* dataset,CompositeDestination* cd, const std::string& filename):
+            BuildOperation(threadPool, dataset->getBuildLog(), "WriteOperation", false),
+            _dataset(dataset),
+            _cd(cd),
+            _filename(filename) {}
+
+        virtual void build()
+        {
+            //notify(osg::NOTICE)<<"   WriteOperation"<<std::endl;
+
+            osg::ref_ptr<osg::Node> node = _cd->createSubTileScene();
+            if (node.valid())
+            {
+                if (_buildLog.valid()) _buildLog->log(osg::NOTICE, "   writeSubTile filename= %s",_filename.c_str());
+
+                _dataset->_writeNodeFileAndImages(*node,_filename);
+
+                _cd->setSubTilesGenerated(true);
+                _cd->unrefSubTileData();
+            }
+            else
+            {
+                log(osg::WARN, "   failed to writeSubTile node for tile, filename=%s",_filename.c_str());
+            }
+        }
+
+        MyDataSet*                            _dataset;
+        osg::ref_ptr<CompositeDestination>  _cd;
+        std::string                         _filename;
+};
+
 void MyDataSet::_writeRow(Row& row)
 {
     log(osg::NOTICE, "_writeRow %u",row.size());
@@ -1656,11 +1691,11 @@ void MyDataSet::_writeRow(Row& row)
 #endif
                 log(osg::NOTICE, "       _taskOutputDirectory= %s",_taskOutputDirectory.c_str());
 
-                /*  if (_writeThreadPool.valid())
+                if (_writeThreadPool.valid())
                 {
                     _writeThreadPool->run(new WriteOperation(_writeThreadPool.get(), this, parent, filename));
                 }
-                else*/
+                else
                 {
                     osg::ref_ptr<osg::Node> node = parent->createSubTileScene();
                     if (node.valid())

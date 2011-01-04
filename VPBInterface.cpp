@@ -9,6 +9,7 @@ void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,
     int numlod=datalist_lod.size()-1;
     vpb::MyDataSet *m=new vpb::MyDataSet(calib,useTextureArray);
     m->setNumReadThreadsToCoresRatio(1.5);
+ //   m->setNumWriteThreadsToCoresRatio(1.5);
     m->setRadiusToMaxVisibleDistanceRatio(2.5);
    //  m->_tq = new TexturingQuery("mesh-quad/bbox.txt",calib);
 

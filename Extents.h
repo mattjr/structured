@@ -66,6 +66,12 @@ namespace vpb
         osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray,int texSizeIdx);
         std::vector<osg::ref_ptr<osg::Image> >getRemappedImages(idmap_t allIds,int sizeIdx);
         static const int TEXUNIT_ARRAY=0;
+        int getTextureSizeForLevel(int level){
+            if(levelToTextureLevel.count(level))
+                return _atlasGen.getDownsampleSize(levelToTextureLevel[level]);
+            return -1;
+        }
+
         typedef std::pair<unsigned int, std::string> AttributeAlias;
         std::vector<osg::ref_ptr<osg::Vec4Array > > texCoordIDIndexPerModel;
         std::vector<osg::ref_ptr<osg::Vec2Array > > texCoordsPerModel;
@@ -121,6 +127,7 @@ class MyDataSet :  public DataSet
         void writeDestination() { _buildDestination(true); }
 
         void _buildDestination(bool writeToDisk);
+        void _equalizeRow(Row& row);
         int _run();
         TexturingQuery *_tq;
         void processTile(MyDestinationTile *tile,Source *src);

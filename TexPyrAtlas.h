@@ -29,12 +29,16 @@ public:
     osg::Matrix getTextureMatrixByID(id_type id);
     osg::Matrix computeTextureMatrixFreedImage(Source *s) ;
     void computeImageNumberToAtlasMap(void);
+
+    std::map<id_type ,std::string> _totalImageList;
+
 protected:
     void buildAtlas();
     std::vector<int> _downsampleSizes;
     osg::ref_ptr<osg::State> _state;
     std::vector<osg::ref_ptr<osg::Image> > _images;
-            std::map<id_type ,std::string> _totalImageList;
+    std::map<Source*,osg::Vec2> _sourceToSize;
+    std::map<Source*,id_type> _sourceToId;
     /**
           * Resizes an image using nearest-neighbor resampling. Returns a new image, leaving
           * the input image unaltered.
@@ -56,9 +60,7 @@ protected:
                         unsigned int mipmapLevel=0 );
     std::string _imgdir;
     std::map<id_type,int> _idToAtlas;
-    std::map<Source*,id_type> _sourceToId;
     std::map<id_type,Source*> _idToSource;
-    std::map<Source*,osg::Vec2> _sourceToSize;
 
     bool _doAtlas;
 

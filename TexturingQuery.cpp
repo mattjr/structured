@@ -206,7 +206,7 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
 
     osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
 
-    OSG_NOTICE << "Time for projectAllTriangles = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
+    OSG_INFO << "Time for projectAllTriangles = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
 
     return true;
 }
@@ -364,10 +364,10 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
         //setVertexAttrib(*geom, _vertexAlias, geom->getVertexArray(), false, osg::Geometry::BIND_PER_VERTEX);
         // geom->setVertexArray(0);
         if(!verts || !verts->size()){
-            OSG_NOTICE << "Empty mesh continuing!" <<endl;
+            OSG_INFO<< "Empty mesh continuing!" <<endl;
             continue;
         }
-        OSG_NOTICE << "\tModel Size: "<< verts->size()<<endl;
+        OSG_INFO << "\tModel Size: "<< verts->size()<<endl;
 
         osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
         osg::Geometry::PrimitiveSetList::iterator itr;

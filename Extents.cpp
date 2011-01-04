@@ -550,7 +550,7 @@ void MyDataSet::_buildDestination(bool writeToDisk)
 
                 if (getRecordSubtileFileNamesOnLeafTile() && qitr->first>=getMaximumNumOfLevels()) continue;
 
-                log(osg::INFO, "New level");
+                log(osg::NOTICE, "New level");
 
                 Level::iterator prev_itr = level.begin();
                 _readRow(prev_itr->second);
@@ -606,6 +606,25 @@ void MyDataSet::_buildDestination(bool writeToDisk)
     osgDB::Registry::instance()->setOptions(previous_options.get());
 
 }
+void MyDataSet::_equalizeRow(Row& row)
+{
+    log(osg::INFO, "_equalizeRow %d",row.size());
+    for(Row::iterator citr=row.begin();
+        citr!=row.end();
+        ++citr)
+    {
+        CompositeDestination* cd = citr->second;
+        for(CompositeDestination::TileList::iterator titr=cd->_tiles.begin();
+            titr!=cd->_tiles.end();
+            ++titr)
+        {
+            DestinationTile* tile = titr->get();
+            log(osg::INFO, "   equalizing tile level=%u X=%u Y=%u",tile->_level,tile->_tileX,tile->_tileY);
+           // tile->equalizeBoundaries();
+            tile->setTileComplete(true);
+        }
+    }
+}
 void MyDestinationTile::setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding)
 {
     if(!array)
@@ -651,6 +670,11 @@ osg::Node* MyDestinationTile::createScene()
         {
             int texSizeIdx=levelToTextureLevel[_level];
             _atlasGen.loadTextureFiles(texSizeIdx);
+            int texsize=getTextureSizeForLevel(_level);
+            int numtex=_atlasGen._totalImageList.size();
+            double memsize=((texsize*texsize*numtex*4)/1024.0)/1024.0;
+            log(osg::NOTICE, "   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB",_level,_tileX,_tileY,texsize,texsize,numtex,memsize);
+
             //printf("tile Level %d texure level size %d\n",_level,_atlasGen.getDownsampleSize(levelToTextureLevel[_level]));
             int cnt=0;
             osg::ref_ptr<osg::Vec4Array> v=new osg::Vec4Array;
@@ -684,7 +708,7 @@ osg::Node* MyDestinationTile::createScene()
                 addNodeToScene(itr->get());
             }
 
-            OSG_ALWAYS << "Number of coords "<< texCoords->size() << endl;
+            OSG_INFO<< "Number of coords "<< texCoords->size() << endl;
             if(_createdScene){
                 osgUtil::Optimizer::MergeGeodesVisitor visitor;
 
@@ -1156,10 +1180,10 @@ void MyDataSet::createNewDestinationGraph(
 
     osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
 
-    log(osg::NOTICE,"Time for _destinationGraph->computeMaximumSourceResolution() = %f", osg::Timer::instance()->delta_s(before_computeMax, after_computeMax));
+    log(osg::INFO,"Time for _destinationGraph->computeMaximumSourceResolution() = %f", osg::Timer::instance()->delta_s(before_computeMax, after_computeMax));
 }
 void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
-    log(osg::NOTICE,"   source:%s",src->getFileName().c_str());
+    log(osg::INFO,"   source:%s",src->getFileName().c_str());
     //   log(osg::NOTICE,"    %x",src->getSourceData()->_model.get());
     osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
                                          tile->_extents._min.y(),
@@ -1260,6 +1284,9 @@ void MyDataSet::_readRow(Row& row)
             {
                 DestinationTile* tile = titr->get();
                 log(osg::NOTICE, "   reading tile level=%u X=%u Y=%u",tile->_level,tile->_tileX,tile->_tileY);
+                if(tile->_sources.size())
+                log(osg::NOTICE, "   src: %s ",tile->_sources.front()->getFileName().c_str());
+
                 //tile->readFrom(sourceGraph);
                 for(DestinationTile::Sources::iterator itr = tile->_sources.begin();
                 itr != tile->_sources.end();
@@ -1671,6 +1698,19 @@ class WriteOperation : public BuildOperation
 void MyDataSet::_writeRow(Row& row)
 {
     log(osg::NOTICE, "_writeRow %u",row.size());
+  /*  if(row.size()){
+        MyCompositeDestination::TileList t=row.begin()->second->_tiles;
+        if(t.size()){
+            MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(&(*t.front()));
+            if(myt){
+                int texsize=myt->getTextureSizeForLevel(myt->_level);
+                int numtex=myt->_atlasGen._totalImageList.size();
+                double memsize=((texsize*texsize*numtex*3)/1024.0)/1024.0;
+                log(osg::NOTICE, "   dst: level texture size %d images=%d Size:%.2f MB",texsize,numtex,memsize);
+            }
+        }
+    }*/
+
     for(Row::iterator citr=row.begin();
     citr!=row.end();
     ++citr)
@@ -1689,7 +1729,7 @@ void MyDataSet::_writeRow(Row& row)
 #else
                 std::string filename = _taskOutputDirectory+parent->getSubTileName();
 #endif
-                log(osg::NOTICE, "       _taskOutputDirectory= %s",_taskOutputDirectory.c_str());
+                log(osg::INFO, "       _taskOutputDirectory= %s",_taskOutputDirectory.c_str());
 
                 if (_writeThreadPool.valid())
                 {

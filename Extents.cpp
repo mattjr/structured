@@ -673,11 +673,12 @@ osg::Node* MyDestinationTile::createScene()
             int tex_size;
 
             for( tex_size=16; tex_size <= 1024; tex_size*=2){
-                memsize=(((tex_size*2)*(tex_size*2)*numtex*4)/1024.0)/1024.0;
+                memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
                 if(memsize >1.0)
                     break;
             }
-
+            //Got the size that was over target get size under target
+            tex_size=min(16,tex_size/2);
             //  int texSizeIdx=levelToTextureLevel[_level];
             _atlasGen.loadTextureFiles(tex_size);
 

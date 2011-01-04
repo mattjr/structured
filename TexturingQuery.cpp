@@ -13,51 +13,22 @@ using namespace std;
 
 
 
-
-TexturingQuery::TexturingQuery(std::string bbox_file,const Camera_Calib &calib,TexPyrAtlas &atlasGen,bool useTextureArray) : _bbox_file(bbox_file),
+TexturingQuery::TexturingQuery(TexturedSource *source,const Camera_Calib &calib,TexPyrAtlas &atlasGen,bool useTextureArray) :
 _calib(calib),
 _origImageSize(1360,1024),
 _useTextureArray(useTextureArray),
 _atlasGen(atlasGen),
-_useAtlas(true)
+_useAtlas(true),
+_source(source)
 {
     _vertexAlias = AttributeAlias(0, "osg_Vertex");
 
-    baseName="tmpStore";
-    char tmp[1024];
-    sprintf(tmp,"%d",rand());
-    utilization=0.7;
-    capacity=4;
-    baseName=tmp;
-    memstore = StorageManager::createNewMemoryStorageManager();
-    // Create a new storage manager with the provided base name and a 4K page size.
 
-    manager = StorageManager::createNewRandomEvictionsBuffer(*memstore, 10, false);
-    // applies a main memory random buffer on top of the persistent storage manager
-    // (LRU buffer, etc can be created the same way).
-    stream = new MyDataStream(_bbox_file,_cameras);
-
-    // Create and bulk load a new RTree with dimensionality 3, using "file" as
-    // the StorageManager and the RSTAR splitting policy.
-    id_type indexIdentifier;
-    tree = RTree::createAndBulkLoadNewRTree(
-            RTree::BLM_STR, *stream, *manager, utilization, capacity,capacity, 3, SpatialIndex::RTree::RV_RSTAR, indexIdentifier);
-
-    // std::cerr << *tree;
-    //std::cerr << "Buffer hits: " << file->getHits() << std::endl;
-    //std::cerr << "Index ID: " << indexIdentifier << std::endl;
-
-    bool ret = tree->isIndexValid();
-    if (ret == false) std::cerr << "ERROR: Structure is invalid!" << std::endl;
-    //  else std::cerr << "The stucture seems O.K." << std::endl;
 
 
 }
 TexturingQuery::~TexturingQuery(){
-    delete tree;
-    delete manager;
-    delete memstore;
-    delete stream;
+
 }
 const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts){
     CamDists orderedProj;
@@ -69,9 +40,9 @@ const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3
     std::multimap<SpatialIndex::id_type,int> cam_counter;
     for(unsigned int i=0; i<tri_v.size(); i++){
         avgV += verts[tri_v[i]];
-        pair<multimap<int, ProjectionCamera>::iterator, multimap<int, ProjectionCamera>::iterator> ppp;
+        pair<multimap<int, TexturedSource::ProjectionCamera>::iterator, multimap<int, TexturedSource::ProjectionCamera>::iterator> ppp;
         ppp=reproj.equal_range(tri_v[i]);
-        for (multimap<int, ProjectionCamera>::iterator it2 = ppp.first;
+        for (multimap<int, TexturedSource::ProjectionCamera>::iterator it2 = ppp.first;
              it2 != ppp.second;
              ++it2){
             //   printf("here %d %d\n",(*it2).second.id,i);
@@ -120,7 +91,7 @@ osg::Vec2 TexturingQuery::convertToUV(const osg::Vec2 &pix){
 
 void TexturingQuery::findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,SpatialIndex::id_type id){
     cpad.id=id;
-    osg::Vec2 texC=reprojectPt(_cameras[id].m,v);
+    osg::Vec2 texC=reprojectPt(_source->_cameras[id].m,v);
     if(texC.x() < 0.0 || texC.x() > _origImageSize.x() || texC.y() < 0.0 || texC.y() > _origImageSize.y() )
         cpad.dist=DBL_MAX;
     else
@@ -128,7 +99,7 @@ void TexturingQuery::findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,Spatial
     cpad.uv=convertToUV(texC);
 
 }
-double TexturingQuery::getDistToCenter(osg::Vec3 v, ProjectionCamera cam){
+double TexturingQuery::getDistToCenter(osg::Vec3 v, TexturedSource::ProjectionCamera cam){
     osg::Vec2 texC=reprojectPt(cam.m,v);
     if(texC.x() < 0.0 || texC.x() > _origImageSize.x() || texC.y() < 0.0 || texC.y() > _origImageSize.y() )
         return DBL_MAX;
@@ -156,11 +127,11 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
         Point p = Point(pt, 3);
         ObjVisitor vis;
         // cout << p <<endl;
-        tree->intersectsWithQuery(p,vis);
+        _source->tree->intersectsWithQuery(p,vis);
         if(vis.GetResultCount()){
             for(unsigned int r=0; r < vis.GetResults().size(); r++){
-                if(_cameras.count(vis.GetResults()[r]))
-                    reproj.insert(std::pair<int,ProjectionCamera>(i,_cameras[vis.GetResults()[r]]));
+                if(_source->_cameras.count(vis.GetResults()[r]))
+                    reproj.insert(std::pair<int,TexturedSource::ProjectionCamera>(i,_source->_cameras[vis.GetResults()[r]]));
             }
         }
     }
@@ -194,7 +165,7 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
                 vert_reproj.insert(make_pair<unsigned int, int >(prset.index(i+k),1));
                 camIdxArr->at(prset.index(i+k))=camIdx;
                 if(texCoordsArray && d.size()) {
-                    texCoordsArray->at(prset.index(i+k))=convertToUV(reprojectPt(_cameras[d[0].id].m,verts[tri_v[k]]));
+                    texCoordsArray->at(prset.index(i+k))=convertToUV(reprojectPt(_source->_cameras[d[0].id].m,verts[tri_v[k]]));
                 }
             }
         }
@@ -234,8 +205,8 @@ void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds){
     std::vector<std::pair<SpatialIndex::id_type,string> > files(allIds.size());
     map<SpatialIndex::id_type,int>::const_iterator end = allIds.end();
     for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
-    {   if(_cameras.count(it->first))
-        files[it->second]=make_pair<SpatialIndex::id_type,string> (it->first,_cameras[it->first].filename);
+    {   if(_source->_cameras.count(it->first))
+        files[it->second]=make_pair<SpatialIndex::id_type,string> (it->first,_source->_cameras[it->first].filename);
         else
             OSG_ALWAYS << " Failed " <<it->first << " : " << it->second << '\n';
 }

@@ -247,7 +247,7 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
 
 void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
                                                        osg::Vec2Array* texCoordsArray,
-                                                       const osg::Vec3Array &verts,int texSizeIdx){
+                                                       const osg::Vec3Array &verts,int tex_size){
     if(!v)
         return;
 
@@ -287,7 +287,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         stateset->setDataVariance(osg::Object::STATIC);
     }
     int numIdx=prset.getNumIndices();
-  //  printf("Num idx %d\n",numIdx);
+    //  printf("Num idx %d\n",numIdx);
 
     for(int i=0; i<numIdx-2; i+=3){
         vector<osg::Vec3> vP;
@@ -668,12 +668,20 @@ osg::Node* MyDestinationTile::createScene()
         }
         else*/
         {
-            int texSizeIdx=levelToTextureLevel[_level];
-            _atlasGen.loadTextureFiles(texSizeIdx);
-            int texsize=getTextureSizeForLevel(_level);
             int numtex=_atlasGen._totalImageList.size();
-            double memsize=((texsize*texsize*numtex*4)/1024.0)/1024.0;
-            log(osg::NOTICE, "   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB",_level,_tileX,_tileY,texsize,texsize,numtex,memsize);
+            double memsize;
+            int tex_size;
+
+            for( tex_size=16; tex_size <= 1024; tex_size*=2){
+                memsize=(((tex_size*2)*(tex_size*2)*numtex*4)/1024.0)/1024.0;
+                if(memsize >1.0)
+                    break;
+            }
+
+            //  int texSizeIdx=levelToTextureLevel[_level];
+            _atlasGen.loadTextureFiles(tex_size);
+
+            log(osg::NOTICE, "   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
 
             //printf("tile Level %d texure level size %d\n",_level,_atlasGen.getDownsampleSize(levelToTextureLevel[_level]));
             int cnt=0;
@@ -722,7 +730,7 @@ osg::Node* MyDestinationTile::createScene()
                 osgUtil::GeometryCollector::GeometryList geomList = gc.getGeometryList();
                 if(geomList.size() > 1){
                     OSG_ALWAYS << "Number of collected geometies " << geomList.size() << "problem "<<endl;
-                 //   OSG_FATAL << "Number of collected geometies " << geomList.size() << "problem "<<endl;
+                    //   OSG_FATAL << "Number of collected geometies " << geomList.size() << "problem "<<endl;
 
                 }
                 if(geomList.size() && _atlasGen.getNumSources()> 0 ){
@@ -739,10 +747,10 @@ osg::Node* MyDestinationTile::createScene()
                     osg::ref_ptr<osg::Geode> geode = dynamic_cast<osg::Geode*> (group->getChild(0));
                     osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
                     osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
-                    generateStateAndSplitDrawables(geoms,v,*(primitiveSets.begin()->get()),texCoords,*verts,texSizeIdx);
+                    generateStateAndSplitDrawables(geoms,v,*(primitiveSets.begin()->get()),texCoords,*verts,tex_size);
                     geode->removeDrawables(0);
                     for(int i=0; i < (int)geoms.size(); i++)
-                       geode->addDrawable(geoms[i]);
+                        geode->addDrawable(geoms[i]);
 
                 }
             }
@@ -1164,8 +1172,10 @@ void MyDataSet::createNewDestinationGraph(
                             titr != cd->_tiles.end();
                             ++titr)
                             {
-                                DestinationTile* tile = titr->get();
-                                tile->_sources.push_back(source);
+                                MyDestinationTile* tile = dynamic_cast<MyDestinationTile*>(titr->get());
+                                TexturedSource* texsource = dynamic_cast<TexturedSource*>(source);
+
+                                tile->addSourceWithHint(texsource,extents);
                             }
                         }
                     }
@@ -1182,7 +1192,7 @@ void MyDataSet::createNewDestinationGraph(
 
     log(osg::INFO,"Time for _destinationGraph->computeMaximumSourceResolution() = %f", osg::Timer::instance()->delta_s(before_computeMax, after_computeMax));
 }
-void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
+void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     log(osg::INFO,"   source:%s",src->getFileName().c_str());
     //   log(osg::NOTICE,"    %x",src->getSourceData()->_model.get());
     osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
@@ -1201,7 +1211,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,Source *src){
     std::string mf=src->getFileName();
     int npos=mf.find("/");
     std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-    TexturingQuery *tq=new TexturingQuery(bbox_name,_calib,tile->_atlasGen,_useTextureArray);
+    TexturingQuery *tq=new TexturingQuery(src,_calib,tile->_atlasGen,_useTextureArray);
     tq->_tile=tile;
     bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(root.get()));
     delete tq;
@@ -1222,7 +1232,7 @@ class MyReadFromOperation : public BuildOperation
 {
 public:
 
-    MyReadFromOperation(ThreadPool* threadPool, BuildLog* buildLog, DestinationTile* tile, MyDataSet* dataSet,Source *src):
+    MyReadFromOperation(ThreadPool* threadPool, BuildLog* buildLog, DestinationTile* tile, MyDataSet* dataSet,TexturedSource *src):
             BuildOperation(threadPool, buildLog, "ReadFromOperation", false),
             _tile(tile),
             _dataSet(dataSet),
@@ -1239,7 +1249,7 @@ public:
 
     DestinationTile* _tile;
     MyDataSet* _dataSet;
-    Source *_src;
+    TexturedSource *_src;
 };
 
 void MyDataSet::_readRow(Row& row)
@@ -1261,7 +1271,9 @@ void MyDataSet::_readRow(Row& row)
                 itr != (*titr)->_sources.end();
                 ++itr)
                 {
-                    _readThreadPool->run(new MyReadFromOperation(_readThreadPool.get(), getBuildLog(), titr->get(), this,(*itr).get()));
+                    TexturedSource *source=dynamic_cast<TexturedSource*>((*itr).get());
+
+                    _readThreadPool->run(new MyReadFromOperation(_readThreadPool.get(), getBuildLog(), titr->get(), this,source));
                 }
             }
         }
@@ -1285,7 +1297,7 @@ void MyDataSet::_readRow(Row& row)
                 DestinationTile* tile = titr->get();
                 log(osg::NOTICE, "   reading tile level=%u X=%u Y=%u",tile->_level,tile->_tileX,tile->_tileY);
                 if(tile->_sources.size())
-                log(osg::NOTICE, "   src: %s ",tile->_sources.front()->getFileName().c_str());
+                    log(osg::NOTICE, "   src: %s ",tile->_sources.front()->getFileName().c_str());
 
                 //tile->readFrom(sourceGraph);
                 for(DestinationTile::Sources::iterator itr = tile->_sources.begin();
@@ -1293,7 +1305,8 @@ void MyDataSet::_readRow(Row& row)
                 ++itr)
                 {
                     MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(tile);
-                    processTile(myt,*itr);
+                    TexturedSource *source=dynamic_cast<TexturedSource*>((*itr).get());
+                    processTile(myt,source);
                 }
 
             }
@@ -1662,43 +1675,43 @@ osg::Node* MyCompositeDestination::createSubTileScene()
 }
 class WriteOperation : public BuildOperation
 {
-    public:
+public:
 
-        WriteOperation(ThreadPool* threadPool, MyDataSet* dataset,CompositeDestination* cd, const std::string& filename):
+    WriteOperation(ThreadPool* threadPool, MyDataSet* dataset,CompositeDestination* cd, const std::string& filename):
             BuildOperation(threadPool, dataset->getBuildLog(), "WriteOperation", false),
             _dataset(dataset),
             _cd(cd),
             _filename(filename) {}
 
-        virtual void build()
+    virtual void build()
+    {
+        //notify(osg::NOTICE)<<"   WriteOperation"<<std::endl;
+
+        osg::ref_ptr<osg::Node> node = _cd->createSubTileScene();
+        if (node.valid())
         {
-            //notify(osg::NOTICE)<<"   WriteOperation"<<std::endl;
+            if (_buildLog.valid()) _buildLog->log(osg::NOTICE, "   writeSubTile filename= %s",_filename.c_str());
 
-            osg::ref_ptr<osg::Node> node = _cd->createSubTileScene();
-            if (node.valid())
-            {
-                if (_buildLog.valid()) _buildLog->log(osg::NOTICE, "   writeSubTile filename= %s",_filename.c_str());
+            _dataset->_writeNodeFileAndImages(*node,_filename);
 
-                _dataset->_writeNodeFileAndImages(*node,_filename);
-
-                _cd->setSubTilesGenerated(true);
-                _cd->unrefSubTileData();
-            }
-            else
-            {
-                log(osg::WARN, "   failed to writeSubTile node for tile, filename=%s",_filename.c_str());
-            }
+            _cd->setSubTilesGenerated(true);
+            _cd->unrefSubTileData();
         }
+        else
+        {
+            log(osg::WARN, "   failed to writeSubTile node for tile, filename=%s",_filename.c_str());
+        }
+    }
 
-        MyDataSet*                            _dataset;
-        osg::ref_ptr<CompositeDestination>  _cd;
-        std::string                         _filename;
+    MyDataSet*                            _dataset;
+    osg::ref_ptr<CompositeDestination>  _cd;
+    std::string                         _filename;
 };
 
 void MyDataSet::_writeRow(Row& row)
 {
     log(osg::NOTICE, "_writeRow %u",row.size());
-  /*  if(row.size()){
+    /*  if(row.size()){
         MyCompositeDestination::TileList t=row.begin()->second->_tiles;
         if(t.size()){
             MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(&(*t.front()));

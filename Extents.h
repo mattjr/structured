@@ -49,6 +49,8 @@
 
 namespace vpb
 {
+
+
     class MyDestinationTile : public DestinationTile{
     public:
         MyDestinationTile(std::string imageDir):_atlasGen(imageDir){
@@ -60,6 +62,7 @@ namespace vpb
         levelToTextureLevel[3]=0;
         levelToTextureLevel[4]=0;
         levelToTextureLevel[5]=0;
+        _hintTextureNumber=0;
 
     }
         typedef std::map<SpatialIndex::id_type,int> idmap_t;
@@ -71,6 +74,21 @@ namespace vpb
                 return _atlasGen.getDownsampleSize(levelToTextureLevel[level]);
             return -1;
         }
+        void addToHintTextureNumber(int numberTextures){
+            _hintTextureNumber+=numberTextures;
+        }
+        void addSourceWithHint(TexturedSource *source,const vpb::GeospatialExtents extents){
+            _sources.push_back(source);
+            const double minR[]={extents.xMin(),extents.yMin(),DBL_MIN};
+            const double maxR[]={extents.xMax(),extents.yMax(),DBL_MAX};
+
+
+            SpatialIndex::Region r = SpatialIndex::Region(minR,maxR,3);
+            CountVisitor c;
+            source->tree->intersectsWithQuery(r,c);
+            //OSG_NOTICE << "Source has " << c.GetResultCount() <<std::endl;
+            addToHintTextureNumber(c.GetResultCount());
+        }
 
         typedef std::pair<unsigned int, std::string> AttributeAlias;
         std::vector<osg::ref_ptr<osg::Vec4Array > > texCoordIDIndexPerModel;
@@ -80,7 +98,7 @@ namespace vpb
 
         void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
                                                             osg::Vec2Array* texCoordsArray,
-                                                            const osg::Vec3Array &verts,int texSizeIdx);
+                                                            const osg::Vec3Array &verts,int tex_size);
         static const int TEX_UNIT=0;
 
         AttributeAlias _projCoordAlias;
@@ -89,6 +107,7 @@ namespace vpb
          OpenThreads::Mutex _tileMutex;
          TexPyrAtlas _atlasGen;
          std::map<int,int> levelToTextureLevel;
+         int _hintTextureNumber;
 
     };
     class ClippedCopy{
@@ -130,7 +149,7 @@ class MyDataSet :  public DataSet
         void _equalizeRow(Row& row);
         int _run();
         TexturingQuery *_tq;
-        void processTile(MyDestinationTile *tile,Source *src);
+        void processTile(MyDestinationTile *tile,TexturedSource *src);
 
     protected:
         virtual ~MyDataSet() {}

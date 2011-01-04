@@ -2,7 +2,7 @@
 #include <osgDB/ReadFile>
 #include <string.h>
 using namespace std;
-TexPyrAtlas::TexPyrAtlas(std::string imgdir,bool doAtlas):_imgdir(imgdir),_doAtlas(doAtlas)
+TexPyrAtlas::TexPyrAtlas(std::string imgdir,bool doAtlas):_imgdir(imgdir),_doAtlas(doAtlas),_useTextureArray(false)
 {
     setMaximumAtlasSize(4096,4096);
     setMargin(0);
@@ -71,7 +71,7 @@ osg::ref_ptr<osg::Image> TexPyrAtlas::getImage(int index,int sizeIndex){
     else
         return osg::ref_ptr<osg::Image> ();*/
 }
-void TexPyrAtlas::loadTextureFiles(int sizeIndex){
+void TexPyrAtlas::loadTextureFiles(int size){
     std::vector<osg::ref_ptr<osg::Image> > loc_images;
     loc_images.resize(_totalImageList.size());
     if(!_doAtlas)
@@ -81,7 +81,7 @@ void TexPyrAtlas::loadTextureFiles(int sizeIndex){
     int i=0;
     for (std::map<id_type,string>::const_iterator it = _totalImageList.begin(); it != end; ++it, i++){
         osg::ref_ptr<osg::Image> img=osgDB::readImageFile(_imgdir+"/"+it->second);
-        resizeImage(img,_downsampleSizes[sizeIndex],_downsampleSizes[sizeIndex],loc_images[i]);
+        resizeImage(img,size,size,loc_images[i]);
         if(loc_images[i].valid()){
             if(!_doAtlas) {
                 _images[i]=loc_images[i];
@@ -234,7 +234,7 @@ void TexPyrAtlas::buildAtlas()
                 OSG_INFO<<"creating new Atlas for "<<source->_image->getFileName()<<std::endl;
 
                 osg::ref_ptr<Atlas> atlas = new Atlas(_maximumAtlasWidth,_maximumAtlasHeight,_margin);
-                if(_atlasList.size()){
+                if(_atlasList.size() && _useTextureArray){
                 atlas->_width=_maximumAtlasWidth;
                 atlas->_height=_maximumAtlasHeight;
                 }

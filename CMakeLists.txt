@@ -334,6 +334,7 @@ SET( SRCS OSGExport.cpp
 		auv_3ds.cpp
 		Clean.cpp
 		novelty.cpp
+TexturedSource.cpp
 Clipper.cpp
 VPBInterface.cpp
 TexPyrAtlas.cpp

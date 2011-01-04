@@ -18,7 +18,7 @@ void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,
     m->setLogFileName("tmp.log");
         for(int lod=0; lod < (int)datalist_lod.size(); lod++){
             for(int i=0; i<(int)datalist_lod[lod].size(); i++){
-            vpb::Source *sourceModel=new vpb::Source(vpb::Source::MODEL,datalist_lod[lod][i]);
+            TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,datalist_lod[lod][i]);
             sourceModel->setMaxLevel(numlod-lod);
             sourceModel->setMinLevel(numlod-lod);
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));

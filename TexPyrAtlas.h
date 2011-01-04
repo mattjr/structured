@@ -16,7 +16,7 @@ public:
     int getDownsampleSize(int idx){if(idx > (int) _downsampleSizes.size()) return 0; return _downsampleSizes[idx];}
     osg::ref_ptr<osg::Texture> getTexture(int index,int sizeIndex);
     unsigned int getNumAtlases(){return _atlasList.size();}
-    void loadTextureFiles(int sizeIndex);
+    void loadTextureFiles(int size);
     osg::Image *getAtlasByNumber(unsigned int i){
         if(i < _atlasList.size())
             return _atlasList[i]->_image;
@@ -61,7 +61,7 @@ protected:
     std::string _imgdir;
     std::map<id_type,int> _idToAtlas;
     std::map<id_type,Source*> _idToSource;
-
+bool _useTextureArray;
     bool _doAtlas;
 
 

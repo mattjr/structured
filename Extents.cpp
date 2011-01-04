@@ -678,7 +678,7 @@ osg::Node* MyDestinationTile::createScene()
                     break;
             }
             //Got the size that was over target get size under target
-            tex_size=min(16,tex_size/2);
+            tex_size=max(16,tex_size/2);
             //  int texSizeIdx=levelToTextureLevel[_level];
             _atlasGen.loadTextureFiles(tex_size);
 

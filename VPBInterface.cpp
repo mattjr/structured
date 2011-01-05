@@ -8,14 +8,15 @@ void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
     vpb::MyDataSet *m=new vpb::MyDataSet(calib,useTextureArray);
-   // m->setNumReadThreadsToCoresRatio(1.5);
- //   m->setNumWriteThreadsToCoresRatio(1.5);
+    m->setNumReadThreadsToCoresRatio(1.5);
+    m->setNumWriteThreadsToCoresRatio(1.5);
+    //m->setCompressionMethod(vpb::BuildOptions::RGB_S3TC_DXT1);
     m->setRadiusToMaxVisibleDistanceRatio(2.5);
    //  m->_tq = new TexturingQuery("mesh-quad/bbox.txt",calib);
 
     m->setDestinationName("real.ive");
 
-    m->setLogFileName("tmp.log");
+    m->setLogFileName("/tmp/tmp.log");
         for(int lod=0; lod < (int)datalist_lod.size(); lod++){
             for(int i=0; i<(int)datalist_lod[lod].size(); i++){
             TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,datalist_lod[lod][i]);

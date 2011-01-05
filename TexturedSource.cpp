@@ -43,3 +43,7 @@ TexturedSource::~TexturedSource(){
     delete memstore;
     delete stream;
 }
+void TexturedSource::intersectsWithQuery(const SpatialIndex::IShape& query, SpatialIndex::IVisitor& v){
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_treeMutex);
+    tree->intersectsWithQuery(query,v);
+}

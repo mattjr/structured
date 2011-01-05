@@ -36,7 +36,7 @@
 #include <vpb/System>
 #include <vpb/FileUtils>
 #include <vpb/FilePathManager>
-
+#include <vpb/TextureUtils>
 #include <vpb/ShapeFilePlacer>
 
 // GDAL includes
@@ -281,6 +281,39 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
         texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
         texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
+        bool inlineImageFile = _dataSet->getDestinationTileExtension()==".ive" || _dataSet->getDestinationTileExtension()==".osgb" ;
+        bool compressedImageSupported = inlineImageFile;
+        //bool mipmapImageSupported = compressedImageSupported; // inlineImageFile;
+        int layerNum=0;
+        osg::Texture::InternalFormatMode internalFormatMode = osg::Texture::USE_IMAGE_DATA_FORMAT;
+        switch(getImageOptions(layerNum)->getTextureType())
+        {
+            case(BuildOptions::RGB_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+            case(BuildOptions::RGBA_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+            case(BuildOptions::RGBA_S3TC_DXT3): internalFormatMode = osg::Texture::USE_S3TC_DXT3_COMPRESSION; break;
+            case(BuildOptions::RGBA_S3TC_DXT5): internalFormatMode = osg::Texture::USE_S3TC_DXT5_COMPRESSION; break;
+            case(BuildOptions::ARB_COMPRESSED): internalFormatMode = osg::Texture::USE_ARB_COMPRESSION; break;
+            case(BuildOptions::COMPRESSED_TEXTURE): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+            case(BuildOptions::COMPRESSED_RGBA_TEXTURE): internalFormatMode = osg::Texture::USE_S3TC_DXT3_COMPRESSION; break;
+            default: break;
+        }
+
+        bool compressedImageRequired = (internalFormatMode != osg::Texture::USE_IMAGE_DATA_FORMAT);
+        //  image->s()>=minumCompressedTextureSize && image->t()>=minumCompressedTextureSize &&
+
+        if (compressedImageSupported && compressedImageRequired )
+        {
+            log(osg::NOTICE,"Compressed image");
+
+            bool generateMiMap = getImageOptions(layerNum)->getMipMappingMode()==DataSet::MIP_MAPPING_IMAGERY;
+            bool resizePowerOfTwo = getImageOptions(layerNum)->getPowerOfTwoImages();
+            vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
+
+            log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");
+
+        }
+
+
         stateset->setTextureAttributeAndModes(TEX_UNIT,texture,osg::StateAttribute::ON);
         stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
 
@@ -683,6 +716,7 @@ osg::Node* MyDestinationTile::createScene()
             _atlasGen.loadTextureFiles(tex_size);
 
             log(osg::NOTICE, "   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
+            //            printf("   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
 
             //printf("tile Level %d texure level size %d\n",_level,_atlasGen.getDownsampleSize(levelToTextureLevel[_level]));
             int cnt=0;
@@ -1678,7 +1712,7 @@ class WriteOperation : public BuildOperation
 {
 public:
 
-    WriteOperation(ThreadPool* threadPool, MyDataSet* dataset,CompositeDestination* cd, const std::string& filename):
+    WriteOperation(ThreadPool* threadPool, MyDataSet* dataset,MyCompositeDestination* cd, const std::string& filename):
             BuildOperation(threadPool, dataset->getBuildLog(), "WriteOperation", false),
             _dataset(dataset),
             _cd(cd),
@@ -1705,7 +1739,7 @@ public:
     }
 
     MyDataSet*                            _dataset;
-    osg::ref_ptr<CompositeDestination>  _cd;
+    osg::ref_ptr<MyCompositeDestination>  _cd;
     std::string                         _filename;
 };
 

@@ -61,8 +61,9 @@ protected:
     std::string _imgdir;
     std::map<id_type,int> _idToAtlas;
     std::map<id_type,Source*> _idToSource;
-bool _useTextureArray;
     bool _doAtlas;
+
+    bool _useTextureArray;
 
 
 };

@@ -2199,14 +2199,15 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       else
 	fprintf(vripcmds_fp,"cat ../%s | cut -f1 -d\" \" | xargs $BASEDIR/vrip/bin/plymerge > ../mesh-agg/seg-%08d.ply;",vrip_seg_fname,i);
 
-      fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-agg/seg-%08d.ply > ../mesh-diced/clipped-diced-%08d.ply;",
-	      vrip_cells[i].bounds.min_x,
+      fprintf(vripcmds_fp,"$BASEDIR/treeBBClip ../mesh-agg/seg-%08d.ply %f %f %f %f %f %f --outfile ../mesh-diced/clipped-diced-%08d.ply;",
+              i,
+              vrip_cells[i].bounds.min_x,
 	      vrip_cells[i].bounds.min_y,
-	      FLT_MIN,
+              -FLT_MAX,
 	      vrip_cells[i].bounds.max_x,
 	      vrip_cells[i].bounds.max_y,
 	      FLT_MAX,
-	      eps,i,i);
+              i);
 
      if(have_mb_ply){
        fprintf(vripcmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply;",i,i);
@@ -2538,7 +2539,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 
 
 
-	FILE *dicefp=fopen("./simp.sh","w+");
+        FILE *dicefp=fopen("./simp.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\n");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  

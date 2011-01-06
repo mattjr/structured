@@ -350,10 +350,14 @@ ADD_LIBRARY( ts STATIC ${SRCS} )
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
 ADD_EXECUTABLE( genTex genTex.cpp )
 ADD_EXECUTABLE( lodgen lodgen.cpp )
+ADD_EXECUTABLE( treeBBClip treeBBClip.cpp PLYWriterNodeVisitor.cc )
+ADD_EXECUTABLE( simplifier simplifier.cpp)
+
 LINK_LIBRARIES(osgTerrain vpbd osgFX osg spatialindex)
 TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf)
 TARGET_LINK_LIBRARIES( genTex ts plankton )
 TARGET_LINK_LIBRARIES( lodgen ts )
+TARGET_LINK_LIBRARIES( treeBBClip ts )
 
 # Disabled by DJLM. 
 # Threaded stereo expects access to a large bunch of other executables

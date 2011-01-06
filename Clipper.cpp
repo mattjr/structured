@@ -21,6 +21,7 @@
 #include <iostream>
 #include <iterator>
 #include <osg/io_utils>
+#include <stdio.h>
 using namespace osg;
 
 bool ClipTriangle(osg::Vec3 (&poly)[10], unsigned int &polySize, const osg::BoundingBox &bounds)
@@ -85,7 +86,7 @@ bool ClipTriangle(osg::Vec3 (&poly)[10], unsigned int &polySize, const osg::Boun
                     newVtx[0]*=f;
                     newVtx[1]*=f;
                     newVtx[2]*=f;
-                    newVtx = poly[v0] + newVtx ;//(1-f)*poly[v0] + f*poly[v1];
+                    newVtx = (poly[v0] + newVtx) ;//(1-f)*poly[v0] + f*poly[v1];
                     newVtx[d] = boundsside[d]; // make sure it's exactly _on_ the plane
 
                     if (v0in) {
@@ -146,9 +147,9 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::Bound
                 osg::Vec3 poly[10]={v0,v1,v2};
                 unsigned int polySize=3;
                 if(ClipTriangle(poly,polySize,clipbox)){
-                    v0=poly[0];
+                  /*  v0=poly[0];
                     v1=poly[1];
-                    v2=poly[2];
+                    v2=poly[2];*/
                 }
 
             }

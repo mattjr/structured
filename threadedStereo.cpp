@@ -107,7 +107,7 @@ static bool have_mb_grd=false;
 static bool have_cov_file=false;
 static string stereo_calib_file_name;
 static bool no_simp=true;
-static double simp_res[3];
+static  vector<double>simp_res(255);
 static FILE *uv_fp;
 static ofstream file_name_list;
 static string base_dir;
@@ -433,7 +433,7 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
   recon_config_file->get_value( "SD_SCALE", dense_scale,0.5);
  
   
-  
+
 
   bool vrip_on;
   recon_config_file->get_value("USE_VRIP",vrip_on,true);
@@ -710,7 +710,12 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
   recon_config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
   recon_config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
   recon_config_file->set_value( "SD_SHOW_DEBUG_IMAGES"  , display_debug_images );
+  simp_res[0]=0.005;
+   simp_res[1]=0.01;
+   simp_res[2]=0.05;
 
+  for(int i=3;i < vpblod; i++)
+        simp_res[i]=(simp_res[i-1]*1.2);
   if (argp.errors())
     {
       argp.writeErrorMessages(std::cout);
@@ -2390,20 +2395,20 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
     }
     fclose(quadmergecmds_fp);
     fclose(diced_fp);
-    int lodPick[]={0,0,0,1,1,2,2,2,2,2};
+   // int lodPick[]={0,0,0,0,1,1,1,1,2,2};
     std::vector<std::vector<string> > datalist_lod;
     for(int lod=0; lod < vpblod; lod ++){
         std::vector<string> level;
         if(!no_quadmerge){
             for(int i=0; i <(int)quad_cells.size(); i++){
                 char tmp[1024];
-                sprintf(tmp,"mesh-quad/clipped-diced-%08d-lod%d.ply",i,lodPick[lod]);//std::min(lod,2)
+                sprintf(tmp,"mesh-quad/clipped-diced-%08d-lod%d.ply",i,lod);//std::min(lod,2)
                 level.push_back(tmp);
             }
         }else{
             for(int i=0; i <(int)vrip_cells.size(); i++){
                 char tmp[1024];
-                sprintf(tmp,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,lodPick[lod]);//std::min(lod,2)
+                sprintf(tmp,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,lod);//std::min(lod,2)
                 level.push_back(tmp);
             }
         }
@@ -2537,7 +2542,11 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
 	fprintf(dicefp,"cd $DICEDIR\n");
 	fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"  
-		"REDFACT=(%f %f %f)\n",simp_res[0],simp_res[1],simp_res[2]);
+                "REDFACT=(");
+        for(int r=0; r<vpblod; r++)
+          fprintf(dicefp,"%f ",simp_res[r]);
+
+        fprintf(dicefp,")\n");
 		
 	char simpargstr[2048];
 	if(further_clean)
@@ -2556,20 +2565,20 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 		"if [ $FACES == 0 ]; then\n continue;\n fi\n"
 		"echo $MESHNAME >> valid.txt\n"
 		"SIMPCMD=\"cd $DICEDIR/\" \n"
-		"\tfor f in `echo {0..2}`\n"
+                "\tfor f in `echo {0..%d}`\n"
 		"\tdo\n"
 		"\t\tif [ $f == 0 ]; then\n"
-		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$f.ply/g`\n"
+                "\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$((%d-$f)).ply/g`\n"
 		"FLIPCMD=\"-F\"\n"
 		"\t\telse\n"
 		"FLIPCMD="
-		"\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$(($f - 1 )).ply/-lod$f.ply/g`\n"
+                "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$((%d-$f+1)).ply/-lod$((%d-$f)).ply/g`\n"
 		"\t\tfi\n"
 		"\t\tSIMPCMD=$SIMPCMD\";\"\"tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
 		"MESHNAME=$NEWNAME\n"
 		"\tdone\n"
 		"echo $SIMPCMD >> simpcmds\n"
-		"done\n",simplogdir,simpargstr);
+                "done\n",simplogdir,vpblod,vpblod,vpblod,vpblod,simpargstr);
 	
 	
 	if(dist_run){

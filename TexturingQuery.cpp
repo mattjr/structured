@@ -358,9 +358,14 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
                     OSG_ALWAYS << "Failed to create reprojection array" <<endl;
                     continue;
                 }
+
+                {
+                    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_tile->_texCoordMutex);
+
                     _tile->texCoordIDIndexPerModel.push_back(v);
                     _tile->texCoordsPerModel.push_back(texCoords);
-                    return true;
+                }
+                return true;
                 break;
         default:
                 OSG_ALWAYS << "Freakout shouldn't be anything but triangles\n";

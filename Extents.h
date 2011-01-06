@@ -63,6 +63,7 @@ namespace vpb
         levelToTextureLevel[4]=0;
         levelToTextureLevel[5]=0;
         _hintTextureNumber=0;
+        _hintNumLevels=0;
 
     }
         typedef std::map<SpatialIndex::id_type,int> idmap_t;
@@ -77,6 +78,10 @@ namespace vpb
         void addToHintTextureNumber(int numberTextures){
             _hintTextureNumber+=numberTextures;
         }
+        void setHintNumLevels(int levels){
+            _hintNumLevels=levels;
+        }
+
         void addSourceWithHint(TexturedSource *source,const vpb::GeospatialExtents extents){
             _sources.push_back(source);
             const double minR[]={extents.xMin(),extents.yMin(),DBL_MIN};
@@ -104,10 +109,12 @@ namespace vpb
         AttributeAlias _projCoordAlias;
         AttributeAlias _texCoordsAlias;
          osg::Node * createScene(void);
-         OpenThreads::Mutex _tileMutex;
+         OpenThreads::Mutex _texCoordMutex;
+         OpenThreads::Mutex _modelMutex;
          TexPyrAtlas _atlasGen;
          std::map<int,int> levelToTextureLevel;
          int _hintTextureNumber;
+         int _hintNumLevels;
 
     };
     class ClippedCopy{
@@ -148,7 +155,6 @@ class MyDataSet :  public DataSet
         void _buildDestination(bool writeToDisk);
         void _equalizeRow(Row& row);
         int _run();
-        TexturingQuery *_tq;
         void processTile(MyDestinationTile *tile,TexturedSource *src);
 
     protected:

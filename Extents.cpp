@@ -705,18 +705,25 @@ osg::Node* MyDestinationTile::createScene()
             double memsize;
             int tex_size;
 
-            for( tex_size=16; tex_size <= 1024; tex_size*=2){
+            /*for( tex_size=16; tex_size <= 2048; tex_size*=2){
                 memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
                 if(memsize >1.0)
                     break;
             }
             //Got the size that was over target get size under target
-            tex_size=max(16,tex_size/2);
+            tex_size=max(16,tex_size/2);*/
+            int start_pow=9;
+            tex_size=1024;//log2 = 10
+            int leveloffset=(_hintNumLevels-_level);
+            printf("level offset %d level %d\n",leveloffset,_level);
+            tex_size=pow(2,start_pow-leveloffset);
+            memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
+
             //  int texSizeIdx=levelToTextureLevel[_level];
             _atlasGen.loadTextureFiles(tex_size);
 
-            log(osg::NOTICE, "   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
-            //            printf("   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
+          //  log(osg::NOTICE, "   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
+                        printf("   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
 
             //printf("tile Level %d texure level size %d\n",_level,_atlasGen.getDownsampleSize(levelToTextureLevel[_level]));
             int cnt=0;
@@ -1211,6 +1218,7 @@ void MyDataSet::createNewDestinationGraph(
                                 TexturedSource* texsource = dynamic_cast<TexturedSource*>(source);
 
                                 tile->addSourceWithHint(texsource,extents);
+                                tile->setHintNumLevels(maxNumLevels);
                             }
                         }
                     }
@@ -1253,7 +1261,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
 
     if(projectSucess){
 
-        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_tileMutex);
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_modelMutex);
 
         if(!tile->_models){
             tile->_models = new DestinationData(NULL);
@@ -1307,7 +1315,6 @@ void MyDataSet::_readRow(Row& row)
                 ++itr)
                 {
                     TexturedSource *source=dynamic_cast<TexturedSource*>((*itr).get());
-
                     _readThreadPool->run(new MyReadFromOperation(_readThreadPool.get(), getBuildLog(), titr->get(), this,source));
                 }
             }

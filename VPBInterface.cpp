@@ -11,17 +11,18 @@ void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,
     m->setNumReadThreadsToCoresRatio(1.5);
     m->setNumWriteThreadsToCoresRatio(1.5);
     //m->setCompressionMethod(vpb::BuildOptions::RGB_S3TC_DXT1);
-    m->setRadiusToMaxVisibleDistanceRatio(2.5);
-   //  m->_tq = new TexturingQuery("mesh-quad/bbox.txt",calib);
+    m->setRadiusToMaxVisibleDistanceRatio(4.0);
 
     m->setDestinationName("real.ive");
 
-    m->setLogFileName("/tmp/tmp.log");
-        for(int lod=0; lod < (int)datalist_lod.size(); lod++){
-            for(int i=0; i<(int)datalist_lod[lod].size(); i++){
+    m->setLogFileName("tmp.log");
+    for(int lod=0; lod < (int)datalist_lod.size(); lod++){
+        for(int i=0; i<(int)datalist_lod[lod].size(); i++){
+            if(!osgDB::fileExists(datalist_lod[lod][i]))
+                continue;
             TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,datalist_lod[lod][i]);
-            sourceModel->setMaxLevel(numlod-lod);
-            sourceModel->setMinLevel(numlod-lod);
+            sourceModel->setMaxLevel(lod);
+            sourceModel->setMinLevel(lod);
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
             osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
             if (model)

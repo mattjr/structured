@@ -1249,8 +1249,14 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     //  osg::ref_ptr<osg::Node> root = (osg::Node*)src->getSourceData()->_model.get()->clone(osg::CopyOp::DEEP_COPY_ALL);
 
     //   root->accept(clipper);
-    ClippedCopy cl_cp(ext_bbox);
-    osg::ref_ptr<osg::Node> root =cl_cp.makeCopy((osg::Geode*)src->getSourceData()->_model.get());
+  //  ClippedCopy cl_cp(ext_bbox);
+    //osg::ref_ptr<osg::Node> root =cl_cp.makeCopy((osg::Geode*)src->getSourceData()->_model.get());
+    osg::ref_ptr<osg::Node> root;
+    if(src->_kdTree){
+        KdTreeBbox *kdtreeBbox=new KdTreeBbox(*src->_kdTree);
+        root=kdtreeBbox->intersect(ext_bbox);
+    }else
+        OSG_FATAL<<"No kdtree\n";
     std::string mf=src->getFileName();
     int npos=mf.find("/");
     std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");

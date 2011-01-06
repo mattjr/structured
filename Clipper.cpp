@@ -25,7 +25,7 @@
 #include <iterator>
 #include <osg/io_utils>
 using namespace osgUtil;
-
+#if 0
 struct dereference_less
 {
     template<class T, class U>
@@ -1859,3 +1859,196 @@ void Clipper::simplify(osg::Geometry& geometry, const IndexList& protectedPoints
 */
 
 }
+
+#endif
+using namespace osg;
+
+
+void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::BoundingBox clipbox) const
+{
+    if (node.first<0)
+    {
+        // treat as a leaf
+
+        //OSG_NOTICE<<"KdTree::intersect("<<&leaf<<")"<<std::endl;
+        int istart = -node.first-1;
+        int iend = istart + node.second;
+
+        for(int i=istart; i<iend; ++i)
+        {
+            //const Triangle& tri = _triangles[_primitiveIndices[i]];
+            const KdTree::Triangle& tri = _triangles[i];
+            // OSG_NOTICE<<"   tri("<<tri.p1<<","<<tri.p2<<","<<tri.p3<<")"<<std::endl;
+
+            const osg::Vec3& v0 = _vertices[tri.p0];
+            const osg::Vec3& v1 = _vertices[tri.p1];
+            const osg::Vec3& v2 = _vertices[tri.p2];
+
+
+
+            if(!clipbox.contains(v0))
+            {
+                continue;
+            }
+
+
+            int counter=_new_triangles->size();
+            _new_vertices->push_back(v0);
+            _new_vertices->push_back(v1);
+            _new_vertices->push_back(v2);
+
+            _new_triangles->push_back(counter);
+            _new_triangles->push_back(counter+1);
+            _new_triangles->push_back(counter+2);
+
+        }
+    }
+    else
+    {
+        if (node.first>0)
+        {
+            //osg::BoundingBox clipbox2(b);
+          //  if (intersectAndClip(clipbox2, _kdNodes[node.first].bb))
+          if(clipbox.intersects(_kdNodes[node.first].bb))
+            {
+                intersect(_kdNodes[node.first], clipbox);
+            }
+        }
+        if (node.second>0)
+        {
+            //osg::BoundingBox clipbox2(b);
+           // if (intersectAndClip(clipbox2,_kdNodes[node.second].bb))
+            if(clipbox.intersects(_kdNodes[node.second].bb))
+            {
+                intersect(_kdNodes[node.second], clipbox);
+            }
+        }
+    }
+}
+/*
+bool IntersectKdTree::intersectAndClip(osg::BoundingBox clipbox, const osg::BoundingBox& bb) const
+{
+    //return true;
+
+    //if (!bb.valid()) return true;
+
+    // compate s and e against the xMin to xMax range of bb.
+    if (s.x()<=e.x())
+    {
+
+        // trivial reject of segment wholely outside.
+        if (e.x()<bb.xMin()) return false;
+        if (s.x()>bb.xMax()) return false;
+
+        if (s.x()<bb.xMin())
+        {
+            // clip s to xMin.
+            s = s+_d_invX*(bb.xMin()-s.x());
+        }
+
+        if (e.x()>bb.xMax())
+        {
+            // clip e to xMax.
+            e = s+_d_invX*(bb.xMax()-s.x());
+        }
+    }
+    else
+    {
+        if (s.x()<bb.xMin()) return false;
+        if (e.x()>bb.xMax()) return false;
+
+        if (e.x()<bb.xMin())
+        {
+            // clip s to xMin.
+            e = s+_d_invX*(bb.xMin()-s.x());
+        }
+
+        if (s.x()>bb.xMax())
+        {
+            // clip e to xMax.
+            s = s+_d_invX*(bb.xMax()-s.x());
+        }
+    }
+
+    // compate s and e against the yMin to yMax range of bb.
+    if (s.y()<=e.y())
+    {
+
+        // trivial reject of segment wholely outside.
+        if (e.y()<bb.yMin()) return false;
+        if (s.y()>bb.yMax()) return false;
+
+        if (s.y()<bb.yMin())
+        {
+            // clip s to yMin.
+            s = s+_d_invY*(bb.yMin()-s.y());
+        }
+
+        if (e.y()>bb.yMax())
+        {
+            // clip e to yMax.
+            e = s+_d_invY*(bb.yMax()-s.y());
+        }
+    }
+    else
+    {
+        if (s.y()<bb.yMin()) return false;
+        if (e.y()>bb.yMax()) return false;
+
+        if (e.y()<bb.yMin())
+        {
+            // clip s to yMin.
+            e = s+_d_invY*(bb.yMin()-s.y());
+        }
+
+        if (s.y()>bb.yMax())
+        {
+            // clip e to yMax.
+            s = s+_d_invY*(bb.yMax()-s.y());
+        }
+    }
+
+    // compate s and e against the zMin to zMax range of bb.
+    if (s.z()<=e.z())
+    {
+
+        // trivial reject of segment wholely outside.
+        if (e.z()<bb.zMin()) return false;
+        if (s.z()>bb.zMax()) return false;
+
+        if (s.z()<bb.zMin())
+        {
+            // clip s to zMin.
+            s = s+_d_invZ*(bb.zMin()-s.z());
+        }
+
+        if (e.z()>bb.zMax())
+        {
+            // clip e to zMax.
+            e = s+_d_invZ*(bb.zMax()-s.z());
+        }
+    }
+    else
+    {
+        if (s.z()<bb.zMin()) return false;
+        if (e.z()>bb.zMax()) return false;
+
+        if (e.z()<bb.zMin())
+        {
+            // clip s to zMin.
+            e = s+_d_invZ*(bb.zMin()-s.z());
+        }
+
+        if (s.z()>bb.zMax())
+        {
+            // clip e to zMax.
+            s = s+_d_invZ*(bb.zMax()-s.z());
+        }
+    }
+
+    // OSG_NOTICE<<"clampped segment "<<s<<" "<<e<<std::endl;
+
+    // if (s==e) return false;
+
+    return true;
+}*/

@@ -19,7 +19,8 @@
 #include <osg/Geometry>
 
 #include <osgUtil/Export>
-
+#include <osg/KdTree>
+#if 0
 /** A simplifier for reducing the number of traingles in osg::Geometry.
   */
 class  Clipper : public osg::NodeVisitor
@@ -121,8 +122,69 @@ class  Clipper : public osg::NodeVisitor
         osg::ref_ptr<ContinueSimplificationCallback> _continueSimplificationCallback;
     
 };
+#endif
 
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// IntersectKdTree
+//
+struct IntersectKdTreeBbox
+{
+    IntersectKdTreeBbox(const osg::Vec3Array& vertices,
+                    const osg::KdTree::KdNodeList& nodes,
+                    const osg::KdTree::TriangleList& triangles):
+                        _vertices(vertices),
+                        _kdNodes(nodes),
+                        _triangles(triangles)
+    {
+      _new_triangles =  new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
+      _new_vertices = new osg::Vec3Array;
+    }
+
+    void intersect(const osg::KdTree::KdNode& node, const osg::BoundingBox clipbox) const;
+    //bool intersectAndClip(osg::Vec3& s, osg::Vec3& e, const osg::BoundingBox& bb) const;
+    const osg::Vec3Array&               _vertices;
+    const osg::KdTree::KdNodeList&           _kdNodes;
+    const osg::KdTree::TriangleList&         _triangles;
+    osg::DrawElementsUInt * _new_triangles;
+    osg::Vec3Array *   _new_vertices;
+
+
+
+
+
+protected:
+
+    IntersectKdTreeBbox& operator = (const IntersectKdTreeBbox&) { return *this; }
+};
+class KdTreeBbox : public osg::KdTree {
+public:
+    KdTreeBbox(const KdTree& rhs) : KdTree(rhs){}
+    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox) const
+    {
+        if (_kdNodes.empty())
+        {
+            OSG_NOTICE<<"Warning: _kdTree is empty"<<std::endl;
+            return false;
+        }
+
+
+
+        IntersectKdTreeBbox intersector(*_vertices,
+                                    _kdNodes,
+                                    _triangles
+                                    );
+        osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
+        osg::Geometry *new_geom=new osg::Geometry;
+        newGeode->addDrawable(new_geom);
+        intersector.intersect(getNode(0), bbox);
+        new_geom->addPrimitiveSet(intersector._new_triangles);
+        new_geom->setVertexArray(intersector._new_vertices);
+
+        return newGeode;
+    }
+};
 
 
 #endif

@@ -16,6 +16,7 @@ void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,
     m->setDestinationName("real.ive");
 
     m->setLogFileName("tmp.log");
+    osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
     for(int lod=0; lod < (int)datalist_lod.size(); lod++){
         for(int i=0; i<(int)datalist_lod[lod].size(); i++){
             if(!osgDB::fileExists(datalist_lod[lod][i]))
@@ -24,6 +25,7 @@ void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,
             sourceModel->setMaxLevel(lod);
             sourceModel->setMinLevel(lod);
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
+
             osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
             if (model)
             {
@@ -31,7 +33,13 @@ void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,
                 data->_model = model;
                 data->_extents.expandBy(model->getBound());
                 sourceModel->setSourceData(data);
-
+                osg::Geode *geode= dynamic_cast<osg::Geode*>(model);
+                if(geode && geode->getNumDrawables()){
+                    osg::Drawable *drawable = geode->getDrawable(0);
+                    sourceModel->_kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
+                }else{
+                    OSG_FATAL << "No drawbables \n";
+                }
             }
 
 

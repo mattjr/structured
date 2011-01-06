@@ -27,6 +27,8 @@ public:
     typedef std::map<SpatialIndex::id_type,ProjectionCamera>  CameraVector;
     SpatialIndex::ISpatialIndex* tree;
     void intersectsWithQuery(const SpatialIndex::IShape& query, SpatialIndex::IVisitor& v);
+  osg::BoundingBox _bb;
+  osg::KdTree *_kdTree;
 protected:
     SpatialIndex::IStorageManager* memstore;
     SpatialIndex::IStorageManager* manager;
@@ -36,6 +38,7 @@ protected:
     std::string _bbox_file;
     TexturedSource::CameraVector _cameras;
     OpenThreads::Mutex _treeMutex;
+
 
 
 

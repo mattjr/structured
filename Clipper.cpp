@@ -22,8 +22,11 @@
 #include <iterator>
 #include <osg/io_utils>
 #include <stdio.h>
-using namespace osg;
+#include <osg/TriangleFunctor>
+#include <osgUtil/Tessellator> // to tessellate multiple contours
 
+using namespace osg;
+using namespace std;
 bool ClipTriangle(osg::Vec3 (&poly)[10], unsigned int &polySize, const osg::BoundingBox &bounds)
 {
     // I think allocating space for 7 vertices should be fine, but just in case
@@ -113,6 +116,25 @@ bool ClipTriangle(osg::Vec3 (&poly)[10], unsigned int &polySize, const osg::Boun
     }
     return true;
 }
+class StoreTri
+{
+public:
+    void operator() (const osg::Vec3& v1,const osg::Vec3& v2,const osg::Vec3& v3, bool)
+    {
+        int size=idx.size();
+        v.push_back(v1);
+        v.push_back(v2);
+        v.push_back(v3);
+        idx.push_back(size);
+        idx.push_back(size+1);
+        idx.push_back(size+2);
+        //std::cout << "\t("<<v1<<") ("<<v2<<") ("<<v3<<") "<<") " <<std::endl;
+
+    }
+    std::vector<osg::Vec3> v;
+    std::vector<int> idx;
+
+};
 
 void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::BoundingBox clipbox) const
 {
@@ -143,13 +165,44 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::Bound
             if(contains == 0)
                 continue;
             else if(contains <3){
+
                 //Some inside needs clipping
                 osg::Vec3 poly[10]={v0,v1,v2};
                 unsigned int polySize=3;
                 if(ClipTriangle(poly,polySize,clipbox)){
-                  /*  v0=poly[0];
-                    v1=poly[1];
-                    v2=poly[2];*/
+
+                    // create Geometry object to store all the vertices and lines primitive.
+                    osg::ref_ptr<osg::Geometry> polyGeom = new osg::Geometry();
+
+                    // this time we'll use C arrays to initialize the vertices.
+                    // note, anticlockwise ordering.
+                    // note II, OpenGL polygons must be convex, planar polygons, otherwise
+                    // undefined results will occur.  If you have concave polygons or ones
+                    // that cross over themselves then use the osgUtil::Tessellator to fix
+                    // the polygons into a set of valid polygons.
+
+
+                    osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array(polySize,poly);
+
+                    // pass the created vertex array to the points geometry object.
+                    polyGeom->setVertexArray(vertices);
+
+                    // This time we simply use primitive, and hardwire the number of coords to use
+                    // since we know up front,
+                    polyGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POLYGON,0,polySize));
+
+                    //printTriangles("Polygon",*polyGeom);
+                    osg::TriangleFunctor<StoreTri> tf;
+                    polyGeom->accept(tf);
+
+                    // add the points geometry to the geode.
+                    int offset= _new_vertices->size();
+                    for(int p=0; p < (int) tf.v.size(); p++)
+                        _new_vertices->push_back(tf.v[p]);
+                    for(int p=0; p < (int) tf.idx.size(); p++)
+                        _new_triangles->push_back(tf.idx[p]+offset);
+
+                    continue;
                 }
 
             }

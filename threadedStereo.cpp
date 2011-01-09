@@ -710,12 +710,12 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
   recon_config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
   recon_config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
   recon_config_file->set_value( "SD_SHOW_DEBUG_IMAGES"  , display_debug_images );
-  simp_res[0]=0.005;
-   simp_res[1]=0.01;
-   simp_res[2]=0.05;
+  simp_res[0]=0.1;
+   simp_res[1]=0.1;
+   simp_res[2]=0.1;
 
   for(int i=3;i < vpblod; i++)
-        simp_res[i]=(simp_res[i-1]*1.2);
+        simp_res[i]=0.2;//(simp_res[i-1]*1.2);
   if (argp.errors())
     {
       argp.writeErrorMessages(std::cout);
@@ -2609,7 +2609,7 @@ tcmd+=tmp100;
 		"FLIPCMD="
                 "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$((%d-$f+1)).ply/-lod$((%d-$f)).ply/g`\n"
 		"\t\tfi\n"
-		"\t\tSIMPCMD=$SIMPCMD\";\"\"tridecimator $MESHNAME $NEWNAME ${REDFACT[$f]}r -b2.0 $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
+                "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/bin/texturedDecimator $MESHNAME -out $NEWNAME -per ${REDFACT[$f]} $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
 		"MESHNAME=$NEWNAME\n"
 		"\tdone\n"
 		"echo $SIMPCMD >> simpcmds\n"

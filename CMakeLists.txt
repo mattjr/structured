@@ -353,6 +353,7 @@ ADD_EXECUTABLE( lodgen lodgen.cpp )
 ADD_EXECUTABLE( treeBBClip treeBBClip.cpp PLYWriterNodeVisitor.cc )
 ADD_EXECUTABLE( simplifier simplifier.cpp)
 ADD_EXECUTABLE( bin/mergeMesh mergeMesh/mergeMesh.cpp mergeMesh/plylib.cpp)
+ADD_EXECUTABLE( bin/texturedDecimator mergeMesh/texturedDecimator.cpp mergeMesh/plylib.cpp mergeMesh/quadric_simp.cpp mergeMesh/quadric_tex_simp.cpp)
 
 LINK_LIBRARIES(osgTerrain vpbd osgFX osg spatialindex)
 TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf)

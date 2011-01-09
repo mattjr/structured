@@ -136,7 +136,7 @@ public:
 
 };
 
-void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::BoundingBox clipbox) const
+void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::BoundingBox clipbox,const OverlapMode &mode) const
 {
     if (node.first<0)
     {
@@ -166,44 +166,49 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::Bound
                 continue;
             else if(contains <3){
 
-                //Some inside needs clipping
-                osg::Vec3 poly[10]={v0,v1,v2};
-                unsigned int polySize=3;
-                if(ClipTriangle(poly,polySize,clipbox)){
-
-                    // create Geometry object to store all the vertices and lines primitive.
-                    osg::ref_ptr<osg::Geometry> polyGeom = new osg::Geometry();
-
-                    // this time we'll use C arrays to initialize the vertices.
-                    // note, anticlockwise ordering.
-                    // note II, OpenGL polygons must be convex, planar polygons, otherwise
-                    // undefined results will occur.  If you have concave polygons or ones
-                    // that cross over themselves then use the osgUtil::Tessellator to fix
-                    // the polygons into a set of valid polygons.
-
-
-                    osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array(polySize,poly);
-
-                    // pass the created vertex array to the points geometry object.
-                    polyGeom->setVertexArray(vertices);
-
-                    // This time we simply use primitive, and hardwire the number of coords to use
-                    // since we know up front,
-                    polyGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POLYGON,0,polySize));
-
-                    //printTriangles("Polygon",*polyGeom);
-                    osg::TriangleFunctor<StoreTri> tf;
-                    polyGeom->accept(tf);
-
-                    // add the points geometry to the geode.
-                    int offset= _new_vertices->size();
-                    for(int p=0; p < (int) tf.v.size(); p++)
-                        _new_vertices->push_back(tf.v[p]);
-                    for(int p=0; p < (int) tf.idx.size(); p++)
-                        _new_triangles->push_back(tf.idx[p]+offset);
-
+                //Some inside
+                if(mode==GAP)
                     continue;
-                }
+                else if(mode == CUT){
+                    // clipping
+                    osg::Vec3 poly[10]={v0,v1,v2};
+                    unsigned int polySize=3;
+                    if(ClipTriangle(poly,polySize,clipbox)){
+
+                        // create Geometry object to store all the vertices and lines primitive.
+                        osg::ref_ptr<osg::Geometry> polyGeom = new osg::Geometry();
+
+                        // this time we'll use C arrays to initialize the vertices.
+                        // note, anticlockwise ordering.
+                        // note II, OpenGL polygons must be convex, planar polygons, otherwise
+                        // undefined results will occur.  If you have concave polygons or ones
+                        // that cross over themselves then use the osgUtil::Tessellator to fix
+                        // the polygons into a set of valid polygons.
+
+
+                        osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array(polySize,poly);
+
+                        // pass the created vertex array to the points geometry object.
+                        polyGeom->setVertexArray(vertices);
+
+                        // This time we simply use primitive, and hardwire the number of coords to use
+                        // since we know up front,
+                        polyGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POLYGON,0,polySize));
+
+                        //printTriangles("Polygon",*polyGeom);
+                        osg::TriangleFunctor<StoreTri> tf;
+                        polyGeom->accept(tf);
+
+                        // add the points geometry to the geode.
+                        int offset= _new_vertices->size();
+                        for(int p=0; p < (int) tf.v.size(); p++)
+                            _new_vertices->push_back(tf.v[p]);
+                        for(int p=0; p < (int) tf.idx.size(); p++)
+                            _new_triangles->push_back(tf.idx[p]+offset);
+
+                        continue;
+                    }
+                }//else DUP INCLUDE THESE FACES IN BOTH BOXES
 
             }
 
@@ -227,7 +232,7 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::Bound
             //  if (intersectAndClip(clipbox2, _kdNodes[node.first].bb))
             if(clipbox.intersects(_kdNodes[node.first].bb))
             {
-                intersect(_kdNodes[node.first], clipbox);
+                intersect(_kdNodes[node.first], clipbox,mode);
             }
         }
         if (node.second>0)
@@ -236,7 +241,7 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::Bound
             // if (intersectAndClip(clipbox2,_kdNodes[node.second].bb))
             if(clipbox.intersects(_kdNodes[node.second].bb))
             {
-                intersect(_kdNodes[node.second], clipbox);
+                intersect(_kdNodes[node.second], clipbox,mode);
             }
         }
     }

@@ -2199,7 +2199,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
       else
 	fprintf(vripcmds_fp,"cat ../%s | cut -f1 -d\" \" | xargs $BASEDIR/vrip/bin/plymerge > ../mesh-agg/seg-%08d.ply;",vrip_seg_fname,i);
 
-      fprintf(vripcmds_fp,"$BASEDIR/treeBBClip ../mesh-agg/seg-%08d.ply %f %f %f %f %f %f --outfile ../mesh-diced/clipped-diced-%08d.ply;",
+      fprintf(vripcmds_fp,"$BASEDIR/treeBBClip ../mesh-agg/seg-%08d.ply %f %f %f %f %f %f -dup --outfile ../mesh-diced/tmp-clipped-diced-%08d.ply;",
               i,
               vrip_cells[i].bounds.min_x,
 	      vrip_cells[i].bounds.min_y,
@@ -2510,7 +2510,7 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	fclose(conf_ply_file);
 	if(run_pos){
 	  sysres=system("./runpos.sh");
-	  shellcm.pos_dice(vrip_cells,eps);
+          shellcm.pos_dice(vrip_cells,eps);
 	}
       }
       
@@ -2529,15 +2529,49 @@ fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-c
 	  
 	}
 	
+vector<string> mergeandcleanCmds;
+//mergeandcleanCmds.push_back("cd mesh-diced;");
+char tmp100[8096];
+string tcmd;
+tcmd =basepath+"/vrip/bin/plymerge ";
+    for(int i=0; i <(int)vrip_cells.size(); i++){
+        if(vrip_cells[i].poses.size() == 0)
+          continue;
+        sprintf(tmp100, " mesh-diced/tmp-clipped-diced-%08d.ply ",i);
+        tcmd+=tmp100;
+    }
+    tcmd+= " > mesh-diced/total-unmerged.ply;";
+    sprintf(tmp100,"  %s/bin/mergeMesh mesh-diced/total-unmerged.ply -thresh %f -out mesh-diced/total.ply",basepath.c_str(),0.9*vrip_res);
+tcmd+=tmp100;
+    mergeandcleanCmds.push_back(tcmd);
 
 	string vripcmd="runvrip.py";
-	shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip");
+        shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip",NULL,&mergeandcleanCmds);
 	if(!no_vrip)
 	  sysres=system("./runvrip.py");
 	
+        string splitcmds_fn="mesh-diced/splitcmds";
+        FILE *splitcmds_fp=fopen(splitcmds_fn.c_str(),"w");
 
-
-
+        for(int i=0; i <(int)vrip_cells.size(); i++){
+          if(vrip_cells[i].poses.size() == 0)
+            continue;
+          fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/total.ply %f %f %f %f %f %f -dup --outfile mesh-diced/clipped-diced-%08d.ply\n",
+                  cwd,
+                  basepath.c_str(),
+                  vrip_cells[i].bounds.min_x,
+                  vrip_cells[i].bounds.min_y,
+                  -FLT_MAX,
+                  vrip_cells[i].bounds.max_x,
+                  vrip_cells[i].bounds.max_y,
+                  FLT_MAX,
+                  i);
+      }
+        fclose(splitcmds_fp);
+        string splitcmd="split.py";
+        shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
+        if(!no_vrip)
+          sysres=system("./split.py");
 
         FILE *dicefp=fopen("./simp.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());

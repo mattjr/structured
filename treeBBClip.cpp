@@ -16,8 +16,17 @@ int main( int argc, char **argv )
     arguments.getApplicationUsage()->setCommandLineUsage(arguments.getApplicationName()+" filename");
     string outfilename="out.ply";
     arguments.read("--outfile",outfilename);
-
-    //  arguments.reportRemainingOptionsAsUnrecognized();
+    IntersectKdTreeBbox::OverlapMode mode;
+    if(arguments.read("-gap"))
+        mode=IntersectKdTreeBbox::GAP;
+    else if(arguments.read("-dup"))
+        mode=IntersectKdTreeBbox::DUP;
+    else if(arguments.read("-cut"))
+        mode=IntersectKdTreeBbox::CUT;
+    else{
+        cerr << "Must be -gap or  -dup  or -cut \n";
+        return -1;
+    }//  arguments.reportRemainingOptionsAsUnrecognized();
 
 
     // report any errors if they have occurred when parsing the program arguments.
@@ -52,7 +61,7 @@ int main( int argc, char **argv )
             osg::KdTree *kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
             if(kdTree){
                 KdTreeBbox *kdtreeBbox=new KdTreeBbox(*kdTree);
-                root=kdtreeBbox->intersect(bb);
+                root=kdtreeBbox->intersect(bb,mode);
             }
         }else{
             OSG_ALWAYS << "Model can't be converted to geode\n";

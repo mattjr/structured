@@ -38,8 +38,14 @@ struct IntersectKdTreeBbox
       _new_triangles =  new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
       _new_vertices = new osg::Vec3Array;
     }
+    enum OverlapMode{
+        GAP,
+        DUP,
+        CUT
 
-    void intersect(const osg::KdTree::KdNode& node, const osg::BoundingBox clipbox) const;
+    };
+
+    void intersect(const osg::KdTree::KdNode& node, const osg::BoundingBox clipbox,const OverlapMode &mode) const;
     //bool intersectAndClip(osg::Vec3& s, osg::Vec3& e, const osg::BoundingBox& bb) const;
     const osg::Vec3Array&               _vertices;
     const osg::KdTree::KdNodeList&           _kdNodes;
@@ -56,9 +62,11 @@ protected:
     IntersectKdTreeBbox& operator = (const IntersectKdTreeBbox&) { return *this; }
 };
 class KdTreeBbox : public osg::KdTree {
+
+
 public:
     KdTreeBbox(const KdTree& rhs) : KdTree(rhs){}
-    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox) const
+    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &overlapmode) const
     {
         if (_kdNodes.empty())
         {
@@ -75,7 +83,7 @@ public:
         osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
         osg::Geometry *new_geom=new osg::Geometry;
         newGeode->addDrawable(new_geom);
-        intersector.intersect(getNode(0), bbox);
+        intersector.intersect(getNode(0), bbox,overlapmode);
         new_geom->addPrimitiveSet(intersector._new_triangles);
         new_geom->setVertexArray(intersector._new_vertices);
 

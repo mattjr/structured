@@ -1254,7 +1254,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     osg::ref_ptr<osg::Node> root;
     if(src->_kdTree){
         KdTreeBbox *kdtreeBbox=new KdTreeBbox(*src->_kdTree);
-        root=kdtreeBbox->intersect(ext_bbox);
+        root=kdtreeBbox->intersect(ext_bbox,IntersectKdTreeBbox::DUP);
     }else
         OSG_FATAL<<"No kdtree\n";
     std::string mf=src->getFileName();

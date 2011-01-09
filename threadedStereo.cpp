@@ -1987,9 +1987,9 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
       }
       fprintf(fpp,"\n");
       
-      if(use_poisson_recon){
-	dump_pts(pos_fp,string("mesh-agg/"+name.mesh_name).c_str(),clean_pos_pts);
-      }
+//      if(use_poisson_recon){
+//	dump_pts(pos_fp,string("mesh-agg/"+name.mesh_name).c_str(),clean_pos_pts);
+  //    }
     }
 
     char conf_name[2048];

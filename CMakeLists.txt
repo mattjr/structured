@@ -227,7 +227,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${OPENCV_INCLUDE_DIRS}
 		     ${OPENGL_INCLUDE_DIR}
  		     ${GTS_INCLUDE_DIRS}
-		     "tridecimator/vcg"
+                     "${PROJECT_SOURCE_DIR}/mergeMesh/"
 		     "tridecimator/"
 		     "mesh2hmap/"
 		     "/opt/local/include"
@@ -326,13 +326,13 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS(poster texture_image retex mbosg tridecimator mesh2hmap mesh2xy grd2ply clip_delaunay quadmerge single_mesh_gen)
+SUBDIRS(poster texture_image retex mbosg  mesh2hmap mesh2xy grd2ply  quadmerge single_mesh_gen)
 SET( SRCS OSGExport.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp
                 Extents.cpp
 		auv_3ds.cpp
-		Clean.cpp
+                #Clean.cpp
 		novelty.cpp
 TexturedSource.cpp
 Clipper.cpp
@@ -352,12 +352,14 @@ ADD_EXECUTABLE( genTex genTex.cpp )
 ADD_EXECUTABLE( lodgen lodgen.cpp )
 ADD_EXECUTABLE( treeBBClip treeBBClip.cpp PLYWriterNodeVisitor.cc )
 ADD_EXECUTABLE( simplifier simplifier.cpp)
+ADD_EXECUTABLE( bin/mergeMesh mergeMesh/mergeMesh.cpp mergeMesh/plylib.cpp)
 
 LINK_LIBRARIES(osgTerrain vpbd osgFX osg spatialindex)
 TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf)
 TARGET_LINK_LIBRARIES( genTex ts plankton )
 TARGET_LINK_LIBRARIES( lodgen ts )
 TARGET_LINK_LIBRARIES( treeBBClip ts )
+#TARGET_LINK_LIBRARIES( threshold ts )
 
 # Disabled by DJLM. 
 # Threaded stereo expects access to a large bunch of other executables

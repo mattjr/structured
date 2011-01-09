@@ -38,7 +38,7 @@ void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,
                     osg::Drawable *drawable = geode->getDrawable(0);
                     sourceModel->_kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
                 }else{
-                    OSG_FATAL << "No drawbables \n";
+                    OSG_ALWAYS << "No drawbables \n";
                 }
             }
 

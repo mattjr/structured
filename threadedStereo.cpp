@@ -153,6 +153,8 @@ static bool no_merge=false;
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[2048];
 char cachedtexdir[2048];
+char cachedsegtex[2048];
+
 static bool pos_clip=false;
 static string deltaT_config_name;
 static string deltaT_dir;
@@ -484,6 +486,8 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
                                 10);
   proj_tex_size=lodTexSize[0];
   sprintf(cachedtexdir,"cache-tex-%d/",lodTexSize[0]);
+  sprintf(cachedsegtex,"cache-seg-coords/");
+
 
   string mbfile;
 
@@ -705,6 +709,7 @@ deltaT_config_name=base_dir+string("/")+"localiser.cfg";
 
   strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
   strcpy(cachedtexdir,string(base_dir+string("/")+cachedtexdir).c_str());
+  strcpy(cachedsegtex,string(base_dir+string("/")+cachedsegtex).c_str());
 
 
   recon_config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
@@ -1727,6 +1732,8 @@ int main( int argc, char *argv[ ] )
   chmod(cachedmeshdir,   0777);
   auv_data_tools::makedir(cachedtexdir);
   chmod(cachedtexdir,   0777);
+  auv_data_tools::makedir(cachedsegtex);
+  chmod(cachedsegtex,   0777);
   //
   // Open the contents file
   //
@@ -2551,6 +2558,7 @@ tcmd+=tmp100;
 	  sysres=system("./runvrip.py");
 	
         string splitcmds_fn="mesh-diced/splitcmds";
+
         FILE *splitcmds_fp=fopen(splitcmds_fn.c_str(),"w");
 
         for(int i=0; i <(int)vrip_cells.size(); i++){
@@ -2572,6 +2580,8 @@ tcmd+=tmp100;
         shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
         if(!no_vrip)
           sysres=system("./split.py");
+
+
 
         FILE *dicefp=fopen("./simp.sh","w+");
 	fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
@@ -2631,7 +2641,26 @@ tcmd+=tmp100;
 	if(!no_simp && !no_vrip)
 	  sysres=system("./simp.sh");
 
+        string texcmds_fn="mesh-diced/texcmds";
 
+        FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
+
+        for(int i=0; i <(int)vrip_cells.size(); i++){
+          if(vrip_cells[i].poses.size() == 0)
+            continue;
+          fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/clipped-diced-%08d-lod0.ply --outfile %s/clipped-diced-coords-%08d.txt\n",
+                  cwd,
+                  basepath.c_str(),
+                  base_dir.c_str(),
+                  i,
+                  cachedsegtex,
+                  i);
+      }
+        fclose(texcmds_fp);
+        string texcmd="tex.py";
+        shellcm.write_generic(texcmd,texcmds_fn,"Tex");
+        if(!no_vrip)
+          sysres=system("./tex.py");
 
         if(!mgc)
           mgc = new MyGraphicsContext();

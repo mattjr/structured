@@ -352,6 +352,8 @@ ADD_EXECUTABLE( genTex genTex.cpp )
 ADD_EXECUTABLE( lodgen lodgen.cpp )
 ADD_EXECUTABLE( treeBBClip treeBBClip.cpp PLYWriterNodeVisitor.cc )
 ADD_EXECUTABLE( simplifier simplifier.cpp)
+ADD_EXECUTABLE( calcTexCoord calcTexCoord.cpp sha2.cpp)
+
 ADD_EXECUTABLE( bin/mergeMesh mergeMesh/mergeMesh.cpp mergeMesh/plylib.cpp)
 ADD_EXECUTABLE( bin/texturedDecimator mergeMesh/texturedDecimator.cpp mergeMesh/plylib.cpp mergeMesh/quadric_simp.cpp mergeMesh/quadric_tex_simp.cpp)
 
@@ -360,6 +362,8 @@ TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf)
 TARGET_LINK_LIBRARIES( genTex ts plankton )
 TARGET_LINK_LIBRARIES( lodgen ts )
 TARGET_LINK_LIBRARIES( treeBBClip ts )
+TARGET_LINK_LIBRARIES( calcTexCoord ts spatialindex vpbd )
+
 #TARGET_LINK_LIBRARIES( threshold ts )
 
 # Disabled by DJLM. 

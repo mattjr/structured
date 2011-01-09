@@ -3,7 +3,7 @@
 #include <osgDB/ReadFile>
 #include "TexturingQuery.h"
 using namespace std;
-void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,bool useTextureArray){
+void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,bool useTextureArray){
 
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
@@ -24,8 +24,8 @@ void doQuadTreeVPB(std::vector<std::vector<string> > datalist_lod,Bounds bounds,
             TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,datalist_lod[lod][i]);
             sourceModel->setMaxLevel(lod);
             sourceModel->setMinLevel(lod);
+            sourceModel->tex_cache_dir=cacheddir;
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
-
             osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
             if (model)
             {

@@ -7,12 +7,12 @@
 #include "TexturedSource.h"
 #include "TexturingQuery.h"
 #include "Extents.h"
-#include "sha2.h"
 #include "auv_stereo_geometry.hpp"
-#define BUFLEN 16384
+#include "calcTexCoord.h"
 
 using namespace libsnapper;
 using namespace std;
+
 int main( int argc, char **argv )
 {
     // use an ArgumentParser object to manage the program arguments.
@@ -35,47 +35,21 @@ int main( int argc, char **argv )
     }
 
 
-    string outfilename="out.ply";
-    arguments.read("--outfile",outfilename);
+    string outfilename;
+    if(!arguments.read("--outfile",outfilename)){
+        fprintf(stderr,"Need outfile name\n");
+        return -1;
+    }
     std::string mf=argv[2];
-    int npos=mf.find("/");
-    std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-    if(!osgDB::fileExists(bbox_name)){
-        cerr << "Bbox file " << bbox_name << mf<<" doesn't exist\n";
+    std::string sha2hash;
+    int res=checkCached(mf,outfilename,sha2hash);
+    if(res == -1)
         return -1;
-    }
-    sha2 mySha2;
-    mySha2.Init(sha2::enuSHA256);
-    unsigned char	buf[BUFLEN];
-    char buffer1[2048];
+    else if(res == 1)
+        return 0;//Hash is valid
+    cout <<"Computing hash\n";
+    //Differing hash or no hash
 
-    FILE *fp=fopen(mf.c_str(),"rb");
-    if(!fp){
-        cerr << "MEsh file " << mf<<" doesn't exist\n";
-        return -1;
-    }
-    int l;
-    while ((l = fread(buf,1,BUFLEN,fp)) > 0) {
-
-        mySha2.Update(buf,l);
-    }
-    fclose(fp);
-    mySha2.End();
-    std::string meshHash=mySha2.StringHash();
-    if(osgDB::fileExists(outfilename)){
-        //Check hash
-        ifstream fin(outfilename.c_str());
-        fin.getline(buffer1,2048);
-
-        if(string(buffer1) == meshHash)
-        {
-            cout << "Valid existing hash of texcoord file skipping\n";
-            return 0;
-        }else{
-            cout << "Differing hashes "<< buffer1<< " != "<<meshHash<<endl;
-        }
-
-    }
     TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf);
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
     osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
@@ -109,7 +83,7 @@ int main( int argc, char **argv )
             fprintf(stderr, "Didn't store any tex coords\n");
             return -1;
         }
-        fprintf(fp,"%s\n",meshHash.c_str());
+        fprintf(fp,"%s\n",sha2hash.c_str());
         fprintf(fp,"%d\n",(int)tile->texCoordIDIndexPerModel[0]->size());
         for(int i=0; i< (int)tile->texCoordIDIndexPerModel[0]->size(); i++){
             for(int j=0; j <4; j++){

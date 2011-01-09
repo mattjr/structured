@@ -334,6 +334,7 @@ SET( SRCS OSGExport.cpp
 		auv_3ds.cpp
                 #Clean.cpp
 		novelty.cpp
+sha2.cpp
 TexturedSource.cpp
 Clipper.cpp
 VPBInterface.cpp
@@ -352,7 +353,7 @@ ADD_EXECUTABLE( genTex genTex.cpp )
 ADD_EXECUTABLE( lodgen lodgen.cpp )
 ADD_EXECUTABLE( treeBBClip treeBBClip.cpp PLYWriterNodeVisitor.cc )
 ADD_EXECUTABLE( simplifier simplifier.cpp)
-ADD_EXECUTABLE( calcTexCoord calcTexCoord.cpp sha2.cpp)
+ADD_EXECUTABLE( calcTexCoord calcTexCoord.cpp )
 
 ADD_EXECUTABLE( bin/mergeMesh mergeMesh/mergeMesh.cpp mergeMesh/plylib.cpp)
 ADD_EXECUTABLE( bin/texturedDecimator mergeMesh/texturedDecimator.cpp mergeMesh/plylib.cpp mergeMesh/quadric_simp.cpp mergeMesh/quadric_tex_simp.cpp)

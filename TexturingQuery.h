@@ -21,6 +21,8 @@ public:
 };
 
 typedef std::vector<CamProjAndDist> CamDists;
+int checkCached(std::string mf,std::string cachedloc,std::string &sha2hash);
+bool loadCached(const std::string &file,osg::Vec4Array *ids,osg::Vec2Array *texCoords);
 
 class TexturingQuery
 {
@@ -66,6 +68,7 @@ protected:
                                         const osg::Vec3Array &verts,int texSizeIdx);
     osg::Vec2 reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v);
     AttributeAlias _vertexAlias;
+    bool checkAndLoadCache();
 
     TexturedSource *_source;
 

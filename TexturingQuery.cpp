@@ -8,18 +8,88 @@
 #include <osgDB/FileUtils>
 #include <osg/io_utils>
 #include <osg/TriangleIndexFunctor>
+#include "calcTexCoord.h"
 using namespace SpatialIndex;
 using namespace std;
 
+bool loadCached(const std::string &file,osg::Vec4Array *ids,osg::Vec2Array *texCoords){
+    FILE *fp=fopen(file.c_str(),"r");
+    if(!fp){
+        fprintf(stderr, "Can't write file %s\n",file.c_str());
+        return -1;
+    }
+char meshHash[1024];
+int numPts;
+int a;
+    fscanf(fp,"%s\n",meshHash);
+    fscanf(fp,"%d\n",&numPts);
+    for(int i=0; i< numPts; i++){
+        osg::Vec4 id;
+        osg::Vec2 tex;
+        for(int j=0; j <4; j++){
+            fread((char*)&a,1,sizeof(int),fp);
+            id[j]=a;
+        }
+        for(int j=0; j <2; j++){
+            fread((char*)&a,1,sizeof(int),fp);
+            tex[j]=a;
+        }
+    ids->push_back(id);
+    texCoords->push_back(tex);
+    }
+    return true;
+}
 
+int checkCached(std::string mf,std::string cachedloc,std::string &sha2hash){
+    int npos=mf.find("/");
+    std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
+    if(!osgDB::fileExists(bbox_name)){
+        std::cerr << "Bbox file " << bbox_name << mf<<" doesn't exist\n";
+        return -1;
+    }
+    sha2 mySha2;
+    mySha2.Init(sha2::enuSHA256);
+    unsigned char	buf[BUFLEN];
+    char buffer1[2048];
+
+    FILE *fp=fopen(mf.c_str(),"rb");
+    if(!fp){
+        std::cerr << "MEsh file " << mf<<" doesn't exist\n";
+        return -1;
+    }
+    int l;
+    while ((l = fread(buf,1,BUFLEN,fp)) > 0) {
+
+        mySha2.Update(buf,l);
+    }
+    fclose(fp);
+    mySha2.End();
+    sha2hash=mySha2.StringHash();
+    if(osgDB::fileExists(cachedloc)){
+        //Check hash
+        std::ifstream fin(cachedloc.c_str());
+        fin.getline(buffer1,2048);
+
+        if(std::string(buffer1) == sha2hash)
+        {
+            std::cout << "Valid existing hash of texcoord file skipping\n";
+            return 1;
+        }else{
+            std::cout << "Differing hashes "<< buffer1<< " != "<<sha2hash<<std::endl;
+            return 0;
+        }
+
+    }else
+        return 0;
+}
 
 TexturingQuery::TexturingQuery(TexturedSource *source,const Camera_Calib &calib,TexPyrAtlas &atlasGen,bool useTextureArray) :
-_calib(calib),
-_origImageSize(1360,1024),
-_useTextureArray(useTextureArray),
-_atlasGen(atlasGen),
-_useAtlas(true),
-_source(source)
+        _calib(calib),
+        _origImageSize(1360,1024),
+        _useTextureArray(useTextureArray),
+        _atlasGen(atlasGen),
+        _useAtlas(true),
+        _source(source)
 {
     _vertexAlias = AttributeAlias(0, "osg_Vertex");
 
@@ -153,7 +223,7 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
                 camIdx[v]=d[v].id;
         }
         for(int k=0; k <3; k++){
-/*
+            /*
             if(d[0].id <0){
                 printf("REmap\n");
                 camIdxArr->at(prset.index(i+k))=osg::Vec4(-1,-1,-1,-1);
@@ -209,7 +279,7 @@ void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds){
         files[it->second]=make_pair<SpatialIndex::id_type,string> (it->first,_source->_cameras[it->first].filename);
         else
             OSG_ALWAYS << " Failed " <<it->first << " : " << it->second << '\n';
-}
+    }
 
     _atlasGen.addSources(files);
 }
@@ -300,8 +370,29 @@ public:
         }
     }
 }*/
+bool TexturingQuery::checkAndLoadCache(){
+    string hash;
+    string cachedfile=_source->tex_cache_dir+osgDB::getNameLessExtension(osgDB::getSimpleFileName(_source->getFileName()))+".txt";
+    if(checkCached(_source->getFileName(),cachedfile,hash) == 1){
+        osg::Vec4Array *ids=new osg::Vec4Array;
+        osg::Vec2Array *texCoords=new osg::Vec2Array;
 
+
+        loadCached(cachedfile,ids,texCoords);
+        map<SpatialIndex::id_type,int> allIds=calcAllIds(ids);
+        addImagesToAtlasGen(allIds);
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_tile->_texCoordMutex);
+
+        _tile->texCoordIDIndexPerModel.push_back(ids);
+        _tile->texCoordsPerModel.push_back(texCoords);
+        return true;
+    }
+    return false;
+}
 bool TexturingQuery::projectModel(osg::Geode *geode){
+    if(checkAndLoadCache())
+        return true;
+    //No cached
     if(!geode){
         OSG_ALWAYS << "Not valid geode\n";
         return false;
@@ -314,22 +405,22 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
         drawable->accept(tif);
 
 
-      //  printf("Size %d",(int)tif.indices_double_counted.size());
+        //  printf("Size %d",(int)tif.indices_double_counted.size());
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
         //geom->setUseDisplayList(false);
         osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
 
         int origSize=tif.new_list.size();
-      //  verts->resize(origSize+tif.indices_double_counted.size());
+        //  verts->resize(origSize+tif.indices_double_counted.size());
         for(int i=0; i<origSize; i++){
             if(tif.indices_double_counted.count(tif.new_list[i])){
-               verts->push_back(verts->at(tif.new_list[i]));
-               tif.new_list[i]=verts->size()-1;
+                verts->push_back(verts->at(tif.new_list[i]));
+                tif.new_list[i]=verts->size()-1;
             }
         }
         osg::DrawElementsUInt* elements
                 = new osg::DrawElementsUInt(GL_TRIANGLES, tif.new_list.begin(),
-                                   tif.new_list.end());
+                                            tif.new_list.end());
         geom->setPrimitiveSet(0,elements);
 
         //setVertexAttrib(*geom, _vertexAlias, geom->getVertexArray(), false, osg::Geometry::BIND_PER_VERTEX);
@@ -367,7 +458,7 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
                 }
                 return true;
                 break;
-        default:
+                default:
                 OSG_ALWAYS << "Freakout shouldn't be anything but triangles\n";
             }
         }

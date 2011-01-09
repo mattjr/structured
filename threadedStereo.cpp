@@ -2648,7 +2648,7 @@ tcmd+=tmp100;
         for(int i=0; i <(int)vrip_cells.size(); i++){
           if(vrip_cells[i].poses.size() == 0)
             continue;
-          fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/clipped-diced-%08d-lod0.ply --outfile %s/clipped-diced-coords-%08d.txt\n",
+          fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/clipped-diced-%08d-lod0.ply --outfile %s/clipped-diced-%08d-lod0.txt\n",
                   cwd,
                   basepath.c_str(),
                   base_dir.c_str(),
@@ -2664,7 +2664,7 @@ tcmd+=tmp100;
 
         if(!mgc)
           mgc = new MyGraphicsContext();
-        doQuadTreeVPB(datalist_lod,bounds,calib->left_calib,useTextureArray);
+        doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,useTextureArray);
 
 
 	vector<string> gentexnames;

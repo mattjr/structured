@@ -37,6 +37,8 @@ int main(int argc ,char**argv){
         fprintf(stderr,"Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::ImporterPLY<CMeshO>::ErrorMsg(err));
         exit(-1);
     }
+
+
     cm.face.EnableFFAdjacency();
     cm.face.EnableMark();
     cm.vert.EnableMark();
@@ -59,7 +61,7 @@ int main(int argc ,char**argv){
         tri::MyTriEdgeCollapse::SetDefaultParams();
         tri::TriEdgeCollapseQuadricParameter &pp = tri::MyTriEdgeCollapse::Params();
         pp.PreserveBoundary=false;
-        QuadricSimplification(cm,TargetFaceNum,false,  NULL);
+      //  QuadricSimplification(cm,TargetFaceNum,false,  NULL);
 
     }else{
         if ( ! tri::Clean<CMeshO>::HasConsistentPerWedgeTexCoord(cm) ) {

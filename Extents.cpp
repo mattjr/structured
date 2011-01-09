@@ -895,7 +895,7 @@ MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int c
     destinationGraph->_dataSet = this;
 
 
-    MyDestinationTile* tile = new MyDestinationTile("/home/mattjr/auvdata/r20090804_084719_scott_25_dense_repeat_auv5_deep/renav20090804/mesh/img");
+    MyDestinationTile* tile = new MyDestinationTile("/home/mattjr/auvdata/r20090804_084719_scott_25_dense_repeat_auv5_deep/renav20090804/mesh/cache-tex");
     tile->_name = destinationGraph->_name;
     tile->_level = currentLevel;
     tile->_tileX = currentX;

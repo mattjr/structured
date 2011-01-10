@@ -61,6 +61,7 @@ int main( int argc, char **argv )
         sourceModel->setSourceData(data);
         osg::Geode *geode= dynamic_cast<osg::Geode*>(model);
         if(geode && geode->getNumDrawables()){
+            //addDups(geode);
             osg::Drawable *drawable = geode->getDrawable(0);
             sourceModel->_kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
         }else{

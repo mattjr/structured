@@ -376,6 +376,31 @@ public:
         }
     }
 }*/
+void addDups(osg::Geode *geode){
+    osg::Drawable *drawable = geode->getDrawable(0);
+    osg::TriangleIndexFunctor<TriangleIndexVisitor> tif;
+    drawable->accept(tif);
+
+
+    //  printf("Size %d",(int)tif.indices_double_counted.size());
+    osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+    //geom->setUseDisplayList(false);
+    osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+    int origSize=tif.new_list.size();
+    //  verts->resize(origSize+tif.indices_double_counted.size());
+    for(int i=0; i<origSize; i++){
+        if(tif.indices_double_counted.count(tif.new_list[i])){
+            verts->push_back(verts->at(tif.new_list[i]));
+            tif.new_list[i]=verts->size()-1;
+        }
+    }
+    osg::DrawElementsUInt* elements
+            = new osg::DrawElementsUInt(GL_TRIANGLES, tif.new_list.begin(),
+                                        tif.new_list.end());
+    geom->setPrimitiveSet(0,elements);
+    printf("Dups to be added %d\n",(int)tif.indices_double_counted.size());
+}
+
 bool TexturingQuery::checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCoords){
         assert(ids != NULL && texCoords != NULL);
     string hash;
@@ -408,28 +433,11 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
         reproj.clear();
 
         osg::Drawable *drawable = geode->getDrawable(i);
-        osg::TriangleIndexFunctor<TriangleIndexVisitor> tif;
-        drawable->accept(tif);
 
-
-        //  printf("Size %d",(int)tif.indices_double_counted.size());
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
         //geom->setUseDisplayList(false);
         osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
-printf("AAAA %d\n",verts->size());
-      /*  int origSize=tif.new_list.size();
-        //  verts->resize(origSize+tif.indices_double_counted.size());
-        for(int i=0; i<origSize; i++){
-            if(tif.indices_double_counted.count(tif.new_list[i])){
-                verts->push_back(verts->at(tif.new_list[i]));
-                tif.new_list[i]=verts->size()-1;
-            }
-        }
-        osg::DrawElementsUInt* elements
-                = new osg::DrawElementsUInt(GL_TRIANGLES, tif.new_list.begin(),
-                                            tif.new_list.end());
-        geom->setPrimitiveSet(0,elements);
-*/
+
         //setVertexAttrib(*geom, _vertexAlias, geom->getVertexArray(), false, osg::Geometry::BIND_PER_VERTEX);
         // geom->setVertexArray(0);
         if(!verts || !verts->size()){
@@ -449,7 +457,6 @@ printf("AAAA %d\n",verts->size());
 
         osg::ref_ptr<osg::StateSet> stateset;
         bool projectValid=false;
-printf("Vertsize %d\n",verts->size());
         for(itr=primitiveSets.begin(); itr!=primitiveSets.end(); ++itr){
             switch((*itr)->getMode()){
             case(osg::PrimitiveSet::TRIANGLES):
@@ -464,7 +471,7 @@ printf("Vertsize %d\n",verts->size());
                     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_tile->_texCoordMutex);
 
                     _tile->texCoordIDIndexPerModel[geode]=v;
-                    printf("v %d\n",v->size());
+                    //printf("v %d\n",v->size());
 
                     _tile->texCoordsPerModel[geode]=texCoords;
                 }

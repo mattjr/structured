@@ -2619,8 +2619,9 @@ tcmd+=tmp100;
 		"FLIPCMD="
                 "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$((%d-$f+1)).ply/-lod$((%d-$f)).ply/g`\n"
 		"\t\tfi\n"
-                "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/bin/texturedDecimator $MESHNAME -out $NEWNAME -per ${REDFACT[$f]} $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
-		"MESHNAME=$NEWNAME\n"
+                "\t\t#SIMPCMD=$SIMPCMD\";\"\"$BASEPATH/bin/texturedDecimator $MESHNAME -out $NEWNAME -per ${REDFACT[$f]} $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
+                "\t\tSIMPCMD=$SIMPCMD\";\"\"cp $MESHNAME $NEWNAME;chmod 0666 $NEWNAME  \"\n"
+                "MESHNAME=$NEWNAME\n"
 		"\tdone\n"
 		"echo $SIMPCMD >> simpcmds\n"
                 "done\n",simplogdir,vpblod,vpblod,vpblod,vpblod,simpargstr);

@@ -4,7 +4,7 @@
 #include "Clipper.h"
 #include <osgUtil/SmoothingVisitor>
 #include "PLYWriterNodeVisitor.h"
-
+void addDups(osg::Geode *geode);
 using namespace std;
 int main( int argc, char **argv )
 {

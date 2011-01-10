@@ -325,8 +325,10 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         stateset->setDataVariance(osg::Object::STATIC);
     }
     int numIdx=prset.getNumIndices();
-      printf("Num idx %d\n",numIdx);
+     // printf("Num idx %d\n",numIdx);
+      //printf("Num idx %d %d\n",numIdx,v->size());
 
+assert(numIdx == v->size());
     for(int i=0; i<numIdx-2; i+=3){
         vector<osg::Vec3> vP;
         vector<osg::Vec2> tP;

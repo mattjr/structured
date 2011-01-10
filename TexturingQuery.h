@@ -9,6 +9,7 @@
 #include "TexturedSource.h"
 #include <libsnapper/auv_camera_calib.hpp>
 using libsnapper::Camera_Calib;
+void addDups(osg::Geode *geode);
 
 namespace vpb{
     class MyDestinationTile;

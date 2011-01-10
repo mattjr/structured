@@ -362,7 +362,7 @@ LINK_LIBRARIES(osgTerrain vpbd osgFX osg spatialindex)
 TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf)
 TARGET_LINK_LIBRARIES( genTex ts plankton )
 TARGET_LINK_LIBRARIES( lodgen ts )
-TARGET_LINK_LIBRARIES( treeBBClip ts )
+TARGET_LINK_LIBRARIES( treeBBClip ts spatialindex )
 TARGET_LINK_LIBRARIES( calcTexCoord ts spatialindex vpbd )
 
 #TARGET_LINK_LIBRARIES( threshold ts )

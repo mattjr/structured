@@ -34,7 +34,9 @@ void QuadricSimplification(CMeshO &m,int  TargetFaceNum, bool Selected, CallBack
   QZero.SetZero();
   tri::QuadricTemp TD(m.vert,QZero);
   tri::QHelper::TDp()=&TD;
-
+  CMeshO::VertexIterator  vi;
+  for(vi=m.vert.begin();vi!=m.vert.end();++vi)
+      (*vi).SetW();
 	// we assume that the caller has already set up the tri::MyTriEdgeCollapse::Params() class
 	tri::TriEdgeCollapseQuadricParameter & pp = tri::MyTriEdgeCollapse::Params();
   

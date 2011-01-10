@@ -2613,18 +2613,19 @@ tcmd+=tmp100;
                 "\tfor f in `echo {0..%d}`\n"
 		"\tdo\n"
 		"\t\tif [ $f == 0 ]; then\n"
-                "\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$((%d-$f)).ply/g`\n"
+                "\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$((%d-$f-1)).ply/g`\n"
+                "\t\t\tNEWNAME2=`echo $MESHNAME | sed s/.ply/-lod$((%d-$f-1)).txt/g`\n"
 		"FLIPCMD=\"-F\"\n"
 		"\t\telse\n"
 		"FLIPCMD="
                 "\t\t\tNEWNAME=`echo $MESHNAME | sed s/-lod$((%d-$f+1)).ply/-lod$((%d-$f)).ply/g`\n"
+                "\t\t\tNEWNAME2=`echo $MESHNAME | sed s/-lod$((%d-$f+1)).ply/-lod$((%d-$f)).txt/g`\n"
 		"\t\tfi\n"
-                "\t\t#SIMPCMD=$SIMPCMD\";\"\"$BASEPATH/bin/texturedDecimator $MESHNAME -out $NEWNAME -per ${REDFACT[$f]} $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
-                "\t\tSIMPCMD=$SIMPCMD\";\"\"cp $MESHNAME $NEWNAME;chmod 0666 $NEWNAME  \"\n"
+                "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/texturedDecimator/bin/texturedDecimator $MESHNAME $NEWNAME %s/$NEWNAME2 %s/$NEWNAME2.tmp ${REDFACT[$f]} $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
                 "MESHNAME=$NEWNAME\n"
 		"\tdone\n"
 		"echo $SIMPCMD >> simpcmds\n"
-                "done\n",simplogdir,vpblod,vpblod,vpblod,vpblod,simpargstr);
+                "done\n",simplogdir,vpblod,vpblod,vpblod,vpblod,vpblod,vpblod,vpblod,cachedsegtex,cachedsegtex,simpargstr);
 	
 	
 	if(dist_run){

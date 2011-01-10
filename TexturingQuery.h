@@ -10,7 +10,6 @@
 #include <libsnapper/auv_camera_calib.hpp>
 using libsnapper::Camera_Calib;
 void addDups(osg::Geode *geode);
-
 namespace vpb{
     class MyDestinationTile;
 };
@@ -24,6 +23,8 @@ public:
 typedef std::vector<CamProjAndDist> CamDists;
 int checkCached(std::string mf,std::string cachedloc,std::string &sha2hash);
 bool loadCached(const std::string &file,osg::Vec4Array *ids,osg::Vec2Array *texCoords);
+bool writeCached(const std::string &outfilename,const std::string  sha2hash,osg::Vec4Array *ids,osg::Vec2Array *texCoords);
+std::string getHash(std::string mf);
 
 class TexturingQuery
 {

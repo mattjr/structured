@@ -75,29 +75,7 @@ int main( int argc, char **argv )
     tq->_tile=tile;
     bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(model));
     if(projectSucess){
-        FILE *fp=fopen(outfilename.c_str(),"w");
-        if(!fp){
-            fprintf(stderr, "Can't write file %s\n",outfilename.c_str());
-            return -1;
-        }
-        if(tile->texCoordIDIndexPerModel.size() < 1){
-            fprintf(stderr, "Didn't store any tex coords\n");
-            return -1;
-        }
-        fprintf(fp,"%s\n",sha2hash.c_str());
-        fprintf(fp,"%d\n",(int)tile->texCoordIDIndexPerModel.begin()->second->size());
-        for(int i=0; i< (int)tile->texCoordIDIndexPerModel.begin()->second->size(); i++){
-            for(int j=0; j <4; j++){
-                int a=(int)tile->texCoordIDIndexPerModel.begin()->second->at(i)[j];
-                fwrite((char*)&a,1,sizeof(int),fp);
-            }
-            for(int j=0; j <2; j++){
-                float b=tile->texCoordsPerModel.begin()->second->at(i)[j];
-                fwrite((char*)&b,1,sizeof(float),fp);
-            }
-           // printf("%f %f\n",tile->texCoordsPerModel[0]->at(i)[0],tile->texCoordsPerModel[0]->at(i)[1]);
-
-        }
+      writeCached(outfilename,sha2hash,tile->texCoordIDIndexPerModel.begin()->second,tile->texCoordsPerModel.begin()->second);
     }
     delete tq;
 }

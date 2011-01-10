@@ -11,11 +11,37 @@
 #include "calcTexCoord.h"
 using namespace SpatialIndex;
 using namespace std;
+bool writeCached(const std::string &outfilename,const std::string  sha2hash,osg::Vec4Array *ids,osg::Vec2Array *texCoords){
+    FILE *fp=fopen(outfilename.c_str(),"w");
+    if(!fp){
+        fprintf(stderr, "Can't write file %s\n",outfilename.c_str());
+        return false;
+    }
+    if(texCoords->size() < 1){
+        fprintf(stderr, "Didn't store any tex coords\n");
+        return false;
+    }
+    fprintf(fp,"%s\n",sha2hash.c_str());
+    fprintf(fp,"%d\n",(int)ids->size());
+    for(int i=0; i< (int)ids->size(); i++){
+        for(int j=0; j <4; j++){
+            int a=(int)ids->at(i)[j];
+            fwrite((char*)&a,1,sizeof(int),fp);
+        }
+        for(int j=0; j <2; j++){
+            float b=texCoords->at(i)[j];
+            fwrite((char*)&b,1,sizeof(float),fp);
+        }
+       // printf("%f %f\n",texCoords[0]->at(i)[0],texCoords[0]->at(i)[1]);
+
+    }
+    return true;
+}
 
 bool loadCached(const std::string &file,osg::Vec4Array *ids,osg::Vec2Array *texCoords){
     FILE *fp=fopen(file.c_str(),"r");
     if(!fp){
-        fprintf(stderr, "Can't write file %s\n",file.c_str());
+        fprintf(stderr, "Can't read file %s\n",file.c_str());
         return -1;
     }
 char meshHash[1024];
@@ -45,23 +71,15 @@ float b;
     }
     return true;
 }
-
-int checkCached(std::string mf,std::string cachedloc,std::string &sha2hash){
-    int npos=mf.find("/");
-    std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-    if(!osgDB::fileExists(bbox_name)){
-        std::cerr << "Bbox file " << bbox_name << mf<<" doesn't exist\n";
-        return -1;
-    }
+std::string getHash(std::string mf){
     sha2 mySha2;
     mySha2.Init(sha2::enuSHA256);
     unsigned char	buf[BUFLEN];
-    char buffer1[2048];
 
     FILE *fp=fopen(mf.c_str(),"rb");
     if(!fp){
         std::cerr << "MEsh file " << mf<<" doesn't exist\n";
-        return -1;
+        return string();
     }
     int l;
     while ((l = fread(buf,1,BUFLEN,fp)) > 0) {
@@ -70,7 +88,19 @@ int checkCached(std::string mf,std::string cachedloc,std::string &sha2hash){
     }
     fclose(fp);
     mySha2.End();
-    sha2hash=mySha2.StringHash();
+return mySha2.StringHash();
+}
+
+int checkCached(std::string mf,std::string cachedloc,std::string &sha2hash){
+    int npos=mf.find("/");
+    std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
+    if(!osgDB::fileExists(bbox_name)){
+        std::cerr << "Bbox file " << bbox_name << mf<<" doesn't exist\n";
+        return -1;
+    }
+    char buffer1[2048];
+
+    sha2hash=getHash(mf);
     if(osgDB::fileExists(cachedloc)){
         //Check hash
         std::ifstream fin(cachedloc.c_str());

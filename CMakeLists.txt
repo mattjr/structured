@@ -326,7 +326,7 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS(poster texture_image retex mbosg  mesh2hmap mesh2xy grd2ply  quadmerge single_mesh_gen)
+SUBDIRS(poster texture_image retex mbosg texturedDecimator mesh2hmap mesh2xy grd2ply  quadmerge single_mesh_gen)
 SET( SRCS OSGExport.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp
@@ -356,7 +356,7 @@ ADD_EXECUTABLE( simplifier simplifier.cpp)
 ADD_EXECUTABLE( calcTexCoord calcTexCoord.cpp )
 
 ADD_EXECUTABLE( bin/mergeMesh mergeMesh/mergeMesh.cpp mergeMesh/plylib.cpp)
-ADD_EXECUTABLE( bin/texturedDecimator mergeMesh/texturedDecimator.cpp mergeMesh/plylib.cpp mergeMesh/quadric_simp.cpp mergeMesh/quadric_tex_simp.cpp)
+#ADD_EXECUTABLE( bin/texturedDecimator mergeMesh/texturedDecimator.cpp mergeMesh/plylib.cpp mergeMesh/quadric_simp.cpp mergeMesh/quadric_tex_simp.cpp)
 
 LINK_LIBRARIES(osgTerrain vpbd osgFX osg spatialindex)
 TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf)

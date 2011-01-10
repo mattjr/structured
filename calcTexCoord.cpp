@@ -84,16 +84,18 @@ int main( int argc, char **argv )
             return -1;
         }
         fprintf(fp,"%s\n",sha2hash.c_str());
-        fprintf(fp,"%d\n",(int)tile->texCoordIDIndexPerModel[0]->size());
-        for(int i=0; i< (int)tile->texCoordIDIndexPerModel[0]->size(); i++){
+        fprintf(fp,"%d\n",(int)tile->texCoordIDIndexPerModel.begin()->second->size());
+        for(int i=0; i< (int)tile->texCoordIDIndexPerModel.begin()->second->size(); i++){
             for(int j=0; j <4; j++){
-                int a=(int)tile->texCoordIDIndexPerModel[0]->at(i)[j];
+                int a=(int)tile->texCoordIDIndexPerModel.begin()->second->at(i)[j];
                 fwrite((char*)&a,1,sizeof(int),fp);
             }
             for(int j=0; j <2; j++){
-                int a=(int)tile->texCoordsPerModel[0]->at(i)[j];
-                fwrite((char*)&a,1,sizeof(int),fp);
+                float b=tile->texCoordsPerModel.begin()->second->at(i)[j];
+                fwrite((char*)&b,1,sizeof(float),fp);
             }
+           // printf("%f %f\n",tile->texCoordsPerModel[0]->at(i)[0],tile->texCoordsPerModel[0]->at(i)[1]);
+
         }
     }
     delete tq;

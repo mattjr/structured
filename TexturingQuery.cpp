@@ -21,8 +21,10 @@ bool loadCached(const std::string &file,osg::Vec4Array *ids,osg::Vec2Array *texC
 char meshHash[1024];
 int numPts;
 int a;
+float b;
     fscanf(fp,"%s\n",meshHash);
     fscanf(fp,"%d\n",&numPts);
+    printf("Num pts %d\n",numPts);
     for(int i=0; i< numPts; i++){
         osg::Vec4 id;
         osg::Vec2 tex;
@@ -31,11 +33,15 @@ int a;
             id[j]=a;
         }
         for(int j=0; j <2; j++){
-            fread((char*)&a,1,sizeof(int),fp);
-            tex[j]=a;
+            fread((char*)&b,1,sizeof(float),fp);
+            tex[j]=b;
         }
     ids->push_back(id);
     texCoords->push_back(tex);
+   // printf("%f %f %f %f\n",id[0],id[1],id[2],id[3]);
+
+    //printf("%f %f\n",tex[0],tex[1]);
+
     }
     return true;
 }
@@ -370,28 +376,29 @@ public:
         }
     }
 }*/
-bool TexturingQuery::checkAndLoadCache(){
+bool TexturingQuery::checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCoords){
+        assert(ids != NULL && texCoords != NULL);
     string hash;
     string cachedfile=_source->tex_cache_dir+osgDB::getNameLessExtension(osgDB::getSimpleFileName(_source->getFileName()))+".txt";
     if(checkCached(_source->getFileName(),cachedfile,hash) == 1){
-        osg::Vec4Array *ids=new osg::Vec4Array;
-        osg::Vec2Array *texCoords=new osg::Vec2Array;
+
 
 
         loadCached(cachedfile,ids,texCoords);
         map<SpatialIndex::id_type,int> allIds=calcAllIds(ids);
         addImagesToAtlasGen(allIds);
-        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_tile->_texCoordMutex);
+       // OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_tile->_texCoordMutex);
 
-        _tile->texCoordIDIndexPerModel.push_back(ids);
-        _tile->texCoordsPerModel.push_back(texCoords);
+      //  _tile->texCoordIDIndexPerModel.push_back(ids);
+        //_tile->texCoordsPerModel.push_back(texCoords);
         return true;
     }
+    ids=NULL;
+    texCoords=NULL;
     return false;
 }
 bool TexturingQuery::projectModel(osg::Geode *geode){
-    if(checkAndLoadCache())
-        return true;
+
     //No cached
     if(!geode){
         OSG_ALWAYS << "Not valid geode\n";
@@ -409,8 +416,8 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
         //geom->setUseDisplayList(false);
         osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
-
-        int origSize=tif.new_list.size();
+printf("AAAA %d\n",verts->size());
+      /*  int origSize=tif.new_list.size();
         //  verts->resize(origSize+tif.indices_double_counted.size());
         for(int i=0; i<origSize; i++){
             if(tif.indices_double_counted.count(tif.new_list[i])){
@@ -422,7 +429,7 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
                 = new osg::DrawElementsUInt(GL_TRIANGLES, tif.new_list.begin(),
                                             tif.new_list.end());
         geom->setPrimitiveSet(0,elements);
-
+*/
         //setVertexAttrib(*geom, _vertexAlias, geom->getVertexArray(), false, osg::Geometry::BIND_PER_VERTEX);
         // geom->setVertexArray(0);
         if(!verts || !verts->size()){
@@ -430,6 +437,9 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
             continue;
         }
         OSG_INFO << "\tModel Size: "<< verts->size()<<endl;
+     /*   if(checkCached && checkAndLoadCache())
+            return true;
+*/
 
         osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
         osg::Geometry::PrimitiveSetList::iterator itr;
@@ -439,7 +449,7 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
 
         osg::ref_ptr<osg::StateSet> stateset;
         bool projectValid=false;
-
+printf("Vertsize %d\n",verts->size());
         for(itr=primitiveSets.begin(); itr!=primitiveSets.end(); ++itr){
             switch((*itr)->getMode()){
             case(osg::PrimitiveSet::TRIANGLES):
@@ -453,8 +463,10 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
                 {
                     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_tile->_texCoordMutex);
 
-                    _tile->texCoordIDIndexPerModel.push_back(v);
-                    _tile->texCoordsPerModel.push_back(texCoords);
+                    _tile->texCoordIDIndexPerModel[geode]=v;
+                    printf("v %d\n",v->size());
+
+                    _tile->texCoordsPerModel[geode]=texCoords;
                 }
                 return true;
                 break;

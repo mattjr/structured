@@ -38,6 +38,7 @@ public:
         }
     };
     vpb::MyDestinationTile *_tile;
+    bool checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCoords);
 
 protected:
     typedef std::multimap<int,TexturedSource::ProjectionCamera> ProjectsToMap;
@@ -68,7 +69,6 @@ protected:
                                         const osg::Vec3Array &verts,int texSizeIdx);
     osg::Vec2 reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v);
     AttributeAlias _vertexAlias;
-    bool checkAndLoadCache();
 
     TexturedSource *_source;
 

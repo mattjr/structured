@@ -131,7 +131,7 @@ MyMesh mesh;
 int main(int argc ,char**argv){
 if(argc<4) Usage();
 
-  int FinalSize=atoi(argv[3]);
+
 	//int t0=clock();	
   int err=vcg::tri::io::Importer<MyMesh>::Open(mesh,argv[1]);
   if(err) 
@@ -184,8 +184,11 @@ if(argc<4) Usage();
       int unref =  tri::Clean<MyMesh>::RemoveUnreferencedVertex(mesh);
       printf("Removed %i duplicate and %i unreferenced vertices from mesh \n",dup,unref);
   }
+  printf("mesh loaded %d %d \n",mesh.vn,mesh.fn);
 
-
+  int FinalSize=atoi(argv[3]);
+if(FinalSize ==0 )
+    FinalSize=mesh.fn;
   printf("reducing it to %i\n",FinalSize);
 	
 	vcg::tri::UpdateBounding<MyMesh>::Box(mesh);

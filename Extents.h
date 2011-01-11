@@ -66,7 +66,6 @@ namespace vpb
         _hintNumLevels=0;
 
     }
-        typedef std::map<SpatialIndex::id_type,int> idmap_t;
         osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray,int texSizeIdx);
         std::vector<osg::ref_ptr<osg::Image> >getRemappedImages(idmap_t allIds,int sizeIdx);
         static const int TEXUNIT_ARRAY=0;

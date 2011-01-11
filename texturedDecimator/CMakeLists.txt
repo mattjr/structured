@@ -99,7 +99,7 @@ SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/ )
 SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 ###
 
-SET( SRCS ./wrap/ply/plylib.cpp      )
+SET( SRCS ./wrap/ply/plylib.cpp   quadric_tex_simp.cpp   )
 
 
 

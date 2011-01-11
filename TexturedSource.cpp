@@ -1,11 +1,9 @@
 #include "TexturedSource.h"
 using namespace SpatialIndex;
-TexturedSource::TexturedSource(Type type, const std::string& filename): Source(type,filename)
+TexturedSource::TexturedSource(Type type, const std::string& filename,const std::string &bbox_file): Source(type,filename)
 {
     std::string mf=filename;
-    int npos=mf.find("/");
-    _bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-
+    _bbox_file=bbox_file;
 
     utilization=0.7;
     capacity=4;

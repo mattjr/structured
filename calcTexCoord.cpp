@@ -49,8 +49,10 @@ int main( int argc, char **argv )
         return 0;//Hash is valid
     cout <<"Computing hash\n";
     //Differing hash or no hash
-
-    TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf);
+    int npos=mf.find("/");
+    std::string bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
+   printf("SS %s\n",bbox_file.c_str());
+    TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
     osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
     if (model)
@@ -76,6 +78,7 @@ int main( int argc, char **argv )
     bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(model));
     if(projectSucess){
       writeCached(outfilename,sha2hash,tile->texCoordIDIndexPerModel.begin()->second,tile->texCoordsPerModel.begin()->second);
-    }
+    }else
+        cerr << "Failed to project\n";
     delete tq;
 }

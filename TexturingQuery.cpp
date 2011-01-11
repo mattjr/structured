@@ -488,7 +488,8 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
         osg::ref_ptr<osg::StateSet> stateset;
         bool projectValid=false;
         for(itr=primitiveSets.begin(); itr!=primitiveSets.end(); ++itr){
-            switch((*itr)->getMode()){
+            int mode=(*itr)->getMode();
+            switch(mode){
             case(osg::PrimitiveSet::TRIANGLES):
                 //remapSharedVert(*(*itr), *verts,tif.indices_double_counted);
                 projectValid=projectAllTriangles(v,texCoords,*(*itr), *verts);

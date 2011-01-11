@@ -76,6 +76,7 @@ protected:
 
 };
 
+typedef std::map<SpatialIndex::id_type,int> idmap_t;
 
 std::map<SpatialIndex::id_type,int> calcAllIds(osg::Vec4Array *v);
 bool loadShaderSource(osg::Shader* obj, const std::string& fileName );

@@ -21,7 +21,10 @@ void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datal
         for(int i=0; i<(int)datalist_lod[lod].size(); i++){
             if(!osgDB::fileExists(datalist_lod[lod][i]))
                 continue;
-            TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,datalist_lod[lod][i]);
+            std::string mf=datalist_lod[lod][i];
+            int npos=mf.find("/");
+            std::string bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
+            TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
             sourceModel->setMaxLevel(lod);
             sourceModel->setMinLevel(lod);
             sourceModel->tex_cache_dir=cacheddir;

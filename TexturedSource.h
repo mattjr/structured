@@ -14,7 +14,7 @@ class TexturedSource : public vpb::Source
 {
     friend class TexturingQuery;
 public:
-    TexturedSource(Type type, const std::string& filename);
+    TexturedSource(Type type, const std::string& filename,const std::string &bbox_file);
     ~TexturedSource();
 
     class ProjectionCamera{
@@ -30,6 +30,7 @@ public:
   osg::BoundingBox _bb;
   osg::KdTree *_kdTree;
   std::string tex_cache_dir;
+  TexturedSource::CameraVector _cameras;
 
 protected:
     SpatialIndex::IStorageManager* memstore;
@@ -38,7 +39,6 @@ protected:
     int capacity;
     MyDataStream *stream;
     std::string _bbox_file;
-    TexturedSource::CameraVector _cameras;
     OpenThreads::Mutex _treeMutex;
 
 

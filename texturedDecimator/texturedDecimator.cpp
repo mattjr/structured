@@ -84,6 +84,10 @@ int main(int argc ,char**argv){
         std::cerr << "Can't load tex file\n";
         return -1;
     }
+    string mf=argv[1];
+    TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,argv[1],"bbox-"+mf.substr(0,mf.size()-9)+".ply.txt");
+    idmap_t allIds=calcAllIds(ids);
+
     //int t0=clock();
     int err=vcg::tri::io::Importer<CMeshO>::Open(mesh,argv[1]);
     if(err)
@@ -144,6 +148,13 @@ int main(int argc ,char**argv){
     CMeshO::FaceIterator   fi;
     printf("idx %d t %d \n",mesh.vn ,texCoords->size());
 //Need to redensifiy mesh
+    string path="/home/mattjr/auvdata/r20090804_084719_scott_25_dense_repeat_auv5_deep/renav20090804/mesh/cache-tex/";
+    mesh.textures.resize(allIds.size());
+   idmap_t::const_iterator end = allIds.end();
+    for (idmap_t::const_iterator it = allIds.begin(); it != end; ++it)
+    {   if(sourceModel->_cameras.count(it->first))
+         mesh.textures[it->second]=path+sourceModel->_cameras[it->first].filename;
+    }
 
     for(fi=mesh.face.begin(); fi!=mesh.face.end(); ++fi)
         for(unsigned int k=0;k<3;k++){
@@ -155,9 +166,16 @@ int main(int argc ,char**argv){
 
         (*fi).WT(k).u()=texCoord[0];
         (*fi).WT(k).v()=texCoord[1];
-        (*fi).WT(k).N()=id[0];
+        (*fi).WT(k).n()=allIds[id[0]];
     }
+    vcg::tri::io::PlyInfo pi;
+    pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
 
+ //   vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,argv[2],true,pi);
+// exit(-1);
+  //  vcg::tri::io::ImporterPLY<CMeshO>::Open(mesh,argv[2],pi);
+
+//exit(-1);
     if(CleaningFlag){
         int dup = tri::Clean<CMeshO>::RemoveDuplicateVertex(mesh);
         int unref =  tri::Clean<CMeshO>::RemoveUnreferencedVertex(mesh);
@@ -173,6 +191,8 @@ int main(int argc ,char**argv){
         printf( "Mesh has some inconsistent tex coords (some faces without texture)\n");
     }
     printf("reducing it to %i\n",FinalSize);
+    QuadricTexSimplification(mesh,250,false,NULL);
+#if 0
     assert(tri::HasPerVertexMark(mesh));
 
     vcg::tri::UpdateBounding<CMeshO>::Box(mesh);
@@ -202,8 +222,8 @@ int main(int argc ,char**argv){
     int t3=clock();
     printf("mesh  %d %d Error %g \n",mesh.vn,mesh.fn,DeciSession.currMetric);
     printf("\nCompleted in (%i+%i) msec\n",t2-t1,t3-t2);
-
-    vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,argv[2]);
+#endif
+  //  vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,argv[2],true,pi);
     std::string hash=getHash(argv[2]);
 
     vcg::SimpleTempData<CMeshO::VertContainer,int> indices2(mesh.vert);

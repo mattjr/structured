@@ -86,7 +86,9 @@ int main(int argc ,char**argv){
     }
     string mf=argv[1];
     TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,argv[1],"bbox-"+mf.substr(0,mf.size()-9)+".ply.txt");
-    idmap_t allIds=calcAllIds(ids);
+    idmap_t allIds;
+   idbackmap_t  backMap;
+    calcAllIdsBack(ids,allIds,backMap);
 
     //int t0=clock();
     int err=vcg::tri::io::Importer<CMeshO>::Open(mesh,argv[1]);
@@ -231,7 +233,7 @@ int main(int argc ,char**argv){
     printf("mesh  %d %d Error %g \n",mesh.vn,mesh.fn,DeciSession.currMetric);
     printf("\nCompleted in (%i+%i) msec\n",t2-t1,t3-t2);
 #endif
-  //  vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,argv[2],true,pi);
+    vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,argv[2],true,pi);
     std::string hash=getHash(argv[2]);
 
     vcg::SimpleTempData<CMeshO::VertContainer,int> indices2(mesh.vert);
@@ -248,7 +250,8 @@ int main(int argc ,char**argv){
         int idx=indices[(*fi).cV(k)];
        (*texCoords)[idx][0]=  (*fi).WT(k).u();
        (*texCoords)[idx][1]=  (*fi).WT(k).v();
-
+       (*ids)[idx][0]=backMap[(*fi).WT(k).n()];
+       printf("%f %f %f\n",(*texCoords)[idx][0],(*texCoords)[idx][0], (*ids)[idx][0]);
     }
     writeCached(out_texcoord_file,hash,ids,texCoords);
     vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,"assy2.ply",true,pi);

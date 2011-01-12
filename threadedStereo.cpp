@@ -2655,11 +2655,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int i=0; i <(int)vrip_cells.size(); i++){
                     if(vrip_cells[i].poses.size() == 0)
                         continue;
-                    for(int j=vpblod; j >=0; j--){
+                    for(int j=vpblod; j >0; j--){
                         fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/texturedDecimator clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %s/clipped-diced-%08d-lod%d.txt %s/clipped-diced-%08d-lod%d.txt %d -P;",
                                 cwd,
                                 basepath.c_str(),
-                                i,j,i,j-1, cachedsegtex,i,j,cachedsegtex,i,j-1,sizeStep[i][j]);
+                                i,vpblod,i,j-1, cachedsegtex,i,vpblod,cachedsegtex,i,j-1,sizeStep[i][j]);
                     }
                      fprintf(simpcmds_fp,"\n");
                 }

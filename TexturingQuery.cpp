@@ -108,7 +108,7 @@ int checkCached(std::string mf,std::string cachedloc,std::string &sha2hash){
 
         if(std::string(buffer1) == sha2hash)
         {
-            std::cout << "Valid existing hash of texcoord file skipping\n";
+            std::cout << "Valid existing hash of texcoord file skipping "<< osgDB::getSimpleFileName(cachedloc)<<"\n";
             return 1;
         }else{
             std::cout << "Differing hashes "<< buffer1<< " != "<<sha2hash<<std::endl;
@@ -356,6 +356,22 @@ map<SpatialIndex::id_type,int> calcAllIds(osg::Vec4Array *v){
     return allIds;
 }
 
+void calcAllIdsBack(osg::Vec4Array *v,map<SpatialIndex::id_type,int> &allIds,map<int,SpatialIndex::id_type>  &backMap){
+
+    unsigned int uniqueIdCount=0;
+    for(int i=0; i< (int)v->size(); i++){
+        for(int j=0; j< 4; j++){
+            int id=(int)((*v)[i][j]);
+            if(id < 0)
+                continue;
+            if(allIds.count(id) == 0){
+                allIds[id]=uniqueIdCount;
+                backMap[uniqueIdCount]=id;
+                uniqueIdCount++;
+            }
+        }
+    }
+}
 
 
 

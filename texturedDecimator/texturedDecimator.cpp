@@ -76,7 +76,7 @@ int main(int argc ,char**argv){
     if(argc<6) Usage();
     std::string in_texcoord_file=argv[3];
     std::string out_texcoord_file=argv[4];
-    float FinalSizePer=atof(argv[5]);
+    int FinalSize=atof(argv[5]);
     osg::Vec2Array *texCoords=new osg::Vec2Array;
     osg::Vec4Array *ids=new osg::Vec4Array;
 
@@ -96,7 +96,7 @@ int main(int argc ,char**argv){
         exit(-1);
     }
     printf("mesh loaded %d %d \n",mesh.vn,mesh.fn);
-    int FinalSize=FinalSizePer*mesh.fn;
+ //   int FinalSize=FinalSizePer*mesh.fn;
     TriEdgeCollapseQuadricTexParameter &qparams = MyTriEdgeCollapseQTex::Params() ;
     MyTriEdgeCollapseQTex::SetDefaultParams();
     qparams.QualityThr  =.3;
@@ -171,7 +171,7 @@ int main(int argc ,char**argv){
     vcg::tri::io::PlyInfo pi;
     pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
 
- //   vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,argv[2],true,pi);
+   vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,"assy.ply",true,pi);
 // exit(-1);
   //  vcg::tri::io::ImporterPLY<CMeshO>::Open(mesh,argv[2],pi);
 
@@ -191,7 +191,15 @@ int main(int argc ,char**argv){
         printf( "Mesh has some inconsistent tex coords (some faces without texture)\n");
     }
     printf("reducing it to %i\n",FinalSize);
-    QuadricTexSimplification(mesh,250,false,NULL);
+  //  mesh.face.EnableMark();
+    tri::UpdateTopology<CMeshO>::FaceFace(mesh);
+    tri::UpdateFlags<CMeshO>::FaceBorderFromFF(mesh);
+    tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(mesh);
+    tri::UpdateBounding<CMeshO>::Box(mesh);
+    tri::UpdateTopology<CMeshO>::VertexFace(mesh);
+    tri::UpdateFlags<CMeshO>::FaceBorderFromNone(mesh);
+
+    QuadricTexSimplification(mesh,FinalSize,false,NULL);
 #if 0
     assert(tri::HasPerVertexMark(mesh));
 
@@ -243,6 +251,8 @@ int main(int argc ,char**argv){
 
     }
     writeCached(out_texcoord_file,hash,ids,texCoords);
+    vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,"assy2.ply",true,pi);
+
     return 0;
 
 }

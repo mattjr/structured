@@ -277,7 +277,7 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
             osg::Vec4 id1 = (*_texid)[tri.p1];
             osg::Vec4 id2 = (*_texid)[tri.p2];
 
-
+//printf("%f\n",id0[0]);
             int contains=0;
             contains+=clipbox.contains(v0);
             contains+=clipbox.contains(v1);

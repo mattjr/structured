@@ -2,6 +2,7 @@
 #include <string>
 #include <osgDB/ReadFile>
 #include "TexturingQuery.h"
+#include "vertexData.h"
 using namespace std;
 void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,bool useTextureArray){
 
@@ -29,7 +30,16 @@ void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datal
             sourceModel->setMinLevel(lod);
             sourceModel->tex_cache_dir=cacheddir;
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
-            osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
+            ply::VertexData vertexData;
+            osg::Node* model = vertexData.readPlyFile(sourceModel->getFileName().c_str());
+            sourceModel->ids=new osg::Vec4Array;
+            sourceModel->ids->resize(vertexData._texIds->size());
+            for(int j=0; j < vertexData._texIds->size(); j++)
+                 sourceModel->ids->at(j)=vertexData._texIds->at(j);
+            osg::ref_ptr<osg::KdTreeBuilder>  _kdTreeBuilder = osgDB::Registry::instance()->getKdTreeBuilder()->clone();
+
+            model->accept(*_kdTreeBuilder);
+            //model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
             if (model)
             {
                 vpb::SourceData* data = new vpb::SourceData(sourceModel);

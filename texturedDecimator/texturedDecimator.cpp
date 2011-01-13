@@ -73,14 +73,14 @@ void Usage()
 CMeshO mesh;
 
 int main(int argc ,char**argv){
-    if(argc<6) Usage();
-    std::string in_texcoord_file=argv[3];
-    std::string out_texcoord_file=argv[4];
-    int FinalSize=atof(argv[5]);
+    if(argc<4) Usage();
+   // std::string in_texcoord_file=argv[3];
+   // std::string out_texcoord_file=argv[4];
+    int FinalSize=atof(argv[3]);
     osg::Vec2Array *texCoords=new osg::Vec2Array;
     osg::Vec4Array *ids=new osg::Vec4Array;
 
-    if(!loadCached(in_texcoord_file,ids,texCoords)){
+    /*if(!loadCached(in_texcoord_file,ids,texCoords)){
         std::cerr << "Can't load tex file\n";
         return -1;
     }
@@ -89,7 +89,7 @@ int main(int argc ,char**argv){
     idmap_t allIds;
    idbackmap_t  backMap;
     calcAllIdsBack(ids,allIds,backMap);
-
+*/
     //int t0=clock();
     int err=vcg::tri::io::Importer<CMeshO>::Open(mesh,argv[1]);
     if(err)
@@ -137,7 +137,7 @@ int main(int argc ,char**argv){
     //  mesh.mask |= vcg::tri::io::Mask::IOM_VERTTEXCOORD;
 
     //mesh.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
-    CMeshO::VertexPointer  vp;
+  /*  CMeshO::VertexPointer  vp;
     CMeshO::VertexIterator vi;
     vcg::SimpleTempData<CMeshO::VertContainer,int> indices(mesh.vert);
     int j;
@@ -169,7 +169,7 @@ int main(int argc ,char**argv){
         (*fi).WT(k).u()=texCoord[0];
         (*fi).WT(k).v()=texCoord[1];
         (*fi).WT(k).n()=allIds[id[0]];
-    }
+    }*/
     vcg::tri::io::PlyInfo pi;
     pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
 
@@ -233,8 +233,10 @@ int main(int argc ,char**argv){
     printf("mesh  %d %d Error %g \n",mesh.vn,mesh.fn,DeciSession.currMetric);
     printf("\nCompleted in (%i+%i) msec\n",t2-t1,t3-t2);
 #endif
+    mesh.textures.resize(2);
+    //Needed to force the ply to output tex id
     vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,argv[2],true,pi);
-    std::string hash=getHash(argv[2]);
+   /* std::string hash=getHash(argv[2]);
 
     vcg::SimpleTempData<CMeshO::VertContainer,int> indices2(mesh.vert);
 
@@ -244,18 +246,19 @@ int main(int argc ,char**argv){
     }
     texCoords->resize(mesh.vn);
     ids->resize(mesh.vn);
-
     for(fi=mesh.face.begin(); fi!=mesh.face.end(); ++fi)
         for(unsigned int k=0;k<3;k++){
         int idx=indices[(*fi).cV(k)];
        (*texCoords)[idx][0]=  (*fi).WT(k).u();
        (*texCoords)[idx][1]=  (*fi).WT(k).v();
-       (*ids)[idx][0]=backMap[(*fi).WT(k).n()];
-       printf("%f %f %f\n",(*texCoords)[idx][0],(*texCoords)[idx][0], (*ids)[idx][0]);
+       osg::Vec4 v(-1,-1,-1,-1);
+       v[0]=backMap[(*fi).WT(k).n()];
+       (*ids)[idx]=v;
+       printf("FFF %f %f\n",v[0],(*fi).WT(k).n());
     }
     writeCached(out_texcoord_file,hash,ids,texCoords);
     vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,"assy2.ply",true,pi);
-
+*/
     return 0;
 
 }

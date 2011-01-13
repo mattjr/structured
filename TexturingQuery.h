@@ -41,6 +41,7 @@ public:
     };
     vpb::MyDestinationTile *_tile;
     bool checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCoords);
+    void addImagesToAtlasGen(std::map<SpatialIndex::id_type,int> allIds);
 
 protected:
     typedef std::multimap<int,TexturedSource::ProjectionCamera> ProjectsToMap;
@@ -63,7 +64,6 @@ protected:
     TexPyrAtlas &_atlasGen;
 
     bool _useAtlas;
-    void addImagesToAtlasGen(std::map<SpatialIndex::id_type,int> allIds);
     typedef std::pair<unsigned int, std::string> AttributeAlias;
     std::vector<osg::ref_ptr<osg::Image> >getRemappedImages(std::map<SpatialIndex::id_type,int> allIds,int sizeIdx);
     void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,

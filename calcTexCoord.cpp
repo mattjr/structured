@@ -9,7 +9,7 @@
 #include "Extents.h"
 #include "auv_stereo_geometry.hpp"
 #include "calcTexCoord.h"
-
+#include "PLYWriterNodeVisitor.h"
 using namespace libsnapper;
 using namespace std;
 
@@ -41,17 +41,17 @@ int main( int argc, char **argv )
         return -1;
     }
     std::string mf=argv[2];
-    std::string sha2hash;
+   /* std::string sha2hash;
     int res=checkCached(mf,outfilename,sha2hash);
     if(res == -1)
         return -1;
     else if(res == 1)
         return 0;//Hash is valid
-    cout <<"Computing hash\n";
+    cout <<"Computing hash\n";*/
     //Differing hash or no hash
     int npos=mf.find("/");
     std::string bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-   printf("SS %s\n",bbox_file.c_str());
+    printf("SS %s\n",bbox_file.c_str());
     TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
     osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
@@ -69,16 +69,24 @@ int main( int argc, char **argv )
         }else{
             std::cerr << "No drawbables \n";
         }
-    }
-    TexPyrAtlas atlasGen("null",false);
-    TexturingQuery *tq=new TexturingQuery(sourceModel,calib->left_calib,atlasGen,true);
-    vpb::MyDestinationTile *tile=new vpb::MyDestinationTile("");
 
-    tq->_tile=tile;
-    bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(model));
-    if(projectSucess){
-      writeCached(outfilename,sha2hash,tile->texCoordIDIndexPerModel.begin()->second,tile->texCoordsPerModel.begin()->second);
+        TexPyrAtlas atlasGen("null",false);
+        TexturingQuery *tq=new TexturingQuery(sourceModel,calib->left_calib,atlasGen,true);
+        vpb::MyDestinationTile *tile=new vpb::MyDestinationTile("");
+
+        tq->_tile=tile;
+        bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(model));
+        if(projectSucess){
+            //  writeCached(outfilename,sha2hash,tile->texCoordIDIndexPerModel.begin()->second,tile->texCoordsPerModel.begin()->second);
+            std::ofstream f(outfilename.c_str());
+            osg::Geometry *geom = dynamic_cast< osg::Geometry*>( geode->getDrawable(0));
+            geom->setTexCoordArray(0,tile->texCoordsPerModel.begin()->second);
+            PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second);
+            model->accept(nv);
+        }else
+            cerr << "Failed to project\n";
+        delete tq;
     }else
-        cerr << "Failed to project\n";
-    delete tq;
+        cerr << "Failed to open "<<sourceModel->getFileName() <<endl;
+
 }

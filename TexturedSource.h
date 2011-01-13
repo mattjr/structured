@@ -31,7 +31,7 @@ public:
   osg::KdTree *_kdTree;
   std::string tex_cache_dir;
   TexturedSource::CameraVector _cameras;
-
+  osg::Vec4Array *ids;
 protected:
     SpatialIndex::IStorageManager* memstore;
     SpatialIndex::IStorageManager* manager;

@@ -335,9 +335,12 @@ SET( SRCS OSGExport.cpp
                 #Clean.cpp
 		novelty.cpp
 sha2.cpp
+plyfile.cpp
 TexturedSource.cpp
 Clipper.cpp
 VPBInterface.cpp
+PLYWriterNodeVisitor.cc
+vertexData.cpp
 TexPyrAtlas.cpp
 TexturingQuery.cpp
 		stereo_cells.cpp
@@ -351,7 +354,7 @@ ADD_LIBRARY( ts STATIC ${SRCS} )
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
 ADD_EXECUTABLE( genTex genTex.cpp )
 ADD_EXECUTABLE( lodgen lodgen.cpp )
-ADD_EXECUTABLE( treeBBClip treeBBClip.cpp PLYWriterNodeVisitor.cc )
+ADD_EXECUTABLE( treeBBClip treeBBClip.cpp  )
 ADD_EXECUTABLE( simplifier simplifier.cpp)
 ADD_EXECUTABLE( calcTexCoord calcTexCoord.cpp )
 

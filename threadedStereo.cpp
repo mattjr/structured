@@ -2631,13 +2631,12 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int i=0; i <(int)vrip_cells.size(); i++){
                     if(vrip_cells[i].poses.size() == 0)
                         continue;
-                    fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/clipped-diced-%08d-lod%d.ply --outfile %s/clipped-diced-%08d-lod%d.txt\n",
+                    fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/clipped-diced-%08d-lod%d.ply --outfile mesh-diced/clipped-diced-%08d-lod%d.ply\n",
                             cwd,
                             basepath.c_str(),
                             base_dir.c_str(),
                             i,
                             vpblod,
-                            cachedsegtex,
                             i,
                             vpblod);
                 }
@@ -2656,10 +2655,10 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     if(vrip_cells[i].poses.size() == 0)
                         continue;
                     for(int j=vpblod; j >0; j--){
-                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/texturedDecimator clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %s/clipped-diced-%08d-lod%d.txt %s/clipped-diced-%08d-lod%d.txt %d -P;",
+                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/texturedDecimator clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %d -P;",
                                 cwd,
                                 basepath.c_str(),
-                                i,vpblod,i,j-1, cachedsegtex,i,vpblod,cachedsegtex,i,j-1,sizeStep[i][j]);
+                                i,vpblod,i,j-1, sizeStep[i][j]);
                     }
                      fprintf(simpcmds_fp,"\n");
                 }

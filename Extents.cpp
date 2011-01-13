@@ -325,10 +325,10 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         stateset->setDataVariance(osg::Object::STATIC);
     }
     int numIdx=prset.getNumIndices();
-     // printf("Num idx %d\n",numIdx);
-      //printf("Num idx %d %d\n",numIdx,v->size());
+    // printf("Num idx %d\n",numIdx);
+    //printf("Num idx %d %d\n",numIdx,v->size());
 
-assert(numIdx ==(int) v->size());
+    assert(numIdx ==(int) v->size());
     for(int i=0; i<numIdx-2; i+=3){
         vector<osg::Vec3> vP;
         vector<osg::Vec2> tP;
@@ -1261,6 +1261,51 @@ void MyDataSet::createNewDestinationGraph(
 
     log(osg::INFO,"Time for _destinationGraph->computeMaximumSourceResolution() = %f", osg::Timer::instance()->delta_s(before_computeMax, after_computeMax));
 }
+bool toVert(osg::Geode *geode,osg::Vec4Array *ids,osg::Vec4Array *newIds,osg::Vec2Array *newTexCoord){
+
+    //No cached
+    if(!geode){
+        OSG_ALWAYS << "Not valid geode\n";
+        return false;
+    }
+
+    for (unsigned int i=0; i<geode->getNumDrawables(); i++){
+
+        osg::Drawable *drawable = geode->getDrawable(i);
+
+        osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+        //geom->setUseDisplayList(false);
+        osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+        osg::Vec2Array *texCoords=static_cast<const osg::Vec2Array*>(geom->getTexCoordArray(0));
+        //setVertexAttrib(*geom, _vertexAlias, geom->getVertexArray(), false, osg::Geometry::BIND_PER_VERTEX);
+        // geom->setVertexArray(0);
+        newIds->resize(verts->size());
+        newTexCoord->resize(verts->size());
+        if(!verts || !verts->size()){
+            OSG_INFO<< "Empty mesh continuing!" <<endl;
+            continue;
+        }
+        OSG_INFO << "\tModel Size: "<< verts->size()<<endl;
+        /*   if(checkCached && checkAndLoadCache())
+            return true;
+*/
+
+        osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
+        osg::PrimitiveSet *prim=primitiveSets.begin()->get();
+        printf("%d %d\n",texCoords->size() ,prim->getNumIndices() );
+        assert(texCoords->size() ==prim->getNumIndices() );
+        int numIdx=prim->getNumIndices();
+        for(int i=0; i<numIdx-2; i+=3){
+            for(int k=0; k <3; k++){
+              //      printf("%d %d %d %d %d %d\n",i+k,prim->index(i+k),newTexCoord->size(),newIds->size(),ids->size(),texCoords->size());
+                newTexCoord->at(prim->index(i+k))=texCoords->at(i+k);
+                newIds->at(prim->index(i+k))=ids->at(i+k);
+
+            }
+        }
+    }
+    return true;
+}
 void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     log(osg::INFO,"   source:%s",src->getFileName().c_str());
     //   log(osg::NOTICE,"    %x",src->getSourceData()->_model.get());
@@ -1280,17 +1325,25 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     osg::ref_ptr<osg::Node> root;
     TexturingQuery *tq=new TexturingQuery(src,_calib,tile->_atlasGen,_useTextureArray);
     tq->_tile=tile;
+
     osg::Vec4Array *ids=new osg::Vec4Array;
     osg::Vec2Array *texCoords=new osg::Vec2Array;
+    //for(int i=0; i < src->ids->)
+    // osg::Vec4Array *ids=src->ids;
+    //osg::Vec2Array *oldtexCoords=(osg::Vec2Array*)dynamic_cast<osg::Geometry*>(((osg::Geode*)src->getSourceData()->_model.get())->getDrawable(0))->getTexCoordArray(0);
+
+    toVert((((osg::Geode*)src->getSourceData()->_model.get())),src->ids,ids,texCoords);
+    map<SpatialIndex::id_type,int> allIds=calcAllIds(ids);
+    tq->addImagesToAtlasGen(allIds);
     osg::ref_ptr<osg::Vec4Array> new_ids;
     osg::ref_ptr<osg::Vec2Array> new_texCoords;
-
-    bool projectSucess =tq->checkAndLoadCache(ids,texCoords);
+    bool projectSucess=(ids!=NULL);
+    //    bool projectSucess =tq->checkAndLoadCache(ids,texCoords);
     if(src->_kdTree){
         KdTreeBbox *kdtreeBbox=new KdTreeBbox(*src->_kdTree);
         if(projectSucess){
             root=kdtreeBbox->intersect(ext_bbox, ids,texCoords,new_texCoords,new_ids,IntersectKdTreeBbox::DUP);
-          //  root=kdtreeBbox->intersect(ext_bbox,IntersectKdTreeBbox::DUP);
+            //  root=kdtreeBbox->intersect(ext_bbox,IntersectKdTreeBbox::DUP);
 
             OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_texCoordMutex);
             assert(new_ids.valid() && new_texCoords.valid());

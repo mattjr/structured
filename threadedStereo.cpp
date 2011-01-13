@@ -2590,7 +2590,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 std::vector<double> cur_res(vrip_cells.size(),0);
 
                 int totalFaces=0;
-                  double desiredRes=0.1;
+                double desiredRes=0.1;
                 for(int i=0; i <(int)vrip_cells.size(); i++){
                     if(vrip_cells[i].poses.size() == 0)
                         continue;
@@ -2604,25 +2604,29 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     numFaces[i]=faces;
                     cur_res[i]=vrip_cells[i].bounds.area()/totalFaces;
                     double dRes=desiredRes-cur_res[i];
-                     resFrac[i]=(dRes/(float)vpblod);
+                    resFrac[i]=(dRes/(float)vpblod);
 
                     printf("%d: %d \n",i,faces);
                 }
 
 
-             /*   printf("Total Faces %d %f\n",totalFaces,cur_res);
+                /*   printf("Total Faces %d %f\n",totalFaces,cur_res);
                 printf("%f %f dres %f\n",cur_res,desiredRes,dRes);*/
                 std::vector< std::vector<int > >sizeStep;
                 sizeStep.resize(vrip_cells.size());
                 for(int i=0; i< (int)vrip_cells.size(); i++){
                     sizeStep[i].resize(vpblod+1);
                     for(int j=vpblod; j >=0; j--){
+                        if(vrip_cells[i].poses.size() == 0){
+                            sizeStep[i][j]=0;
+                            continue;
+                        }
                         double newRes=(cur_res[i]+(vpblod-j)*resFrac[i]);
                         sizeStep[i][j]=vrip_cells[i].bounds.area()/newRes;
-                    OSG_ALWAYS << "Level " << j << "Res " <<  newRes << "Orig Faces " << numFaces[i] << "New faces " << sizeStep[i][j] <<endl;
-                }
-//                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
-   //                 printf("Step size %d %f\n",sizeSteps[i],resFrac);
+                        OSG_ALWAYS << "Level " << j << "Res " <<  newRes << "Orig Faces " << numFaces[i] << "New faces " << sizeStep[i][j] <<endl;
+                    }
+                    //                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
+                    //                 printf("Step size %d %f\n",sizeSteps[i],resFrac);
                 }
                 string texcmds_fn="mesh-diced/texcmds";
 
@@ -2660,7 +2664,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                                 basepath.c_str(),
                                 i,vpblod,i,j-1, sizeStep[i][j]);
                     }
-                     fprintf(simpcmds_fp,"\n");
+                    fprintf(simpcmds_fp,"\n");
                 }
                 fclose(simpcmds_fp);
                 string simpcmd="simp.py";
@@ -2669,7 +2673,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     sysres=system("./simp.py");
 
 
-/*
+                /*
                 FILE *dicefp=fopen("./simp.sh","w+");
                 fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
                 fprintf(dicefp,"cd $DICEDIR\n");
@@ -2752,7 +2756,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 string gentexcmd_fn;
                 for(int i=0; i <(int)gentexdir.size(); i++){
                     gentexcmd_fn=(gentexdir[i]+"/gentexcmds");
-                     FILE *dicefp=fopen(gentexcmd_fn.c_str(),"w+");
+                    FILE *dicefp=fopen(gentexcmd_fn.c_str(),"w+");
 
 
                     char argstr[2048];

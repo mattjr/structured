@@ -1,6 +1,7 @@
 #include "TexPyrAtlas.h"
 #include <osgDB/ReadFile>
 #include <string.h>
+#include <assert.h>
 using namespace std;
 TexPyrAtlas::TexPyrAtlas(std::string imgdir,bool doAtlas):_imgdir(imgdir),_doAtlas(doAtlas),_useTextureArray(false)
 {
@@ -80,7 +81,9 @@ void TexPyrAtlas::loadTextureFiles(int size){
     std::map<id_type,string>::const_iterator end = _totalImageList.end();
     int i=0;
     for (std::map<id_type,string>::const_iterator it = _totalImageList.begin(); it != end; ++it, i++){
-        osg::ref_ptr<osg::Image> img=osgDB::readImageFile(_imgdir+"/"+it->second);
+        string fname=_imgdir+"/"+it->second;
+        osg::ref_ptr<osg::Image> img=osgDB::readImageFile(fname);
+        assert(img.valid());
         resizeImage(img,size,size,loc_images[i]);
         if(loc_images[i].valid()){
             if(!_doAtlas) {

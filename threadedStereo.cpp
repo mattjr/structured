@@ -2574,8 +2574,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             vrip_cells[i].bounds.max_y,
                             FLT_MAX,
                             i);
-                    fprintf(splitcmds_fp,"%s/texturedDecimator/bin/tridecimator mesh-diced/clipped-diced-%08d.ply mesh-diced/clipped-diced-%08d-lod%d.ply 0.7 -P\n",
-                            basepath.c_str(),
+                    fprintf(splitcmds_fp,"cp mesh-diced/clipped-diced-%08d.ply mesh-diced/clipped-diced-%08d-lod%d.ply \n",
+                            //basepath.c_str(),
                             i,i,vpblod);
 
                 }

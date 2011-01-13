@@ -165,10 +165,9 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces )
         _triangles->push_back( face.vertices[1]);
         _triangles->push_back( face.vertices[ind3] );
         for(int k=0; k <face.nTex; k+=2)
-        _texCoord->push_back(osg::Vec2(face.texcoord[k],face.texcoord[k+1]));
+            _texCoord->push_back(osg::Vec2(face.texcoord[k],face.texcoord[k+1]));
         for(int k=0; k<3; k++)
             _texIds->push_back(osg::Vec4(face.id,-1,-1,-1));
-   //     printf("%d\n",face.id);
 
         // free the memory that was allocated by ply_get_element
         free( face.vertices );
@@ -363,7 +362,7 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
         if(_texCoord.valid())
         {
             geom->setTexCoordArray(0,_texCoord.get());
-          //  geom->setColorBinding( osg::Geometry::BIND_PER_VERTEX );
+            //  geom->setColorBinding( osg::Geometry::BIND_PER_VERTEX );
 
         }
         

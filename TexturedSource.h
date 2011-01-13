@@ -32,6 +32,8 @@ public:
   std::string tex_cache_dir;
   TexturedSource::CameraVector _cameras;
   osg::Vec4Array *ids;
+  osg::Vec2Array *tex;
+
 protected:
     SpatialIndex::IStorageManager* memstore;
     SpatialIndex::IStorageManager* manager;

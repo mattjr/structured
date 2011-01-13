@@ -21,6 +21,7 @@
 #include <iostream>
 #include <iterator>
 #include <osg/io_utils>
+#include <assert.h>
 #include <stdio.h>
 #include <osg/TriangleFunctor>
 #include <osgUtil/Tessellator> // to tessellate multiple contours
@@ -276,6 +277,7 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
             osg::Vec4 id0 = (*_texid)[tri.p0];
             osg::Vec4 id1 = (*_texid)[tri.p1];
             osg::Vec4 id2 = (*_texid)[tri.p2];
+assert(id0[0]  == id1[0] && id0[0] == id2[0]);
 
 //printf("%f\n",id0[0]);
             int contains=0;

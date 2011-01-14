@@ -23,7 +23,7 @@ bool toVert(osg::Node *node,osg::Vec2Array *texcoord,osg::Vec4Array *ids,osg::Ve
         osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
         osg::Vec2Array *texCoords=static_cast<const osg::Vec2Array*>(geom->getTexCoordArray(0));
 
-        newIds->resize(verts->size());
+        newIds->resize(verts->size(),osg::Vec4(-1,-1,-1,-1));
         newTexCoord->resize(verts->size());
         if(!verts || !verts->size()){
             OSG_INFO<< "Empty mesh continuing!" <<endl;

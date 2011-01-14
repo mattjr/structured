@@ -311,7 +311,7 @@ void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds){
     std::vector<std::pair<SpatialIndex::id_type,string> > files(allIds.size());
     map<SpatialIndex::id_type,int>::const_iterator end = allIds.end();
     for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
-    {   if(_source->_cameras.count(it->first))
+    {   if(_source->_cameras.count(it->first) && _source->_cameras[it->first].filename.size())
         files[it->second]=make_pair<SpatialIndex::id_type,string> (it->first,_source->_cameras[it->first].filename);
         else
             OSG_ALWAYS << " Failed " <<it->first << " : " << it->second << '\n';

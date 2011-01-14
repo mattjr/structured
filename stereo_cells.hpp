@@ -39,6 +39,8 @@ public:
   double time;
   libplankton::Vector *pose;
   std::string img_name;
+  GtsBBox *bbox;
+
   bool valid;
 };
 

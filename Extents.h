@@ -155,6 +155,7 @@ class MyDataSet :  public DataSet
         void _equalizeRow(Row& row);
         int _run();
         void processTile(MyDestinationTile *tile,TexturedSource *src);
+        std::string _imageDir;
 
     protected:
         virtual ~MyDataSet() {}
@@ -165,6 +166,7 @@ class MyDataSet :  public DataSet
          const Camera_Calib &_calib;
          MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
          bool _useTextureArray;
+
 };
 
 }

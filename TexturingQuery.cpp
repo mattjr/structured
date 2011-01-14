@@ -323,7 +323,8 @@ void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds){
 
 osg::Vec2 TexturingQuery::reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v){
 
-    osg::Vec3 cam_frame=mat*v;
+
+    osg::Vec3 cam_frame=mat*v;//osg::Vec3(v.x(),-v.y(),v.z());
     osg::Vec3 und_n;
     und_n.x()=cam_frame.x()/cam_frame.z();
     und_n.y()=cam_frame.y()/cam_frame.z();

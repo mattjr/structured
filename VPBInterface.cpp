@@ -63,11 +63,12 @@ bool toVert(osg::Node *node,osg::Vec2Array *texcoord,osg::Vec4Array *ids,osg::Ve
     return true;
 }
 #endif
-void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,bool useTextureArray){
+void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,std::string imageDir,bool useTextureArray){
 
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
     vpb::MyDataSet *m=new vpb::MyDataSet(calib,useTextureArray);
+    m->_imageDir=imageDir;
     m->setNumReadThreadsToCoresRatio(1.5);
     m->setNumWriteThreadsToCoresRatio(1.5);
     //m->setCompressionMethod(vpb::BuildOptions::RGB_S3TC_DXT1);

@@ -70,7 +70,7 @@ FILE *		vripcmds_fp=fopen("mesh-pos/poscmds","w");
 
 		  cells[i].bounds.min_x,
 		  cells[i].bounds.min_y,
-		  FLT_MIN,
+                  -FLT_MAX,
 		  cells[i].bounds.max_x,
 		  cells[i].bounds.max_y,
 		  FLT_MAX,

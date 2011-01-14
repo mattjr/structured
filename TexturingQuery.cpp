@@ -121,7 +121,6 @@ int checkCached(std::string mf,std::string cachedloc,std::string &sha2hash){
 
 TexturingQuery::TexturingQuery(TexturedSource *source,const Camera_Calib &calib,TexPyrAtlas &atlasGen,bool useTextureArray) :
         _calib(calib),
-        _origImageSize(1360,1024),
         _useTextureArray(useTextureArray),
         _atlasGen(atlasGen),
         _useAtlas(true),
@@ -184,9 +183,9 @@ const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3
 }
 osg::Vec2 TexturingQuery::convertToUV(const osg::Vec2 &pix){
     osg::Vec2 ratioPow2;
-    osg::Vec2 pow2size(osg::Image::computeNearestPowerOfTwo(_origImageSize.x()),osg::Image::computeNearestPowerOfTwo(_origImageSize.y()));
-    ratioPow2.x()=(pow2size.x()/_origImageSize.x());
-    ratioPow2.y()=(pow2size.y()/_origImageSize.y());
+    osg::Vec2 pow2size(osg::Image::computeNearestPowerOfTwo(_calib.width),osg::Image::computeNearestPowerOfTwo(_calib.height));
+    ratioPow2.x()=(pow2size.x()/_calib.width);
+    ratioPow2.y()=(pow2size.y()/_calib.height);
     ratioPow2.x()*=pix.x();
     ratioPow2.y()*=pix.y();
     osg::Vec2 uv;
@@ -198,19 +197,19 @@ osg::Vec2 TexturingQuery::convertToUV(const osg::Vec2 &pix){
 void TexturingQuery::findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,SpatialIndex::id_type id){
     cpad.id=id;
     osg::Vec2 texC=reprojectPt(_source->_cameras[id].m,v);
-    if(texC.x() < 0.0 || texC.x() > _origImageSize.x() || texC.y() < 0.0 || texC.y() > _origImageSize.y() )
+    if(texC.x() < 0.0 || texC.x() > _calib.width || texC.y() < 0.0 || texC.y() > _calib.height )
         cpad.dist=DBL_MAX;
     else
-        cpad.dist=(texC-osg::Vec2(_origImageSize.x()/2,_origImageSize.y()/2)).length2();
+        cpad.dist=(texC-osg::Vec2(_calib.width/2,_calib.height/2)).length2();
     cpad.uv=convertToUV(texC);
 
 }
 double TexturingQuery::getDistToCenter(osg::Vec3 v, TexturedSource::ProjectionCamera cam){
     osg::Vec2 texC=reprojectPt(cam.m,v);
-    if(texC.x() < 0.0 || texC.x() > _origImageSize.x() || texC.y() < 0.0 || texC.y() > _origImageSize.y() )
+    if(texC.x() < 0.0 || texC.x() > _calib.width || texC.y() < 0.0 || texC.y() > _calib.height )
         return DBL_MAX;
     else
-        return (texC-osg::Vec2(_origImageSize.x()/2.0,_origImageSize.y()/2.0)).length2();
+        return (texC-osg::Vec2(_calib.width/2.0,_calib.height/2.0)).length2();
 }
 
 
@@ -323,8 +322,7 @@ void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds){
 
 osg::Vec2 TexturingQuery::reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v){
 
-
-    osg::Vec3 cam_frame=mat*v;//osg::Vec3(v.x(),-v.y(),v.z());
+    osg::Vec3 cam_frame=mat*v;
     osg::Vec3 und_n;
     und_n.x()=cam_frame.x()/cam_frame.z();
     und_n.y()=cam_frame.y()/cam_frame.z();

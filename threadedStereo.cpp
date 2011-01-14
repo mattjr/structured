@@ -2188,7 +2188,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int k=0; k < (int)mb_ply_filenames.size(); k++){
                     fprintf(vripcmds_fp,"plycullmaxx %f %f %f %f %f %f %f < %s > ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply;tridecimator ../mesh-agg/dirty-clipped-mb-%08d-%08d.ply ../mesh-agg/clipped-mb-%08d-%08d.ply 0 -e%f;set VISLIST=`cat ../%s | grep surface |cut -f1 -d\" \"`; plyclipbboxes -e %f $VISLIST ../mesh-agg/clipped-mb-%08d-%08d.ply > ../mesh-agg/vis-mb-%08d-%08d.ply;", vrip_cells[i].bounds.min_x,
                             vrip_cells[i].bounds.min_y,
-                            FLT_MIN,
+                            -FLT_MAX,
                             vrip_cells[i].bounds.max_x,
                             vrip_cells[i].bounds.max_y,
                             FLT_MAX,
@@ -2374,7 +2374,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/quad-lod%d.ply > ../mesh-quad/clipped-diced-%08d-lod%d.ply;",
                         quad_cells[i].bounds.min_x,
                         quad_cells[i].bounds.min_y,
-                        FLT_MIN,
+                        -FLT_MAX,
                         quad_cells[i].bounds.max_x,
                         quad_cells[i].bounds.max_y,
                         FLT_MAX,
@@ -2735,7 +2735,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 */
                 if(!mgc)
                     mgc = new MyGraphicsContext();
-                doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,dir_name,useTextureArray);
+                doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray);
 
 
                 vector<string> gentexnames;

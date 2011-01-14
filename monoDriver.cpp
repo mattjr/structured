@@ -1255,7 +1255,7 @@ int main( int argc, char *argv[ ] )
             fprintf(quadmergecmds_fp,"plycullmaxx %f %f %f %f %f %f %f < ../mesh-quad/quad-lod%d.ply > ../mesh-quad/clipped-diced-%08d-lod%d.ply;",
                     quad_cells[i].bounds.min_x,
                     quad_cells[i].bounds.min_y,
-                    FLT_MIN,
+                    -FLT_MAX,
                     quad_cells[i].bounds.max_x,
                     quad_cells[i].bounds.max_y,
                     FLT_MAX,
@@ -1557,67 +1557,6 @@ int main( int argc, char *argv[ ] )
             if(!no_vrip)
                 sysres=system("./simp.py");
 
-
-            /*
-                FILE *dicefp=fopen("./simp.sh","w+");
-                fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
-                fprintf(dicefp,"cd $DICEDIR\n");
-                fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"
-                        "REDFACT=(");
-                for(int r=0; r<vpblod; r++)
-                    fprintf(dicefp,"%f ",simp_res[r]);
-
-                fprintf(dicefp,")\n");
-
-                char simpargstr[2048];
-                if(further_clean)
-                    sprintf(simpargstr," -S%f ",connected_comp_size_clean);
-                else
-                    sprintf(simpargstr," ");
-                fprintf(dicefp, "LOGDIR=%s\n"
-                        "if [[ -d $LOGDIR ]] ; then\n"
-                        "find $LOGDIR -name 'loadbal*' | xargs rm &>/dev/null\nfi\n"
-                        "if [[ -d $DICEDIR ]] ; then\n"
-                        "find $DICEDIR -name '*lod*' | xargs rm &> /dev/null\nfi\n"
-                        "rm -f simpcmds\n"
-                        "rm -f valid.txt\n"
-                        "cat diced.txt | while read MESHNAME; do\n"
-                        "FACES=`plyhead $MESHNAME | grep face | cut -f 3 -d\" \"`\n"
-                        "if [ $FACES == 0 ]; then\n continue;\n fi\n"
-                        "echo $MESHNAME >> valid.txt\n"
-                        "SIMPCMD=\"cd $DICEDIR/\" \n"
-                        "\tfor f in `echo {%d..0}`\n"
-                        "\tdo\n"
-                        "\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$(($f-1)).ply/g`\n"
-                        "\t\t\tNEWNAME2=`echo $MESHNAME | sed s/.ply/-lod$(($f)).ply/g`\n"
-                        "\t\t\tNEWNAME3=`echo $MESHNAME | sed s/.ply/-lod$(($f)).txt/g`\n"
-                        "\t\tif [ $f == %d ]; then\n"
-                        "FLIPCMD=\"-F\"\n"
-                        "\t\telse\n"
-                        "FLIPCMD=\n"
-                        "\t\tfi\n"
-                        "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/texturedDecimator/bin/texturedDecimator $NEWNAME2 $NEWNAME %s/$NEWNAME3 %s/$NEWNAME3.tmp ${REDFACT[$f]} $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
-                        "#MESHNAME=$NEWNAME\n"
-                        "\tdone\n"
-                        "echo $SIMPCMD >> simpcmds\n"
-                        "done\n",simplogdir,vpblod,vpblod,cachedsegtex,cachedsegtex,simpargstr);
-
-
-                if(dist_run){
-                    fprintf(dicefp,"cd $DICEDIR\n"
-                            "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n");
-                } else {
-                    fprintf(dicefp,"cd ..\n"
-                            "%s/runtp.py $DICEDIR/simpcmds %d %s\n"
-                            "cd $DICEDIR\n",basepath.c_str(),num_threads,"Simp");
-                }
-
-                fprintf(dicefp,"cat dicedld.txt | xargs plybbox > range.txt\n");
-                fchmod(fileno(dicefp),0777);
-                fclose(dicefp);
-                if(!no_simp && !no_vrip)
-                    sysres=system("./simp.sh");
-*/
             if(!mgc)
                 mgc = new MyGraphicsContext();
             doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,dir_name,useTextureArray);

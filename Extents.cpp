@@ -737,7 +737,7 @@ osg::Node* MyDestinationTile::createScene()
             }
             //Got the size that was over target get size under target
             tex_size=max(16,tex_size/2);*/
-            int start_pow=9;
+            int start_pow=10;
             tex_size=1024;//log2 = 10
             int leveloffset=(_hintNumLevels-_level);
             printf("level offset %d level %d\n",leveloffset,_level);
@@ -1266,7 +1266,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     log(osg::INFO,"   source:%s",src->getFileName().c_str());
     osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
                                          tile->_extents._min.y(),
-                                         DBL_MIN),osg::Vec3d(tile->_extents._max.x(),
+                                         -DBL_MAX),osg::Vec3d(tile->_extents._max.x(),
                                                              tile->_extents._max.y(),
                                                              DBL_MAX));
     osg::ref_ptr<osg::Node> root;
@@ -1283,7 +1283,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     osg::ref_ptr<osg::Vec2Array> new_texCoords;
     bool projectSucess=(ids!=NULL);
     if(src->_kdTree){
-        KdTreeBbox *kdtreeBbox=new KdTreeBbox(*src->_kdTree);
+        osg::ref_ptr<KdTreeBbox> kdtreeBbox=new KdTreeBbox(*src->_kdTree);
         if(projectSucess){
             root=kdtreeBbox->intersect(ext_bbox, ids,texCoords,new_texCoords,new_ids,IntersectKdTreeBbox::DUP);
             OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_texCoordMutex);
@@ -1292,7 +1292,6 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
             tile->texCoordsPerModel[root.get()]=new_texCoords;
         }else
             root=kdtreeBbox->intersect(ext_bbox,IntersectKdTreeBbox::DUP);
-
     }else{
         OSG_ALWAYS<<"No kdtree\n";
         assert(0);

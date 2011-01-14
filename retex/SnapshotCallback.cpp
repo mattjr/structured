@@ -287,12 +287,12 @@ void SnapImageDrawCallback::pasteTile() const {
     for(int i=0; i < tileBuffer->width; i++){
       for(int j=0; j < tileBuffer->height; j++){
 	
-	float z=FLT_MIN;
+        float z=(-FLT_MAX);
 	bool good=getClosestZValue(i,j,z);
 	if(good)
 	  CV_IMAGE_ELEM(depthImg,float,y+j,x+i)=z;
 	else
-	  CV_IMAGE_ELEM(depthImg,float,y+j,x+i)=FLT_MIN;
+          CV_IMAGE_ELEM(depthImg,float,y+j,x+i)=(-FLT_MAX);
       }
     }
   }

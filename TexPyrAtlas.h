@@ -3,13 +3,15 @@
 #include <osgUtil/Optimizer>
 #include <string>
 #include <osg/State>
+#include <osg/Referenced>
+typedef std::vector<std::pair<std::string,int> > texcache_t;
 
-class TexPyrAtlas : public osgUtil::Optimizer::TextureAtlasBuilder
+class TexPyrAtlas : public osgUtil::Optimizer::TextureAtlasBuilder , public osg::Referenced
 {
 public:
     typedef long id_type;
 
-    TexPyrAtlas(std::string imgdir,bool doAtlas=true);
+    TexPyrAtlas(texcache_t imgdir,bool doAtlas=true);
     void addSources(std::vector<std::pair<id_type ,std::string> > imageList);
     int getAtlasId(id_type id);
     osg::ref_ptr<osg::Image> getImage(int index,int sizeIndex);
@@ -24,6 +26,15 @@ public:
     }
     std::vector<osg::ref_ptr<osg::Image> > getImages(void){
     return _images;
+    }
+    bool getClosestDir(std::string &str,int size){
+        for(int i=0; i< (int)_imgdir.size(); i++){
+            if(_imgdir[i].second <= size){
+                str= _imgdir[i].first;
+                return true;
+            }
+        }
+        return false;
     }
 
     osg::Matrix getTextureMatrixByID(id_type id);
@@ -58,10 +69,11 @@ protected:
                         unsigned int out_s, unsigned int out_t,
                         osg::ref_ptr<osg::Image>& output,
                         unsigned int mipmapLevel=0 );
-    std::string _imgdir;
+    texcache_t _imgdir;
     std::map<id_type,int> _idToAtlas;
     std::map<id_type,Source*> _idToSource;
     bool _doAtlas;
+    OpenThreads::Mutex _imageListMutex;
 
     bool _useTextureArray;
 

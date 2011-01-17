@@ -69,10 +69,10 @@ int main( int argc, char **argv )
         }else{
             std::cerr << "No drawbables \n";
         }
-
-        TexPyrAtlas atlasGen("null",false);
+        texcache_t tmp;
+        TexPyrAtlas atlasGen(tmp,false);
         TexturingQuery *tq=new TexturingQuery(sourceModel,calib->left_calib,atlasGen,true);
-        vpb::MyDestinationTile *tile=new vpb::MyDestinationTile("");
+        vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(tmp);
 
         tq->_tile=tile;
         bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(model));

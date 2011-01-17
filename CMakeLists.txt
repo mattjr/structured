@@ -252,9 +252,14 @@ LINK_DIRECTORIES( ${OPENCV_LIBRARY_DIRS}
                   /quadmerge/nn
                 )
 
-LINK_LIBRARIES(	${OSG_LIBRARY_DEBUG}
-                ${OSGDB_LIBRARY_DEBUG}
-                ${OSGUTIL_LIBRARY_DEBUG}
+LINK_LIBRARIES(
+      #  /usr/local/lib64/libosgd.so
+      #          /usr/local/lib64/libosgDBd.so
+      #            /usr/local/lib64/libosgUtild.so${OSG_LIBRARY_DEBUG}
+                ${OSG_LIBRARY_DEBUG}
+
+ ${OSGDB_LIBRARY_DEBUG}
+               ${OSGUTIL_LIBRARY_DEBUG}
                 ${OSGSHADOW_LIBRARY}
                 ${OSGVIEWER_LIBRARY_DEBUG}
                 ${OSGTEXT_LIBRARY_DEBUG}
@@ -334,6 +339,8 @@ SET( SRCS OSGExport.cpp
 		auv_3ds.cpp
                 #Clean.cpp
 		novelty.cpp
+PosterPrinter.cpp
+imageNode.cpp
 sha2.cpp
 plyfile.cpp
 TexturedSource.cpp

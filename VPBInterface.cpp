@@ -63,14 +63,14 @@ bool toVert(osg::Node *node,osg::Vec2Array *texcoord,osg::Vec4Array *ids,osg::Ve
     return true;
 }
 #endif
-void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,std::string imageDir,bool useTextureArray){
-
+void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cachedDirs,bool useTextureArray){
+vector<osg::KdTree*> trees;
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
-    vpb::MyDataSet *m=new vpb::MyDataSet(calib,useTextureArray);
-    m->_imageDir=imageDir;
-    m->setNumReadThreadsToCoresRatio(1.5);
-    m->setNumWriteThreadsToCoresRatio(1.5);
+    osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,useTextureArray);
+    m->_cachedDirs=cachedDirs;
+    m->setNumReadThreadsToCoresRatio(0.5);
+    m->setNumWriteThreadsToCoresRatio(0.5);
     //m->setCompressionMethod(vpb::BuildOptions::RGB_S3TC_DXT1);
     m->setRadiusToMaxVisibleDistanceRatio(4.0);
 
@@ -109,6 +109,7 @@ void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datal
                 if(geode && geode->getNumDrawables()){
                     osg::Drawable *drawable = geode->getDrawable(0);
                     sourceModel->_kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
+                    trees.push_back(sourceModel->_kdTree);
                 }else{
                     OSG_ALWAYS << "No drawbables \n";
                 }
@@ -120,5 +121,8 @@ void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datal
     }
     m->createNewDestinationGraph(geo,256,128,numlod);
     m->_run();
+//    for(int i=0; i<trees.size(); i++)
+  //    delete trees[i];
+
 
 }

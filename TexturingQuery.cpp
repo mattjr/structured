@@ -306,7 +306,8 @@ bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
     }
 }
 void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds){
-
+//cout << "Adding " << allIds.size() <<  endl;/
+//printf("0x%x\n",(int)this);
     std::vector<std::pair<SpatialIndex::id_type,string> > files(allIds.size());
     map<SpatialIndex::id_type,int>::const_iterator end = allIds.end();
     for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)

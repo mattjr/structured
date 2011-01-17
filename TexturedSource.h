@@ -28,7 +28,7 @@ public:
     SpatialIndex::ISpatialIndex* tree;
     void intersectsWithQuery(const SpatialIndex::IShape& query, SpatialIndex::IVisitor& v);
   osg::BoundingBox _bb;
-  osg::KdTree *_kdTree;
+  osg::ref_ptr<osg::KdTree> _kdTree;
   std::string tex_cache_dir;
   TexturedSource::CameraVector _cameras;
   osg::Vec4Array *ids;

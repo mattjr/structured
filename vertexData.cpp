@@ -171,6 +171,8 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces )
 
         // free the memory that was allocated by ply_get_element
         free( face.vertices );
+        free( face.texcoord );
+
     }
 }
 

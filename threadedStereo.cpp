@@ -85,6 +85,7 @@ static bool interp_quad=false;
 static bool run_pos=false;
 static bool do_novelty=false;
 static double dense_scale;
+static bool no_tex=false;
 static vector<string> mb_xyz_files;
 static int desired_area=250.0;
 static bool have_max_frame_count = false;
@@ -107,6 +108,7 @@ static bool have_mb_grd=false;
 static bool have_cov_file=false;
 static string stereo_calib_file_name;
 static bool no_simp=true;
+static bool no_split=false;
 static  vector<double>simp_res(255);
 static FILE *uv_fp;
 static ofstream file_name_list;
@@ -128,7 +130,6 @@ static bool use_dense_feature=false;
 //StereoMatching* stereo;
 //StereoImage simage;
 static bool gen_mb_ply=false;
-static bool no_atlas=false;
 static bool output_ply_and_conf =true;
 static FILE *conf_ply_file;
 static bool output_3ds=false;
@@ -152,7 +153,7 @@ static double edgethresh;
 static bool no_merge=false;
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[2048];
-char cachedtexdir[2048];
+texcache_t cachedtexdir;
 char cachedsegtex[2048];
 
 static bool pos_clip=false;
@@ -485,7 +486,9 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value( "POSTER_TILE_SCALE", poster_tiles,
                                   10);
     proj_tex_size=lodTexSize[0];
-    sprintf(cachedtexdir,"cache-tex-%d/",lodTexSize[0]);
+
+    //sprintf(cachedtexdir,"cache-tex-%d/",lodTexSize[1]);
+
     sprintf(cachedsegtex,"cache-seg-coords/");
 
 
@@ -551,6 +554,9 @@ static bool parse_args( int argc, char *argv[ ] )
         have_cov_file=true;
     if(argp.read( "-n",max_frame_count))
         have_max_frame_count = true;
+    //    max_frame_count=20;
+    //  have_max_frame_count = true;
+
     use_undistorted_images = argp.read("-u" );
     use_proj_tex=argp.read("--projtex");
 
@@ -558,7 +564,14 @@ static bool parse_args( int argc, char *argv[ ] )
         even_split= true;
     argp.read("--cellscale",cell_scale );
 
-
+    for(int i=0; i< vpblod; i++){
+        char tmppp[1024];
+        int size=lodTexSize[0]/pow(2,i);
+        if(size <8)
+            continue;
+        sprintf(tmppp,"cache-tex-%d/",size);
+        cachedtexdir.push_back(make_pair<string,int> (string(tmppp),size));
+    }
 
 
     if(argp.read("--pos")){
@@ -593,6 +606,8 @@ static bool parse_args( int argc, char *argv[ ] )
     dice_lod=argp.read("--dicelod" );
 
     no_simp=argp.read( "--nosimp" );
+
+    no_split=argp.read( "--nosplit" );
 
     do_hw_blend=argp.read("--blend" );
     argp.read("--maxaltcutoff",max_alt_cutoff);
@@ -676,9 +691,13 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--start",start_time);
     argp.read("--stop",stop_time);
     output_3ds=  argp.read("--3ds");
-    no_gen_tex=argp.read("--nogentex");
+    no_gen_tex= (!argp.read("--gentex"));
     if(argp.read("--novrip"))
         no_vrip=true;
+    if(argp.read("--notex"))
+        no_tex=true;
+
+
     no_merge=argp.read("--nomerge");
     if(no_merge){
         run_pos = false;
@@ -708,7 +727,9 @@ static bool parse_args( int argc, char *argv[ ] )
         sprintf(cachedmeshdir,"cache-mesh-feat/");
 
     strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
-    strcpy(cachedtexdir,string(base_dir+string("/")+cachedtexdir).c_str());
+    for(int i=0; i < cachedtexdir.size(); i++){
+        cachedtexdir[i].first=base_dir+"/"+cachedtexdir[i].first;
+    }
     strcpy(cachedsegtex,string(base_dir+string("/")+cachedsegtex).c_str());
 
 
@@ -1144,7 +1165,9 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
     string right_frame_name;
     char filename[2048];
     char meshfilename[2048];
-    char texfilename[2048];
+    char tmpF[2048];
+
+    vector<string> texfilename;
     bool meshcached=false;
     bool texcached=false;
 
@@ -1169,12 +1192,14 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       fclose(fp);
       chmod(filename,   0666);
   */
-    if(no_atlas)
-        sprintf(texfilename,"%s/%s.dds",
-                cachedtexdir,osgDB::getStrippedName(name.left_name).c_str());
-    else
-        sprintf(texfilename,"%s/%s.png",
-                cachedtexdir,osgDB::getStrippedName(name.left_name).c_str());
+
+    for(int i=0; i< cachedtexdir.size(); i++){
+        sprintf(tmpF,"%s/%s.png",
+                cachedtexdir[i].first.c_str(),osgDB::getStrippedName(name.left_name).c_str());
+        texfilename.push_back(tmpF);
+
+    }
+
     if(use_dense_stereo)
         sprintf(meshfilename,"%s/surface-%s-%s.ply",
                 cachedmeshdir,osgDB::getStrippedName(name.left_name).c_str(),
@@ -1201,7 +1226,11 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
             }else
                 meshcached=true;
         }
-        texcached=FileExists(texfilename);
+        texcached=true;
+        for(int i=0; i< texfilename.size(); i++){
+            if(!FileExists(texfilename[i]))
+                texcached=false;
+        }
     }
 
     sprintf(filename,"%s/%s.ply",
@@ -1231,10 +1260,12 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
 
         if(!texcached){
             //      printf("\nCaching texture %s\n",texfilename);
-            if(!no_atlas)
-                osgExp->cacheImage(color_frame,texfilename,tex_size,false);
-            else
-                osgExp->cacheCompressedImage(color_frame,texfilename,tex_size);
+            //if(!no_atlas)
+            for(int i=0; i< texfilename.size(); i++){
+                osgExp->cacheImage(color_frame,texfilename[i],cachedtexdir[i].second,false);
+            }
+            //else
+                //osgExp->cacheCompressedImage(color_frame,texfilename,tex_size);
         }
 
 
@@ -1730,8 +1761,10 @@ int main( int argc, char *argv[ ] )
 
     auv_data_tools::makedir(cachedmeshdir);
     chmod(cachedmeshdir,   0777);
-    auv_data_tools::makedir(cachedtexdir);
-    chmod(cachedtexdir,   0777);
+    for(int i=0; i < cachedtexdir.size(); i++){
+        auv_data_tools::makedir(cachedtexdir[i].first.c_str());
+        chmod(cachedtexdir[i].first.c_str(),   0777);
+    }
     auv_data_tools::makedir(cachedsegtex);
     chmod(cachedsegtex,   0777);
     //
@@ -2415,6 +2448,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 }
             }else{
                 for(int i=0; i <(int)vrip_cells.size(); i++){
+                    if(vrip_cells[i].poses.size() == 0)
+                        continue;
                     char tmp[1024];
                     sprintf(tmp,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,lod);//std::min(lod,2)
                     level.push_back(tmp);
@@ -2582,7 +2617,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 fclose(splitcmds_fp);
                 string splitcmd="split.py";
                 shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
-                if(!no_vrip)
+                if(!no_split)
                     sysres=system("./split.py");
 
                 std::vector<int> numFaces(vrip_cells.size(),0);
@@ -2597,6 +2632,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     char tmpf[1024];
                     sprintf(tmpf,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,vpblod);
                     osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpf);
+                    assert(model.valid());
+                    if(!model.valid()){
+                        OSG_ALWAYS<<"No valid model ";
+                        exit(-1);
+                    }
                     osg::Drawable *drawable = model->asGeode()->getDrawable(0);
                     osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
                     int faces=geom->getPrimitiveSet(0)->getNumPrimitives();
@@ -2646,8 +2686,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 }
                 fclose(texcmds_fp);
                 string texcmd="tex.py";
-                shellcm.write_generic(texcmd,texcmds_fn,"Tex");
-                if(!no_vrip)
+                shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,NULL,std::min(4,num_threads));
+                if(!no_tex)
                     sysres=system("./tex.py");
 
 
@@ -2669,7 +2709,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 fclose(simpcmds_fp);
                 string simpcmd="simp.py";
                 shellcm.write_generic(simpcmd,simpcmds_fn,"simp");
-                if(!no_vrip)
+                if(!no_simp)
                     sysres=system("./simp.py");
 
 
@@ -2797,7 +2837,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                                 ,gentexdir[i].c_str(),basepath.c_str(),
                                 recon_config_file_name.c_str(),
                                 recon_config_file_name.c_str(),
-                                cachedtexdir,gentexdir[i].c_str(),
+                                cachedtexdir[0].first.c_str(),gentexdir[i].c_str(),
                                 stereo_calib_file_name.c_str(),j1,j1+dist_gentex_range,argstr);
 
                         j1+=dist_gentex_range;

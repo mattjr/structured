@@ -53,7 +53,8 @@ namespace vpb
 
     class MyDestinationTile : public DestinationTile{
     public:
-        MyDestinationTile(std::string imageDir):_atlasGen(imageDir){
+        MyDestinationTile(texcache_t imageDir){
+            _atlasGen=new TexPyrAtlas(imageDir);
         _projCoordAlias = AttributeAlias(1, "osg_ProjCoord");
         _texCoordsAlias = AttributeAlias(15, "osg_texCoord");
         levelToTextureLevel[0]=2;
@@ -71,7 +72,7 @@ namespace vpb
         static const int TEXUNIT_ARRAY=0;
         int getTextureSizeForLevel(int level){
             if(levelToTextureLevel.count(level))
-                return _atlasGen.getDownsampleSize(levelToTextureLevel[level]);
+                return _atlasGen->getDownsampleSize(levelToTextureLevel[level]);
             return -1;
         }
         void addToHintTextureNumber(int numberTextures){
@@ -104,13 +105,14 @@ namespace vpb
                                                             osg::Vec2Array* texCoordsArray,
                                                             const osg::Vec3Array &verts,int tex_size);
         static const int TEX_UNIT=0;
+        void unrefData();
 
         AttributeAlias _projCoordAlias;
         AttributeAlias _texCoordsAlias;
          osg::Node * createScene(void);
          OpenThreads::Mutex _texCoordMutex;
          OpenThreads::Mutex _modelMutex;
-         TexPyrAtlas _atlasGen;
+         osg::ref_ptr<TexPyrAtlas>  _atlasGen;
          std::map<int,int> levelToTextureLevel;
          int _hintTextureNumber;
          int _hintNumLevels;
@@ -132,6 +134,9 @@ namespace vpb
                 CompositeDestination(cs, extents){}
         osg::Node* createPagedLODScene();
         osg::Node* createSubTileScene();
+        void unrefSubTileData();
+        void unrefLocalData();
+
 
         typedef std::vector< osg::ref_ptr<MyDestinationTile> > MyTileList;
     };
@@ -155,7 +160,7 @@ class MyDataSet :  public DataSet
         void _equalizeRow(Row& row);
         int _run();
         void processTile(MyDestinationTile *tile,TexturedSource *src);
-        std::string _imageDir;
+        texcache_t _cachedDirs;
 
     protected:
         virtual ~MyDataSet() {}
@@ -170,6 +175,5 @@ class MyDataSet :  public DataSet
 };
 
 }
-
 
 #endif // EXTENTS_H

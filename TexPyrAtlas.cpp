@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 using namespace std;
-TexPyrAtlas::TexPyrAtlas(std::string imgdir,bool doAtlas):_imgdir(imgdir),_doAtlas(doAtlas),_useTextureArray(false)
+TexPyrAtlas::TexPyrAtlas(texcache_t imgdir,bool doAtlas):_imgdir(imgdir),_doAtlas(doAtlas),_useTextureArray(false)
 {
     setMaximumAtlasSize(4096,4096);
     setMargin(0);
@@ -32,7 +32,7 @@ int TexPyrAtlas::getAtlasId(id_type id){
 }
 osg::Matrix TexPyrAtlas::getTextureMatrixByID(id_type id){
     if(_idToSource.count(id))
-return computeTextureMatrixFreedImage(_idToSource[id]);     //   return _idToSource[id]->computeTextureMatrix(); This was using images we had freed
+        return computeTextureMatrixFreedImage(_idToSource[id]);     //   return _idToSource[id]->computeTextureMatrix(); This was using images we had freed
 
     return osg::Matrix::identity();
 }
@@ -47,12 +47,14 @@ osg::Matrix TexPyrAtlas::computeTextureMatrixFreedImage(Source *s)
     if (!(s->_atlas->_image)) return osg::Matrix();
 
     return osg::Matrix::scale(float(image_s)/float(s->_atlas->_image->s()), float(image_t)/float(s->_atlas->_image->t()), 1.0)*
-           osg::Matrix::translate(float(s->_x)/float(s->_atlas->_image->s()), float(s->_y)/float(s->_atlas->_image->t()), 0.0);
+            osg::Matrix::translate(float(s->_x)/float(s->_atlas->_image->s()), float(s->_y)/float(s->_atlas->_image->t()), 0.0);
 }
 void TexPyrAtlas::addSources(std::vector<std::pair<id_type ,std::string> > imageList){
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_imageListMutex);
+
     for(int i=0; i< (int)imageList.size(); i++){
 
-        if(_totalImageList.count(imageList[i].first) == 0)
+        if(_totalImageList.count(imageList[i].first) == 0 )
             _totalImageList.insert(imageList[i]);
     }
 }
@@ -74,20 +76,27 @@ osg::ref_ptr<osg::Image> TexPyrAtlas::getImage(int index,int sizeIndex){
 }
 void TexPyrAtlas::loadTextureFiles(int size){
     std::vector<osg::ref_ptr<osg::Image> > loc_images;
-    loc_images.resize(_totalImageList.size());
-    if(!_doAtlas)
-        _images.resize(_totalImageList.size());
+
+    string closestDir;
+    if(!getClosestDir(closestDir,size)){
+        cerr << "Can't find any dir close to size " << size<<endl;
+        exit(-1);
+    }
 
     std::map<id_type,string>::const_iterator end = _totalImageList.end();
-    int i=0;
-    for (std::map<id_type,string>::const_iterator it = _totalImageList.begin(); it != end; ++it, i++){
-        string fname=_imgdir+"/"+it->second;
+    for (std::map<id_type,string>::const_iterator it = _totalImageList.begin(); it != end; ++it){
+        string fname=closestDir+"/"+it->second;
         osg::ref_ptr<osg::Image> img=osgDB::readImageFile(fname);
         assert(img.valid());
-        resizeImage(img,size,size,loc_images[i]);
-        if(loc_images[i].valid()){
+        osg::ref_ptr<osg::Image> tmp=NULL;
+        if(img->s() == size && img->t() == size)
+            tmp=img;
+        else
+            resizeImage(img,size,size,tmp);
+        loc_images.push_back(tmp);
+        if(loc_images.back().valid()){
             if(!_doAtlas) {
-                _images[i]=loc_images[i];
+                _images.push_back(loc_images.back());
             }else{
                 //texture->setImage(_images[i]);
                 /*   texture->setTextureSize(_downsampleSizes[0],_downsampleSizes[0]);
@@ -96,12 +105,12 @@ void TexPyrAtlas::loadTextureFiles(int size){
                 // osg::setNotifyLevel(osg::FATAL);
                 vpb::generateMipMap(*_state,*texture,resizePowerOfTwo,vpb::BuildOptions::GL_DRIVER);
                 // osg::setNotifyLevel(saved_ns);*/
-                if (!getSource(loc_images[i])) {
-                    Source *s=new Source(loc_images[i]);
+                if (!getSource(loc_images.back())) {
+                    Source *s=new Source(loc_images.back());
                     _sourceList.push_back(s);
                     _sourceToId[s]=it->first;
                     _idToSource[it->first]=s;
-                    _sourceToSize[s]=osg::Vec2(loc_images[i]->s(),loc_images[i]->t());
+                    _sourceToSize[s]=osg::Vec2(loc_images.back()->s(),loc_images.back()->t());
                 }
             }
         }else{
@@ -115,9 +124,9 @@ void TexPyrAtlas::loadTextureFiles(int size){
         for(int i=0; i < (int)getNumAtlases(); i++)
             _images.push_back(getAtlasByNumber(i));
         //Free ref created by source new above which is leaks after copy from sources
-        for(int i=0; i < (int)loc_images.size(); i++){
-            loc_images[i]->unref();
-        }
+       // for(int i=0; i < (int)loc_images.size(); i++){
+        //    loc_images[i]->unref();
+        //}
 
     }
        /* for(int i=0; i < loc_images.size(); i++){
@@ -156,6 +165,7 @@ bool
     {
         output = new osg::Image();
         output->allocateImage( out_s, out_t, 1, pf, input->getDataType(), input->getPacking() );
+        assert(output.valid() && output->data());
     }
     output->setInternalTextureFormat( input->getInternalTextureFormat() );
 
@@ -209,16 +219,16 @@ void TexPyrAtlas::buildAtlas()
     // assign the source to the atlas
     _atlasList.clear();
     for(SourceList::iterator sitr = _sourceList.begin();
-        sitr != _sourceList.end();
-        ++sitr)
+    sitr != _sourceList.end();
+    ++sitr)
     {
         Source* source = sitr->get();
         if (source->suitableForAtlas(_maximumAtlasWidth,_maximumAtlasHeight,_margin))
         {
             bool addedSourceToAtlas = false;
             for(AtlasList::iterator aitr = _atlasList.begin();
-                aitr != _atlasList.end() && !addedSourceToAtlas;
-                ++aitr)
+            aitr != _atlasList.end() && !addedSourceToAtlas;
+            ++aitr)
             {
                 OSG_INFO<<"checking source "<<source->_image->getFileName()<<" to see it it'll fit in atlas "<<aitr->get()<<std::endl;
                 if ((*aitr)->doesSourceFit(source))
@@ -238,8 +248,8 @@ void TexPyrAtlas::buildAtlas()
 
                 osg::ref_ptr<Atlas> atlas = new Atlas(_maximumAtlasWidth,_maximumAtlasHeight,_margin);
                 if(_atlasList.size() && _useTextureArray){
-                atlas->_width=_maximumAtlasWidth;
-                atlas->_height=_maximumAtlasHeight;
+                    atlas->_width=_maximumAtlasWidth;
+                    atlas->_height=_maximumAtlasHeight;
                 }
                 _atlasList.push_back(atlas.get());
 
@@ -251,19 +261,19 @@ void TexPyrAtlas::buildAtlas()
     // build the atlas which are suitable for use, and discard the rest.
     AtlasList activeAtlasList;
     for(AtlasList::iterator aitr = _atlasList.begin();
-        aitr != _atlasList.end();
-        ++aitr)
+    aitr != _atlasList.end();
+    ++aitr)
     {
         Atlas* atlas = aitr->get();
 
-        if (atlas->_sourceList.size()==1)
+     /*   if (atlas->_sourceList.size()==1)
         {
             // no point building an atlas with only one entry
             // so disconnect the source.
             Source* source = atlas->_sourceList[0].get();
             source->_atlas = 0;
             atlas->_sourceList.clear();
-        }
+        }*/
 
         if (!(atlas->_sourceList.empty()))
         {

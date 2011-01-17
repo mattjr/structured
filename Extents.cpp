@@ -247,8 +247,8 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
 void MyCompositeDestination::unrefSubTileData()
 {
     for(MyCompositeDestination::ChildList::iterator citr=_children.begin();
-        citr!=_children.end();
-        ++citr)
+    citr!=_children.end();
+    ++citr)
     {
         ((MyCompositeDestination*)((*citr).get()))->unrefLocalData();
     }
@@ -256,8 +256,8 @@ void MyCompositeDestination::unrefSubTileData()
 void MyCompositeDestination::unrefLocalData()
 {
     for(CompositeDestination::TileList::iterator titr=_tiles.begin();
-        titr!=_tiles.end();
-        ++titr)
+    titr!=_tiles.end();
+    ++titr)
     {
         MyDestinationTile* tile = dynamic_cast<MyDestinationTile*>(titr->get());
         log(osg::INFO,"   unref tile level=%d X=%d Y=%d",tile->_level, tile->_tileX, tile->_tileY);
@@ -269,7 +269,7 @@ void MyDestinationTile::unrefData()
     _imageLayerSet.clear();
     _terrain = 0;
     _models = 0;
-_atlasGen=0;
+    _atlasGen=0;
     _createdScene = 0;
     _stateset = 0;
 }
@@ -722,17 +722,17 @@ void MyDataSet::_equalizeRow(Row& row)
 {
     log(osg::INFO, "_equalizeRow %d",row.size());
     for(Row::iterator citr=row.begin();
-        citr!=row.end();
-        ++citr)
+    citr!=row.end();
+    ++citr)
     {
         CompositeDestination* cd = citr->second;
         for(CompositeDestination::TileList::iterator titr=cd->_tiles.begin();
-            titr!=cd->_tiles.end();
-            ++titr)
+        titr!=cd->_tiles.end();
+        ++titr)
         {
             DestinationTile* tile = titr->get();
             log(osg::INFO, "   equalizing tile level=%u X=%u Y=%u",tile->_level,tile->_tileX,tile->_tileY);
-           // tile->equalizeBoundaries();
+            // tile->equalizeBoundaries();
             tile->setTileComplete(true);
         }
     }
@@ -753,7 +753,7 @@ void MyDestinationTile::setVertexAttrib(osg::Geometry& geom, const AttributeAlia
 osg::Node* MyDestinationTile::createScene()
 {
     if (_createdScene.valid()) return _createdScene.get();
-/*
+    /*
     if (_dataSet->getGeometryType()==DataSet::HEIGHT_FIELD)
     {
         _createdScene = createHeightField();
@@ -838,7 +838,7 @@ osg::Node* MyDestinationTile::createScene()
             }
             idmap_t allIds=calcAllIds(v);
             numtex=allIds.size();
-              memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
+            memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
             printf("   dst2: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
 
             OSG_INFO<< "Number of coords "<< texCoords->size() << endl;
@@ -1326,14 +1326,14 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
                                          tile->_extents._min.y(),
                                          -DBL_MAX),osg::Vec3d(tile->_extents._max.x(),
-                                                             tile->_extents._max.y(),
-                                                             DBL_MAX));
+                                                              tile->_extents._max.y(),
+                                                              DBL_MAX));
     osg::ref_ptr<osg::Node> root;
     TexturingQuery *tq=new TexturingQuery(src,_calib,*(tile->_atlasGen),_useTextureArray);
     tq->_tile=tile;
 
 
-     osg::Vec4Array *ids=src->ids;
+    osg::Vec4Array *ids=src->ids;
     osg::Vec2Array *texCoords=src->tex;
 
     osg::ref_ptr<osg::Vec4Array> new_ids;
@@ -1343,6 +1343,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
         osg::ref_ptr<KdTreeBbox> kdtreeBbox=new KdTreeBbox(*src->_kdTree);
         if(projectSucess){
             root=kdtreeBbox->intersect(ext_bbox, ids,texCoords,new_texCoords,new_ids,IntersectKdTreeBbox::DUP);
+            //printf("0x%x\n",(long int)root.get());
             OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_texCoordMutex);
             assert(new_ids.valid() && new_texCoords.valid());
             tile->texCoordIDIndexPerModel[root.get()]=new_ids;
@@ -1361,10 +1362,15 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     }
 
     if(projectSucess){
+        {
+            OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_texCoordMutex);
 
-        map<SpatialIndex::id_type,int> allIds=calcAllIds(tile->texCoordIDIndexPerModel[root.get()]);
-        tq->addImagesToAtlasGen(allIds);
-
+            map<SpatialIndex::id_type,int> allIds=calcAllIds(new_ids);//tile->texCoordIDIndexPerModel[root.get()]);
+            tq->addImagesToAtlasGen(allIds);
+            int level=tile->_level;
+            int total=tq->_atlasGen._totalImageList.size();
+          //  printf("%d %d %d %d 0x%x AAAAAA\n",level,total,tile->_tileX,tile->_tileY,(long int)&(tq->_atlasGen));
+        }
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_modelMutex);
 
         if(!tile->_models){

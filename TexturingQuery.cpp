@@ -145,13 +145,13 @@ const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3
     std::multimap<SpatialIndex::id_type,int> cam_counter;
     for(unsigned int i=0; i<tri_v.size(); i++){
         avgV += verts[tri_v[i]];
-        pair<multimap<int, TexturedSource::ProjectionCamera>::iterator, multimap<int, TexturedSource::ProjectionCamera>::iterator> ppp;
+        pair<multimap<int, SpatialIndex::id_type>::iterator, multimap<int, SpatialIndex::id_type>::iterator> ppp;
         ppp=reproj.equal_range(tri_v[i]);
-        for (multimap<int, TexturedSource::ProjectionCamera>::iterator it2 = ppp.first;
+        for (multimap<int, SpatialIndex::id_type>::iterator it2 = ppp.first;
              it2 != ppp.second;
              ++it2){
             //   printf("here %d %d\n",(*it2).second.id,i);
-            cam_counter.insert(make_pair<long,int>((*it2).second.id,i));
+            cam_counter.insert(make_pair<long,int>((*it2).second,i));
         }
     }
     avgV.x()/=3.0;
@@ -236,14 +236,14 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
         if(vis.GetResultCount()){
             for(unsigned int r=0; r < vis.GetResults().size(); r++){
                 if(_source->_cameras.count(vis.GetResults()[r]))
-                    reproj.insert(std::pair<int,TexturedSource::ProjectionCamera>(i,_source->_cameras[vis.GetResults()[r]]));
+                    reproj.insert(std::pair<int,SpatialIndex::id_type>(i,vis.GetResults()[r]));
             }
         }
     }
     camIdxArr->resize(verts.size(),osg::Vec4(-1,-1,-1,-1));
     if(texCoordsArray)
         texCoordsArray->resize(verts.size());
-    multimap<unsigned int, int> vert_reproj;
+    //multimap<unsigned int, int> vert_reproj;
 
     for(int i=0; i<numIdx-2; i+=3){
 
@@ -267,7 +267,7 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
                 }
 
             }else*/{
-                vert_reproj.insert(make_pair<unsigned int, int >(prset.index(i+k),1));
+             //   vert_reproj.insert(make_pair<unsigned int, int >(prset.index(i+k),1));
                 camIdxArr->at(prset.index(i+k))=camIdx;
                 if(texCoordsArray && d.size()) {
                     texCoordsArray->at(prset.index(i+k))=convertToUV(reprojectPt(_source->_cameras[d[0].id].m,verts[tri_v[k]]));

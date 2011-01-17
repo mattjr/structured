@@ -69,10 +69,10 @@ vector<osg::KdTree*> trees;
     int numlod=datalist_lod.size()-1;
     osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,useTextureArray);
     m->_cachedDirs=cachedDirs;
-    m->setNumReadThreadsToCoresRatio(0.5);
-    m->setNumWriteThreadsToCoresRatio(0.5);
+    m->setNumReadThreadsToCoresRatio(1.5);
+    m->setNumWriteThreadsToCoresRatio(1.5);
     //m->setCompressionMethod(vpb::BuildOptions::RGB_S3TC_DXT1);
-    m->setRadiusToMaxVisibleDistanceRatio(4.0);
+    m->setRadiusToMaxVisibleDistanceRatio(7.0);
 
     m->setDestinationName("real.ive");
 

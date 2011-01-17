@@ -41,10 +41,13 @@ public:
     };
     vpb::MyDestinationTile *_tile;
     bool checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCoords);
+
     void addImagesToAtlasGen(std::map<SpatialIndex::id_type,int> allIds);
+    bool _useTextureArray;
+    TexPyrAtlas &_atlasGen;
 
 protected:
-    typedef std::multimap<int,TexturedSource::ProjectionCamera> ProjectsToMap;
+    typedef std::multimap<int,SpatialIndex::id_type> ProjectsToMap;
     double getDistToCenter(osg::Vec3 v, TexturedSource::ProjectionCamera cam);
     void findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,SpatialIndex::id_type id);
     osg::Vec2 convertToUV(const osg::Vec2 &pix);
@@ -59,8 +62,6 @@ protected:
                                              const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
     osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray, int texSizeIdx);
     ProjectsToMap reproj;
-    bool _useTextureArray;
-    TexPyrAtlas &_atlasGen;
 
     bool _useAtlas;
     typedef std::pair<unsigned int, std::string> AttributeAlias;

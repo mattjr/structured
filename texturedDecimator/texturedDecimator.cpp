@@ -76,7 +76,7 @@ int main(int argc ,char**argv){
     if(argc<4) Usage();
    // std::string in_texcoord_file=argv[3];
    // std::string out_texcoord_file=argv[4];
-    int FinalSize=atof(argv[3]);
+    int FinalSize=atoi(argv[3]);
     osg::Vec2Array *texCoords=new osg::Vec2Array;
     osg::Vec4Array *ids=new osg::Vec4Array;
 
@@ -102,6 +102,7 @@ int main(int argc ,char**argv){
     TriEdgeCollapseQuadricTexParameter &qparams = MyTriEdgeCollapseQTex::Params() ;
     MyTriEdgeCollapseQTex::SetDefaultParams();
     qparams.QualityThr  =.3;
+    qparams.QualityCheck=true;
     float TargetError=numeric_limits<float>::max();
     bool CleaningFlag =false;
     // parse command line.

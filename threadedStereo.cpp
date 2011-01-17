@@ -2662,7 +2662,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             continue;
                         }
                         double newRes=(cur_res[i]+(vpblod-j)*resFrac[i]);
-                        sizeStep[i][j]=vrip_cells[i].bounds.area()/newRes;
+                        sizeStep[i][j]= numFaces[i]/(pow(2,vpblod-j));
+                                        //vrip_cells[i].bounds.area()/newRes;
                         OSG_ALWAYS << "Level " << j << "Res " <<  newRes << "Orig Faces " << numFaces[i] << "New faces " << sizeStep[i][j] <<endl;
                     }
                     //                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
@@ -2686,7 +2687,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 }
                 fclose(texcmds_fp);
                 string texcmd="tex.py";
-                shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,NULL,std::min(4,num_threads));
+                shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,NULL,num_threads);
                 if(!no_tex)
                     sysres=system("./tex.py");
 

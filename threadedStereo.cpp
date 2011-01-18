@@ -2900,7 +2900,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
                             "chmod 777 mesh-regen-tex\n"
                             "cd mesh-regen-tex\n"
-                            "$BASEPATH/poster/poster --color 1.0 1.0 1.0 --inactive --tilesize %d %d --finalsize %d %d --enable-output-heightmap --enable-output-poster --depth --origin %.18g %.18g --poster poster.tif --heightmap height.tif ../mesh/lod/twostep.%s\n"
+                            "$BASEPATH/poster/poster --color 1.0 1.0 1.0 --inactive --tilesize %d %d --finalsize %d %d --enable-output-heightmap --enable-output-poster --depth --origin %.18g %.18g --poster poster.tif --heightmap height.tif ../real.%s\n"
 
                             ,proj_tex_size,proj_tex_size,proj_tex_size*poster_tiles,proj_tex_size*poster_tiles,latOrigin,longOrigin,OSG_EXT);/*recon_config_file_name.c_str(), recon_config_file_name.c_str(),proj_tex_size,stereo_calib_file_name.c_str(),dicedir,
                   "mesh-regen-tex/",dicedir);*/

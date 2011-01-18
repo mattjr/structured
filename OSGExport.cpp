@@ -370,7 +370,7 @@ osg::ref_ptr<osg::Image>OSGExporter::cacheImage(IplImage *img,string name,int te
 				  IPL_DEPTH_8U,3);
 
   if(img && tex_img)
-    cvResize(img,tex_img);
+    cvResize(img,tex_img,CV_INTER_AREA);
   else
     printf("Invalid Images\n");
 

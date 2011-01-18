@@ -101,7 +101,7 @@ int main(int argc ,char**argv){
  //   int FinalSize=FinalSizePer*mesh.fn;
     TriEdgeCollapseQuadricTexParameter &qparams = MyTriEdgeCollapseQTex::Params() ;
     MyTriEdgeCollapseQTex::SetDefaultParams();
-    qparams.QualityThr  =.3;
+    qparams.QualityThr  =.5;
     qparams.QualityCheck=true;
     float TargetError=numeric_limits<float>::max();
     bool CleaningFlag =false;

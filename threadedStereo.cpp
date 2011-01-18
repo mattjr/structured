@@ -2619,7 +2619,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
                 if(!no_split)
                     sysres=system("./split.py");
-
+                double minFrac=0.05;
                 std::vector<int> numFaces(vrip_cells.size(),0);
                 std::vector<double> resFrac(vrip_cells.size(),0);
                 std::vector<double> cur_res(vrip_cells.size(),0);
@@ -2662,7 +2662,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             continue;
                         }
                         double newRes=(cur_res[i]+(vpblod-j)*resFrac[i]);
-                        sizeStep[i][j]= numFaces[i]/(pow(2,vpblod-j));
+                        sizeStep[i][j]= std::max(numFaces[i]/(pow(2,vpblod-j)),(numFaces[i]*minFrac));
                                         //vrip_cells[i].bounds.area()/newRes;
                         OSG_ALWAYS << "Level " << j << "Res " <<  newRes << "Orig Faces " << numFaces[i] << "New faces " << sizeStep[i][j] <<endl;
                     }

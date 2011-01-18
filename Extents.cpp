@@ -284,7 +284,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
     std::vector<osg::ref_ptr<osg::Image> > texture_images= _atlasGen->getImages();
     unsigned int a=v->size();
     unsigned int b=texCoordsArray->size();
-    printf("%d != %d\n",a,(int)verts.size());
+    //printf("%d != %d\n",a,(int)verts.size());
     if(a != 0)
         assert(a == verts.size());
     assert(a == b);
@@ -794,7 +794,7 @@ osg::Node* MyDestinationTile::createScene()
             int start_pow=9;
             tex_size=1024;//log2 = 10
             int leveloffset=(_hintNumLevels-_level);
-            printf("level offset %d level %d\n",leveloffset,_level);
+            //printf("level offset %d level %d\n",leveloffset,_level);
             tex_size=pow(2,start_pow-leveloffset);
             tex_size=max(tex_size,8);
             memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
@@ -803,7 +803,7 @@ osg::Node* MyDestinationTile::createScene()
             _atlasGen->loadTextureFiles(tex_size);
 
             //  log(osg::NOTICE, "   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
-            printf("   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
+         //   printf("   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
 
             //printf("tile Level %d texure level size %d\n",_level,_atlasGen->getDownsampleSize(levelToTextureLevel[_level]));
             int cnt=0;
@@ -836,11 +836,11 @@ osg::Node* MyDestinationTile::createScene()
                 }
                 addNodeToScene(itr->get());
             }
-            idmap_t allIds=calcAllIds(v);
+           /* idmap_t allIds=calcAllIds(v);
             numtex=allIds.size();
             memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
-            printf("   dst2: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
-
+            //printf("   dst2: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
+*/
             OSG_INFO<< "Number of coords "<< texCoords->size() << endl;
             if(_createdScene){
                 osgUtil::Optimizer::MergeGeodesVisitor visitor;

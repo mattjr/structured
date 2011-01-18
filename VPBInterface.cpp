@@ -72,7 +72,7 @@ vector<osg::KdTree*> trees;
     m->setNumReadThreadsToCoresRatio(1.5);
     m->setNumWriteThreadsToCoresRatio(1.5);
     //m->setCompressionMethod(vpb::BuildOptions::RGB_S3TC_DXT1);
-    m->setRadiusToMaxVisibleDistanceRatio(7.0);
+    m->setRadiusToMaxVisibleDistanceRatio(10);
 
     m->setDestinationName("real.ive");
 

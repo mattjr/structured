@@ -71,8 +71,8 @@ vector<osg::KdTree*> trees;
     m->_cachedDirs=cachedDirs;
     m->setNumReadThreadsToCoresRatio(1.5);
     m->setNumWriteThreadsToCoresRatio(1.5);
-    //m->setCompressionMethod(vpb::BuildOptions::RGB_S3TC_DXT1);
-    m->setRadiusToMaxVisibleDistanceRatio(10);
+    m->setCompressionMethod(vpb::BuildOptions::NVTT);
+    m->setRadiusToMaxVisibleDistanceRatio(7);
 
     m->setDestinationName("real.ive");
 

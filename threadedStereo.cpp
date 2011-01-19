@@ -1715,7 +1715,7 @@ int main( int argc, char *argv[ ] )
     fprintf(rerunfp,"#!/bin/bash\n");
     for(int i=0; i < argc; i++)
         fprintf(rerunfp,"%s ",argv[i]);
-    fprintf(rerunfp,"\n");;
+    fprintf(rerunfp," $*\n");;
     fchmod(fileno(rerunfp),0777);
     fclose(rerunfp);
     //

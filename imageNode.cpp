@@ -77,15 +77,22 @@ void computeViewMatrix( osg::Camera* camera, const osg::Vec3d& eye, const osg::V
     matrix.preMult( osg::Matrixd::rotate( hpr[2], 0.0, 0.0, 1.0) );
     camera->setViewMatrix( osg::Matrixd::inverse(matrix) );
 }
-
+osg::Matrix getToScreenMatrix(  osg::ref_ptr< osg::Camera > camera )
+{
+    return osg::Matrix( camera->getViewMatrix() * camera->getProjectionMatrix() * camera->getViewport()->computeWindowMatrix() );
+}
+osg::Matrix getFromScreenMatrix(  osg::ref_ptr< osg::Camera > camera )
+{
+    return osg::Matrix::inverse( camera->getViewMatrix() * camera->getProjectionMatrix() * camera->getViewport()->computeWindowMatrix() );
+}
 /* The main entry */
-int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image)
+int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScreen,const osg::Vec2 &texSize)
 {
     // Poster arguments
     bool activeMode = false;
     bool outputPoster = true, outputTiles = false;
     int tileWidth = 512, tileHeight = 512;
-    int posterWidth = 512, posterHeight = 512;
+    int posterWidth = texSize.x(), posterHeight = texSize.y();
     std::string posterName = "poster.bmp", extName = "bmp";
     osg::Vec4 bgColor(0.2f, 0.2f, 0.6f, 1.0f);
     osg::Camera::RenderTargetImplementation renderImplementation = osg::Camera::FRAME_BUFFER_OBJECT;
@@ -171,7 +178,8 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image)
     {
         osg::Camera* camera = viewer.getCamera();
         computeViewMatrix( camera, eye, hpr );
-
+        camera->setProjectionMatrixAsOrtho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
+        toScreen=getToScreenMatrix(camera);
         osg::ref_ptr<CustomRenderer> renderer = new CustomRenderer( camera );
         camera->setRenderer( renderer.get() );
         viewer.setThreadingModel( osgViewer::Viewer::SingleThreaded );
@@ -200,112 +208,6 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image)
     }
     return 0;
 
-#if 0
-    // Poster arguments
-    bool activeMode = false;
-    bool outputPoster = true, outputTiles = false;
-    int tileWidth = 512, tileHeight = 512;
-    int posterWidth = tileWidth, posterHeight = tileHeight;
-    std::string posterName = "poster.bmp", extName = "bmp";
-    osg::Vec4 bgColor(0.2f, 0.2f, 0.6f, 1.0f);
-    osg::Camera::RenderTargetImplementation renderImplementation = osg::Camera::FRAME_BUFFER_OBJECT;
 
-
-    // Create camera for rendering tiles offscreen. FrameBuffer is recommended because it requires less memory.
-    osg::ref_ptr<osg::Camera> camera = new osg::Camera;
-    camera->setClearColor( bgColor );
-    camera->setClearMask( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
-    camera->setRenderOrder( osg::Camera::PRE_RENDER );
-    camera->setRenderTargetImplementation( renderImplementation );
-    camera->setViewport( 0, 0, tileWidth, tileHeight );
-    camera->addChild( scene );
-
-    // Set the printer
-    osg::ref_ptr<PosterPrinter> printer = new PosterPrinter;
-    printer->setTileSize( tileWidth, tileHeight );
-    printer->setPosterSize( posterWidth, posterHeight );
-    printer->setCamera( camera.get() );
-
-    {
-        image = new osg::Image;
-        image->allocateImage( posterWidth, posterHeight, 1, GL_RGBA, GL_UNSIGNED_BYTE );
-        printer->setFinalPoster( image.get() );
-        printer->setOutputPosterName( posterName );
-    }
-
-#if 0
-    // While recording sub-images of the poster, the scene will always be traversed twice, from its two
-    // parent node: root and camera. Sometimes this may not be so comfortable.
-    // To prevent this behaviour, we can use a switch node to enable one parent and disable the other.
-    // However, the solution also needs to be used with care, as the window will go blank while taking
-    // snapshots and recover later.
-    osg::ref_ptr<osg::Switch> root = new osg::Switch;
-    root->addChild( scene, true );
-    root->addChild( camera.get(), false );
-#else
-    osg::ref_ptr<osg::Group> root = new osg::Group;
-    root->addChild( scene );
-  //  root->addChild( camera.get() );
-#endif
-
-    osgViewer::Viewer viewer;
-    viewer.setSceneData( root.get() );
-    viewer.getDatabasePager()->setDoPreCompile( false );
-
-    //if ( renderImplementation==osg::Camera::FRAME_BUFFER )
-    {
-        // FRAME_BUFFER requires the window resolution equal or greater than the to-be-copied size
-        viewer.setUpViewInWindow( 100, 100, tileWidth, tileHeight );
-    }
-
-    if ( activeMode )
-    {
-        //viewer.addEventHandler( new PrintPosterHandler(printer.get()) );
-        viewer.addEventHandler( new osgViewer::StatsHandler );
-        viewer.addEventHandler( new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()) );
-        viewer.setCameraManipulator( new osgGA::TrackballManipulator );
-        viewer.run();
-    }else
-
-    {
-        const osg::BoundingSphere &bs=scene->getBound();
-        osg::Camera* camera = viewer.getCamera();
-        osg::Vec3d eye(bs.center()+osg::Vec3(0,0,3.5*bs.radius()));
-
-        osg::Vec3d hpr( 0.0, 0.0, 0.0 );
-
-        computeViewMatrix( camera, eye, hpr );
-
-
-        osg::ref_ptr<CustomRenderer> renderer = new CustomRenderer( camera );
-        camera->setRenderer( renderer.get() );
-        viewer.setThreadingModel( osgViewer::Viewer::SingleThreaded );
-
-        // Realize and initiate the first PagedLOD request
-        viewer.realize();
-        viewer.frame();
-
-        printer->init( camera );
-
-        while ( !printer->done() )
-        {
-            viewer.advance();
-
-            // Keep updating and culling until full level of detail is reached
-            renderer->setCullOnly( true );
-            while ( viewer.getDatabasePager()->getRequestsInProgress() )
-            {
-                viewer.updateTraversal();
-                viewer.renderingTraversals();
-            }
-
-            renderer->setCullOnly( false );
-            printer->frame( viewer.getFrameStamp(), viewer.getSceneData() );
-            viewer.renderingTraversals();
-        }
-    }
-    return 0;
-#endif
 }
 

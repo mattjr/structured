@@ -95,7 +95,7 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScree
     int posterWidth = texSize.x(), posterHeight = texSize.y();
     std::string posterName = "poster.bmp", extName = "bmp";
     osg::Vec4 bgColor(0.2f, 0.2f, 0.6f, 1.0f);
-    osg::Camera::RenderTargetImplementation renderImplementation = osg::Camera::FRAME_BUFFER_OBJECT;
+    osg::Camera::RenderTargetImplementation renderImplementation =  osg::Camera::FRAME_BUFFER_OBJECT;
 
 
 
@@ -158,12 +158,12 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScree
     if ( renderImplementation==osg::Camera::FRAME_BUFFER )
     {
         // FRAME_BUFFER requires the window resolution equal or greater than the to-be-copied size
-        viewer.setUpViewInWindow( 100, 100, tileWidth, tileHeight );
+        viewer.setUpViewInWindow( 200, 200, tileWidth, tileHeight );
     }
     else
     {
         // We want to see the console output, so just render in a window
-        viewer.setUpViewInWindow( 100, 100, 800, 600 );
+        viewer.setUpViewInWindow( 200, 200, tileWidth, tileHeight );
     }
 
     if ( activeMode )

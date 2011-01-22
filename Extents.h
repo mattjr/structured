@@ -130,12 +130,14 @@ namespace vpb
 
     class MyCompositeDestination : public CompositeDestination{
     public:
-        MyCompositeDestination(osg::CoordinateSystemNode* cs, const GeospatialExtents& extents):
-                CompositeDestination(cs, extents){}
+        MyCompositeDestination(osg::CoordinateSystemNode* cs, const GeospatialExtents& extents,bool useReImage):
+                CompositeDestination(cs, extents),_useReImage(useReImage){}
         osg::Node* createPagedLODScene();
         osg::Node* createSubTileScene();
         void unrefSubTileData();
         void unrefLocalData();
+        bool _useReImage;
+        osg::Geode *convertModel(osg::Group *group);
 
 
         typedef std::vector< osg::ref_ptr<MyDestinationTile> > MyTileList;
@@ -171,7 +173,7 @@ class MyDataSet :  public DataSet
          const Camera_Calib &_calib;
          MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
          bool _useTextureArray;
-
+         bool _useReImage;
 };
 
 }

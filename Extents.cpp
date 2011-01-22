@@ -38,7 +38,7 @@
 #include <vpb/FilePathManager>
 #include <vpb/TextureUtils>
 #include <vpb/ShapeFilePlacer>
-
+#include "PosterPrinter.h"
 // GDAL includes
 #include <gdal_priv.h>
 #include <ogr_spatialref.h>
@@ -67,7 +67,7 @@ void MyDataSet::init()
     _numTextureLevels = 1;
 
     _newDestinationGraph = false;
-
+    _useReImage=true;
 }
 class CollectClusterCullingCallbacks : public osg::NodeVisitor
 {
@@ -422,13 +422,23 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
 
         MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(t);
 
-        return myt?myt->createScene(): 0;
+        osg::Node *node= myt?myt->createScene(): 0;
+        if(_useReImage && node){
+            return convertModel(node->asGroup());
+        }else{
+            return node;
+        }
     }
     if (_tiles.empty() && _children.size()==1)  {
         CompositeDestination *c=_children.front();
         MyCompositeDestination *child=dynamic_cast<MyCompositeDestination*>(c);
-        if(child)return child->createPagedLODScene();
-        else return 0;}
+        if(child){
+            if(_useReImage)
+                return convertModel(child->createPagedLODScene()->asGroup());
+            else
+                return child->createPagedLODScene();
+        }else return 0;
+    }
 
     if (_type==GROUP)
     {
@@ -491,7 +501,12 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
     float farDistance = _dataSet->getMaximumVisibleDistanceOfTopLevel();
     if (tileNodes.size()==1)
     {
-        pagedLOD->addChild(tileNodes.front());
+        if(_useReImage){
+            osg::Geode *retex=convertModel(tileNodes.front()->asGroup());
+            pagedLOD->addChild(retex);
+        }else{
+            pagedLOD->addChild(tileNodes.front());
+        }
     }
     else if (tileNodes.size()>1)
     {
@@ -502,7 +517,12 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
         {
             group->addChild(*itr);
         }
-        pagedLOD->addChild(group);
+        if(_useReImage){
+            osg::Geode *retex=convertModel(group);
+            pagedLOD->addChild(retex);
+        }else{
+            pagedLOD->addChild(group);
+        }
     }
 
 
@@ -803,7 +823,7 @@ osg::Node* MyDestinationTile::createScene()
             _atlasGen->loadTextureFiles(tex_size);
 
             //  log(osg::NOTICE, "   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
-         //   printf("   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
+            //   printf("   dst: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
 
             //printf("tile Level %d texure level size %d\n",_level,_atlasGen->getDownsampleSize(levelToTextureLevel[_level]));
             int cnt=0;
@@ -836,7 +856,7 @@ osg::Node* MyDestinationTile::createScene()
                 }
                 addNodeToScene(itr->get());
             }
-           /* idmap_t allIds=calcAllIds(v);
+            /* idmap_t allIds=calcAllIds(v);
             numtex=allIds.size();
             memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
             //printf("   dst2: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
@@ -949,7 +969,7 @@ MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int c
 
     }
 
-    MyCompositeDestination* destinationGraph = new MyCompositeDestination(_intermediateCoordinateSystem.get(),extents);
+    MyCompositeDestination* destinationGraph = new MyCompositeDestination(_intermediateCoordinateSystem.get(),extents,_useReImage);
 
     if (currentLevel==0) _destinationGraph = destinationGraph;
 
@@ -1369,7 +1389,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
             tq->addImagesToAtlasGen(allIds);
             int level=tile->_level;
             int total=tq->_atlasGen._totalImageList.size();
-          //  printf("%d %d %d %d 0x%x AAAAAA\n",level,total,tile->_tileX,tile->_tileY,(long int)&(tq->_atlasGen));
+            //  printf("%d %d %d %d 0x%x AAAAAA\n",level,total,tile->_tileX,tile->_tileY,(long int)&(tq->_atlasGen));
         }
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_modelMutex);
 

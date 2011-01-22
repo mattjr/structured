@@ -28,7 +28,8 @@
 #include <osgViewer/ViewerEventHandlers>
 #include <iostream>
 #include "PosterPrinter.h"
-
+#include "Extents.h"
+#include <vpb/TextureUtils>
 
 /* CustomRenderer: Do culling only while loading PagedLODs */
 class CustomRenderer : public osgViewer::Renderer
@@ -77,13 +78,13 @@ void computeViewMatrix( osg::Camera* camera, const osg::Vec3d& eye, const osg::V
     matrix.preMult( osg::Matrixd::rotate( hpr[2], 0.0, 0.0, 1.0) );
     camera->setViewMatrix( osg::Matrixd::inverse(matrix) );
 }
-osg::Matrix getToScreenMatrix(  osg::ref_ptr< osg::Camera > camera )
+osg::Matrix getToScreenMatrix(  osg::ref_ptr< osg::Camera > camera,osg::Vec2 size )
 {
-    return osg::Matrix( camera->getViewMatrix() * camera->getProjectionMatrix() * camera->getViewport()->computeWindowMatrix() );
+    return osg::Matrix( camera->getViewMatrix() * camera->getProjectionMatrix() *( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*size.x(),0.5*size.y(),0.5f)));//camera->getViewport()->computeWindowMatrix() );
 }
-osg::Matrix getFromScreenMatrix(  osg::ref_ptr< osg::Camera > camera )
+osg::Matrix getFromScreenMatrix(  osg::ref_ptr< osg::Camera > camera,osg::Vec2 size  )
 {
-    return osg::Matrix::inverse( camera->getViewMatrix() * camera->getProjectionMatrix() * camera->getViewport()->computeWindowMatrix() );
+    return osg::Matrix::inverse( camera->getViewMatrix() * camera->getProjectionMatrix() *( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*size.x(),0.5*size.y(),0.5f)));
 }
 /* The main entry */
 int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScreen,const osg::Vec2 &texSize)
@@ -179,7 +180,7 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScree
         osg::Camera* camera = viewer.getCamera();
         computeViewMatrix( camera, eye, hpr );
         camera->setProjectionMatrixAsOrtho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
-        toScreen=getToScreenMatrix(camera);
+        toScreen=getToScreenMatrix(camera,texSize);
         osg::ref_ptr<CustomRenderer> renderer = new CustomRenderer( camera );
         camera->setRenderer( renderer.get() );
         viewer.setThreadingModel( osgViewer::Viewer::SingleThreaded );
@@ -208,6 +209,154 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScree
     }
     return 0;
 
+
+}
+
+/* Computing view matrix helpers */
+template<class T>
+class FindTopMostNodeOfTypeVisitor : public osg::NodeVisitor
+{
+public:
+    FindTopMostNodeOfTypeVisitor()
+        :   osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        _foundNode(0)
+    {}
+
+    void apply( osg::Node& node )
+    {
+        T* result = dynamic_cast<T*>( &node );
+        if ( result ) _foundNode = result;
+        else traverse( node );
+    }
+
+    T* _foundNode;
+};
+
+template<class T>
+T* findTopMostNodeOfType( osg::Node* node )
+{
+    if ( !node ) return 0;
+
+    FindTopMostNodeOfTypeVisitor<T> fnotv;
+    node->accept( fnotv );
+    return fnotv._foundNode;
+}
+
+osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &toScreen,const osg::Vec2 &size){
+    osg::Vec3 tc=vert*toScreen;
+    tc.x()/=size.x();
+    tc.y()/=size.y();
+    return osg::Vec2(tc.x(),tc.y());
+}
+
+
+osg::Geode *vpb::MyCompositeDestination::convertModel(osg::Group *group){
+osg::ref_ptr<osg::Image> image;
+
+    osg::Vec2 texSize(2048,2048);
+
+    osg::Matrix toScreen;
+    osg::Vec2Array *texCoord=new osg::Vec2Array();
+    osg::Geometry *newGeom = new osg::Geometry;
+   // osg::Group *group= findTopMostNodeOfType<osg::Group>(model);
+    osg::Vec3Array *newVerts= new osg::Vec3Array;
+    osg::DrawElementsUInt* newPrimitiveSet = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
+    osg::Geode *newGeode=new osg::Geode;
+    if(group->getNumChildren() == 0)
+        return newGeode;
+    for(int i=0; i< group->getNumChildren(); i++){
+
+        osg::Group *group2  = dynamic_cast< osg::Group*>(group->getChild(i));
+      osg::Geode *geode;
+        if(group2)
+           geode=group2->getChild(0)->asGeode();
+        else
+            geode = dynamic_cast< osg::Geode*>(group->getChild(i));
+
+        osg::Drawable *drawable=geode->getDrawable(0);
+        osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+        osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+        osg::DrawElementsUInt* primitiveSet = dynamic_cast<osg::DrawElementsUInt*>(geom->getPrimitiveSet(0));
+        int offset=newVerts->size();
+        if(!verts || !primitiveSet)
+            continue;
+        for(int j=0; j< (int)verts->size(); j++){
+            newVerts->push_back(verts->at(j));
+        }
+        for(int j=0; j< (int)primitiveSet->getNumIndices(); j++){
+            newPrimitiveSet->addElement(offset+primitiveSet->getElement(j));
+        }
+
+    }
+
+    printf("%d\n",newVerts->size());
+    render(group,image,toScreen,texSize);
+    for(int j=0; j< (int)newVerts->size(); j++){
+        /// std::cout <<calcCoordReproj(newVerts->at(j),toScreen,texSize) << std::endl;
+
+        texCoord->push_back(calcCoordReproj(newVerts->at(j),toScreen,texSize));
+    }
+    for(int j=0; j< (int)newPrimitiveSet->getNumIndices(); j++){
+        if(newPrimitiveSet->getElement(j) < 0 || newPrimitiveSet->getElement(j) > newVerts->size() ){
+            printf("ASDADASDASDASDADS\n");
+            exit(-1);
+        }
+    }
+    printf("%d %d\n",newPrimitiveSet->getNumIndices(),        newPrimitiveSet->getNumIndices()/3);
+
+
+    newGeom->setTexCoordArray(0,texCoord);
+    newGeom->setVertexArray(newVerts);
+    newGeom->addPrimitiveSet(newPrimitiveSet);
+    //newGeom->setUseDisplayList(false);
+
+    newGeode->addDrawable(newGeom);
+    osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(image);
+    texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
+    texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
+    texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
+    texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
+
+    osg::Texture::InternalFormatMode internalFormatMode = osg::Texture::USE_IMAGE_DATA_FORMAT;
+    internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
+    /*  switch(getImageOptions(layerNum)->getTextureType())
+    {
+    case(BuildOptions::RGB_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+    case(BuildOptions::RGBA_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+    case(BuildOptions::RGBA_S3TC_DXT3): internalFormatMode = osg::Texture::USE_S3TC_DXT3_COMPRESSION; break;
+    case(BuildOptions::RGBA_S3TC_DXT5): internalFormatMode = osg::Texture::USE_S3TC_DXT5_COMPRESSION; break;
+    case(BuildOptions::ARB_COMPRESSED): internalFormatMode = osg::Texture::USE_ARB_COMPRESSION; break;
+    case(BuildOptions::COMPRESSED_TEXTURE): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+    case(BuildOptions::COMPRESSED_RGBA_TEXTURE): internalFormatMode = osg::Texture::USE_S3TC_DXT3_COMPRESSION; break;
+    default: break;
+    }
+*/
+    bool compressedImageRequired = (internalFormatMode != osg::Texture::USE_IMAGE_DATA_FORMAT);
+    //  image->s()>=minumCompressedTextureSize && image->t()>=minumCompressedTextureSize &&
+
+    if (/*compressedImageSupported && */compressedImageRequired )
+    {
+        log(osg::NOTICE,"Compressed image");
+
+        bool generateMiMap = true;//getImageOptions(layerNum)->getMipMappingMode()==DataSet::MIP_MAPPING_IMAGERY;
+        bool resizePowerOfTwo = true;//getImageOptions(layerNum)->getPowerOfTwoImages();
+        vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
+
+        log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");
+
+    }
+
+    osg::StateSet *stateset=newGeode->getOrCreateStateSet();
+    stateset->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+    stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+
+    stateset->setDataVariance(osg::Object::STATIC);
+
+    // osg::Vec3 v(1972.38,3932.55,0);
+    //osg::Vec3 v(302.3,334.3,0);
+    //  std::cout << v*toScreen << " " << toScreen<<std::endl;
+    // osgDB::Registry::instance()->writeImage( *image,"ass.png",NULL);
+return newGeode;
 
 }
 

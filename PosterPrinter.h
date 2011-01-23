@@ -4,7 +4,7 @@
 #include <osg/Camera>
 #include <osg/PagedLOD>
 #include <osgUtil/IntersectionVisitor>
-int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScreen,const osg::Vec2 &texSize);
+int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::GraphicsContext &gc,osg::Matrix &toScreen,const osg::Vec4 &sizes);
 osg::Geode *convertModel(osg::Group *group);
 
 /** PosterVisitor: A visitor for adding culling callbacks to newly allocated paged nodes */

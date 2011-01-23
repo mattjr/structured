@@ -30,6 +30,7 @@
 #include "PosterPrinter.h"
 #include "Extents.h"
 #include <vpb/TextureUtils>
+#include <osg/ComputeBoundsVisitor>
 
 /* CustomRenderer: Do culling only while loading PagedLODs */
 class CustomRenderer : public osgViewer::Renderer
@@ -87,13 +88,14 @@ osg::Matrix getFromScreenMatrix(  osg::ref_ptr< osg::Camera > camera,osg::Vec2 s
     return osg::Matrix::inverse( camera->getViewMatrix() * camera->getProjectionMatrix() *( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*size.x(),0.5*size.y(),0.5f)));
 }
 /* The main entry */
-int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScreen,const osg::Vec2 &texSize)
+int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::GraphicsContext &gc,osg::Matrix &toScreen,const osg::Vec4 &sizes)
 {
     // Poster arguments
     bool activeMode = false;
-    bool outputPoster = true, outputTiles = false;
-    int tileWidth = 512, tileHeight = 512;
-    int posterWidth = texSize.x(), posterHeight = texSize.y();
+    bool outputPoster = true;
+    assert(sizes[2]== sizes[3]);
+    int tileWidth = sizes[0], tileHeight = sizes[1];
+    int posterWidth = sizes[2], posterHeight = sizes[3];
     std::string posterName = "poster.bmp", extName = "bmp";
     osg::Vec4 bgColor(0.2f, 0.2f, 0.6f, 1.0f);
     osg::Camera::RenderTargetImplementation renderImplementation =  osg::Camera::FRAME_BUFFER_OBJECT;
@@ -106,6 +108,9 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScree
     const osg::BoundingSphere &bs=scene->getBound();
     osg::Vec3d eye(bs.center()+osg::Vec3(0,0,3.5*bs.radius()));
 
+    osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+    scene->traverse(cbbv);
+    osg::BoundingBox bb = cbbv.getBoundingBox();
 
     if ( !scene )
     {
@@ -155,6 +160,7 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScree
     osgViewer::Viewer viewer;
     viewer.setSceneData( root.get() );
     viewer.getDatabasePager()->setDoPreCompile( false );
+    viewer.getCamera()->setGraphicsContext(&gc);
 
     if ( renderImplementation==osg::Camera::FRAME_BUFFER )
     {
@@ -164,7 +170,9 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScree
     else
     {
         // We want to see the console output, so just render in a window
-        viewer.setUpViewInWindow( 200, 200, tileWidth, tileHeight );
+     //   viewer.setUpViewInWindow( 200, 200, tileWidth, tileHeight );
+        viewer.getCamera()->setViewport(new osg::Viewport(0,0,tileWidth,tileHeight));
+
     }
 
     if ( activeMode )
@@ -179,8 +187,12 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::Matrix &toScree
     {
         osg::Camera* camera = viewer.getCamera();
         computeViewMatrix( camera, eye, hpr );
-        camera->setProjectionMatrixAsOrtho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
-        toScreen=getToScreenMatrix(camera,texSize);
+        osg::Vec3 centeredMin,centeredMax;
+        centeredMin=(bb._min-bb.center());
+        centeredMax=(bb._max-bb.center());
+       // camera->setProjectionMatrixAsOrtho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
+        camera->setProjectionMatrixAsOrtho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
+        toScreen=getToScreenMatrix(camera,osg::Vec2(posterWidth,posterHeight));
         osg::ref_ptr<CustomRenderer> renderer = new CustomRenderer( camera );
         camera->setRenderer( renderer.get() );
         viewer.setThreadingModel( osgViewer::Viewer::SingleThreaded );
@@ -253,7 +265,7 @@ osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &toScreen,cons
 osg::Geode *vpb::MyCompositeDestination::convertModel(osg::Group *group){
 osg::ref_ptr<osg::Image> image;
 
-    osg::Vec2 texSize(2048,2048);
+    osg::Vec4 texSizes(1024,1024,1024,1024);
 
     osg::Matrix toScreen;
     osg::Vec2Array *texCoord=new osg::Vec2Array();
@@ -264,7 +276,7 @@ osg::ref_ptr<osg::Image> image;
     osg::Geode *newGeode=new osg::Geode;
     if(group->getNumChildren() == 0)
         return newGeode;
-    for(int i=0; i< group->getNumChildren(); i++){
+    for(int i=0; i< (int)group->getNumChildren(); i++){
 
         osg::Group *group2  = dynamic_cast< osg::Group*>(group->getChild(i));
       osg::Geode *geode;
@@ -289,12 +301,36 @@ osg::ref_ptr<osg::Image> image;
 
     }
 
-    printf("%d\n",newVerts->size());
-    render(group,image,toScreen,texSize);
+
+
+        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+        traits->x =0;
+        traits->y = 0;
+        traits->width = 1024;
+        traits->height = 1024;
+        traits->windowDecoration = false;
+        traits->doubleBuffer = false;
+        traits->sharedContext = 0;
+        traits->pbuffer = true;
+
+         osg::ref_ptr<osg::GraphicsContext> _gc= osg::GraphicsContext::createGraphicsContext(traits.get());
+
+        if (!_gc)
+        {
+            osg::notify(osg::NOTICE)<<"Failed to create pbuffer, failing back to normal graphics window."<<std::endl;
+
+            traits->pbuffer = false;
+            _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+        }
+
+
+    //printf("%d\n",newVerts->size());
+    render(group,image,*_gc,toScreen,texSizes);
+
     for(int j=0; j< (int)newVerts->size(); j++){
         /// std::cout <<calcCoordReproj(newVerts->at(j),toScreen,texSize) << std::endl;
 
-        texCoord->push_back(calcCoordReproj(newVerts->at(j),toScreen,texSize));
+        texCoord->push_back(calcCoordReproj(newVerts->at(j),toScreen,osg::Vec2(texSizes[2],texSizes[3])));
     }
     for(int j=0; j< (int)newPrimitiveSet->getNumIndices(); j++){
         if(newPrimitiveSet->getElement(j) < 0 || newPrimitiveSet->getElement(j) > newVerts->size() ){
@@ -302,7 +338,7 @@ osg::ref_ptr<osg::Image> image;
             exit(-1);
         }
     }
-    printf("%d %d\n",newPrimitiveSet->getNumIndices(),        newPrimitiveSet->getNumIndices()/3);
+    //printf("%d %d\n",newPrimitiveSet->getNumIndices(),        newPrimitiveSet->getNumIndices()/3);
 
 
     newGeom->setTexCoordArray(0,texCoord);

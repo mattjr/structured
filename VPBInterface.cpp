@@ -72,6 +72,10 @@ vector<osg::KdTree*> trees;
     m->setNumReadThreadsToCoresRatio(1.5);
     m->setNumWriteThreadsToCoresRatio(1.5);
     m->setCompressionMethod(vpb::BuildOptions::NVTT);
+   // m->setCompressionMethod(vpb::BuildOptions::GL_DRIVER);
+    vpb::ImageOptions *imageOptions = new vpb::ImageOptions();
+    imageOptions->setTextureType(vpb::ImageOptions::RGBA);
+    m->setLayerImageOptions(0,imageOptions);
     m->setRadiusToMaxVisibleDistanceRatio(7);
 
     m->setDestinationName("real.ive");

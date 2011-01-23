@@ -290,7 +290,7 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
             recordImages();
             if ( _finalPoster.valid() )
             {
-                std::cout << "Writing final result to file..." << std::endl;
+                OSG_INFO << "Writing final result to file..." << std::endl;
                 osgDB::writeImageFile( *_finalPoster, _outputPosterName );
             }
             
@@ -299,7 +299,7 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
             _visitor->clearNames();
             
             _isFinishing = false;
-            std::cout << "Recording images finished." << std::endl;
+            OSG_INFO << "Recording images finished." << std::endl;
         }
     }
     
@@ -318,7 +318,7 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
             
             if ( _camera.valid() )
             {
-                std::cout << "Binding sub-camera " << _currentRow << "_" << _currentColumn
+               OSG_INFO << "Binding sub-camera " << _currentRow << "_" << _currentColumn
                           << " to image..." << std::endl;
                 bindCameraToImage( _camera.get(), _currentRow, _currentColumn );
                 if ( _currentColumn<_tileColumns-1 )

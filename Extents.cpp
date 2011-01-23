@@ -1387,8 +1387,8 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
 
             map<SpatialIndex::id_type,int> allIds=calcAllIds(new_ids);//tile->texCoordIDIndexPerModel[root.get()]);
             tq->addImagesToAtlasGen(allIds);
-            int level=tile->_level;
-            int total=tq->_atlasGen._totalImageList.size();
+            //int level=tile->_level;
+            //int total=tq->_atlasGen._totalImageList.size();
             //  printf("%d %d %d %d 0x%x AAAAAA\n",level,total,tile->_tileX,tile->_tileY,(long int)&(tq->_atlasGen));
         }
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_modelMutex);

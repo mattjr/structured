@@ -32,7 +32,7 @@ bool writeCached(const std::string &outfilename,const std::string  sha2hash,osg:
             float b=texCoords->at(i)[j];
             fwrite((char*)&b,1,sizeof(float),fp);
         }
-       // printf("%f %f\n",texCoords[0]->at(i)[0],texCoords[0]->at(i)[1]);
+        // printf("%f %f\n",texCoords[0]->at(i)[0],texCoords[0]->at(i)[1]);
 
     }
     return true;
@@ -44,10 +44,10 @@ bool loadCached(const std::string &file,osg::Vec4Array *ids,osg::Vec2Array *texC
         fprintf(stderr, "Can't read file %s\n",file.c_str());
         return -1;
     }
-char meshHash[1024];
-int numPts;
-int a;
-float b;
+    char meshHash[1024];
+    int numPts;
+    int a;
+    float b;
     fscanf(fp,"%s\n",meshHash);
     fscanf(fp,"%d\n",&numPts);
     printf("Num pts %d\n",numPts);
@@ -62,11 +62,11 @@ float b;
             fread((char*)&b,1,sizeof(float),fp);
             tex[j]=b;
         }
-    ids->push_back(id);
-    texCoords->push_back(tex);
-   // printf("%f %f %f %f\n",id[0],id[1],id[2],id[3]);
+        ids->push_back(id);
+        texCoords->push_back(tex);
+        // printf("%f %f %f %f\n",id[0],id[1],id[2],id[3]);
 
-    //printf("%f %f\n",tex[0],tex[1]);
+        //printf("%f %f\n",tex[0],tex[1]);
 
     }
     return true;
@@ -88,7 +88,7 @@ std::string getHash(std::string mf){
     }
     fclose(fp);
     mySha2.End();
-return mySha2.StringHash();
+    return mySha2.StringHash();
 }
 
 int checkCached(std::string mf,std::string cachedloc,std::string &sha2hash){
@@ -213,7 +213,7 @@ double TexturingQuery::getDistToCenter(osg::Vec3 v, TexturedSource::ProjectionCa
 }
 
 
-bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Array* texCoordsArray,
+bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord &texCoordsArray,
                                          const osg::PrimitiveSet& prset, const osg::Vec3Array &verts){
     int numIdx=prset.getNumIndices();
     osg::Timer_t before_computeMax = osg::Timer::instance()->tick();
@@ -241,8 +241,10 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
         }
     }
     camIdxArr->resize(verts.size(),osg::Vec4(-1,-1,-1,-1));
-    if(texCoordsArray)
-        texCoordsArray->resize(verts.size());
+    for(int f=0; f < (int)texCoordsArray.size() && f < maxNumTC; f++){
+        if(texCoordsArray[f])
+            texCoordsArray[f]->resize(verts.size());
+    }
     //multimap<unsigned int, int> vert_reproj;
 
     for(int i=0; i<numIdx-2; i+=3){
@@ -267,10 +269,14 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Arra
                 }
 
             }else*/{
-             //   vert_reproj.insert(make_pair<unsigned int, int >(prset.index(i+k),1));
+                //   vert_reproj.insert(make_pair<unsigned int, int >(prset.index(i+k),1));
                 camIdxArr->at(prset.index(i+k))=camIdx;
-                if(texCoordsArray && d.size()) {
-                    texCoordsArray->at(prset.index(i+k))=convertToUV(reprojectPt(_source->_cameras[d[0].id].m,verts[tri_v[k]]));
+
+                for(int f=0; f <(int)d.size() && f<maxNumTC; f++){
+                    if(texCoordsArray[f]) {
+                        osg::Vec2 tc=convertToUV(reprojectPt(_source->_cameras[d[f].id].m,verts[tri_v[k]]));
+                        texCoordsArray[f]->at(prset.index(i+k))=osg::Vec3(tc[0],tc[1],-1);
+                    }
                 }
             }
         }
@@ -306,8 +312,8 @@ bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
     }
 }
 void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds){
-//cout << "Adding " << allIds.size() <<  endl;/
-//printf("0x%x\n",(int)this);
+    //cout << "Adding " << allIds.size() <<  endl;/
+    //printf("0x%x\n",(int)this);
     std::vector<std::pair<SpatialIndex::id_type,string> > files(allIds.size());
     map<SpatialIndex::id_type,int>::const_iterator end = allIds.end();
     for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
@@ -318,6 +324,7 @@ void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds){
     }
 
     _atlasGen.addSources(files);
+    //_atlasGen.setAllID(allIds);
 }
 
 
@@ -448,7 +455,7 @@ void addDups(osg::Geode *geode){
 }
 
 bool TexturingQuery::checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCoords){
-        assert(ids != NULL && texCoords != NULL);
+    assert(ids != NULL && texCoords != NULL);
     string hash;
     string cachedfile=_source->tex_cache_dir+osgDB::getNameLessExtension(osgDB::getSimpleFileName(_source->getFileName()))+".txt";
     if(checkCached(_source->getFileName(),cachedfile,hash) == 1){
@@ -458,9 +465,9 @@ bool TexturingQuery::checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCo
         loadCached(cachedfile,ids,texCoords);
         map<SpatialIndex::id_type,int> allIds=calcAllIds(ids);
         addImagesToAtlasGen(allIds);
-       // OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_tile->_texCoordMutex);
+        // OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_tile->_texCoordMutex);
 
-      //  _tile->texCoordIDIndexPerModel.push_back(ids);
+        //  _tile->texCoordIDIndexPerModel.push_back(ids);
         //_tile->texCoordsPerModel.push_back(texCoords);
         return true;
     }
@@ -491,7 +498,7 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
             continue;
         }
         OSG_INFO << "\tModel Size: "<< verts->size()<<endl;
-     /*   if(checkCached && checkAndLoadCache())
+        /*   if(checkCached && checkAndLoadCache())
             return true;
 */
 
@@ -499,7 +506,11 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
         osg::Geometry::PrimitiveSetList::iterator itr;
         osg::ref_ptr<osg::Vec4Array> v= new osg::Vec4Array;
 
-        osg::ref_ptr<osg::Vec2Array> texCoords=new osg::Vec2Array;
+        TexBlendCoord texCoords(4);
+            texCoords[0]=new osg::Vec3Array;
+            texCoords[1]=new osg::Vec3Array;
+            texCoords[2]=new osg::Vec3Array;
+            texCoords[3]=new osg::Vec3Array;
 
         osg::ref_ptr<osg::StateSet> stateset;
         bool projectValid=false;

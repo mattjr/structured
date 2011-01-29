@@ -2438,7 +2438,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
         fclose(diced_fp);
         // int lodPick[]={0,0,0,0,1,1,1,1,2,2};
         std::vector<std::vector<string> > datalist_lod;
-        for(int lod=0; lod < vpblod; lod ++){
+        for(int lod=0; lod <= vpblod; lod ++){
             std::vector<string> level;
             if(!no_quadmerge){
                 for(int i=0; i <(int)quad_cells.size(); i++){

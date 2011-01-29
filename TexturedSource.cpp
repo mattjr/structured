@@ -32,6 +32,16 @@ TexturedSource::TexturedSource(Type type, const std::string& filename,const std:
     }else {
         OSG_INFO << "The stucture seems O.K." << std::endl;
     }
+    ids=new osg::Vec4Array;
+
+
+    tex.resize(4);
+   // for(int f=0; tex.size(); f++)
+        tex[0]=new osg::Vec3Array;
+        tex[1]=new osg::Vec3Array;
+
+        tex[2]=new osg::Vec3Array;
+        tex[3]=new osg::Vec3Array;
 
 }
 TexturedSource::~TexturedSource(){

@@ -11,7 +11,7 @@ class TexPyrAtlas : public osgUtil::Optimizer::TextureAtlasBuilder , public osg:
 public:
     typedef long id_type;
 
-    TexPyrAtlas(texcache_t imgdir,bool doAtlas=true);
+    TexPyrAtlas(texcache_t imgdir);
     void addSources(std::vector<std::pair<id_type ,std::string> > imageList);
     int getAtlasId(id_type id);
     osg::ref_ptr<osg::Image> getImage(int index,int sizeIndex);
@@ -24,6 +24,7 @@ public:
             return _atlasList[i]->_image;
         return NULL;
     }
+    void setAllID(std::map<id_type,int>  allIDs){_allIDs=allIDs;}
     std::vector<osg::ref_ptr<osg::Image> > getImages(void){
     return _images;
     }
@@ -42,7 +43,9 @@ public:
     void computeImageNumberToAtlasMap(void);
 
     std::map<id_type ,std::string> _totalImageList;
-
+    bool _useTextureArray;
+    bool _useAtlas;
+    std::map<id_type,int>  _allIDs;
 protected:
     void buildAtlas();
     std::vector<int> _downsampleSizes;
@@ -72,10 +75,8 @@ protected:
     texcache_t _imgdir;
     std::map<id_type,int> _idToAtlas;
     std::map<id_type,Source*> _idToSource;
-    bool _doAtlas;
     OpenThreads::Mutex _imageListMutex;
 
-    bool _useTextureArray;
 
 
 };

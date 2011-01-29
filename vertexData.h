@@ -43,7 +43,7 @@ namespace ply
         // to set the flag for using inverted face
         void useInvertedFaces() { _invertFaces = true; }
         osg::ref_ptr<osg::Vec4Array>   _texIds;
-        osg::ref_ptr<osg::Vec2Array>   _texCoord;
+        std::vector<osg::ref_ptr<osg::Vec3Array> >   _texCoord;
 
     private:
         // Function which reads all the vertices and colors if color info is

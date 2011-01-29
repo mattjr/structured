@@ -6,7 +6,7 @@
 #include <osg/Geode>
 #include <osg/BoundingBox>
 #include <osg/Geometry>
-
+#include "Clipper.h"
 
 class MyDataStream;
 
@@ -32,7 +32,7 @@ public:
   std::string tex_cache_dir;
   TexturedSource::CameraVector _cameras;
   osg::Vec4Array *ids;
-  osg::Vec2Array *tex;
+  TexBlendCoord  tex;
 
 protected:
     SpatialIndex::IStorageManager* memstore;

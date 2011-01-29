@@ -37,7 +37,7 @@ class CustomRenderer : public osgViewer::Renderer
 {
 public:
     CustomRenderer( osg::Camera* camera )
-    : osgViewer::Renderer(camera), _cullOnly(true)
+        : osgViewer::Renderer(camera), _cullOnly(true)
     {
     }
 
@@ -170,7 +170,7 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::GraphicsContext
     else
     {
         // We want to see the console output, so just render in a window
-     //   viewer.setUpViewInWindow( 200, 200, tileWidth, tileHeight );
+        //   viewer.setUpViewInWindow( 200, 200, tileWidth, tileHeight );
         viewer.getCamera()->setViewport(new osg::Viewport(0,0,tileWidth,tileHeight));
 
     }
@@ -190,7 +190,7 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::GraphicsContext
         osg::Vec3 centeredMin,centeredMax;
         centeredMin=(bb._min-bb.center());
         centeredMax=(bb._max-bb.center());
-       // camera->setProjectionMatrixAsOrtho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
+        // camera->setProjectionMatrixAsOrtho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
         camera->setProjectionMatrixAsOrtho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
         toScreen=getToScreenMatrix(camera,osg::Vec2(posterWidth,posterHeight));
         osg::ref_ptr<CustomRenderer> renderer = new CustomRenderer( camera );
@@ -262,26 +262,29 @@ osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &toScreen,cons
 }
 
 
-osg::Geode *vpb::MyCompositeDestination::convertModel(osg::Group *group){
-osg::ref_ptr<osg::Image> image;
+osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
+    if(!_useReImage)
+        return group;
+    if(group->getNumChildren() == 0)
+        return group;
+    osg::ref_ptr<osg::Image> image;
 
     osg::Vec4 texSizes(1024,1024,1024,1024);
 
     osg::Matrix toScreen;
     osg::Vec2Array *texCoord=new osg::Vec2Array();
     osg::Geometry *newGeom = new osg::Geometry;
-   // osg::Group *group= findTopMostNodeOfType<osg::Group>(model);
+    // osg::Group *group= findTopMostNodeOfType<osg::Group>(model);
     osg::Vec3Array *newVerts= new osg::Vec3Array;
     osg::DrawElementsUInt* newPrimitiveSet = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
     osg::Geode *newGeode=new osg::Geode;
-    if(group->getNumChildren() == 0)
-        return newGeode;
+
     for(int i=0; i< (int)group->getNumChildren(); i++){
 
         osg::Group *group2  = dynamic_cast< osg::Group*>(group->getChild(i));
-      osg::Geode *geode;
+        osg::Geode *geode;
         if(group2)
-           geode=group2->getChild(0)->asGeode();
+            geode=group2->getChild(0)->asGeode();
         else
             geode = dynamic_cast< osg::Geode*>(group->getChild(i));
 
@@ -303,25 +306,25 @@ osg::ref_ptr<osg::Image> image;
 
 
 
-        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-        traits->x =0;
-        traits->y = 0;
-        traits->width = 1024;
-        traits->height = 1024;
-        traits->windowDecoration = false;
-        traits->doubleBuffer = false;
-        traits->sharedContext = 0;
-        traits->pbuffer = true;
+    osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+    traits->x =0;
+    traits->y = 0;
+    traits->width = 1024;
+    traits->height = 1024;
+    traits->windowDecoration = false;
+    traits->doubleBuffer = false;
+    traits->sharedContext = 0;
+    traits->pbuffer = true;
 
-         osg::ref_ptr<osg::GraphicsContext> _gc= osg::GraphicsContext::createGraphicsContext(traits.get());
+    osg::ref_ptr<osg::GraphicsContext> _gc= osg::GraphicsContext::createGraphicsContext(traits.get());
 
-        if (!_gc)
-        {
-            osg::notify(osg::NOTICE)<<"Failed to create pbuffer, failing back to normal graphics window."<<std::endl;
+    if (!_gc)
+    {
+        osg::notify(osg::NOTICE)<<"Failed to create pbuffer, failing back to normal graphics window."<<std::endl;
 
-            traits->pbuffer = false;
-            _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-        }
+        traits->pbuffer = false;
+        _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+    }
 
 
     //printf("%d\n",newVerts->size());
@@ -392,7 +395,9 @@ osg::ref_ptr<osg::Image> image;
     //osg::Vec3 v(302.3,334.3,0);
     //  std::cout << v*toScreen << " " << toScreen<<std::endl;
     // osgDB::Registry::instance()->writeImage( *image,"ass.png",NULL);
-return newGeode;
+    osg::Group *newGroup=new osg::Group;
+    newGroup->addChild(newGeode);
+    return newGroup;
 
 }
 

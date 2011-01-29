@@ -58,7 +58,7 @@ protected:
 
     std::string baseName;
 
-    bool projectAllTriangles(osg::Vec4Array* camIdxArr,osg::Vec2Array* texCoordsArray,
+    bool projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord  &texCoordsArray,
                                              const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
     osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray, int texSizeIdx);
     ProjectsToMap reproj;

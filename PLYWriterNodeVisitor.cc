@@ -86,7 +86,7 @@ private:
 class PrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
     
 public:
-    PrimitiveIndexWriter(std::ostream& fout,osg::Geometry* geo, unsigned int normalIndex, unsigned int lastVertexIndex, unsigned int  lastNormalIndex, unsigned int lastTexIndex,bool textured,osg::Vec4Array *textureID) :
+    PrimitiveIndexWriter(std::ostream& fout,osg::Geometry* geo, unsigned int normalIndex, unsigned int lastVertexIndex, unsigned int  lastNormalIndex, unsigned int lastTexIndex,bool textured,osg::Vec4Array *textureID,std::vector<osg::ref_ptr<osg::Vec3Array> > *textureCoord) :
             osg::PrimitiveIndexFunctor(), 
             _fout(fout),
             _lastVertexIndex(lastVertexIndex),
@@ -97,7 +97,8 @@ public:
             _geo(geo),
             _normalIndex(normalIndex),
             _textured(textured),
-            _textureID(textureID)
+            _textureID(textureID),
+            _textureCoord(textureCoord)
 
     {
     }
@@ -152,25 +153,36 @@ public:
 
             _fout << std::endl;*/
         if(_textured){
-            unsigned char t=2*3;
+            unsigned char t=2*3*4;
             float uv[2];
-            osg::Vec2Array &tex=*((osg::Vec2Array*)_geo->getTexCoordArray(0));
             _fout.write((char *)&t,sizeof(char));
+            for(int f=0; f< _textureCoord->size(); f++){
+                osg::Vec3Array &tex=*(_textureCoord->at(f));
 
-            for(int k=0; k < 3; k++)
                 uv[0]=tex[i1][0];
-            uv[1]=tex[i1][1];
-            _fout.write((char*)uv,sizeof(float)*2);
+                uv[1]=tex[i1][1];
+                _fout.write((char*)uv,sizeof(float)*2);
 
-            uv[0]=tex[i2][0];
-            uv[1]=tex[i2][1];
-            _fout.write((char*)uv,sizeof(float)*2);
+                uv[0]=tex[i2][0];
+                uv[1]=tex[i2][1];
+                _fout.write((char*)uv,sizeof(float)*2);
 
-            uv[0]=tex[i3][0];
-            uv[1]=tex[i3][1];
-            _fout.write((char*)uv,sizeof(float)*2);
-            int texnumber=(int)(*_textureID)[i1][0];
+                uv[0]=tex[i3][0];
+                uv[1]=tex[i3][1];
+                _fout.write((char*)uv,sizeof(float)*2);
+            }
+            //_fout.write((char *)&t,sizeof(char));
+
+            int texnumber=(*_textureID)[i1][0];
             _fout.write((char *)&texnumber,sizeof(int));
+
+            unsigned char p=4*3*1;
+            _fout.write((char *)&p,sizeof(char));
+
+            for(int f=0; f< 12; f++){
+                float id=(float)(*_textureID)[i1][f];
+                _fout.write((char *)&id,sizeof(float));
+            }
         }
 
         // not sure if this is correct?
@@ -352,6 +364,7 @@ private:
     bool _textured;
 
     osg::Vec4Array *_textureID;
+    std::vector<osg::ref_ptr<osg::Vec3Array> > *_textureCoord;
 
 
 
@@ -574,7 +587,7 @@ void PLYWriterNodeVisitor::processGeometry(osg::Geometry* geo, osg::Matrix& m) {
     {
         osg::PrimitiveSet* ps = geo->getPrimitiveSet(i);
         
-        PrimitiveIndexWriter pif(_fout, geo, normalIndex, _lastVertexIndex, _lastNormalIndex, _lastTexIndex,_textured,_textureID);
+        PrimitiveIndexWriter pif(_fout, geo, normalIndex, _lastVertexIndex, _lastNormalIndex, _lastTexIndex,_textured,_textureID,_textureCoord);
         ps->accept(pif);
         
         if(geo->getNormalArray() && geo->getNormalBinding() == osg::Geometry::BIND_PER_PRIMITIVE_SET)
@@ -653,15 +666,13 @@ void PLYWriterNodeVisitor::write_header(void){
     _fout <<"element vertex "<<_total_vertex_count <<std::endl;
     _fout <<"property float x\n";
     _fout <<"property float y\n";
-
     _fout <<"property float z\n";
-
     _fout <<"element face " <<_total_face_count<<std::endl;
-
     _fout <<"property list uchar int vertex_indices\n";
     if(_textured){
         _fout <<"property list uchar float texcoord\n";
         _fout <<"property int texnumber\n";
+        _fout <<"property list uchar float color\n";
     }
 
     _fout <<"end_header\n";

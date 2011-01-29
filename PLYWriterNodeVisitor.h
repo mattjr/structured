@@ -50,7 +50,7 @@
 class PLYWriterNodeVisitor: public osg::NodeVisitor {
 
     public:
-    PLYWriterNodeVisitor(std::ostream& fout, osg::Vec4Array *textureID=NULL) :
+    PLYWriterNodeVisitor(std::ostream& fout, osg::Vec4Array *textureID=NULL,std::vector<osg::ref_ptr<osg::Vec3Array> > *texCoords=NULL) :
             osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN), 
             _fout(fout), 
             _currentStateSet(new osg::StateSet()),
@@ -60,6 +60,7 @@ class PLYWriterNodeVisitor: public osg::NodeVisitor {
 	    _total_vertex_count(0),
             _total_face_count(0),
             _textureID(textureID),
+            _textureCoord(texCoords),
             _textured(textureID != NULL)
         {
 	  //            _fout << "# file written by OpenSceneGraph" << std::endl << std::endl;
@@ -162,6 +163,8 @@ class PLYWriterNodeVisitor: public osg::NodeVisitor {
   int _total_vertex_count;
   int _total_face_count;
   osg::Vec4Array *_textureID;
+  std::vector<osg::ref_ptr<osg::Vec3Array> > *_textureCoord;
+
 bool _textured;
 };
 

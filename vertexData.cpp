@@ -45,7 +45,8 @@ VertexData::VertexData()
     _colors = NULL;
     _normals = NULL;
     _triangles = NULL;
-    _texCoord=NULL;
+    for(int f=0; f< _texCoord.size(); f++)
+        _texCoord[f]=NULL;
     _texIds=NULL;
     
 }
@@ -114,6 +115,8 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces )
         unsigned char   nTex;
         float *texcoord;
         int id;
+        unsigned char   nIds;
+        float*            ids;
     } face;
 
     PlyProperty faceProps[] = 
@@ -122,20 +125,26 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces )
           1, PLY_UCHAR, PLY_UCHAR, offsetof( _Face, nVertices ) },
 { "texcoord", PLY_FLOAT, PLY_FLOAT, offsetof( _Face, texcoord ),
   1, PLY_UCHAR, PLY_UCHAR, offsetof( _Face, nTex ) },
-{ "texnumber", PLY_INT, PLY_INT, offsetof( _Face, id ), 0, 0, 0, 0 }
+{ "texnumber", PLY_INT, PLY_INT, offsetof( _Face, id ), 0, 0, 0, 0 },
+{ "color", PLY_FLOAT, PLY_FLOAT, offsetof( _Face, ids ),
+  1, PLY_UCHAR, PLY_UCHAR, offsetof( _Face, nIds ) }
 
     };
     
     ply_get_property( file, "face", &faceProps[0] );
     ply_get_property( file, "face", &faceProps[1] );
     ply_get_property( file, "face", &faceProps[2] );
+    ply_get_property( file, "face", &faceProps[3] );
 
     
     // If read colors allocate space for color array
     if( 1/*readTex*/ )
     {
-        if(!_texCoord.valid())
-            _texCoord = new osg::Vec2Array;
+        _texCoord.resize(4);
+        for(int f=0; f<_texCoord.size(); f++){
+            if(!_texCoord[f].valid())
+                _texCoord[f] = new osg::Vec3Array;
+        }
 
         if(!_texIds.valid())
             _texIds = new osg::Vec4Array;
@@ -164,14 +173,31 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces )
         _triangles->push_back( face.vertices[ind1]);
         _triangles->push_back( face.vertices[1]);
         _triangles->push_back( face.vertices[ind3] );
-        for(int k=0; k <face.nTex; k+=2)
-            _texCoord->push_back(osg::Vec2(face.texcoord[k],face.texcoord[k+1]));
-        for(int k=0; k<3; k++)
-            _texIds->push_back(osg::Vec4(face.id,-1,-1,-1));
+        MESHASSERT( face.ids != 0 );
+        if( (unsigned int)(face.nIds) != 12 )
+        {
+            free( face.vertices );
+            printf("%d \n",face.nIds);
+
+            throw MeshException( "Error reading PLY file. Encountered a "
+                                 "face which does not have 9 ids." );
+        }
+        for(int k=0,f=0; k <face.nTex; k+=6){
+            _texCoord[f]->push_back(osg::Vec3(face.texcoord[k],face.texcoord[k+1],-1));
+            _texCoord[f]->push_back(osg::Vec3(face.texcoord[k+2],face.texcoord[k+3],-1));
+            _texCoord[f]->push_back(osg::Vec3(face.texcoord[k+4],face.texcoord[k+5],-1));
+         f++;
+        }
+        for(int k=0; k<face.nIds; k+=4){
+            _texIds->push_back(osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]));
+            //cout << (int)face.nIds << " "<<osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]) << endl;
+        }
+
 
         // free the memory that was allocated by ply_get_element
         free( face.vertices );
         free( face.texcoord );
+        free( face.ids );
 
     }
 }
@@ -361,12 +387,12 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
 
 
         // if color info is given set the color array
-        if(_texCoord.valid())
+        /* if(_texCoord.valid())
         {
             geom->setTexCoordArray(0,_texCoord.get());
             //  geom->setColorBinding( osg::Geometry::BIND_PER_VERTEX );
 
-        }
+        }*/
         
         // set flage true to activate the vertex buffer object of drawable
         geom->setUseVertexBufferObjects(true);

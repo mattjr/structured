@@ -15,15 +15,15 @@ varying vec4 normal;
 varying vec3  L, E, H;
 varying vec4 vC;
 attribute vec4 osg_ProjCoord;
-attribute vec2 osg_texCoord;
+//attribute vec2 osg_texCoord1 ;
 
 
 
 void main()
 {
  
-projCord.x=osg_texCoord.x;
-projCord.y=osg_texCoord.y;
+projCord.x=gl_MultiTexCoord0.x;
+projCord.y=gl_MultiTexCoord0.y;
 projCord.z=osg_ProjCoord.x;
 projCord.w=osg_ProjCoord.w;
 

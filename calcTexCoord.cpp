@@ -70,7 +70,8 @@ int main( int argc, char **argv )
             std::cerr << "No drawbables \n";
         }
         texcache_t tmp;
-        TexPyrAtlas atlasGen(tmp,false);
+        TexPyrAtlas atlasGen(tmp);
+        atlasGen._useAtlas=false;
         TexturingQuery *tq=new TexturingQuery(sourceModel,calib->left_calib,atlasGen,true);
         vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(tmp);
 
@@ -79,9 +80,10 @@ int main( int argc, char **argv )
         if(projectSucess){
             //  writeCached(outfilename,sha2hash,tile->texCoordIDIndexPerModel.begin()->second,tile->texCoordsPerModel.begin()->second);
             std::ofstream f(outfilename.c_str());
-            osg::Geometry *geom = dynamic_cast< osg::Geometry*>( geode->getDrawable(0));
-            geom->setTexCoordArray(0,tile->texCoordsPerModel.begin()->second);
-            PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second);
+            //osg::Geometry *geom = dynamic_cast< osg::Geometry*>( geode->getDrawable(0));
+           // for(int f=0; f<tile->texCoordsPerModel.begin()->second.size(); f++)
+            //    geom->setTexCoordArray(f,tile->texCoordsPerModel.begin()->second[f]);
+            PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second));
             model->accept(nv);
         }else
             cerr << "Failed to project\n";

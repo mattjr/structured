@@ -250,7 +250,7 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::Bound
 
 
 
-void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* _texid,osg::Vec2Array *_texcoords, const osg::BoundingBox clipbox,const OverlapMode &mode) const
+void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* _texid,const TexBlendCoord &_texcoords, const osg::BoundingBox clipbox,const OverlapMode &mode) const
 {
     if (node.first<0)
     {
@@ -269,17 +269,18 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
             osg::Vec3 v0 = _vertices[tri.p0];
             osg::Vec3 v1 = _vertices[tri.p1];
             osg::Vec3 v2 = _vertices[tri.p2];
-
-            osg::Vec2 t0 = (*_texcoords)[tri.p0];
-            osg::Vec2 t1 = (*_texcoords)[tri.p1];
-            osg::Vec2 t2 = (*_texcoords)[tri.p2];
-
+            osg::Vec3 t0[maxNumTC],t1[maxNumTC],t2[maxNumTC];
+            for(int f=0; f< maxNumTC; f++){
+                t0[f] = (*_texcoords[f])[tri.p0];
+                t1[f] = (*_texcoords[f])[tri.p1];
+                t2[f] = (*_texcoords[f])[tri.p2];
+            }
             osg::Vec4 id0 = (*_texid)[tri.p0];
             osg::Vec4 id1 = (*_texid)[tri.p1];
             osg::Vec4 id2 = (*_texid)[tri.p2];
-assert(id0[0]  == id1[0] && id0[0] == id2[0]);
+            assert(id0[0]  == id1[0] && id0[0] == id2[0]);
 
-//printf("%f\n",id0[0]);
+            //printf("%f\n",id0[0]);
             int contains=0;
             contains+=clipbox.contains(v0);
             contains+=clipbox.contains(v1);
@@ -344,15 +345,15 @@ assert(id0[0]  == id1[0] && id0[0] == id2[0]);
             _new_triangles->push_back(counter);
             _new_triangles->push_back(counter+1);
             _new_triangles->push_back(counter+2);
-
-            _new_texcoords->push_back(t0);
-            _new_texcoords->push_back(t1);
-            _new_texcoords->push_back(t2);
-
+            for(int f=0; f< maxNumTC; f++){
+                _new_texcoords[f]->push_back(t0[f]);
+                _new_texcoords[f]->push_back(t1[f]);
+                _new_texcoords[f]->push_back(t2[f]);
+            }
             _new_texid->push_back(id0);
             _new_texid->push_back(id1);
             _new_texid->push_back(id2);
-
+assert(_new_texcoords[0]->size() ==  _new_texid->size());
 
         }
     }

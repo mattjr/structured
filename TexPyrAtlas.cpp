@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 using namespace std;
-TexPyrAtlas::TexPyrAtlas(texcache_t imgdir,bool doAtlas):_imgdir(imgdir),_doAtlas(doAtlas),_useTextureArray(false)
+TexPyrAtlas::TexPyrAtlas(texcache_t imgdir):_imgdir(imgdir)
 {
     setMaximumAtlasSize(4096,4096);
     setMargin(0);
@@ -12,8 +12,8 @@ TexPyrAtlas::TexPyrAtlas(texcache_t imgdir,bool doAtlas):_imgdir(imgdir),_doAtla
     _downsampleSizes.push_back(128);
     _downsampleSizes.push_back(32);
     _state = new osg::State;
-
-
+    _useTextureArray=false;
+    _useAtlas=true;
 }
 
 
@@ -26,6 +26,8 @@ void TexPyrAtlas::computeImageNumberToAtlasMap(void){
 }
 
 int TexPyrAtlas::getAtlasId(id_type id){
+    if(!_useAtlas)
+        return id;
     if(_idToAtlas.count(id))
         return _idToAtlas[id];
     return -1;
@@ -60,7 +62,7 @@ void TexPyrAtlas::addSources(std::vector<std::pair<id_type ,std::string> > image
 }
 osg::ref_ptr<osg::Image> TexPyrAtlas::getImage(int index,int sizeIndex){
     osg::ref_ptr<osg::Image> img;
-    if(!_doAtlas){
+    if(!_useAtlas){
         if(index >= 0 && index < (int)_images.size() && _images[index].valid()){
             resizeImage(_images[index].get(),_downsampleSizes[sizeIndex],_downsampleSizes[sizeIndex],img);
         }
@@ -95,8 +97,10 @@ void TexPyrAtlas::loadTextureFiles(int size){
             resizeImage(img,size,size,tmp);
         loc_images.push_back(tmp);
         if(loc_images.back().valid()){
-            if(!_doAtlas) {
+            if(!_useAtlas) {
+                _allIDs[it->first]=_images.size();
                 _images.push_back(loc_images.back());
+
             }else{
                 //texture->setImage(_images[i]);
                 /*   texture->setTextureSize(_downsampleSizes[0],_downsampleSizes[0]);
@@ -118,7 +122,7 @@ void TexPyrAtlas::loadTextureFiles(int size){
         }
     }
 
-    if(_doAtlas){
+    if(_useAtlas){
         buildAtlas();
         computeImageNumberToAtlasMap();
         for(int i=0; i < (int)getNumAtlases(); i++)

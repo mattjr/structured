@@ -50,13 +50,17 @@
 namespace vpb
 {
 
-
+class MyDataSet;
     class MyDestinationTile : public DestinationTile{
     public:
         MyDestinationTile(texcache_t imageDir){
             _atlasGen=new TexPyrAtlas(imageDir);
         _projCoordAlias = AttributeAlias(1, "osg_ProjCoord");
-        _texCoordsAlias = AttributeAlias(15, "osg_texCoord");
+        _texCoordsAlias1 = AttributeAlias(8, "osg_texCoord1");
+        _texCoordsAlias2 = AttributeAlias(9, "osg_texCoord2");
+        _texCoordsAlias3 = AttributeAlias(10, "osg_texCoord3");
+        _texCoordsAlias4 = AttributeAlias(11, "osg_texCoord4");
+
         levelToTextureLevel[0]=2;
         levelToTextureLevel[1]=2;
         levelToTextureLevel[2]=1;
@@ -67,7 +71,7 @@ namespace vpb
         _hintNumLevels=0;
 
     }
-        osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray,int texSizeIdx);
+        osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  const TexBlendCoord &texCoordsArray,int texSizeIdx);
         std::vector<osg::ref_ptr<osg::Image> >getRemappedImages(idmap_t allIds,int sizeIdx);
         static const int TEXUNIT_ARRAY=0;
         int getTextureSizeForLevel(int level){
@@ -97,18 +101,22 @@ namespace vpb
 
         typedef std::pair<unsigned int, std::string> AttributeAlias;
         std::map< osg::Node * , osg::ref_ptr<osg::Vec4Array > > texCoordIDIndexPerModel;
-        std::map< osg::Node * ,osg::ref_ptr<osg::Vec2Array > > texCoordsPerModel;
+        std::map< osg::Node * ,TexBlendCoord> texCoordsPerModel;
         void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
-        void remapArrayForTexturing(osg::Vec4Array *v,osg::Vec2Array *texCoordsArray,idmap_t allIds);
+        void remapArrayForTexturing(osg::Vec4Array *v,const TexBlendCoord &texCoordsArray,idmap_t allIds);
 
         void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
-                                                            osg::Vec2Array* texCoordsArray,
+                                                            const TexBlendCoord  &texCoordsArray,
                                                             const osg::Vec3Array &verts,int tex_size);
         static const int TEX_UNIT=0;
         void unrefData();
 
         AttributeAlias _projCoordAlias;
-        AttributeAlias _texCoordsAlias;
+        AttributeAlias _texCoordsAlias1;
+        AttributeAlias _texCoordsAlias2;
+        AttributeAlias _texCoordsAlias3;
+        AttributeAlias _texCoordsAlias4;
+
          osg::Node * createScene(void);
          OpenThreads::Mutex _texCoordMutex;
          OpenThreads::Mutex _modelMutex;
@@ -116,6 +124,7 @@ namespace vpb
          std::map<int,int> levelToTextureLevel;
          int _hintTextureNumber;
          int _hintNumLevels;
+         MyDataSet *_mydataSet;
 
     };
     class ClippedCopy{
@@ -137,7 +146,7 @@ namespace vpb
         void unrefSubTileData();
         void unrefLocalData();
         bool _useReImage;
-        osg::Geode *convertModel(osg::Group *group);
+        osg::Group *convertModel(osg::Group *group);
 
 
         typedef std::vector< osg::ref_ptr<MyDestinationTile> > MyTileList;
@@ -163,6 +172,10 @@ class MyDataSet :  public DataSet
         int _run();
         void processTile(MyDestinationTile *tile,TexturedSource *src);
         texcache_t _cachedDirs;
+        bool _useTextureArray;
+        bool _useDisplayLists;
+        bool _useAtlas;
+        bool _useBlending;
 
     protected:
         virtual ~MyDataSet() {}
@@ -172,7 +185,6 @@ class MyDataSet :  public DataSet
          void init();
          const Camera_Calib &_calib;
          MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
-         bool _useTextureArray;
          bool _useReImage;
 };
 

@@ -6,7 +6,7 @@
 #include "vertexData.h"
 using namespace std;
 #if 1
-bool toVert(osg::Node *node,osg::Vec2Array *texcoord,osg::Vec4Array *ids,osg::Vec2Array *newTexCoord,osg::Vec4Array *newIds){
+bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,TexBlendCoord &newTexCoord,osg::Vec4Array *newIds){
     int vertsAdded=0;
 
     osg::Geode *geode=dynamic_cast<osg::Geode*>(node);
@@ -21,10 +21,16 @@ bool toVert(osg::Node *node,osg::Vec2Array *texcoord,osg::Vec4Array *ids,osg::Ve
 
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
         osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
-        osg::Vec2Array *texCoords=static_cast<const osg::Vec2Array*>(geom->getTexCoordArray(0));
+        //osg::Vec2Array *texCoords=static_cast<const osg::Vec2Array*>(geom->getTexCoordArray(0));
+        newTexCoord.resize(4);
+            newTexCoord[0]=new osg::Vec3Array;
+            newTexCoord[1]=new osg::Vec3Array;
+            newTexCoord[2]=new osg::Vec3Array;
+            newTexCoord[3]=new osg::Vec3Array;
 
         newIds->resize(verts->size(),osg::Vec4(-1,-1,-1,-1));
-        newTexCoord->resize(verts->size());
+        for(int f=0; f< maxNumTC; f++)
+            newTexCoord[f]->resize(verts->size());
         if(!verts || !verts->size()){
             OSG_INFO<< "Empty mesh continuing!" <<endl;
             //continue;
@@ -33,7 +39,8 @@ bool toVert(osg::Node *node,osg::Vec2Array *texcoord,osg::Vec4Array *ids,osg::Ve
         OSG_INFO << "\tModel Size: "<< verts->size()<<endl;
         osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
         osg::PrimitiveSet *prim=primitiveSets.begin()->get();
-        assert(texCoords->size() ==prim->getNumIndices() );
+        //printf("%d %d\n",texcoord[0]->size() ,prim->getNumIndices() );
+        assert(texcoord[0]->size() ==prim->getNumIndices() );
         int numIdx=prim->getNumIndices();
         vector<unsigned int>new_list;
         idbackmap_t idmap;
@@ -48,17 +55,19 @@ bool toVert(osg::Node *node,osg::Vec2Array *texcoord,osg::Vec4Array *ids,osg::Ve
                     verts->push_back(v);
                     vertsAdded++;
                     dynamic_cast<osg::DrawElementsUInt*>(prim)->setElement(i+k,newidx);
-                    newTexCoord->push_back(texCoords->at(i+k));
+                    for(int f=0; f< maxNumTC; f++)
+                        newTexCoord[f]->push_back(texcoord[f]->at(i+k));
                     newIds->push_back(ids->at(i+k));
                     continue;
                 }
-                newTexCoord->at(newidx)=texCoords->at(i+k);
+                for(int f=0; f< maxNumTC; f++)
+                newTexCoord[f]->at(newidx)=texcoord[f]->at(i+k);
                 newIds->at(newidx)=ids->at(i+k);
                 new_list.push_back(newidx);
 
             }
         }
-        geom->setTexCoordArray(0,newTexCoord);
+        //geom->setTexCoordArray(0,newTexCoord);
 
     return true;
 }
@@ -96,11 +105,8 @@ vector<osg::KdTree*> trees;
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
             ply::VertexData vertexData;
             osg::Node* model = vertexData.readPlyFile(sourceModel->getFileName().c_str());
-            sourceModel->ids=new osg::Vec4Array;
-            sourceModel->tex=new osg::Vec2Array;
-
-
             toVert(model,vertexData._texCoord,vertexData._texIds,sourceModel->tex,sourceModel->ids);
+            //std::cerr << "aaa " << sourceModel->tex->at(0)->size() << " " << sourceModel->ids->size() <<endl;
             osg::ref_ptr<osg::KdTreeBuilder>  _kdTreeBuilder = osgDB::Registry::instance()->getKdTreeBuilder()->clone();
             model->accept(*_kdTreeBuilder);
             if (model)

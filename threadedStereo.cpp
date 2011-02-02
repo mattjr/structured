@@ -564,7 +564,7 @@ static bool parse_args( int argc, char *argv[ ] )
         even_split= true;
     argp.read("--cellscale",cell_scale );
 
-    for(int i=0; i< vpblod; i++){
+    for(int i=0; i<= vpblod; i++){
         char tmppp[1024];
         int size=lodTexSize[0]/pow(2,i);
         if(size <8)
@@ -2619,12 +2619,13 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
                 if(!no_split)
                     sysres=system("./split.py");
-                double minFrac=0.05;
+                double minFrac=0.02;
                 std::vector<int> numFaces(vrip_cells.size(),0);
                 std::vector<double> resFrac(vrip_cells.size(),0);
                 std::vector<double> cur_res(vrip_cells.size(),0);
 
                 int totalFaces=0;
+                int largestNumFaces=0;
                 double desiredRes=0.1;
                 for(int i=0; i <(int)vrip_cells.size(); i++){
                     if(vrip_cells[i].poses.size() == 0)
@@ -2642,6 +2643,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     int faces=geom->getPrimitiveSet(0)->getNumPrimitives();
                     totalFaces+=faces;
                     numFaces[i]=faces;
+                    if(faces > largestNumFaces)
+                        largestNumFaces=faces;
                     cur_res[i]=vrip_cells[i].bounds.area()/totalFaces;
                     double dRes=desiredRes-cur_res[i];
                     resFrac[i]=(dRes/(float)vpblod);
@@ -2662,7 +2665,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             continue;
                         }
                         double newRes=(cur_res[i]+(vpblod-j)*resFrac[i]);
-                        sizeStep[i][j]= std::max(numFaces[i]/(pow(2,vpblod-j)),(numFaces[i]*minFrac));
+                        sizeStep[i][j]= std::max(numFaces[i]/(pow(2.5,vpblod-j)),(largestNumFaces*minFrac));
                                         //vrip_cells[i].bounds.area()/newRes;
                         OSG_ALWAYS << "Level " << j << "Res " <<  newRes << "Orig Faces " << numFaces[i] << "New faces " << sizeStep[i][j] <<endl;
                     }
@@ -2703,7 +2706,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/texturedDecimator clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %d -P;",
                                 cwd,
                                 basepath.c_str(),
-                                i,vpblod,i,j-1, sizeStep[i][j]);
+                                i,j,i,j-1, sizeStep[i][j-1]);
                     }
                     fprintf(simpcmds_fp,"\n");
                 }

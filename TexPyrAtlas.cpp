@@ -76,6 +76,16 @@ osg::ref_ptr<osg::Image> TexPyrAtlas::getImage(int index,int sizeIndex){
     else
         return osg::ref_ptr<osg::Image> ();*/
 }
+osg::ref_ptr<osg::Image> getImageFullorStub(string fname,int size){
+    if(false){
+        osg::ref_ptr<osg::Image> img= new osg::Image();
+        img->setFileName(fname);
+        img->setImage(size,size,3,GL_RGB, GL_RGB, GL_UNSIGNED_BYTE,NULL,osg::Image::NO_DELETE);
+        img->setWriteHint(osg::Image::EXTERNAL_FILE);
+        return img;
+    }
+    return osgDB::readImageFile(fname);
+}
 void TexPyrAtlas::loadTextureFiles(int size){
     std::vector<osg::ref_ptr<osg::Image> > loc_images;
 
@@ -88,7 +98,7 @@ void TexPyrAtlas::loadTextureFiles(int size){
     std::map<id_type,string>::const_iterator end = _totalImageList.end();
     for (std::map<id_type,string>::const_iterator it = _totalImageList.begin(); it != end; ++it){
         string fname=closestDir+"/"+it->second;
-        osg::ref_ptr<osg::Image> img=osgDB::readImageFile(fname);
+        osg::ref_ptr<osg::Image> img=getImageFullorStub(fname,size);
         assert(img.valid());
         osg::ref_ptr<osg::Image> tmp=NULL;
         if(img->s() == size && img->t() == size)

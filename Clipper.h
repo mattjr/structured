@@ -134,8 +134,9 @@ public:
         new_geom->setVertexArray(intersector._new_vertices);
         new_texcoord=intersector._new_texcoords;
         new_ids=intersector._new_texid;
-
-        return newGeode;
+//        if(intersector._new_vertices->size())
+            return newGeode;
+  //      return NULL;
     }
 };
 

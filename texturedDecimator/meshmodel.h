@@ -115,7 +115,7 @@ class CFaceO    : public vcg::Face<  CUsedTypesO,
       vcg::face::Normal3f,             /*12b */
       vcg::face::QualityfOcf,          /* 0b */
       vcg::face::Mark,              /* 0b */
-      vcg::face::Color4bOcf,           /* 0b */
+      vcg::face::WedgeColor4f,           /* 0b */
       vcg::face::FFAdj,             /* 0b */
       vcg::face::VFAdj,             /* 0b */
       vcg::face::WedgeTexCoord2f     /* 0b */

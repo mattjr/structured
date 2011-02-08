@@ -173,8 +173,9 @@ int main(int argc ,char**argv){
     }*/
     vcg::tri::io::PlyInfo pi;
     pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
+    pi.mask |= vcg::tri::io::Mask::IOM_WEDGCOLOR;
 
-   vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,"assy.ply",true,pi);
+ //  vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,"assy.ply",true,pi);
 // exit(-1);
   //  vcg::tri::io::ImporterPLY<CMeshO>::Open(mesh,argv[2],pi);
 

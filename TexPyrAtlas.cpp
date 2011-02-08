@@ -6,7 +6,7 @@ using namespace std;
 TexPyrAtlas::TexPyrAtlas(texcache_t imgdir):_imgdir(imgdir)
 {
     setMaximumAtlasSize(4096,4096);
-    setMargin(0);
+    setMargin(5);
     _downsampleSizes.clear();
     _downsampleSizes.push_back(512);
     _downsampleSizes.push_back(128);

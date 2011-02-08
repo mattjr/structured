@@ -537,8 +537,12 @@ static int Save(SaveMeshType &m,  const char * filename, bool binary, PlyInfo &p
   assert(j==m.vn); 
 
 	char c = 3;
-	unsigned char b9 = 9;
+        unsigned char b12 = 12;
+
+        unsigned char b9 = 9;
 	unsigned char b6 = 6;
+        unsigned char b24 = 24;
+
 	FacePointer fp;
 	int vv[3];
 	FaceIterator fi;
@@ -574,14 +578,22 @@ static int Save(SaveMeshType &m,  const char * filename, bool binary, PlyInfo &p
 					}
           else if( HasPerWedgeTexCoord(m) && (pi.mask & Mask::IOM_WEDGTEXCOORD)  )
 					{
-						fwrite(&b6,sizeof(char),1,fpout);
+                                                /*fwrite(&b6,sizeof(char),1,fpout);
 						float t[6];
 						for(int k=0;k<3;++k)
 						{
 							t[k*2+0] = fp->WT(k).u();
 							t[k*2+1] = fp->WT(k).v();
 						}
-						fwrite(t,sizeof(float),6,fpout);
+                                                fwrite(t,sizeof(float),6,fpout);*/
+              fwrite(&b24,sizeof(char),1,fpout);
+                                                              float t[24];
+                                                              for(int k=0;k<3*4;++k)
+                                                              {
+                                                                      t[k*2+0] = fp->WT(k).u();
+                                                                      t[k*2+1] = fp->WT(k).v();
+                                                              }
+                                                              fwrite(t,sizeof(float),24,fpout);
 					}
 
 					if(multit)
@@ -596,7 +608,7 @@ static int Save(SaveMeshType &m,  const char * filename, bool binary, PlyInfo &p
 
           if( HasPerWedgeColor(m) && (pi.mask & Mask::IOM_WEDGCOLOR)  )
 					{
-						fwrite(&b9,sizeof(char),1,fpout);
+                                              /*  fwrite(&b9,sizeof(char),1,fpout);
 						float t[3];
 						for(int z=0;z<3;++z)
 						{
@@ -604,7 +616,18 @@ static int Save(SaveMeshType &m,  const char * filename, bool binary, PlyInfo &p
 							t[1] = float(fp->WC(z)[1])/255;
 							t[2] = float(fp->WC(z)[2])/255;
 							fwrite( t,sizeof(float),3,fpout);
-						}
+                                                }*/
+
+                                                             fwrite(&b12,sizeof(char),1,fpout);
+                                                             float t[4];
+                                                             for(int z=0;z<3;++z)
+                                                             {
+                                                                 t[0] = float(fp->WC(z)[0]);
+                                                                 t[1] = float(fp->WC(z)[1]);
+                                                                 t[2] = float(fp->WC(z)[2]);
+                                                                 t[3] = float(fp->WC(z)[3]);
+                                                                 fwrite( t,sizeof(float),4,fpout);
+                                                             }
 					}
 
           if( HasPerFaceQuality(m) && (pi.mask & Mask::IOM_FACEQUALITY) )

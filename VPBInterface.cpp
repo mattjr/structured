@@ -78,8 +78,8 @@ vector<osg::KdTree*> trees;
     int numlod=datalist_lod.size()-1;
     osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,useTextureArray);
     m->_cachedDirs=cachedDirs;
-    m->setNumReadThreadsToCoresRatio(1.5);
-    m->setNumWriteThreadsToCoresRatio(1.5);
+   // m->setNumReadThreadsToCoresRatio(1.5);
+   // m->setNumWriteThreadsToCoresRatio(1.5);
     m->setCompressionMethod(vpb::BuildOptions::NVTT);
    // m->setCompressionMethod(vpb::BuildOptions::GL_DRIVER);
     vpb::ImageOptions *imageOptions = new vpb::ImageOptions();
@@ -91,7 +91,7 @@ vector<osg::KdTree*> trees;
 
     m->setLogFileName("tmp.log");
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
-    for(int lod=0; lod < (int)datalist_lod.size(); lod++){
+    for(int lod=0/*datalist_lod.size()-1*/; lod < (int)datalist_lod.size(); lod++){
         for(int i=0; i<(int)datalist_lod[lod].size(); i++){
             if(!osgDB::fileExists(datalist_lod[lod][i]))
                 continue;

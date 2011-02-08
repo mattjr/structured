@@ -139,17 +139,21 @@ class MyDataSet;
 
     class MyCompositeDestination : public CompositeDestination{
     public:
-        MyCompositeDestination(osg::CoordinateSystemNode* cs, const GeospatialExtents& extents,bool useReImage):
-                CompositeDestination(cs, extents),_useReImage(useReImage){}
+        MyCompositeDestination(osg::CoordinateSystemNode* cs, const GeospatialExtents& extents,bool useReImage,bool useVBO,bool useDisplayLists,std::ofstream &file,OpenThreads::Mutex &fileMutex):
+                CompositeDestination(cs, extents),_useReImage(useReImage),_useVBO(useVBO),_useDisplayLists(useDisplayLists),_file(file),_fileMutex(fileMutex){}
         osg::Node* createPagedLODScene();
         osg::Node* createSubTileScene();
         void unrefSubTileData();
         void unrefLocalData();
         bool _useReImage;
+        bool _useVBO;
+        bool _useDisplayLists;
         osg::Group *convertModel(osg::Group *group);
-
-
+        std::ofstream &_file;
+        OpenThreads::Mutex &_fileMutex;
         typedef std::vector< osg::ref_ptr<MyDestinationTile> > MyTileList;
+        void writeCameraMatrix(osg::Node *scene);
+int _numLevels;
     };
 
 
@@ -176,6 +180,8 @@ class MyDataSet :  public DataSet
         bool _useDisplayLists;
         bool _useAtlas;
         bool _useBlending;
+        bool _useVBO;
+
 
     protected:
         virtual ~MyDataSet() {}
@@ -186,6 +192,8 @@ class MyDataSet :  public DataSet
          const Camera_Calib &_calib;
          MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
          bool _useReImage;
+         std::ofstream _file;
+         OpenThreads::Mutex _fileMutex;
 };
 
 }

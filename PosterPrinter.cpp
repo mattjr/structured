@@ -67,14 +67,14 @@ public:
 #if OPENSCENEGRAPH_MAJOR_VERSION>2 || OPENSCENEGRAPH_MAJOR_VERSION==2&&OPENSCENEGRAPH_MINOR_VERSION>=9
 
                     nv->getDatabaseRequestHandler()->requestNodeFile(
-                        pagedLOD->getFileName(numChildren), pagedLOD,
-                        1.0, nv->getFrameStamp(),
-                        pagedLOD->getDatabaseRequest(numChildren), pagedLOD->getDatabaseOptions() );
+                            pagedLOD->getFileName(numChildren), pagedLOD,
+                            1.0, nv->getFrameStamp(),
+                            pagedLOD->getDatabaseRequest(numChildren), pagedLOD->getDatabaseOptions() );
 #else
-                       nv->getDatabaseRequestHandler()->requestNodeFile(
-                        pagedLOD->getFileName(numChildren), pagedLOD,
-                        1.0, nv->getFrameStamp(),
-                        pagedLOD->getDatabaseRequest(numChildren));
+                    nv->getDatabaseRequestHandler()->requestNodeFile(
+                            pagedLOD->getFileName(numChildren), pagedLOD,
+                            1.0, nv->getFrameStamp(),
+                            pagedLOD->getDatabaseRequest(numChildren));
 #endif
 
                 }
@@ -83,16 +83,16 @@ public:
 #if OPENSCENEGRAPH_MAJOR_VERSION>2 || OPENSCENEGRAPH_MAJOR_VERSION==2&&OPENSCENEGRAPH_MINOR_VERSION>=9
 
                     nv->getDatabaseRequestHandler()->requestNodeFile(
-                        pagedLOD->getDatabasePath()+pagedLOD->getFileName(numChildren), pagedLOD,
-                        1.0, nv->getFrameStamp(),
-                        pagedLOD->getDatabaseRequest(numChildren), pagedLOD->getDatabaseOptions() );
+                            pagedLOD->getDatabasePath()+pagedLOD->getFileName(numChildren), pagedLOD,
+                            1.0, nv->getFrameStamp(),
+                            pagedLOD->getDatabaseRequest(numChildren), pagedLOD->getDatabaseOptions() );
 #else
-                     nv->getDatabaseRequestHandler()->requestNodeFile(
-                        pagedLOD->getDatabasePath()+pagedLOD->getFileName(numChildren), pagedLOD,
-                        1.0, nv->getFrameStamp(),
-                        pagedLOD->getDatabaseRequest(numChildren) );
+                    nv->getDatabaseRequestHandler()->requestNodeFile(
+                            pagedLOD->getDatabasePath()+pagedLOD->getFileName(numChildren), pagedLOD,
+                            1.0, nv->getFrameStamp(),
+                            pagedLOD->getDatabaseRequest(numChildren) );
 #endif
-                 }
+                }
             }
         }
         //node->traverse(*nv);
@@ -102,7 +102,7 @@ static osg::ref_ptr<PagedCullingCallback> g_pagedCullingCallback = new PagedCull
 
 /* PosterVisitor: A visitor for adding culling callbacks to newly allocated paged nodes */
 PosterVisitor::PosterVisitor()
-:   osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+    :   osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
     _appliedCount(0), _needToApplyCount(0),
     _addingCallbacks(true)
 {
@@ -157,11 +157,11 @@ void PosterVisitor::apply( osg::PagedLOD& node )
 
 /* PosterIntersector: A simple polytope intersector for updating pagedLODs in each image-tile */
 PosterIntersector::PosterIntersector( const osg::Polytope& polytope )
-:   _intersectionVisitor(0), _parent(0), _polytope(polytope)
+    :   _intersectionVisitor(0), _parent(0), _polytope(polytope)
 {}
 
 PosterIntersector::PosterIntersector( double xMin, double yMin, double xMax, double yMax )
-:   Intersector(osgUtil::Intersector::PROJECTION),
+    :   Intersector(osgUtil::Intersector::PROJECTION),
     _intersectionVisitor(0), _parent(0)
 {
     _polytope.add( osg::Plane( 1.0, 0.0, 0.0,-xMin) );
@@ -194,7 +194,7 @@ bool PosterIntersector::enter( const osg::Node& node )
         if ( node.getCullCallback() )
         {
             const osg::ClusterCullingCallback* cccb =
-                dynamic_cast<const osg::ClusterCullingCallback*>( node.getCullCallback() );
+                    dynamic_cast<const osg::ClusterCullingCallback*>( node.getCullCallback() );
             if ( cccb && cccb->cull(_intersectionVisitor, 0, NULL) ) return false;
         }
         return true;
@@ -243,10 +243,10 @@ void PosterIntersector::intersect( osgUtil::IntersectionVisitor& iv, osg::Drawab
 
 /* PosterPrinter: The implementation class of high-res rendering */
 PosterPrinter::PosterPrinter():
-    _outputTiles(false), _outputTileExt("bmp"),
-    _isRunning(false), _isFinishing(false), _lastBindingFrame(0),
-    _currentRow(0), _currentColumn(0),
-    _camera(0), _finalPoster(0)
+        _outputTiles(false), _outputTileExt("bmp"),
+        _isRunning(false), _isFinishing(false), _lastBindingFrame(0),
+        _currentRow(0), _currentColumn(0),
+        _camera(0), _finalPoster(0)
 {
     _intersector = new PosterIntersector(-1.0, -1.0, 1.0, 1.0);
     _visitor = new PosterVisitor;
@@ -318,8 +318,8 @@ void PosterPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
             
             if ( _camera.valid() )
             {
-               OSG_INFO << "Binding sub-camera " << _currentRow << "_" << _currentColumn
-                          << " to image..." << std::endl;
+                OSG_INFO << "Binding sub-camera " << _currentRow << "_" << _currentColumn
+                        << " to image..." << std::endl;
                 bindCameraToImage( _camera.get(), _currentRow, _currentColumn );
                 if ( _currentColumn<_tileColumns-1 )
                 {
@@ -354,7 +354,7 @@ bool PosterPrinter::addCullCallbacks( const osg::FrameStamp* fs, osg::Node* node
     _lastBindingFrame = fs->getFrameNumber();
     
     std::cout << "Dispatching callbacks to paged nodes... "
-              << _visitor->inQueue() << std::endl;
+            << _visitor->inQueue() << std::endl;
     return true;
 }
 
@@ -376,8 +376,8 @@ void PosterPrinter::bindCameraToImage( osg::Camera* camera, int row, int col )
     
     // Calculate projection matrix offset of each tile
     osg::Matrix offsetMatrix =
-        osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *
-        osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
+            osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *
+            osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
     camera->setViewMatrix( _currentViewMatrix );
     camera->setProjectionMatrix( _currentProjectionMatrix * offsetMatrix );
     
@@ -419,4 +419,122 @@ void PosterPrinter::recordImages()
             osgDB::writeImageFile( *image, image->getName()+"."+_outputTileExt );
     }
     _images.clear();
+}
+void CameraVectorPrinter::init( std::vector<osg::Matrixd> &views,std::vector<osg::Matrixd> &projs,std::vector<std::string> &fnames)
+{
+    if ( _isRunning ) return;
+    _images.clear();
+    _visitor->clearNames();
+    _views=views;
+    _projs=projs;
+    _fnames=fnames;
+    _currentIdx = 0;
+    _currentViewMatrix = views.front();
+    _currentProjectionMatrix = projs.front();
+    _lastBindingFrame = 0;
+    _isRunning = true;
+    _isFinishing = false;
+}
+
+void CameraVectorPrinter::frame( const osg::FrameStamp* fs, osg::Node* node )
+{
+    // Add cull callbacks to all existing paged nodes,
+    // and advance frame when all callbacks are dispatched.
+    if ( addCullCallbacks(fs, node) )
+        return;
+
+    if ( _isFinishing )
+    {
+        if ( (fs->getFrameNumber()-_lastBindingFrame)>2 )
+        {
+            // Record images and the final poster
+            recordImages();
+            /* if ( _finalPoster.valid() )
+            {
+                OSG_INFO << "Writing final result to file..." << std::endl;
+                osgDB::writeImageFile( *_finalPoster, _outputPosterName );
+            }
+*/
+            // Release all cull callbacks to free unused paged nodes
+            removeCullCallbacks( node );
+            _visitor->clearNames();
+
+            _isFinishing = false;
+            OSG_INFO << "Recording images finished." << std::endl;
+        }
+    }
+
+    if ( _isRunning )
+    {
+        // Every "copy-to-image" process seems to be finished in 2 frames.
+        // So record them and dispatch camera to next tiles.
+        if ( (fs->getFrameNumber()-_lastBindingFrame)>2 )
+        {
+            // Record images and unref them to free memory
+            recordImages();
+
+            // Release all cull callbacks to free unused paged nodes
+            removeCullCallbacks( node );
+            _visitor->clearNames();
+
+            if ( _camera.valid() )
+            {
+                OSG_INFO << "Binding sub-camera " << _currentIdx
+                        << " to image..." << std::endl;
+                bindCameraToImage( _camera.get(), _currentIdx );
+
+                if ( _currentIdx<_projs.size()-1 )
+                {
+                    _currentIdx++;
+                    std::cout << _currentIdx << "/" << _projs.size()<<std::endl;
+
+                }
+                else
+                {
+                    _isRunning = false;
+                    _isFinishing = true;
+                }
+
+            }
+            _lastBindingFrame = fs->getFrameNumber();
+        }
+    }
+}
+void CameraVectorPrinter::bindCameraToImage( osg::Camera* camera, int index)
+{
+
+
+    osg::ref_ptr<osg::Image> image = new osg::Image;
+    image->setName( _fnames[index] );
+    image->allocateImage( (int)_tileSize.x(), (int)_tileSize.y(), 1, GL_RGBA, GL_UNSIGNED_BYTE );
+    _images1D[index] = image.get();
+
+
+    camera->setViewMatrix( _views[index] );
+    camera->setProjectionMatrix( _projs[index]);
+
+    // Check intersections between the image-tile box and the model
+    osgUtil::IntersectionVisitor iv( _intersector.get() );
+    iv.setReadCallback( g_pagedLoadingCallback.get() );
+    _intersector->reset();
+    camera->accept( iv );
+    if ( _intersector->containsIntersections() )
+    {
+        // Apply a cull calback to every paged node obtained, to force the highest level displaying.
+        // This will be done by the PosterVisitor, who already records all the paged nodes.
+    }
+
+    // Reattach cameras and new allocated images
+    camera->setRenderingCache( NULL );  // FIXME: Uses for reattaching camera with image, maybe inefficient?
+    camera->detach( osg::Camera::COLOR_BUFFER );
+    camera->attach( osg::Camera::COLOR_BUFFER, image.get(), 0, 0 );
+}
+void CameraVectorPrinter::recordImages()
+{
+    for ( TileImages1D::iterator itr=_images1D.begin(); itr!=_images1D.end(); ++itr )
+    {
+        osg::Image* image = (itr->second).get();
+        osgDB::writeImageFile( *image, image->getName());
+    }
+    _images1D.clear();
 }

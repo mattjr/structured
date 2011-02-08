@@ -131,7 +131,7 @@ public:
     BaseType::push_back(v);
 	BaseType::back()._ovp = this;
     if (QualityEnabled)     QV.push_back(0);
-	if (ColorEnabled)       CV.push_back(vcg::Color4b(vcg::Color4b::White));
+//	if (ColorEnabled)       CV.push_back(vcg::Color4b(vcg::Color4b::White));
 	if (MarkEnabled)        MV.push_back(0);
     if (NormalEnabled)      NV.push_back(typename VALUE_TYPE::NormalType());
 	if (VFAdjacencyEnabled) AV.push_back(AdjTypePack());

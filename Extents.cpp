@@ -47,7 +47,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
-
+bool checkInBounds(osg::Vec3 tc);
 
 using namespace vpb;
 using vpb::log;
@@ -68,9 +68,11 @@ void MyDataSet::init()
 
     _newDestinationGraph = false;
     _useReImage=false;
-    _useAtlas=false;
+    _useAtlas=true;
     _useDisplayLists=false;
     _useBlending=true;
+    _useVBO=false;
+    _file.open("/tmp/scope.txt");
 }
 class CollectClusterCullingCallbacks : public osg::NodeVisitor
 {
@@ -171,24 +173,41 @@ std::vector<osg::ref_ptr<osg::Image> >MyDestinationTile::getRemappedImages(idmap
 
     return images;
 }
+
+float clamp( const float& x, const float& min, const float& max )
+{
+        return std::min( std::max( min, x ), max );
+};
 void MyDestinationTile::remapArrayForTexturing(osg::Vec4Array *v,const TexBlendCoord &texCoordsArray,idmap_t allIds){
     //Remap
     for(int i=0; i< (int)v->size(); i++){
         for(int j=0; j< 4; j++){
             int id=(int)((*v)[i][j]);
-            if(id >= 0 && allIds.count(id)){
+            if(id >= 0){
                 if(_mydataSet->_useAtlas){
                     (*v)[i][j]=_atlasGen->getAtlasId(id);
-                        osg::Matrix matrix=_atlasGen->getTextureMatrixByID(id);
-                            osg::Vec3 tc=texCoordsArray[j]->at(i);
-                            texCoordsArray[j]->at(i)=osg::Vec3(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
-                                                               tc[0]*matrix(0,1) + tc[1]*matrix(1,1) + matrix(3,1),(*v)[i][j]);
-
-
+                    osg::Matrix matrix=_atlasGen->getTextureMatrixByID(id);
+                    osg::Vec3 tc=texCoordsArray[j]->at(i);
+                    if(checkInBounds(tc)){
+                        double r=(osg::Vec2(tc[0],tc[1])-osg::Vec2(0.5,0.5)).length();
+                    texCoordsArray[j]->at(i)=osg::Vec3(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
+                                                           tc[0]*matrix(0,1) + tc[1]*matrix(1,1) + matrix(3,1),r);
+                    }else{
+                    //    texCoordsArray[j]->at(i)=osg::Vec3(-1,-1,-1);
+                   }
                 }else{
-                    (*v)[i][j]=allIds[id];
-                    texCoordsArray[j]->at(i)[2]=(*v)[i][j];
+                    if( allIds.count(id)){
+                        (*v)[i][j]=allIds[id];
+                        if(checkInBounds(texCoordsArray[j]->at(i))){
+                            texCoordsArray[j]->at(i)[2]=(*v)[i][j];
+                        }else{
+
+                      //    texCoordsArray[j]->at(i)=osg::Vec3(-1,-1,-1);
+                        }
+                    }
                 }
+            }else{
+                texCoordsArray[j]->at(i)=osg::Vec3(-1,-1,-1);
             }
         }
     }
@@ -204,8 +223,17 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
     int tex_size=  _atlasGen->getMaximumAtlasHeight();
     idmap_t allIds=_atlasGen->_allIDs;
     // idmap_t allIds=calcAllIds(v);
+    //  idmap_t allIds=calcAllIds(v);
 
-    std::vector<osg::ref_ptr<osg::Image> > texture_images= _atlasGen->getImages(); //getRemappedImages(allIds,texSizeIdx);
+    std::vector<osg::ref_ptr<osg::Image> > texture_images;
+    if(_mydataSet->_useAtlas){
+        if(_atlasGen->getNumAtlases() == 0)
+            return NULL;
+        texture_images.push_back(_atlasGen->getAtlasByNumber(0));
+
+    }else{
+        texture_images = _atlasGen->getImages(); //getRemappedImages(allIds,texSizeIdx);
+    }
     unsigned int a=v->size();
     unsigned int b=texCoordsArray[0]->size();
 
@@ -216,15 +244,46 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
     OSG_ALWAYS << "\tImage Size: " <<texture_images[0]->s() <<endl;
 
     OSG_ALWAYS << "\tArray Size: " <<texture_images.size()<<endl;
+    OSG_ALWAYS << "\tNumber of Sources: " <<_atlasGen->getNumSources()<<endl;
+    OSG_ALWAYS << "\tNumber of Atlas: " <<_atlasGen->getNumAtlases()<<endl;
 
-    osg::ref_ptr<osg::Texture2DArray> textureArray =new osg::Texture2DArray;
+    //Important otherwise osg optimizer will collapse textures into one another
+      texture_images[0]->setFileName(_dataSet->getSubtileName(_level,_tileX,_tileY));
+
+    osg::ref_ptr<osg::Texture2DArray> textureArray;
+    osg::ref_ptr<osg::Texture2D> texture;
+
+    if(!_mydataSet->_useAtlas){
+        textureArray=new osg::Texture2DArray;
+        textureArray->setTextureSize(texture_images[0]->s(),texture_images[0]->t(),texture_images.size());
+        for(int i=0; i < (int)texture_images.size(); i++)
+            textureArray->setImage(i,texture_images[i]);
+        stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
+
+    }
+    else{
+        texture=new osg::Texture2D(texture_images[0]);
+       /* texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
+        texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
+        texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
+        texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);*/
+        stateset->setTextureAttribute(TEXUNIT_ARRAY, texture.get());
+    }
+    stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
+
     osg::Program* program = new osg::Program;
     program->setName( "projective_tex" );
     osg::ref_ptr<osg::Shader> lerpF=new osg::Shader( osg::Shader::FRAGMENT);
     osg::ref_ptr<osg::Shader> lerpV=new osg::Shader( osg::Shader::VERTEX);
     if(_mydataSet->_useBlending){
-        loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/blend.frag" );
         loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/blend.vert" );
+
+        if(_mydataSet->_useAtlas){
+            loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/blendAtlas.frag" );
+        }else{
+            loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/blend.frag" );
+        }
+
     }else{
         loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/projV.frag" );
         loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/projVatlas.vert" );
@@ -237,16 +296,12 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
     program->addBindAttribLocation(_texCoordsAlias3.second,_texCoordsAlias3.first);
     program->addBindAttribLocation(_texCoordsAlias4.second,_texCoordsAlias4.first);
 
-    textureArray->setTextureSize(texture_images[0]->s(),texture_images[0]->t(),texture_images.size());
 
-    for(int i=0; i < (int)texture_images.size(); i++)
-        textureArray->setImage(i,texture_images[i]);
+
 
 
     stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
-    stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
 
-    stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
     stateset->setDataVariance(osg::Object::STATIC);
 
     return stateset;
@@ -430,20 +485,16 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
         MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(t);
 
         osg::Node *node= myt?myt->createScene(): 0;
-        if(_useReImage && node){
-            return convertModel(node->asGroup());
-        }else{
-            return node;
-        }
+
+        if(node)return convertModel(node->asGroup());
+        return NULL;
+
     }
     if (_tiles.empty() && _children.size()==1)  {
         CompositeDestination *c=_children.front();
         MyCompositeDestination *child=dynamic_cast<MyCompositeDestination*>(c);
         if(child){
-            if(_useReImage)
-                return convertModel(child->createPagedLODScene()->asGroup());
-            else
-                return child->createPagedLODScene();
+            return convertModel(child->createPagedLODScene()->asGroup());
         }else return 0;
     }
 
@@ -508,12 +559,12 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
     float farDistance = _dataSet->getMaximumVisibleDistanceOfTopLevel();
     if (tileNodes.size()==1)
     {
-        if(_useReImage){
-            osg::Group *retex=convertModel(tileNodes.front()->asGroup());
-            pagedLOD->addChild(retex);
-        }else{
+        //   if(_useReImage){
+        osg::Group *retex=convertModel(tileNodes.front()->asGroup());
+        pagedLOD->addChild(retex);
+        /*  }else{
             pagedLOD->addChild(tileNodes.front());
-        }
+        }*/
     }
     else if (tileNodes.size()>1)
     {
@@ -524,12 +575,12 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
         {
             group->addChild(*itr);
         }
-        if(_useReImage){
-            osg::Group *retex=convertModel(group);
-            pagedLOD->addChild(retex);
-        }else{
-            pagedLOD->addChild(group);
-        }
+        // if(_useReImage){
+        osg::Group *retex=convertModel(group);
+        pagedLOD->addChild(retex);
+        // }else{
+        //   pagedLOD->addChild(group);
+        // }
     }
 
 
@@ -574,7 +625,8 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
 
     if (pagedLOD->getNumChildren()>0)
         pagedLOD->setCenter(pagedLOD->getBound().center());
-
+    if(pagedLOD->getNumChildren() ==0)
+        return NULL;
     return pagedLOD;
 }
 void MyDataSet::_buildDestination(bool writeToDisk)
@@ -753,6 +805,8 @@ void MyDataSet::_equalizeRow(Row& row)
     ++citr)
     {
         CompositeDestination* cd = citr->second;
+        //if(!cd)
+        //     continue;
         for(CompositeDestination::TileList::iterator titr=cd->_tiles.begin();
         titr!=cd->_tiles.end();
         ++titr)
@@ -820,7 +874,7 @@ osg::Node* MyDestinationTile::createScene()
             tex_size=max(16,tex_size/2);*/
             int start_pow=9;
             tex_size=1024;//log2 = 10
-            int leveloffset=(_hintNumLevels-_level-1);
+            int leveloffset=(_hintNumLevels-_level);
             //printf("level offset %d level %d\n",leveloffset,_level);
             tex_size=pow(2,start_pow-leveloffset);
             tex_size=max(tex_size,8);
@@ -897,7 +951,7 @@ osg::Node* MyDestinationTile::createScene()
                 if(geomList.size() && _atlasGen->_totalImageList.size()> 0 ){
                     osg::Geometry *geom=*geomList.begin();
 
-                    if(_mydataSet->_useTextureArray){
+                    if(1){// if(_mydataSet->_useTextureArray){
                         osg::StateSet *stateset=generateStateAndArray2DRemap(v,texCoords,0);
                         setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
                         setVertexAttrib(*geom,_texCoordsAlias1,texCoords[0],false,osg::Geometry::BIND_PER_VERTEX);
@@ -941,7 +995,7 @@ osg::Node* MyDestinationTile::createScene()
             }
         }*/
     }else {
-        if (!_createdScene) _createdScene = new osg::Group;
+        //if (!_createdScene) _createdScene = new osg::Group;
     }
 
     return _createdScene.get();
@@ -988,7 +1042,7 @@ MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int c
 
     }
 
-    MyCompositeDestination* destinationGraph = new MyCompositeDestination(_intermediateCoordinateSystem.get(),extents,_useReImage);
+    MyCompositeDestination* destinationGraph = new MyCompositeDestination(_intermediateCoordinateSystem.get(),extents,_useReImage,_useVBO,_useDisplayLists,_file,_fileMutex);
 
     if (currentLevel==0) _destinationGraph = destinationGraph;
 
@@ -1335,6 +1389,8 @@ void MyDataSet::createNewDestinationGraph(
                             cd->addSource(source);
                         }
                         else*/
+                        dynamic_cast<MyCompositeDestination*>(cd)->_numLevels=maxNumLevels;
+
                         {
                             for(CompositeDestination::TileList::iterator titr = cd->_tiles.begin();
                             titr != cd->_tiles.end();
@@ -1353,6 +1409,65 @@ void MyDataSet::createNewDestinationGraph(
         }
     }
 
+    /*   int startLevel = 0; // getGenerateSubtile() ? getSubtileLevel() : 0;
+  int k = maxNumLevels;
+    for(int l=startLevel; l<=k; l++)
+    {
+        int i_min, i_max, j_min, j_max;
+        if (computeCoverage(extents, l, i_min, j_min, i_max, j_max))
+        {
+            // log(osg::NOTICE,"     level=%i i_min=%i i_max=%i j_min=%i j_max=%i",l, i_min, i_max, j_min, j_max);
+
+            if (getGenerateSubtile())
+            {
+                int i_lower, i_upper, j_lower, j_upper;
+
+                if (l<static_cast<int>(getSubtileLevel()))
+                {
+                    // divide by 2 to the power of ((getSubtileLevel()-l);
+                    int delta = getSubtileLevel()-l;
+                    i_lower = getSubtileX() >> delta;
+                    j_lower = getSubtileY() >> delta;
+                    i_upper = i_lower + 1;
+                    j_upper = j_lower + 1;
+                }
+                else
+                {
+                    // multiply 2 to the power of ((l-getSubtileLevel());
+                    int f = 1 << (l-getSubtileLevel());
+                    i_lower = getSubtileX() * f;
+                    j_lower = getSubtileY() * f;
+                    i_upper = i_lower + f;
+                    j_upper = j_lower + f;
+                }
+
+                if (i_min<i_lower) i_min = i_lower;
+                if (i_max>i_upper) i_max = i_upper;
+                if (j_min<j_lower) j_min = j_lower;
+                if (j_max>j_upper) j_max = j_upper;
+            }
+
+            for(int j=j_min; j<j_max;++j)
+            {
+                for(int i=i_min; i<i_max;++i)
+                {
+                    CompositeDestination* cd = getComposite(l,i,j);
+
+
+                        for(CompositeDestination::TileList::iterator titr = cd->_tiles.begin();
+                        titr != cd->_tiles.end();
+                        ++titr)
+                        {
+                            MyDestinationTile* tile = dynamic_cast<MyDestinationTile*>(titr->get());
+                            if(tile->_sources.size() == 0)
+                                 _quadMap[tile->_level][tile->_tileY][tile->_tileX]=NULL;
+                        }
+
+                }
+            }
+        }
+    }
+*/
     osg::Timer_t before_computeMax = osg::Timer::instance()->tick();
 
     if (_destinationGraph.valid()) _destinationGraph->computeMaximumSourceResolution();
@@ -1363,6 +1478,8 @@ void MyDataSet::createNewDestinationGraph(
 }
 
 void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
+    if(tile->_sources.size() == 0)
+        return;
     log(osg::INFO,"   source:%s",src->getFileName().c_str());
     osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
                                          tile->_extents._min.y(),
@@ -1372,14 +1489,13 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     osg::ref_ptr<osg::Node> root;
     TexturingQuery *tq=new TexturingQuery(src,_calib,*(tile->_atlasGen),_useTextureArray);
     tq->_tile=tile;
-
+    bool _reimagePass=(tile->_level != tile->_hintNumLevels);
 
     osg::Vec4Array *ids=src->ids;
     TexBlendCoord  *texCoords=(&src->tex);
-    //printf("FFFFF %d %d",(*texCoords)[0]->size(), ids->size());
     osg::ref_ptr<osg::Vec4Array> new_ids;
     TexBlendCoord  new_texCoords;
-    bool projectSucess=false;//(ids!=NULL);
+    bool projectSucess=!_reimagePass;//false;//(ids!=NULL && !_reimagePass);
     if(src->_kdTree){
         osg::ref_ptr<KdTreeBbox> kdtreeBbox=new KdTreeBbox(*src->_kdTree);
         if(projectSucess){
@@ -1400,7 +1516,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     std::string mf=src->getFileName();
     int npos=mf.find("/");
     std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-    if(!projectSucess) {
+    if(!projectSucess && !_reimagePass) {
         projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(root.get()));
     }
 
@@ -1414,6 +1530,8 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
             //int total=tq->_atlasGen._totalImageList.size();
             //  printf("%d %d %d %d 0x%x AAAAAA\n",level,total,tile->_tileX,tile->_tileY,(long int)&(tq->_atlasGen));
         }
+    }
+    {
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_modelMutex);
 
         if(!tile->_models){
@@ -1461,6 +1579,8 @@ void MyDataSet::_readRow(Row& row)
         ++citr)
         {
             CompositeDestination* cd = citr->second;
+            //if(!cd)
+            //     continue;
             for(CompositeDestination::TileList::iterator titr=cd->_tiles.begin();
             titr!=cd->_tiles.end();
             ++titr)
@@ -1926,6 +2046,8 @@ void MyDataSet::_writeRow(Row& row)
     ++citr)
     {
         MyCompositeDestination* cd = dynamic_cast<MyCompositeDestination*>(citr->second);
+        //    if(!cd)
+        //       continue;
         MyCompositeDestination* parent =  dynamic_cast<MyCompositeDestination*>(cd->_parent);
 
         if (parent)

@@ -4,8 +4,6 @@
 #include <osg/Camera>
 #include <osg/PagedLOD>
 #include <osgUtil/IntersectionVisitor>
-int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::GraphicsContext &gc,osg::Matrix &toScreen,const osg::Vec4 &sizes);
-osg::Geode *convertModel(osg::Group *group);
 
 /** PosterVisitor: A visitor for adding culling callbacks to newly allocated paged nodes */
 class PosterVisitor : public osg::NodeVisitor
@@ -157,6 +155,20 @@ protected:
     osg::ref_ptr<osg::Camera> _camera;
     osg::ref_ptr<osg::Image> _finalPoster;
     TileImages _images;
+};
+class CameraVectorPrinter: public PosterPrinter{
+public:
+    void init( std::vector<osg::Matrixd> &views,std::vector<osg::Matrixd> &projs,std::vector<std::string> &fnames);
+    int _currentIdx;
+    void bindCameraToImage( osg::Camera* camera, int index);
+    std::vector<osg::Matrixd> _views;
+    std::vector<osg::Matrixd> _projs;
+    std::vector<std::string> _fnames;
+    void frame( const osg::FrameStamp* fs, osg::Node* node );
+  typedef std::map< int, osg::ref_ptr<osg::Image> > TileImages1D;
+  void recordImages();
+  TileImages1D _images1D;
+
 };
 
 #endif

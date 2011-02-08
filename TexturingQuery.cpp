@@ -212,7 +212,13 @@ double TexturingQuery::getDistToCenter(osg::Vec3 v, TexturedSource::ProjectionCa
         return (texC-osg::Vec2(_calib.width/2.0,_calib.height/2.0)).length2();
 }
 
-
+bool checkInBounds(osg::Vec3 tc){
+    if(tc[0] >= 1.0 || tc[0] <= 0.0 || tc[1] >= 1.0 || tc[1] <=0.0){
+      //  cout << tc<<endl;
+        return false;
+    }
+    return true;
+}
 bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord &texCoordsArray,
                                          const osg::PrimitiveSet& prset, const osg::Vec3Array &verts){
     int numIdx=prset.getNumIndices();
@@ -271,13 +277,21 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord
             }else*/{
                 //   vert_reproj.insert(make_pair<unsigned int, int >(prset.index(i+k),1));
                 camIdxArr->at(prset.index(i+k))=camIdx;
-
                 for(int f=0; f <(int)d.size() && f<maxNumTC; f++){
                     if(texCoordsArray[f]) {
                         osg::Vec2 tc=convertToUV(reprojectPt(_source->_cameras[d[f].id].m,verts[tri_v[k]]));
                         texCoordsArray[f]->at(prset.index(i+k))=osg::Vec3(tc[0],tc[1],-1);
                     }
                 }
+            }
+        }
+        //REally innecfficent needs fixing
+        for(int k=0; k <3; k++){
+            for(int f=0; f <(int)d.size() && f<maxNumTC; f++){
+                if(!checkInBounds(texCoordsArray[f]->at(prset.index(i+k))))
+                    for(int k2=0; k2<3; k2++)
+                        texCoordsArray[f]->at(prset.index(i+k2))=osg::Vec3(-1,-1,-1);
+
             }
         }
     }
@@ -507,10 +521,10 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
         osg::ref_ptr<osg::Vec4Array> v= new osg::Vec4Array;
 
         TexBlendCoord texCoords(4);
-            texCoords[0]=new osg::Vec3Array;
-            texCoords[1]=new osg::Vec3Array;
-            texCoords[2]=new osg::Vec3Array;
-            texCoords[3]=new osg::Vec3Array;
+        texCoords[0]=new osg::Vec3Array;
+        texCoords[1]=new osg::Vec3Array;
+        texCoords[2]=new osg::Vec3Array;
+        texCoords[3]=new osg::Vec3Array;
 
         osg::ref_ptr<osg::StateSet> stateset;
         bool projectValid=false;

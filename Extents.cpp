@@ -290,7 +290,6 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
     }
     program->addShader(  lerpF );
     program->addShader(  lerpV );
-    program->addBindAttribLocation(_projCoordAlias.second,_projCoordAlias.first);
     program->addBindAttribLocation(_texCoordsAlias1.second,_texCoordsAlias1.first);
     program->addBindAttribLocation(_texCoordsAlias2.second,_texCoordsAlias2.first);
     program->addBindAttribLocation(_texCoordsAlias3.second,_texCoordsAlias3.first);
@@ -953,7 +952,7 @@ osg::Node* MyDestinationTile::createScene()
 
                     if(1){// if(_mydataSet->_useTextureArray){
                         osg::StateSet *stateset=generateStateAndArray2DRemap(v,texCoords,0);
-                        setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
+                        //setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
                         setVertexAttrib(*geom,_texCoordsAlias1,texCoords[0],false,osg::Geometry::BIND_PER_VERTEX);
                         setVertexAttrib(*geom,_texCoordsAlias2,texCoords[1],false,osg::Geometry::BIND_PER_VERTEX);
                         setVertexAttrib(*geom,_texCoordsAlias3,texCoords[2],false,osg::Geometry::BIND_PER_VERTEX);

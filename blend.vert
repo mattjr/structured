@@ -5,6 +5,10 @@ uniform float tilingFactor;
 varying vec4 normal;
 varying vec3  L, E, H;
 varying vec3 VaryingTexCoord[4];
+attribute vec3 osg_texCoord1;
+attribute vec3 osg_texCoord2;
+attribute vec3 osg_texCoord3;
+attribute vec3 osg_texCoord4;
 void main()
 {
   normal.xyz = normalize( /*gl_NormalMatrix * */gl_Normal);
@@ -17,10 +21,8 @@ void main()
     L = normalize(eyeLightPos.xyz - eyePosition.xyz);
     E = -normalize(eyePosition.xyz);
     H = normalize(L + E);
-    VaryingTexCoord[0] = gl_MultiTexCoord0.xyz;
-     VaryingTexCoord[1] = gl_MultiTexCoord1.xyz;
-     VaryingTexCoord[2] = gl_MultiTexCoord2.xyz;
-     VaryingTexCoord[3] = gl_MultiTexCoord3.xyz;
-     //gl_TexCoord[0] = gl_MultiTexCoord4;
-
+    VaryingTexCoord[0] = osg_texCoord1;
+     VaryingTexCoord[1] = osg_texCoord2;
+     VaryingTexCoord[2] = osg_texCoord3;
+     VaryingTexCoord[3] = osg_texCoord4;
 }

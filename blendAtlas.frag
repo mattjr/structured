@@ -1,4 +1,10 @@
 #version 110
+#pragma optionNV(fastmath on)
+#pragma optionNV(fastprecision on)
+#pragma optionNV(ifcvt none)
+#pragma optionNV(inline all)
+#pragma optionNV(strict on)
+#pragma optionNV(unroll all)
 uniform vec3 weights;
 uniform int shaderOut;
 varying vec4 normal;

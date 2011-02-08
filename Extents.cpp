@@ -267,8 +267,40 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
         texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
         texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
         texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);*/
+        int layerNum=0;
+        osg::Texture::InternalFormatMode internalFormatMode = osg::Texture::USE_IMAGE_DATA_FORMAT;
+      /*  switch(getImageOptions(layerNum)->getTextureType())
+        {
+        case(BuildOptions::RGB_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+        case(BuildOptions::RGBA_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+        case(BuildOptions::RGBA_S3TC_DXT3): internalFormatMode = osg::Texture::USE_S3TC_DXT3_COMPRESSION; break;
+        case(BuildOptions::RGBA_S3TC_DXT5): internalFormatMode = osg::Texture::USE_S3TC_DXT5_COMPRESSION; break;
+        case(BuildOptions::ARB_COMPRESSED): internalFormatMode = osg::Texture::USE_ARB_COMPRESSION; break;
+        case(BuildOptions::COMPRESSED_TEXTURE): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+        case(BuildOptions::COMPRESSED_RGBA_TEXTURE): internalFormatMode = osg::Texture::USE_S3TC_DXT3_COMPRESSION; break;
+        default: break;
+        }*/
+        //internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
+        bool inlineImageFile = _dataSet->getDestinationTileExtension()==".ive" || _dataSet->getDestinationTileExtension()==".osgb" ;
+        bool compressedImageSupported = inlineImageFile;
+        bool compressedImageRequired = (internalFormatMode != osg::Texture::USE_IMAGE_DATA_FORMAT);
+        //  image->s()>=minumCompressedTextureSize && image->t()>=minumCompressedTextureSize &&
+
+        if (compressedImageSupported && compressedImageRequired )
+        {
+            log(osg::NOTICE,"Compressed image");
+
+            bool generateMiMap = getImageOptions(layerNum)->getMipMappingMode()==DataSet::MIP_MAPPING_IMAGERY;
+            bool resizePowerOfTwo = getImageOptions(layerNum)->getPowerOfTwoImages();
+            vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
+
+            log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");
+
+        }
+
         stateset->setTextureAttribute(TEXUNIT_ARRAY, texture.get());
     }
+
     stateset->addUniform( new osg::Uniform("theTexture", TEXUNIT_ARRAY) );
 
     osg::Program* program = new osg::Program;

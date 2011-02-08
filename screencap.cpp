@@ -1043,7 +1043,7 @@ int main(int argc, char** argv)
         if( im_copy( im, out) )
             printf("Fail!\n");
         im_close(out);*/
-                    if(im_insertplace(raw,im,width*row,height*col))
+                    if(im_insertplace(raw,im,width*col,height*row))
                         printf("Fail!\n");
 
                     //   return(-1);

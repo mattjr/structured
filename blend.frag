@@ -1,4 +1,4 @@
-#version 120
+#version 110
 #extension GL_EXT_gpu_shader4 : enable
 uniform vec3 weights;
 uniform int shaderOut;
@@ -14,14 +14,14 @@ vec4 jetColorMap(float val) {
   val= clamp(val,0.0,1.0);
   
   vec4 jet;
-        jet.x = min(4.0f * val - 1.5f,-4.0f * val + 4.5f) ;
-        jet.y = min(4.0f * val - 0.5f,-4.0f * val + 3.5f) ;
-        jet.z = min(4.0f * val + 0.5f,-4.0f * val + 2.5f) ;
+        jet.x = min(4.0 * val - 1.5,-4.0 * val + 4.5) ;
+        jet.y = min(4.0 * val - 0.5,-4.0 * val + 3.5) ;
+        jet.z = min(4.0 * val + 0.5,-4.0 * val + 2.5) ;
 
 
-        jet.x = clamp(jet.x, 0.0f, 1.0f);
-        jet.y = clamp(jet.y, 0.0f, 1.0f);
-        jet.z = clamp(jet.z, 0.0f, 1.0f);
+        jet.x = clamp(jet.x, 0.0, 1.0);
+        jet.y = clamp(jet.y, 0.0, 1.0);
+        jet.z = clamp(jet.z, 0.0, 1.0);
 	jet.w = 1.0;
         return jet;
 }
@@ -68,11 +68,11 @@ vec4 freq3Blend(vec3 Cb){
   for(int j=0; j < 3; j++){
     for(int i=0;i<4; i++){
       //If no valid texture at this pixel don't blend it
-      if(VaryingTexCoord[i].z < 0 || VaryingTexCoord[i].x < 0 || VaryingTexCoord[i].x > 1.0 ||VaryingTexCoord[i].y <0||VaryingTexCoord[i].y >1.0)
+      if(VaryingTexCoord[i].z < 0.0 || VaryingTexCoord[i].x < 0.0 || VaryingTexCoord[i].x > 1.0 ||VaryingTexCoord[i].y <0.0||VaryingTexCoord[i].y >1.0)
      	continue;
       validPix=true;
       float r = length(VaryingTexCoord[i].xy - vec2(0.5,0.5));
-      float W=exp(-r*10*16*Cb[j]);
+      float W=exp(-r*10.0*16.0*Cb[j]);
 
 
       if(j == 0)
@@ -106,13 +106,13 @@ void main()
   usedWeights=weights;
 
 
-  if(usedWeights.x==0 && usedWeights.y==0 &&usedWeights.z==0)
+  if(usedWeights.x==0.0 && usedWeights.y==0.0 &&usedWeights.z==0.0)
     usedWeights=vec3(0.710000,0.650000,0.070000);
 
  if(shaderOut == 0)
     color= freq3Blend(usedWeights);
   else if(shaderOut ==1)
-    color=texture2DArray(VaryingTexCoord[0].xyz);
+    color=texture2DArray(theTexture,VaryingTexCoord[0].xyz);
   else if(shaderOut ==3){
     vec3 NNormal = normalize(normal.xyz);
     vec3 Light  = normalize(vec3(1,  2.5,  -1));
@@ -134,11 +134,11 @@ void main()
     float height = normal.w;;
     float range= zrange.y-zrange.x;
     float val =(height-zrange.x)/range;
-    vec4 jet=jetColorMap(1-val);
+    vec4 jet=jetColorMap(1.0-val);
     color = jet * (ambient + diffuse + specular);
   }
   else
-    color=texture2DArray(VaryingTexCoord[0].xyz);
+    color=texture2DArray(theTexture,VaryingTexCoord[0].xyz);
 
 
   gl_FragColor = color;

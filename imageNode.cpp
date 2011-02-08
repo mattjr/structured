@@ -27,11 +27,12 @@
 #include <osgViewer/Viewer>
 #include <osgViewer/ViewerEventHandlers>
 #include <iostream>
-#include "PosterPrinter.h"
+#include "imageNode.h"
 #include "Extents.h"
 #include <vpb/TextureUtils>
 #include <osg/ComputeBoundsVisitor>
-
+#include <osg/io_utils>
+#include <iostream>
 /* CustomRenderer: Do culling only while loading PagedLODs */
 class CustomRenderer : public osgViewer::Renderer
 {
@@ -87,6 +88,48 @@ osg::Matrix getFromScreenMatrix(  osg::ref_ptr< osg::Camera > camera,osg::Vec2 s
 {
     return osg::Matrix::inverse( camera->getViewMatrix() * camera->getProjectionMatrix() *( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*size.x(),0.5*size.y(),0.5f)));
 }
+void vpb::MyCompositeDestination::writeCameraMatrix(osg::Node *scene){
+    const osg::BoundingSphere &bs=scene->getBound();
+    osg::Vec3d eye(bs.center()+osg::Vec3(0,0,3.5*bs.radius()));
+    osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+    scene->traverse(cbbv);
+    osg::BoundingBox bb = cbbv.getBoundingBox();
+    osg::Matrixd matrix;
+    matrix.makeTranslate( eye );
+    osg::Matrix view=osg::Matrix::inverse(matrix);
+    osg::Vec3 centeredMin,centeredMax;
+    centeredMin=(bb._min-bb.center());
+    centeredMax=(bb._max-bb.center());
+    std::cout << "radus "<<bb.radius() <<std::endl;
+    double radius=bb.radius();
+    if(!isfinite(radius))
+        return;
+    osg::Matrix proj= osg::Matrixd::ortho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
+    {
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_fileMutex);
+        for(int i=0; i<4; i++)
+            for(int j=0; j<4; j++)
+                _file << view(i,j) << " ";
+        _file << "\n";
+        for(int i=0; i<4; i++)
+            for(int j=0; j<4; j++)
+                _file << proj(i,j) << " ";
+        _file << "\n";
+    }
+}
+
+void readCameraMatrix( std::ifstream &file,osg::Matrix &view,osg::Matrix &proj){
+
+
+    // std::ifstream file(filename.c_str());
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            file >> view(i,j);
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            file >> proj(i,j);
+}
+
 /* The main entry */
 int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::GraphicsContext &gc,osg::Matrix &toScreen,const osg::Vec4 &sizes)
 {
@@ -224,6 +267,155 @@ int render(osg::Node *scene,osg::ref_ptr<osg::Image> &image,osg::GraphicsContext
 
 }
 
+/* The main entry */
+int renderAll(osg::Node *scene, std::vector<osg::Matrixd> &views,std::vector<osg::Matrixd> &projs,std::vector<std::string> &fnames,const osg::Vec4 &sizes)
+{
+
+    osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+    traits->x =0;
+    traits->y = 0;
+    traits->width = 1;
+    traits->height = 1;
+    traits->windowDecoration = false;
+    traits->doubleBuffer = false;
+    traits->sharedContext = 0;
+    traits->pbuffer = true;
+
+    osg::ref_ptr<osg::GraphicsContext> _gc= osg::GraphicsContext::createGraphicsContext(traits.get());
+
+    if (!_gc)
+    {
+        osg::notify(osg::NOTICE)<<"Failed to create pbuffer, failing back to normal graphics window."<<std::endl;
+
+        traits->pbuffer = false;
+        _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+    }
+    // Poster arguments
+    bool activeMode = false;
+    bool outputPoster = true;
+    assert(sizes[2]== sizes[3]);
+    int tileWidth = sizes[0], tileHeight = sizes[1];
+    int posterWidth = sizes[2], posterHeight = sizes[3];
+    std::string posterName = "poster.bmp", extName = "bmp";
+    osg::Vec4 bgColor(0.2f, 0.2f, 0.6f, 1.0f);
+    osg::Camera::RenderTargetImplementation renderImplementation =  osg::Camera::FRAME_BUFFER_OBJECT;
+
+
+
+    // Camera settings for inactive screenshot
+    osg::Vec3d hpr( 0.0, 0.0, 0.0 );
+    const osg::BoundingSphere &bs=scene->getBound();
+    osg::Vec3d eye(bs.center()+osg::Vec3(0,0,3.5*bs.radius()));
+
+    osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+    scene->traverse(cbbv);
+    osg::BoundingBox bb = cbbv.getBoundingBox();
+
+    if ( !scene )
+    {
+        std::cout << "No data loaded" << std::endl;
+        return 1;
+    }
+
+    // Create camera for rendering tiles offscreen. FrameBuffer is recommended because it requires less memory.
+    osg::ref_ptr<osg::Camera> camera = new osg::Camera;
+    camera->setClearColor( bgColor );
+    camera->setClearMask( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
+    camera->setRenderOrder( osg::Camera::PRE_RENDER );
+    camera->setRenderTargetImplementation( renderImplementation );
+    camera->setViewport( 0, 0, tileWidth, tileHeight );
+    camera->addChild( scene );
+
+    // Set the printer
+    osg::ref_ptr<CameraVectorPrinter> printer = new CameraVectorPrinter;
+    printer->setTileSize( tileWidth, tileHeight );
+    printer->setPosterSize( posterWidth, posterHeight );
+    printer->setCamera( camera.get() );
+
+
+
+#if 0
+    // While recording sub-images of the poster, the scene will always be traversed twice, from its two
+    // parent node: root and camera. Sometimes this may not be so comfortable.
+    // To prevent this behaviour, we can use a switch node to enable one parent and disable the other.
+    // However, the solution also needs to be used with care, as the window will go blank while taking
+    // snapshots and recover later.
+    osg::ref_ptr<osg::Switch> root = new osg::Switch;
+    root->addChild( scene, true );
+    root->addChild( camera.get(), false );
+#else
+    osg::ref_ptr<osg::Group> root = new osg::Group;
+    root->addChild( scene );
+    root->addChild( camera.get() );
+#endif
+
+    osgViewer::Viewer viewer;
+    viewer.setSceneData( root.get() );
+    viewer.getDatabasePager()->setDoPreCompile( false );
+    viewer.getCamera()->setGraphicsContext(_gc.get());
+
+    if ( renderImplementation==osg::Camera::FRAME_BUFFER )
+    {
+        // FRAME_BUFFER requires the window resolution equal or greater than the to-be-copied size
+        viewer.setUpViewInWindow( 200, 200, tileWidth, tileHeight );
+    }
+    else
+    {
+        // We want to see the console output, so just render in a window
+        //   viewer.setUpViewInWindow( 200, 200, tileWidth, tileHeight );
+        viewer.getCamera()->setViewport(new osg::Viewport(0,0,tileWidth,tileHeight));
+
+    }
+
+    if ( activeMode )
+    {
+        //viewer.addEventHandler( new PrintPosterHandler(printer.get()) );
+        viewer.addEventHandler( new osgViewer::StatsHandler );
+        viewer.addEventHandler( new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()) );
+        viewer.setCameraManipulator( new osgGA::TrackballManipulator );
+        viewer.run();
+    }
+    else
+    {
+        osg::Camera* camera = viewer.getCamera();
+        computeViewMatrix( camera, eye, hpr );
+        osg::Vec3 centeredMin,centeredMax;
+        centeredMin=(bb._min-bb.center());
+        centeredMax=(bb._max-bb.center());
+        camera->setProjectionMatrixAsOrtho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
+        //  camera->setProjectionMatrixAsOrtho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
+        osg::ref_ptr<CustomRenderer> renderer = new CustomRenderer( camera );
+        camera->setRenderer( renderer.get() );
+        viewer.setThreadingModel( osgViewer::Viewer::SingleThreaded );
+
+        // Realize and initiate the first PagedLOD request
+        viewer.realize();
+        viewer.frame();
+
+        printer->init( views,projs,fnames );
+        while ( !printer->done() )
+        {
+            viewer.advance();
+
+            // Keep updating and culling until full level of detail is reached
+            renderer->setCullOnly( true );
+            while ( viewer.getDatabasePager()->getRequestsInProgress() )
+            {
+                viewer.updateTraversal();
+                viewer.renderingTraversals();
+            }
+
+            renderer->setCullOnly( false );
+            printer->frame( viewer.getFrameStamp(), viewer.getSceneData() );
+            viewer.renderingTraversals();
+        }
+    }
+    return 0;
+
+
+}
+
 /* Computing view matrix helpers */
 template<class T>
 class FindTopMostNodeOfTypeVisitor : public osg::NodeVisitor
@@ -263,9 +455,17 @@ osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &toScreen,cons
 
 
 osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
-    if(!_useReImage)
-        return group;
+    if(!group)
+        return NULL;
+    //
     if(group->getNumChildren() == 0)
+        return group;
+   if(_level!=_numLevels)
+       return group;
+      writeCameraMatrix(group);
+      return group;
+
+    if(!_useReImage)
         return group;
     osg::ref_ptr<osg::Image> image;
 
@@ -347,7 +547,8 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     newGeom->setTexCoordArray(0,texCoord);
     newGeom->setVertexArray(newVerts);
     newGeom->addPrimitiveSet(newPrimitiveSet);
-    //newGeom->setUseDisplayList(false);
+    newGeom->setUseDisplayList(_useDisplayLists);
+    newGeom->setUseVertexBufferObjects(_useVBO);
 
     newGeode->addDrawable(newGeom);
     osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(image);
@@ -373,7 +574,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     bool compressedImageRequired = (internalFormatMode != osg::Texture::USE_IMAGE_DATA_FORMAT);
     //  image->s()>=minumCompressedTextureSize && image->t()>=minumCompressedTextureSize &&
 
-    if (/*compressedImageSupported && */compressedImageRequired )
+    if (0 &&/*compressedImageSupported && */compressedImageRequired )
     {
         log(osg::NOTICE,"Compressed image");
 

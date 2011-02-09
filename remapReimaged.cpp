@@ -34,7 +34,7 @@
 #include <sstream>
 #include <string.h>
 #include "imageNode.h"
-osg::Group *remapNode(osg::Group *group, osg::ref_ptr<osg::Image> &image,osg::Matrix &toScreen,osg::Vec2 texSize){
+osg::Group *remapNode(osg::Group *group, osg::ref_ptr<osg::Image> &image,osg::Matrix &viewProj,osg::Vec2 texSize){
     if(!group)
         return NULL;
     //
@@ -78,10 +78,10 @@ osg::Group *remapNode(osg::Group *group, osg::ref_ptr<osg::Image> &image,osg::Ma
 
 
 
-
+    osg::Matrix window= osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*texSize.x(),0.5*texSize.y(),0.5f);
     for(int j=0; j< (int)newVerts->size(); j++){
         /// std::cout <<calcCoordReproj(newVerts->at(j),toScreen,texSize) << std::endl;
-        osg::Vec2 tc=calcCoordReproj(newVerts->at(j),toScreen,osg::Vec2(texSize.x(),texSize.y()));
+        osg::Vec2 tc=calcCoordReproj(newVerts->at(j),viewProj,window,osg::Vec2(texSize.x(),texSize.y()));
         tc.y()= 1.0-tc.y();
         texCoord->push_back(tc);
     }
@@ -151,21 +151,21 @@ osg::Group *remapNode(osg::Group *group, osg::ref_ptr<osg::Image> &image,osg::Ma
     return newGroup;
 
 }
-bool readMatrixToScreen(std::string fname,osg::Matrix &toScreen,osg::Vec2 size){
-    std::ifstream file(fname.c_str());
+bool readMatrixToScreen(std::string fname,osg::Matrix &viewProj,osg::Vec2 size){
+    std::fstream file(fname.c_str(), std::ios::binary|std::ios::in);
     if(!file.good()){
      fprintf(stderr,"Can't open %s\n",fname.c_str());
         return false;
     }
-    osg::Matrix view,proj;
+    osg::Matrixd view,proj;
 
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++)
-            file >> view(i,j);
+             file.read(reinterpret_cast<char*>(&(view(i,j))), sizeof(double));
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++)
-            file >> proj(i,j);
-    toScreen=osg::Matrix( view * proj *( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*size.x(),0.5*size.y(),0.5f)));
+            file.read(reinterpret_cast<char*>(&(proj(i,j))), sizeof(double));
+    viewProj=osg::Matrix( view * proj);
     return true;
 }
 
@@ -247,12 +247,12 @@ int main(int argc, char** argv)
             if(osgDB::fileExists(os.str())){
                 osg::ref_ptr<osg::Node> node= osgDB::readNodeFile(os.str());
                 osg::ref_ptr<osg::Image> image= osgDB::readImageFile(osgDB::getNameLessExtension(os.str()).append(".tif"));
-                osg::Matrix toScreen;
+                osg::Matrix viewProj;
                 if(node.valid() && image.valid()){
                     osg::Vec2 img_size(image->s(),image->t());
-                    bool res=readMatrixToScreen(osgDB::getNameLessExtension(os.str()).append(".txt"),toScreen,img_size);
+                    bool res=readMatrixToScreen(osgDB::getNameLessExtension(os.str()).append(".txt"),viewProj,img_size);
                     if(res){
-                        osg::Group *gp=remapNode(node->asGroup(),image,toScreen,img_size);
+                        osg::Group *gp=remapNode(node->asGroup(),image,viewProj,img_size);
                         if(gp){
                             std::ostringstream os_new;
                             os_new << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile-blended.ive";

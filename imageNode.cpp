@@ -446,24 +446,30 @@ T* findTopMostNodeOfType( osg::Node* node )
     return fnotv._foundNode;
 }
 
-osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &toScreen,const osg::Vec2 &size){
-    osg::Vec3 tc=vert*toScreen;
-    tc.x()/=size.x();
-    tc.y()/=size.y();
-    return osg::Vec2(tc.x(),tc.y());
+osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &viewProj,const osg::Matrix &screen,const osg::Vec2 &size){
+    osg::Vec4 v(vert.x(),vert.y(),vert.z(),1.0);
+    v=v*viewProj;
+    v.x() /= v.w();
+    v.y() /= v.w();
+    v.z() /= v.w();
+    v.w() /= v.w();
+    v= v*screen;
+    osg::Vec2 tc(v.x(),v.y());
+    tc.x()/=(size.x()-1);
+    tc.y()/=(size.y()-1);
+    return tc;
+
 }
-
-
 osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     if(!group)
         return NULL;
     //
     if(group->getNumChildren() == 0)
         return group;
-   if(_level!=_numLevels)
-       return group;
-      writeCameraMatrix(group);
-      return group;
+    if(_level!=_numLevels)
+        return group;
+    writeCameraMatrix(group);
+    return group;
 
     if(!_useReImage)
         return group;
@@ -533,7 +539,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     for(int j=0; j< (int)newVerts->size(); j++){
         /// std::cout <<calcCoordReproj(newVerts->at(j),toScreen,texSize) << std::endl;
 
-        texCoord->push_back(calcCoordReproj(newVerts->at(j),toScreen,osg::Vec2(texSizes[2],texSizes[3])));
+        texCoord->push_back(calcCoordReproj(newVerts->at(j),toScreen,osg::Matrix::identity(),osg::Vec2(texSizes[2],texSizes[3])));
     }
     for(int j=0; j< (int)newPrimitiveSet->getNumIndices(); j++){
         if(newPrimitiveSet->getElement(j) < 0 || newPrimitiveSet->getElement(j) > newVerts->size() ){

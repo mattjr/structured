@@ -964,26 +964,28 @@ int main(int argc, char** argv)
 
                 osg::Matrixd matrix;
                 matrix.makeTranslate( eye );
-                osg::Matrix view=osg::Matrix::inverse(matrix);
+                osg::Matrixd view=osg::Matrix::inverse(matrix);
                 osg::Vec3 centeredMin,centeredMax;
+                double margin=0.05*bb.radius();
+                bb._min-=osg::Vec3(margin,margin,margin);
+                bb._max+=osg::Vec3(margin,margin,margin);
+
                 centeredMin=(bb._min-bb.center());
                 centeredMax=(bb._max-bb.center());
-                osg::Matrix proj= osg::Matrixd::ortho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
+                osg::Matrixd proj= osg::Matrixd::ortho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
                 IMAGE *raw;
                 std::ostringstream os;
                 std::ostringstream os2;
 
                 os << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.tif";
                 os2 << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.txt";
-                std::ofstream _file(os2.str().c_str());
+                std::fstream _file(os2.str().c_str(),std::ios::binary|std::ios::out);
                 for(int i=0; i<4; i++)
                     for(int j=0; j<4; j++)
-                        _file << view(i,j) << " ";
-                _file << "\n";
+                        _file.write(reinterpret_cast<char*>(&(view(i,j))),sizeof(double));
                 for(int i=0; i<4; i++)
                     for(int j=0; j<4; j++)
-                        _file << proj(i,j) << " ";
-                _file << "\n";
+                        _file.write(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
                 _file.close();
 
                 if( !(raw = im_open(  os.str().c_str(), "w" )) )

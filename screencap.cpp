@@ -929,6 +929,10 @@ int main(int argc, char** argv)
                             node->traverse(cbbv);
 
                             bb = cbbv.getBoundingBox();
+                            if(!isfinite(bb.radius())){
+                                printf("Empty continuing\n");
+                                continue;
+                            }
                         }
                         loadedModel->addChild(node);
                     }
@@ -1052,6 +1056,7 @@ int main(int argc, char** argv)
                 }
             }
             im_close(raw);
+            im_close(im);
         }
 
     }

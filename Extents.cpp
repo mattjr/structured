@@ -176,7 +176,7 @@ std::vector<osg::ref_ptr<osg::Image> >MyDestinationTile::getRemappedImages(idmap
 
 float clamp( const float& x, const float& min, const float& max )
 {
-        return std::min( std::max( min, x ), max );
+    return std::min( std::max( min, x ), max );
 };
 void MyDestinationTile::remapArrayForTexturing(osg::Vec4Array *v,const TexBlendCoord &texCoordsArray,idmap_t allIds){
     //Remap
@@ -190,11 +190,11 @@ void MyDestinationTile::remapArrayForTexturing(osg::Vec4Array *v,const TexBlendC
                     osg::Vec3 tc=texCoordsArray[j]->at(i);
                     if(checkInBounds(tc)){
                         double r=(osg::Vec2(tc[0],tc[1])-osg::Vec2(0.5,0.5)).length();
-                    texCoordsArray[j]->at(i)=osg::Vec3(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
+                        texCoordsArray[j]->at(i)=osg::Vec3(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
                                                            tc[0]*matrix(0,1) + tc[1]*matrix(1,1) + matrix(3,1),r);
                     }else{
-                    //    texCoordsArray[j]->at(i)=osg::Vec3(-1,-1,-1);
-                   }
+                        //    texCoordsArray[j]->at(i)=osg::Vec3(-1,-1,-1);
+                    }
                 }else{
                     if( allIds.count(id)){
                         (*v)[i][j]=allIds[id];
@@ -202,7 +202,7 @@ void MyDestinationTile::remapArrayForTexturing(osg::Vec4Array *v,const TexBlendC
                             texCoordsArray[j]->at(i)[2]=(*v)[i][j];
                         }else{
 
-                      //    texCoordsArray[j]->at(i)=osg::Vec3(-1,-1,-1);
+                            //    texCoordsArray[j]->at(i)=osg::Vec3(-1,-1,-1);
                         }
                     }
                 }
@@ -248,7 +248,7 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
     OSG_ALWAYS << "\tNumber of Atlas: " <<_atlasGen->getNumAtlases()<<endl;
 
     //Important otherwise osg optimizer will collapse textures into one another
-      texture_images[0]->setFileName(_dataSet->getSubtileName(_level,_tileX,_tileY));
+    texture_images[0]->setFileName(_dataSet->getSubtileName(_level,_tileX,_tileY));
 
     osg::ref_ptr<osg::Texture2DArray> textureArray;
     osg::ref_ptr<osg::Texture2D> texture;
@@ -263,13 +263,13 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
     }
     else{
         texture=new osg::Texture2D(texture_images[0]);
-       /* texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
+        /* texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
         texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
         texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
         texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);*/
         int layerNum=0;
         osg::Texture::InternalFormatMode internalFormatMode = osg::Texture::USE_IMAGE_DATA_FORMAT;
-      /*  switch(getImageOptions(layerNum)->getTextureType())
+        /*  switch(getImageOptions(layerNum)->getTextureType())
         {
         case(BuildOptions::RGB_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
         case(BuildOptions::RGBA_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
@@ -317,8 +317,8 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
         }
 
     }else{
-        loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/projV.frag" );
-        loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/projVatlas.vert" );
+        loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/pass.frag" );
+        loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/blend.vert" );
     }
     program->addShader(  lerpF );
     program->addShader(  lerpV );
@@ -381,13 +381,13 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
     if(a != 0)
         assert(a == verts.size());
     assert(a == b);
-
-    //remapArrayForTexturing(v,texCoordsArray,allIds);
-
-    std::vector<osg::DrawElementsUInt *>  primsets(_atlasGen->getNumAtlases()+1);;
-    std::vector<osg::Vec3Array *>  vertSplit(_atlasGen->getNumAtlases()+1);
-    std::vector<osg::Vec2Array *> texSplit(_atlasGen->getNumAtlases()+1);
-    geoms.resize(_atlasGen->getNumAtlases()+1);
+    std::vector<osg::ref_ptr<osg::Image> > texture_images=_atlasGen->getImages();
+    remapArrayForTexturing(v,texCoordsArray,allIds);
+    int numberOfGeoms=texture_images.size();
+    std::vector<osg::DrawElementsUInt *>  primsets(numberOfGeoms+1);;
+    std::vector<osg::Vec3Array *>  vertSplit(numberOfGeoms+1);
+    std::vector<TexBlendCoord> texSplit(numberOfGeoms+1);
+    geoms.resize(numberOfGeoms+1);
     int untexidx=(geoms.size()-1);
     for(int i=0; i< (int)geoms.size(); i++){
         geoms[i]= new osg::Geometry;
@@ -398,16 +398,31 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         //No texture in last set
         if(i == untexidx)
             continue;
-        texSplit[i]=new osg::Vec2Array;
-        geoms[i]->setTexCoordArray(TEX_UNIT,texSplit[i]);
+        texSplit[i].resize(4);
+        texSplit[i][0]=new osg::Vec3Array;
+        texSplit[i][1]=new osg::Vec3Array;
+        texSplit[i][2]=new osg::Vec3Array;
+        texSplit[i][3]=new osg::Vec3Array;
+        if(_mydataSet->_useBlending){
+            setVertexAttrib(*geoms[i],_texCoordsAlias1,texSplit[i][0],false,osg::Geometry::BIND_PER_VERTEX);
+            setVertexAttrib(*geoms[i],_texCoordsAlias2,texSplit[i][1],false,osg::Geometry::BIND_PER_VERTEX);
+            setVertexAttrib(*geoms[i],_texCoordsAlias3,texSplit[i][2],false,osg::Geometry::BIND_PER_VERTEX);
+            setVertexAttrib(*geoms[i],_texCoordsAlias4,texSplit[i][3],false,osg::Geometry::BIND_PER_VERTEX);
+        }else{
+            geoms[i]->setTexCoordArray(TEX_UNIT,texSplit[i][0]);
+        }
         //geoms[i]->setUseDisplayList(false);
         osg::StateSet *stateset=geoms[i]->getOrCreateStateSet();
-        osg::Image *atlasTex=_atlasGen->getAtlasByNumber(i);
-        osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(atlasTex);
-        texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
+        osg::Image *tex=texture_images[i];
+        char tmpf[255];
+        sprintf(tmpf,"%d",rand());
+        tex->setFileName(tmpf);
+
+        osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(tex);
+      /*  texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
         texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
         texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
-        texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
+        texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);*/
         bool inlineImageFile = _dataSet->getDestinationTileExtension()==".ive" || _dataSet->getDestinationTileExtension()==".osgb" ;
         bool compressedImageSupported = inlineImageFile;
         //bool mipmapImageSupported = compressedImageSupported; // inlineImageFile;
@@ -428,7 +443,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         bool compressedImageRequired = (internalFormatMode != osg::Texture::USE_IMAGE_DATA_FORMAT);
         //  image->s()>=minumCompressedTextureSize && image->t()>=minumCompressedTextureSize &&
 
-        if (compressedImageSupported && compressedImageRequired )
+        if (0&&compressedImageSupported && compressedImageRequired )
         {
             log(osg::NOTICE,"Compressed image");
 
@@ -444,6 +459,32 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         stateset->setTextureAttributeAndModes(TEX_UNIT,texture,osg::StateAttribute::ON);
         stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
 
+        osg::Program* program = new osg::Program;
+        program->setName( "projective_tex" );
+        osg::ref_ptr<osg::Shader> lerpF=new osg::Shader( osg::Shader::FRAGMENT);
+        osg::ref_ptr<osg::Shader> lerpV=new osg::Shader( osg::Shader::VERTEX);
+        if(_mydataSet->_useBlending){
+            loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/blend.vert" );
+
+            if(_mydataSet->_useAtlas){
+                loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/blendAtlas.frag" );
+            }else{
+                loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/blend.frag" );
+            }
+
+        }else{
+            loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/pass.frag" );
+            loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/blend.vert" );
+        }
+        program->addShader(  lerpF );
+        program->addShader(  lerpV );
+        program->addBindAttribLocation(_texCoordsAlias1.second,_texCoordsAlias1.first);
+        program->addBindAttribLocation(_texCoordsAlias2.second,_texCoordsAlias2.first);
+        program->addBindAttribLocation(_texCoordsAlias3.second,_texCoordsAlias3.first);
+        program->addBindAttribLocation(_texCoordsAlias4.second,_texCoordsAlias4.first);
+        if(_mydataSet->_useBlending)
+            stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
+
         stateset->setDataVariance(osg::Object::STATIC);
     }
     int numIdx=prset.getNumIndices();
@@ -453,44 +494,48 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
     assert(numIdx ==(int) v->size());
     for(int i=0; i<numIdx-2; i+=3){
         vector<osg::Vec3> vP;
-        vector<osg::Vec2> tP;
+        vector<osg::Vec3> tP[4];
         vector<unsigned int> iP;
         vector<SpatialIndex::id_type> idP;
 
-        int atlas=-1;
+         SpatialIndex::id_type id=-1;//int atlas=-1;
         bool untex=false;
         for(int k=0; k <3; k++){
-            SpatialIndex::id_type id= (v &&  v->size() && prset.index(i+k) < v->size()   )? (int)((*v)[prset.index(i+k)][0]) : -1;
+          id = (v &&  v->size() && prset.index(i+k) < v->size()   )? (int)((*v)[prset.index(i+k)][0]) : -1;
             if(id < 0){
                 untex=true;
             }else{
-                atlas=_atlasGen->getAtlasId(id);
+                /*atlas=_atlasGen->getAtlasId(id);
                 if(atlas < 0 || atlas >= untexidx){
                     OSG_ALWAYS << "Atlas mapping incorrect id: " << id << " index: " << prset.index(i+k) << endl;
                     exit(-1);
-                }
+                }*/
 
 
-                osg::Vec3 tc = texCoordsArray[0]->at(prset.index(i+k));
-                osg::Matrix matrix=_atlasGen->getTextureMatrixByID(id);
-                tP.push_back(osg::Vec2(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
-                                       tc[0]*matrix(0,1) + tc[1]*matrix(1,1) + matrix(3,1)));
-                iP.push_back(vertSplit[atlas]->size()+k);
+                osg::Vec3 tc[4];
+                for(int t=0; t <4; t++){
+                tc[t]= texCoordsArray[t]->at(prset.index(i+k));
+
+              //  osg::Matrix matrix=_atlasGen->getTextureMatrixByID(id);
+                tP[t].push_back(tc[t]);//osg::Vec2(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
+            }                     // tc[0]*matrix(0,1) + tc[1]*matrix(1,1) + matrix(3,1)));
+                iP.push_back(vertSplit[id]->size()+k);
 
             }
-            idP.push_back(atlas);
+          //  idP.push_back(atlas);
             vP.push_back((verts)[prset.index(i+k)]);
         }
         // assert(idP[0]== idP[1] == idP[2]);
-        if(idP[0]!= idP[1] || idP[1]!= idP[2] || idP[0]!= idP[2])
-            untex=true;
+       // if(idP[0]!= idP[1] || idP[1]!= idP[2] || idP[0]!= idP[2])
+         //   untex=true;
         //assert(vP.size() == 3 && iP.size() == 3);
         int untexSize=vertSplit[untexidx]->size();
         for(int k=0; k <3; k++){
             if(!untex){
-                vertSplit[atlas]->push_back(vP[k]);
-                texSplit[atlas]->push_back(tP[k]);
-                primsets[atlas]->push_back(iP[k]);
+                vertSplit[id]->push_back(vP[k]);
+                for(int t=0; t<4; t++)
+                texSplit[id][t]->push_back(tP[t][k]);
+                primsets[id]->push_back(iP[k]);
             }else{
                 vertSplit[untexidx]->push_back(vP[k]);
                 primsets[untexidx]->push_back(untexSize+k);
@@ -502,6 +547,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
 
 
     }*/
+
     if(!vertSplit[geoms.size()-1]->size()){
         geoms.resize(geoms.size()-1);
     }
@@ -982,7 +1028,7 @@ osg::Node* MyDestinationTile::createScene()
                 if(geomList.size() && _atlasGen->_totalImageList.size()> 0 ){
                     osg::Geometry *geom=*geomList.begin();
 
-                    if(1){// if(_mydataSet->_useTextureArray){
+                    if(false){// if(_mydataSet->_useTextureArray){
                         osg::StateSet *stateset=generateStateAndArray2DRemap(v,texCoords,0);
                         //setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);
                         setVertexAttrib(*geom,_texCoordsAlias1,texCoords[0],false,osg::Geometry::BIND_PER_VERTEX);

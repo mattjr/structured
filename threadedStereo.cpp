@@ -2679,7 +2679,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int i=0; i <(int)vrip_cells.size(); i++){
                     if(vrip_cells[i].poses.size() == 0)
                         continue;
-                    fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/clipped-diced-%08d-lod%d.ply --outfile mesh-diced/clipped-diced-%08d-lod%d.ply\n",
+                    fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/clipped-diced-%08d-lod%d.ply --outfile mesh-diced/clipped-diced-%08d-lod%d.ply",
                             cwd,
                             basepath.c_str(),
                             base_dir.c_str(),
@@ -2687,6 +2687,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             vpblod,
                             i,
                             vpblod);
+                    if(true)
+                         fprintf(texcmds_fp," --tex_cache %s %d\n",cachedtexdir[0].first.c_str(),cachedtexdir[0].second);
+                    else
+                        fprintf(texcmds_fp,"\n");
+
                 }
                 fclose(texcmds_fp);
                 string texcmd="tex.py";

@@ -26,6 +26,9 @@ void TexPyrAtlas::computeImageNumberToAtlasMap(void){
 }
 
 int TexPyrAtlas::getAtlasId(id_type id){
+    if(id < 0 )
+        return id;
+
     if(!_useAtlas)
         return id;
     if(_idToAtlas.count(id))

@@ -40,6 +40,16 @@ int main( int argc, char **argv )
         fprintf(stderr,"Need outfile name\n");
         return -1;
     }
+    bool reimage=false;
+    std::string tex_cache_dir;
+    texcache_t cache;
+
+    int size;
+    if(arguments.read("--tex_cache",tex_cache_dir,size)){
+        reimage=true;
+        cache.push_back(std::make_pair<std::string,int>(tex_cache_dir,size));
+    }
+
     std::string mf=argv[2];
    /* std::string sha2hash;
     int res=checkCached(mf,outfilename,sha2hash);
@@ -69,22 +79,37 @@ int main( int argc, char **argv )
         }else{
             std::cerr << "No drawbables \n";
         }
-        texcache_t tmp;
-        TexPyrAtlas atlasGen(tmp);
-        atlasGen._useAtlas=false;
-        TexturingQuery *tq=new TexturingQuery(sourceModel,calib->left_calib,atlasGen,true);
-        vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(tmp);
+      //  TexPyrAtlas atlasGen(cache);
+        //atlasGen._useAtlas=true;
+        vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,false);
+        dataset->_useAtlas=true;
+        dataset->_useBlending=true;
+        vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(cache);
+        tile->_mydataSet=dataset;
+        tile->_dataSet=dataset;
+
+        TexturingQuery *tq=new TexturingQuery(sourceModel,calib->left_calib,*tile->_atlasGen,true);
 
         tq->_tile=tile;
         bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(model));
         if(projectSucess){
             //  writeCached(outfilename,sha2hash,tile->texCoordIDIndexPerModel.begin()->second,tile->texCoordsPerModel.begin()->second);
-            std::ofstream f(outfilename.c_str());
             //osg::Geometry *geom = dynamic_cast< osg::Geometry*>( geode->getDrawable(0));
            // for(int f=0; f<tile->texCoordsPerModel.begin()->second.size(); f++)
             //    geom->setTexCoordArray(f,tile->texCoordsPerModel.begin()->second[f]);
-            PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second));
-            model->accept(nv);
+            if(!reimage){
+                std::ofstream f(outfilename.c_str());
+                PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second));
+                model->accept(nv);
+            }else{
+               // map<SpatialIndex::id_type,int> allIds=calcAllIds(tile->texCoordIDIndexPerModel.begin()->second);
+               // tq->addImagesToAtlasGen(allIds);
+                tile->_models = new vpb::DestinationData(NULL);
+                tile->_models->_models.push_back(model);
+                osg::ref_ptr<osg::Node> node=tile->createScene();
+                osgDB::writeNodeFile(*node,osgDB::getNameLessExtension(outfilename).append(".ive"));
+            }
+
         }else
             cerr << "Failed to project\n";
         delete tq;

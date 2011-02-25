@@ -781,7 +781,39 @@ void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* c
         }
     }
 }
+typedef struct _picture_cell{
+    int row;
+    int col;
+    std::vector<int> idx;
 
+    std::vector<std::string> names;
+}picture_cell;
+struct cell_compare {
+    bool operator ()(picture_cell const& a, picture_cell const& b) const {
+        if (a.idx.size() < b.idx.size()) return true;
+        if (a.idx.size()  > b.idx.size() ) return false;
+
+        for(int i=0; i < a.idx.size(); i++){
+            if (a.idx[i] < b.idx[i]) return true;
+            if (a.idx[i] > b.idx[i]) return false;
+
+        }
+
+        return false;
+    }
+};
+
+
+bool cell_equal(picture_cell const& a, picture_cell const& b)  {
+    if (a.idx.size() != b.idx.size()) return false;
+
+    for(int i=0; i < a.idx.size(); i++){
+        if (a.idx[i] != b.idx[i]) return false;
+
+    }
+
+    return true;
+}
 int main(int argc, char** argv)
 {
     // use an ArgumentParser object to manage the program arguments.
@@ -929,6 +961,8 @@ int main(int argc, char** argv)
 
         }else{
             bboxes.push_back(std::make_pair<osg::BoundingBox,std::string>(osg::BoundingBox(minx,miny,0.0,maxx,maxy,1.0),fname));
+            std::cout << " bbox " << bboxes.back().first._min<< " " << bboxes.back().first._max << std::endl;
+
         }
         cnt++;
 
@@ -975,20 +1009,19 @@ int main(int argc, char** argv)
     if( im_setupout( raw ) ){
         fprintf(stderr,"Fail!\n");
     }
-  //  osg::ref_ptr<osg::Node> loadedModel =osgDB::readNodeFile("/home/mattjr/data/d100/mesh-diced/total.ply");
+    //  osg::ref_ptr<osg::Node> loadedModel =osgDB::readNodeFile("/home/mattjr/data/d100/mesh-diced/total.ply");
+    std::vector<picture_cell> cells;
     for(int row=0; row< _tileRows; row++){
         for(int col=0; col<_tileColumns; col++){
-            osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
 
             bool centerValid=false;
 
-            osg::ref_ptr<osg::Group> loadedModel =new osg::Group;
             osg::BoundingBox thisCellBbox;
             thisCellBbox._min=totalbb._min+osg::Vec3(col*deltaV.x(),row*deltaV.y(),0.0);
             thisCellBbox._max=totalbb._min+osg::Vec3((col+1)*deltaV.x(),(row+1)*deltaV.y(),1.0);
             thisCellBbox._min[2]=0;
             thisCellBbox._max[2]=1;
-            std::cout << "this bbox " << thisCellBbox._min<< " " << thisCellBbox._max << std::endl;
+            //  std::cout << "this bbox " << thisCellBbox._min<< " " << thisCellBbox._max << std::endl;
             osg::Timer_t tick_start = osg::Timer::instance()->tick();
             //for(int i=0; i < 9; i++){
             //   int offsetX=xdel[i];
@@ -998,47 +1031,103 @@ int main(int argc, char** argv)
             char tmp[1024];
             //sprintf(tmp,"%08d",i);
             //os << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX+offsetX<<"_Y"<<modelY+offsetY<<"_subtile.ive";
+            picture_cell cell;
+            cell.row=row;
+            cell.col=col;
+            std::cout << " == " << thisCellBbox._min<< " " << thisCellBbox._max << std::endl;
+
             for(int i=0; i< bboxes.size(); i++){
-               if(bboxes[i].first.intersects(thisCellBbox))
+                // std::cout << " A " << bboxes[i].first._min<< " " << bboxes[i].first._max;
+                double eps=0.5;
+                if(osg::Vec3(bboxes[i].first._min -thisCellBbox._min).length()  < eps && osg::Vec3(bboxes[i].first._max - thisCellBbox._max).length() < eps)//if(bboxes[i].first.intersects(thisCellBbox) )
                 {
                     std::ostringstream os;
 
-                    os<< "/home/mattjr/data/d100/mesh-diced/" <<bboxes[i].second;
-                    std::cout << os.str() << "included\n";
-                    if(osgDB::fileExists(os.str())){
-                        osg::ref_ptr<osg::Node> node= osgDB::readNodeFile(osgDB::getNameLessExtension(os.str())+".ive");
+                    os<< "/home/mattjr/data/dall_6/mesh-diced/" <<bboxes[i].second;
+                    //std::cout << "row " << row << " col "<<col <<" i: " <<osgDB::getNameLessAllExtensions(osgDB::getSimpleFileName(os.str()))<<"\n";
+                    //if(osgDB::fileExists(os.str())){
+                    cell.names.push_back(osgDB::getNameLessExtension(os.str())+".ive");
+                    cell.idx.push_back(i);
 
-                        loadedModel->addChild(node);
-                    }
+                    //loadedModel->addChild(node);
+                    //}
                 }
 
 
             }
+            std::sort(cell.idx.begin(),cell.idx.end());
 
-            // load the data
-            if (loadedModel.valid() && loadedModel->getNumChildren() > 0)
-            {
+            cells.push_back(cell);
+
+        }
+    }
+    int mult_count=0;
+    std::sort(cells.begin(),cells.end(),cell_compare());
+    for(int i=0; i < cells.size(); i++){
+        if(cells[i].names.size() > 1)
+            mult_count++;
+        for(int j=0; j < cells[i].names.size(); j++)
+            std::cout << cells[i].idx[j] << " ";
+        std::cout << "\n\n  ";
+    }
+    printf("Mult count %d\n",mult_count);
+    osg::ref_ptr<osg::Group> loadedModel;
+
+    for(int i=0; i < cells.size(); i++){
+        // load the data
+        osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
+        printf("\r%03d/%03d",i,cells.size());
+        fflush(stdout);
+
+        bool load=false;
+        if(i == 0)
+            load=true;
+        else
+            if(!cell_equal(cells[i],cells[i-1]))
+                load=true;
+
+        if(cells[i].idx.size() ==0){
+            fprintf(stderr,"No data\n");
+            load=false;
+        }
+        //if(cells[i].idx.size() > 3)
+        //  load=false;
+
+        if(load){
+            loadedModel =0;
+            loadedModel=new osg::Group;
+            for(int j=0; j < cells[i].names.size(); j++){
+
+                osg::ref_ptr<osg::Node> node= osgDB::readNodeFile(cells[i].names[j]);
+                std::cout << "\nLoading: "<<osgDB::getSimpleFileName(cells[i].names[j]) << "\n";
+                loadedModel->addChild(node);
+                std::cout << "Loaded\n";
+
+            }
+        }
+        if (loadedModel.valid() && loadedModel->getNumChildren() > 0)
+        {
 
 
-                // optimize the scene graph, remove redundant nodes and state etc.
-                osgUtil::Optimizer optimizer;
-                optimizer.optimize(loadedModel.get());
-                osg::Timer_t tick_afterReadPixels = osg::Timer::instance()->tick();
+            // optimize the scene graph, remove redundant nodes and state etc.
+            osgUtil::Optimizer optimizer;
+            optimizer.optimize(loadedModel.get());
+            osg::Timer_t tick_afterReadPixels = osg::Timer::instance()->tick();
 
-                //double timeForReadPixels = osg::Timer::instance()->delta_s(tick_start, tick_afterReadPixels);
-                //printf("Time for read %.2f\n",timeForReadPixels);
-                viewer.setSceneData( loadedModel.get() );
+            //double timeForReadPixels = osg::Timer::instance()->delta_s(tick_start, tick_afterReadPixels);
+            //printf("Time for read %.2f\n",timeForReadPixels);
+            viewer.setSceneData( loadedModel.get() );
 
 
 
-                std::ostringstream os2;
+            std::ostringstream os2;
 
-                // os << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.tif";
-                // os2 << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.txt";
-                // char tmp[1024];
-                //zsprintf(tmp,"%08d",i);
-                //os<< "/home/mattjr/data/dall_6/mesh-diced/clipped-diced-"<<tmp<<"-lod3.tif";
-                /*os2<< "/home/mattjr/data/dall_6/mesh-diced/clipped-diced-"<<tmp<<"-lod3.mat";
+            // os << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.tif";
+            // os2 << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.txt";
+            // char tmp[1024];
+            //zsprintf(tmp,"%08d",i);
+            //os<< "/home/mattjr/data/dall_6/mesh-diced/clipped-diced-"<<tmp<<"-lod3.tif";
+            /*os2<< "/home/mattjr/data/dall_6/mesh-diced/clipped-diced-"<<tmp<<"-lod3.mat";
 
                 std::fstream _file(os2.str().c_str(),std::ios::binary|std::ios::out);
                 for(int i=0; i<4; i++)
@@ -1050,39 +1139,39 @@ int main(int argc, char** argv)
                 _file.close();
                 */
 
-                IMAGE *im;
-                if( !(im = im_open( "temp", "t" )) )
-                    fprintf(stderr,"Freakout");
+            IMAGE *im;
+            if( !(im = im_open( "temp", "t" )) )
+                fprintf(stderr,"Freakout");
 
-                im_initdesc(im,width,height,4,IM_BBITS_BYTE,IM_BANDFMT_UCHAR,IM_CODING_NONE,IM_TYPE_sRGB,1.0,1.0,0,0);
-
-
-                if( im_setupout( im ) ){
-                    fprintf(stderr,"Fail!\n");
-                }
-                if(im_incheck(im)){
-                    fprintf(stderr,"Fail!\n");
-                }
+            im_initdesc(im,width,height,4,IM_BBITS_BYTE,IM_BANDFMT_UCHAR,IM_CODING_NONE,IM_TYPE_sRGB,1.0,1.0,0,0);
 
 
+            if( im_setupout( im ) ){
+                fprintf(stderr,"Fail!\n");
+            }
+            if(im_incheck(im)){
+                fprintf(stderr,"Fail!\n");
+            }
 
-                char tmpn[255];
 
 
-                viewer.getCamera()->setProjectionMatrix(proj*offsetMatrix);
-                viewer.getCamera()->setViewMatrix(view);
-                //     std::cout << proj << " " <<view <<std::endl;
-                //  for(int t=0; t<2; t++){
-                viewer.frame();
-                viewer.advance();
-                viewer.updateTraversal();
-                viewer.renderingTraversals();
-                //  }
-                osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
-                //         for(int i = 0; i < img->t(); ++i) {
-                //         im_writeline(i,im, (PEL *)img->data(0,img->t() - i - 1));
-                //     }
-                /*  char *ptr=im->data;
+            char tmpn[255];
+
+
+            viewer.getCamera()->setProjectionMatrix(proj*offsetMatrix);
+            viewer.getCamera()->setViewMatrix(view);
+            //     std::cout << proj << " " <<view <<std::endl;
+            //  for(int t=0; t<2; t++){
+            viewer.frame();
+            viewer.advance();
+            viewer.updateTraversal();
+            viewer.renderingTraversals();
+            //  }
+            osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
+            //         for(int i = 0; i < img->t(); ++i) {
+            //         im_writeline(i,im, (PEL *)img->data(0,img->t() - i - 1));
+            //     }
+            /*  char *ptr=im->data;
             unsigned char *src=img->data();
             for(int i=0; i<(int)img->getImageSizeInBytes(); i+=4,ptr+=3){
                 *(ptr+0)= *(src+i+0);
@@ -1091,27 +1180,29 @@ int main(int argc, char** argv)
 
             }
 */
-                if(_tileColumns ==1 && _tileRows ==1 ){
-                    memcpy(raw->data,img->data(),img->getImageSizeInBytes());
+            if(_tileColumns ==1 && _tileRows ==1 ){
+                memcpy(raw->data,img->data(),img->getImageSizeInBytes());
 
-                }else{
-                    memcpy(im->data,img->data(),img->getImageSizeInBytes());
-                    // sprintf(tmpn,"%d_%d.tif",row,col);
-                    /*       IMAGE *out;
+            }else{
+                memcpy(im->data,img->data(),img->getImageSizeInBytes());
+                // sprintf(tmpn,"%d_%d.tif",row,col);
+                /*       IMAGE *out;
         out=im_open( tmpn, "w" );
     if( im_copy( im, out) )
         printf("Fail!\n");
     im_close(out);*/
-                    if(im_insertplace(raw,im,width*col,height*row))
-                        printf("Fail!\n");
-                }
-                //   return(-1);
-                //osgDB::writeImageFile(*img,tmpn);
-                im_close(im);
-
+                if(im_insertplace(raw,im,width*cells[i].col,height*cells[i].row))
+                    printf("Fail!\n");
             }
+            //   return(-1);
+            //osgDB::writeImageFile(*img,tmpn);
+            im_close(im);
 
+        }else{
+            std::cout << "Prob shouldn't get here\n";
         }
+
+
     }
     im_close(raw);
 

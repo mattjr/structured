@@ -984,8 +984,20 @@ int main(int argc, char** argv)
     centeredMax=(totalbb._max-totalbb.center());
     osg::Matrixd proj= osg::Matrixd::ortho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
 
-    int _tileColumns=4;
-    int _tileRows=4;
+    std::stringstream os2;
+    os2<< "view.mat";
+
+    std::fstream _file(os2.str().c_str(),std::ios::binary|std::ios::out);
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            _file.write(reinterpret_cast<char*>(&(view(i,j))),sizeof(double));
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            _file.write(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
+    _file.close();
+
+    int _tileColumns=2;
+    int _tileRows=2;
     osg::Vec3 deltaV=totalbb._max-totalbb._min;
     deltaV.x()/= _tileColumns;
     deltaV.y()/= _tileRows;
@@ -1043,7 +1055,8 @@ int main(int argc, char** argv)
                 {
                     std::ostringstream os;
 
-                    os<< "/home/mattjr/data/dall_6/mesh-diced/" <<bboxes[i].second;
+                    os<< argv[2] <<"/"<<bboxes[i].second;
+                    std::cout << os.str() <<std::endl;
                     //std::cout << "row " << row << " col "<<col <<" i: " <<osgDB::getNameLessAllExtensions(osgDB::getSimpleFileName(os.str()))<<"\n";
                     //if(osgDB::fileExists(os.str())){
                     cell.names.push_back(osgDB::getNameLessExtension(os.str())+".ive");

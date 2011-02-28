@@ -82,12 +82,12 @@ int main( int argc, char **argv )
       //  TexPyrAtlas atlasGen(cache);
         //atlasGen._useAtlas=true;
         vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,false);
-        dataset->_useAtlas=true;
+        dataset->_useAtlas=false;
         dataset->_useBlending=true;
         vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(cache);
         tile->_mydataSet=dataset;
         tile->_dataSet=dataset;
-
+        tile->_atlasGen->_useAtlas=false;
         TexturingQuery *tq=new TexturingQuery(sourceModel,calib->left_calib,*tile->_atlasGen,true);
 
         tq->_tile=tile;

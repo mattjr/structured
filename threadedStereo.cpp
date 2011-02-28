@@ -2182,7 +2182,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
         }
 
 
-
+        FILE *reFP=fopen("rebbox.txt","w");
         string mbfile=mbdir+"/"+"mb-total.ply";
         Bounds bounds( tasks );
         std::vector<Cell_Data> vrip_cells;
@@ -2193,8 +2193,10 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
         else
             vrip_cells=calc_cells(tasks,AUV_SPLIT,cell_scale);
         printf("Split into %d cells for VRIP\n",(int)vrip_cells.size());
-
+        fprintf(reFP,"%f %f %f %f %s\n",bounds.min_x,bounds.max_x,bounds.min_y,bounds.max_y,"total");
         for(int i=0; i <(int)vrip_cells.size(); i++){
+            fprintf(reFP,"%f %f %f %f clipped-diced-%08d-lod%d.ive\n",vrip_cells[i].bounds.min_x,vrip_cells[i].bounds.max_x,vrip_cells[i].bounds.min_y,vrip_cells[i].bounds.max_y,i,vpblod);
+
             if(vrip_cells[i].poses.size() == 0)
                 continue;
 
@@ -2289,7 +2291,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
         fclose(vripcmds_fp);
         fclose(diced_fp);
         fclose(diced_lod_fp);
-
+        fclose(reFP);
         FILE *quadmerge_seg_fp;
         char quadmerge_seg_fname[2048];
 

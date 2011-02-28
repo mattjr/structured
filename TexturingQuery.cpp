@@ -511,7 +511,8 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
             OSG_INFO<< "Empty mesh continuing!" <<endl;
             continue;
         }
-        OSG_INFO << "\tModel Size: "<< verts->size()<<endl;
+        //OSG_INFO
+        std::cout<< "\tModel Size: "<< verts->size()<<endl;
         /*   if(checkCached && checkAndLoadCache())
             return true;
 */
@@ -543,7 +544,7 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
                     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_tile->_texCoordMutex);
 
                     _tile->texCoordIDIndexPerModel[geode]=v;
-                    //printf("v %d\n",v->size());
+                    //printf("v %d %d\n",v->size(), *itr->getNumIndices());
 
                     _tile->texCoordsPerModel[geode]=texCoords;
                 }

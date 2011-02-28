@@ -104,8 +104,12 @@ vector<osg::KdTree*> trees;
             sourceModel->tex_cache_dir=cacheddir;
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
             ply::VertexData vertexData;
-            osg::Node* model = vertexData.readPlyFile(sourceModel->getFileName().c_str());
-            toVert(model,vertexData._texCoord,vertexData._texIds,sourceModel->tex,sourceModel->ids);
+            osg::Node* model;
+            if(!m->_useReImage){
+                model= vertexData.readPlyFile(sourceModel->getFileName().c_str());
+                toVert(model,vertexData._texCoord,vertexData._texIds,sourceModel->tex,sourceModel->ids);
+            }else
+                model = osgDB::readNodeFile(sourceModel->getFileName());
             //std::cerr << "aaa " << sourceModel->tex->at(0)->size() << " " << sourceModel->ids->size() <<endl;
             osg::ref_ptr<osg::KdTreeBuilder>  _kdTreeBuilder = osgDB::Registry::instance()->getKdTreeBuilder()->clone();
             model->accept(*_kdTreeBuilder);

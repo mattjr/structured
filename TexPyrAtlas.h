@@ -80,5 +80,5 @@ protected:
 
 
 };
-
+std::string getUUID(void);
 #endif // TEXPYRATLAS_H

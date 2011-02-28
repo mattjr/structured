@@ -905,26 +905,31 @@ int main(int argc, char** argv)
     int currentLevel=2;
     int   xdel[] = { 0,-1, 1, 0,  0,1,-1,1,-1};
     int   ydel[] = { 0, 0, 0,-1,  1,1,-1,-1,1};
-    for(int modelX=0; modelX<4; modelX++){
-        for(int modelY=0; modelY<4; modelY++){
-            bool centerValid=false;
+  //  for(int modelX=0; modelX<4; modelX++){
+    //    for(int modelY=0; modelY<4; modelY++){
+    for(int i=0; i<15; i++){
+    bool centerValid=false;
 
             osg::ref_ptr<osg::Group> loadedModel =new osg::Group;
 
             osg::Timer_t tick_start = osg::Timer::instance()->tick();
-            for(int i=0; i < 9; i++){
-                int offsetX=xdel[i];
-                int offsetY=ydel[i];
+            //for(int i=0; i < 9; i++){
+             //   int offsetX=xdel[i];
+               // int offsetY=ydel[i];
                 std::ostringstream os;
-                os << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX+offsetX<<"_Y"<<modelY+offsetY<<"_subtile.ive";
+            //    os << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX+offsetX<<"_Y"<<modelY+offsetY<<"_subtile.ive";
                 //files.push_back(os.str());
-
+                char tmp[1024];
+                sprintf(tmp,"%08d",i);
+//os << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX+offsetX<<"_Y"<<modelY+offsetY<<"_subtile.ive";
+                os<< "/home/mattjr/data/dall_6/mesh-diced/clipped-diced-"<<tmp<<"-lod3.ive";
                 if(osgDB::fileExists(os.str())){
                     osg::ref_ptr<osg::Node> node= osgDB::readNodeFile(os.str());
                     if(node.valid()){
                         //  std::cout << os.str() << "oaded \n";
 
-                        if(offsetX ==0 && offsetY ==0 ){
+                        //if(offsetX ==0 && offsetY ==0 )
+                        {
                             std::cout << os.str()<<std::endl;
 
                             bs=node->getBound();
@@ -936,14 +941,14 @@ int main(int argc, char** argv)
                             if(isfinite(bb.radius())){
                                 centerValid=true;
                             }else{
-                                printf("Empty continuing %d %d \n",modelX+offsetX,modelY+offsetY);
+                            //    printf("Empty continuing %d %d \n",modelX+offsetX,modelY+offsetY);
                                 break;
                             }
                         }
                         loadedModel->addChild(node);
                     }
-                }else if(offsetX ==0 && offsetY ==0 )
-                    break;
+               // }else if(offsetX ==0 && offsetY ==0 )
+                 //   break;
             }
 
             // load the data
@@ -977,8 +982,13 @@ int main(int argc, char** argv)
                 std::ostringstream os;
                 std::ostringstream os2;
 
-                os << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.tif";
-                os2 << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.txt";
+               // os << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.tif";
+               // os2 << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.txt";
+                char tmp[1024];
+                sprintf(tmp,"%08d",i);
+                os<< "/home/mattjr/data/dall_6/mesh-diced/clipped-diced-"<<tmp<<"-lod3.tif";
+                os2<< "/home/mattjr/data/dall_6/mesh-diced/clipped-diced-"<<tmp<<"-lod3.mat";
+
                 std::fstream _file(os2.str().c_str(),std::ios::binary|std::ios::out);
                 for(int i=0; i<4; i++)
                     for(int j=0; j<4; j++)
@@ -1074,5 +1084,5 @@ int main(int argc, char** argv)
             }
         }
 
-    }
+   // }
 }

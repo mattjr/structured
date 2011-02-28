@@ -179,17 +179,17 @@ class MyDataSet :  public DataSet
         bool _useAtlas;
         bool _useBlending;
         bool _useVBO;
+        osg::Matrix viewProj;
 
+        bool _useReImage;
 
     protected:
         virtual ~MyDataSet() {}
-
         void _readRow(Row& row);
          void _writeRow(Row& row);
          void init();
          const Camera_Calib &_calib;
          MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
-         bool _useReImage;
          std::ofstream _file;
          OpenThreads::Mutex _fileMutex;
 };

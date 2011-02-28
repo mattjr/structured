@@ -59,21 +59,22 @@ osg::Group *remapNode(osg::Group *group, osg::ref_ptr<osg::Image> &image,osg::Ma
             geode=group2->getChild(0)->asGeode();
         else
             geode = dynamic_cast< osg::Geode*>(group->getChild(i));
+        for(int k=0; k<geode->getNumDrawables(); k++){
+            osg::Drawable *drawable=geode->getDrawable(k);
+            osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+            osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+            osg::DrawElementsUInt* primitiveSet = dynamic_cast<osg::DrawElementsUInt*>(geom->getPrimitiveSet(0));
+            int offset=newVerts->size();
+            if(!verts || !primitiveSet)
+                continue;
+            for(int j=0; j< (int)verts->size(); j++){
+                newVerts->push_back(verts->at(j));
+            }
+            for(int j=0; j< (int)primitiveSet->getNumIndices(); j++){
+                newPrimitiveSet->addElement(offset+primitiveSet->getElement(j));
+            }
 
-        osg::Drawable *drawable=geode->getDrawable(0);
-        osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
-        osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
-        osg::DrawElementsUInt* primitiveSet = dynamic_cast<osg::DrawElementsUInt*>(geom->getPrimitiveSet(0));
-        int offset=newVerts->size();
-        if(!verts || !primitiveSet)
-            continue;
-        for(int j=0; j< (int)verts->size(); j++){
-            newVerts->push_back(verts->at(j));
         }
-        for(int j=0; j< (int)primitiveSet->getNumIndices(); j++){
-            newPrimitiveSet->addElement(offset+primitiveSet->getElement(j));
-        }
-
     }
 
 
@@ -154,14 +155,14 @@ osg::Group *remapNode(osg::Group *group, osg::ref_ptr<osg::Image> &image,osg::Ma
 bool readMatrixToScreen(std::string fname,osg::Matrix &viewProj,osg::Vec2 size){
     std::fstream file(fname.c_str(), std::ios::binary|std::ios::in);
     if(!file.good()){
-     fprintf(stderr,"Can't open %s\n",fname.c_str());
+        fprintf(stderr,"Can't open %s\n",fname.c_str());
         return false;
     }
     osg::Matrixd view,proj;
 
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++)
-             file.read(reinterpret_cast<char*>(&(view(i,j))), sizeof(double));
+            file.read(reinterpret_cast<char*>(&(view(i,j))), sizeof(double));
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++)
             file.read(reinterpret_cast<char*>(&(proj(i,j))), sizeof(double));
@@ -192,7 +193,7 @@ int main(int argc, char** argv)
         arguments.writeErrorMessages(std::cout);
         return 1;
     }
-/*
+    /*
     if (arguments.argc()<=1)
     {
         arguments.getApplicationUsage()->write(std::cout,osg::ApplicationUsage::COMMAND_LINE_OPTION);
@@ -236,35 +237,39 @@ int main(int argc, char** argv)
     int currentLevel=2;
     int   xdel[] = {-1, 0, 1, 0,  0,1,-1,1,-1};
     int   ydel[] = { 0, 0, 0,-1,  1,1,-1,-1,1};
-    for(int modelX=0; modelX<4; modelX++){
-        for(int modelY=0; modelY<4; modelY++){
+    //    for(int modelX=0; modelX<4; modelX++){
+    //      for(int modelY=0; modelY<4; modelY++){
+    for(int i=0; i < 15; i++){
+        char tmp[1024];
+        sprintf(tmp,"%08d",i);
+        //os2<< "/home/mattjr/data/dall_6/mesh-diced/clipped-diced-"<<tmp<<"-lod3.mat";
 
+        std::ostringstream os;
 
-            std::ostringstream os;
+        //  os << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.ive";
+        os<< "/home/mattjr/data/dall_6/mesh-diced/clipped-diced-"<<tmp<<"-lod3.ive";
 
-            os << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile.ive";
-
-            if(osgDB::fileExists(os.str())){
-                osg::ref_ptr<osg::Node> node= osgDB::readNodeFile(os.str());
-                osg::ref_ptr<osg::Image> image= osgDB::readImageFile(osgDB::getNameLessExtension(os.str()).append(".tif"));
-                osg::Matrix viewProj;
-                if(node.valid() && image.valid()){
-                    osg::Vec2 img_size(image->s(),image->t());
-                    bool res=readMatrixToScreen(osgDB::getNameLessExtension(os.str()).append(".txt"),viewProj,img_size);
-                    if(res){
-                        osg::Group *gp=remapNode(node->asGroup(),image,viewProj,img_size);
-                        if(gp){
-                            std::ostringstream os_new;
-                            os_new << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile-blended.ive";
-
-                            osgDB::writeNodeFile(*gp,os_new.str());
-                        }
+        if(osgDB::fileExists(os.str())){
+            osg::ref_ptr<osg::Node> node= osgDB::readNodeFile(os.str());
+            osg::ref_ptr<osg::Image> image= osgDB::readImageFile(osgDB::getNameLessExtension(os.str()).append(".tif"));
+            osg::Matrix viewProj;
+            if(node.valid() && image.valid()){
+                osg::Vec2 img_size(image->s(),image->t());
+                bool res=readMatrixToScreen(osgDB::getNameLessExtension(os.str()).append(".mat"),viewProj,img_size);
+                if(res){
+                    osg::Group *gp=remapNode(node->asGroup(),image,viewProj,img_size);
+                    if(gp){
+                        std::ostringstream os_new;
+                        //os_new << _tileBasename << "_L"<<currentLevel<<"_X"<<modelX<<"_Y"<<modelY<<"_subtile-blended.ive";
+                        os_new<< "/home/mattjr/data/dall_6/mesh-diced/clipped-diced-"<<tmp<<"-blended-lod3.ive";
+                        osgDB::writeNodeFile(*gp,os_new.str());
                     }
                 }
             }
         }
-
-
-
     }
+
+
+
+    //}
 }

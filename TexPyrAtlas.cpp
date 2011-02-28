@@ -89,6 +89,18 @@ osg::ref_ptr<osg::Image> getImageFullorStub(string fname,int size){
     }
     return osgDB::readImageFile(fname);
 }
+string getUUID(void){
+    char strUuid[1024];
+
+    sprintf(strUuid, "%x%x-%x-%x-%x-%x%x%x",
+            rand(), rand(),                 // Generates a 64-bit Hex number
+            rand(),                         // Generates a 32-bit Hex number
+            ((rand() & 0x0fff) | 0x4000),   // Generates a 32-bit Hex number of the form 4xxx (4 indicates the UUID version)
+            rand() % 0x3fff + 0x8000,       // Generates a 32-bit Hex number in the range [0x8000, 0xbfff]
+            rand(), rand(), rand());        // Generates a 96-bit Hex number
+    return string(strUuid);
+}
+
 void TexPyrAtlas::loadTextureFiles(int size){
     std::vector<osg::ref_ptr<osg::Image> > loc_images;
 
@@ -97,7 +109,6 @@ void TexPyrAtlas::loadTextureFiles(int size){
         cerr << "Can't find any dir close to size " << size<<endl;
         exit(-1);
     }
-
     std::map<id_type,string>::const_iterator end = _totalImageList.end();
     for (std::map<id_type,string>::const_iterator it = _totalImageList.begin(); it != end; ++it){
         string fname=closestDir+"/"+it->second;
@@ -113,6 +124,7 @@ void TexPyrAtlas::loadTextureFiles(int size){
             if(!_useAtlas) {
                 _allIDs[it->first]=_images.size();
                 _images.push_back(loc_images.back());
+                _images.back()->setFileName(getUUID());
 
             }else{
                 //texture->setImage(_images[i]);
@@ -135,11 +147,14 @@ void TexPyrAtlas::loadTextureFiles(int size){
         }
     }
 
+
     if(_useAtlas){
         buildAtlas();
         computeImageNumberToAtlasMap();
-        for(int i=0; i < (int)getNumAtlases(); i++)
-            _images.push_back(getAtlasByNumber(i));
+        for(int i=0; i < (int)getNumAtlases(); i++){
+                _images.push_back(getAtlasByNumber(i));
+                _images.back()->setFileName(getUUID());
+            }
         //Free ref created by source new above which is leaks after copy from sources
        // for(int i=0; i < (int)loc_images.size(); i++){
         //    loc_images[i]->unref();
@@ -283,7 +298,7 @@ void TexPyrAtlas::buildAtlas()
     {
         Atlas* atlas = aitr->get();
 
-     /*   if (atlas->_sourceList.size()==1)
+        /*   if (atlas->_sourceList.size()==1)
         {
             // no point building an atlas with only one entry
             // so disconnect the source.

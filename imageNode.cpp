@@ -33,6 +33,7 @@
 #include <osg/ComputeBoundsVisitor>
 #include <osg/io_utils>
 #include <iostream>
+#include <vips/vips.h>
 /* CustomRenderer: Do culling only while loading PagedLODs */
 class CustomRenderer : public osgViewer::Renderer
 {
@@ -460,22 +461,46 @@ osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &viewProj,cons
     return tc;
 
 }
+osg::Matrix getImageSection(const osg::Vec3 minV, const osg::Vec3 maxV, osg::Vec4 &texsize,const osg::Matrix &viewProj,osg::ref_ptr<osg::Image> &image){
+    IMAGE *im;
+    if( !(im = im_open( "subtile.tif", "r" )) ){
+        fprintf(stderr, "Freakout\n");
+    }
+
+    REGION *region = im_region_create( im );
+    int x=0,y=0;
+    Rect r = { left: x, top: y, width: im->Xsize, height: im->Ysize};
+    if( im_prepare( region, &r ) ) fprintf(stderr,"can't get region\n");
+    char *pixel = IM_REGION_ADDR( region, x, y );
+texsize[0]=r.width;
+texsize[1]=r.height;
+texsize[2]=r.width;
+texsize[3]=r.height;
+
+
+    image = new osg::Image;
+    image->allocateImage(im->Xsize,im->Ysize, 1, GL_RGBA,GL_UNSIGNED_BYTE);
+    memcpy(image->data(),pixel,image->getImageSizeInBytes());
+    im_region_free( region );
+    im_close(im);
+    return viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*texsize.x(),0.5*texsize.y(),0.5f));
+}
+
 osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     if(!group)
         return NULL;
     //
     if(group->getNumChildren() == 0)
         return group;
-    if(_level!=_numLevels)
+    /* if(_level!=_numLevels)
         return group;
     writeCameraMatrix(group);
     return group;
-
+*/
     if(!_useReImage)
         return group;
     osg::ref_ptr<osg::Image> image;
 
-    osg::Vec4 texSizes(1024,1024,1024,1024);
 
     osg::Matrix toScreen;
     osg::Vec2Array *texCoord=new osg::Vec2Array();
@@ -484,6 +509,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     osg::Vec3Array *newVerts= new osg::Vec3Array;
     osg::DrawElementsUInt* newPrimitiveSet = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
     osg::Geode *newGeode=new osg::Geode;
+    osg::Vec3 minV(DBL_MAX,DBL_MAX,DBL_MAX),maxV(-DBL_MAX,-DBL_MAX,-DBL_MAX);
 
     for(int i=0; i< (int)group->getNumChildren(); i++){
 
@@ -502,6 +528,12 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         if(!verts || !primitiveSet)
             continue;
         for(int j=0; j< (int)verts->size(); j++){
+            for(int k=0; k <3; k++){
+                if(verts->at(j)[k]< minV[k])
+                    minV[k]=verts->at(j)[k];
+                if(verts->at(j)[k]> maxV[k])
+                    maxV[k]=verts->at(j)[k];
+            }
             newVerts->push_back(verts->at(j));
         }
         for(int j=0; j< (int)primitiveSet->getNumIndices(); j++){
@@ -509,32 +541,39 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         }
 
     }
+    osg::Vec4 texSizes;
+
+    if(0){
+        ///OLD slow render
+        texSizes=osg::Vec4(1024,1024,1024,1024);
+        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+        traits->x =0;
+        traits->y = 0;
+        traits->width = 1024;
+        traits->height = 1024;
+        traits->windowDecoration = false;
+        traits->doubleBuffer = false;
+        traits->sharedContext = 0;
+        traits->pbuffer = true;
+
+        osg::ref_ptr<osg::GraphicsContext> _gc= osg::GraphicsContext::createGraphicsContext(traits.get());
+
+        if (!_gc)
+        {
+            osg::notify(osg::NOTICE)<<"Failed to create pbuffer, failing back to normal graphics window."<<std::endl;
+
+            traits->pbuffer = false;
+            _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+        }
 
 
+        //printf("%d\n",newVerts->size());
+        render(group,image,*_gc,toScreen,texSizes);
+    }else{
+        std::cout << minV << " "<<maxV<<std::endl;
 
-    osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-    traits->x =0;
-    traits->y = 0;
-    traits->width = 1024;
-    traits->height = 1024;
-    traits->windowDecoration = false;
-    traits->doubleBuffer = false;
-    traits->sharedContext = 0;
-    traits->pbuffer = true;
-
-    osg::ref_ptr<osg::GraphicsContext> _gc= osg::GraphicsContext::createGraphicsContext(traits.get());
-
-    if (!_gc)
-    {
-        osg::notify(osg::NOTICE)<<"Failed to create pbuffer, failing back to normal graphics window."<<std::endl;
-
-        traits->pbuffer = false;
-        _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+        toScreen=getImageSection(minV,maxV,texSizes, dynamic_cast<MyDataSet*>(_dataSet)->viewProj,image);
     }
-
-
-    //printf("%d\n",newVerts->size());
-    render(group,image,*_gc,toScreen,texSizes);
 
     for(int j=0; j< (int)newVerts->size(); j++){
         /// std::cout <<calcCoordReproj(newVerts->at(j),toScreen,texSize) << std::endl;

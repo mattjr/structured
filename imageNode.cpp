@@ -34,6 +34,9 @@
 #include <osg/io_utils>
 #include <iostream>
 #include <vips/vips.h>
+#include <vips/vips>
+#include <math.h>
+
 /* CustomRenderer: Do culling only while loading PagedLODs */
 class CustomRenderer : public osgViewer::Renderer
 {
@@ -103,7 +106,7 @@ void vpb::MyCompositeDestination::writeCameraMatrix(osg::Node *scene){
     centeredMax=(bb._max-bb.center());
     std::cout << "radus "<<bb.radius() <<std::endl;
     double radius=bb.radius();
-    if(!isfinite(radius))
+    if(!std::isfinite(radius))
         return;
     osg::Matrix proj= osg::Matrixd::ortho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
     {
@@ -447,7 +450,7 @@ T* findTopMostNodeOfType( osg::Node* node )
     return fnotv._foundNode;
 }
 
-osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &viewProj,const osg::Matrix &screen,const osg::Vec2 &size){
+osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &viewProj,const osg::Matrix &screen,const osg::Vec2 &size,const osg::Vec4 &ratio){
     osg::Vec4 v(vert.x(),vert.y(),vert.z(),1.0);
     v=v*viewProj;
     v.x() /= v.w();
@@ -455,35 +458,60 @@ osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &viewProj,cons
     v.z() /= v.w();
     v.w() /= v.w();
     v= v*screen;
+    //std::cout << "Pre shift " << v << std::endl;
+    v.x() /= size.x();;
+    v.y() /= size.y();
+
+
+    v.x() -= (ratio.x()/size.x());
+    v.y() -= (ratio.y()/size.y());
+    //std::cout << "Post shift " << v << std::endl;
+
+
+    //  std::cout << "PP shift " << v << std::endl;
+
+
     osg::Vec2 tc(v.x(),v.y());
-    tc.x()/=(size.x()-1);
-    tc.y()/=(size.y()-1);
+    tc.x() *= ratio.z();
+    tc.y() *=ratio.w();
+    //tc.x()*=ratio.x();
+    //tc.y()*=ratio.y();
+     tc.x()/=(ratio.z());
+       tc.y()/=(ratio.w());
+
+
     return tc;
 
 }
-osg::Matrix getImageSection(const osg::Vec3 minV, const osg::Vec3 maxV, osg::Vec4 &texsize,const osg::Matrix &viewProj,osg::ref_ptr<osg::Image> &image){
-    IMAGE *im;
-    if( !(im = im_open( "subtile.tif", "r" )) ){
-        fprintf(stderr, "Freakout\n");
-    }
+osg::Matrix getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<osg::Image> &image,osg::Vec4 &ratio){
 
-    REGION *region = im_region_create( im );
-    int x=0,y=0;
-    Rect r = { left: x, top: y, width: im->Xsize, height: im->Ysize};
-    if( im_prepare( region, &r ) ) fprintf(stderr,"can't get region\n");
-    char *pixel = IM_REGION_ADDR( region, x, y );
-texsize[0]=r.width;
-texsize[1]=r.height;
-texsize[2]=r.width;
-texsize[3]=r.height;
+    int level=2;
+    double downsampleFactor=1.0;
+    double downsampleRatio=1.0/downsampleFactor;
 
 
+    int x=(int)std::max((int)floor(minT.x()),0);
+    int y=(int)std::max((int)floor(minT.y()),0);
+    int xMax=(int)std::min((int)ceil(maxT.x()),origX);
+    int yMax=(int)std::min((int)ceil(maxT.y()),origY);
+    int xRange=(xMax-x);
+    int yRange=(yMax-y);
+    //printf("X:%f -- %f Y:%f -- %f\n",vMin.x(),vMax.x(),vMin.y(),vMax.y());
+    //printf("Range %d %d\n",xRange,yRange);
+    int newX=xRange*downsampleRatio;
+    int newY=yRange*downsampleRatio;
+    double maxSide=std::max(osg::Image::computeNearestPowerOfTwo(newX),osg::Image::computeNearestPowerOfTwo(newY));
+    osg::Vec2 subSize=osg::Vec2(maxSide,maxSide);
+    texsize[0]=origX;
+    texsize[1]=origY;
+    texsize[2]=subSize.x();
+    texsize[3]=subSize.y();
     image = new osg::Image;
-    image->allocateImage(im->Xsize,im->Ysize, 1, GL_RGBA,GL_UNSIGNED_BYTE);
-    memcpy(image->data(),pixel,image->getImageSizeInBytes());
-    im_region_free( region );
-    im_close(im);
-    return viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*texsize.x(),0.5*texsize.y(),0.5f));
+    image->allocateImage(subSize.x(),subSize.y(), 1, GL_RGBA,GL_UNSIGNED_BYTE);
+    vips::VImage osgImage(image->data(),subSize.x(),subSize.y(),4,vips::VImage::FMTUCHAR);
+    in.extract_area(x,y,xRange,yRange).embed(0,0,0,subSize.x(),subSize.y()).write(osgImage);
+    ratio=osg::Vec4(x,y,subSize.x(),subSize.y());
+    return toTex;
 }
 
 osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
@@ -492,6 +520,10 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     //
     if(group->getNumChildren() == 0)
         return group;
+    if(!std::isfinite(group->getBound().radius()) || group->getBound().radius() < 0.0)
+        return group;
+    //double l=group->getBound().radius();
+    //printf("Brav %f\n",l);
     /* if(_level!=_numLevels)
         return group;
     writeCameraMatrix(group);
@@ -509,7 +541,11 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     osg::Vec3Array *newVerts= new osg::Vec3Array;
     osg::DrawElementsUInt* newPrimitiveSet = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
     osg::Geode *newGeode=new osg::Geode;
-    osg::Vec3 minV(DBL_MAX,DBL_MAX,DBL_MAX),maxV(-DBL_MAX,-DBL_MAX,-DBL_MAX);
+    osg::Vec2 minT(DBL_MAX,DBL_MAX),maxT(-DBL_MAX,-DBL_MAX);
+    vips::VImage in ("subtile.tif");
+
+    int origX=in.Xsize(),origY=in.Ysize();
+    osg::Matrix toTex=dynamic_cast<MyDataSet*>(_dataSet)->viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*origX,0.5*origY,0.5f));
 
     for(int i=0; i< (int)group->getNumChildren(); i++){
 
@@ -528,11 +564,15 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         if(!verts || !primitiveSet)
             continue;
         for(int j=0; j< (int)verts->size(); j++){
-            for(int k=0; k <3; k++){
-                if(verts->at(j)[k]< minV[k])
-                    minV[k]=verts->at(j)[k];
-                if(verts->at(j)[k]> maxV[k])
-                    maxV[k]=verts->at(j)[k];
+            osg::Vec4 pt(verts->at(j)[0],verts->at(j)[1],verts->at(j)[2],1.0);
+            osg::Vec4 proj=pt*toTex;
+            proj.x() /= proj.w();
+            proj.y() /= proj.w();
+            for(int k=0; k <2; k++){
+                if(proj[k]< minT[k])
+                    minT[k]=proj[k];
+                if(proj[k]> maxT[k])
+                    maxT[k]=proj[k];
             }
             newVerts->push_back(verts->at(j));
         }
@@ -542,6 +582,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
 
     }
     osg::Vec4 texSizes;
+    osg::Vec4 ratio(0.0,0.0,0,0);
 
     if(0){
         ///OLD slow render
@@ -570,15 +611,15 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         //printf("%d\n",newVerts->size());
         render(group,image,*_gc,toScreen,texSizes);
     }else{
-        std::cout << minV << " "<<maxV<<std::endl;
-
-        toScreen=getImageSection(minV,maxV,texSizes, dynamic_cast<MyDataSet*>(_dataSet)->viewProj,image);
+        //std::cout << minV << " "<<maxV<<std::endl;
+        toScreen=getImageSection(in,minT,maxT,origX,origY,texSizes, toTex,image,ratio);
     }
 
     for(int j=0; j< (int)newVerts->size(); j++){
-        /// std::cout <<calcCoordReproj(newVerts->at(j),toScreen,texSize) << std::endl;
 
-        texCoord->push_back(calcCoordReproj(newVerts->at(j),toScreen,osg::Matrix::identity(),osg::Vec2(texSizes[2],texSizes[3])));
+        texCoord->push_back(calcCoordReproj(newVerts->at(j),toScreen,osg::Matrix::identity(),osg::Vec2(texSizes[2],texSizes[3]),ratio));
+        //  std::cout <<texCoord->back() << std::endl;
+
     }
     for(int j=0; j< (int)newPrimitiveSet->getNumIndices(); j++){
         if(newPrimitiveSet->getElement(j) < 0 || newPrimitiveSet->getElement(j) > newVerts->size() ){
@@ -596,11 +637,18 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     newGeom->setUseVertexBufferObjects(_useVBO);
 
     newGeode->addDrawable(newGeom);
+    char tmp[128];
+    // if(image->s() != image->t()){
+    sprintf(tmp,"%d-%d-%d.png",image->s(),image->t(),rand());
+    osgDB::writeImageFile(*image.get(),tmp);
+    //}
     osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(image);
     texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
     texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
     texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
     texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
+    texture->setTextureSize(image->s(),image->t());
+    std::cout <<  "Check it "<<texture->getTextureWidth() << " "<< texture->getTextureHeight()<<"\n";
 
     osg::Texture::InternalFormatMode internalFormatMode = osg::Texture::USE_IMAGE_DATA_FORMAT;
     internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION;

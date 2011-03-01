@@ -82,7 +82,7 @@ osg::Group *remapNode(osg::Group *group, osg::ref_ptr<osg::Image> &image,osg::Ma
     osg::Matrix window= osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*texSize.x(),0.5*texSize.y(),0.5f);
     for(int j=0; j< (int)newVerts->size(); j++){
         /// std::cout <<calcCoordReproj(newVerts->at(j),toScreen,texSize) << std::endl;
-        osg::Vec2 tc=calcCoordReproj(newVerts->at(j),viewProj,window,osg::Vec2(texSize.x(),texSize.y()));
+        osg::Vec2 tc=calcCoordReproj(newVerts->at(j),viewProj,window,osg::Vec2(texSize.x(),texSize.y()),osg::Vec4(1,1,0,0));
         tc.y()= 1.0-tc.y();
         texCoord->push_back(tc);
     }

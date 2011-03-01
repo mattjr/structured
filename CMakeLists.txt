@@ -381,20 +381,20 @@ ADD_EXECUTABLE( dicedImage dicedImage.cpp )
 ADD_EXECUTABLE( bin/mergeMesh mergeMesh/mergeMesh.cpp mergeMesh/plylib.cpp)
 #ADD_EXECUTABLE( bin/texturedDecimator mergeMesh/texturedDecimator.cpp mergeMesh/plylib.cpp mergeMesh/quadric_simp.cpp mergeMesh/quadric_tex_simp.cpp)
 
-LINK_LIBRARIES(osgTerrain vpbd osgFX osg spatialindex vips)
-TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf vips)
+LINK_LIBRARIES(osgTerrain vpbd osgFX osg spatialindex vips vipsCC)
+TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf vips vipsCC)
 TARGET_LINK_LIBRARIES( testImageModel ts  )
 TARGET_LINK_LIBRARIES( genTex ts plankton )
-TARGET_LINK_LIBRARIES( remapReimaged ts  vips)
+TARGET_LINK_LIBRARIES( remapReimaged ts  vips vipsCC vpbd)
 
 TARGET_LINK_LIBRARIES( monoDriver ts plankton vpbd  hmap gmt netcdf)
 
 TARGET_LINK_LIBRARIES( lodgen ts )
 TARGET_LINK_LIBRARIES( treeBBClip ts spatialindex )
-TARGET_LINK_LIBRARIES( calcTexCoord ts spatialindex vpbd vips)
-TARGET_LINK_LIBRARIES( loadCamRender ts spatialindex vpbd vips )
-TARGET_LINK_LIBRARIES( screencap vips)
-TARGET_LINK_LIBRARIES( dicedImage vips)
+TARGET_LINK_LIBRARIES( calcTexCoord ts spatialindex vpbd vips vipsCC)
+TARGET_LINK_LIBRARIES( loadCamRender ts spatialindex vpbd vips vipsCC )
+TARGET_LINK_LIBRARIES( screencap vips vipsCC)
+TARGET_LINK_LIBRARIES( dicedImage vips vipsCC)
 
 #TARGET_LINK_LIBRARIES( threshold ts )
 

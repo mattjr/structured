@@ -46,7 +46,7 @@
 #include <osgUtil/MeshOptimizers>
 #include "TexturingQuery.h"
 #include <OpenThreads/ScopedLock>
-
+#include <vips/vips>
 namespace vpb
 {
 
@@ -182,6 +182,7 @@ class MyDataSet :  public DataSet
         osg::Matrix viewProj;
 
         bool _useReImage;
+        vips::VImage *in;
 
     protected:
         virtual ~MyDataSet() {}

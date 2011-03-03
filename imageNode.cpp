@@ -476,8 +476,8 @@ osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &viewProj,cons
     tc.y() *=ratio.w();
     //tc.x()*=ratio.x();
     //tc.y()*=ratio.y();
-     tc.x()/=(ratio.z());
-       tc.y()/=(ratio.w());
+    tc.x()/=(ratio.z());
+    tc.y()/=(ratio.w());
 
 
     return tc;
@@ -501,6 +501,13 @@ osg::Matrix getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Ve
     double maxSide=std::max(osg::Image::computeNearestPowerOfTwo(xRange,1.0),osg::Image::computeNearestPowerOfTwo(yRange,1.0));
 
     osg::Vec2 subSize=osg::Vec2(maxSide,maxSide);
+    if(downsampleRatio*maxSide < 1.0){
+        printf("Clipping %f %f to",downsampleRatio,downsampleFactor);
+        downsampleRatio=1.0/maxSide;
+        downsampleFactor=maxSide;
+        printf("%f %f\n",downsampleRatio,downsampleFactor);
+
+    }
     texsize[0]=origX;
     texsize[1]=origY;
     texsize[2]=subSize.x();
@@ -509,10 +516,14 @@ osg::Matrix getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Ve
     downsampleSize.x()*=downsampleRatio;
     downsampleSize.y()*=downsampleRatio;
 
-   // printf("Range %d %d\n",xRange,yRange);
-   printf("%f %f %f %f\n",subSize.x(),subSize.y(),downsampleSize.x(),downsampleSize.y());
+    // printf("Range %d %d\n",xRange,yRange);
+    // printf("%f %f %f %f\n",subSize.x(),subSize.y(),downsampleSize.x(),downsampleSize.y());
     image = new osg::Image;
     image->allocateImage(downsampleSize.x(),downsampleSize.y(), 1, GL_RGBA,GL_UNSIGNED_BYTE);
+    if(image->data() == 0 ){
+        fprintf(stderr,"Failed to allocate\n");
+        exit(-1);
+    }
     vips::VImage osgImage(image->data(),downsampleSize.x(),downsampleSize.y(),4,vips::VImage::FMTUCHAR);
     in.extract_area(x,y,xRange,yRange).embed(1,0,0,subSize.x(),subSize.y()).shrink(downsampleFactor,downsampleFactor).write(osgImage);
     ratio=osg::Vec4(x,y,subSize.x(),subSize.y());
@@ -549,9 +560,9 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     osg::DrawElementsUInt* newPrimitiveSet = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
     osg::Geode *newGeode=new osg::Geode;
     osg::Vec2 minT(DBL_MAX,DBL_MAX),maxT(-DBL_MAX,-DBL_MAX);
-    vips::VImage in ("subtile.tif");
+    // ("subtile.tif");
 
-    int origX=in.Xsize(),origY=in.Ysize();
+    int origX=dynamic_cast<MyDataSet*>(_dataSet)->in->Xsize(),origY=dynamic_cast<MyDataSet*>(_dataSet)->in->Ysize();
     osg::Matrix toTex=dynamic_cast<MyDataSet*>(_dataSet)->viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*origX,0.5*origY,0.5f));
 
     for(int i=0; i< (int)group->getNumChildren(); i++){
@@ -622,7 +633,9 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         int start_pow=9;
         //tex_size=1024;//log2 = 10
         int leveloffset=(_numLevels-_level);
-        toScreen=getImageSection(in,minT,maxT,origX,origY,texSizes, toTex,image,ratio,leveloffset);
+        leveloffset=std::min(leveloffset,6);
+
+        toScreen=getImageSection(*(dynamic_cast<MyDataSet*>(_dataSet)->in),minT,maxT,origX,origY,texSizes, toTex,image,ratio,leveloffset);
     }
 
     for(int j=0; j< (int)newVerts->size(); j++){
@@ -650,7 +663,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     char tmp[128];
     // if(image->s() != image->t()){
     sprintf(tmp,"%d-%d-%d.png",image->s(),image->t(),rand());
-   // osgDB::writeImageFile(*image.get(),tmp);
+    // osgDB::writeImageFile(*image.get(),tmp);
     //}
     osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(image);
     texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);

@@ -93,6 +93,7 @@ void MyDataSet::init()
     _useTextureArray=true;
     _file.open("/tmp/scope.txt");
     readMatrixToScreen("view.mat",viewProj);
+    in = new vips::VImage("subtile.tif");
 
 }
 class CollectClusterCullingCallbacks : public osg::NodeVisitor

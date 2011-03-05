@@ -27,7 +27,7 @@
 #include "auv_stereo_keypoint_finder.hpp"
 #include "adt_image_norm.hpp"
 #include "auv_stereo_dense.hpp"
-
+#include <osg/ComputeBoundsVisitor>
 #include "auv_concurrency.hpp"
 #include "OSGExport.h"
 #include "keypoint.hpp"
@@ -295,7 +295,12 @@ typedef struct _class_id_t{
     string name;
     double time;
 }class_id_t;
-
+typedef struct _picture_cell{
+    int row;
+    int col;
+    osg::BoundingBox bbox;
+    std::string name;
+}picture_cell;
 //
 // Parse command line arguments into global variables
 //
@@ -1265,7 +1270,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
                 osgExp->cacheImage(color_frame,texfilename[i],cachedtexdir[i].second,false);
             }
             //else
-                //osgExp->cacheCompressedImage(color_frame,texfilename,tex_size);
+            //osgExp->cacheCompressedImage(color_frame,texfilename,tex_size);
         }
 
 
@@ -2594,6 +2599,56 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 if(!no_vrip)
                     sysres=system("./runvrip.py");
 
+                osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("mesh-diced/total.ply");
+                if(!model.valid()){
+                    std::cerr << " Cant open total.ply\n";
+                    exit(-1);
+                }
+                osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+                model->traverse(cbbv);
+                osg::BoundingBox totalbb = cbbv.getBoundingBox();
+                osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
+                osg::Matrixd matrix;
+                matrix.makeTranslate( eye );
+                osg::Matrixd view=osg::Matrix::inverse(matrix);
+                osg::Vec3 centeredMin,centeredMax;
+                centeredMin=(totalbb._min-totalbb.center());
+                centeredMax=(totalbb._max-totalbb.center());
+                osg::Matrixd proj= osg::Matrixd::ortho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
+
+                std::stringstream os2;
+                os2<< "view.mat";
+
+                std::fstream _file(os2.str().c_str(),std::ios::binary|std::ios::out);
+                for(int i=0; i<4; i++)
+                    for(int j=0; j<4; j++)
+                        _file.write(reinterpret_cast<char*>(&(view(i,j))),sizeof(double));
+                for(int i=0; i<4; i++)
+                    for(int j=0; j<4; j++)
+                        _file.write(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
+                _file.close();
+                std::vector<picture_cell> cells;
+
+                int _tileColumns=4;
+                int _tileRows=8;
+                osg::Vec3 deltaV=totalbb._max-totalbb._min;
+                deltaV.x()/= _tileColumns;
+                deltaV.y()/= _tileRows;
+                int cnt=0;
+                char tmp4[1024];
+                for(int row=0; row< _tileRows; row++){
+                    for(int col=0; col<_tileColumns; col++){
+                        osg::BoundingBox thisCellBbox;
+                        thisCellBbox._min=totalbb._min+osg::Vec3(col*deltaV.x(),row*deltaV.y(),0.0);
+                        thisCellBbox._max=totalbb._min+osg::Vec3((col+1)*deltaV.x(),(row+1)*deltaV.y(),1.0);
+                        picture_cell cell;
+                        cell.bbox=thisCellBbox;
+                        cell.row=row;
+                        cell.col=col;
+                        sprintf(tmp4,"mesh-diced/clipped-diced-%08d-lod%d.ply \n",cnt++,vpblod);
+                        cell.name=string(tmp4);
+                    }
+                }
                 string splitcmds_fn="mesh-diced/splitcmds";
 
                 FILE *splitcmds_fp=fopen(splitcmds_fn.c_str(),"w");
@@ -2668,7 +2723,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         }
                         double newRes=(cur_res[i]+(vpblod-j)*resFrac[i]);
                         sizeStep[i][j]= std::max(numFaces[i]/(pow(2.5,vpblod-j)),(largestNumFaces*minFrac));
-                                        //vrip_cells[i].bounds.area()/newRes;
+                        //vrip_cells[i].bounds.area()/newRes;
                         OSG_ALWAYS << "Level " << j << "Res " <<  newRes << "Orig Faces " << numFaces[i] << "New faces " << sizeStep[i][j] <<endl;
                     }
                     //                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
@@ -2690,7 +2745,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             i,
                             vpblod);
                     if(true)
-                         fprintf(texcmds_fp," --tex_cache %s %d\n",cachedtexdir[0].first.c_str(),cachedtexdir[0].second);
+                        fprintf(texcmds_fp," --tex_cache %s %d\n",cachedtexdir[0].first.c_str(),cachedtexdir[0].second);
                     else
                         fprintf(texcmds_fp,"\n");
 

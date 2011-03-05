@@ -37,6 +37,7 @@
 #include <vips/vips>
 #include <math.h>
 #include <osgUtil/ShaderGen>
+#include "Extents.h"
 /* CustomRenderer: Do culling only while loading PagedLODs */
 class CustomRenderer : public osgViewer::Renderer
 {
@@ -483,12 +484,12 @@ osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &viewProj,cons
     return tc;
 
 }
-osg::Matrix getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<osg::Image> &image,osg::Vec4 &ratio,int level){
+osg::Matrix vpb::MyDataSet::getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<osg::Image> &image,osg::Vec4 &ratio,int level){
 
     double downsampleFactor=pow(2,level);
     double downsampleRatio=1.0/downsampleFactor;
 
-
+    printf("%f %f\n",downsampleRatio,downsampleRatio);
     int x=(int)std::max((int)floor(minT.x()),0);
     int y=(int)std::max((int)floor(minT.y()),0);
     int xMax=(int)std::min((int)ceil(maxT.x()),origX);
@@ -524,8 +525,14 @@ osg::Matrix getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Ve
         fprintf(stderr,"Failed to allocate\n");
         exit(-1);
     }
-    vips::VImage osgImage(image->data(),downsampleSize.x(),downsampleSize.y(),4,vips::VImage::FMTUCHAR);
-    in.extract_area(x,y,xRange,yRange).embed(1,0,0,subSize.x(),subSize.y()).shrink(downsampleFactor,downsampleFactor).write(osgImage);
+    {
+     //   OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_imageMutex);
+        vips::VImage *osgImage = new vips::VImage(image->data(),downsampleSize.x(),downsampleSize.y(),4,vips::VImage::FMTUCHAR);
+#warning "memleak"
+        in.extract_area(x,y,xRange,yRange).embed(1,0,0,subSize.x(),subSize.y())./*shrink(downsampleFactor,downsampleFactor)*/affine(downsampleRatio,0,0,downsampleRatio,0,0,0,0,downsampleSize.x(),downsampleSize.y())
+                                                                                                                                    .write(*osgImage);
+       // delete osgImage;
+    }
     ratio=osg::Vec4(x,y,subSize.x(),subSize.y());
     //osg::Vec2 f(xRange-subSize.x(),yRange-subSize.y());
     //std::cout << f<<std::endl;
@@ -633,9 +640,9 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         int start_pow=9;
         //tex_size=1024;//log2 = 10
         int leveloffset=(_numLevels-_level);
-        leveloffset=std::min(leveloffset,6);
+        leveloffset=std::min(leveloffset,5);
 
-        toScreen=getImageSection(*(dynamic_cast<MyDataSet*>(_dataSet)->in),minT,maxT,origX,origY,texSizes, toTex,image,ratio,leveloffset);
+        toScreen=dynamic_cast<MyDataSet*>(_dataSet)->getImageSection(*(dynamic_cast<MyDataSet*>(_dataSet)->in),minT,maxT,origX,origY,texSizes, toTex,image,ratio,leveloffset);
     }
 
     for(int j=0; j< (int)newVerts->size(); j++){
@@ -656,7 +663,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     newGeom->setTexCoordArray(0,texCoord);
     newGeom->setVertexArray(newVerts);
     newGeom->addPrimitiveSet(newPrimitiveSet);
-    newGeom->setUseDisplayList(false);
+    newGeom->setUseDisplayList(_useDisplayLists);
     newGeom->setUseVertexBufferObjects(_useVBO);
 
     newGeode->addDrawable(newGeom);
@@ -708,8 +715,8 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
 
     stateset->setDataVariance(osg::Object::STATIC);
-    osgUtil::ShaderGenVisitor sgv;
-    newGeode->accept(sgv);
+ //   osgUtil::ShaderGenVisitor sgv;
+   // newGeode->accept(sgv);
 
     // osg::Vec3 v(1972.38,3932.55,0);
     //osg::Vec3 v(302.3,334.3,0);

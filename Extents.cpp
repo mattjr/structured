@@ -70,7 +70,7 @@ bool readMatrixToScreen(std::string fname,osg::Matrix &viewProj){
     viewProj=osg::Matrix( view * proj);
     return true;
 }
-MyDataSet::MyDataSet(const Camera_Calib &calib,bool useTextureArray): _calib(calib),_useTextureArray(useTextureArray)
+MyDataSet::MyDataSet(const Camera_Calib &calib,bool useTextureArray,bool useReImage): _calib(calib),_useTextureArray(useTextureArray),_useReImage(useReImage)
 {
     init();
 }
@@ -85,7 +85,6 @@ void MyDataSet::init()
     _numTextureLevels = 1;
 
     _newDestinationGraph = false;
-    _useReImage=true;
     _useAtlas=false;
     _useDisplayLists=false;
     _useBlending=true;
@@ -93,7 +92,12 @@ void MyDataSet::init()
     _useTextureArray=true;
     _file.open("/tmp/scope.txt");
     readMatrixToScreen("view.mat",viewProj);
-    in = new vips::VImage("subtile.tif");
+    if(_useReImage){
+        if(osgDB::fileExists("subtile.tif"))
+        in = new vips::VImage("subtile.tif");
+        else
+            std::cerr << "Can't open subtile on reimaging run\n";
+    }
 
 }
 class CollectClusterCullingCallbacks : public osg::NodeVisitor

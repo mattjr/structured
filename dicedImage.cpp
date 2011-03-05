@@ -823,119 +823,9 @@ int main(int argc, char** argv)
     arguments.getApplicationUsage()->setApplicationName(arguments.getApplicationName());
     arguments.getApplicationUsage()->setCommandLineUsage(arguments.getApplicationName()+" [options] filename ...");
 
-    osgViewer::Viewer viewer(arguments);
-
-    unsigned int helpType = 0;
-    if ((helpType = arguments.readHelpType()))
-    {
-        arguments.getApplicationUsage()->write(std::cout, helpType);
-        return 1;
-    }
-
-    // report any errors if they have occurred when parsing the program arguments.
-    if (arguments.errors())
-    {
-        arguments.writeErrorMessages(std::cout);
-        return 1;
-    }
-
-    if (arguments.argc()<=1)
-    {
-        arguments.getApplicationUsage()->write(std::cout,osg::ApplicationUsage::COMMAND_LINE_OPTION);
-        return 1;
-    }
-
-    GLenum readBuffer = GL_BACK;
-    WindowCaptureCallback::FramePosition position = WindowCaptureCallback::END_FRAME;
-    WindowCaptureCallback::Mode mode = WindowCaptureCallback::SINGLE_PBO;
-
-    while (arguments.read("--start-frame")) { position = WindowCaptureCallback::START_FRAME; readBuffer = GL_FRONT; }
-    while (arguments.read("--end-frame")) position = WindowCaptureCallback::END_FRAME;
-
-    while (arguments.read("--front")) readBuffer = GL_FRONT;
-    while (arguments.read("--back")) readBuffer = GL_BACK;
-
-    while (arguments.read("--no-pbo")) mode = WindowCaptureCallback::READ_PIXELS;
-    while (arguments.read("--single-pbo")) mode = WindowCaptureCallback::SINGLE_PBO;
-    while (arguments.read("--double-pbo")) mode = WindowCaptureCallback::DOUBLE_PBO;
-    while (arguments.read("--triple-pbo")) mode = WindowCaptureCallback::TRIPLE_PBO;
- osg::Texture::TextureObjectManager* tom;
-
     unsigned int width=1280;
     unsigned int height=1024;
-    bool pbufferOnly = false;
-    osg::ref_ptr<osg::GraphicsContext> pbuffer;
-    if (arguments.read("--pbuffer",width,height) ||
-        (pbufferOnly = arguments.read("--pbuffer-only",width,height)))
-    {
-        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-        traits->x = 0;
-        traits->y = 0;
-        traits->width = width;
-        traits->height = height;
-        traits->red = 8;
-        traits->green = 8;
-        traits->blue = 8;
-        traits->alpha = 8;
-        traits->windowDecoration = false;
-        traits->pbuffer = true;
-        traits->doubleBuffer = true;
-        traits->sharedContext = 0;
-
-        pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
-        std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
-        tom= osg::Texture::getTextureObjectManager(pbuffer->getState()->getContextID()).get();
-        if (pbuffer.valid())
-        {
-            osg::notify(osg::NOTICE)<<"Pixel buffer has been created successfully."<<std::endl;
-        }
-        else
-        {
-            osg::notify(osg::NOTICE)<<"Pixel buffer has not been created successfully."<<std::endl;
-        }
-
-    }
-
-
-
-    WindowCaptureCallback *wcc=new WindowCaptureCallback(mode, position, readBuffer);
-    osg::ref_ptr<osg::Camera> camera;
-
-    if (pbuffer.valid())
-    {camera = new osg::Camera;
-        camera->setGraphicsContext(pbuffer.get());
-        camera->setViewport(new osg::Viewport(0,0,width,height));
-        GLenum buffer = pbuffer->getTraits()->doubleBuffer ? GL_BACK : GL_FRONT;
-        camera->setDrawBuffer(buffer);
-        camera->setReadBuffer(buffer);
-        camera->setFinalDrawCallback(wcc);
-
-        if (pbufferOnly)
-        {
-            viewer.addSlave(camera.get(), osg::Matrixd(), osg::Matrixd());
-
-            viewer.realize();
-        }
-        else
-        {
-            viewer.realize();
-
-            viewer.stopThreading();
-
-            pbuffer->realize();
-
-            viewer.addSlave(camera.get(), osg::Matrixd(), osg::Matrixd());
-
-            viewer.startThreading();
-        }
-    }
-    else
-    {
-        viewer.realize();
-
-        addCallbackToViewer(viewer, wcc);
-    }
-    viewer.setReleaseContextAtEndOfFrameHint(true);
+    arguments.read("--pbuffer-only",width,height);
 
     //  osg::BoundingSphere bs;
     //osg::BoundingBox bb ;
@@ -1091,14 +981,126 @@ int main(int argc, char** argv)
     printf("Mult count %d\n",mult_count);
     osg::ref_ptr<osg::Group> loadedModel;
 
-    //for(int i=0; i < cells.size(); i++)
-    int i=3;
+    for(int i=0; i < cells.size(); i++)
+    //int i=3;
     {
+        osgViewer::Viewer viewer(arguments);
+
+        unsigned int helpType = 0;
+        if ((helpType = arguments.readHelpType()))
+        {
+            arguments.getApplicationUsage()->write(std::cout, helpType);
+            return 1;
+        }
+
+        // report any errors if they have occurred when parsing the program arguments.
+        if (arguments.errors())
+        {
+            arguments.writeErrorMessages(std::cout);
+            return 1;
+        }
+
+        if (arguments.argc()<=1)
+        {
+            arguments.getApplicationUsage()->write(std::cout,osg::ApplicationUsage::COMMAND_LINE_OPTION);
+            return 1;
+        }
+
+        GLenum readBuffer = GL_BACK;
+        WindowCaptureCallback::FramePosition position = WindowCaptureCallback::END_FRAME;
+        WindowCaptureCallback::Mode mode = WindowCaptureCallback::SINGLE_PBO;
+
+        while (arguments.read("--start-frame")) { position = WindowCaptureCallback::START_FRAME; readBuffer = GL_FRONT; }
+        while (arguments.read("--end-frame")) position = WindowCaptureCallback::END_FRAME;
+
+        while (arguments.read("--front")) readBuffer = GL_FRONT;
+        while (arguments.read("--back")) readBuffer = GL_BACK;
+
+        while (arguments.read("--no-pbo")) mode = WindowCaptureCallback::READ_PIXELS;
+        while (arguments.read("--single-pbo")) mode = WindowCaptureCallback::SINGLE_PBO;
+        while (arguments.read("--double-pbo")) mode = WindowCaptureCallback::DOUBLE_PBO;
+        while (arguments.read("--triple-pbo")) mode = WindowCaptureCallback::TRIPLE_PBO;
+     osg::Texture::TextureObjectManager* tom;
+
+
+        bool pbufferOnly = true;
+        osg::ref_ptr<osg::GraphicsContext> pbuffer;
+    //    if (arguments.read("--pbuffer",width,height) ||
+      //      (pbufferOnly = arguments.read("--pbuffer-only",width,height)))
+        {
+            osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+            traits->x = 0;
+            traits->y = 0;
+            traits->width = width;
+            traits->height = height;
+            traits->red = 8;
+            traits->green = 8;
+            traits->blue = 8;
+            traits->alpha = 8;
+            traits->windowDecoration = false;
+            traits->pbuffer = true;
+            traits->doubleBuffer = true;
+            traits->sharedContext = 0;
+
+            pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
+            std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
+            tom= osg::Texture::getTextureObjectManager(pbuffer->getState()->getContextID()).get();
+            if (pbuffer.valid())
+            {
+                osg::notify(osg::NOTICE)<<"Pixel buffer has been created successfully."<<std::endl;
+            }
+            else
+            {
+                osg::notify(osg::NOTICE)<<"Pixel buffer has not been created successfully."<<std::endl;
+            }
+
+        }
+
+
+
+        WindowCaptureCallback *wcc=new WindowCaptureCallback(mode, position, readBuffer);
+        osg::ref_ptr<osg::Camera> camera;
+
+        if (pbuffer.valid())
+        {camera = new osg::Camera;
+            camera->setGraphicsContext(pbuffer.get());
+            camera->setViewport(new osg::Viewport(0,0,width,height));
+            GLenum buffer = pbuffer->getTraits()->doubleBuffer ? GL_BACK : GL_FRONT;
+            camera->setDrawBuffer(buffer);
+            camera->setReadBuffer(buffer);
+            camera->setFinalDrawCallback(wcc);
+
+            if (pbufferOnly)
+            {
+                viewer.addSlave(camera.get(), osg::Matrixd(), osg::Matrixd());
+
+                viewer.realize();
+            }
+            else
+            {
+                viewer.realize();
+
+                viewer.stopThreading();
+
+                pbuffer->realize();
+
+                viewer.addSlave(camera.get(), osg::Matrixd(), osg::Matrixd());
+
+                viewer.startThreading();
+            }
+        }
+        else
+        {
+            viewer.realize();
+
+            addCallbackToViewer(viewer, wcc);
+        }
+        viewer.setReleaseContextAtEndOfFrameHint(true);
         // load the data
         osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
         printf("\r%03d/%03d",i,cells.size());
         fflush(stdout);
-        osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(cells[3].names[0]);
+        osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(cells[i].names[0]);
         bool load=false;
         if(i == 0)
             load=true;
@@ -1223,7 +1225,7 @@ int main(int argc, char** argv)
         }else{
             std::cout << "Prob shouldn't get here\n";
         }
-        node->releaseGLObjects();
+      /*  node->releaseGLObjects();
         tom->deleteAllTextureObjects();
         tom->flushAllDeletedTextureObjects();
         pbuffer->releaseGLObjects(0);
@@ -1244,7 +1246,7 @@ int main(int argc, char** argv)
          //   (*citr)->getState// close();
         }
         viewer.setSceneData(NULL);
-
+*/
         ///osg::deleteAllGLObjects(viewer.getCamera()->->getContextID());
 
     }

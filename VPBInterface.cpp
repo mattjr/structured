@@ -73,13 +73,13 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
 }
 #endif
 void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cachedDirs,bool useTextureArray){
-vector<osg::KdTree*> trees;
+//vector<osg::KdTree*> trees;
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
     osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,useTextureArray);
     m->_cachedDirs=cachedDirs;
-   // m->setNumReadThreadsToCoresRatio(1.5);
-   // m->setNumWriteThreadsToCoresRatio(1.5);
+    m->setNumReadThreadsToCoresRatio(1.5);
+    m->setNumWriteThreadsToCoresRatio(1.5);
    // m->setCompressionMethod(vpb::BuildOptions::NVTT);
     m->setCompressionMethod(vpb::BuildOptions::GL_DRIVER);
     vpb::ImageOptions *imageOptions = new vpb::ImageOptions();
@@ -123,7 +123,7 @@ vector<osg::KdTree*> trees;
                 if(geode && geode->getNumDrawables()){
                     osg::Drawable *drawable = geode->getDrawable(0);
                     sourceModel->_kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
-                    trees.push_back(sourceModel->_kdTree);
+                   // trees.push_back(sourceModel->_kdTree);
                 }else{
                     OSG_ALWAYS << "No drawbables \n";
                 }

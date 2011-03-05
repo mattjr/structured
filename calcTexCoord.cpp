@@ -81,7 +81,7 @@ int main( int argc, char **argv )
         }
       //  TexPyrAtlas atlasGen(cache);
         //atlasGen._useAtlas=true;
-        vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,false);
+        vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,false,false);
         dataset->_useAtlas=false;
         dataset->_useBlending=true;
         vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(cache);

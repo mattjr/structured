@@ -158,7 +158,7 @@ int _numLevels;
 class MyDataSet :  public DataSet
 {
     public:
-        MyDataSet(const Camera_Calib &calib,bool useTextureArray);
+        MyDataSet(const Camera_Calib &calib,bool useTextureArray,bool useReImage=true);
         void createNewDestinationGraph(
                                        const GeospatialExtents& extents,
                                        unsigned int maxImageSize,
@@ -183,9 +183,10 @@ class MyDataSet :  public DataSet
 
         bool _useReImage;
         vips::VImage *in;
+        osg::Matrix getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<osg::Image> &image,osg::Vec4 &ratio,int level);
 
     protected:
-        virtual ~MyDataSet() {}
+        virtual ~MyDataSet() {if(in) delete in;}
         void _readRow(Row& row);
          void _writeRow(Row& row);
          void init();
@@ -193,6 +194,8 @@ class MyDataSet :  public DataSet
          MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
          std::ofstream _file;
          OpenThreads::Mutex _fileMutex;
+         OpenThreads::Mutex _imageMutex;
+
 };
 
 }

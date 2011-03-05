@@ -33,6 +33,7 @@
 #include <osgDB/FileNameUtils>
 #include <iostream>
 #include <sstream>
+#include <osg/GLObjects>
 #include <string.h>
 //#if _M_SSE >= 0x401
 #include <smmintrin.h>
@@ -858,7 +859,7 @@ int main(int argc, char** argv)
     while (arguments.read("--single-pbo")) mode = WindowCaptureCallback::SINGLE_PBO;
     while (arguments.read("--double-pbo")) mode = WindowCaptureCallback::DOUBLE_PBO;
     while (arguments.read("--triple-pbo")) mode = WindowCaptureCallback::TRIPLE_PBO;
-
+ osg::Texture::TextureObjectManager* tom;
 
     unsigned int width=1280;
     unsigned int height=1024;
@@ -882,6 +883,8 @@ int main(int argc, char** argv)
         traits->sharedContext = 0;
 
         pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
+        std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
+        tom= osg::Texture::getTextureObjectManager(pbuffer->getState()->getContextID()).get();
         if (pbuffer.valid())
         {
             osg::notify(osg::NOTICE)<<"Pixel buffer has been created successfully."<<std::endl;
@@ -932,6 +935,8 @@ int main(int argc, char** argv)
 
         addCallbackToViewer(viewer, wcc);
     }
+    viewer.setReleaseContextAtEndOfFrameHint(true);
+
     //  osg::BoundingSphere bs;
     //osg::BoundingBox bb ;
     osg::BoundingBox totalbb;
@@ -996,8 +1001,8 @@ int main(int argc, char** argv)
             _file.write(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
     _file.close();
 
-    int _tileColumns=2;
-    int _tileRows=2;
+    int _tileColumns=4;
+    int _tileRows=8;
     osg::Vec3 deltaV=totalbb._max-totalbb._min;
     deltaV.x()/= _tileColumns;
     deltaV.y()/= _tileRows;
@@ -1086,12 +1091,14 @@ int main(int argc, char** argv)
     printf("Mult count %d\n",mult_count);
     osg::ref_ptr<osg::Group> loadedModel;
 
-    for(int i=0; i < cells.size(); i++){
+    //for(int i=0; i < cells.size(); i++)
+    int i=3;
+    {
         // load the data
         osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
         printf("\r%03d/%03d",i,cells.size());
         fflush(stdout);
-
+        osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(cells[3].names[0]);
         bool load=false;
         if(i == 0)
             load=true;
@@ -1106,30 +1113,32 @@ int main(int argc, char** argv)
         //if(cells[i].idx.size() > 3)
         //  load=false;
 
-        if(load){
-            loadedModel =0;
-            loadedModel=new osg::Group;
-            for(int j=0; j < cells[i].names.size(); j++){
+       // if(load){
+        //    loadedModel =0;
+           // loadedModel=new osg::Group;
+           // for(int j=0; j < cells[i].names.size(); j++){
 
-                osg::ref_ptr<osg::Node> node= osgDB::readNodeFile(cells[i].names[j]);
-                std::cout << "\nLoading: "<<osgDB::getSimpleFileName(cells[i].names[j]) << "\n";
-                loadedModel->addChild(node);
-                std::cout << "Loaded\n";
+            //    osg::ref_ptr<osg::Node> node= osgDB::readNodeFile(cells[i].names[j]);
+              //  std::cout << "\nLoading: "<<osgDB::getSimpleFileName(cells[i].names[j]) << "\n";
+               // loadedModel->addChild(node);
+                //std::cout << "Loaded\n";
 
-            }
-        }
-        if (loadedModel.valid() && loadedModel->getNumChildren() > 0)
+          //  }
+       // }
+
+
+        if (node.valid())// && loadedModel->getNumChildren() > 0)
         {
 
-
             // optimize the scene graph, remove redundant nodes and state etc.
-            osgUtil::Optimizer optimizer;
-            optimizer.optimize(loadedModel.get());
+            //osgUtil::Optimizer optimizer;
+            //optimizer.optimize(node.get());
             osg::Timer_t tick_afterReadPixels = osg::Timer::instance()->tick();
 
             //double timeForReadPixels = osg::Timer::instance()->delta_s(tick_start, tick_afterReadPixels);
             //printf("Time for read %.2f\n",timeForReadPixels);
-            viewer.setSceneData( loadedModel.get() );
+            viewer.setSceneData( node );
+
 
 
 
@@ -1165,7 +1174,6 @@ int main(int argc, char** argv)
             if(im_incheck(im)){
                 fprintf(stderr,"Fail!\n");
             }
-
 
 
             char tmpn[255];
@@ -1207,6 +1215,7 @@ int main(int argc, char** argv)
                 if(im_insertplace(raw,im,width*cells[i].col,height*cells[i].row))
                     printf("Fail!\n");
             }
+
             //   return(-1);
             //osgDB::writeImageFile(*img,tmpn);
             im_close(im);
@@ -1214,7 +1223,29 @@ int main(int argc, char** argv)
         }else{
             std::cout << "Prob shouldn't get here\n";
         }
+        node->releaseGLObjects();
+        tom->deleteAllTextureObjects();
+        tom->flushAllDeletedTextureObjects();
+        pbuffer->releaseGLObjects(0);
+        viewer.releaseGLObjects(0);
+        osg::deleteAllGLObjects(pbuffer->getState()->getContextID());
+        osgViewer::ViewerBase::Contexts contexts;
 
+        viewer.getContexts(contexts);
+
+        // clear out all the previously assigned operations
+        for(osgViewer::ViewerBase::Contexts::iterator citr = contexts.begin();
+            citr != contexts.end();
+            ++citr)
+        {
+            //(*citr)->close();
+
+            osg::deleteAllGLObjects(   (*citr)->getState()->getContextID());
+         //   (*citr)->getState// close();
+        }
+        viewer.setSceneData(NULL);
+
+        ///osg::deleteAllGLObjects(viewer.getCamera()->->getContextID());
 
     }
     im_close(raw);

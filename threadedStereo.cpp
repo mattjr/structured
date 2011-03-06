@@ -300,6 +300,7 @@ typedef struct _picture_cell{
     int col;
     osg::BoundingBox bbox;
     std::string name;
+    std::vector<int> images;
 }picture_cell;
 //
 // Parse command line arguments into global variables
@@ -2204,7 +2205,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 continue;
 
             sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
-            sprintf(conf_name,"mesh-diced/bbox-clipped-diced-%08d.ply.txt",i);
+            sprintf(conf_name,"mesh-diced/old-bbox-clipped-diced-%08d.ply.txt",i);
 
             vrip_seg_fp=fopen(vrip_seg_fname,"w");
             bboxfp = fopen(conf_name,"w");
@@ -2441,27 +2442,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
         fclose(quadmergecmds_fp);
         fclose(diced_fp);
         // int lodPick[]={0,0,0,0,1,1,1,1,2,2};
-        std::vector<std::vector<string> > datalist_lod;
-        for(int lod=0; lod <= vpblod; lod ++){
-            std::vector<string> level;
-            if(!no_quadmerge){
-                for(int i=0; i <(int)quad_cells.size(); i++){
-                    char tmp[1024];
-                    sprintf(tmp,"mesh-quad/clipped-diced-%08d-lod%d.ply",i,lod);//std::min(lod,2)
-                    level.push_back(tmp);
-                }
-            }else{
-                for(int i=0; i <(int)vrip_cells.size(); i++){
-                    if(vrip_cells[i].poses.size() == 0)
-                        continue;
-                    char tmp[1024];
-                    sprintf(tmp,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,lod);//std::min(lod,2)
-                    level.push_back(tmp);
-                }
-            }
 
-            datalist_lod.push_back(level);
-        }
         if(output_uv_file)
             fclose(uv_fp);
         if(output_3ds)
@@ -2633,36 +2614,49 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 deltaV.y()/= _tileRows;
                 int cnt=0;
                 char tmp4[1024];
+                double avgZ=totalbb.zMin()+((totalbb.zMax()-totalbb.zMin())/2.0);
                 for(int row=0; row< _tileRows; row++){
                     for(int col=0; col<_tileColumns; col++){
                         osg::BoundingBox thisCellBbox;
-                        thisCellBbox._min=totalbb._min+osg::Vec3(col*deltaV.x(),row*deltaV.y(),0.0);
-                        thisCellBbox._max=totalbb._min+osg::Vec3((col+1)*deltaV.x(),(row+1)*deltaV.y(),1.0);
+                        thisCellBbox._min=totalbb._min+osg::Vec3(col*deltaV.x(),row*deltaV.y(),0);
+                        thisCellBbox._max=totalbb._min+osg::Vec3((col+1)*deltaV.x(),(row+1)*deltaV.y(),totalbb.zMax()-totalbb.zMin());
                         picture_cell cell;
                         cell.bbox=thisCellBbox;
                         cell.row=row;
                         cell.col=col;
-                        sprintf(tmp4,"mesh-diced/clipped-diced-%08d-lod%d.ply",cnt++,vpblod);
+                        sprintf(tmp4,"mesh-diced/clipped-diced-%08d-lod%d.ive",cnt++,vpblod);
                         cell.name=string(tmp4);
+                        for(int i=0; i < tasks.size(); i++){
+                            osg::BoundingBox imgBox(tasks[i].pose[AUV_POSE_INDEX_X]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]-tasks[i].radius,avgZ,
+                                                    tasks[i].pose[AUV_POSE_INDEX_X]+tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]+tasks[i].radius,avgZ);
+                            if(thisCellBbox.intersects(imgBox)){
+                                cell.images.push_back(i);
+                            }
+                        }
                         cells.push_back(cell);
                     }
                 }
 
-              //  fprintf(reFP,"%f %f %f %f clipped-diced-%08d-lod%d.ive\n",vrip_cells[i].bounds.min_x,vrip_cells[i].bounds.max_x,vrip_cells[i].bounds.min_y,vrip_cells[i].bounds.max_y,i,vpblod);
+                //  fprintf(reFP,"%f %f %f %f clipped-diced-%08d-lod%d.ive\n",vrip_cells[i].bounds.min_x,vrip_cells[i].bounds.max_x,vrip_cells[i].bounds.min_y,vrip_cells[i].bounds.max_y,i,vpblod);
 
                 string splitcmds_fn="mesh-diced/splitcmds";
 
                 FILE *splitcmds_fp=fopen(splitcmds_fn.c_str(),"w");
                 FILE *reFP=fopen("rebbox.txt","w");
-                fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
-                        totalbb.zMax());
+                fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
+                        totalbb.zMax(),_tileColumns,_tileRows);
 
                 for(int i=0; i <(int)cells.size(); i++){
-                    fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
-                            cells[i].bbox.zMax(),cells[i].row,cells[i].col,cells[i].name.c_str());
 
-                    if(cells[i].bbox.radius() <= 0 || std::isinf(cells[i].bbox.radius()))
+
+                    if(cells[i].images.size() == 0){
+                        fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
+                                cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
                         continue;
+
+                    }
+                    fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
+                            cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
                     fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/total.ply %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/clipped-diced-%08d.ply;",
                             cwd,
                             basepath.c_str(),
@@ -2676,6 +2670,24 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     fprintf(splitcmds_fp,"cp mesh-diced/clipped-diced-%08d.ply mesh-diced/clipped-diced-%08d-lod%d.ply \n",
                             //basepath.c_str(),
                             i,i,vpblod);
+                    char tp[1024];
+                    sprintf(tp,"mesh-diced/bbox-clipped-diced-%08d.ply.txt",i);
+                    FILE *bboxfp=fopen(tp,"w");
+
+                    for(int k=0; k < cells[i].images.size(); k++){
+                        const Stereo_Pose_Data *pose=(&tasks[cells[i].images[k]]);
+                        if(pose && pose->valid){
+                            fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
+                            save_bbox_frame(pose->bbox,bboxfp);
+                            for(int k=0; k < 4; k++)
+                                for(int n=0; n < 4; n++)
+                                    fprintf(bboxfp," %lf",pose->m[k][n]);
+                            fprintf(bboxfp,"\n");
+                        }
+
+                    }
+                    fclose(bboxfp);
+
 
                 }
                 fclose(splitcmds_fp);
@@ -2686,15 +2698,15 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 if(!no_split)
                     sysres=system("./split.py");
                 double minFrac=0.02;
-                std::vector<int> numFaces(vrip_cells.size(),0);
-                std::vector<double> resFrac(vrip_cells.size(),0);
-                std::vector<double> cur_res(vrip_cells.size(),0);
+                std::vector<int> numFaces(cells.size(),0);
+                std::vector<double> resFrac(cells.size(),0);
+                std::vector<double> cur_res(cells.size(),0);
 
                 int totalFaces=0;
                 int largestNumFaces=0;
                 double desiredRes=0.1;
-                for(int i=0; i <(int)vrip_cells.size(); i++){
-                    if(vrip_cells[i].poses.size() == 0)
+                for(int i=0; i <(int)cells.size(); i++){
+                    if(cells[i].images.size() == 0)
                         continue;
                     char tmpf[1024];
                     sprintf(tmpf,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,vpblod);
@@ -2711,7 +2723,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     numFaces[i]=faces;
                     if(faces > largestNumFaces)
                         largestNumFaces=faces;
-                    cur_res[i]=vrip_cells[i].bounds.area()/totalFaces;
+                    cur_res[i]=((cells[i].bbox.xMax()-cells[i].bbox.xMin())*(cells[i].bbox.yMax()-cells[i].bbox.yMin()))/totalFaces;
                     double dRes=desiredRes-cur_res[i];
                     resFrac[i]=(dRes/(float)vpblod);
 
@@ -2722,17 +2734,16 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 /*   printf("Total Faces %d %f\n",totalFaces,cur_res);
                 printf("%f %f dres %f\n",cur_res,desiredRes,dRes);*/
                 std::vector< std::vector<int > >sizeStep;
-                sizeStep.resize(vrip_cells.size());
-                for(int i=0; i< (int)vrip_cells.size(); i++){
+                sizeStep.resize(cells.size());
+                for(int i=0; i< (int)cells.size(); i++){
                     sizeStep[i].resize(vpblod+1);
                     for(int j=vpblod; j >=0; j--){
-                        if(vrip_cells[i].poses.size() == 0){
+                        if(cells[i].images.size() == 0){
                             sizeStep[i][j]=0;
                             continue;
                         }
                         double newRes=(cur_res[i]+(vpblod-j)*resFrac[i]);
                         sizeStep[i][j]= std::max(numFaces[i]/(pow(2.5,vpblod-j)),(largestNumFaces*minFrac));
-                        //vrip_cells[i].bounds.area()/newRes;
                         OSG_ALWAYS << "Level " << j << "Res " <<  newRes << "Orig Faces " << numFaces[i] << "New faces " << sizeStep[i][j] <<endl;
                     }
                     //                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
@@ -2742,8 +2753,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
 
-                for(int i=0; i <(int)vrip_cells.size(); i++){
-                    if(vrip_cells[i].poses.size() == 0)
+                for(int i=0; i <(int)cells.size(); i++){
+                    if(cells[i].images.size() == 0)
                         continue;
                     fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/clipped-diced-%08d-lod%d.ply --outfile mesh-diced/clipped-diced-%08d-lod%d.ply",
                             cwd,
@@ -2761,7 +2772,12 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 }
                 fclose(texcmds_fp);
                 string texcmd="tex.py";
-                shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,NULL,num_threads);
+                vector<std::string> postcmdv;
+                std::ostringstream p;
+                osg::Vec2 reimageSize(1024,1024);
+                p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << reimageSize.x() << " "<< reimageSize.y();
+                postcmdv.push_back(p.str());
+                shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,&(postcmdv),num_threads);
                 if(!no_tex)
                     sysres=system("./tex.py");
 
@@ -2769,14 +2785,15 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 string simpcmds_fn="mesh-diced/simpcmds";
 
                 FILE *simpcmds_fp=fopen(simpcmds_fn.c_str(),"w");
-
-                for(int i=0; i <(int)vrip_cells.size(); i++){
-                    if(vrip_cells[i].poses.size() == 0)
+                string app("tridecimator");
+                for(int i=0; i <(int)cells.size(); i++){
+                    if(cells[i].images.size() == 0)
                         continue;
                     for(int j=vpblod; j >0; j--){
-                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/texturedDecimator clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %d -P;",
+                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %d -P;",
                                 cwd,
                                 basepath.c_str(),
+                                app.c_str(),
                                 i,j,i,j-1, sizeStep[i][j-1]);
                     }
                     fprintf(simpcmds_fp,"\n");
@@ -2787,6 +2804,21 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 if(!no_simp)
                     sysres=system("./simp.py");
 
+                std::vector<std::vector<string> > datalist_lod;
+                for(int lod=0; lod <= vpblod; lod ++){
+                    std::vector<string> level;
+
+                        for(int i=0; i <(int)cells.size(); i++){
+                            if(cells[i].images.size() == 0)
+                                continue;
+                            char tmp[1024];
+                            sprintf(tmp,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,lod);//std::min(lod,2)
+                            level.push_back(tmp);
+                        }
+
+
+                    datalist_lod.push_back(level);
+                }
 
                 /*
                 FILE *dicefp=fopen("./simp.sh","w+");

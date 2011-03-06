@@ -253,19 +253,19 @@ LINK_DIRECTORIES( ${OPENCV_LIBRARY_DIRS}
                 )
 
 LINK_LIBRARIES(
-        /usr/local/lib64/libosgd.so
-                /usr/local/lib64/libosgDBd.so
-                  /usr/local/lib64/libosgUtild.so
+ #       /usr/local/lib64/libosgd.so
+  #              /usr/local/lib64/libosgDBd.so
+   #               /usr/local/lib64/libosgUtild.so
 #${OSG_LIBRARY_DEBUG}
- #               ${OSG_LIBRARY_DEBUG}
-# ${OSGDB_LIBRARY_DEBUG}
- #              ${OSGUTIL_LIBRARY_DEBUG}
- #     ${OSGTERRAIN_LIBRARY_DEBUG}
+               ${OSG_LIBRARY_DEBUG}
+ ${OSGDB_LIBRARY_DEBUG}
+               ${OSGUTIL_LIBRARY_DEBUG}
+     ${OSGTERRAIN_LIBRARY_DEBUG}
 gdal
 osgTerrain
 osgFX
-#osgViewer
-/usr/local/lib64/libosgViewerd.so
+osgViewer
+#/usr/local/lib64/libosgViewerd.so
 osgSim
 -L/usr/local/lib/static nvtt nvcore nvmath  nvimage -fopenmp -L/usr/local/cuda/lib64 cudart cuda /home/mattjr/exp/nvidia-texture-tools-read-only/build-Debug/src/nvtt/squish/libsquish.a
                 ${OSGSHADOW_LIBRARY}

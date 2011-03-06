@@ -782,7 +782,7 @@ void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* c
         }
     }
 }
-typedef struct _picture_cell{
+/*typedef struct _picture_cell{
     int row;
     int col;
     std::vector<int> idx;
@@ -814,7 +814,13 @@ bool cell_equal(picture_cell const& a, picture_cell const& b)  {
     }
 
     return true;
-}
+}*/
+typedef struct _picture_cell{
+    int row;
+    int col;
+    osg::BoundingBox bbox;
+    std::string name;
+}picture_cell;
 int main(int argc, char** argv)
 {
     // use an ArgumentParser object to manage the program arguments.
@@ -826,7 +832,8 @@ int main(int argc, char** argv)
     unsigned int width=1280;
     unsigned int height=1024;
     arguments.read("--pbuffer-only",width,height);
-
+    int _tileColumns;
+    int _tileRows;
     //  osg::BoundingSphere bs;
     //osg::BoundingBox bb ;
     osg::BoundingBox totalbb;
@@ -836,7 +843,7 @@ int main(int argc, char** argv)
     int   ydel[] = { 0, 0, 0,-1,  1,1,-1,-1,1};
     //  for(int modelX=0; modelX<4; modelX++){
     //    for(int modelY=0; modelY<4; modelY++){
-    std::vector<std::pair<osg::BoundingBox,std::string> > bboxes;
+    std::vector<picture_cell> cells;
     FILE *fp=fopen(argv[1],"r");
     if(!fp){
         fprintf(stderr,"Can't open %s\n",argv[1]);
@@ -845,18 +852,29 @@ int main(int argc, char** argv)
     int cnt=0;
     while(!feof(fp)){
         char fname[1024];
-        float minx,maxx,miny,maxy;
-        int res=fscanf(fp,"%f %f %f %f %s\n",&minx,&maxx,&miny,&maxy,fname);
-        if(res != 5){
+        float minx,maxx,miny,maxy,minz,maxz;
+        int row,col;
+        int res=fscanf(fp,"%f %f %f %f %f %f %d %d %s\n",&minx,&maxx,&miny,&maxy,&minz,&maxz,&col,&row,fname);
+        if(res != 9){
             fprintf(stderr,"Bad parse\n");
-            continue;
+            exit(-1);
         }
         if(cnt==0){
-            totalbb=osg::BoundingBox(minx,miny,46,maxx,maxy,49);
+            totalbb=osg::BoundingBox(minx,miny,minz,maxx,maxy,maxz);
+            _tileColumns=col;
+            _tileRows=row;
 
         }else{
-            bboxes.push_back(std::make_pair<osg::BoundingBox,std::string>(osg::BoundingBox(minx,miny,0.0,maxx,maxy,1.0),fname));
-            std::cout << " bbox " << bboxes.back().first._min<< " " << bboxes.back().first._max << std::endl;
+            picture_cell cell;
+            cell.bbox=osg::BoundingBox(minx,miny,minz,maxx,maxy,maxz);
+            cell.col=col;
+            cell.row=row;
+            if(std::string(fname) != "null")
+             cell.name=std::string(argv[2])+"/"+std::string(fname);
+            else
+                 cell.name=std::string(fname);
+            cells.push_back(cell);
+           // std::cout << " bbox " << bboxes.back().first._min<< " " << bboxes.back().first._max << std::endl;
 
         }
         cnt++;
@@ -891,8 +909,7 @@ int main(int argc, char** argv)
             _file.write(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
     _file.close();
 
-    int _tileColumns=4;
-    int _tileRows=8;
+
     osg::Vec3 deltaV=totalbb._max-totalbb._min;
     deltaV.x()/= _tileColumns;
     deltaV.y()/= _tileRows;
@@ -916,9 +933,10 @@ int main(int argc, char** argv)
     if( im_setupout( raw ) ){
         fprintf(stderr,"Fail!\n");
     }
+#if 0
     //  osg::ref_ptr<osg::Node> loadedModel =osgDB::readNodeFile("/home/mattjr/data/d100/mesh-diced/total.ply");
-    std::vector<picture_cell> cells;
-    for(int row=0; row< _tileRows; row++){
+    //std::vector<picture_cell> cells;
+   /* for(int row=0; row< _tileRows; row++){
         for(int col=0; col<_tileColumns; col++){
 
             bool centerValid=false;
@@ -942,20 +960,20 @@ int main(int argc, char** argv)
             cell.row=row;
             cell.col=col;
             std::cout << " == " << thisCellBbox._min<< " " << thisCellBbox._max << std::endl;
-
-            for(int i=0; i< bboxes.size(); i++){
+*/
+            for(int i=0; i< cells.size(); i++){
                 // std::cout << " A " << bboxes[i].first._min<< " " << bboxes[i].first._max;
-                double eps=0.5;
-                if(osg::Vec3(bboxes[i].first._min -thisCellBbox._min).length()  < eps && osg::Vec3(bboxes[i].first._max - thisCellBbox._max).length() < eps)//if(bboxes[i].first.intersects(thisCellBbox) )
+                //double eps=0.5;
+               // if(osg::Vec3(cells[i].bbox._min -thisCellBbox._min).length()  < eps && osg::Vec3(bboxes[i].first._max - thisCellBbox._max).length() < eps)//if(bboxes[i].first.intersects(thisCellBbox) )
                 {
                     std::ostringstream os;
 
-                    os<< argv[2] <<"/"<<bboxes[i].second;
+                    os<< argv[2] <<"/"<<cells[i].name;
                     std::cout << os.str() <<std::endl;
                     //std::cout << "row " << row << " col "<<col <<" i: " <<osgDB::getNameLessAllExtensions(osgDB::getSimpleFileName(os.str()))<<"\n";
                     //if(osgDB::fileExists(os.str())){
-                    cell.names.push_back(osgDB::getNameLessExtension(os.str())+".ive");
-                    cell.idx.push_back(i);
+                    //cell.names.push_back(osgDB::getNameLessExtension(os.str())+".ive");
+                   // cell.idx.push_back(i);
 
                     //loadedModel->addChild(node);
                     //}
@@ -980,10 +998,12 @@ int main(int argc, char** argv)
     }
     printf("Mult count %d\n",mult_count);
     osg::ref_ptr<osg::Group> loadedModel;
+#endif
 
-    for(int i=0; i < cells.size(); i++)
-    //int i=3;
+    for(int i=0; i < (int)cells.size(); i++)
     {
+        if(cells[i].name == "null")
+            continue;
         osgViewer::Viewer viewer(arguments);
 
         unsigned int helpType = 0;
@@ -1043,11 +1063,11 @@ int main(int argc, char** argv)
             traits->sharedContext = 0;
 
             pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
-            std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
+            //std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
             tom= osg::Texture::getTextureObjectManager(pbuffer->getState()->getContextID()).get();
             if (pbuffer.valid())
             {
-                osg::notify(osg::NOTICE)<<"Pixel buffer has been created successfully."<<std::endl;
+             //   osg::notify(osg::NOTICE)<<"Pixel buffer has been created successfully."<<std::endl;
             }
             else
             {
@@ -1098,20 +1118,10 @@ int main(int argc, char** argv)
         viewer.setReleaseContextAtEndOfFrameHint(true);
         // load the data
         osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
-        printf("\r%03d/%03d",i,cells.size());
+        printf("\r%03d/%03d",i,(int)cells.size());
         fflush(stdout);
-        osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(cells[i].names[0]);
-        bool load=false;
-        if(i == 0)
-            load=true;
-        else
-            if(!cell_equal(cells[i],cells[i-1]))
-                load=true;
+        osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(cells[i].name);
 
-        if(cells[i].idx.size() ==0){
-            fprintf(stderr,"No data\n");
-            load=false;
-        }
         //if(cells[i].idx.size() > 3)
         //  load=false;
 
@@ -1223,7 +1233,7 @@ int main(int argc, char** argv)
             im_close(im);
 
         }else{
-            std::cout << "Prob shouldn't get here\n";
+            std::cout << "Invalid " << cells[i].name << "\n";
         }
       /*  node->releaseGLObjects();
         tom->deleteAllTextureObjects();

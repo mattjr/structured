@@ -2187,7 +2187,6 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
         }
 
 
-        FILE *reFP=fopen("rebbox.txt","w");
         string mbfile=mbdir+"/"+"mb-total.ply";
         Bounds bounds( tasks );
         std::vector<Cell_Data> vrip_cells;
@@ -2198,9 +2197,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
         else
             vrip_cells=calc_cells(tasks,AUV_SPLIT,cell_scale);
         printf("Split into %d cells for VRIP\n",(int)vrip_cells.size());
-        fprintf(reFP,"%f %f %f %f %s\n",bounds.min_x,bounds.max_x,bounds.min_y,bounds.max_y,"total");
+
         for(int i=0; i <(int)vrip_cells.size(); i++){
-            fprintf(reFP,"%f %f %f %f clipped-diced-%08d-lod%d.ive\n",vrip_cells[i].bounds.min_x,vrip_cells[i].bounds.max_x,vrip_cells[i].bounds.min_y,vrip_cells[i].bounds.max_y,i,vpblod);
 
             if(vrip_cells[i].poses.size() == 0)
                 continue;
@@ -2296,7 +2294,6 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
         fclose(vripcmds_fp);
         fclose(diced_fp);
         fclose(diced_lod_fp);
-        fclose(reFP);
         FILE *quadmerge_seg_fp;
         char quadmerge_seg_fname[2048];
 
@@ -2600,12 +2597,12 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     sysres=system("./runvrip.py");
 
                 osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("mesh-diced/total.ply");
-                if(!model.valid()){
+                if(!model.valid() || !model->getBound().radius()){
                     std::cerr << " Cant open total.ply\n";
                     exit(-1);
                 }
                 osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
-                model->traverse(cbbv);
+                model->accept(cbbv);
                 osg::BoundingBox totalbb = cbbv.getBoundingBox();
                 osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
                 osg::Matrixd matrix;
@@ -2645,25 +2642,35 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         cell.bbox=thisCellBbox;
                         cell.row=row;
                         cell.col=col;
-                        sprintf(tmp4,"mesh-diced/clipped-diced-%08d-lod%d.ply \n",cnt++,vpblod);
+                        sprintf(tmp4,"mesh-diced/clipped-diced-%08d-lod%d.ply",cnt++,vpblod);
                         cell.name=string(tmp4);
+                        cells.push_back(cell);
                     }
                 }
+
+              //  fprintf(reFP,"%f %f %f %f clipped-diced-%08d-lod%d.ive\n",vrip_cells[i].bounds.min_x,vrip_cells[i].bounds.max_x,vrip_cells[i].bounds.min_y,vrip_cells[i].bounds.max_y,i,vpblod);
+
                 string splitcmds_fn="mesh-diced/splitcmds";
 
                 FILE *splitcmds_fp=fopen(splitcmds_fn.c_str(),"w");
+                FILE *reFP=fopen("rebbox.txt","w");
+                fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
+                        totalbb.zMax());
 
-                for(int i=0; i <(int)vrip_cells.size(); i++){
-                    if(vrip_cells[i].poses.size() == 0)
+                for(int i=0; i <(int)cells.size(); i++){
+                    fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
+                            cells[i].bbox.zMax(),cells[i].row,cells[i].col,cells[i].name.c_str());
+
+                    if(cells[i].bbox.radius() <= 0 || std::isinf(cells[i].bbox.radius()))
                         continue;
-                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/total.ply %f %f %f %f %f %f -dup --outfile mesh-diced/clipped-diced-%08d.ply;",
+                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/total.ply %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/clipped-diced-%08d.ply;",
                             cwd,
                             basepath.c_str(),
-                            vrip_cells[i].bounds.min_x,
-                            vrip_cells[i].bounds.min_y,
+                            cells[i].bbox.xMin(),
+                            cells[i].bbox.yMin(),
                             -FLT_MAX,
-                            vrip_cells[i].bounds.max_x,
-                            vrip_cells[i].bounds.max_y,
+                            cells[i].bbox.xMax(),
+                            cells[i].bbox.yMax(),
                             FLT_MAX,
                             i);
                     fprintf(splitcmds_fp,"cp mesh-diced/clipped-diced-%08d.ply mesh-diced/clipped-diced-%08d-lod%d.ply \n",
@@ -2672,6 +2679,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 }
                 fclose(splitcmds_fp);
+                fclose(reFP);
+
                 string splitcmd="split.py";
                 shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
                 if(!no_split)

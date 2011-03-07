@@ -2607,7 +2607,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 _file.close();
                 std::vector<picture_cell> cells;
 
-                int _tileColumns=4;
+                int _tileColumns=8;
                 int _tileRows=8;
                 osg::Vec3 deltaV=totalbb._max-totalbb._min;
                 deltaV.x()/= _tileColumns;
@@ -2774,7 +2774,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 string texcmd="tex.py";
                 vector<std::string> postcmdv;
                 std::ostringstream p;
-                osg::Vec2 reimageSize(1024,1024);
+                osg::Vec2 reimageSize(4096,4096);
                 p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << reimageSize.x() << " "<< reimageSize.y();
                 postcmdv.push_back(p.str());
                 shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,&(postcmdv),num_threads);

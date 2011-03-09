@@ -103,7 +103,8 @@ string getUUID(void){
 
 void TexPyrAtlas::loadTextureFiles(int size){
     std::vector<osg::ref_ptr<osg::Image> > loc_images;
-
+    if( _totalImageList.size() == 0)
+        return;
     string closestDir;
     if(!getClosestDir(closestDir,size)){
         cerr << "Can't find any dir close to size " << size<<endl;

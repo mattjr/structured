@@ -108,6 +108,9 @@ int main( int argc, char **argv )
                 tile->_models->_models.push_back(model);
                 osg::ref_ptr<osg::Node> node=tile->createScene();
                 osgDB::writeNodeFile(*node,osgDB::getNameLessExtension(outfilename).append(".ive"));
+                std::ofstream f(outfilename.c_str());
+                PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second));
+                model->accept(nv);
             }
 
         }else

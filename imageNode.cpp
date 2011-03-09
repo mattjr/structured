@@ -520,14 +520,15 @@ osg::Matrix vpb::MyDataSet::getImageSection(vips::VImage &in,const osg::Vec2 min
     // printf("Range %d %d\n",xRange,yRange);
     // printf("%f %f %f %f\n",subSize.x(),subSize.y(),downsampleSize.x(),downsampleSize.y());
     image = new osg::Image;
-    image->allocateImage(downsampleSize.x(),downsampleSize.y(), 1, GL_RGBA,GL_UNSIGNED_BYTE);
+    image->allocateImage(downsampleSize.x(),downsampleSize.y(), 1, GL_RGB,GL_UNSIGNED_BYTE);
     if(image->data() == 0 ){
         fprintf(stderr,"Failed to allocate\n");
         exit(-1);
     }
     {
+      //  vips::VImage tmp("subtile.v");
      //   OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_imageMutex);
-        vips::VImage *osgImage = new vips::VImage(image->data(),downsampleSize.x(),downsampleSize.y(),4,vips::VImage::FMTUCHAR);
+        vips::VImage *osgImage = new vips::VImage(image->data(),downsampleSize.x(),downsampleSize.y(),3,vips::VImage::FMTUCHAR);
 #warning "memleak"
         in.extract_area(x,y,xRange,yRange).embed(1,0,0,subSize.x(),subSize.y())./*shrink(downsampleFactor,downsampleFactor)*/affine(downsampleRatio,0,0,downsampleRatio,0,0,0,0,downsampleSize.x(),downsampleSize.y())
                                                                                                                                     .write(*osgImage);

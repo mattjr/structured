@@ -48,7 +48,7 @@ using namespace ulapack;
 using namespace libsnapper;
 #define DEFAULT_NUM_THREADS (int)(get_num_processors( )*1.5)
 
-
+bool reimage=true;
 static int meshNum;
 static double start_time = 0.0;
 static bool apply_aug=false;
@@ -194,7 +194,7 @@ static int overlap=50;
 static   double local_easting, local_northing;
 using mapnik::Envelope;
 Envelope<double> total_env;
-
+ osg::Vec2 reimageSize(4096,4096);
 int pos_lod0_min_depth,pos_lod2_min_depth;
 int pos_lod0_depth,pos_lod2_depth;
 void runC(Stereo_Pose_Data &name);
@@ -367,6 +367,8 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--skipsparse",skip_sparse);
     argp.read("--bkmb",background_mb);
     argp.read("--overlap",overlap);
+    argp.read("--reimageres",reimageSize.x(),reimageSize.y());
+
     if(argp.read("--noarray"))
         useTextureArray=false;
 
@@ -577,6 +579,8 @@ static bool parse_args( int argc, char *argv[ ] )
             continue;
         sprintf(tmppp,"cache-tex-%d/",size);
         cachedtexdir.push_back(make_pair<string,int> (string(tmppp),size));
+        if(i==0 && reimage)
+            break;
     }
 
 
@@ -2205,7 +2209,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 continue;
 
             sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
-            sprintf(conf_name,"mesh-diced/old-bbox-clipped-diced-%08d.ply.txt",i);
+            sprintf(conf_name,"mesh-diced/bbox-clipped-diced-%08d.ply.txt",i);
 
             vrip_seg_fp=fopen(vrip_seg_fname,"w");
             bboxfp = fopen(conf_name,"w");
@@ -2624,7 +2628,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         cell.bbox=thisCellBbox;
                         cell.row=row;
                         cell.col=col;
-                        sprintf(tmp4,"mesh-diced/clipped-diced-%08d-lod%d.ive",cnt++,vpblod);
+                        sprintf(tmp4,"mesh-diced/tex-clipped-diced-%08d-lod%d.ive",cnt++,vpblod);
                         cell.name=string(tmp4);
                         for(int i=0; i < tasks.size(); i++){
                             osg::BoundingBox imgBox(tasks[i].pose[AUV_POSE_INDEX_X]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]-tasks[i].radius,avgZ,
@@ -2657,7 +2661,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     }
                     fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                             cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
-                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/total.ply %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/clipped-diced-%08d.ply;",
+                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/total.ply %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/tex-clipped-diced-%08d.ply;",
                             cwd,
                             basepath.c_str(),
                             cells[i].bbox.xMin(),
@@ -2667,11 +2671,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             cells[i].bbox.yMax(),
                             FLT_MAX,
                             i);
-                    fprintf(splitcmds_fp,"cp mesh-diced/clipped-diced-%08d.ply mesh-diced/clipped-diced-%08d-lod%d.ply \n",
+                    fprintf(splitcmds_fp,"cp mesh-diced/tex-clipped-diced-%08d.ply mesh-diced/tex-clipped-diced-%08d-lod%d.ply \n",
                             //basepath.c_str(),
                             i,i,vpblod);
                     char tp[1024];
-                    sprintf(tp,"mesh-diced/bbox-clipped-diced-%08d.ply.txt",i);
+                    sprintf(tp,"mesh-diced/bbox-tex-clipped-diced-%08d.ply.txt",i);
                     FILE *bboxfp=fopen(tp,"w");
 
                     for(int k=0; k < cells[i].images.size(); k++){
@@ -2690,6 +2694,25 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
 
                 }
+                for(int i=0; i <(int)vrip_cells.size(); i++){
+                    if(vrip_cells[i].poses.size() == 0)
+                        continue;
+                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/total.ply %f %f %f %f %f %f -dup --outfile mesh-diced/clipped-diced-%08d.ply;",
+                            cwd,
+                            basepath.c_str(),
+                            vrip_cells[i].bounds.min_x,
+                            vrip_cells[i].bounds.min_y,
+                            -FLT_MAX,
+                            vrip_cells[i].bounds.max_x,
+                            vrip_cells[i].bounds.max_y,
+                            FLT_MAX,
+                            i);
+                    fprintf(splitcmds_fp,"cp mesh-diced/clipped-diced-%08d.ply mesh-diced/clipped-diced-%08d-lod%d.ply \n",
+                            //basepath.c_str(),
+                            i,i,vpblod);
+
+                }
+
                 fclose(splitcmds_fp);
                 fclose(reFP);
 
@@ -2698,15 +2721,15 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 if(!no_split)
                     sysres=system("./split.py");
                 double minFrac=0.02;
-                std::vector<int> numFaces(cells.size(),0);
-                std::vector<double> resFrac(cells.size(),0);
-                std::vector<double> cur_res(cells.size(),0);
+                std::vector<int> numFaces(vrip_cells.size(),0);
+                std::vector<double> resFrac(vrip_cells.size(),0);
+                std::vector<double> cur_res(vrip_cells.size(),0);
 
                 int totalFaces=0;
                 int largestNumFaces=0;
                 double desiredRes=0.1;
-                for(int i=0; i <(int)cells.size(); i++){
-                    if(cells[i].images.size() == 0)
+                for(int i=0; i <(int)vrip_cells.size(); i++){
+                    if(vrip_cells[i].poses.size() == 0)
                         continue;
                     char tmpf[1024];
                     sprintf(tmpf,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,vpblod);
@@ -2723,7 +2746,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     numFaces[i]=faces;
                     if(faces > largestNumFaces)
                         largestNumFaces=faces;
-                    cur_res[i]=((cells[i].bbox.xMax()-cells[i].bbox.xMin())*(cells[i].bbox.yMax()-cells[i].bbox.yMin()))/totalFaces;
+                    cur_res[i]=vrip_cells[i].bounds.area()/totalFaces;
                     double dRes=desiredRes-cur_res[i];
                     resFrac[i]=(dRes/(float)vpblod);
 
@@ -2734,11 +2757,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 /*   printf("Total Faces %d %f\n",totalFaces,cur_res);
                 printf("%f %f dres %f\n",cur_res,desiredRes,dRes);*/
                 std::vector< std::vector<int > >sizeStep;
-                sizeStep.resize(cells.size());
-                for(int i=0; i< (int)cells.size(); i++){
+                sizeStep.resize(vrip_cells.size());
+                for(int i=0; i< (int)vrip_cells.size(); i++){
                     sizeStep[i].resize(vpblod+1);
                     for(int j=vpblod; j >=0; j--){
-                        if(cells[i].images.size() == 0){
+                        if(vrip_cells[i].poses.size() == 0){
                             sizeStep[i][j]=0;
                             continue;
                         }
@@ -2756,7 +2779,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int i=0; i <(int)cells.size(); i++){
                     if(cells[i].images.size() == 0)
                         continue;
-                    fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/clipped-diced-%08d-lod%d.ply --outfile mesh-diced/clipped-diced-%08d-lod%d.ply",
+                    fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/tex-clipped-diced-%08d-lod%d.ply --outfile mesh-diced/tex-clipped-diced-%08d-lod%d.ply",
                             cwd,
                             basepath.c_str(),
                             base_dir.c_str(),
@@ -2774,7 +2797,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 string texcmd="tex.py";
                 vector<std::string> postcmdv;
                 std::ostringstream p;
-                osg::Vec2 reimageSize(4096,4096);
+
                 p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << reimageSize.x() << " "<< reimageSize.y();
                 postcmdv.push_back(p.str());
                 shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,&(postcmdv),num_threads);
@@ -2785,12 +2808,19 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 string simpcmds_fn="mesh-diced/simpcmds";
 
                 FILE *simpcmds_fp=fopen(simpcmds_fn.c_str(),"w");
-                string app("tridecimator");
-                for(int i=0; i <(int)cells.size(); i++){
-                    if(cells[i].images.size() == 0)
-                        continue;
+                string app;
+                if(1)
+                    app="tridecimator";
+                else
+                    app="texturedDecimator";
+               // for(int i=0; i <(int)cells.size(); i++){
+                 //   if(cells[i].images.size() == 0)
+                   //     continue;
+                for(int i=0; i <(int)vrip_cells.size(); i++){
+                    if(vrip_cells[i].poses.size() == 0)
+                 continue;
                     for(int j=vpblod; j >0; j--){
-                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %d -P;",
+                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %d -By -P;",
                                 cwd,
                                 basepath.c_str(),
                                 app.c_str(),
@@ -2808,13 +2838,15 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int lod=0; lod <= vpblod; lod ++){
                     std::vector<string> level;
 
-                        for(int i=0; i <(int)cells.size(); i++){
-                            if(cells[i].images.size() == 0)
-                                continue;
-                            char tmp[1024];
-                            sprintf(tmp,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,lod);//std::min(lod,2)
-                            level.push_back(tmp);
-                        }
+                 //   for(int i=0; i <(int)cells.size(); i++){
+                   //     if(cells[i].images.size() == 0)
+                    for(int i=0; i <(int)vrip_cells.size(); i++){
+                        if(vrip_cells[i].poses.size() == 0)
+                            continue;
+                        char tmp[1024];
+                        sprintf(tmp,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,lod);//std::min(lod,2)
+                        level.push_back(tmp);
+                    }
 
 
                     datalist_lod.push_back(level);

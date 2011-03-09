@@ -76,10 +76,10 @@ void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datal
 //vector<osg::KdTree*> trees;
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
-    osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,useTextureArray);
+    osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,useTextureArray,true);
     m->_cachedDirs=cachedDirs;
     m->setNumReadThreadsToCoresRatio(1.5);
-    m->setNumWriteThreadsToCoresRatio(1.5);
+   m->setNumWriteThreadsToCoresRatio(1.5);
    // m->setCompressionMethod(vpb::BuildOptions::NVTT);
     m->setCompressionMethod(vpb::BuildOptions::GL_DRIVER);
     vpb::ImageOptions *imageOptions = new vpb::ImageOptions();

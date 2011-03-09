@@ -42,6 +42,8 @@
 #include <tmmintrin.h>
 //#endif
 #include <vips/vips.h>
+#include <vips/vips>
+
 #include <osg/io_utils>
 #define u32 unsigned int
 #define u16 unsigned short
@@ -259,19 +261,19 @@ public:
             {
                 if (gc->getTraits()->alpha)
                 {
-                    osg::notify(osg::NOTICE)<<"Select GL_BGRA read back format"<<std::endl;
+                    osg::notify(osg::INFO)<<"Select GL_BGRA read back format"<<std::endl;
                     _pixelFormat = GL_BGRA;
                 }
                 else
                 {
-                    osg::notify(osg::NOTICE)<<"Select GL_BGR read back format"<<std::endl;
+                    osg::notify(osg::INFO)<<"Select GL_BGR read back format"<<std::endl;
                     _pixelFormat = GL_BGR;
                 }
             }
 
             getSize(gc, _width, _height);
 
-            std::cout<<"Window size "<<_width<<", "<<_height<<std::endl;
+            osg::notify(osg::INFO)<<"Window size "<<_width<<", "<<_height<<std::endl;
 
             // single buffered image
             _imageBuffer.push_back(new osg::Image);
@@ -280,19 +282,19 @@ public:
             switch(_mode)
             {
             case(READ_PIXELS):
-                osg::notify(osg::NOTICE)<<"Reading window usig glReadPixels, with out PixelBufferObject."<<std::endl;
+                osg::notify(osg::INFO)<<"Reading window usig glReadPixels, with out PixelBufferObject."<<std::endl;
                 break;
             case(SINGLE_PBO):
-                osg::notify(osg::NOTICE)<<"Reading window usig glReadPixels, with a single PixelBufferObject."<<std::endl;
+                osg::notify(osg::INFO)<<"Reading window usig glReadPixels, with a single PixelBufferObject."<<std::endl;
                 _pboBuffer.push_back(0);
                 break;
             case(DOUBLE_PBO):
-                osg::notify(osg::NOTICE)<<"Reading window usig glReadPixels, with a double buffer PixelBufferObject."<<std::endl;
+                osg::notify(osg::INFO)<<"Reading window usig glReadPixels, with a double buffer PixelBufferObject."<<std::endl;
                 _pboBuffer.push_back(0);
                 _pboBuffer.push_back(0);
                 break;
             case(TRIPLE_PBO):
-                osg::notify(osg::NOTICE)<<"Reading window usig glReadPixels, with a triple buffer PixelBufferObject."<<std::endl;
+                osg::notify(osg::INFO)<<"Reading window usig glReadPixels, with a triple buffer PixelBufferObject."<<std::endl;
                 _pboBuffer.push_back(0);
                 _pboBuffer.push_back(0);
                 _pboBuffer.push_back(0);
@@ -451,18 +453,18 @@ void WindowCaptureCallback::ContextData::updateTimings(osg::Timer_t tick_start,
         double numMPixels = double(_width * _height) / 1000000.0;
         double numMb = double(dataSize) / (1024*1024);
 
-        int prec = osg::notify(osg::NOTICE).precision(5);
+        int prec = osg::notify(osg::INFO).precision(5);
 
         if (timeForMemCpy==0.0)
         {
-            osg::notify(osg::NOTICE)<<"fps = "<<fps<<", full frame copy = "<<timeForFullCopy*1000.0f<<"ms rate = "<<numMPixels / timeForFullCopy<<" Mpixel/sec, copy speed = "<<numMb / timeForFullCopy<<" Mb/sec"<<std::endl;
+            osg::notify(osg::INFO)<<"fps = "<<fps<<", full frame copy = "<<timeForFullCopy*1000.0f<<"ms rate = "<<numMPixels / timeForFullCopy<<" Mpixel/sec, copy speed = "<<numMb / timeForFullCopy<<" Mb/sec"<<std::endl;
         }
         else
         {
-            osg::notify(osg::NOTICE)<<"fps = "<<fps<<", full frame copy = "<<timeForFullCopy*1000.0f<<"ms rate = "<<numMPixels / timeForFullCopy<<" Mpixel/sec, "<<numMb / timeForFullCopy<< " Mb/sec "<<
+            osg::notify(osg::INFO)<<"fps = "<<fps<<", full frame copy = "<<timeForFullCopy*1000.0f<<"ms rate = "<<numMPixels / timeForFullCopy<<" Mpixel/sec, "<<numMb / timeForFullCopy<< " Mb/sec "<<
                     "time for memcpy = "<<timeForMemCpy*1000.0<<"ms  memcpy speed = "<<numMb / timeForMemCpy<<" Mb/sec"<<std::endl;
         }
-        osg::notify(osg::NOTICE).precision(prec);
+        osg::notify(osg::INFO).precision(prec);
 
     }
 
@@ -527,12 +529,12 @@ void WindowCaptureCallback::ContextData::singlePBO(osg::GLBufferObject::Extensio
     if (image->s() != _width ||
         image->t() != _height)
     {
-        osg::notify(osg::NOTICE)<<"Allocating image "<<std::endl;
+        osg::notify(osg::INFO)<<"Allocating image "<<std::endl;
         image->allocateImage(_width, _height, 1, GL_RGBA, _type);
 
         if (pbo!=0)
         {
-            osg::notify(osg::NOTICE)<<"deleting pbo "<<pbo<<std::endl;
+            osg::notify(osg::INFO)<<"deleting pbo "<<pbo<<std::endl;
             ext->glDeleteBuffers (1, &pbo);
             pbo = 0;
         }
@@ -545,7 +547,7 @@ void WindowCaptureCallback::ContextData::singlePBO(osg::GLBufferObject::Extensio
         ext->glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, pbo);
         ext->glBufferData(GL_PIXEL_PACK_BUFFER_ARB, image->getTotalSizeInBytes(), 0, GL_STREAM_READ);
 
-        osg::notify(osg::NOTICE)<<"Generating pbo "<<pbo<<std::endl;
+        osg::notify(osg::INFO)<<"Generating pbo "<<pbo<<std::endl;
     }
     else
     {
@@ -609,19 +611,19 @@ void WindowCaptureCallback::ContextData::multiPBO(osg::GLBufferObject::Extension
     if (image->s() != _width ||
         image->t() != _height)
     {
-        osg::notify(osg::NOTICE)<<"Allocating image "<<std::endl;
+        osg::notify(osg::INFO)<<"Allocating image "<<std::endl;
         image->allocateImage(_width, _height, 1, _pixelFormat, _type);
 
         if (read_pbo!=0)
         {
-            osg::notify(osg::NOTICE)<<"deleting pbo "<<read_pbo<<std::endl;
+            osg::notify(osg::INFO)<<"deleting pbo "<<read_pbo<<std::endl;
             ext->glDeleteBuffers (1, &read_pbo);
             read_pbo = 0;
         }
 
         if (copy_pbo!=0)
         {
-            osg::notify(osg::NOTICE)<<"deleting pbo "<<copy_pbo<<std::endl;
+            osg::notify(osg::INFO)<<"deleting pbo "<<copy_pbo<<std::endl;
             ext->glDeleteBuffers (1, &copy_pbo);
             copy_pbo = 0;
         }
@@ -635,7 +637,7 @@ void WindowCaptureCallback::ContextData::multiPBO(osg::GLBufferObject::Extension
         ext->glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, copy_pbo);
         ext->glBufferData(GL_PIXEL_PACK_BUFFER_ARB, image->getTotalSizeInBytes(), 0, GL_STREAM_READ);
 
-        osg::notify(osg::NOTICE)<<"Generating pbo "<<read_pbo<<std::endl;
+        osg::notify(osg::INFO)<<"Generating pbo "<<read_pbo<<std::endl;
     }
 
     if (read_pbo==0)
@@ -644,7 +646,7 @@ void WindowCaptureCallback::ContextData::multiPBO(osg::GLBufferObject::Extension
         ext->glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, read_pbo);
         ext->glBufferData(GL_PIXEL_PACK_BUFFER_ARB, image->getTotalSizeInBytes(), 0, GL_STREAM_READ);
 
-        osg::notify(osg::NOTICE)<<"Generating pbo "<<read_pbo<<std::endl;
+        osg::notify(osg::INFO)<<"Generating pbo "<<read_pbo<<std::endl;
     }
     else
     {
@@ -726,13 +728,13 @@ void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* c
 
             if (firstCamera)
             {
-                osg::notify(osg::NOTICE)<<"First camera "<<firstCamera<<std::endl;
+                osg::notify(osg::INFO)<<"First camera "<<firstCamera<<std::endl;
 
                 firstCamera->setInitialDrawCallback(callback);
             }
             else
             {
-                osg::notify(osg::NOTICE)<<"No camera found"<<std::endl;
+                osg::notify(osg::INFO)<<"No camera found"<<std::endl;
             }
         }
     }
@@ -771,13 +773,13 @@ void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* c
 
             if (lastCamera)
             {
-                osg::notify(osg::NOTICE)<<"Last camera "<<lastCamera<<std::endl;
+                osg::notify(osg::INFO)<<"Last camera "<<lastCamera<<std::endl;
 
                 lastCamera->setFinalDrawCallback(callback);
             }
             else
             {
-                osg::notify(osg::NOTICE)<<"No camera found"<<std::endl;
+                osg::notify(osg::INFO)<<"No camera found"<<std::endl;
             }
         }
     }
@@ -913,26 +915,33 @@ int main(int argc, char** argv)
     osg::Vec3 deltaV=totalbb._max-totalbb._min;
     deltaV.x()/= _tileColumns;
     deltaV.y()/= _tileRows;
-    IMAGE *raw;
+   // IMAGE *raw;
     std::ostringstream os;
-    os <<"subtile.tif";
-    if( !(raw = im_open(  os.str().c_str(), "w" )) )
+    os <<"subtile.v";//<<":deflate";
+  /*  if( !(raw = im_open(  os.str().c_str(), "w" )) )
         return( -1 );
-
+*/
+    vips::VImage raw;//( os.str().c_str(), "w" );
 
     /* Make sure we can write PIO-style.
  */
-    if( im_poutcheck( raw ) )
-        return( -1 );
+    ///if( im_poutcheck( raw ) )
+     //   return( -1 );
 
     /* Process and save as VIPS.
  */
-    if( im_demand_hint( raw, IM_SMALLTILE, NULL ))
-        fprintf(stderr,"Freakout");
-    im_initdesc(raw,width*_tileColumns,height*_tileRows,4,IM_BBITS_BYTE,IM_BANDFMT_UCHAR,IM_CODING_NONE,IM_TYPE_sRGB,1.0,1.0,0,0);
-    if( im_setupout( raw ) ){
-        fprintf(stderr,"Fail!\n");
-    }
+    //if( im_demand_hint( raw, IM_ANY, NULL ))
+      // fprintf(stderr,"Freakout");
+    raw.initdesc(width*_tileColumns,height*_tileRows,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
+
+   /* if( im_setupout( raw ) ){
+        fprintf(stderr,"Fail setup out!\n");
+    }*/
+    /*if(im_incheck(raw)){
+        fprintf(stderr,"Fail in check!\n");
+    }*/
+
+
 #if 0
     //  osg::ref_ptr<osg::Node> loadedModel =osgDB::readNodeFile("/home/mattjr/data/d100/mesh-diced/total.ply");
     //std::vector<picture_cell> cells;
@@ -1067,11 +1076,11 @@ int main(int argc, char** argv)
             tom= osg::Texture::getTextureObjectManager(pbuffer->getState()->getContextID()).get();
             if (pbuffer.valid())
             {
-             //   osg::notify(osg::NOTICE)<<"Pixel buffer has been created successfully."<<std::endl;
+             //   osg::notify(osg::INFO)<<"Pixel buffer has been created successfully."<<std::endl;
             }
             else
             {
-                osg::notify(osg::NOTICE)<<"Pixel buffer has not been created successfully."<<std::endl;
+                osg::notify(osg::INFO)<<"Pixel buffer has not been created successfully."<<std::endl;
             }
 
         }
@@ -1173,7 +1182,7 @@ int main(int argc, char** argv)
                 _file.close();
                 */
 
-            IMAGE *im;
+           /* IMAGE *im;
             if( !(im = im_open( "temp", "t" )) )
                 fprintf(stderr,"Freakout");
 
@@ -1181,11 +1190,12 @@ int main(int argc, char** argv)
 
 
             if( im_setupout( im ) ){
-                fprintf(stderr,"Fail!\n");
+                fprintf(stderr,"Fail setup out!\n");
             }
             if(im_incheck(im)){
-                fprintf(stderr,"Fail!\n");
-            }
+                fprintf(stderr,"Fail in check!\n");
+            }*/
+
 
 
             char tmpn[255];
@@ -1213,8 +1223,11 @@ int main(int argc, char** argv)
 
             }
 */
+            vips::VImage tmp(img->data(),img->s(),img->t(),4,vips::VImage::FMTUCHAR);
+
+#if 0
             if(_tileColumns ==1 && _tileRows ==1 ){
-                memcpy(raw->data,img->data(),img->getImageSizeInBytes());
+                memcpy(raw.image()->data,img->data(),img->getImageSizeInBytes());
 
             }else{
                 memcpy(im->data,img->data(),img->getImageSizeInBytes());
@@ -1224,13 +1237,15 @@ int main(int argc, char** argv)
     if( im_copy( im, out) )
         printf("Fail!\n");
     im_close(out);*/
-                if(im_insertplace(raw,im,width*cells[i].col,height*cells[i].row))
-                    printf("Fail!\n");
+                if(im_insertplace(raw.image(),im,width*cells[i].col,height*cells[i].row))
+                    printf("Fail can't insert!\n");
             }
 
             //   return(-1);
             //osgDB::writeImageFile(*img,tmpn);
             im_close(im);
+#endif
+            raw.insertplace(tmp.extract_bands(0,3),width*cells[i].col,height*cells[i].row);
 
         }else{
             std::cout << "Invalid " << cells[i].name << "\n";
@@ -1260,7 +1275,8 @@ int main(int argc, char** argv)
         ///osg::deleteAllGLObjects(viewer.getCamera()->->getContextID());
 
     }
-    im_close(raw);
+    //im_close(raw);
+    raw.write("subtile.v");
 
 }
 

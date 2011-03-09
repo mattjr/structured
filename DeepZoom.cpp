@@ -14,7 +14,6 @@ public:
 
     enum CmdParseState { DEFAULT, OUTPUTDIR, TILESIZE, OVERLAP, INPUTFILE };
     bool deleteExisting;
-    std::string tileFormatExt;
 
     // The following can be overriden/set by the indicated command line arguments
     int tileSize;            // -tilesize
@@ -30,7 +29,7 @@ public:
         deleteExisting=false;
         outputDir="dz";
         verboseMode=false;
-        tileFormatExt="jpg";
+        tileFormat="v";
         debugMode=false;
         xmlHeader= "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
         schemaName = "http://schemas.microsoft.com/deepzoom/2009";
@@ -48,7 +47,10 @@ int main( int argc, char **argv )
 {
     // use an ArgumentParser object to manage the program arguments.
     osg::ArgumentParser arguments(&argc,argv);
-
+    if(argc < 2 ){
+        cerr << "Must have at least one input image\n";
+        exit(-1);
+    }
     DeepZoom dz;
     arguments.read("-tilesize",dz.tileSize);
     arguments.read("-overlap",dz.tileOverlap);
@@ -99,7 +101,7 @@ void DeepZoom::processImageFile(string inFile, string outputDir) {
 
     std::string imgDir = pathWithoutExtension;
     if (osgDB::fileExists(imgDir))  {
-        cerr << ("Image directory already exists in output dir: " + imgDir);
+        cerr << ("Image directory already exists in output dir: " + imgDir+"\n");
     }
 
     if(!osgDB::makeDirectory(imgDir)){
@@ -122,17 +124,20 @@ void DeepZoom::processImageFile(string inFile, string outputDir) {
             cerr<< "Failed to create " << dir.str() <<endl;
             exit(-1);
         }
-
+//#pragma omp parallel for
         for (int col = 0; col < nCols; col++) {
             for (int row = 0; row < nRows; row++) {
                 VImage tile = getTile(image, row, col);
                 //saveImage(tile, dir + File.separator + col + '_' + row);
                 std::ostringstream imgName;
-                imgName << dir << "/" << col << "_" << row;
+                imgName << dir.str() << "/" << col << "_" << row<<"."<<tileFormat;
+                if(verboseMode)
+                    cout << imgName.str() << endl;
                 tile.write(imgName.str().c_str());
             }
         }
-
+        double ratioWidth=width/originalWidth;
+        double ratioHeight=height/originalHeight;
         // Scale down image for next level
         width = ceil(width / 2);
         height = ceil(height / 2);
@@ -141,8 +146,7 @@ void DeepZoom::processImageFile(string inFile, string outputDir) {
             image = resizeImage(image, width * 1.66, height * 1.66);
             image = resizeImage(image, width * 1.33, height * 1.33);
         }*/
-        double ratioWidth=width/originalWidth;
-        double ratioHeight=height/originalHeight;
+
 
         image = image.affine(ratioWidth,0,0,ratioHeight,0,0,0,0,width,height);
     }

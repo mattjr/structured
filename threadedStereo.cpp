@@ -2614,21 +2614,22 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 int _tileColumns=8;
                 int _tileRows=8;
                 osg::Vec3 deltaV=totalbb._max-totalbb._min;
-                deltaV.x()/= _tileColumns;
-                deltaV.y()/= _tileRows;
+                deltaV.x()/= _tileRows;
+                deltaV.y()/= _tileColumns;
                 int cnt=0;
                 char tmp4[1024];
                 double avgZ=totalbb.zMin()+((totalbb.zMax()-totalbb.zMin())/2.0);
                 for(int row=0; row< _tileRows; row++){
                     for(int col=0; col<_tileColumns; col++){
                         osg::BoundingBox thisCellBbox;
-                        thisCellBbox._min=totalbb._min+osg::Vec3(col*deltaV.x(),row*deltaV.y(),0);
-                        thisCellBbox._max=totalbb._min+osg::Vec3((col+1)*deltaV.x(),(row+1)*deltaV.y(),totalbb.zMax()-totalbb.zMin());
+                        thisCellBbox._min=totalbb._min+osg::Vec3(row*deltaV.x(),col*deltaV.y(),0);
+                        thisCellBbox._max=totalbb._min+osg::Vec3((row+1)*deltaV.x(),(col+1)*deltaV.y(),totalbb.zMax()-totalbb.zMin());
                         picture_cell cell;
                         cell.bbox=thisCellBbox;
                         cell.row=row;
                         cell.col=col;
-                        sprintf(tmp4,"mesh-diced/tex-clipped-diced-%08d-lod%d.ive",cnt++,vpblod);
+                        printf("%d %d %d cnt\n",row,col,cnt);
+                        sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",row,col,vpblod);
                         cell.name=string(tmp4);
                         for(int i=0; i < tasks.size(); i++){
                             osg::BoundingBox imgBox(tasks[i].pose[AUV_POSE_INDEX_X]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]-tasks[i].radius,avgZ,
@@ -2653,15 +2654,15 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int i=0; i <(int)cells.size(); i++){
 
 
-                    if(cells[i].images.size() == 0){
+                 /*   if(cells[i].images.size() == 0){
                         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
-                                cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
+                                cells[i].bbox.zMax(),cells[i].row,cells[i].col,"null");
                         continue;
 
-                    }
+                    }*/
                     fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
-                            cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
-                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/total.ply %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/tex-clipped-diced-%08d.ply;",
+                            cells[i].bbox.zMax(),cells[i].row,cells[i].col,cells[i].name.c_str());
+                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/total.ply %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d.ply;",
                             cwd,
                             basepath.c_str(),
                             cells[i].bbox.xMin(),
@@ -2670,12 +2671,12 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             cells[i].bbox.xMax(),
                             cells[i].bbox.yMax(),
                             FLT_MAX,
-                            i);
-                    fprintf(splitcmds_fp,"cp mesh-diced/tex-clipped-diced-%08d.ply mesh-diced/tex-clipped-diced-%08d-lod%d.ply \n",
+                            cells[i].row,cells[i].col);
+                    fprintf(splitcmds_fp,"cp mesh-diced/tex-clipped-diced-r_%04d_c_%04d.ply mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
                             //basepath.c_str(),
-                            i,i,vpblod);
+                             cells[i].row,cells[i].col,  cells[i].row,cells[i].col,vpblod);
                     char tp[1024];
-                    sprintf(tp,"mesh-diced/bbox-tex-clipped-diced-%08d.ply.txt",i);
+                    sprintf(tp,"mesh-diced/bbox-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
                     FILE *bboxfp=fopen(tp,"w");
 
                     for(int k=0; k < cells[i].images.size(); k++){
@@ -2779,13 +2780,13 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int i=0; i <(int)cells.size(); i++){
                     if(cells[i].images.size() == 0)
                         continue;
-                    fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/tex-clipped-diced-%08d-lod%d.ply --outfile mesh-diced/tex-clipped-diced-%08d-lod%d.ply",
+                    fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply",
                             cwd,
                             basepath.c_str(),
                             base_dir.c_str(),
-                            i,
+                            cells[i].row,cells[i].col,
                             vpblod,
-                            i,
+                            cells[i].row,cells[i].col,
                             vpblod);
                     if(true)
                         fprintf(texcmds_fp," --tex_cache %s %d\n",cachedtexdir[0].first.c_str(),cachedtexdir[0].second);
@@ -2798,7 +2799,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 vector<std::string> postcmdv;
                 std::ostringstream p;
 
-                p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << reimageSize.x() << " "<< reimageSize.y();
+                p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << (int)reimageSize.x() << " "<< (int)reimageSize.y() << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
                 postcmdv.push_back(p.str());
                 shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,&(postcmdv),num_threads);
                 if(!no_tex)

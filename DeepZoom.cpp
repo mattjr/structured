@@ -29,7 +29,7 @@ public:
         deleteExisting=false;
         outputDir="dz";
         verboseMode=false;
-        tileFormat="v";
+        tileFormat="jpg";
         debugMode=false;
         xmlHeader= "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
         schemaName = "http://schemas.microsoft.com/deepzoom/2009";

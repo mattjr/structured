@@ -261,7 +261,7 @@ LINK_LIBRARIES(
  ${OSGDB_LIBRARY_DEBUG}
                ${OSGUTIL_LIBRARY_DEBUG}
      ${OSGTERRAIN_LIBRARY_DEBUG}
-gdal
+/usr/lib//libgdal1.6.0.so.1
 osgTerrain
 osgFX
 osgViewer

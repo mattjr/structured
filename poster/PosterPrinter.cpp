@@ -25,12 +25,14 @@
 #include<osgUtil/LineSegmentIntersector>
 #include <string.h>
 //Include the stuff for the geotifs
-#include <geotiff/geotiff.h>
-#include <geotiff/xtiffio.h>
+#include <geotiff.h>
+#include <xtiffio.h>
 #include <GeographicConversions/ufRedfearn.h>
 #include <limits>
 #include <adt_write_gtiff.hpp>
 #include <adt_file_utils.hpp>
+#include <auv_map_projection.hpp>
+
 /* PagedLoadingCallback: Callback for loading paged nodes while doing intersecting test */
 struct PagedLoadingCallback : public osgUtil::IntersectionVisitor::ReadCallback
 {

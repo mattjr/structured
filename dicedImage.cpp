@@ -840,9 +840,9 @@ int main(int argc, char** argv)
             cell.col=col;
             cell.row=row;
             if(std::string(fname) != "null")
-             cell.name=std::string(argv[2])+"/"+std::string(fname);
+                cell.name=std::string(argv[2])+"/"+std::string(fname);
             else
-                 cell.name=std::string(fname);
+                cell.name=std::string(fname);
             cells.push_back(cell);
 
         }
@@ -911,7 +911,7 @@ int main(int argc, char** argv)
             //std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
             if (pbuffer.valid())
             {
-             //   osg::notify(osg::INFO)<<"Pixel buffer has been created successfully."<<std::endl;
+                //   osg::notify(osg::INFO)<<"Pixel buffer has been created successfully."<<std::endl;
             }
             else
             {
@@ -988,22 +988,16 @@ int main(int argc, char** argv)
     }
     raw.write("subtile.v");
     printf("Done\n");
-   applyGeoTags(osg::Vec2(lat,lon),view,proj,raw.Xsize(),raw.Ysize());
-  //  applyGeoTags2("/home/mattjr/data/d100/out.tif",view,proj,win,osg::Vec2(lat,lon),raw.Xsize(),raw.Ysize());
+    applyGeoTags(osg::Vec2(lat,lon),view,proj,raw.Xsize(),raw.Ysize());
 
 }
 
 
 void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMatrix,int width,int height){
-    osg::Matrix trans;/*(
-            osg::Matrix::rotate(osg::inDegrees(-90.0f),
-                                1.0f,0.0f,0.0f)*
-            osg::Matrix::rotate(osg::inDegrees(-90.0f),0.0f,
-                                1.0f,0.0f));
-*/
+
     osg::Matrix modWindow =( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*width,0.5*height,0.5f));
     osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,height,0));
-    osg::Matrix worldtoScreen=trans*viewMatrix * projMatrix * modWindow*bottomLeftToTopLeft;
+    osg::Matrix worldtoScreen=viewMatrix * projMatrix * modWindow*bottomLeftToTopLeft;
     osg::Matrix screenToWorld=osg::Matrix::inverse(worldtoScreen);
     osg::Vec3 tl(0,0,0);
     osg::Vec3 bl(0,height,0);
@@ -1027,19 +1021,19 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
     std::cout << tlGlobal << " " << blGlobal <<" " <<trGlobal<< " " << brGlobal <<"\n";
     char gdal_param[4096];
     sprintf(gdal_param," -of GTiff -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
-    //sprintf(gdal_param," -of GTiff -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
 
-    std::ofstream gdalcommand("add_geo.sh");
-    if(!gdalcommand.good())
+    FILE *fp=fopen("add_geo.sh","w");
+    if(!fp)
         std::cerr << "Failed!\n";
-    gdalcommand << "#!/bin/bash\n";
-    gdalcommand << "vips im_vips2tiff subtile.v out.tif:none:tile:256x256\n";
+    fprintf(fp,"#!/bin/bash\n");
+    fprintf(fp,"vips im_vips2tiff subtile.v out.tif:none:tile:256x256\n");
 
-    //gdalcommand << "geotifcp -e geo_tif.tfw -4 " << szProj4 << " out.tif geo_tif1.tif\n";
 
-    gdalcommand << "gdal_translate " << gdal_param << " out.tif geo_tif2.tif\n";
-    sprintf(gdal_param," -of GTiff -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),trGlobal.y(),blGlobal.x(),blGlobal.y(),szProj4);
-    gdalcommand << "#gdal_translate " << gdal_param << " out.tif geo_tif.tif\n";
-    system("sh ./add_geo.sh");
-
+    fprintf(fp,"gdal_translate %s out.tif geo_tif.tif\n",gdal_param);
+    fchmod(fileno(fp),0777);
+    fclose (fp);
+    //gdalwarp  -t_srs '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs' geo_tif2.tif utm.tif
+    int res= system("./add_geo.sh");
+    if(res != 0)
+        printf("Failed on run\n");
 }

@@ -54,6 +54,10 @@ viewer.setSceneData(model);
     //viewer.getCamera()->setViewMatrix(view);
 osg::BoundingSphere bs=model->getBound();
 std::cout << "Bounding " << bs.center()<<"\n";
+osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+model->traverse(cbbv);
+osg::BoundingBox totalbb = cbbv.getBoundingBox();
+std::cout << totalbb._min << " "<<totalbb._max<<std::endl;
 double dist = 3.5f * bs.radius();
 viewer.realize();
 osg::Vec3d eye(bs.center()+osg::Vec3(0,0,3.5*bs.radius()));
@@ -67,6 +71,8 @@ osg::Matrixd mat=osg::Matrixd::ortho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.
 //viewer.getCamera()->setViewMatrixAsLookAt(bs.center(), bs.center() +osg::Vec3d(0.0,0.0f,dist), osg::Vec3(1.0,0.0,0.0));
 viewer.getCamera()->setViewMatrix(osg::Matrix::inverse(matrix));
 viewer.getCamera()->setProjectionMatrix(mat);
+std::cout << osg::Matrix::inverse(matrix) << " "<< mat<<std::endl;
+
 while(!viewer.done()){
 viewer.frame();
 

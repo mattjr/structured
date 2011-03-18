@@ -4,6 +4,8 @@
 #include "Clipper.h"
 #include <osgUtil/SmoothingVisitor>
 #include "PLYWriterNodeVisitor.h"
+#include <osgUtil/Optimizer>
+
 void addDups(osg::Geode *geode);
 using namespace std;
 int main( int argc, char **argv )
@@ -54,8 +56,15 @@ int main( int argc, char **argv )
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
     osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(arguments[1]);
     osg::ref_ptr<osg::Node> root;
-    if(model.valid()){
+    bool result = false;
+
+   // do
+
+    //while(result);
+        if(model.valid()){
         osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
+        if(!geode)
+            geode=model->asGroup()->getChild(0)->asGeode();
         if(geode && geode->getNumDrawables()){
             osg::Drawable *drawable = geode->getDrawable(0);
             osg::KdTree *kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());

@@ -808,8 +808,8 @@ int main(int argc, char** argv)
     arguments.getApplicationUsage()->setCommandLineUsage(arguments.getApplicationName()+" [options] filename ...");
     bool pbufferOnly = !arguments.read("--show");
 
-    unsigned int width=1280;
-    unsigned int height=1024;
+    unsigned int width=512;
+    unsigned int height=512;
     arguments.read("--pbuffer-only",width,height);
     int _tileColumns;
     int _tileRows;
@@ -831,21 +831,19 @@ int main(int argc, char** argv)
         char fname[1024];
         float minx,maxx,miny,maxy,minz,maxz;
         int row,col;
-        int res=fscanf(fp,"%f %f %f %f %f %f %d %d %s\n",&minx,&maxx,&miny,&maxy,&minz,&maxz,&row,&col,fname);
+        int res=fscanf(fp,"%f %f %f %f %f %f %d %d %s\n",&minx,&maxx,&miny,&maxy,&minz,&maxz,&col,&row,fname);
         if(res != 9){
             fprintf(stderr,"Bad parse\n");
             exit(-1);
         }
         if(cnt==0){
-            //totalbb=osg::BoundingBox(minx,miny,minz,maxx,maxy,maxz);
-            totalbb=osg::BoundingBox(miny,minx,-maxz,maxy,maxx,-minz);
+            totalbb=osg::BoundingBox(minx,miny,minz,maxx,maxy,maxz);
             _tileColumns=col;
             _tileRows=row;
 
         }else{
             picture_cell cell;
-            //cell.bbox=osg::BoundingBox(minx,miny,minz,maxx,maxy,maxz);
-           cell.bbox= osg::BoundingBox(miny,minx,-maxz,maxy,maxx,-minz);
+            cell.bbox=osg::BoundingBox(minx,miny,minz,maxx,maxy,maxz);
             cell.col=col;
             cell.row=row;
             if(std::string(fname) != "null")
@@ -853,7 +851,6 @@ int main(int argc, char** argv)
             else
                  cell.name=std::string(fname);
             cells.push_back(cell);
-           // std::cout << " bbox " << bboxes.back().first._min<< " " << bboxes.back().first._max << std::endl;
 
         }
         cnt++;
@@ -861,49 +858,23 @@ int main(int argc, char** argv)
     }
 
 
-    osg::BoundingSphere bs(totalbb);
-double dist=3.5*bs.radius();
-std::cout << "Bounding " << totalbb._min << " "<<totalbb._max<<"\n";
-
-  //  osg::Vec3d eye(bs.center()+osg::Vec3(0,0,dist));
-   // osg::Matrixd matrix;
-   // matrix.makeTranslate( eye );
-   // osg::Matrixd view=osg::Matrix::identity();//inverse(matrix);
-   // view =osg::Matrixd::lookAt(bs.center()+ osg::Vec3d(0.0,-dist,0.0f), bs.center(), osg::Vec3(0.0,0.0,1.0));
 
 
-//osg::Matrixd view=osg::Matrixd::lookAt(bs.center(), bs.center() +osg::Vec3d(0.0,0.0f,dist), osg::Vec3(1.0,0.0,0.0));
-
-  //  osg::Matrixd proj= osg::Matrixd::ortho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
+    osg::Matrixd view,proj;
 
 
-
-
-//proj.postMult(trans);
-     osg::Vec3 centeredMin,centeredMax;
-    centeredMin=(totalbb._min-totalbb.center());
-        centeredMax=(totalbb._max-totalbb.center());
-   osg::Matrixd proj= osg::Matrixd::ortho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());//osg::Matrixd::ortho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
-   osg::Vec3d eye(bs.center()+osg::Vec3(0,0,3.5*bs.radius()));
-   osg::Matrixd matrix;
-      matrix.makeTranslate( eye );
-       osg::Matrixd view=osg::Matrix::inverse(matrix);
     std::stringstream os2;
     os2<< "view.mat";
 
-    std::fstream _file(os2.str().c_str(),std::ios::binary|std::ios::out);
+    std::fstream _file(os2.str().c_str(),std::ios::binary|std::ios::in);
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++)
-            _file.write(reinterpret_cast<char*>(&(view(i,j))),sizeof(double));
+            _file.read(reinterpret_cast<char*>(&(view(i,j))),sizeof(double));
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++)
-            _file.write(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
+            _file.read(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
     _file.close();
 
-
-    osg::Vec3 deltaV=totalbb._max-totalbb._min;
-    deltaV.x()/= _tileColumns;
-    deltaV.y()/= _tileRows;
     std::ostringstream os;
     os <<"subtile.v";//<<":deflate";
     vips::VImage raw;
@@ -997,29 +968,22 @@ std::cout << "Bounding " << totalbb._min << " "<<totalbb._max<<"\n";
         }
 
         // load the data
-        osg::Matrix offsetMatrix=osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
+        osg::Matrix offsetMatrix=osg::Matrix::scale(_tileColumns, _tileRows, 1.0)*osg::Matrix::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
         printf("\r%03d/%03d",i,(int)cells.size());
         fflush(stdout);
-     //   if()
-        osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(/*cells[i].name*/string("mesh-diced/tex-clipped-diced-r_0007_c_0000-lod3.ive")+".0,180,-90.rot");//");
 
-        if (node.valid() && cells[i].row ==_tileRows-1 )
+        osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(cells[i].name);
+
+        if (node.valid() )
         {
             viewer.setSceneData( node );
             viewer.getCamera()->setProjectionMatrix(proj*offsetMatrix);
             viewer.getCamera()->setViewMatrix(view);
-            //for(int p=0; p<; p++){
-        viewer.frame();
+            viewer.frame();
             viewer.advance();
             viewer.updateTraversal();
             viewer.renderingTraversals();
-
-            win= osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*raw.Xsize(),0.5*raw.Ysize(),0.5f)*osg::Matrix::translate(0,0,0.0f);//viewer.getCamera()->getViewport()->computeWindowMatrix();
             osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
-           // img->flipHorizontal();
-        //  img->flipVertical();
-       //    osgDB::writeImageFile(*img,cells[i].name+".png");
-
             vips::VImage tmp(img->data(),img->s(),img->t(),4,vips::VImage::FMTUCHAR);
             raw.insertplace(tmp.flipver().extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
 
@@ -1030,7 +994,8 @@ std::cout << "Bounding " << totalbb._min << " "<<totalbb._max<<"\n";
 
     }
     raw.write("subtile.v");
-    applyGeoTags(osg::Vec2(lat,lon),view,proj,raw.Xsize(),raw.Ysize());
+    printf("Done\n");
+   applyGeoTags(osg::Vec2(lat,lon),view,proj,raw.Xsize(),raw.Ysize());
   //  applyGeoTags2("/home/mattjr/data/d100/out.tif",view,proj,win,osg::Vec2(lat,lon),raw.Xsize(),raw.Ysize());
 
 }

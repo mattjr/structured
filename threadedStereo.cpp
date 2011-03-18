@@ -42,6 +42,7 @@
 #include "quadmerge/envelope.hpp"
 #include "VPBInterface.hpp"
 #include "quadmerge/fileio.hpp"
+#include <osgDB/WriteFile>
 using namespace std;
 using namespace libplankton;
 using namespace ulapack;
@@ -56,6 +57,7 @@ static double stop_time = numeric_limits<double>::max();
 //
 // Command-line arguments
 //
+using namespace std;
 int proj_tex_size;
 int poster_tiles=40;
 static bool rugosity=false;
@@ -194,7 +196,7 @@ static int overlap=50;
 static   double local_easting, local_northing;
 using mapnik::Envelope;
 Envelope<double> total_env;
- osg::Vec2 reimageSize(4096,4096);
+osg::Vec2 reimageSize(4096,4096);
 int pos_lod0_min_depth,pos_lod2_min_depth;
 int pos_lod0_depth,pos_lod2_depth;
 void runC(Stereo_Pose_Data &name);
@@ -2580,23 +2582,42 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip",NULL,&mergeandcleanCmds);
                 if(!no_vrip)
                     sysres=system("./runvrip.py");
+                osg::BoundingBox totalbb;
+                osg::BoundingSphere bs;
+                osg::Matrix rotM;
+                {
+                    string rot=".0,180,-90.rot";
+                    float rx, ry, rz;
+                    int count = sscanf( rot.c_str(), "%f,%f,%f", &rx, &ry, &rz );
+                    if( count != 3 )
+                    {
+                        std::cerr << "Can't parse string\n";
+                    }
+                    rotM =osg::Matrix::rotate(
+                            osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                            osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                            osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
 
-                osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("mesh-diced/total.ply");
-                if(!model.valid() || !model->getBound().radius()){
-                    std::cerr << " Cant open total.ply\n";
-                    exit(-1);
+                    osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("mesh-diced/total.ply"+rot);
+                    if(!model.valid() || !model->getBound().radius()){
+                        std::cerr << " Cant open total.ply\n";
+                        exit(-1);
+                    }
+                    bs=model->getBound();
+                    osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
+                    model->accept(fstv);
+                    fstv.removeTransforms(model);
+                    osgDB::writeNodeFile(*model,"mesh-diced/totalrot.ive");
+                    osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+                    model->accept(cbbv);
+                    totalbb = cbbv.getBoundingBox();
+
                 }
-                osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
-                model->accept(cbbv);
-                osg::BoundingBox totalbb = cbbv.getBoundingBox();
                 osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
                 osg::Matrixd matrix;
                 matrix.makeTranslate( eye );
                 osg::Matrixd view=osg::Matrix::inverse(matrix);
-                osg::Vec3 centeredMin,centeredMax;
-                centeredMin=(totalbb._min-totalbb.center());
-                centeredMax=(totalbb._max-totalbb.center());
-                osg::Matrixd proj= osg::Matrixd::ortho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
+                osg::Matrixd proj= osg::Matrixd::ortho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
 
                 std::stringstream os2;
                 os2<< "view.mat";
@@ -2609,31 +2630,36 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     for(int j=0; j<4; j++)
                         _file.write(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
                 _file.close();
+
                 std::vector<picture_cell> cells;
 
                 int _tileColumns=8;
                 int _tileRows=8;
-                osg::Vec3 deltaV=totalbb._max-totalbb._min;
-                deltaV.x()/= _tileRows;
-                deltaV.y()/= _tileColumns;
-                int cnt=0;
                 char tmp4[1024];
                 double avgZ=totalbb.zMin()+((totalbb.zMax()-totalbb.zMin())/2.0);
                 for(int row=0; row< _tileRows; row++){
                     for(int col=0; col<_tileColumns; col++){
-                        osg::BoundingBox thisCellBbox;
-                        thisCellBbox._min=totalbb._min+osg::Vec3(row*deltaV.x(),col*deltaV.y(),0);
-                        thisCellBbox._max=totalbb._min+osg::Vec3((row+1)*deltaV.x(),(col+1)*deltaV.y(),totalbb.zMax()-totalbb.zMin());
+                        osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
+                        double left,right,bottom,top,znear,zfar;
+                        (view*proj*offsetMatrix).getOrtho(left,right,bottom,top,znear,zfar);
+
+                        osg::BoundingBox thisCellBbox(left,bottom,bs.center()[2]-bs.radius(),right,top,bs.center()[2]+bs.radius());
+
                         picture_cell cell;
                         cell.bbox=thisCellBbox;
                         cell.row=row;
                         cell.col=col;
-                        printf("%d %d %d cnt\n",row,col,cnt);
-                        sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",row,col,vpblod);
+                        sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply",row,col,vpblod);
                         cell.name=string(tmp4);
                         for(int i=0; i < tasks.size(); i++){
-                            osg::BoundingBox imgBox(tasks[i].pose[AUV_POSE_INDEX_X]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]-tasks[i].radius,avgZ,
-                                                    tasks[i].pose[AUV_POSE_INDEX_X]+tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]+tasks[i].radius,avgZ);
+                            osg::Vec3 m1=osg::Vec3(tasks[i].pose[AUV_POSE_INDEX_X]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Z]-tasks[i].radius)*rotM;
+                            osg::Vec3 m2=osg::Vec3(tasks[i].pose[AUV_POSE_INDEX_X]+tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]+tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Z]+tasks[i].radius)*rotM;
+
+                            osg::BoundingBox imgBox;
+                            imgBox.expandBy(m1);
+                            imgBox.expandBy(m2);
+                            cout << m1 << " "<< m2 << " bounds \n";
+                                    cout <<thisCellBbox._min << " "<< thisCellBbox._max<<" bbox\n";
                             if(thisCellBbox.intersects(imgBox)){
                                 cell.images.push_back(i);
                             }
@@ -2653,16 +2679,15 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 for(int i=0; i <(int)cells.size(); i++){
 
-
-                 /*   if(cells[i].images.size() == 0){
+                    if(cells[i].images.size() == 0){
                         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
-                                cells[i].bbox.zMax(),cells[i].row,cells[i].col,"null");
+                                cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
                         continue;
 
-                    }*/
+                    }
                     fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
-                            cells[i].bbox.zMax(),cells[i].row,cells[i].col,cells[i].name.c_str());
-                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/total.ply %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d.ply;",
+                            cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
+                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/totalrot.ive %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d.ply;",
                             cwd,
                             basepath.c_str(),
                             cells[i].bbox.xMin(),
@@ -2674,7 +2699,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             cells[i].row,cells[i].col);
                     fprintf(splitcmds_fp,"cp mesh-diced/tex-clipped-diced-r_%04d_c_%04d.ply mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
                             //basepath.c_str(),
-                             cells[i].row,cells[i].col,  cells[i].row,cells[i].col,vpblod);
+                            cells[i].row,cells[i].col,  cells[i].row,cells[i].col,vpblod);
                     char tp[1024];
                     sprintf(tp,"mesh-diced/bbox-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
                     FILE *bboxfp=fopen(tp,"w");
@@ -2814,12 +2839,12 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     app="tridecimator";
                 else
                     app="texturedDecimator";
-               // for(int i=0; i <(int)cells.size(); i++){
-                 //   if(cells[i].images.size() == 0)
-                   //     continue;
+                // for(int i=0; i <(int)cells.size(); i++){
+                //   if(cells[i].images.size() == 0)
+                //     continue;
                 for(int i=0; i <(int)vrip_cells.size(); i++){
                     if(vrip_cells[i].poses.size() == 0)
-                 continue;
+                        continue;
                     for(int j=vpblod; j >0; j--){
                         fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %d -By -P;",
                                 cwd,
@@ -2839,8 +2864,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int lod=0; lod <= vpblod; lod ++){
                     std::vector<string> level;
 
-                 //   for(int i=0; i <(int)cells.size(); i++){
-                   //     if(cells[i].images.size() == 0)
+                    //   for(int i=0; i <(int)cells.size(); i++){
+                    //     if(cells[i].images.size() == 0)
                     for(int i=0; i <(int)vrip_cells.size(); i++){
                         if(vrip_cells[i].poses.size() == 0)
                             continue;

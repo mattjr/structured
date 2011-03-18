@@ -49,9 +49,19 @@ int main( int argc, char **argv )
         reimage=true;
         cache.push_back(std::make_pair<std::string,int>(tex_cache_dir,size));
     }
+    float rx, ry, rz;
+    osg::Matrix inverseM=osg::Matrix::identity();
+
+    if(arguments.read("--invrot",rx,ry,rz)){
+        inverseM =osg::Matrix::rotate(
+                osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+    }
+    osg::Matrix rotM=osg::Matrix::inverse(inverseM);
 
     std::string mf=argv[2];
-   /* std::string sha2hash;
+    /* std::string sha2hash;
     int res=checkCached(mf,outfilename,sha2hash);
     if(res == -1)
         return -1;
@@ -65,6 +75,14 @@ int main( int argc, char **argv )
     TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
     osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
+    osg::ref_ptr<osg::MatrixTransform>xform = new osg::MatrixTransform;
+    xform->setDataVariance( osg::Object::STATIC );
+    xform->setMatrix(rotM);
+    osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
+    xform->addChild(model);
+    xform->accept(fstv);
+    fstv.removeTransforms(xform);
+
     if (model)
     {
         vpb::SourceData* data = new vpb::SourceData(sourceModel);
@@ -79,7 +97,7 @@ int main( int argc, char **argv )
         }else{
             std::cerr << "No drawbables \n";
         }
-      //  TexPyrAtlas atlasGen(cache);
+        //  TexPyrAtlas atlasGen(cache);
         //atlasGen._useAtlas=true;
         vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,false,false);
         dataset->_useAtlas=false;
@@ -95,19 +113,23 @@ int main( int argc, char **argv )
         if(projectSucess){
             //  writeCached(outfilename,sha2hash,tile->texCoordIDIndexPerModel.begin()->second,tile->texCoordsPerModel.begin()->second);
             //osg::Geometry *geom = dynamic_cast< osg::Geometry*>( geode->getDrawable(0));
-           // for(int f=0; f<tile->texCoordsPerModel.begin()->second.size(); f++)
+            // for(int f=0; f<tile->texCoordsPerModel.begin()->second.size(); f++)
             //    geom->setTexCoordArray(f,tile->texCoordsPerModel.begin()->second[f]);
             if(!reimage){
                 std::ofstream f(outfilename.c_str());
                 PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second));
                 model->accept(nv);
             }else{
-               // map<SpatialIndex::id_type,int> allIds=calcAllIds(tile->texCoordIDIndexPerModel.begin()->second);
-               // tq->addImagesToAtlasGen(allIds);
+                // map<SpatialIndex::id_type,int> allIds=calcAllIds(tile->texCoordIDIndexPerModel.begin()->second);
+                // tq->addImagesToAtlasGen(allIds);
                 tile->_models = new vpb::DestinationData(NULL);
                 tile->_models->_models.push_back(model);
                 osg::ref_ptr<osg::Node> node=tile->createScene();
-                osgDB::writeNodeFile(*node,osgDB::getNameLessExtension(outfilename).append(".ive"));
+                osg::ref_ptr<osg::MatrixTransform>xform = new osg::MatrixTransform;
+                xform->setDataVariance( osg::Object::STATIC );
+                xform->setMatrix(inverseM);
+                xform->addChild(node);
+                osgDB::writeNodeFile(*xform,osgDB::getNameLessExtension(outfilename).append(".ive"));
                 std::ofstream f(outfilename.c_str());
                 PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second));
                 model->accept(nv);

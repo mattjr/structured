@@ -2585,14 +2585,13 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 osg::BoundingBox totalbb;
                 osg::BoundingSphere bs;
                 osg::Matrix rotM;
+                float rx=0,ry=180.0,rz=-90;
+
                 {
-                    string rot=".0,180,-90.rot";
-                    float rx, ry, rz;
-                    int count = sscanf( rot.c_str(), "%f,%f,%f", &rx, &ry, &rz );
-                    if( count != 3 )
-                    {
-                        std::cerr << "Can't parse string\n";
-                    }
+                    char tmp[1024];
+                    sprintf(tmp,".%d,%d,%d.rot",(int)rx,(int)ry,(int)rz);
+                    string rot=string(tmp);
+
                     rotM =osg::Matrix::rotate(
                             osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
                             osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
@@ -2636,7 +2635,6 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 int _tileColumns=8;
                 int _tileRows=8;
                 char tmp4[1024];
-                double avgZ=totalbb.zMin()+((totalbb.zMax()-totalbb.zMin())/2.0);
                 for(int row=0; row< _tileRows; row++){
                     for(int col=0; col<_tileColumns; col++){
                         osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
@@ -2649,7 +2647,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         cell.bbox=thisCellBbox;
                         cell.row=row;
                         cell.col=col;
-                        sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply",row,col,vpblod);
+                        sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",row,col,vpblod);
                         cell.name=string(tmp4);
                         for(int i=0; i < tasks.size(); i++){
                             osg::Vec3 m1=osg::Vec3(tasks[i].pose[AUV_POSE_INDEX_X]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Z]-tasks[i].radius)*rotM;
@@ -2658,8 +2656,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             osg::BoundingBox imgBox;
                             imgBox.expandBy(m1);
                             imgBox.expandBy(m2);
-                            cout << m1 << " "<< m2 << " bounds \n";
-                                    cout <<thisCellBbox._min << " "<< thisCellBbox._max<<" bbox\n";
+                          //  cout << m1 << " "<< m2 << " bounds \n";
+                            //        cout <<thisCellBbox._min << " "<< thisCellBbox._max<<" bbox\n";
                             if(thisCellBbox.intersects(imgBox)){
                                 cell.images.push_back(i);
                             }
@@ -2813,10 +2811,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             vpblod,
                             cells[i].row,cells[i].col,
                             vpblod);
-                    if(true)
-                        fprintf(texcmds_fp," --tex_cache %s %d\n",cachedtexdir[0].first.c_str(),cachedtexdir[0].second);
-                    else
-                        fprintf(texcmds_fp,"\n");
+                        fprintf(texcmds_fp," --tex_cache %s %d --invrot %f %f %f\n",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,rx,ry,rz);
+
 
                 }
                 fclose(texcmds_fp);

@@ -104,14 +104,7 @@ typedef __m128d __cl_double2;
 #define __CL_DOUBLE2__  1
 #endif
 void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMatrix,int width,int height);
-void applyGeoTags2(const char* filename,osg::Matrix viewMatrix,osg::Matrix projMatrix,osg::Matrix win,osg::Vec2 geoOrigin,int width,int height);
-#include <geotiff.h>
-#include <xtiffio.h>
-#include <GeographicConversions/ufRedfearn.h>
-#include <limits>
-#include <adt_write_gtiff.hpp>
-#include <auv_map_projection.hpp>
-#include <adt_file_utils.hpp>
+
 void ConvertRGBA_BGRA_SSE2(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch)
 {
     // Converts RGBA to BGRA:
@@ -1033,7 +1026,7 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
     worldfile << std::setprecision(12) << scalePix.x() << std::endl<< 0 <<std::endl<< 0 << std::endl<<scalePix.y() << std::endl<<tlGlobal.x()<<std::endl<<tlGlobal.y()<<std::endl;
     std::cout << tlGlobal << " " << blGlobal <<" " <<trGlobal<< " " << brGlobal <<"\n";
     char gdal_param[4096];
-    sprintf(gdal_param," -of GTiff -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.y(),brGlobal.x(),brGlobal.y(),tlGlobal.x(),szProj4);
+    sprintf(gdal_param," -of GTiff -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
     //sprintf(gdal_param," -of GTiff -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
 
     std::ofstream gdalcommand("add_geo.sh");
@@ -1048,122 +1041,5 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
     sprintf(gdal_param," -of GTiff -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),trGlobal.y(),blGlobal.x(),blGlobal.y(),szProj4);
     gdalcommand << "#gdal_translate " << gdal_param << " out.tif geo_tif.tif\n";
     system("sh ./add_geo.sh");
-
-}
-
-
-void applyGeoTags2(const char* filename,osg::Matrix viewMatrix,osg::Matrix projMatrix,osg::Matrix win,osg::Vec2 geoOrigin,int width,int height){
-    gtiffspace::geo_info pos;
-    libplankton::Local_WGS84_TM_Projection *map_projection = new libplankton::Local_WGS84_TM_Projection( geoOrigin.x(),
-                                                                                                         geoOrigin.y());//glong
-
-    osg::Matrix trans(
-            osg::Matrix::rotate(osg::inDegrees(-90.0f),
-                                1.0f,0.0f,0.0f)*
-            osg::Matrix::rotate(osg::inDegrees(-90.0f),0.0f,
-                                1.0f,0.0f));
-    int _tileColumns=1;
-    int _tileRows=1;
-
-
-    osg::Matrix modWindow=osg::Matrix( osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *win);
-    modWindow(3,0)*=_tileColumns;
-    modWindow(3,1)*=_tileRows;
-    osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,height,0));
-    //std::cout << bottomLeftToTopLeft<<std::endl;
-    //std::cout <<modWindow<<std::endl;
-    osg::Matrix worldtoScreen=trans*viewMatrix * projMatrix * modWindow*bottomLeftToTopLeft;
-    osg::Matrix screenToWorld=osg::Matrix::inverse(worldtoScreen);
-    osg::Vec3 tl(0,0,0);
-    osg::Vec3 bl(0,height,0);
-    osg::Vec3 tr(width,0,0);
-    osg::Vec3 br(width,height,0);
-
-    osg::Vec3 tlGlobal=tl*screenToWorld;
-    cout << "TL Global" << tlGlobal<<endl;
-    double latTL,longTL;
-    map_projection->calc_geo_coords(tlGlobal.x(),tlGlobal.y(),latTL,longTL);
-
-
-    osg::Vec3 blGlobal=bl*screenToWorld;
-    cout << "bl Global" << blGlobal<<endl;
-    double latbl,longbl;
-    map_projection->calc_geo_coords(blGlobal.x(),blGlobal.y(),latbl,longbl);
-
-    osg::Vec3 trGlobal=tr*screenToWorld;
-    cout << "tr Global" << trGlobal<<endl;
-    double lattr,longtr;
-    map_projection->calc_geo_coords(trGlobal.x(),trGlobal.y(),lattr,longtr);
-
-    osg::Vec3 brGlobal=br*screenToWorld;
-    //cout << "br Global" << brGlobal<<endl;
-    double latbr,longbr;
-    map_projection->calc_geo_coords(brGlobal.x(),brGlobal.y(),latbr,longbr);
-
-    //osg::Vec3 test(1956.17,3937.951,47.6057);
-    //double testLat,testLong;
-    //map_projection->calc_geo_coords(test.x(),test.y(),testLat,testLong);
-    // std::cout << "LAt LONG " <<testLat << " "<< testLong<<"\n";
-
-    /* std::cout << "good " <<test*worldtoScreen<<"\n";
-    std::cout << "LAt LONG " <<testLat << " "<< testLong<<"\n";
-    cout << "brGlobal " << brGlobal<< " " << tlGlobal << endl;*/
-    osg::Vec3 diff=(brGlobal-tlGlobal);
-    //cout << "Diff " << diff<<endl;
-    osg::Vec2 scalePix( fabs(diff.x()/width), fabs(diff.y()/height));
-    cout << "Pix Scale "<<scalePix<<endl;
-    UF::GeographicConversions::Redfearn gpsConversion("WGS84","UTM");
-    string zone;
-    double easting_ctr, northing_ctr;
-
-    double gridConvergence, pointScale;
-    if(geoOrigin.x() != 0 || geoOrigin.y() !=0){
-        gpsConversion.GetGridCoordinates(latTL, longTL
-                                         , zone, easting_ctr, northing_ctr, gridConvergence, pointScale);
-        pos.UTMZone=zone;
-        gtiffspace::tie_point tie;
-        tie.pt[0]=tl.x();
-        tie.pt[1]=tl.y();
-        tie.pt[2]=0;
-        tie.pt[3]=easting_ctr;
-        tie.pt[4]=northing_ctr;
-        tie.pt[5]=0;
-        pos.tie_points.push_back(tie);
-
-    }
-    /*std::cout << "world " <<(test*worldtoScreen)<<"Grab Iron\n";
-    osg::Matrix transScreen;
-    Transpose(transScreen,screenToWorld);
-      pos.transform[0] = transScreen(0,0);
-    pos.transform[1] = transScreen(0,1);
-    pos.transform[2] = 0;
-    pos.transform[3] = transScreen(0,3);
-    pos.transform[4] = transScreen(1,0);
-    pos.transform[5] = transScreen(1,1);
-    pos.transform[6] = 0;
-    pos.transform[7] = transScreen(1,3);
-    pos.transform[8] = 0;
-    pos.transform[9] = 0;
-    pos.transform[10] = 0;
-    pos.transform[11] = 0;
-    pos.transform[12] = 0;
-    pos.transform[13] = 0;
-    pos.transform[14] = 0;
-    pos.transform[15] = 1;
-    pos.UTMZone = "51S";*/
-
-
-    /*printf("%f %f %f %f\n",pos.transform[0],pos.transform[1],pos.transform[2],pos.transform[3]);
-    printf("%f %f %f %f\n",pos.transform[4],pos.transform[5],pos.transform[6],pos.transform[7]);
-    std::cout<<"Screen to World" << screenToWorld << std::endl;
-    std::cout<<"Trans Scren" << (transScreen*test) << std::endl;
-    std::cout<<"View" << transScreen << std::endl;
-    std::cout<<"CAm" << camera->getViewport()->computeWindowMatrix() << std::endl;*/
-
-    pos.pixscale[0]=scalePix.x();
-    pos.pixscale[1]=scalePix.y();
-    pos.pixscale[2]=0;
-    gtiffspace::append_gtiff_tags(filename,pos);
-    // std::cout<<"Screen to World" << screenToWorlds << std::endl;
 
 }

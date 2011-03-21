@@ -84,6 +84,8 @@ static double subvol;
 static bool useTextureArray=true;
 static double longOrigin,latOrigin;
 static bool interp_quad=false;
+static int _tileRows;
+static int _tileColumns;
 static bool run_pos=false;
 static bool do_novelty=false;
 static double dense_scale;
@@ -483,6 +485,8 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("DIST_GENTEX_RANGE",dist_gentex_range,10);
     recon_config_file->get_value("POS_LOD2_MIN_DEPTH",pos_lod2_min_depth,6);
     recon_config_file->get_value("POS_LOD2_DEPTH",pos_lod2_depth,8);
+    recon_config_file->get_value("IMAGE_SPLIT_COL",_tileColumns,8);
+    recon_config_file->get_value("IMAGE_SPLIT_ROW",_tileRows,8);
 
     recon_config_file->get_value("POS_LOD0_MIN_DEPTH",pos_lod0_min_depth,8);
     recon_config_file->get_value("POS_LOD0_DEPTH",pos_lod0_depth,11);
@@ -524,6 +528,7 @@ static bool parse_args( int argc, char *argv[ ] )
 
     if(argp.read(  "--noposclip"))
         pos_clip=false;
+    argp.read(  "--imagesplit",_tileRows,_tileColumns);
 
     if(argp.read("--usenewmb"))
         use_new_mb=true;
@@ -2632,8 +2637,6 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 std::vector<picture_cell> cells;
 
-                int _tileColumns=8;
-                int _tileRows=8;
                 char tmp4[1024];
                 for(int row=0; row< _tileRows; row++){
                     for(int col=0; col<_tileColumns; col++){

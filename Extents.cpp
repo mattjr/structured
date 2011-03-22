@@ -71,6 +71,20 @@ bool readMatrixToScreen(std::string fname,osg::Matrix &viewProj){
     viewProj=osg::Matrix( view * proj);
     return true;
 }
+
+bool readMatrix(std::string fname,osg::Matrix &viewProj){
+    std::fstream file(fname.c_str(), std::ios::binary|std::ios::in);
+    if(!file.good()){
+        fprintf(stderr,"Can't open %s\n",fname.c_str());
+        return false;
+    }
+
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            file.read(reinterpret_cast<char*>(&(viewProj(i,j))), sizeof(double));
+
+    return true;
+}
 MyDataSet::MyDataSet(const Camera_Calib &calib,bool useTextureArray,bool useReImage): _calib(calib),_useTextureArray(useTextureArray),_useReImage(useReImage)
 {
     init();
@@ -92,7 +106,9 @@ void MyDataSet::init()
     _useVBO=false;
     _useTextureArray=true;
     _file.open("/tmp/scope.txt");
+    readMatrix("rot.mat",rotMat);
     readMatrixToScreen("view.mat",viewProj);
+
     if(_useReImage){
         if(osgDB::fileExists("subtile.v"))
         in = new vips::VImage("subtile.v");

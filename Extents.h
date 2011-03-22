@@ -180,6 +180,7 @@ class MyDataSet :  public DataSet
         bool _useBlending;
         bool _useVBO;
         osg::Matrix viewProj;
+        osg::Matrix rotMat;
 
         bool _useReImage;
         vips::VImage *in;

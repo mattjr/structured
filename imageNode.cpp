@@ -484,23 +484,55 @@ osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &viewProj,cons
     return tc;
 
 }
+osg::Vec2 calcCoordReprojTrans(const osg::Vec3 &vert,const osg::Matrix &trans,const osg::Matrix &viewProj,const osg::Vec2 &size,const osg::Vec4 &ratio){
+    osg::Vec4 v(vert.x(),vert.y(),vert.z(),1.0);
+    v=v*trans;
+    v=v*viewProj;
+    v.x() /= v.w();
+    v.y() /= v.w();
+    v.z() /= v.w();
+    v.w() /= v.w();
+    //std::cout << "Pre shift " << v << std::endl;
+    v.x() /= size.x();;
+    v.y() /= size.y();
+
+
+    v.x() -= (ratio.x()/size.x());
+    v.y() -= (ratio.y()/size.y());
+    //std::cout << "Post shift " << v << std::endl;
+
+
+    //  std::cout << "PP shift " << v << std::endl;
+
+
+    osg::Vec2 tc(v.x(),v.y());
+    tc.x() *= ratio.z();
+    tc.y() *=ratio.w();
+    //tc.x()*=ratio.x();
+    //tc.y()*=ratio.y();
+    tc.x()/=(ratio.z());
+    tc.y()/=(ratio.w());
+
+
+    return tc;
+
+}
 osg::Matrix vpb::MyDataSet::getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<osg::Image> &image,osg::Vec4 &ratio,int level){
 
     double downsampleFactor=pow(2,level);
     double downsampleRatio=1.0/downsampleFactor;
-
-    printf("%f %f\n",downsampleRatio,downsampleRatio);
+   // std::cout<< minT << " " << maxT<<std::endl;
+   // printf("%f %f\n",downsampleRatio,downsampleRatio);
     int x=(int)std::max((int)floor(minT.x()),0);
     int y=(int)std::max((int)floor(minT.y()),0);
     int xMax=(int)std::min((int)ceil(maxT.x()),origX);
     int yMax=(int)std::min((int)ceil(maxT.y()),origY);
     int xRange=(xMax-x);
     int yRange=(yMax-y);
-    //printf("X:%f -- %f Y:%f -- %f\n",vMin.x(),vMax.x(),vMin.y(),vMax.y());
+    //printf("X:%d -- %d Y:%d -- %d ",x,xMax,y,yMax);
 
     //Need bias of 1.0 or will round down
     double maxSide=std::max(osg::Image::computeNearestPowerOfTwo(xRange,1.0),osg::Image::computeNearestPowerOfTwo(yRange,1.0));
-
     osg::Vec2 subSize=osg::Vec2(maxSide,maxSide);
     if(downsampleRatio*maxSide < 1.0){
         printf("Clipping %f %f to",downsampleRatio,downsampleFactor);
@@ -571,7 +603,9 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     // ("subtile.tif");
 
     int origX=dynamic_cast<MyDataSet*>(_dataSet)->in->Xsize(),origY=dynamic_cast<MyDataSet*>(_dataSet)->in->Ysize();
-    osg::Matrix toTex=dynamic_cast<MyDataSet*>(_dataSet)->viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*origX,0.5*origY,0.5f));
+    osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,origY,0));
+
+    osg::Matrix toTex=dynamic_cast<MyDataSet*>(_dataSet)->viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*origX,0.5*origY,0.5f))*bottomLeftToTopLeft;
 
     for(int i=0; i< (int)group->getNumChildren(); i++){
 
@@ -591,9 +625,14 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
             continue;
         for(int j=0; j< (int)verts->size(); j++){
             osg::Vec4 pt(verts->at(j)[0],verts->at(j)[1],verts->at(j)[2],1.0);
-            osg::Vec4 proj=pt*toTex;
+
+            osg::Vec4 rotpt=pt*dynamic_cast<MyDataSet*>(_dataSet)->rotMat;
+
+            osg::Vec4 proj=rotpt*toTex;
             proj.x() /= proj.w();
             proj.y() /= proj.w();
+          //  std::cout << pt << " rot " <<pt*dynamic_cast<MyDataSet*>(_dataSet)->rotMat<<" proj "<< proj << "\n";
+
             for(int k=0; k <2; k++){
                 if(proj[k]< minT[k])
                     minT[k]=proj[k];
@@ -648,7 +687,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
 
     for(int j=0; j< (int)newVerts->size(); j++){
 
-        texCoord->push_back(calcCoordReproj(newVerts->at(j),toScreen,osg::Matrix::identity(),osg::Vec2(texSizes[2],texSizes[3]),ratio));
+        texCoord->push_back(calcCoordReprojTrans(newVerts->at(j),dynamic_cast<MyDataSet*>(_dataSet)->rotMat,toScreen,osg::Vec2(texSizes[2],texSizes[3]),ratio));
         //  std::cout <<texCoord->back() << std::endl;
 
     }

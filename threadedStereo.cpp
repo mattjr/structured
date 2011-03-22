@@ -2617,6 +2617,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     totalbb = cbbv.getBoundingBox();
 
                 }
+
                 osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
                 osg::Matrixd matrix;
                 matrix.makeTranslate( eye );
@@ -2634,6 +2635,14 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     for(int j=0; j<4; j++)
                         _file.write(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
                 _file.close();
+
+
+
+                std::fstream _file2("rot.mat",std::ios::binary|std::ios::out);
+                for(int i=0; i<4; i++)
+                    for(int j=0; j<4; j++)
+                        _file2.write(reinterpret_cast<char*>(&(rotM(i,j))),sizeof(double));
+                _file2.close();
 
                 std::vector<picture_cell> cells;
 

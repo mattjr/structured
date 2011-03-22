@@ -221,7 +221,7 @@ void DeepZoom::saveHTML(int width, int height, std::string file) {
     s<< "<script type=\"text/javascript\">Seadragon.embed('100%', '100%','" << osgDB::getSimpleFileName(file) << "'," <<width << "," <<  height<<  "," << tileSize << "," << tileOverlap << ",'"<< tileFormat << "');</script>\n";
     lines.push_back(s.str());
     lines.push_back(htmlFooter);
-    saveText(lines, outputDir+"/"+"test.html");
+    saveText(lines, outputDir+"/"+osgDB::getNameLessAllExtensions(osgDB::getSimpleFileName(file)));
 }
 /**
      * Saves strings as text to the given file

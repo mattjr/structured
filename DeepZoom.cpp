@@ -23,6 +23,7 @@ public:
     bool verboseMode;   // -verbose or -v
     bool debugMode;     // -debug
     std::vector<std::string> inputFile;  // must follow all other args
+    std::string htmlHeader,htmlFooter;
     DeepZoom(){
         tileSize=256;
         tileOverlap=1;
@@ -33,11 +34,15 @@ public:
         debugMode=false;
         xmlHeader= "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
         schemaName = "http://schemas.microsoft.com/deepzoom/2009";
+        htmlHeader="<html>\n<head>\n<script type=\"text/javascript\" src=\"http://seadragon.com/ajax/embed.js\"></script>\n</head>\n<body>\n";
+        htmlFooter="</body>\n</html>\n";
     }
     VImage getTile(vips::VImage img, int row, int col);
     void processImageFile(std::string inFile, std::string outputDir);
     void saveImageDescriptor(int width, int height, std::string file) ;
     void saveText(vector<string> lines, string file);
+    void saveHTML(int width, int height, std::string file);
+
 };
 
 /**
@@ -99,13 +104,13 @@ void DeepZoom::processImageFile(string inFile, string outputDir) {
     std::string descriptor((pathWithoutExtension + ".xml"));
 
 
-    std::string imgDir = pathWithoutExtension;
+    std::string imgDir = pathWithoutExtension+"_files";
     if (osgDB::fileExists(imgDir))  {
         cerr << ("Image directory already exists in output dir: " + imgDir+"\n");
     }
 
     if(!osgDB::makeDirectory(imgDir)){
-        cerr<< "Failed to create " << imgDir <<endl;
+       cerr<< "Failed to create " << imgDir <<endl;
         exit(-1);
     }
     double width = originalWidth;
@@ -136,22 +141,16 @@ void DeepZoom::processImageFile(string inFile, string outputDir) {
                 tile.write(imgName.str().c_str());
             }
         }
-        double ratioWidth=width/originalWidth;
-        double ratioHeight=height/originalHeight;
+
         // Scale down image for next level
-        width = ceil(width / 2);
-        height = ceil(height / 2);
-        /*  if (width > 10 && height > 10) {
-            // resize in stages to improve quality
-            image = resizeImage(image, width * 1.66, height * 1.66);
-            image = resizeImage(image, width * 1.33, height * 1.33);
-        }*/
-
-
-        image = image.affine(ratioWidth,0,0,ratioHeight,0,0,0,0,width,height);
+        width = ceil(width * 0.5);
+        height = ceil(height *0.5);
+        image = image.affine(0.5,0,0,0.5,0,0,0,0,width,height);
     }
 
     saveImageDescriptor(originalWidth, originalHeight, descriptor);
+    saveHTML(originalWidth, originalHeight, descriptor);
+
 }
 
 
@@ -176,8 +175,8 @@ VImage DeepZoom::getTile(VImage img, int row, int col) {
         h = img.Ysize() - y;
 
     if (debugMode)
-        printf("getTile: row=%d, col=%d, x=%d, y=%d, w=%d, h=%d\n",
-               row, col, x, y, w, h);
+        printf("getTile: row=%d, col=%d, x=%d, y=%d, w=%d, h=%d Xsize=%d, Ysize=%d\n",
+               row, col, x, y, w, h,img.Xsize(),img.Ysize());
 
     assert(w > 0);
     assert(h > 0);
@@ -209,6 +208,21 @@ void DeepZoom::saveImageDescriptor(int width, int height, std::string file) {
     saveText(lines, file);
 }
 
+/**
+     * Write image descriptor HTML file
+     * @param width image width
+     * @param height image height
+     * @param file the file to which it is saved
+     */
+void DeepZoom::saveHTML(int width, int height, std::string file) {
+    vector<string> lines;
+    lines.push_back(htmlHeader);
+    ostringstream s;
+    s<< "<script type=\"text/javascript\">Seadragon.embed('100%', '100%','" << osgDB::getSimpleFileName(file) << "'," <<width << "," <<  height<<  "," << tileSize << "," << tileOverlap << ",'"<< tileFormat << "');</script>\n";
+    lines.push_back(s.str());
+    lines.push_back(htmlFooter);
+    saveText(lines, outputDir+"/"+"test.html");
+}
 /**
      * Saves strings as text to the given file
      * @param lines the image to be saved

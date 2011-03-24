@@ -61,6 +61,7 @@ int main( int argc, char **argv )
     arguments.read("-overlap",dz.tileOverlap);
     dz.verboseMode=arguments.read("-v");
     dz.debugMode=arguments.read("-debug");
+    arguments.read("-format",dz.tileFormat);
     arguments.read("-output",dz.outputDir);
     if (dz.debugMode) {
         printf("tileSize=%d ", dz.tileSize);

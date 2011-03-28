@@ -6,6 +6,6 @@
 #include <vector>
 #include <string>
 
-void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<std::string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cacheDirs,bool useTextureArray);
+void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<std::string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cacheDirs,bool useTextureArray,bool useSingleImage);
 bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,TexBlendCoord &newTexCoord,osg::Vec4Array *newIds);
 #endif // VPBINTERFACE_HPP

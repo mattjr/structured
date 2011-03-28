@@ -85,7 +85,7 @@ bool readMatrix(std::string fname,osg::Matrix &viewProj){
 
     return true;
 }
-MyDataSet::MyDataSet(const Camera_Calib &calib,bool useTextureArray,bool useReImage): _calib(calib),_useTextureArray(useTextureArray),_useReImage(useReImage)
+MyDataSet::MyDataSet(const Camera_Calib &calib,bool useTextureArray,bool useReImage,bool useVirtualTex): _calib(calib),_useTextureArray(useTextureArray),_useReImage(useReImage),_useVirtualTex(useVirtualTex)
 {
     init();
 }

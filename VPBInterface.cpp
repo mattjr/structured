@@ -72,7 +72,7 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
     return true;
 }
 #endif
-void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cachedDirs,bool useTextureArray){
+void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cachedDirs,bool useTextureArray,bool useSingleImage){
 //vector<osg::KdTree*> trees;
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
@@ -97,7 +97,10 @@ void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datal
                 continue;
             std::string mf=datalist_lod[lod][i];
             int npos=mf.find("/");
-            std::string bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
+
+            std::string bbox_file;
+            if(!useSingleImage)
+            bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
             TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
             sourceModel->setMaxLevel(lod);
             sourceModel->setMinLevel(lod);
@@ -140,3 +143,6 @@ void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datal
 
 
 }
+
+
+

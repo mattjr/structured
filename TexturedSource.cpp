@@ -36,20 +36,27 @@ TexturedSource::TexturedSource(Type type, const std::string& filename,const std:
 
 
     tex.resize(4);
-   // for(int f=0; tex.size(); f++)
-        tex[0]=new osg::Vec3Array;
-        tex[1]=new osg::Vec3Array;
+    // for(int f=0; tex.size(); f++)
+    tex[0]=new osg::Vec3Array;
+    tex[1]=new osg::Vec3Array;
 
-        tex[2]=new osg::Vec3Array;
-        tex[3]=new osg::Vec3Array;
+    tex[2]=new osg::Vec3Array;
+    tex[3]=new osg::Vec3Array;
+
 
 }
-TexturedSource::~TexturedSource(){
+TexturedSource::TexturedSource(Type type, const std::string& filename): Source(type,filename)
+{
 
-    delete tree;
-    delete manager;
-    delete memstore;
-    delete stream;
+}
+
+TexturedSource::~TexturedSource(){
+    if(_bbox_file.size()){
+        delete tree;
+        delete manager;
+        delete memstore;
+        delete stream;
+    }
 }
 void TexturedSource::intersectsWithQuery(const SpatialIndex::IShape& query, SpatialIndex::IVisitor& v){
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_treeMutex);

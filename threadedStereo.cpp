@@ -744,7 +744,7 @@ static bool parse_args( int argc, char *argv[ ] )
         sprintf(cachedmeshdir,"cache-mesh-feat/");
 
     strcpy(cachedmeshdir,string(base_dir+string("/")+cachedmeshdir).c_str());
-    for(int i=0; i < cachedtexdir.size(); i++){
+    for(int i=0; i < (int)cachedtexdir.size(); i++){
         cachedtexdir[i].first=base_dir+"/"+cachedtexdir[i].first;
     }
     strcpy(cachedsegtex,string(base_dir+string("/")+cachedsegtex).c_str());
@@ -1210,7 +1210,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
       chmod(filename,   0666);
   */
 
-    for(int i=0; i< cachedtexdir.size(); i++){
+    for(int i=0; i< (int)cachedtexdir.size(); i++){
         sprintf(tmpF,"%s/%s.png",
                 cachedtexdir[i].first.c_str(),osgDB::getStrippedName(name.left_name).c_str());
         texfilename.push_back(tmpF);
@@ -1244,7 +1244,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
                 meshcached=true;
         }
         texcached=true;
-        for(int i=0; i< texfilename.size(); i++){
+        for(int i=0; i< (int)texfilename.size(); i++){
             if(!FileExists(texfilename[i]))
                 texcached=false;
         }
@@ -1278,7 +1278,7 @@ bool threadedStereo::runP(Stereo_Pose_Data &name){
         if(!texcached){
             //      printf("\nCaching texture %s\n",texfilename);
             //if(!no_atlas)
-            for(int i=0; i< texfilename.size(); i++){
+            for(int i=0; i< (int)texfilename.size(); i++){
                 osgExp->cacheImage(color_frame,texfilename[i],cachedtexdir[i].second,false);
             }
             //else
@@ -1778,7 +1778,7 @@ int main( int argc, char *argv[ ] )
 
     auv_data_tools::makedir(cachedmeshdir);
     chmod(cachedmeshdir,   0777);
-    for(int i=0; i < cachedtexdir.size(); i++){
+    for(int i=0; i < (int)cachedtexdir.size(); i++){
         auv_data_tools::makedir(cachedtexdir[i].first.c_str());
         chmod(cachedtexdir[i].first.c_str(),   0777);
     }
@@ -2591,7 +2591,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 osg::BoundingSphere bs;
                 osg::Matrix rotM;
                 float rx=0,ry=180.0,rz=-90;
-
+                int numberFacesAll=0;
                 {
                     char tmp[1024];
                     sprintf(tmp,".%d,%d,%d.rot",(int)rx,(int)ry,(int)rz);
@@ -2603,6 +2603,14 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
 
                     osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("mesh-diced/total.ply"+rot);
+                    osg::Drawable *drawable = model->asGroup()->getChild(0)->asGeode()->getDrawable(0);
+                    if(!drawable){
+                        fprintf(stderr,"Failed to load model\n");
+                        exit(-1);
+                    }
+                    osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+                    numberFacesAll=geom->getPrimitiveSet(0)->getNumPrimitives();
+
                     if(!model.valid() || !model->getBound().radius()){
                         std::cerr << " Cant open total.ply\n";
                         exit(-1);
@@ -2661,14 +2669,14 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         cell.col=col;
                         sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",row,col,vpblod);
                         cell.name=string(tmp4);
-                        for(int i=0; i < tasks.size(); i++){
+                        for(int i=0; i < (int)tasks.size(); i++){
                             osg::Vec3 m1=osg::Vec3(tasks[i].pose[AUV_POSE_INDEX_X]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Z]-tasks[i].radius)*rotM;
                             osg::Vec3 m2=osg::Vec3(tasks[i].pose[AUV_POSE_INDEX_X]+tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]+tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Z]+tasks[i].radius)*rotM;
 
                             osg::BoundingBox imgBox;
                             imgBox.expandBy(m1);
                             imgBox.expandBy(m2);
-                          //  cout << m1 << " "<< m2 << " bounds \n";
+                            //  cout << m1 << " "<< m2 << " bounds \n";
                             //        cout <<thisCellBbox._min << " "<< thisCellBbox._max<<" bbox\n";
                             if(thisCellBbox.intersects(imgBox)){
                                 cell.images.push_back(i);
@@ -2714,7 +2722,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     sprintf(tp,"mesh-diced/bbox-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
                     FILE *bboxfp=fopen(tp,"w");
 
-                    for(int k=0; k < cells[i].images.size(); k++){
+                    for(int k=0; k < (int)cells[i].images.size(); k++){
                         const Stereo_Pose_Data *pose=(&tasks[cells[i].images[k]]);
                         if(pose && pose->valid){
                             fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
@@ -2756,7 +2764,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
                 if(!no_split)
                     sysres=system("./split.py");
-                double minFrac=0.02;
+                /*double minFrac=0.02;
                 std::vector<int> numFaces(vrip_cells.size(),0);
                 std::vector<double> resFrac(vrip_cells.size(),0);
                 std::vector<double> cur_res(vrip_cells.size(),0);
@@ -2789,9 +2797,19 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     printf("%d: %d \n",i,faces);
                 }
 
+*/
 
-                /*   printf("Total Faces %d %f\n",totalFaces,cur_res);
-                printf("%f %f dres %f\n",cur_res,desiredRes,dRes);*/
+                std::vector<int > sizeStepTotal(vpblod+1);
+
+                for(int j=vpblod; j >=0; j--){
+
+                    sizeStepTotal[j]= numberFacesAll/(pow(2.5,vpblod-j));
+                }
+                //                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
+                //                 printf("Step size %d %f\n",sizeSteps[i],resFrac);
+
+              /*     //  printf("Total Faces %d %f\n",totalFaces,cur_res);
+               // printf("%f %f dres %f\n",cur_res,desiredRes,dRes);
                 std::vector< std::vector<int > >sizeStep;
                 sizeStep.resize(vrip_cells.size());
                 for(int i=0; i< (int)vrip_cells.size(); i++){
@@ -2807,7 +2825,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     }
                     //                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
                     //                 printf("Step size %d %f\n",sizeSteps[i],resFrac);
-                }
+                }*/
                 string texcmds_fn="mesh-diced/texcmds";
 
                 FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
@@ -2823,7 +2841,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             vpblod,
                             cells[i].row,cells[i].col,
                             vpblod);
-                        fprintf(texcmds_fp," --tex_cache %s %d --invrot %f %f %f\n",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,rx,ry,rz);
+                    fprintf(texcmds_fp," --tex_cache %s %d --invrot %f %f %f\n",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,rx,ry,rz);
 
 
                 }
@@ -2834,6 +2852,10 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << (int)reimageSize.x() << " "<< (int)reimageSize.y() << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
                 postcmdv.push_back(p.str());
+                std::ostringstream p2;
+                p2 << basepath << "/singleImageTex " << "mesh-diced/total.ply --outfile mesh-diced/totaltex.ply";
+                postcmdv.push_back(p2.str());
+
                 shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,&(postcmdv),num_threads);
                 if(!no_tex)
                     sysres=system("./tex.py");
@@ -2847,10 +2869,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     app="tridecimator";
                 else
                     app="texturedDecimator";
-                // for(int i=0; i <(int)cells.size(); i++){
-                //   if(cells[i].images.size() == 0)
-                //     continue;
-                for(int i=0; i <(int)vrip_cells.size(); i++){
+
+                /* for(int i=0; i <(int)vrip_cells.size(); i++){
                     if(vrip_cells[i].poses.size() == 0)
                         continue;
                     for(int j=vpblod; j >0; j--){
@@ -2861,6 +2881,15 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                                 i,j,i,j-1, sizeStep[i][j-1]);
                     }
                     fprintf(simpcmds_fp,"\n");
+                }*/
+                fprintf(simpcmds_fp,"cd %s/mesh-diced;cp totaltex.ply total-lod%d.ply;",cwd,vpblod);
+
+                for(int j=vpblod; j >0; j--){
+                    fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s totaltex.ply total-lod%d.ply %d -P;",
+                            cwd,
+                            basepath.c_str(),
+                            app.c_str(),
+                            j-1, sizeStepTotal[j-1]);
                 }
                 fclose(simpcmds_fp);
                 string simpcmd="simp.py";
@@ -2886,69 +2915,10 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     datalist_lod.push_back(level);
                 }
 
-                /*
-                FILE *dicefp=fopen("./simp.sh","w+");
-                fprintf(dicefp,"#!/bin/bash\necho -e 'Simplifying...'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\ncd $MESHAGG\n",basepath.c_str());
-                fprintf(dicefp,"cd $DICEDIR\n");
-                fprintf(dicefp,"NUMDICED=`wc -l diced.txt |cut -f1 -d\" \" `\n"
-                        "REDFACT=(");
-                for(int r=0; r<vpblod; r++)
-                    fprintf(dicefp,"%f ",simp_res[r]);
 
-                fprintf(dicefp,")\n");
-
-                char simpargstr[2048];
-                if(further_clean)
-                    sprintf(simpargstr," -S%f ",connected_comp_size_clean);
-                else
-                    sprintf(simpargstr," ");
-                fprintf(dicefp, "LOGDIR=%s\n"
-                        "if [[ -d $LOGDIR ]] ; then\n"
-                        "find $LOGDIR -name 'loadbal*' | xargs rm &>/dev/null\nfi\n"
-                        "if [[ -d $DICEDIR ]] ; then\n"
-                        "find $DICEDIR -name '*lod*' | xargs rm &> /dev/null\nfi\n"
-                        "rm -f simpcmds\n"
-                        "rm -f valid.txt\n"
-                        "cat diced.txt | while read MESHNAME; do\n"
-                        "FACES=`plyhead $MESHNAME | grep face | cut -f 3 -d\" \"`\n"
-                        "if [ $FACES == 0 ]; then\n continue;\n fi\n"
-                        "echo $MESHNAME >> valid.txt\n"
-                        "SIMPCMD=\"cd $DICEDIR/\" \n"
-                        "\tfor f in `echo {%d..0}`\n"
-                        "\tdo\n"
-                        "\t\t\tNEWNAME=`echo $MESHNAME | sed s/.ply/-lod$(($f-1)).ply/g`\n"
-                        "\t\t\tNEWNAME2=`echo $MESHNAME | sed s/.ply/-lod$(($f)).ply/g`\n"
-                        "\t\t\tNEWNAME3=`echo $MESHNAME | sed s/.ply/-lod$(($f)).txt/g`\n"
-                        "\t\tif [ $f == %d ]; then\n"
-                        "FLIPCMD=\"-F\"\n"
-                        "\t\telse\n"
-                        "FLIPCMD=\n"
-                        "\t\tfi\n"
-                        "\t\tSIMPCMD=$SIMPCMD\";\"\"$BASEPATH/texturedDecimator/bin/texturedDecimator $NEWNAME2 $NEWNAME %s/$NEWNAME3 %s/$NEWNAME3.tmp ${REDFACT[$f]} $FLIPCMD %s >& declog-$MESHNAME.txt ;chmod 0666 $NEWNAME  \"\n"
-                        "#MESHNAME=$NEWNAME\n"
-                        "\tdone\n"
-                        "echo $SIMPCMD >> simpcmds\n"
-                        "done\n",simplogdir,vpblod,vpblod,cachedsegtex,cachedsegtex,simpargstr);
-
-
-                if(dist_run){
-                    fprintf(dicefp,"cd $DICEDIR\n"
-                            "time $BASEPATH/vrip/bin/loadbalance ~/loadlimit simpcmds -logdir $LOGDIR\n");
-                } else {
-                    fprintf(dicefp,"cd ..\n"
-                            "%s/runtp.py $DICEDIR/simpcmds %d %s\n"
-                            "cd $DICEDIR\n",basepath.c_str(),num_threads,"Simp");
-                }
-
-                fprintf(dicefp,"cat dicedld.txt | xargs plybbox > range.txt\n");
-                fchmod(fileno(dicefp),0777);
-                fclose(dicefp);
-                if(!no_simp && !no_vrip)
-                    sysres=system("./simp.sh");
-*/
                 if(!mgc)
                     mgc = new MyGraphicsContext();
-                doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray);
+                doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,true);
 
 
                 vector<string> gentexnames;

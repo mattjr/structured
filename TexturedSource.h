@@ -15,6 +15,7 @@ class TexturedSource : public vpb::Source
     friend class TexturingQuery;
 public:
     TexturedSource(Type type, const std::string& filename,const std::string &bbox_file);
+    TexturedSource(Type type, const std::string& filename);
     ~TexturedSource();
 
     class ProjectionCamera{

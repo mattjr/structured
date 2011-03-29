@@ -1561,7 +1561,7 @@ int main( int argc, char *argv[ ] )
                 mgc = new MyGraphicsContext();
             texcache_t cached_dir_name;
             cached_dir_name.push_back(make_pair<string,int>(dir_name,1024));
-            doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,cached_dir_name,useTextureArray,true);
+            doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,cached_dir_name,useTextureArray,true,false);
 
 
             vector<string> gentexnames;

@@ -578,14 +578,14 @@ static int Save(SaveMeshType &m,  const char * filename, bool binary, PlyInfo &p
 					}
           else if( HasPerWedgeTexCoord(m) && (pi.mask & Mask::IOM_WEDGTEXCOORD)  )
 					{
-                                                /*fwrite(&b6,sizeof(char),1,fpout);
+                                                fwrite(&b6,sizeof(char),1,fpout);
 						float t[6];
 						for(int k=0;k<3;++k)
 						{
 							t[k*2+0] = fp->WT(k).u();
 							t[k*2+1] = fp->WT(k).v();
 						}
-                                                fwrite(t,sizeof(float),6,fpout);*/
+                                                fwrite(t,sizeof(float),6,fpout);/*
               fwrite(&b24,sizeof(char),1,fpout);
                                                               float t[24];
                                                               for(int k=0;k<3*4;++k)
@@ -593,7 +593,7 @@ static int Save(SaveMeshType &m,  const char * filename, bool binary, PlyInfo &p
                                                                       t[k*2+0] = fp->WT(k).u();
                                                                       t[k*2+1] = fp->WT(k).v();
                                                               }
-                                                              fwrite(t,sizeof(float),24,fpout);
+                                                              fwrite(t,sizeof(float),24,fpout);*/
 					}
 
 					if(multit)

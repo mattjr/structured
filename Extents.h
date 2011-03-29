@@ -123,7 +123,6 @@ class MyDataSet;
          int _hintTextureNumber;
          int _hintNumLevels;
          MyDataSet *_mydataSet;
-
     };
     class ClippedCopy{
     public:
@@ -158,7 +157,7 @@ int _numLevels;
 class MyDataSet :  public DataSet
 {
     public:
-        MyDataSet(const Camera_Calib &calib,bool useTextureArray,bool useReImage=false,bool useVirtualTex=true);
+        MyDataSet(const Camera_Calib &calib,bool useTextureArray,bool useReImage,bool useVirtualTex);
         void createNewDestinationGraph(
                                        const GeospatialExtents& extents,
                                        unsigned int maxImageSize,

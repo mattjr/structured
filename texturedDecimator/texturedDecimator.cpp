@@ -173,7 +173,7 @@ int main(int argc ,char**argv){
     }*/
     vcg::tri::io::PlyInfo pi;
     pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
-    pi.mask |= vcg::tri::io::Mask::IOM_WEDGCOLOR;
+   // pi.mask |= vcg::tri::io::Mask::IOM_WEDGCOLOR;
 
  //  vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,"assy.ply",true,pi);
 // exit(-1);
@@ -235,7 +235,7 @@ int main(int argc ,char**argv){
     printf("mesh  %d %d Error %g \n",mesh.vn,mesh.fn,DeciSession.currMetric);
     printf("\nCompleted in (%i+%i) msec\n",t2-t1,t3-t2);
 #endif
-    mesh.textures.resize(2);
+  //  mesh.textures.resize(2);
     //Needed to force the ply to output tex id
     vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,argv[2],true,pi);
    /* std::string hash=getHash(argv[2]);

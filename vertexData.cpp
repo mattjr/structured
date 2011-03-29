@@ -181,14 +181,16 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex )
         _triangles->push_back( face.vertices[ind1]);
         _triangles->push_back( face.vertices[1]);
         _triangles->push_back( face.vertices[ind3] );
-        MESHASSERT( face.ids != 0 );
-        if( (unsigned int)(face.nIds) != 12 )
-        {
-            free( face.vertices );
-            printf("%d \n",face.nIds);
+        if(multTex){
+            MESHASSERT( face.ids != 0 );
+            if( (unsigned int)(face.nIds) != 12 )
+            {
+                free( face.vertices );
+                printf("%d \n",face.nIds);
 
-            throw MeshException( "Error reading PLY file. Encountered a "
-                                 "face which does not have 9 ids." );
+                throw MeshException( "Error reading PLY file. Encountered a "
+                                     "face which does not have 9 ids." );
+            }
         }
         for(int k=0,f=0; k <face.nTex; k+=6){
             _texCoord[f]->push_back(osg::Vec3(face.texcoord[k],face.texcoord[k+1],-1));
@@ -206,7 +208,8 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex )
         // free the memory that was allocated by ply_get_element
         free( face.vertices );
         free( face.texcoord );
-        free( face.ids );
+        if(multTex)
+            free( face.ids );
 
     }
 }

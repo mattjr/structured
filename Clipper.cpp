@@ -259,7 +259,7 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
         //OSG_NOTICE<<"KdTree::intersect("<<&leaf<<")"<<std::endl;
         int istart = -node.first-1;
         int iend = istart + node.second;
-
+        int numTC=_texcoords.size();
         for(int i=istart; i<iend; ++i)
         {
             //const Triangle& tri = _triangles[_primitiveIndices[i]];
@@ -269,17 +269,19 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
             osg::Vec3 v0 = _vertices[tri.p0];
             osg::Vec3 v1 = _vertices[tri.p1];
             osg::Vec3 v2 = _vertices[tri.p2];
-            osg::Vec3 t0[maxNumTC],t1[maxNumTC],t2[maxNumTC];
-            for(int f=0; f< maxNumTC; f++){
+            osg::Vec3 t0[numTC],t1[numTC],t2[numTC];
+            for(int f=0; f< numTC; f++){
                 t0[f] = (*_texcoords[f])[tri.p0];
                 t1[f] = (*_texcoords[f])[tri.p1];
                 t2[f] = (*_texcoords[f])[tri.p2];
             }
-            osg::Vec4 id0 = (*_texid)[tri.p0];
-            osg::Vec4 id1 = (*_texid)[tri.p1];
-            osg::Vec4 id2 = (*_texid)[tri.p2];
-            assert(id0[0]  == id1[0] && id0[0] == id2[0]);
-
+            osg::Vec4 id0,id1,id2;
+            if(numTC > 1){
+                 id0 = (*_texid)[tri.p0];
+                 id1 = (*_texid)[tri.p1];
+                 id2 = (*_texid)[tri.p2];
+                assert(id0[0]  == id1[0] && id0[0] == id2[0]);
+            }
             //printf("%f\n",id0[0]);
             int contains=0;
             contains+=clipbox.contains(v0);
@@ -345,15 +347,18 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
             _new_triangles->push_back(counter);
             _new_triangles->push_back(counter+1);
             _new_triangles->push_back(counter+2);
-            for(int f=0; f< maxNumTC; f++){
+            for(int f=0; f< numTC; f++){
                 _new_texcoords[f]->push_back(t0[f]);
                 _new_texcoords[f]->push_back(t1[f]);
                 _new_texcoords[f]->push_back(t2[f]);
             }
-            _new_texid->push_back(id0);
-            _new_texid->push_back(id1);
-            _new_texid->push_back(id2);
-assert(_new_texcoords[0]->size() ==  _new_texid->size());
+            if(numTC > 1){
+
+                _new_texid->push_back(id0);
+                _new_texid->push_back(id1);
+                _new_texid->push_back(id2);
+                assert(_new_texcoords[0]->size() ==  _new_texid->size());
+            }
 
         }
     }

@@ -2932,7 +2932,9 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 if(!mgc)
                     mgc = new MyGraphicsContext();
-                doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,true);
+                bool useVirtTex=true;
+                bool useReimage=false;
+                doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex);
 
 
                 vector<string> gentexnames;

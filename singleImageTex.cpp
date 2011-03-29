@@ -28,15 +28,17 @@ int main( int argc, char **argv )
         return -1;
     }
 
-
+    bool debug=false;
     osg::Vec2 size;
     {
 
         vips::VImage in("subtile.v");
         size.x()=in.Xsize();
         size.y()=in.Ysize();
-        double downsampleRatio=1.0;
-        in.affine(downsampleRatio,0,0,downsampleRatio,0,0,0,0,size.x()*downsampleRatio,downsampleRatio*size.y()).write("tmp.jpg");
+        if(debug) {
+            double downsampleRatio=1.0;
+            in.affine(downsampleRatio,0,0,downsampleRatio,0,0,0,0,size.x()*downsampleRatio,downsampleRatio*size.y()).write("tmp.jpg");
+        }
     }
     std::string mf=argv[1];
     osg::Matrixd viewProj,rotMat;
@@ -47,7 +49,7 @@ int main( int argc, char **argv )
     osg::Matrix bottomLeftToTopLeft;//= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,size.y(),0));
 
     osg::Matrix toTex=viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*size.x(),0.5*size.y(),0.5f))*bottomLeftToTopLeft;
-
+    std::vector<osg::ref_ptr<osg::Vec3Array> > coordsArray;
     osg::Node* model = osgDB::readNodeFile(mf);
     if (model)
     {
@@ -75,7 +77,8 @@ int main( int argc, char **argv )
             fprintf(stderr,"Fail to convert verts\n");
             exit(-1);
         }
-        osg::Vec2Array *coords=new osg::Vec2Array(verts->size());
+        osg::Vec3Array *coords=new osg::Vec3Array(verts->size());
+        coordsArray.push_back(coords);
         (*geomList.begin())->setTexCoordArray(0,coords);
 #pragma omp for
         for(int j=0; j< (int)verts->size(); j++){
@@ -86,23 +89,30 @@ int main( int argc, char **argv )
             proj.y() /= proj.w();
             proj.x() /= size.x();;
             proj.y() /= size.y();
-            coords->at(j)=osg::Vec2(proj.x(),proj.y());
+            coords->at(j)=osg::Vec3(proj.x(),proj.y(),0);
         }
 
 
 
-        {
+        if(debug){
 
             // set up the texture state.
-               osg::Texture2D* texture = new osg::Texture2D;
-               texture->setDataVariance(osg::Object::DYNAMIC); // protect from being optimized away as static state.
-               texture->setImage(osgDB::readImageFile("tmp.jpg"));
+            osg::Texture2D* texture = new osg::Texture2D;
+            texture->setDataVariance(osg::Object::DYNAMIC); // protect from being optimized away as static state.
+            texture->setImage(osgDB::readImageFile("tmp.jpg"));
 
-               osg::StateSet* stateset = (*geomList.begin())->getOrCreateStateSet();
-               stateset->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+            osg::StateSet* stateset = (*geomList.begin())->getOrCreateStateSet();
+            stateset->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+            osgDB::writeNodeFile(*model,osgDB::getNameLessExtension(outfilename).append(".ive"));
+
+        }else{
+            std::ofstream f(outfilename.c_str());
+
+            PLYWriterNodeVisitor nv(f,NULL,&(coordsArray));
+            model->accept(nv);
 
         }
-        osgDB::writeNodeFile(*model,osgDB::getNameLessExtension(outfilename).append(".ive"));
+
 
     }else
         cerr << "Failed to open "<<mf <<endl;

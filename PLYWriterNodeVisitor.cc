@@ -153,10 +153,10 @@ public:
 
             _fout << std::endl;*/
         if(_textured){
-            unsigned char t=2*3*4;
+            unsigned char t=2*3*_textureCoord->size();
             float uv[2];
             _fout.write((char *)&t,sizeof(char));
-            for(int f=0; f< _textureCoord->size(); f++){
+            for(int f=0; f< (int)_textureCoord->size(); f++){
                 osg::Vec3Array &tex=*(_textureCoord->at(f));
 
                 uv[0]=tex[i1][0];
@@ -172,16 +172,17 @@ public:
                 _fout.write((char*)uv,sizeof(float)*2);
             }
             //_fout.write((char *)&t,sizeof(char));
+            if(_textureCoord->size() > 1){
+                int texnumber=(*_textureID)[i1][0];
+                _fout.write((char *)&texnumber,sizeof(int));
 
-            int texnumber=(*_textureID)[i1][0];
-            _fout.write((char *)&texnumber,sizeof(int));
+                unsigned char p=4*3*1;
+                _fout.write((char *)&p,sizeof(char));
 
-            unsigned char p=4*3*1;
-            _fout.write((char *)&p,sizeof(char));
-
-            for(int f=0; f< 12; f++){
-                float id=(float)(*_textureID)[i1][f];
-                _fout.write((char *)&id,sizeof(float));
+                for(int f=0; f< 12; f++){
+                    float id=(float)(*_textureID)[i1][f];
+                    _fout.write((char *)&id,sizeof(float));
+                }
             }
         }
 
@@ -671,8 +672,10 @@ void PLYWriterNodeVisitor::write_header(void){
     _fout <<"property list uchar int vertex_indices\n";
     if(_textured){
         _fout <<"property list uchar float texcoord\n";
-        _fout <<"property int texnumber\n";
-        _fout <<"property list uchar float color\n";
+        if(_mult_tex){
+            _fout <<"property int texnumber\n";
+            _fout <<"property list uchar float color\n";
+        }
     }
 
     _fout <<"end_header\n";

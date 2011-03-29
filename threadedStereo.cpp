@@ -2865,7 +2865,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 FILE *simpcmds_fp=fopen(simpcmds_fn.c_str(),"w");
                 string app;
-                if(1)
+                if(0)
                     app="tridecimator";
                 else
                     app="texturedDecimator";

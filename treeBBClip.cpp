@@ -70,7 +70,7 @@ int main( int argc, char **argv )
             osg::KdTree *kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
             if(kdTree){
                 KdTreeBbox *kdtreeBbox=new KdTreeBbox(*kdTree);
-                root=kdtreeBbox->intersect(bb,mode);
+                root=kdtreeBbox->intersect(bb,mode,false);
             }
         }else{
             OSG_ALWAYS << "Model can't be converted to geode\n";

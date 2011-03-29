@@ -976,7 +976,27 @@ void fillPrimTexCoordFromVert(const osg::PrimitiveSet& prset,const TexBlendCoord
         }
     }
 }
+osg::StateSet* createSS()
+{
+        osg::StateSet* stateset = new osg::StateSet();
 
+        // osg::Image* image = osgDB::readImageFile( "/Users/julian/Desktop/test.rgb" );
+        unsigned char bla [8][8] = {{1,2,3,4,5,6,7,8},{1,2,3,4,5,6,7,8},{1,2,3,4,5,6,7,8},{1,2,3,4,5,6,7,8},{1,2,3,4,5,6,7,8},{1,2,3,4,5,6,7,8},{1,2,3,4,5,6,7,8},{1,2,3,4,5,6,7,8}};
+        osg::Image* ti = new osg::Image;
+        ti->setImage(8, 8, 1,  GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, (unsigned char *) &bla, osg::Image::NO_DELETE, 1);
+
+    if (ti)
+    {
+        osg::Texture2D* texture = new osg::Texture2D;
+        texture->setImage(ti);
+        texture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
+        stateset->setTextureAttributeAndModes(0,texture, osg::StateAttribute::ON);
+    }
+
+        stateset->setMode(GL_LIGHTING, osg::StateAttribute::ON);
+
+        return stateset;
+}
 osg::Node* MyDestinationTile::createScene()
 {
     if (_createdScene.valid()) return _createdScene.get();
@@ -1055,13 +1075,13 @@ osg::Node* MyDestinationTile::createScene()
             itr != _models->_models.end();
             ++itr,++cnt)
             {
-                if(_atlasGen->_totalImageList.size()> 0 ){
+                if(_atlasGen->_totalImageList.size()> 0 ||texCoordsPerModel.size()){
                     if(texCoordIDIndexPerModel.count(*itr) == 0 ){
                         OSG_ALWAYS << "Not correct number of texCoordIDIndexPerModel in createScene() "<< cnt << " "<<texCoordIDIndexPerModel.size() <<endl;
                     }else{
                         osg::Vec4Array *tmp=texCoordIDIndexPerModel[*itr];
                         const TexBlendCoord &tmp2=texCoordsPerModel[*itr];
-                        cout << tmp->size() << " ASS " << tmp2[0]->size() << endl;
+                      //  cout << tmp->size() << " ASS " << tmp2[0]->size() << endl;
                         if(tmp && tmp2.size()){
                             if(!_mydataSet->_useVirtualTex){
                                 for(int i=0; i<(int)tmp->size(); i++)
@@ -1145,11 +1165,14 @@ osg::Node* MyDestinationTile::createScene()
                     }
                 }else{
                     osg::Geometry *geom=*geomList.begin();
-                    osg::StateSet *stateset=geom->getOrCreateStateSet();
+                    osg::StateSet *stateset=createSS();
                     geom->setUseDisplayList(_mydataSet->_useDisplayLists);
                     geom->setUseVertexBufferObjects(_mydataSet->_useVBO);
                     geom->setStateSet(stateset);
+                    geom->setTexCoordArray(0,texCoords[0]);
+                    int t=texCoords[0]->size();
 
+                    //std::cout << "Drops : "<<texCoords[0]->size() <<"\n";
                 }
             }
         }
@@ -1667,7 +1690,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     osg::ref_ptr<osg::Node> root;
 
 
-    osg::Vec4Array *ids=src->ids;
+    osg::Vec4Array *ids= _useVirtualTex ? NULL :src->ids;
     TexBlendCoord  *texCoords=(&src->tex);
     osg::ref_ptr<osg::Vec4Array> new_ids;
     TexBlendCoord  new_texCoords;
@@ -1679,7 +1702,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
         //printf("0x%x\n",(long int)root.get());
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_texCoordMutex);
         assert(new_ids.valid() );
-        for(int f=0; f< maxNumTC; f++)
+        for(int f=0; f< new_texCoords.size(); f++)
             assert(new_texCoords[f].valid());
         tile->texCoordIDIndexPerModel[root.get()]=new_ids;
         tile->texCoordsPerModel[root.get()]=new_texCoords;

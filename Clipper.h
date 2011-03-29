@@ -32,18 +32,20 @@ struct IntersectKdTreeBbox
 {
     IntersectKdTreeBbox(const osg::Vec3Array& vertices,
                         const osg::KdTree::KdNodeList& nodes,
-                        const osg::KdTree::TriangleList& triangles):
+                        const osg::KdTree::TriangleList& triangles,bool multTex):
     _vertices(vertices),
     _kdNodes(nodes),
     _triangles(triangles)
     {
         _new_triangles =  new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
         _new_vertices = new osg::Vec3Array;
-        _new_texcoords.resize(maxNumTC);
-        for(int f=0; f< maxNumTC; f++){
+        int texCoordSize= multTex ? 4:1;
+        _new_texcoords.resize(texCoordSize);
+        for(int f=0; f< texCoordSize; f++){
             _new_texcoords[f]=new osg::Vec3Array;
         }
-        _new_texid = new osg::Vec4Array;
+        if(multTex)
+            _new_texid = new osg::Vec4Array;
 
     }
     /* ~IntersectKdTreeBbox(){
@@ -86,7 +88,7 @@ class KdTreeBbox : public osg::KdTree {
 
 public:
     KdTreeBbox(const KdTree& rhs) : KdTree(rhs){}
-    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &overlapmode) const
+    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &overlapmode,bool multTex) const
     {
         if (_kdNodes.empty())
         {
@@ -98,7 +100,7 @@ public:
 
         IntersectKdTreeBbox intersector(*_vertices,
                                         _kdNodes,
-                                        _triangles
+                                        _triangles,multTex
                                         );
         osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
         osg::Geometry *new_geom=new osg::Geometry;
@@ -124,8 +126,8 @@ public:
 
         IntersectKdTreeBbox intersector(*_vertices,
                                         _kdNodes,
-                                        _triangles
-                                        );
+                                        _triangles,
+                                        (ids != NULL));
         osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
         osg::Geometry *new_geom=new osg::Geometry;
         newGeode->addDrawable(new_geom);

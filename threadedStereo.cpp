@@ -2802,9 +2802,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 std::vector<int > sizeStepTotal(vpblod+1);
 
                 for(int j=vpblod; j >=0; j--){
+                    sizeStepTotal[j]= numberFacesAll/(pow(4,vpblod-j));
+                    printf("%d\n",sizeStepTotal[j]);
 
-                    sizeStepTotal[j]= numberFacesAll/(pow(2.5,vpblod-j));
                 }
+
                 //                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
                 //                 printf("Step size %d %f\n",sizeSteps[i],resFrac);
 
@@ -2855,6 +2857,16 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 std::ostringstream p2;
                 p2 << basepath << "/singleImageTex " << "mesh-diced/total.ply --outfile mesh-diced/totaltex.ply";
                 postcmdv.push_back(p2.str());
+                int sizeX=reimageSize.x()*_tileRows;
+                int tileSize=256;
+                int tileBorder=1;
+                int adjustedSize=tileSize-(2*tileBorder);
+                int embedSize=sizeX- (sizeX % adjustedSize);
+                std::ostringstream p3;
+                p3 << "vips " << " im_extract_area " << "out.tif "<< " tex.tif " << " 0 0 " <<  embedSize << " "<<embedSize<< ";";
+
+                p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b=1 tex.tif ";
+                postcmdv.push_back(p3.str());
 
                 shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,&(postcmdv),num_threads);
                 if(!no_tex)
@@ -2890,22 +2902,29 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     fprintf(simpcmds_fp,"cd %s/mesh-diced;cp totaltex.ply total-lod%d.ply;",cwd,vpblod);
                     sprintf(tmp,"mesh-diced/total-lod%d.ply",vpblod);//std::min(lod,2)
                     std::vector<string> level;
-                    level.push_back(tmp);
-                    datalist_lod.push_back(level);
 
                     for(int j=vpblod; j >0; j--){
-                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s totaltex.ply total-lod%d.ply %d -P\n",
+                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s totaltex.ply total-lod%d.ply %d -P;",
                                 cwd,
                                 basepath.c_str(),
                                 app.c_str(),
                                 j-1, sizeStepTotal[j-1]);
-                        sprintf(tmp,"mesh-diced/total-lod%d.ply",j-1);//std::min(lod,2)
-                        std::vector<string> level;
-                        level.push_back(tmp);
-                        datalist_lod.push_back(level);
+
 
                     }
+                    for(int lod=0; lod <= vpblod; lod ++){
+                        std::vector<string> level;
+
+                        char tmp[1024];
+                        sprintf(tmp,"mesh-diced/total-lod%d.ply",lod);//std::min(lod,2)
+                        level.push_back(tmp);
+
+
+                        datalist_lod.push_back(level);
+                    }
+
                 }
+
                 fclose(simpcmds_fp);
                 string simpcmd="simp.py";
                 shellcm.write_generic(simpcmd,simpcmds_fn,"simp");

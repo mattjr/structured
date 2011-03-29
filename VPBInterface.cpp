@@ -17,70 +17,70 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
         return false;
     }
 
-        osg::Drawable *drawable = geode->getDrawable(0);
+    osg::Drawable *drawable = geode->getDrawable(0);
 
-        osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
-        osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
-        //osg::Vec2Array *texCoords=static_cast<const osg::Vec2Array*>(geom->getTexCoordArray(0));
-        newTexCoord.resize(4);
-            newTexCoord[0]=new osg::Vec3Array;
-            newTexCoord[1]=new osg::Vec3Array;
-            newTexCoord[2]=new osg::Vec3Array;
-            newTexCoord[3]=new osg::Vec3Array;
+    osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+    osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+    //osg::Vec2Array *texCoords=static_cast<const osg::Vec2Array*>(geom->getTexCoordArray(0));
+    newTexCoord.resize(4);
+    newTexCoord[0]=new osg::Vec3Array;
+    newTexCoord[1]=new osg::Vec3Array;
+    newTexCoord[2]=new osg::Vec3Array;
+    newTexCoord[3]=new osg::Vec3Array;
 
-        newIds->resize(verts->size(),osg::Vec4(-1,-1,-1,-1));
-        for(int f=0; f< maxNumTC; f++)
-            newTexCoord[f]->resize(verts->size());
-        if(!verts || !verts->size()){
-            OSG_INFO<< "Empty mesh continuing!" <<endl;
-            //continue;
-            return false;
-        }
-        OSG_INFO << "\tModel Size: "<< verts->size()<<endl;
-        osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
-        osg::PrimitiveSet *prim=primitiveSets.begin()->get();
-        //printf("%d %d\n",texcoord[0]->size() ,prim->getNumIndices() );
-        assert(texcoord[0]->size() ==prim->getNumIndices() );
-        int numIdx=prim->getNumIndices();
-        vector<unsigned int>new_list;
-        idbackmap_t idmap;
-        for(int i=0; i<numIdx-2; i+=3){
-            for(int k=0; k <3; k++){
-                int newidx=prim->index(i+k);
-                if(idmap.count(newidx) == 0)
-                    idmap[newidx]=ids->at(i+k)[0];
-                else if(idmap[newidx] != ids->at(i+k)[0]){
-                    osg::Vec3 v=verts->at(newidx);
-                    newidx=verts->size();
-                    verts->push_back(v);
-                    vertsAdded++;
-                    dynamic_cast<osg::DrawElementsUInt*>(prim)->setElement(i+k,newidx);
-                    for(int f=0; f< maxNumTC; f++)
-                        newTexCoord[f]->push_back(texcoord[f]->at(i+k));
-                    newIds->push_back(ids->at(i+k));
-                    continue;
-                }
+    newIds->resize(verts->size(),osg::Vec4(-1,-1,-1,-1));
+    for(int f=0; f< maxNumTC; f++)
+        newTexCoord[f]->resize(verts->size());
+    if(!verts || !verts->size()){
+        OSG_INFO<< "Empty mesh continuing!" <<endl;
+        //continue;
+        return false;
+    }
+    OSG_INFO << "\tModel Size: "<< verts->size()<<endl;
+    osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
+    osg::PrimitiveSet *prim=primitiveSets.begin()->get();
+    //printf("%d %d\n",texcoord[0]->size() ,prim->getNumIndices() );
+    assert(texcoord[0]->size() ==prim->getNumIndices() );
+    int numIdx=prim->getNumIndices();
+    vector<unsigned int>new_list;
+    idbackmap_t idmap;
+    for(int i=0; i<numIdx-2; i+=3){
+        for(int k=0; k <3; k++){
+            int newidx=prim->index(i+k);
+            if(idmap.count(newidx) == 0)
+                idmap[newidx]=ids->at(i+k)[0];
+            else if(idmap[newidx] != ids->at(i+k)[0]){
+                osg::Vec3 v=verts->at(newidx);
+                newidx=verts->size();
+                verts->push_back(v);
+                vertsAdded++;
+                dynamic_cast<osg::DrawElementsUInt*>(prim)->setElement(i+k,newidx);
                 for(int f=0; f< maxNumTC; f++)
-                newTexCoord[f]->at(newidx)=texcoord[f]->at(i+k);
-                newIds->at(newidx)=ids->at(i+k);
-                new_list.push_back(newidx);
-
+                    newTexCoord[f]->push_back(texcoord[f]->at(i+k));
+                newIds->push_back(ids->at(i+k));
+                continue;
             }
+            for(int f=0; f< maxNumTC; f++)
+                newTexCoord[f]->at(newidx)=texcoord[f]->at(i+k);
+            newIds->at(newidx)=ids->at(i+k);
+            new_list.push_back(newidx);
+
         }
-        //geom->setTexCoordArray(0,newTexCoord);
+    }
+    //geom->setTexCoordArray(0,newTexCoord);
 
     return true;
 }
 #endif
 void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cachedDirs,bool useTextureArray,bool useSingleImage){
-//vector<osg::KdTree*> trees;
+    //vector<osg::KdTree*> trees;
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
     osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,useTextureArray,true);
     m->_cachedDirs=cachedDirs;
     m->setNumReadThreadsToCoresRatio(1.5);
-   m->setNumWriteThreadsToCoresRatio(1.5);
-   // m->setCompressionMethod(vpb::BuildOptions::NVTT);
+    m->setNumWriteThreadsToCoresRatio(1.5);
+    // m->setCompressionMethod(vpb::BuildOptions::NVTT);
     m->setCompressionMethod(vpb::BuildOptions::GL_DRIVER);
     vpb::ImageOptions *imageOptions = new vpb::ImageOptions();
     imageOptions->setTextureType(vpb::ImageOptions::RGBA);
@@ -99,9 +99,13 @@ void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datal
             int npos=mf.find("/");
 
             std::string bbox_file;
-            if(!useSingleImage)
-            bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-            TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
+            TexturedSource *sourceModel;
+            if(!useSingleImage){
+                bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
+                sourceModel =new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
+            }else{
+                sourceModel=new TexturedSource(vpb::Source::MODEL,mf);
+            }
             sourceModel->setMaxLevel(lod);
             sourceModel->setMinLevel(lod);
             sourceModel->tex_cache_dir=cacheddir;
@@ -126,7 +130,7 @@ void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datal
                 if(geode && geode->getNumDrawables()){
                     osg::Drawable *drawable = geode->getDrawable(0);
                     sourceModel->_kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
-                   // trees.push_back(sourceModel->_kdTree);
+                    // trees.push_back(sourceModel->_kdTree);
                 }else{
                     OSG_ALWAYS << "No drawbables \n";
                 }
@@ -138,8 +142,8 @@ void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datal
     }
     m->createNewDestinationGraph(geo,256,128,numlod);
     m->_run();
-//    for(int i=0; i<trees.size(); i++)
-  //    delete trees[i];
+    //    for(int i=0; i<trees.size(); i++)
+    //    delete trees[i];
 
 
 }

@@ -87,7 +87,7 @@ class MyDataSet;
 
         void addSourceWithHint(TexturedSource *source,const vpb::GeospatialExtents extents){
             _sources.push_back(source);
-            const double minR[]={extents.xMin(),extents.yMin(),DBL_MIN};
+           /* const double minR[]={extents.xMin(),extents.yMin(),DBL_MIN};
             const double maxR[]={extents.xMax(),extents.yMax(),DBL_MAX};
 
 
@@ -95,7 +95,7 @@ class MyDataSet;
             CountVisitor c;
             source->tree->intersectsWithQuery(r,c);
             //OSG_NOTICE << "Source has " << c.GetResultCount() <<std::endl;
-            addToHintTextureNumber(c.GetResultCount());
+            addToHintTextureNumber(c.GetResultCount());*/
         }
 
         typedef std::pair<unsigned int, std::string> AttributeAlias;

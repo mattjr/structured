@@ -2808,7 +2808,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 //                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
                 //                 printf("Step size %d %f\n",sizeSteps[i],resFrac);
 
-              /*     //  printf("Total Faces %d %f\n",totalFaces,cur_res);
+                /*     //  printf("Total Faces %d %f\n",totalFaces,cur_res);
                // printf("%f %f dres %f\n",cur_res,desiredRes,dRes);
                 std::vector< std::vector<int > >sizeStep;
                 sizeStep.resize(vrip_cells.size());
@@ -2882,14 +2882,29 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     }
                     fprintf(simpcmds_fp,"\n");
                 }*/
-                fprintf(simpcmds_fp,"cd %s/mesh-diced;cp totaltex.ply total-lod%d.ply;",cwd,vpblod);
+                std::vector<std::vector<string> > datalist_lod;
 
-                for(int j=vpblod; j >0; j--){
-                    fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s totaltex.ply total-lod%d.ply %d -P;",
-                            cwd,
-                            basepath.c_str(),
-                            app.c_str(),
-                            j-1, sizeStepTotal[j-1]);
+                {
+                    char tmp[1024];
+
+                    fprintf(simpcmds_fp,"cd %s/mesh-diced;cp totaltex.ply total-lod%d.ply;",cwd,vpblod);
+                    sprintf(tmp,"mesh-diced/total-lod%d.ply",vpblod);//std::min(lod,2)
+                    std::vector<string> level;
+                    level.push_back(tmp);
+                    datalist_lod.push_back(level);
+
+                    for(int j=vpblod; j >0; j--){
+                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s totaltex.ply total-lod%d.ply %d -P\n",
+                                cwd,
+                                basepath.c_str(),
+                                app.c_str(),
+                                j-1, sizeStepTotal[j-1]);
+                        sprintf(tmp,"mesh-diced/total-lod%d.ply",j-1);//std::min(lod,2)
+                        std::vector<string> level;
+                        level.push_back(tmp);
+                        datalist_lod.push_back(level);
+
+                    }
                 }
                 fclose(simpcmds_fp);
                 string simpcmd="simp.py";
@@ -2897,8 +2912,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 if(!no_simp)
                     sysres=system("./simp.py");
 
-                std::vector<std::vector<string> > datalist_lod;
-                for(int lod=0; lod <= vpblod; lod ++){
+                /* for(int lod=0; lod <= vpblod; lod ++){
                     std::vector<string> level;
 
                     //   for(int i=0; i <(int)cells.size(); i++){
@@ -2913,7 +2927,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
 
                     datalist_lod.push_back(level);
-                }
+                }*/
 
 
                 if(!mgc)

@@ -45,7 +45,7 @@ VertexData::VertexData()
     _colors = NULL;
     _normals = NULL;
     _triangles = NULL;
-    for(int f=0; f< _texCoord.size(); f++)
+    for(int f=0; f< (int)_texCoord.size(); f++)
         _texCoord[f]=NULL;
     _texIds=NULL;
     
@@ -105,7 +105,7 @@ void VertexData::readVertices( PlyFile* file, const int nVertices,
 
 
 /*  Read the index data from the open file.  */
-void VertexData::readTriangles( PlyFile* file, const int nFaces )
+void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex )
 {
     // temporary face structure for ply loading
     struct _Face
@@ -133,21 +133,29 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces )
     
     ply_get_property( file, "face", &faceProps[0] );
     ply_get_property( file, "face", &faceProps[1] );
-    ply_get_property( file, "face", &faceProps[2] );
-    ply_get_property( file, "face", &faceProps[3] );
+    if(multTex){
+        ply_get_property( file, "face", &faceProps[2] );
+        ply_get_property( file, "face", &faceProps[3] );
+    }
 
     
     // If read colors allocate space for color array
-    if( 1/*readTex*/ )
+    if( multTex)
     {
         _texCoord.resize(4);
-        for(int f=0; f<_texCoord.size(); f++){
+        for(int f=0; f<(int)_texCoord.size(); f++){
             if(!_texCoord[f].valid())
                 _texCoord[f] = new osg::Vec3Array;
         }
 
         if(!_texIds.valid())
             _texIds = new osg::Vec4Array;
+    }else{
+        _texCoord.resize(1);
+        for(int f=0; f<(int)_texCoord.size(); f++){
+            if(!_texCoord[f].valid())
+                _texCoord[f] = new osg::Vec3Array;
+        }
     }
 
     //triangles.clear();
@@ -186,13 +194,14 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces )
             _texCoord[f]->push_back(osg::Vec3(face.texcoord[k],face.texcoord[k+1],-1));
             _texCoord[f]->push_back(osg::Vec3(face.texcoord[k+2],face.texcoord[k+3],-1));
             _texCoord[f]->push_back(osg::Vec3(face.texcoord[k+4],face.texcoord[k+5],-1));
-         f++;
+            f++;
         }
-        for(int k=0; k<face.nIds; k+=4){
-            _texIds->push_back(osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]));
-            //cout << (int)face.nIds << " "<<osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]) << endl;
+        if(multTex){
+            for(int k=0; k<face.nIds; k+=4){
+                _texIds->push_back(osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]));
+                //cout << (int)face.nIds << " "<<osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]) << endl;
+            }
         }
-
 
         // free the memory that was allocated by ply_get_element
         free( face.vertices );
@@ -213,7 +222,7 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
     bool    result = false;
     int     nComments;
     char**  comments;
-    
+
     PlyFile* file = NULL;
 
     // Try to open ply file as for reading
@@ -320,22 +329,28 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
             }
         }
         // If the string is face means triangle info started
-        else if( equal_strings( elemNames[i], "face" ) )
+        else if( equal_strings( elemNames[i], "face" ) ){
+            bool multTex=false;
+            for( int j = 0; j < nProps; ++j )
+                // if the string have the red means color info is there
+                if( equal_strings( props[j]->name, "texnumber" ) )
+                    multTex = true;
             try
             {
-            // Read Triangles
-            readTriangles( file, nElems );
-            // Check whether all face elements read or not
-            MESHASSERT( _triangles->size()/3  == static_cast< size_t >( nElems ) );
-            result = true;
-        }
-        catch( exception& e )
-        {
-            MESHERROR << "Unable to read PLY file, an exception occured:  " 
-                    << e.what() << endl;
-            // stop for loop by setting the loop variable to break condition
-            // this way resources still get released even on error cases
-            i = nPlyElems;
+                // Read Triangles
+                readTriangles( file, nElems ,multTex);
+                // Check whether all face elements read or not
+                MESHASSERT( _triangles->size()/3  == static_cast< size_t >( nElems ) );
+                result = true;
+            }
+            catch( exception& e )
+            {
+                MESHERROR << "Unable to read PLY file, an exception occured:  "
+                        << e.what() << endl;
+                // stop for loop by setting the loop variable to break condition
+                // this way resources still get released even on error cases
+                i = nPlyElems;
+            }
         }
         
         // free the memory that was allocated by ply_get_element_description

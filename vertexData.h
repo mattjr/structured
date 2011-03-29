@@ -52,7 +52,7 @@ namespace ply
                            const bool readColors );
 
         // Reads the triangle indices from the ply file
-        void readTriangles( PlyFile* file, const int nFaces );
+        void readTriangles( PlyFile* file, const int nFaces, bool multTex );
 
         // Calculates the normals according to passed flag
         // if vertexNormals is true then computes normal per vertices

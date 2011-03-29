@@ -129,7 +129,7 @@ static bool even_split=true;
 static double cell_scale=1.0;
 static bool do_classes=false;
 static bool do_classes_interp=false;
-
+static bool useVirtTex=true;
 static bool use_dense_feature=false;
 //StereoMatching* stereo;
 //StereoImage simage;
@@ -2764,7 +2764,17 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
                 if(!no_split)
                     sysres=system("./split.py");
-                /*double minFrac=0.02;
+#ifdef SINGLE_MESH_TEX
+
+                std::vector<int > sizeStepTotal(vpblod+1);
+
+                for(int j=vpblod; j >=0; j--){
+                    sizeStepTotal[j]= numberFacesAll/(pow(4,vpblod-j));
+                    printf("%d\n",sizeStepTotal[j]);
+
+                }
+#else
+                double minFrac=0.02;
                 std::vector<int> numFaces(vrip_cells.size(),0);
                 std::vector<double> resFrac(vrip_cells.size(),0);
                 std::vector<double> cur_res(vrip_cells.size(),0);
@@ -2796,22 +2806,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                     printf("%d: %d \n",i,faces);
                 }
-
-*/
-
-                std::vector<int > sizeStepTotal(vpblod+1);
-
-                for(int j=vpblod; j >=0; j--){
-                    sizeStepTotal[j]= numberFacesAll/(pow(4,vpblod-j));
-                    printf("%d\n",sizeStepTotal[j]);
-
-                }
-
                 //                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
                 //                 printf("Step size %d %f\n",sizeSteps[i],resFrac);
 
-                /*     //  printf("Total Faces %d %f\n",totalFaces,cur_res);
-               // printf("%f %f dres %f\n",cur_res,desiredRes,dRes);
+                //  printf("Total Faces %d %f\n",totalFaces,cur_res);
+                // printf("%f %f dres %f\n",cur_res,desiredRes,dRes);
                 std::vector< std::vector<int > >sizeStep;
                 sizeStep.resize(vrip_cells.size());
                 for(int i=0; i< (int)vrip_cells.size(); i++){
@@ -2822,12 +2821,13 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             continue;
                         }
                         double newRes=(cur_res[i]+(vpblod-j)*resFrac[i]);
-                        sizeStep[i][j]= std::max(numFaces[i]/(pow(2.5,vpblod-j)),(largestNumFaces*minFrac));
+                        sizeStep[i][j]= std::max(numFaces[i]/(pow(4,vpblod-j)),(largestNumFaces*minFrac));
                         OSG_ALWAYS << "Level " << j << "Res " <<  newRes << "Orig Faces " << numFaces[i] << "New faces " << sizeStep[i][j] <<endl;
                     }
                     //                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
                     //                 printf("Step size %d %f\n",sizeSteps[i],resFrac);
-                }*/
+                }
+#endif
                 string texcmds_fn="mesh-diced/texcmds";
 
                 FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
@@ -2848,15 +2848,21 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 }
                 fclose(texcmds_fp);
+
                 string texcmd="tex.py";
                 vector<std::string> postcmdv;
                 std::ostringstream p;
 
                 p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << (int)reimageSize.x() << " "<< (int)reimageSize.y() << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
                 postcmdv.push_back(p.str());
+#if SINGLE_MESH_TEX
                 std::ostringstream p2;
                 p2 << basepath << "/singleImageTex " << "mesh-diced/total.ply --outfile mesh-diced/totaltex.ply";
                 postcmdv.push_back(p2.str());
+
+
+#endif
+
                 int sizeX=reimageSize.x()*_tileRows;
                 int tileSize=256;
                 int tileBorder=1;
@@ -2872,6 +2878,25 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 if(!no_tex)
                     sysres=system("./tex.py");
 
+                if(useVirtTex){
+                    string vttexcmds_fn="mesh-diced/vttexcmds";
+                    string vttex="vttex.py";
+
+                    FILE *vttexcmds_fp=fopen(vttexcmds_fn.c_str(),"w");
+                    for(int i=0; i <(int)vrip_cells.size(); i++){
+                    if(vrip_cells[i].poses.size() == 0)
+                        continue;
+                        fprintf(vttexcmds_fp,"%s/singleImageTex mesh-diced/clipped-diced-%08d.ply --outfile mesh-diced/clipped-diced-%08d-lod%d.ply\n",
+                                basepath.c_str(),
+                                i,i,vpblod);
+                    }
+                    fclose(vttexcmds_fp);
+                    shellcm.write_generic(vttex,vttexcmds_fn,"VT Tex",NULL,NULL,num_threads);
+                    if(!no_tex)
+                        sysres=system("./vttex.py");
+
+                }
+
 
                 string simpcmds_fn="mesh-diced/simpcmds";
 
@@ -2881,20 +2906,10 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     app="tridecimator";
                 else
                     app="texturedDecimator";
-
-                /* for(int i=0; i <(int)vrip_cells.size(); i++){
-                    if(vrip_cells[i].poses.size() == 0)
-                        continue;
-                    for(int j=vpblod; j >0; j--){
-                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %d -By -P;",
-                                cwd,
-                                basepath.c_str(),
-                                app.c_str(),
-                                i,j,i,j-1, sizeStep[i][j-1]);
-                    }
-                    fprintf(simpcmds_fp,"\n");
-                }*/
                 std::vector<std::vector<string> > datalist_lod;
+
+#ifdef SINGLE_MESH_TEX
+
 
                 {
                     char tmp[1024];
@@ -2924,14 +2939,21 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     }
 
                 }
+#else
+                for(int i=0; i <(int)vrip_cells.size(); i++){
+                    if(vrip_cells[i].poses.size() == 0)
+                        continue;
+                    for(int j=vpblod; j >0; j--){
+                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %d -By -P;",
+                                cwd,
+                                basepath.c_str(),
+                                app.c_str(),
+                                i,j,i,j-1, sizeStep[i][j-1]);
+                    }
+                    fprintf(simpcmds_fp,"\n");
+                }
 
-                fclose(simpcmds_fp);
-                string simpcmd="simp.py";
-                shellcm.write_generic(simpcmd,simpcmds_fn,"simp");
-                if(!no_simp)
-                    sysres=system("./simp.py");
-
-                /* for(int lod=0; lod <= vpblod; lod ++){
+                for(int lod=0; lod <= vpblod; lod ++){
                     std::vector<string> level;
 
                     //   for(int i=0; i <(int)cells.size(); i++){
@@ -2946,7 +2968,15 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
 
                     datalist_lod.push_back(level);
-                }*/
+                }
+#endif
+                fclose(simpcmds_fp);
+                string simpcmd="simp.py";
+                shellcm.write_generic(simpcmd,simpcmds_fn,"simp");
+                if(!no_simp)
+                    sysres=system("./simp.py");
+
+
 
 
                 if(!mgc)

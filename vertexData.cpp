@@ -192,6 +192,15 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex )
                                      "face which does not have 9 ids." );
             }
         }
+        MESHASSERT( face.texcoord != 0 );
+        if( (unsigned int)(face.nTex) < 2  )
+        {
+            free( face.texcoord );
+            printf("%d \n",face.nTex);
+
+            throw MeshException( "Error reading PLY file. Encountered a "
+                                 "face which does not have tex coord." );
+        }
         for(int k=0,f=0; k <face.nTex; k+=6){
             _texCoord[f]->push_back(osg::Vec3(face.texcoord[k],face.texcoord[k+1],-1));
             _texCoord[f]->push_back(osg::Vec3(face.texcoord[k+2],face.texcoord[k+3],-1));

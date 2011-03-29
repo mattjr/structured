@@ -35,7 +35,8 @@ struct IntersectKdTreeBbox
                         const osg::KdTree::TriangleList& triangles,bool multTex):
     _vertices(vertices),
     _kdNodes(nodes),
-    _triangles(triangles)
+    _triangles(triangles),
+    _new_texid(NULL)
     {
         _new_triangles =  new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
         _new_vertices = new osg::Vec3Array;

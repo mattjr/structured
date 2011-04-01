@@ -2788,7 +2788,6 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
                 if(!no_split)
                     sysres=system("./split.py");
-#ifdef SINGLE_MESH_TEX
 
                 std::vector<int > sizeStepTotal(vpblod+1);
 
@@ -2797,7 +2796,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     printf("%d\n",sizeStepTotal[j]);
 
                 }
-#else
+
                 double minFrac=0.2;
                 std::vector<int> numFaces(vrip_cells.size(),0);
                 std::vector<double> resFrac(vrip_cells.size(),0);
@@ -2851,7 +2850,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     //                    sizeStep[i]=(int)round(numFaces[i]*resFrac);
                     //                 printf("Step size %d %f\n",sizeSteps[i],resFrac);
                 }
-#endif
+
                 string texcmds_fn="mesh-diced/texcmds";
 
                 FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
@@ -2889,9 +2888,9 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
 #endif
 
-                int sizeX=reimageSize.x()*_tileRows;
-                int adjustedSize=tileSize-(2*tileBorder);
-                int intDiv=sizeX/tileSize;
+                //int sizeX=reimageSize.x()*_tileRows;
+                //int adjustedSize=tileSize-(2*tileBorder);
+               // int intDiv=sizeX/tileSize;
                 //int embedSize=(intDiv* adjustedSize);
                 std::ostringstream p3;
                 // p3 << "vips " << " im_extract_area " << "out.tif "<< " tex.tif " << " 0 0 " <<  embedSize << " "<<embedSize<< ";";
@@ -2978,9 +2977,35 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     fprintf(simpcmds_fp,"\n");
                 }
                 vector<string> mergeandcleanCmdsSimp;
-                for(int i=vpblod-2; i >= 0; i--)
-                    mergeandcleanCmdsSimp.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"clipped-diced","total",vrip_res,i));
+                for(int i=vpblod-2; i >= 0; i--){
+                    char tmp8[8192];
+                    sprintf(tmp8,"mesh-diced/tmp-total-lod%d.ply",i);
+                    mergeandcleanCmdsSimp.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"clipped-diced","tmp-total",vrip_res,i));
+                   /* osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmp8);
+                    assert(model.valid());
+                    if(!model.valid()){
+                        OSG_ALWAYS<<"No valid model ";
+                        exit(-1);
+                    }
+                    osg::Drawable *drawable = model->asGeode()->getDrawable(0);
+                    osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+                    int faces=geom->getPrimitiveSet(0)->getNumPrimitives();
+                    if(faces > sizeStepTotal[i]){*/
+                    if(1){
+                        char srcfile[1024];
+                        if(i==vpblod-2)
+                           sprintf(srcfile,"tmp-total-lod%d.ply",i);
+                        else
+                            sprintf(srcfile,"total-lod%d.ply",i+1);
 
+                           sprintf(tmp8,"cd %s/mesh-diced;time %s/texturedDecimator/bin/%s %s total-lod%d.ply %d -By -P;",
+                                cwd,
+                                basepath.c_str(),
+                                app.c_str(),
+                               srcfile,i,sizeStepTotal[i]);
+                        mergeandcleanCmdsSimp.push_back(tmp8);
+                    }
+                }
                 for(int lod=0; lod <= vpblod; ){
                     std::vector<string> level;
                     if(datalist_lod.size() >3)

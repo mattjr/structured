@@ -49,7 +49,14 @@ int main(int argc ,char**argv){
     CMeshO cm;
     int err=tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1]);
 
-
+    if(!tri::HasPerWedgeTexCoord(cm))
+    {
+        printf("Warning: nothing have been done. Mesh has no Texture.\n");
+        return false;
+    }
+    if ( ! tri::Clean<CMeshO>::HasConsistentPerWedgeTexCoord(cm) ) {
+        printf( "Mesh has some inconsistent tex coords (some faces without texture)\n");
+    }
 
     //vcg::tri::UpdateTopology<CMeshO>::FaceFace(cm);
     // vcg::tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
@@ -62,12 +69,12 @@ int main(int argc ,char**argv){
 
 
      int total = tri::Clean<CMeshO>::MergeCloseVertex(cm, threshold);
-    bool binaryFlag =false;
+    bool binaryFlag =true;
 
     vcg::tri::io::PlyInfo pi;
     if(tex)
      pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
-    int result = tri::io::ExporterPLY<CMeshO>::Save(cm,outfile.c_str(),binaryFlag);
+    int result = tri::io::ExporterPLY<CMeshO>::Save(cm,outfile.c_str(),binaryFlag,pi);
     if(result !=0) {
         fprintf(stderr,"Unable to open write %s : '%s'\n",outfile.c_str(),vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result));
         exit(-1);

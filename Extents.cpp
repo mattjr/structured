@@ -744,8 +744,9 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
         }
     }
 
-    cutOffDistance = osg::maximum(cutOffDistance,(float)(pagedLOD->getBound().radius()*_dataSet->getRadiusToMaxVisibleDistanceRatio()));
-
+    cutOffDistance =(pagedLOD->getBound().radius()*_dataSet->getRadiusToMaxVisibleDistanceRatio());// osg::maximum(cutOffDistance,(float)(pagedLOD->getBound().radius()*_dataSet->getRadiusToMaxVisibleDistanceRatio()));
+printf("AP Level %d Cutoff distance %f Radius %f \n",_level,cutOffDistance,pagedLOD->getBound().radius());
+cout << "AP Center " <<pagedLOD->getBound().center()<<std::endl;
     pagedLOD->setRange(0,cutOffDistance,farDistance);
 
     pagedLOD->setFileName(1,getExternalSubTileName());

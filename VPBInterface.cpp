@@ -77,7 +77,7 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
     return true;
 }
 #endif
-void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cachedDirs,bool useTextureArray,bool useReimage,bool useVirtualTex){
+void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cachedDirs,bool useTextureArray,bool useReimage,bool useVirtualTex,const osg::BoundingBox &bbox){
     //vector<osg::KdTree*> trees;
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
@@ -92,6 +92,10 @@ void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datal
     vpb::ImageOptions *imageOptions = new vpb::ImageOptions();
     imageOptions->setTextureType(vpb::ImageOptions::RGBA);
     m->setLayerImageOptions(0,imageOptions);
+  //  m->setMaximumVisibleDistanceOfTopLevel(1e11);
+    if(useVirtualTex)
+        m->setRadiusToMaxVisibleDistanceRatio(7);
+else
     m->setRadiusToMaxVisibleDistanceRatio(7);
 
     m->setDestinationName("real.ive");

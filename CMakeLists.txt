@@ -382,7 +382,7 @@ ADD_EXECUTABLE( dicedImage dicedImage.cpp )
 ADD_EXECUTABLE(deepzoomVIPS DeepZoom.cpp)
 ADD_EXECUTABLE(singleImageTex singleImageTex.cpp)
 
-ADD_EXECUTABLE( bin/mergeMesh mergeMesh/mergeMesh.cpp mergeMesh/plylib.cpp)
+#ADD_EXECUTABLE( bin/mergeMesh mergeMesh/mergeMesh.cpp mergeMesh/plylib.cpp)
 #ADD_EXECUTABLE( bin/texturedDecimator mergeMesh/texturedDecimator.cpp mergeMesh/plylib.cpp mergeMesh/quadric_simp.cpp mergeMesh/quadric_tex_simp.cpp)
 
 LINK_LIBRARIES(osgTerrain vpbd osgFX osg spatialindex vips vipsCC)

@@ -1026,10 +1026,10 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
     if(!fp)
         std::cerr << "Failed!\n";
     fprintf(fp,"#!/bin/bash\n");
-    fprintf(fp,"vips im_vips2tiff subtile.v out.tif:none:tile:256x256\n");
+    fprintf(fp,"vips im_vips2tiff subtile.v tex.tif:none:tile:256x256\n");
 
 
-    fprintf(fp,"gdal_translate %s out.tif geo_tif.tif\n",gdal_param);
+    fprintf(fp,"gdal_translate %s tex.tif geo_tif.tif\n",gdal_param);
     fchmod(fileno(fp),0777);
     fclose (fp);
     //gdalwarp  -t_srs '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs' geo_tif2.tif utm.tif

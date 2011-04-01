@@ -1,11 +1,36 @@
-#include <osg/ArgumentParser>
+#if 1
+#include <vector>
+#include <limits>
+
 #include <stdio.h>
+#include <stdlib.h>
+
+using namespace std;
+
+// stuff to define the mesh
+#include <vcg/simplex/vertex/base.h>
+#include <vcg/simplex/face/base.h>
+#include <vcg/simplex/edge/base.h>
+#include <vcg/complex/trimesh/base.h>
+
+#include <vcg/math/quadric.h>
 #include <vcg/complex/trimesh/clean.h>
-#include <wrap/io_trimesh/import_ply.h>
+#include <vcg/container/simple_temporary_data.h>
+// io
+#include <wrap/io_trimesh/import.h>
 #include <wrap/io_trimesh/export_ply.h>
 
+// update
+#include <vcg/complex/trimesh/update/topology.h>
+
+// local optimization
+#include <vcg/complex/local_optimization.h>
+#include <vcg/complex/local_optimization/tri_edge_collapse_quadric.h>
 #include "meshmodel.h"
+#include <osg/Vec2>
+#include "TexturingQuery.h"
 using namespace vcg;
+using namespace tri;
 
 int main(int argc ,char**argv){
     osg::ArgumentParser argp(&argc,argv);
@@ -20,11 +45,9 @@ int main(int argc ,char**argv){
     argp.read("-thresh",threshold);
     argp.read("-out",outfile);
     bool tex=argp.read("-tex");
-    vcg::tri::io::PlyInfo pi;
-    if(tex)
-     pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
+
     CMeshO cm;
-    int err=tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1],pi);
+    int err=tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1]);
 
 
 
@@ -41,10 +64,13 @@ int main(int argc ,char**argv){
      int total = tri::Clean<CMeshO>::MergeCloseVertex(cm, threshold);
     bool binaryFlag =false;
 
-
+    vcg::tri::io::PlyInfo pi;
+    if(tex)
+     pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
     int result = tri::io::ExporterPLY<CMeshO>::Save(cm,outfile.c_str(),binaryFlag);
     if(result !=0) {
         fprintf(stderr,"Unable to open write %s : '%s'\n",outfile.c_str(),vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result));
         exit(-1);
     }
 }
+#endif

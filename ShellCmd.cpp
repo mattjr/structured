@@ -280,3 +280,31 @@ void ShellCmd::pos_simp_cmd(bool run){
   
 }
 
+string ShellCmd::generateMergeAndCleanCmd(vector<Cell_Data>vrip_cells,string basename,string outname,double vrip_res,int lod){
+   char tmp100[8096];
+   string tcmd;
+   tcmd =basepath+string("/vrip/bin/plymerge ");
+   for(int i=0; i <(int)vrip_cells.size(); i++){
+       if(vrip_cells[i].poses.size() == 0)
+           continue;
+       if(lod>=0)
+           sprintf(tmp100, " mesh-diced/%s-%08d-lod%d.ply ",basename.c_str(),i,lod);
+       else
+           sprintf(tmp100, " mesh-diced/%s-%08d.ply ",basename.c_str(),i);
+       tcmd+=tmp100;
+   }
+   if(lod >=0)
+   sprintf(tmp100, " > mesh-diced/%s-unmerged-lod%d.ply ;",outname.c_str(),lod);
+else
+    sprintf(tmp100, " > mesh-diced/%s-unmerged.ply ;",outname.c_str());
+
+   tcmd+= tmp100;
+   if(lod >=0)
+       sprintf(tmp100,"  %s/texturedDecimator/bin/mergeMesh mesh-diced/%s-unmerged-lod%d.ply -thresh %f -out mesh-diced/%s-lod%d.ply",basepath,outname.c_str(),lod,0.9*vrip_res,outname.c_str(),lod);
+   else
+       sprintf(tmp100,"  %s/texturedDecimator/bin/mergeMesh mesh-diced/%s-unmerged.ply -thresh %f -out mesh-diced/%s.ply",basepath,outname.c_str(),0.9*vrip_res,outname.c_str());
+
+   tcmd+=tmp100;
+
+   return tcmd;
+}

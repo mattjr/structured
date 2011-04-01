@@ -110,6 +110,8 @@ IF( NOT GLUT_FOUND )
    MESSAGE( FATAL_ERROR  "ERROR - Can't find GLUT" )
 ENDIF( NOT GLUT_FOUND )
 ADD_EXECUTABLE( tridecimator  tridecimator.cpp  ${SRCS} )
+
+ADD_EXECUTABLE( mergeMesh mergeMesh.cpp ${SRCS} )
 ADD_EXECUTABLE( texturedDecimator  texturedDecimator.cpp ${SRCS} )
 TARGET_LINK_LIBRARIES(texturedDecimator ts)
 #ADD_EXECUTABLE( shadevis shadevis/shadevis.cpp plylib.cpp ./vcg/wrap/gui/trackball.cpp ./vcg/wrap/gui/trackmode.cpp   )

@@ -10,6 +10,17 @@
 #include <osg/ComputeBoundsVisitor>
 #include <osgViewer/Viewer>
 #include <osgGA/TrackballManipulator>
+#include <osgGA/FlightManipulator>
+#include <osgGA/DriveManipulator>
+#include <osgGA/KeySwitchMatrixManipulator>
+#include <osgGA/StateSetManipulator>
+#include <osgGA/AnimationPathManipulator>
+#include <osgGA/TerrainManipulator>
+#include <osgGA/SphericalManipulator>
+
+#include <iostream>
+
+#include <osgGA/TrackballManipulator>
 int main( int argc, char **argv )
 {
     // use an ArgumentParser object to manage the program arguments.
@@ -19,7 +30,7 @@ int main( int argc, char **argv )
     osg::Node* model = osgDB::readNodeFiles(arguments);
     //osg::Geode *newGeode= convertModel(model->asGroup());
     //osgDB::writeNodeFile(*newGeode,"test.ive");
-
+osgGA::TrackballManipulator *tb=new osgGA::TrackballManipulator() ;
 #if 0
     osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
     model->traverse(cbbv);
@@ -48,13 +59,22 @@ int main( int argc, char **argv )
    // osg::Matrixd proj= osg::Matrixd::ortho2D(centeredMin[0],centeredMax[0],centeredMin[1],centeredMax[1]);
     osg::Matrixd proj= osg::Matrixd::ortho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());//centeredMin[1],centeredMax[1],centeredMin[0],centeredMax[0]);
 #endif
+viewer.setCameraManipulator(tb);
+// add the state manipulator
+   viewer.addEventHandler( new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()) );
+
+   // add the thread model handler
+   //viewer.addEventHandler(new osgViewer::ThreadingHandler);
+
+   // add the window size toggle handler
+   //viewer.addEventHandler(new osgViewer::WindowSizeHandler);
 
 viewer.setSceneData(model);
     //viewer.getCamera()->setProjectionMatrix(proj);
     //viewer.getCamera()->setViewMatrix(view);
 osg::BoundingSphere bs=model->getBound();
 std::cout << "Bounding " << bs.center()<<"\n";
-osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+/*osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
 model->traverse(cbbv);
 osg::BoundingBox totalbb = cbbv.getBoundingBox();
 std::cout << totalbb._min << " "<<totalbb._max<<std::endl;
@@ -75,6 +95,11 @@ std::cout << osg::Matrix::inverse(matrix) << " "<< mat<<std::endl;
 
 while(!viewer.done()){
 viewer.frame();
+
+}*/
+while(!viewer.done()){
+viewer.frame();
+std::cout << "Distance: "<< tb->getDistance()<<std::endl;
 
 }
 //viewer.run();

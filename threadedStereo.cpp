@@ -54,6 +54,7 @@ static int meshNum;
 static double start_time = 0.0;
 static bool apply_aug=false;
 static double stop_time = numeric_limits<double>::max();
+static int vpblod_override=0;
 //
 // Command-line arguments
 //
@@ -61,7 +62,6 @@ using namespace std;
 int proj_tex_size;
 int poster_tiles=40;
 static bool rugosity=false;
-static int vpblod=3;
 
 static int dist_gentex_range=0;
 static int vrip_split;
@@ -86,10 +86,13 @@ static double longOrigin,latOrigin;
 static bool interp_quad=false;
 static int _tileRows;
 static int _tileColumns;
+static int targetFaces=40000;
 static bool run_pos=false;
 static bool do_novelty=false;
 static double dense_scale;
 static bool no_tex=false;
+static bool no_vttex=false;
+
 static vector<string> mb_xyz_files;
 static int desired_area=250.0;
 static bool have_max_frame_count = false;
@@ -113,7 +116,6 @@ static bool have_cov_file=false;
 static string stereo_calib_file_name;
 static bool no_simp=true;
 static bool no_split=false;
-static  vector<double>simp_res(255);
 static FILE *uv_fp;
 static ofstream file_name_list;
 static string base_dir;
@@ -198,7 +200,7 @@ static int overlap=50;
 static   double local_easting, local_northing;
 using mapnik::Envelope;
 Envelope<double> total_env;
-osg::Vec2 reimageSize(4096,4096);
+osg::Vec2 reimageSize(1024,1024);
 int pos_lod0_min_depth,pos_lod2_min_depth;
 int pos_lod0_depth,pos_lod2_depth;
 void runC(Stereo_Pose_Data &name);
@@ -294,6 +296,8 @@ void print_uv_3dpts( list<Feature*>          &features,
     fprintf(uv_fp,"\n");
 }
 
+
+
 typedef struct _class_id_t{
     int class_id;
     string name;
@@ -372,6 +376,16 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--bkmb",background_mb);
     argp.read("--overlap",overlap);
     argp.read("--reimageres",reimageSize.x(),reimageSize.y());
+    for(int i=0; i< 2; i++){
+        if(osg::Image::computeNearestPowerOfTwo(reimageSize[i]) != reimageSize[i]){
+            fprintf(stderr,"Clamping reimage %d res %f to ",i,reimageSize[i]);
+            reimageSize[i]=osg::Image::computeNearestPowerOfTwo(reimageSize[i]);
+            fprintf(stderr,"%f\n ",reimageSize[i]);
+
+        }
+    }
+
+
 
     if(argp.read("--noarray"))
         useTextureArray=false;
@@ -479,9 +493,9 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("CC_CLEAN_SIZE",connected_comp_size_clean,5.0);
     recon_config_file->get_value("EXTRA_CLEAN",further_clean,false);
     recon_config_file->get_value("CLEAN_POS_PTS",clean_pos_pts,false);
-    recon_config_file->get_value("SIMP_RES_1",simp_res[0],0.005);
+    /*recon_config_file->get_value("SIMP_RES_1",simp_res[0],0.005);
     recon_config_file->get_value("SIMP_RES_2",simp_res[1],0.1);
-    recon_config_file->get_value("SIMP_RES_3",simp_res[2],0.5);
+    recon_config_file->get_value("SIMP_RES_3",simp_res[2],0.5);*/
     recon_config_file->get_value("DIST_GENTEX_RANGE",dist_gentex_range,10);
     recon_config_file->get_value("POS_LOD2_MIN_DEPTH",pos_lod2_min_depth,6);
     recon_config_file->get_value("POS_LOD2_DEPTH",pos_lod2_depth,8);
@@ -524,7 +538,7 @@ static bool parse_args( int argc, char *argv[ ] )
         mb_ply_filenames.push_back(mbfile) ;
 
     argp.read( "--monoskip" ,mono_skip);
-    argp.read( "--vpblod" ,vpblod);
+    argp.read( "--vpblod" ,vpblod_override);
 
     if(argp.read(  "--noposclip"))
         pos_clip=false;
@@ -579,17 +593,22 @@ static bool parse_args( int argc, char *argv[ ] )
         even_split= true;
     argp.read("--cellscale",cell_scale );
 
-    for(int i=0; i<= vpblod; i++){
+    if(!useVirtTex){
+        for(int i=0; (lodTexSize[0]/pow(2,i)) >= 8; i++){
+            char tmppp[1024];
+            int size=lodTexSize[0]/pow(2,i);
+            if(size <8)
+                continue;
+            sprintf(tmppp,"cache-tex-%d/",size);
+            cachedtexdir.push_back(make_pair<string,int> (string(tmppp),size));
+            if(i==0 && reimage)
+                break;
+        }
+    }else{
         char tmppp[1024];
-        int size=lodTexSize[0]/pow(2,i);
-        if(size <8)
-            continue;
-        sprintf(tmppp,"cache-tex-%d/",size);
-        cachedtexdir.push_back(make_pair<string,int> (string(tmppp),size));
-        if(i==0 && reimage)
-            break;
+        sprintf(tmppp,"cache-tex-%d/",lodTexSize[0]);
+        cachedtexdir.push_back(make_pair<string,int> (string(tmppp),lodTexSize[0]));
     }
-
 
     if(argp.read("--pos")){
         vrip_on=false;
@@ -714,7 +733,8 @@ static bool parse_args( int argc, char *argv[ ] )
     if(argp.read("--notex"))
         no_tex=true;
 
-
+    if(argp.read("--novttex"))
+        no_vttex=true;
     no_merge=argp.read("--nomerge");
     if(no_merge){
         run_pos = false;
@@ -753,12 +773,8 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
     recon_config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
     recon_config_file->set_value( "SD_SHOW_DEBUG_IMAGES"  , display_debug_images );
-    simp_res[0]=0.1;
-    simp_res[1]=0.1;
-    simp_res[2]=0.1;
 
-    for(int i=3;i < vpblod; i++)
-        simp_res[i]=0.2;//(simp_res[i-1]*1.2);
+
     if (argp.errors())
     {
         argp.writeErrorMessages(std::cout);
@@ -2568,8 +2584,9 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 }
 
                 vector<string> mergeandcleanCmds;
+                mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"tmp-clipped-diced","total",vrip_res));
                 //mergeandcleanCmds.push_back("cd mesh-diced;");
-                char tmp100[8096];
+           /*     char tmp100[8096];
                 string tcmd;
                 tcmd =basepath+"/vrip/bin/plymerge ";
                 for(int i=0; i <(int)vrip_cells.size(); i++){
@@ -2582,7 +2599,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 sprintf(tmp100,"  %s/bin/mergeMesh mesh-diced/total-unmerged.ply -thresh %f -out mesh-diced/total.ply",basepath.c_str(),0.9*vrip_res);
                 tcmd+=tmp100;
                 mergeandcleanCmds.push_back(tcmd);
-
+*/
                 string vripcmd="runvrip.py";
                 shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip",NULL,&mergeandcleanCmds);
                 if(!no_vrip)
@@ -2625,6 +2642,13 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     totalbb = cbbv.getBoundingBox();
 
                 }
+
+                int vpblod=1;
+                int faceTmp=numberFacesAll;
+                do{
+                    faceTmp /= pow(4,vpblod++);
+                }while(faceTmp > targetFaces);
+                std::cout << "Target LOD height is : " << vpblod <<std::endl;
 
                 osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
                 osg::Matrixd matrix;
@@ -2774,7 +2798,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 }
 #else
-                double minFrac=0.02;
+                double minFrac=0.2;
                 std::vector<int> numFaces(vrip_cells.size(),0);
                 std::vector<double> resFrac(vrip_cells.size(),0);
                 std::vector<double> cur_res(vrip_cells.size(),0);
@@ -2848,12 +2872,14 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 }
                 fclose(texcmds_fp);
+                int tileBorder=1;
 
                 string texcmd="tex.py";
                 vector<std::string> postcmdv;
                 std::ostringstream p;
+                int tileSize=256;
 
-                p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << (int)reimageSize.x() << " "<< (int)reimageSize.y() << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
+                p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << (int)reimageSize.x()-((reimageSize.x()/tileSize)*2*tileBorder) << " "<< (int)reimageSize.y()-((reimageSize.y()/tileSize)*2*tileBorder)  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
                 postcmdv.push_back(p.str());
 #if SINGLE_MESH_TEX
                 std::ostringstream p2;
@@ -2864,14 +2890,13 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 #endif
 
                 int sizeX=reimageSize.x()*_tileRows;
-                int tileSize=256;
-                int tileBorder=1;
                 int adjustedSize=tileSize-(2*tileBorder);
-                int embedSize=sizeX- (sizeX % adjustedSize);
+                int intDiv=sizeX/tileSize;
+                //int embedSize=(intDiv* adjustedSize);
                 std::ostringstream p3;
-                p3 << "vips " << " im_extract_area " << "out.tif "<< " tex.tif " << " 0 0 " <<  embedSize << " "<<embedSize<< ";";
+                // p3 << "vips " << " im_extract_area " << "out.tif "<< " tex.tif " << " 0 0 " <<  embedSize << " "<<embedSize<< ";";
 
-                p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b=1 tex.tif ";
+                p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" tex.tif ";
                 postcmdv.push_back(p3.str());
 
                 shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,&(postcmdv),num_threads);
@@ -2884,15 +2909,15 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                     FILE *vttexcmds_fp=fopen(vttexcmds_fn.c_str(),"w");
                     for(int i=0; i <(int)vrip_cells.size(); i++){
-                    if(vrip_cells[i].poses.size() == 0)
-                        continue;
+                        if(vrip_cells[i].poses.size() == 0)
+                            continue;
                         fprintf(vttexcmds_fp,"%s/singleImageTex mesh-diced/clipped-diced-%08d.ply --outfile mesh-diced/clipped-diced-%08d-lod%d.ply\n",
                                 basepath.c_str(),
                                 i,i,vpblod);
                     }
                     fclose(vttexcmds_fp);
                     shellcm.write_generic(vttex,vttexcmds_fn,"VT Tex",NULL,NULL,num_threads);
-                    if(!no_tex)
+                    if(!no_vttex)
                         sysres=system("./vttex.py");
 
                 }
@@ -2952,10 +2977,14 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     }
                     fprintf(simpcmds_fp,"\n");
                 }
+                vector<string> mergeandcleanCmdsSimp;
+                for(int i=vpblod-2; i >= 0; i--)
+                    mergeandcleanCmdsSimp.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"clipped-diced","total",vrip_res,i));
 
-                for(int lod=0; lod <= vpblod; lod ++){
+                for(int lod=0; lod <= vpblod; ){
                     std::vector<string> level;
-
+                    if(datalist_lod.size() >3)
+                        lod ++;
                     //   for(int i=0; i <(int)cells.size(); i++){
                     //     if(cells[i].images.size() == 0)
                     for(int i=0; i <(int)vrip_cells.size(); i++){
@@ -2972,7 +3001,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 #endif
                 fclose(simpcmds_fp);
                 string simpcmd="simp.py";
-                shellcm.write_generic(simpcmd,simpcmds_fn,"simp");
+                shellcm.write_generic(simpcmd,simpcmds_fn,"simp",NULL,&mergeandcleanCmdsSimp);
                 if(!no_simp)
                     sysres=system("./simp.py");
 
@@ -2983,7 +3012,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     mgc = new MyGraphicsContext();
                 bool useVirtTex=true;
                 bool useReimage=false;
-                doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex);
+                doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb);
 
 
                 vector<string> gentexnames;

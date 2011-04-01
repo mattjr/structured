@@ -13,6 +13,8 @@ public:
   void write_generic(string filename, string cmdfile,string cmdname="Cmds",const vector<string> *precmds =NULL, const vector<string> *postcmds=NULL,int thread_override=0);
   void pos_simp_cmd(bool run);
  void pos_simp_cmd2(bool run);
+ std::string generateMergeAndCleanCmd(std::vector<Cell_Data>vrip_cells,std::string basename,std::string outname,double vrip_res,int lod=-1);
+
   const char *basepath;
   float simp_mult;
   const char *pos_simp_log_dir;

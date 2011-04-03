@@ -209,6 +209,14 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::Bound
 
                         continue;
                     }
+                }else if(mode == DUMP){
+                    if(clipbox.contains(v0))
+                        _gapPts->push_back(v0);
+                    if(clipbox.contains(v1))
+                        _gapPts->push_back(v1);
+                    if(clipbox.contains(v2))
+                        _gapPts->push_back(v2);
+                    continue;
                 }//else DUP INCLUDE THESE FACES IN BOTH BOXES
 
             }
@@ -277,9 +285,9 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
             }
             osg::Vec4 id0,id1,id2;
             if(numTC > 1){
-                 id0 = (*_texid)[tri.p0];
-                 id1 = (*_texid)[tri.p1];
-                 id2 = (*_texid)[tri.p2];
+                id0 = (*_texid)[tri.p0];
+                id1 = (*_texid)[tri.p1];
+                id2 = (*_texid)[tri.p2];
                 assert(id0[0]  == id1[0] && id0[0] == id2[0]);
             }
             //printf("%f\n",id0[0]);
@@ -334,6 +342,14 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
 
                         continue;
                     }
+                }else if(mode == DUMP){
+                    if(clipbox.contains(v0))
+                        _gapPts->push_back(v0);
+                    if(clipbox.contains(v1))
+                        _gapPts->push_back(v1);
+                    if(clipbox.contains(v2))
+                        _gapPts->push_back(v2);
+                    continue;
                 }//else DUP INCLUDE THESE FACES IN BOTH BOXES
 
             }
@@ -383,4 +399,58 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
             }
         }
     }
+}
+osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &overlapmode,osg::Vec3Array *&dumpPts,bool multTex) const
+
+{
+    if (_kdNodes.empty())
+    {
+        OSG_NOTICE<<"Warning: _kdTree is empty"<<std::endl;
+        return false;
+    }
+
+
+
+    IntersectKdTreeBbox intersector(*_vertices,
+                                    _kdNodes,
+                                    _triangles,multTex
+                                    );
+    osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
+    osg::Geometry *new_geom=new osg::Geometry;
+    newGeode->addDrawable(new_geom);
+    intersector.intersect(getNode(0), bbox,overlapmode);
+    new_geom->addPrimitiveSet(intersector._new_triangles);
+    new_geom->setVertexArray(intersector._new_vertices);
+    dumpPts=intersector._gapPts;
+
+    return newGeode;
+}
+osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,osg::Vec4Array *ids, const TexBlendCoord &texcoord,TexBlendCoord  &new_texcoord,
+                                              osg::ref_ptr<osg::Vec4Array> &new_ids,
+                                              const IntersectKdTreeBbox::OverlapMode &overlapmode) const
+
+{
+    if (_kdNodes.empty())
+    {
+        OSG_NOTICE<<"Warning: _kdTree is empty"<<std::endl;
+        return false;
+    }
+
+
+
+    IntersectKdTreeBbox intersector(*_vertices,
+                                    _kdNodes,
+                                    _triangles,
+                                    (ids != NULL));
+    osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
+    osg::Geometry *new_geom=new osg::Geometry;
+    newGeode->addDrawable(new_geom);
+    intersector.intersect(getNode(0),ids,texcoord, bbox,overlapmode);
+    new_geom->addPrimitiveSet(intersector._new_triangles);
+    new_geom->setVertexArray(intersector._new_vertices);
+    new_texcoord=intersector._new_texcoords;
+    new_ids=intersector._new_texid;
+    //        if(intersector._new_vertices->size())
+    return newGeode;
+    //      return NULL;
 }

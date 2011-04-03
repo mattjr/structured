@@ -47,6 +47,7 @@ struct IntersectKdTreeBbox
         }
         if(multTex)
             _new_texid = new osg::Vec4Array;
+        _gapPts=new osg::Vec3Array;
 
     }
     /* ~IntersectKdTreeBbox(){
@@ -59,7 +60,8 @@ struct IntersectKdTreeBbox
     enum OverlapMode{
         GAP,
         DUP,
-        CUT
+        CUT,
+        DUMP
 
     };
 
@@ -75,6 +77,7 @@ struct IntersectKdTreeBbox
     osg::Vec3Array *   _new_vertices;
     TexBlendCoord  _new_texcoords;
     osg::Vec4Array *   _new_texid;
+    osg::Vec3Array *_gapPts;
 
 
 
@@ -89,58 +92,12 @@ class KdTreeBbox : public osg::KdTree {
 
 public:
     KdTreeBbox(const KdTree& rhs) : KdTree(rhs){}
-    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &overlapmode,bool multTex) const
-    {
-        if (_kdNodes.empty())
-        {
-            OSG_NOTICE<<"Warning: _kdTree is empty"<<std::endl;
-            return false;
-        }
-
-
-
-        IntersectKdTreeBbox intersector(*_vertices,
-                                        _kdNodes,
-                                        _triangles,multTex
-                                        );
-        osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
-        osg::Geometry *new_geom=new osg::Geometry;
-        newGeode->addDrawable(new_geom);
-        intersector.intersect(getNode(0), bbox,overlapmode);
-        new_geom->addPrimitiveSet(intersector._new_triangles);
-        new_geom->setVertexArray(intersector._new_vertices);
-
-        return newGeode;
-    }
+    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &overlapmode,osg::Vec3Array *&dumpPts,bool multTex) const;
 
     osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,osg::Vec4Array *ids, const TexBlendCoord &texcoord,TexBlendCoord  &new_texcoord,
                                       osg::ref_ptr<osg::Vec4Array> &new_ids,
-                                      const IntersectKdTreeBbox::OverlapMode &overlapmode) const
-    {
-        if (_kdNodes.empty())
-        {
-            OSG_NOTICE<<"Warning: _kdTree is empty"<<std::endl;
-            return false;
-        }
+                                      const IntersectKdTreeBbox::OverlapMode &overlapmode) const;
 
-
-
-        IntersectKdTreeBbox intersector(*_vertices,
-                                        _kdNodes,
-                                        _triangles,
-                                        (ids != NULL));
-        osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
-        osg::Geometry *new_geom=new osg::Geometry;
-        newGeode->addDrawable(new_geom);
-        intersector.intersect(getNode(0),ids,texcoord, bbox,overlapmode);
-        new_geom->addPrimitiveSet(intersector._new_triangles);
-        new_geom->setVertexArray(intersector._new_vertices);
-        new_texcoord=intersector._new_texcoords;
-        new_ids=intersector._new_texid;
-//        if(intersector._new_vertices->size())
-            return newGeode;
-  //      return NULL;
-    }
 };
 
 

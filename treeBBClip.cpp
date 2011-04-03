@@ -5,13 +5,15 @@
 #include <osgUtil/SmoothingVisitor>
 #include "PLYWriterNodeVisitor.h"
 #include <osgUtil/Optimizer>
-
+#include <osgUtil/DelaunayTriangulator>
+#include <osg/Point>
 void addDups(osg::Geode *geode);
 using namespace std;
 int main( int argc, char **argv )
 {
     // use an ArgumentParser object to manage the program arguments.
     osg::ArgumentParser arguments(&argc,argv);
+    string outdump;
 
     // set up the usage document, in case we need to print out how to use this program.
     arguments.getApplicationUsage()->setDescription(arguments.getApplicationName() +" is the example which demonstrates Depth Peeling");
@@ -25,11 +27,13 @@ int main( int argc, char **argv )
         mode=IntersectKdTreeBbox::DUP;
     else if(arguments.read("-cut"))
         mode=IntersectKdTreeBbox::CUT;
-    else{
-        cerr << "Must be -gap or  -dup  or -cut \n";
+    else if(arguments.read("-dump",outdump)){
+        mode=IntersectKdTreeBbox::DUMP;
+
+    }else{
+        cerr << "Must be -gap or  -dup  or -cut or  -dump\n";
         return -1;
     }//  arguments.reportRemainingOptionsAsUnrecognized();
-
 
     // report any errors if they have occurred when parsing the program arguments.
     if (arguments.errors())
@@ -56,12 +60,11 @@ int main( int argc, char **argv )
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
     osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(arguments[1]);
     osg::ref_ptr<osg::Node> root;
-    bool result = false;
-
-   // do
+    osg::Vec3Array *dumpPts=NULL;
+    // do
 
     //while(result);
-        if(model.valid()){
+    if(model.valid()){
         osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
         if(!geode)
             geode=model->asGroup()->getChild(0)->asGeode();
@@ -70,7 +73,7 @@ int main( int argc, char **argv )
             osg::KdTree *kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
             if(kdTree){
                 KdTreeBbox *kdtreeBbox=new KdTreeBbox(*kdTree);
-                root=kdtreeBbox->intersect(bb,mode,false);
+                root=kdtreeBbox->intersect(bb,mode,dumpPts,false);
             }
         }else{
             OSG_ALWAYS << "Model can't be converted to geode\n";
@@ -82,6 +85,30 @@ int main( int argc, char **argv )
         exit(-1);
     }
 
+    if( mode==IntersectKdTreeBbox::DUMP){
+        // create triangulator and set the points as the area
+        if(!dumpPts || !dumpPts->size()){
+            OSG_ALWAYS << "Dump pts don't exist\n";
+        }else{
+           /* osg::ref_ptr<osgUtil::DelaunayTriangulator> trig = new osgUtil::DelaunayTriangulator();
+            trig->setInputPointArray(dumpPts);
+            trig->triangulate();*/
+            osg::Geometry* gm = new osg::Geometry;
+            gm->setVertexArray(dumpPts);
+            gm->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS,0,dumpPts->size()));
+         //   gm->addPrimitiveSet(trig->getTriangles());
+            osg::Vec4Array* colors = new osg::Vec4Array(1);
+            colors->push_back(osg::Vec4(rand()/(double) RAND_MAX,rand()/(double) RAND_MAX,rand()/(double) RAND_MAX,1));
+            gm->setColorArray(colors);
+            gm->setColorBinding(osg::Geometry::BIND_OVERALL);
+            //create geometry and add it to scene graph
+           // gm->getOrCreateStateSet()->setAttribute( new osg::Point( 3.0f ),osg::StateAttribute::ON );
+
+            osg::Geode* geode = new osg::Geode();
+            geode->addDrawable(gm);
+            osgDB::writeNodeFile(*geode,outdump);
+        }
+    }
     if(osgDB::getFileExtension(outfilename) == "ply"){
         std::ofstream f(outfilename.c_str());
         PLYWriterNodeVisitor nv(f);
@@ -92,4 +119,5 @@ int main( int argc, char **argv )
         root->accept(sv);
         osgDB::writeNodeFile(*root,outfilename);
     }
+
 }

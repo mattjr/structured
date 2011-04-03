@@ -368,6 +368,7 @@ ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} )
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
 ADD_EXECUTABLE( genTex genTex.cpp )
+
 ADD_EXECUTABLE( lodgen lodgen.cpp )
 ADD_EXECUTABLE( treeBBClip treeBBClip.cpp  )
 ADD_EXECUTABLE( simplifier simplifier.cpp)
@@ -395,6 +396,7 @@ TARGET_LINK_LIBRARIES( deepzoomVIPS  vips vipsCC)
 TARGET_LINK_LIBRARIES( monoDriver ts plankton vpbd  hmap gmt netcdf)
 
 TARGET_LINK_LIBRARIES( lodgen ts )
+
 TARGET_LINK_LIBRARIES( treeBBClip ts spatialindex )
 TARGET_LINK_LIBRARIES( calcTexCoord ts spatialindex vpbd vips vipsCC)
 TARGET_LINK_LIBRARIES( singleImageTex ts spatialindex vpbd vips vipsCC)

@@ -2272,14 +2272,14 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
             else
                 fprintf(vripcmds_fp,"cat ../%s | cut -f1 -d\" \" | xargs $BASEDIR/vrip/bin/plymerge > ../mesh-agg/seg-%08d.ply;",vrip_seg_fname,i);
 
-            fprintf(vripcmds_fp,"$BASEDIR/treeBBClip ../mesh-agg/seg-%08d.ply %f %f %f %f %f %f -dup --outfile ../mesh-diced/tmp-clipped-diced-%08d.ply;",
+            fprintf(vripcmds_fp,"$BASEDIR/treeBBClip ../mesh-agg/seg-%08d.ply %f %f %f %f %f %f -dump ../mesh-diced/gap-clipped-diced-%08d.ive --outfile ../mesh-diced/tmp-clipped-diced-%08d.ply;",
                     i,
                     vrip_cells[i].bounds.min_x,
                     vrip_cells[i].bounds.min_y,
                     -FLT_MAX,
                     vrip_cells[i].bounds.max_x,
                     vrip_cells[i].bounds.max_y,
-                    FLT_MAX,
+                    FLT_MAX,i,
                     i);
 
             if(have_mb_ply){
@@ -2584,22 +2584,38 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 }
 
                 vector<string> mergeandcleanCmds;
-                mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"tmp-clipped-diced","total",vrip_res));
+                //mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"tmp-clipped-diced","total",vrip_res));
                 //mergeandcleanCmds.push_back("cd mesh-diced;");
-           /*     char tmp100[8096];
+                string tcmd2;
+                char tmp100[8096];
+
+                tcmd2 =basepath+"/texturedDecimator/bin/triGap";
+
+                for(int i=0; i <(int)vrip_cells.size(); i++){
+                    if(vrip_cells[i].poses.size() == 0)
+                        continue;
+                    sprintf(tmp100, " mesh-diced/gap-clipped-diced-%08d.ive ",i);
+
+                  tcmd2+=tmp100;
+              }
+                tcmd2+= " --thresh 0.1 --outfile mesh-diced/gap-total.ply ";
+                mergeandcleanCmds.push_back(tcmd2);
+
                 string tcmd;
                 tcmd =basepath+"/vrip/bin/plymerge ";
                 for(int i=0; i <(int)vrip_cells.size(); i++){
                     if(vrip_cells[i].poses.size() == 0)
                         continue;
                     sprintf(tmp100, " mesh-diced/tmp-clipped-diced-%08d.ply ",i);
+
                     tcmd+=tmp100;
+
                 }
-                tcmd+= " > mesh-diced/total-unmerged.ply;";
+                tcmd+= " mesh-diced/gap-total.ply > mesh-diced/total-unmerged.ply;";
                 sprintf(tmp100,"  %s/bin/mergeMesh mesh-diced/total-unmerged.ply -thresh %f -out mesh-diced/total.ply",basepath.c_str(),0.9*vrip_res);
                 tcmd+=tmp100;
                 mergeandcleanCmds.push_back(tcmd);
-*/
+
                 string vripcmd="runvrip.py";
                 shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip",NULL,&mergeandcleanCmds);
                 if(!no_vrip)

@@ -79,6 +79,11 @@ int main( int argc, char **argv )
     osg::ref_ptr<osgUtil::DelaunayTriangulator> trig = new osgUtil::DelaunayTriangulator();
     osg::Geometry* gm = *geomList.begin();
     osg::Vec3Array *v=(osg::Vec3Array*)gm->getVertexArray();
+    FILE *fp=fopen("tmp.txt","w");
+    for(int i=0; i<v->size(); i++){
+        fprintf(fp,"%f %f\n",v->at(i)[0],v->at(i)[1]);
+    }
+    fclose(fp);
     std::cout << v->size()<<std::endl;
     trig->setInputPointArray(v);
     trig->triangulate();
@@ -107,7 +112,7 @@ int main( int argc, char **argv )
         osg::Vec3 e2 = v3-(v1);
                     double        area = 0.5 * (e1^e2).length();
 double thresh2=0.07;
-       printf("%f %f %f \n",dist1,dist2,dist3);
+    //   printf("%f %f %f \n",dist1,dist2,dist3);
 //        printf("area %f \n",area);
         if(!(dist1 > thresh || dist2 > thresh || dist3 > thresh))
        // if(area>thresh && !(dist1 > thresh2 || dist2 > thresh2 || dist3 > thresh2))
@@ -119,7 +124,7 @@ double thresh2=0.07;
         }
     }
     printf("Gheed %d\n",newDrawElem->getNumIndices());
-    gm->setPrimitiveSet(0,newDrawElem);
+    gm->setPrimitiveSet(0,origDrawElem);//newDrawElem);
     osg::Vec4Array* colors = new osg::Vec4Array(1);
     colors->push_back(osg::Vec4(rand()/(double) RAND_MAX,rand()/(double) RAND_MAX,rand()/(double) RAND_MAX,1));
     gm->setColorArray(colors);

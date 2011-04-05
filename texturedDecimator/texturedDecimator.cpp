@@ -181,9 +181,10 @@ int main(int argc ,char**argv){
 
 //exit(-1);
     if(CleaningFlag){
+        int dup2 = tri::Clean<CMeshO>::RemoveDuplicateFace(mesh);
         int dup = tri::Clean<CMeshO>::RemoveDuplicateVertex(mesh);
         int unref =  tri::Clean<CMeshO>::RemoveUnreferencedVertex(mesh);
-        printf("Removed %i duplicate and %i unreferenced vertices from mesh \n",dup,unref);
+        printf("Removed %i duplicate vetex %i duplicate faces  and %i unreferenced vertices from mesh \n",dup,dup2,unref);
     }
 
     if(!tri::HasPerWedgeTexCoord(mesh))

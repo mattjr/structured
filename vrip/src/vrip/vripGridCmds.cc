@@ -112,7 +112,7 @@ Vrip_NewGridRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[])
     int xdim, ydim, zdim, maxDim;
     float res;
     vec3f origin;
-
+ 
     if (argc != 3 && argc != 5 && argc != 6 && argc != 8) {
 	interp->result = "Usage: vrip_newgridrle <dim> [<dim> <dim>] <res> [<ox> <oy> <oz>]";
 	return TCL_ERROR;
@@ -140,6 +140,15 @@ Vrip_NewGridRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[])
 	origin[0] = atof(argv[5])-xdim*res/2;
 	origin[1] = atof(argv[6])-ydim*res/2;
 	origin[2] = atof(argv[7])-zdim*res/2;
+    printf("orig %f %f %f\n",origin[0],origin[1],origin[2]);
+
+	origin[0]=round(origin[0]/res)*res;
+	origin[1]=round(origin[1]/res)*res;
+	origin[2]=round(origin[2]/res)*res;
+	
+
+    printf("A %f %f %f\n",origin[0],origin[1],origin[2]);
+
     }
 
     if (backRLEGrid != NULL) {
@@ -153,7 +162,6 @@ Vrip_NewGridRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[])
     if (theDepthMap != NULL) {
 	delete theDepthMap;
     }
-
 
     backRLEGrid = new OccGridRLE(xdim, ydim, zdim, CHUNK_SIZE);
     backRLEGrid->resolution = res;

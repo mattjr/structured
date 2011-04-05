@@ -104,9 +104,9 @@ void MyDataSet::init()
 
     _newDestinationGraph = false;
     _useAtlas=false;
-    _useDisplayLists=false;
+    _useDisplayLists=true;
     _useBlending=true;
-    _useVBO=false;
+    _useVBO=true;
     _useTextureArray=true;
     _file.open("/tmp/scope.txt");
     readMatrix("rot.mat",rotMat);

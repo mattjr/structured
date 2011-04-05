@@ -2980,8 +2980,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                                     j+1,j, sizeStepTotal[j]);
 
                     }
-                    for(int lod=0; lod <= vpblod; lod ++){
+                    for(int lod=0; lod <= vpblod; ){
                         std::vector<string> level;
+                        if(datalist_lod.size() >3)
+                            lod ++;
+                        //for(int lod=0; lod <= vpblod; lod ++){
 
                         char tmp[1024];
                         sprintf(tmp,"mesh-diced/total-lod%d.ply",lod);//std::min(lod,2)
@@ -2989,8 +2992,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
 
                         datalist_lod.push_back(level);
-                    }
 
+                    }
                 }
 #else
                 for(int i=0; i <(int)vrip_cells.size(); i++){
@@ -3167,37 +3170,6 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     fclose(lodfp);
                     if(!no_gen_tex )
                         sysres=system("./lodgen.sh");
-                }
-
-                {
-                    char dicedir[2048];
-                    if(run_pos)
-                        strcpy(dicedir,"mesh-pos/");
-                    else
-                        strcpy(dicedir,"mesh-diced/");
-
-                    FILE *rgfp=fopen("poster.sh","w");
-                    fprintf(rgfp,"#!/bin/bash\necho 'Regen...\n'\nBASEPATH=%s/\nVRIP_HOME=$BASEPATH/vrip\nMESHAGG=$PWD/mesh-agg/\nexport VRIP_DIR=$VRIP_HOME/src/vrip/\nPATH=$PATH:$VRIP_HOME/bin\nRUNDIR=$PWD\nDICEDIR=$PWD/mesh-diced/\nmkdir -p $DICEDIR\n",basepath.c_str());
-                    /*fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
-		  "chmod 777 mesh-regen-tex\n"
-		  "cd mesh-regen-tex\n"
-		  "$BASEPATH/osgretex -pathfile ../mesh/campath.txt -config %s ../mesh/final.ive\n"
-		  "cd $RUNDIR\ntime $BASEPATH/genTex --regen --dicedir %s --margins 10 10 1000000000000000 %s -f %s\n"
-		  "$BASEPATH/lodgen --dicedir %s --mdir mesh-blend\n",
-		  recon_config_file_name.c_str(), dicedir,
-		  recon_config_file_name.c_str(),"mesh-regen-tex/",dicedir);*/
-                    fprintf(rgfp,"mkdir -p mesh-regen-tex\n"
-                            "chmod 777 mesh-regen-tex\n"
-                            "cd mesh-regen-tex\n"
-                            "$BASEPATH/poster/poster --color 1.0 1.0 1.0 --inactive --tilesize %d %d --finalsize %d %d --enable-output-heightmap --enable-output-poster --depth --origin %.18g %.18g --poster poster.tif --heightmap height.tif ../real.%s\n"
-
-                            ,proj_tex_size,proj_tex_size,proj_tex_size*poster_tiles,proj_tex_size*poster_tiles,latOrigin,longOrigin,OSG_EXT);/*recon_config_file_name.c_str(), recon_config_file_name.c_str(),proj_tex_size,stereo_calib_file_name.c_str(),dicedir,
-                  "mesh-regen-tex/",dicedir);*/
-
-                    fchmod(fileno(rgfp),0777);
-                    fclose (rgfp);
-                    if(poster)
-                        sysres=system("./poster.sh");
                 }
             }
         }

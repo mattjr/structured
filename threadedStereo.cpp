@@ -2271,7 +2271,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,vrip_ramp,i,i,redirstr);
             else
                 fprintf(vripcmds_fp,"cat ../%s | cut -f1 -d\" \" | xargs $BASEDIR/vrip/bin/plymerge > ../mesh-agg/seg-%08d.ply;",vrip_seg_fname,i);
-/*
+            /*
             fprintf(vripcmds_fp,"$BASEDIR/treeBBClip ../mesh-agg/seg-%08d.ply %f %f %f %f %f %f -dump ../mesh-diced/gap-clipped-diced-%08d.ive --outfile ../mesh-diced/tmp-clipped-diced-%08d.ply;",
                     i,
                     vrip_cells[i].bounds.min_x,
@@ -2597,7 +2597,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 vector<string> mergeandcleanCmds;
                 mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"tmp-clipped-diced","total",vrip_res));
                 //mergeandcleanCmds.push_back("cd mesh-diced;");
-               /* string tcmd2;
+                /* string tcmd2;
                 char tmp100[8096];
 
                 tcmd2 =basepath+"/texturedDecimator/bin/triGap";
@@ -2918,7 +2918,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 //int sizeX=reimageSize.x()*_tileRows;
                 //int adjustedSize=tileSize-(2*tileBorder);
-               // int intDiv=sizeX/tileSize;
+                // int intDiv=sizeX/tileSize;
                 //int embedSize=(intDiv* adjustedSize);
                 std::ostringstream p3;
                 // p3 << "vips " << " im_extract_area " << "out.tif "<< " tex.tif " << " 0 0 " <<  embedSize << " "<<embedSize<< ";";
@@ -2971,13 +2971,13 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     sprintf(tmp,"mesh-diced/total-lod%d.ply",vpblod);//std::min(lod,2)
                     std::vector<string> level;
 
-                    for(int j=vpblod; j >0; j--){
-                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s totaltex.ply total-lod%d.ply %d -P;",
-                                cwd,
-                                basepath.c_str(),
-                                app.c_str(),
-                                j-1, sizeStepTotal[j-1]);
+                    for(int j=vpblod-1; j >= 0; j--){
 
+                            fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s total-lod%d.ply total-lod%d.ply %d -P -Oy -By;",
+                                    cwd,
+                                    basepath.c_str(),
+                                    app.c_str(),
+                                    j+1,j, sizeStepTotal[j]);
 
                     }
                     for(int lod=0; lod <= vpblod; lod ++){
@@ -3009,7 +3009,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     char tmp8[8192];
                     sprintf(tmp8,"mesh-diced/tmp-total-lod%d.ply",i);
                     mergeandcleanCmdsSimp.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"clipped-diced","tmp-total",vrip_res,i));
-                   /* osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmp8);
+                    /* osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmp8);
                     assert(model.valid());
                     if(!model.valid()){
                         OSG_ALWAYS<<"No valid model ";
@@ -3022,15 +3022,15 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     if(1){
                         char srcfile[1024];
                         if(i==vpblod-2)
-                           sprintf(srcfile,"tmp-total-lod%d.ply",i);
+                            sprintf(srcfile,"tmp-total-lod%d.ply",i);
                         else
                             sprintf(srcfile,"total-lod%d.ply",i+1);
 
-                           sprintf(tmp8,"cd %s/mesh-diced;time %s/texturedDecimator/bin/%s %s total-lod%d.ply %d -By -P;",
+                        sprintf(tmp8,"cd %s/mesh-diced;time %s/texturedDecimator/bin/%s %s total-lod%d.ply %d -By -P;",
                                 cwd,
                                 basepath.c_str(),
                                 app.c_str(),
-                               srcfile,i,sizeStepTotal[i]);
+                                srcfile,i,sizeStepTotal[i]);
                         mergeandcleanCmdsSimp.push_back(tmp8);
                     }
                 }

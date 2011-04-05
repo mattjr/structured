@@ -109,6 +109,10 @@ FIND_PACKAGE( GLUT )
 IF( NOT GLUT_FOUND )
    MESSAGE( FATAL_ERROR  "ERROR - Can't find GLUT" )
 ENDIF( NOT GLUT_FOUND )
+## Compiler flags
+if(CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "-O3")        ## Optimize
+endif()
 ADD_EXECUTABLE( tridecimator  tridecimator.cpp  ${SRCS} )
 ADD_EXECUTABLE( triGap triGap.cpp ${SRCS} )
 

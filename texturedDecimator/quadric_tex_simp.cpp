@@ -67,8 +67,9 @@ void QuadricTexSimplification(CMeshO &m,int  TargetFaceNum, bool Selected, CallB
 	while( DeciSession.DoOptimization() && m.fn>TargetFaceNum )
 	{
     char buf[256];
-    sprintf(buf,"Simplifing heap size %i ops %i\n",int(DeciSession.h.size()),DeciSession.nPerfmormedOps);
+    printf("\rSimplifing heap size %i ops %i Done: %d%%",int(DeciSession.h.size()),DeciSession.nPerfmormedOps,100-100*(m.fn-TargetFaceNum)/(faceToDel));
          //  cb(100-100*(m.fn-TargetFaceNum)/(faceToDel), buf);
+fflush(stdout);
 	};
 
 	DeciSession.Finalize<MyTriEdgeCollapseQTex>();

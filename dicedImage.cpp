@@ -812,6 +812,8 @@ int main(int argc, char** argv)
     double lat=0,lon=0;
     arguments.read("-lat",lat);
     arguments.read("-lon",lon);
+    osg::Vec2 zrange;
+    bool untex= arguments.read("-untex",zrange[0],zrange[1]);
 
     std::vector<picture_cell> cells;
     FILE *fp=fopen(argv[1],"r");
@@ -853,6 +855,7 @@ int main(int argc, char** argv)
 
 
 
+
     osg::Matrixd view,proj;
 
 
@@ -871,9 +874,11 @@ int main(int argc, char** argv)
     std::ostringstream os;
     os <<"subtile.v";//<<":deflate";
     vips::VImage raw;
+    vips::VImage raw_untex;
 
     raw.initdesc(width*_tileColumns,height*_tileRows,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
-
+    if(untex)
+        raw_untex.initdesc(width*_tileColumns,height*_tileRows,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
 
     osg::Matrix win;
 
@@ -979,6 +984,18 @@ int main(int argc, char** argv)
             osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
             vips::VImage tmp(img->data(),img->s(),img->t(),4,vips::VImage::FMTUCHAR);
             raw.insertplace(tmp.flipver().extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
+            if(untex){
+                node->getOrCreateStateSet()->addUniform(new osg::Uniform("shaderOut",3));
+                node->getOrCreateStateSet()->addUniform( new osg::Uniform( "zrange", osg::Vec3(zrange[0], zrange[1], 0.0f) ));
+                viewer.setSceneData( node );
+                viewer.frame();
+                viewer.advance();
+                viewer.updateTraversal();
+                viewer.renderingTraversals();
+                osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
+                vips::VImage tmp(img->data(),img->s(),img->t(),4,vips::VImage::FMTUCHAR);
+                raw_untex.insertplace(tmp.flipver().extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
+            }
 
         }else{
             std::cout << "Invalid " << cells[i].name << "\n";
@@ -987,6 +1004,8 @@ int main(int argc, char** argv)
 
     }
     raw.write("subtile.v");
+    if(untex)
+        raw_untex.write("subtile_untex.v");
     printf("Done\n");
     applyGeoTags(osg::Vec2(lat,lon),view,proj,raw.Xsize(),raw.Ysize());
 

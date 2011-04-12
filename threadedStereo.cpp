@@ -58,6 +58,7 @@ static int vpblod_override=0;
 //
 // Command-line arguments
 //
+static bool untex;
 using namespace std;
 int proj_tex_size;
 int poster_tiles=40;
@@ -528,6 +529,7 @@ static bool parse_args( int argc, char *argv[ ] )
     if(  argp.read("--clean"))
         further_clean=true;
     argp.read("-poster-scale",poster_tiles);
+    untex=argp.read( "--untex" );
 
     argp.read("-r",image_scale);
     argp.read( "--edgethresh" ,edgethresh);
@@ -2632,6 +2634,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 if(!no_vrip)
                     sysres=system("./runvrip.py");
                 osg::BoundingBox totalbb;
+                osg::BoundingBox totalbb_unrot;
+
                 osg::BoundingSphere bs;
                 osg::Matrix rotM;
                 float rx=0,ry=180.0,rz=-90;
@@ -2667,6 +2671,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
                     model->accept(cbbv);
                     totalbb = cbbv.getBoundingBox();
+                    totalbb_unrot.expandBy(totalbb._min*osg::Matrix::inverse(rotM));
+                    totalbb_unrot.expandBy(totalbb._max*osg::Matrix::inverse(rotM));
 
                 }
 
@@ -2906,6 +2912,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 int tileSize=256;
 
                 p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << (int)reimageSize.x()-((reimageSize.x()/tileSize)*2*tileBorder) << " "<< (int)reimageSize.y()-((reimageSize.y()/tileSize)*2*tileBorder)  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
+                if(untex)
+                    p<< " -untex " << totalbb_unrot.zMin() << " " << totalbb_unrot.zMax();
                 postcmdv.push_back(p.str());
 #define SINGLE_MESH_TEX 1
 #if SINGLE_MESH_TEX

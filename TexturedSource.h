@@ -161,7 +161,7 @@ public:
         return (m_pNext != 0);
     }
 
-    virtual uint32_t size()
+    virtual size_t size()
     {
         throw Tools::NotSupportedException("Operation not supported.");
     }

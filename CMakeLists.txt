@@ -34,6 +34,7 @@ INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindUF.cmake )
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOSG.cmake )
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOpenCV.cmake ) 
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindLapack.cmake ) 
+INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindGDAL.cmake )
 
 #--------------------------------#
 # Enforce an out-of-source build #
@@ -230,6 +231,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      "${PROJECT_SOURCE_DIR}/mergeMesh/"
 		     "tridecimator/"
 		     "mesh2hmap/"
+		     ${GDAL_INCLUDE_DIR}
 		     "/opt/local/include"
                      ${ULAPACK_INCLUDE_DIR}
 		     ${LIBADT_INCLUDE_DIR}
@@ -262,7 +264,7 @@ LINK_LIBRARIES(
                ${OSGUTIL_LIBRARY_DEBUG}
      ${OSGTERRAIN_LIBRARY_DEBUG}
 #/usr/lib//libgdal1.6.0.so.1
-gdal
+${GDAL_LIBRARY}
 osgTerrain
 osgFX
 osgViewer
@@ -340,7 +342,7 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS(poster texture_image retex mbosg texturedDecimator mesh2hmap mesh2xy grd2ply  quadmerge single_mesh_gen)
+SUBDIRS( texture_image retex mbosg texturedDecimator mesh2hmap mesh2xy grd2ply  quadmerge single_mesh_gen)
 SET( SRCS OSGExport.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp

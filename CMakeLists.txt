@@ -261,13 +261,14 @@ LINK_LIBRARIES(
  ${OSGDB_LIBRARY_DEBUG}
                ${OSGUTIL_LIBRARY_DEBUG}
      ${OSGTERRAIN_LIBRARY_DEBUG}
-/usr/lib//libgdal1.6.0.so.1
+#/usr/lib//libgdal1.6.0.so.1
+gdal
 osgTerrain
 osgFX
 osgViewer
 #/usr/local/lib64/libosgViewerd.so
 osgSim
--L/usr/local/lib/static nvtt nvcore nvmath  nvimage -fopenmp -L/usr/local/cuda/lib64 cudart cuda /home/mattjr/exp/nvidia-texture-tools-read-only/build-Debug/src/nvtt/squish/libsquish.a
+#-L/usr/local/lib/static nvtt nvcore nvmath  nvimage -fopenmp -L/usr/local/cuda/lib64 cudart cuda /home/mattjr/exp/nvidia-texture-tools-read-only/build-Debug/src/nvtt/squish/libsquish.a
                 ${OSGSHADOW_LIBRARY}
                 ${OSGVIEWER_LIBRARY_DEBUG}
                 ${OSGTEXT_LIBRARY_DEBUG}

@@ -232,6 +232,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
 		     "tridecimator/"
 		     "mesh2hmap/"
 		     ${GDAL_INCLUDE_DIR}
+                    spatialindex-src-1.6.1/src spatialindex-src-1.6.1/include
 		     "/opt/local/include"
                      ${ULAPACK_INCLUDE_DIR}
 		     ${LIBADT_INCLUDE_DIR}
@@ -342,7 +343,7 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS( texture_image retex mbosg texturedDecimator mesh2hmap mesh2xy grd2ply  quadmerge single_mesh_gen)
+SUBDIRS( spatialindex-src-1.6.1/src texture_image retex mbosg texturedDecimator mesh2hmap mesh2xy grd2ply  quadmerge single_mesh_gen)
 SET( SRCS OSGExport.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp
@@ -368,7 +369,7 @@ TexturingQuery.cpp
 		)
 
 ADD_DEFINITIONS( "-g")
-ADD_LIBRARY( ts STATIC ${SRCS} )
+ADD_LIBRARY( ts STATIC ${SRCS} ${SPINDEX_SRC})
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
 ADD_EXECUTABLE( genTex genTex.cpp )
 
@@ -389,7 +390,7 @@ ADD_EXECUTABLE(singleImageTex singleImageTex.cpp)
 #ADD_EXECUTABLE( bin/mergeMesh mergeMesh/mergeMesh.cpp mergeMesh/plylib.cpp)
 #ADD_EXECUTABLE( bin/texturedDecimator mergeMesh/texturedDecimator.cpp mergeMesh/plylib.cpp mergeMesh/quadric_simp.cpp mergeMesh/quadric_tex_simp.cpp)
 
-LINK_LIBRARIES(osgTerrain vpb osgFX osg spatialindex vips vipsCC)
+LINK_LIBRARIES(osgTerrain vpb osgFX osg  spindex vips vipsCC)
 TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf vips vipsCC)
 TARGET_LINK_LIBRARIES( testImageModel ts  )
 TARGET_LINK_LIBRARIES( genTex ts plankton )
@@ -400,11 +401,11 @@ TARGET_LINK_LIBRARIES( monoDriver ts plankton vpb  hmap gmt netcdf)
 
 TARGET_LINK_LIBRARIES( lodgen ts )
 
-TARGET_LINK_LIBRARIES( treeBBClip ts spatialindex )
-TARGET_LINK_LIBRARIES( calcTexCoord ts spatialindex vpb vips vipsCC)
-TARGET_LINK_LIBRARIES( singleImageTex ts spatialindex vpb vips vipsCC)
+TARGET_LINK_LIBRARIES( treeBBClip ts spindex )
+TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC)
+TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC)
 
-TARGET_LINK_LIBRARIES( loadCamRender ts spatialindex vpb vips vipsCC )
+TARGET_LINK_LIBRARIES( loadCamRender ts spindex vpb vips vipsCC )
 TARGET_LINK_LIBRARIES( screencap vips vipsCC)
 TARGET_LINK_LIBRARIES( dicedImage vips vipsCC)
 

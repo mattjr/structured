@@ -1,7 +1,7 @@
 #ifndef TEXTURINGQUERY_H
 #define TEXTURINGQUERY_H
 #include <string>
-#include <spatialindex/SpatialIndex.h>
+#include "SpatialIndex.h"
 #include <osg/Geode>
 #include <osg/BoundingBox>
 #include <osg/Geometry>

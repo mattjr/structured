@@ -2,7 +2,7 @@
 #define TEXTUREDSOURCE_H
 #include <vpb/System>
 
-#include <spatialindex/SpatialIndex.h>
+#include "SpatialIndex.h"
 #include <osg/Geode>
 #include <osg/BoundingBox>
 #include <osg/Geometry>
@@ -161,7 +161,7 @@ public:
         return (m_pNext != 0);
     }
 
-    virtual size_t size()
+    virtual uint32_t size()
     {
         throw Tools::NotSupportedException("Operation not supported.");
     }

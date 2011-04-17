@@ -157,7 +157,7 @@ int _numLevels;
 class MyDataSet :  public DataSet
 {
     public:
-        MyDataSet(const Camera_Calib &calib,bool useTextureArray,bool useReImage,bool useVirtualTex);
+        MyDataSet(const Camera_Calib &calib,std::string basePath,bool useTextureArray,bool useReImage,bool useVirtualTex);
         void createNewDestinationGraph(
                                        const GeospatialExtents& extents,
                                        unsigned int maxImageSize,
@@ -185,6 +185,7 @@ class MyDataSet :  public DataSet
         vips::VImage *in;
         bool _useVirtualTex;
         osg::Matrix getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<osg::Image> &image,osg::Vec4 &ratio,int level);
+        std::string _basePath;
 
     protected:
         virtual ~MyDataSet() {if(in) delete in;}

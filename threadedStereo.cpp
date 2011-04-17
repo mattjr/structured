@@ -61,7 +61,6 @@ static int vpblod_override=0;
 static bool untex;
 using namespace std;
 int proj_tex_size;
-int poster_tiles=40;
 static bool rugosity=false;
 
 static int dist_gentex_range=0;
@@ -512,8 +511,11 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value( "TEX_SIZE_LOD0", lodTexSize[0],
                                   512);
 
-    recon_config_file->get_value( "POSTER_TILE_SCALE", poster_tiles,
-                                  10);
+
+
+    if(recon_config_file->get_value( "REIMAGE_RES",reimageSize.x(),1024)){
+        reimageSize.y()=reimageSize.x();
+    }
     proj_tex_size=lodTexSize[0];
 
     //sprintf(cachedtexdir,"cache-tex-%d/",lodTexSize[1]);
@@ -528,7 +530,6 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--spline_dist",spline_dist);
     if(  argp.read("--clean"))
         further_clean=true;
-    argp.read("-poster-scale",poster_tiles);
     untex=argp.read( "--untex" );
 
     argp.read("-r",image_scale);
@@ -3076,7 +3077,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     mgc = new MyGraphicsContext();
                 bool useVirtTex=true;
                 bool useReimage=false;
-                doQuadTreeVPB(cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb);
+                doQuadTreeVPB(basepath,cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb);
 
 
                 vector<string> gentexnames;

@@ -311,13 +311,17 @@ bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
     std::string fqFileName = osgDB::findDataFile(fileName);
     if( fqFileName.length() == 0 )
     {
-        std::cout << "File \"" << fileName << "\" not found." << std::endl;
+        std::cerr << "File \"" << fileName << "\" not found." << std::endl;
+        assert(0);
+        exit(-1);
         return false;
     }
     bool success = obj->loadShaderSourceFromFile( fqFileName.c_str());
     if ( !success  )
     {
-        std::cout << "Couldn't load file: " << fileName << std::endl;
+        std::cerr << "Couldn't load file: " << fileName << std::endl;
+        assert(0);
+        exit(-1);
         return false;
     }
     else

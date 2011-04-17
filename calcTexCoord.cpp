@@ -22,6 +22,11 @@ int main( int argc, char **argv )
     arguments.getApplicationUsage()->setDescription(arguments.getApplicationName() +" is the example which demonstrates Depth Peeling");
     arguments.getApplicationUsage()->setCommandLineUsage(arguments.getApplicationName()+" filename");
     Stereo_Calib *calib=NULL;
+    string path=string(argv[0]);
+      unsigned int loc=path.rfind("/");
+
+      string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
+      basepath= osgDB::getRealPath (basepath);
     string base_dir=argv[1];
     string stereo_calib_file_name = "stereo.calib";
     stereo_calib_file_name= base_dir+string("/")+stereo_calib_file_name;
@@ -99,7 +104,7 @@ int main( int argc, char **argv )
         }
         //  TexPyrAtlas atlasGen(cache);
         //atlasGen._useAtlas=true;
-        vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,false,false,false);
+        vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,basepath,false,false,false);
         dataset->_useAtlas=false;
         dataset->_useBlending=true;
         vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(cache);

@@ -77,13 +77,13 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
     return true;
 }
 #endif
-void doQuadTreeVPB(std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cachedDirs,bool useTextureArray,bool useReimage,bool useVirtualTex,const osg::BoundingBox &bbox){
+void doQuadTreeVPB(std::string basePath,std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cachedDirs,bool useTextureArray,bool useReimage,bool useVirtualTex,const osg::BoundingBox &bbox){
     //vector<osg::KdTree*> trees;
     vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
     int numlod=datalist_lod.size()-1;
     if(useVirtualTex)
         useReimage=false;
-    osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,useTextureArray,useReimage,useVirtualTex);
+    osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,basePath,useTextureArray,useReimage,useVirtualTex);
     m->_cachedDirs=cachedDirs;
     m->setNumReadThreadsToCoresRatio(1.5);
     m->setNumWriteThreadsToCoresRatio(1.5);

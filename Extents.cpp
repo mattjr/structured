@@ -85,7 +85,7 @@ bool readMatrix(std::string fname,osg::Matrix &viewProj){
 
     return true;
 }
-MyDataSet::MyDataSet(const Camera_Calib &calib,bool useTextureArray,bool useReImage,bool useVirtualTex): _calib(calib),_useTextureArray(useTextureArray),_useReImage(useReImage),_useVirtualTex(useVirtualTex)
+MyDataSet::MyDataSet(const Camera_Calib &calib,string basePath,bool useTextureArray,bool useReImage,bool useVirtualTex): _calib(calib),_basePath(basePath),_useTextureArray(useTextureArray),_useReImage(useReImage),_useVirtualTex(useVirtualTex)
 {
     in=NULL;
     init();
@@ -359,18 +359,18 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
     osg::ref_ptr<osg::Shader> lerpF=new osg::Shader( osg::Shader::FRAGMENT);
     osg::ref_ptr<osg::Shader> lerpV=new osg::Shader( osg::Shader::VERTEX);
     if(_mydataSet->_useBlending){
-        loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/blend.vert" );
+        loadShaderSource( lerpV, _mydataSet->_basePath+"/blend.vert" );
 
         // if(_mydataSet->_useAtlas){
-        //   loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/blendAtlas.frag" );
+        //   loadShaderSource( lerpF, _mydataSet->_basePath+"/blendAtlas.frag" );
         // }else
         {
-            loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/blend.frag" );
+            loadShaderSource( lerpF, _mydataSet->_basePath+"/blend.frag" );
         }
 
     }else{
-        loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/pass.frag" );
-        loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/blend.vert" );
+        loadShaderSource( lerpF, _mydataSet->_basePath+"/pass.frag" );
+        loadShaderSource( lerpV, _mydataSet->_basePath+"/blend.vert" );
     }
     program->addShader(  lerpF );
     program->addShader(  lerpV );
@@ -519,17 +519,17 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         osg::ref_ptr<osg::Shader> lerpF=new osg::Shader( osg::Shader::FRAGMENT);
         osg::ref_ptr<osg::Shader> lerpV=new osg::Shader( osg::Shader::VERTEX);
         if(_mydataSet->_useBlending){
-            loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/blend.vert" );
+            loadShaderSource( lerpV, _mydataSet->_basePath+"/blend.vert" );
 
             if(_mydataSet->_useAtlas){
-                loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/blendAtlas.frag" );
+                loadShaderSource( lerpF,  _mydataSet->_basePath+"/blendAtlas.frag" );
             }else{
-                loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/blend.frag" );
+                loadShaderSource( lerpF,  _mydataSet->_basePath+"/blend.frag" );
             }
 
         }else{
-            loadShaderSource( lerpF, "/home/mattjr/svn/threadedStereo-vpb/pass.frag" );
-            loadShaderSource( lerpV, "/home/mattjr/svn/threadedStereo-vpb/blend.vert" );
+            loadShaderSource( lerpF,  _mydataSet->_basePath+"/pass.frag" );
+            loadShaderSource( lerpV,  _mydataSet->_basePath+"/blend.vert" );
         }
         program->addShader(  lerpF );
         program->addShader(  lerpV );

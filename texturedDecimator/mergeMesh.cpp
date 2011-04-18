@@ -46,6 +46,8 @@ int main(int argc ,char**argv){
     argp.read("-out",outfile);
     bool tex=argp.read("-tex");
     bool flip=argp.read("-flip");
+    float CCPerc;
+    bool clean=argp.read("-cleansize",CCPerc);
     CMeshO cm;
     int err=tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1]);
 
@@ -71,6 +73,12 @@ int main(int argc ,char**argv){
      int total = tri::Clean<CMeshO>::MergeCloseVertex(cm, threshold);
      if(flip){
          tri::Clean<CMeshO>::FlipMesh(cm);
+     }
+     if(clean){
+         float minCC= CCPerc*cm.bbox.Diag();
+         printf("Cleaning Min CC %f\n",minCC);
+            std::pair<int,int> delInfo= tri::Clean<CMeshO>::RemoveSmallConnectedComponentsDiameter(cm,minCC);
+
      }
     bool binaryFlag =true;
 

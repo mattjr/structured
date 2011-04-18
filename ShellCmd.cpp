@@ -283,6 +283,7 @@ void ShellCmd::pos_simp_cmd(bool run){
 string ShellCmd::generateMergeAndCleanCmd(vector<Cell_Data>vrip_cells,string basename,string outname,double vrip_res,int lod){
    char tmp100[8096];
    string tcmd;
+   float cleanPercentage=0.05;
    tcmd =basepath+string("/vrip/bin/plymerge ");
    for(int i=0; i <(int)vrip_cells.size(); i++){
        if(vrip_cells[i].poses.size() == 0)
@@ -302,7 +303,7 @@ else
    if(lod >=0)
        sprintf(tmp100,"  %s/texturedDecimator/bin/mergeMesh mesh-diced/%s-unmerged-lod%d.ply -tex -thresh %f -out mesh-diced/%s-lod%d.ply",basepath,outname.c_str(),lod,0.9*vrip_res,outname.c_str(),lod);
    else
-       sprintf(tmp100,"  %s/texturedDecimator/bin/mergeMesh mesh-diced/%s-unmerged.ply -flip -thresh %f -out mesh-diced/%s.ply",basepath,outname.c_str(),0.9*vrip_res,outname.c_str());
+       sprintf(tmp100,"  %s/texturedDecimator/bin/mergeMesh mesh-diced/%s-unmerged.ply -flip -clean %f -thresh %f -out mesh-diced/%s.ply",basepath,outname.c_str(),cleanPercentage,0.9*vrip_res,outname.c_str());
 
    tcmd+=tmp100;
 

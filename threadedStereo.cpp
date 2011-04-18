@@ -2763,7 +2763,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     }
                     fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                             cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
-                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/totalrot.ive %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d.ply;",
+                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/totalrot.ive %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ive;",
                             cwd,
                             basepath.c_str(),
                             cells[i].bbox.xMin(),
@@ -2773,11 +2773,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             cells[i].bbox.yMax(),
                             FLT_MAX,
                             cells[i].row,cells[i].col);
-                    fprintf(splitcmds_fp,"cp mesh-diced/tex-clipped-diced-r_%04d_c_%04d.ply mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
+                    fprintf(splitcmds_fp,"cp mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ive mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive \n",
                             //basepath.c_str(),
                             cells[i].row,cells[i].col,  cells[i].row,cells[i].col,vpblod);
                     char tp[1024];
-                    sprintf(tp,"mesh-diced/bbox-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
+                    sprintf(tp,"mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
                     FILE *bboxfp=fopen(tp,"w");
 
                     for(int k=0; k < (int)cells[i].images.size(); k++){
@@ -2892,14 +2892,14 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int i=0; i <(int)cells.size(); i++){
                     if(cells[i].images.size() == 0)
                         continue;
-                    fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply",
+                    fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f",
                             cwd,
                             basepath.c_str(),
                             base_dir.c_str(),
                             cells[i].row,cells[i].col,
                             vpblod,
                             cells[i].row,cells[i].col,
-                            vpblod);
+                            vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax());
                     fprintf(texcmds_fp," --tex_cache %s %d --invrot %f %f %f\n",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,rx,ry,rz);
 
 

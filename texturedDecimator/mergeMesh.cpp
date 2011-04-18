@@ -45,7 +45,7 @@ int main(int argc ,char**argv){
     argp.read("-thresh",threshold);
     argp.read("-out",outfile);
     bool tex=argp.read("-tex");
-
+    bool flip=argp.read("-flip");
     CMeshO cm;
     int err=tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1]);
 
@@ -69,6 +69,9 @@ int main(int argc ,char**argv){
 
 
      int total = tri::Clean<CMeshO>::MergeCloseVertex(cm, threshold);
+     if(flip){
+         tri::Clean<CMeshO>::FlipMesh(cm);
+     }
     bool binaryFlag =true;
 
     vcg::tri::io::PlyInfo pi;

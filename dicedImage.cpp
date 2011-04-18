@@ -986,7 +986,6 @@ int main(int argc, char** argv)
             raw.insertplace(tmp.flipver().extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
             if(untex){
                 node->getOrCreateStateSet()->addUniform(new osg::Uniform("shaderOut",3));
-                node->getOrCreateStateSet()->addUniform( new osg::Uniform( "zrange", osg::Vec3(zrange[0], zrange[1], 0.0f) ));
                 viewer.setSceneData( node );
                 viewer.frame();
                 viewer.advance();

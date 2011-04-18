@@ -110,6 +110,8 @@ int main( int argc, char **argv )
         }
     }
     if(osgDB::getFileExtension(outfilename) == "ply"){
+        osgUtil::SmoothingVisitor sv;
+        root->accept(sv);
         std::ofstream f(outfilename.c_str());
         PLYWriterNodeVisitor nv(f);
         root->accept(nv);

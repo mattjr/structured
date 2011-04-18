@@ -114,7 +114,7 @@ Adding copyright.
 #include <wrap/gui/trackmode.h>
 #include <wrap/gui/trackball.h>
 #include <wrap/gui/trackutils.h>
-
+#include <vcg/space/segment3.h>
 using namespace vcg;
 using namespace vcg::trackutils;
 
@@ -346,7 +346,115 @@ void PathMode::Reset()
 {
   current_state=initial_state;
 }
+Point3<float> ClosestPointf( Segment3<float> s, const Point3<float> & p)
+{
+        vcg::Line3<float> l;
+        l.Set(s.P0(),s.P1()-s.P0());
+        l.Normalize();
+        Point3<float> clos=vcg::ClosestPoint<float,true>(l,p) ;//attention to call
+        vcg::Box3<float> b;
+        b.Add(s.P0());
+        b.Add(s.P1());
+        if (b.IsIn(clos))
+                return clos;
+        else
+        {
+                float d0=(s.P0()-p).Norm();
+                float d1=(s.P1()-p).Norm();
+                if (d0<d1)
+                        return (s.P0());
+                else
+                        return (s.P1());
+        }
+        /*ScalarType t = s.Projection(p);
+        if (s<0) return s.P0();
+        if (s>1) return s.P0();
+        return s.P(t);*/
+}
+/*!
+  @brief Calculates the minimal distance between 2 segments.
 
+  R e Q are the segments, R_s and Q_t are set to be the closest points on
+  the segments.
+
+  it's returned the distance from R_s and Q_t, and a boolean value which is true
+  if the segments are parallel enough.
+  @param R the first segment.
+  @param Q the second segment.
+  @param R_s the point on R closest to Q.
+  @param Q_t the point on Q closest to R.
+  @return a std::pair made with the distance from R_s to Q_t and a boolean value, true if and only if P and Q are almost parallel.
+*/
+std::pair< float, bool > SegmentSegmentDistance(const Segment3f & R, const Segment3f & Q, Point3f & R_s, Point3f & Q_t)
+{
+  float R_len=Distance(R.P0(),R.P1());
+  float Q_len=Distance(Q.P0(),Q.P1());
+  const float EPSILON_LENGTH = std::max(R_len,Q_len)*0.0001f;
+  if(R_len < EPSILON_LENGTH){
+        R_s=R.P0();
+        Q_t=ClosestPointf(Q,R_s);
+        return std::make_pair(Distance(R_s,Q_t),true);
+  }
+  if( Q_len < EPSILON_LENGTH){
+        Q_t=Q.P0();
+        R_s=ClosestPointf(R,Q_t);
+        return std::make_pair(Distance(R_s,Q_t),true);
+  }
+  Point3f r0 = R.P0(), Vr = (R.P1()-R.P0()).normalized();
+  Point3f q0 = Q.P0(), Vq = (Q.P1()-Q.P0()).normalized();
+  float VRVR = Vr.dot(Vr);
+  float VQVQ = Vq.dot(Vq);
+  float VRVQ = Vr.dot(Vq);
+  const float det = ( VRVR * VQVQ ) - ( VRVQ * VRVQ );
+  const float EPSILON = 0.00001f;
+  if ( ( det >= 0.0f ? det : -det) < EPSILON ) {
+        Line3f lR(R.P0(),R.P1());
+        float qa=lR.Projection(Q.P0());
+        float qb=lR.Projection(Q.P1());
+        if( (qa<=0.0f) && qb<=(0.0f)){
+      R_s=R.P0();
+      Q_t=ClosestPointf(Q,R_s);
+        } else if ( (qa >= 1.0f) && (qb >= 1.0f) ){
+      R_s=R.P1();
+      Q_t=ClosestPointf(Q,R_s);
+        } else {
+      if( (qa >= 0.0f) && (qa <= 1.0f) ){
+        Q_t=Q.P0();
+                R_s=ClosestPointf(R,Q_t);
+          } else if((qb >= 0.0f) && (qb <= 1.0f) ){
+        Q_t=Q.P1();
+        R_s=ClosestPointf(R,Q_t);
+      } else {
+        if( ( ((qa<=0.0f)&&(qb>=1.0f)) || (((qb<=0.0f)&&(qa>=1.0f))))){
+           R_s=R.P0();
+           Q_t=ClosestPointf(Q,R_s);
+        }else{
+           assert(0);
+        }
+      }
+        }
+        return std::make_pair(Distance(R_s,Q_t),true);
+  }
+  float b1= (q0 - r0).dot(Vr);
+  float b2= (r0 - q0).dot(Vq);
+  float s = ( (VQVQ * b1) + (VRVQ * b2) ) / det;
+  float t = ( (VRVQ * b1) + (VRVR * b2) ) / det;
+  if( s < 0 ){
+    R_s = R.P0();
+  }else if ( s > R_len ){
+    R_s = R.P1();
+  } else {
+    R_s = r0 + (Vr * s);
+  }
+  if( t < 0){
+        Q_t = Q.P0();
+  }else if ( t > Q_len ){
+    Q_t = Q.P1();
+  }else{
+    Q_t = q0 + (Vq * t);
+  }
+  return std::make_pair(Distance(R_s,Q_t),false);
+}
 Point3f PathMode::SetStartNear(Point3f point)
 {
   float p0_state=0;
@@ -367,7 +475,7 @@ Point3f PathMode::SetStartNear(Point3f point)
   		p0=points[i-1];
   		p1=points[i];
   	}
-    Point3f segment_point=ClosestPoint(Segment3f(p0,p1),point);
+    Point3f segment_point=ClosestPointf(Segment3f(p0,p1),point);
     float distance=Distance(segment_point,point);  
     if(distance<nearest_distance){
       nearest_point=segment_point;
@@ -528,7 +636,7 @@ float PathMode::HitPoint(float state, Ray3fN ray, Point3f &hit_point)
     active_segment= Segment3f(current_point,prev_point);
   } 
 
-  hit_point=ClosestPoint(active_segment,closest_point);
+  hit_point=ClosestPointf(active_segment,closest_point);
 
   return verse * ((hit_point-current_point).Norm() / path_length);
 }  
@@ -680,7 +788,7 @@ Point3f AreaMode::Move(Point3f start,Point3f end)
       if(res.first < EPSILON && ! res.second){
       	float dist= Distance(pt,pseg);
       	if(dist < EPSILON){
-          Point3f pn=ClosestPoint(side,end);
+          Point3f pn=ClosestPointf(side,end);
           if(!p_on_side || (Distance(pn,end)<Distance(end,pside))){
             pside=pn;
             p_on_side=true;
@@ -749,7 +857,7 @@ Point3f AreaMode::SetStartNear(Point3f point)
   int i, j, np=int(points.size());
   for (i = 0, j = np-1; i < np; j = i++) {
     Segment3f side(points[i],points[j]);
-    Point3f side_point=ClosestPoint(side,candidate);
+    Point3f side_point=ClosestPointf(side,candidate);
     float distance=Distance(side_point,candidate);
     if( distance < nearest_distance ){
       nearest_point=side_point;

@@ -48,6 +48,8 @@ int main( int argc, char **argv )
     bool reimage=false;
     std::string tex_cache_dir;
     texcache_t cache;
+    osg::Vec2 zrange;
+    arguments.read("--zrange",zrange[0],zrange[1]);
 
     int size;
     if(arguments.read("--tex_cache",tex_cache_dir,size)){
@@ -105,8 +107,11 @@ int main( int argc, char **argv )
         //  TexPyrAtlas atlasGen(cache);
         //atlasGen._useAtlas=true;
         vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,basepath,false,false,false);
+        dataset->_zrange=zrange;
         dataset->_useAtlas=false;
         dataset->_useBlending=true;
+   //     dataset->_useDisplayLists=false;
+
         vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(cache);
         tile->_mydataSet=dataset;
         tile->_dataSet=dataset;

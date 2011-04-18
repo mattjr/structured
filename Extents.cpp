@@ -90,7 +90,39 @@ MyDataSet::MyDataSet(const Camera_Calib &calib,string basePath,bool useTextureAr
     in=NULL;
     init();
 }
+void MyDataSet::loadShaderSourcePrelude(osg::Shader* obj, const std::string& fileName )
+{
+    string filestr;
+    ifstream myfile (fileName.c_str());
+    char prelude[8192];
+    sprintf(prelude,
+            "#version 110\n"
+            "#extension GL_EXT_gpu_shader4 : enable\n"
+            "const float zrangeLow=%f;\n"
+            "const float zrangeHi=%f;\n"
+            ,_zrange[0],_zrange[1]);
+    filestr.append(prelude);
+    filestr.append("\n");
 
+    if (myfile.is_open())
+    {
+        while (! myfile.eof() )
+        {
+            string line;
+            getline (myfile,line);
+            filestr.append(line);
+            filestr.append("\n");
+
+        }
+        obj->setShaderSource(filestr);
+
+        myfile.close();
+    }
+    else
+    {
+        std::cout << "File \"" << fileName << "\" not found." << std::endl;
+    }
+}
 void MyDataSet::init()
 {
     assert(!(_useReImage && _useVirtualTex));
@@ -365,11 +397,11 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
         //   loadShaderSource( lerpF, _mydataSet->_basePath+"/blendAtlas.frag" );
         // }else
         {
-            loadShaderSource( lerpF, _mydataSet->_basePath+"/blend.frag" );
+            _mydataSet->loadShaderSourcePrelude( lerpF, _mydataSet->_basePath+"/blend.frag" );
         }
 
     }else{
-        loadShaderSource( lerpF, _mydataSet->_basePath+"/pass.frag" );
+        _mydataSet->loadShaderSourcePrelude( lerpF, _mydataSet->_basePath+"/pass.frag" );
         loadShaderSource( lerpV, _mydataSet->_basePath+"/blend.vert" );
     }
     program->addShader(  lerpF );
@@ -512,7 +544,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
 
 
         stateset->setTextureAttributeAndModes(TEX_UNIT,texture,osg::StateAttribute::ON);
-        stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+        stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::ON );
 
         osg::Program* program = new osg::Program;
         program->setName( "projective_tex" );
@@ -745,8 +777,8 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
     }
 
     cutOffDistance =(pagedLOD->getBound().radius()*_dataSet->getRadiusToMaxVisibleDistanceRatio());// osg::maximum(cutOffDistance,(float)(pagedLOD->getBound().radius()*_dataSet->getRadiusToMaxVisibleDistanceRatio()));
-printf("AP Level %d Cutoff distance %f Radius %f \n",_level,cutOffDistance,pagedLOD->getBound().radius());
-cout << "AP Center " <<pagedLOD->getBound().center()<<std::endl;
+   // printf("AP Level %d Cutoff distance %f Radius %f \n",_level,cutOffDistance,pagedLOD->getBound().radius());
+    //cout << "AP Center " <<pagedLOD->getBound().center()<<std::endl;
     pagedLOD->setRange(0,cutOffDistance,farDistance);
 
     pagedLOD->setFileName(1,getExternalSubTileName());

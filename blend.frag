@@ -1,30 +1,78 @@
-#version 110
-#extension GL_EXT_gpu_shader4 : enable
 uniform vec3 weights;
 uniform int shaderOut;
-varying vec4 normal;
-uniform vec3 zrange;
-varying vec3 L;
-varying vec3 E;
-varying vec3 H;
+varying float height;
+
+
 varying vec3 VaryingTexCoord[4];
-
+vec4 texture( void );
+void lighting( inout vec4 color );
 uniform sampler2DArray theTexture;
-vec4 jetColorMap(float val) {
-  val= clamp(val,0.0,1.0);
-  
-  vec4 jet;
-        jet.x = min(4.0 * val - 1.5,-4.0 * val + 4.5) ;
-        jet.y = min(4.0 * val - 0.5,-4.0 * val + 3.5) ;
-        jet.z = min(4.0 * val + 0.5,-4.0 * val + 2.5) ;
-
-
-        jet.x = clamp(jet.x, 0.0, 1.0);
-        jet.y = clamp(jet.y, 0.0, 1.0);
-        jet.z = clamp(jet.z, 0.0, 1.0);
-	jet.w = 1.0;
-        return jet;
+vec4 HSV_to_RGB (vec4 hsv){
+  vec4 color;
+  float f,p,q,t;
+  float h,s,v;
+  float r=0.0,g=0.0,b=0.0;
+  float i;
+  if (hsv[1] == 0.0){
+    if (hsv[2] != 0.0){
+      color.x = hsv[2];
+    }
+  }
+  else{
+    h = hsv.x * 360.0;
+    s = hsv.y;
+    v = hsv.z;
+    if (h == 360.0) {
+      h=0.0;
+    }
+    h /=60.0;
+    i = floor (h);
+    f = h-i;
+    p = v * (1.0 - s);
+    q = v * (1.0 - (s * f));
+    t = v * (1.0 - (s * (1.0 -f)));
+    if (i == 0.0){
+      r = v;
+      g = t;
+      b = p;
+    }
+    else if (i == 1.0){
+      r = q;
+      g = v;
+      b = p;
+    }
+    else if (i == 2.0){
+      r = p;
+      g = v;
+      b = t;
+    }
+    else if (i == 3.0) {
+      r = p;
+      g = q;
+      b = v;
+    }
+    else if (i == 4.0) {
+      r = t;
+      g = p;
+      b = v;
+    }
+    else if (i == 5.0) {
+      r = v;
+      g = p;
+      b = q;
+    }
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    color.w = hsv.w;
+  }
+  return color;
 }
+
+vec4 rainbowColorMap(float hue) {
+  return HSV_to_RGB(vec4(hue, 1.0f, 1.0f,1.0));
+}
+
 
 
 vec4 avgC(){
@@ -101,10 +149,9 @@ vec4 freq3Blend(vec3 Cb){
 
 void main()
 {
-  vec4 color;
+  vec4 color=vec4(1.0,0,0,1.0);
   vec3 usedWeights;
   usedWeights=weights;
-
 
   if(usedWeights.x==0.0 && usedWeights.y==0.0 &&usedWeights.z==0.0)
     usedWeights=vec3(0.710000,0.650000,0.070000);
@@ -114,33 +161,36 @@ void main()
   else if(shaderOut ==1)
     color=texture2DArray(theTexture,VaryingTexCoord[0].xyz);
   else if(shaderOut ==3){
-    vec3 NNormal = normalize(normal.xyz);
-    vec3 Light  = normalize(vec3(1,  2.5,  -1));
-    vec4 specular_val=vec4( 0.18, 0.18, 0.18, 0.18 );
-    
-    float mat_shininess = 64.0f ;
-    vec4 ambient_val = vec4(0.92, 0.92, 0.92, 0.95 );
-    vec4 diffuse_val =vec4( 0.8, 0.8, 0.8, 0.85 );
-    vec3 Eye    = normalize(E);
-    vec3 Half   = normalize(E + Light);
-    float Kd = max(dot(NNormal, Light), 0.0);
-    float Ks = pow(max(dot(Half, NNormal), 0.0),
-		   mat_shininess);
-    float Ka = 1.0;
-    
-    vec4 diffuse  = Kd * diffuse_val;
-    vec4 specular = Ks * specular_val;
-    vec4 ambient  = Ka * vec4(0.35,0.35,0.35,1.0) ;
-    float height = normal.w;;
-    float range= zrange.y-zrange.x;
-    float val =(height-zrange.x)/range;
-    vec4 jet=jetColorMap(1.0-val);
-    color = jet * (ambient + diffuse + specular);
+    color = texture();
+    lighting( color );
   }
   else
     color=texture2DArray(theTexture,VaryingTexCoord[0].xyz);
 
-
   gl_FragColor = color;
 } 
- 
+varying vec3 Normal;
+varying vec3 Position; // not used for directional lighting
+void lighting( inout vec4 color )
+{
+    vec3 n = normalize( Normal );
+    float NdotL = dot( n, normalize(gl_LightSource[0].position.xyz) );
+    NdotL = max( 0.0, NdotL );
+    float NdotHV = dot( n, gl_LightSource[0].halfVector.xyz );
+    NdotHV = max( 0.0, NdotHV );
+    color *= gl_FrontLightModelProduct.sceneColor +
+             gl_FrontLightProduct[0].ambient +
+             gl_FrontLightProduct[0].diffuse * NdotL;
+
+   if ( NdotL * NdotHV > 0.0 )
+        color += gl_FrontLightProduct[0].specular *
+                 pow( NdotHV, gl_FrontMaterial.shininess );
+}
+
+vec4 texture( void )
+{
+
+    float range= zrangeHi-zrangeLow;
+    float val =(height-zrangeLow)/range;
+    return rainbowColorMap(val);
+}

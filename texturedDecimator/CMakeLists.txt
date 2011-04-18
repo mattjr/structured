@@ -121,15 +121,15 @@ ADD_EXECUTABLE( texturedDecimator  texturedDecimator.cpp ${SRCS} )
 TARGET_LINK_LIBRARIES(texturedDecimator ts)
 TARGET_LINK_LIBRARIES( triGap ts spatialindex )
 
-#ADD_EXECUTABLE( shadevis shadevis/shadevis.cpp plylib.cpp ./vcg/wrap/gui/trackball.cpp ./vcg/wrap/gui/trackmode.cpp   )
+ADD_EXECUTABLE( shadevis shadevis/shadevis.cpp ./wrap/ply/plylib.cpp wrap/gui/trackball.cpp wrap/gui/trackmode.cpp   )
 IF( APPLE )
 SET(GLEW_LIB glew)
 ELSE(APPLE)
 SET(GLEW_LIB GLEW)
 ENDIF(APPLE)
-#TARGET_LINK_LIBRARIES(shadevis  ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIB})
+TARGET_LINK_LIBRARIES(shadevis  ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIB})
 INSTALL_TARGETS( /bin texturedDecimator tridecimator)
-#INSTALL_TARGETS( /bin shadevis )
+INSTALL_TARGETS( /bin shadevis )
 SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )
 
 

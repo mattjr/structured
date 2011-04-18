@@ -302,7 +302,7 @@ else
    if(lod >=0)
        sprintf(tmp100,"  %s/texturedDecimator/bin/mergeMesh mesh-diced/%s-unmerged-lod%d.ply -tex -thresh %f -out mesh-diced/%s-lod%d.ply",basepath,outname.c_str(),lod,0.9*vrip_res,outname.c_str(),lod);
    else
-       sprintf(tmp100,"  %s/texturedDecimator/bin/mergeMesh mesh-diced/%s-unmerged.ply -thresh %f -out mesh-diced/%s.ply",basepath,outname.c_str(),0.9*vrip_res,outname.c_str());
+       sprintf(tmp100,"  %s/texturedDecimator/bin/mergeMesh mesh-diced/%s-unmerged.ply -flip -thresh %f -out mesh-diced/%s.ply",basepath,outname.c_str(),0.9*vrip_res,outname.c_str());
 
    tcmd+=tmp100;
 

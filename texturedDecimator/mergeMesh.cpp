@@ -60,10 +60,20 @@ int main(int argc ,char**argv){
         printf( "Mesh has some inconsistent tex coords (some faces without texture)\n");
     }
 
-    //vcg::tri::UpdateTopology<CMeshO>::FaceFace(cm);
-    // vcg::tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
-    //vcg::tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);
+ /*   vcg::tri::UpdateTopology<CMeshO>::FaceFace(cm);
+     vcg::tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
+    vcg::tri::UpdateNormals<CMeshO>::PerVertexNormalized(cm);*/
+    if(clean){
+        cm.face.EnableFFAdjacency();
+          cm.face.EnableMark();
+          tri::UpdateTopology<CMeshO>::FaceFace(cm);
+          tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
 
+        float minCC= CCPerc*cm.bbox.Diag();
+        printf("Cleaning Min CC %f\n",minCC);
+           std::pair<int,int> delInfo= tri::Clean<CMeshO>::RemoveSmallConnectedComponentsDiameter(cm,minCC);
+
+    }
     if(err) {
         fprintf(stderr,"Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::ImporterPLY<CMeshO>::ErrorMsg(err));
         exit(-1);
@@ -74,12 +84,7 @@ int main(int argc ,char**argv){
      if(flip){
          tri::Clean<CMeshO>::FlipMesh(cm);
      }
-     if(clean){
-         float minCC= CCPerc*cm.bbox.Diag();
-         printf("Cleaning Min CC %f\n",minCC);
-            std::pair<int,int> delInfo= tri::Clean<CMeshO>::RemoveSmallConnectedComponentsDiameter(cm,minCC);
 
-     }
     bool binaryFlag =true;
 
     vcg::tri::io::PlyInfo pi;

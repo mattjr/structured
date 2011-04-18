@@ -72,7 +72,7 @@ int main(int argc ,char**argv){
         float minCC= CCPerc*cm.bbox.Diag();
         printf("Cleaning Min CC %f\n",minCC);
            std::pair<int,int> delInfo= tri::Clean<CMeshO>::RemoveSmallConnectedComponentsDiameter(cm,minCC);
-
+           printf("Removed %d/%d\n",delInfo.first,delInfo.second);
     }
     if(err) {
         fprintf(stderr,"Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::ImporterPLY<CMeshO>::ErrorMsg(err));

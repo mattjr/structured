@@ -2912,7 +2912,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 std::ostringstream p;
                 int tileSize=256;
 
-                p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << (int)reimageSize.x()-((reimageSize.x()/tileSize)*2*tileBorder) << " "<< (int)reimageSize.y()-((reimageSize.y()/tileSize)*2*tileBorder)  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
+                p << "/usr/bin/time -f \"Total Time %Es\" "<< basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << (int)reimageSize.x()-((reimageSize.x()/tileSize)*2*tileBorder) << " "<< (int)reimageSize.y()-((reimageSize.y()/tileSize)*2*tileBorder)  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
                 if(untex)
                     p<< " -untex " << totalbb_unrot.zMin() << " " << totalbb_unrot.zMax();
                 postcmdv.push_back(p.str());

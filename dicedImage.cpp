@@ -44,6 +44,8 @@
 #include <vips/vips.h>
 #include <vips/vips>
 #include <iomanip>
+#include <stdio.h>
+#include <sys/ioctl.h>
 using namespace std;
 #include <osg/io_utils>
 #define u32 unsigned int
@@ -792,6 +794,52 @@ typedef struct _picture_cell{
     osg::BoundingBox bbox;
     std::string name;
 }picture_cell;
+void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned int totalCount){
+    osg::Timer_t tick = osg::Timer::instance()->tick();
+    double currentTime = osg::Timer::instance()->delta_s(startTick, tick);
+    struct winsize w;
+    ioctl(0, TIOCGWINSZ, &w);
+    int term_width=w.ws_col;
+    std::stringstream tmp;
+    tmp<<totalCount;
+    int countlength=tmp.str().size();
+    std::stringstream time;
+    double percentage=(count/(double)totalCount);
+
+    if(count == 0){
+        time <<"ETA: --:--:--";
+    }else{
+        if(count == totalCount){
+            time << "Time: ";
+        } else{
+            time <<"ETA: ";
+            currentTime= currentTime*totalCount/count - currentTime;
+        }
+        double hours=floor(currentTime/60.0/60.0);
+        double mins=floor((currentTime-(hours*60.0*60.0))/60.0);
+        double secs=floor(currentTime-(hours*60.0*60.0)-(mins*60.0));
+
+        time   <<  setfill('0') << setw(2) <<(int)(hours) <<":"<<setfill('0') << setw(2) <<(int)(mins)<< ":"<<setfill('0') << setw(2) <<secs;
+    }
+
+    std::stringstream bar;
+
+    bar << name << " " <<  setw(3)<<(int)(round(100.0*percentage))<<"% " <<setw(countlength)<< count <<"/"<<totalCount;
+    bar <<" |";
+    int length=term_width-bar.str().size()-time.str().size()-2;
+    for(int i=0; i< length; i++){
+        if(i < length*percentage)
+            bar<<"#";
+        else
+            bar <<" ";
+    }
+    bar << "| "<<time.str();
+   // if(count==totalCount)
+     //   bar<<"\n";
+    printf("\r%s",bar.str().c_str());
+    fflush(stdout);
+}
+
 int main(int argc, char** argv)
 {
     // use an ArgumentParser object to manage the program arguments.
@@ -800,6 +848,7 @@ int main(int argc, char** argv)
     arguments.getApplicationUsage()->setApplicationName(arguments.getApplicationName());
     arguments.getApplicationUsage()->setCommandLineUsage(arguments.getApplicationName()+" [options] filename ...");
     bool pbufferOnly = !arguments.read("--show");
+
 
     unsigned int width=512;
     unsigned int height=512;
@@ -881,8 +930,15 @@ int main(int argc, char** argv)
         raw_untex.initdesc(width*_tileColumns,height*_tileRows,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
 
     osg::Matrix win;
+    unsigned int validCount=0;
+    for(int i=0; i < (int)cells.size(); i++){
+        if(cells[i].name != "null")
+            validCount++;
+    }
+    osg::Timer_t startTick = osg::Timer::instance()->tick();
+    formatBar("Img",startTick,0,validCount);
 
-
+    int count=0;
     for(int i=0; i < (int)cells.size(); i++)
     {
         if(cells[i].name == "null")
@@ -967,9 +1023,9 @@ int main(int argc, char** argv)
 
         // load the data
         osg::Matrix offsetMatrix=osg::Matrix::scale(_tileColumns, _tileRows, 1.0)*osg::Matrix::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
-        printf("\r%03d/%03d",i,(int)cells.size());
+        /* printf("\r%03d/%03d",i,(int)cells.size());
         fflush(stdout);
-
+*/
         osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(cells[i].name);
 
         if (node.valid() )
@@ -999,9 +1055,13 @@ int main(int argc, char** argv)
         }else{
             std::cout << "Invalid " << cells[i].name << "\n";
         }
+       formatBar("Img",startTick,++count,validCount);
+
 
 
     }
+    formatBar("Img",startTick,validCount,validCount);
+
     raw.write("subtile.v");
     if(untex)
         raw_untex.write("subtile_untex.v");

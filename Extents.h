@@ -188,7 +188,7 @@ class MyDataSet :  public DataSet
         std::string _basePath;
         void loadShaderSourcePrelude(osg::Shader* obj, const std::string& fileName );
         osg::Vec2 _zrange;
-
+        bool _useStub;
     protected:
         virtual ~MyDataSet() {if(in) delete in;}
         void _readRow(Row& row);

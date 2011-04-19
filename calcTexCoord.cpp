@@ -116,6 +116,8 @@ int main( int argc, char **argv )
         tile->_mydataSet=dataset;
         tile->_dataSet=dataset;
         tile->_atlasGen->_useAtlas=false;
+        tile->_atlasGen->_useStub=true;
+
         TexturingQuery *tq=new TexturingQuery(sourceModel,calib->left_calib,*tile->_atlasGen,true);
 
         tq->_tile=tile;

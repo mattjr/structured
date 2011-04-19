@@ -140,6 +140,7 @@ void MyDataSet::init()
     _useBlending=true;
     _useVBO=true;
     _useTextureArray=true;
+    _useStub=false;
     _file.open("/tmp/scope.txt");
     readMatrix("rot.mat",rotMat);
     readMatrixToScreen("view.mat",viewProj);
@@ -1323,7 +1324,7 @@ MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int c
     tile->_parent = destinationGraph;
     tile->_atlasGen->_useTextureArray = this->_useTextureArray;
     tile->_atlasGen->_useAtlas = this->_useAtlas;
-
+    tile->_atlasGen->_useStub=this->_useStub;
     // set to NONE as the tile is a mix of RASTER and VECTOR
     // that way the default of RASTER for image and VECTOR for height is maintained
     tile->_dataType = SpatialProperties::NONE;

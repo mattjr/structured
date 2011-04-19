@@ -41,13 +41,14 @@ public:
     osg::Matrix getTextureMatrixByID(id_type id);
     osg::Matrix computeTextureMatrixFreedImage(Source *s) ;
     void computeImageNumberToAtlasMap(void);
-
+    bool _useStub;
     std::map<id_type ,std::string> _totalImageList;
     bool _useTextureArray;
     bool _useAtlas;
     std::map<id_type,int>  _allIDs;
 protected:
     void buildAtlas();
+    osg::ref_ptr<osg::Image> getImageFullorStub(std::string fname,int size);
     std::vector<int> _downsampleSizes;
     osg::ref_ptr<osg::State> _state;
     std::vector<osg::ref_ptr<osg::Image> > _images;

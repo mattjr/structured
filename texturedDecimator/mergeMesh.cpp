@@ -77,8 +77,8 @@ int main(int argc ,char**argv){
 
      if(clean){
          tri::UpdateBounding<CMeshO>::Box(cm);
-         cm.face.EnableFFAdjacency();
-           cm.face.EnableMark();
+       //  cm.face.EnableFFAdjacency();
+         //  cm.face.EnableMark();
            tri::UpdateTopology<CMeshO>::FaceFace(cm);
            tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
 

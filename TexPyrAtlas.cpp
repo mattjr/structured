@@ -14,6 +14,7 @@ TexPyrAtlas::TexPyrAtlas(texcache_t imgdir):_imgdir(imgdir)
     _state = new osg::State;
     _useTextureArray=false;
     _useAtlas=true;
+    _useStub=true;
 }
 
 
@@ -79,8 +80,8 @@ osg::ref_ptr<osg::Image> TexPyrAtlas::getImage(int index,int sizeIndex){
     else
         return osg::ref_ptr<osg::Image> ();*/
 }
-osg::ref_ptr<osg::Image> getImageFullorStub(string fname,int size){
-    if(false){
+osg::ref_ptr<osg::Image> TexPyrAtlas::getImageFullorStub(string fname,int size){
+    if(_useStub){
         osg::ref_ptr<osg::Image> img= new osg::Image();
         img->setFileName(fname);
         img->setImage(size,size,3,GL_RGB, GL_RGB, GL_UNSIGNED_BYTE,NULL,osg::Image::NO_DELETE);
@@ -125,7 +126,8 @@ void TexPyrAtlas::loadTextureFiles(int size){
             if(!_useAtlas) {
                 _allIDs[it->first]=_images.size();
                 _images.push_back(loc_images.back());
-                _images.back()->setFileName(getUUID());
+                if(!_useStub)
+                    _images.back()->setFileName(getUUID());
 
             }else{
                 //texture->setImage(_images[i]);

@@ -46,6 +46,7 @@ int main(int argc ,char**argv){
     argp.read("-out",outfile);
     bool tex=argp.read("-tex");
     bool flip=argp.read("-flip");
+    bool color=argp.read("-color");
     float CCPerc;
     bool clean=argp.read("-cleansize",CCPerc);
     CMeshO cm;
@@ -96,6 +97,8 @@ int main(int argc ,char**argv){
     vcg::tri::io::PlyInfo pi;
     if(tex)
      pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
+    if(color)
+     pi.mask |= vcg::tri::io::Mask::IOM_VERTCOLOR;
     int result = tri::io::ExporterPLY<CMeshO>::Save(cm,outfile.c_str(),binaryFlag,pi);
     if(result !=0) {
         fprintf(stderr,"Unable to open write %s : '%s'\n",outfile.c_str(),vcg::tri::io::ExporterPLY<CMeshO>::ErrorMsg(result));

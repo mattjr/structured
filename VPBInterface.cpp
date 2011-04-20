@@ -140,6 +140,8 @@ else
                 osg::Geode *geode= dynamic_cast<osg::Geode*>(model);
                 if(geode && geode->getNumDrawables()){
                     osg::Drawable *drawable = geode->getDrawable(0);
+                    osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+                    sourceModel->colors=(osg::Vec4Array*)geom->getColorArray();
                     sourceModel->_kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
                     // trees.push_back(sourceModel->_kdTree);
                 }else{

@@ -31,15 +31,19 @@ typedef std::vector<osg::ref_ptr<osg::Vec3Array> > TexBlendCoord;
 struct IntersectKdTreeBbox
 {
     IntersectKdTreeBbox(const osg::Vec3Array& vertices,
+                        const osg::Vec4Array& colors,
                         const osg::KdTree::KdNodeList& nodes,
                         const osg::KdTree::TriangleList& triangles,bool multTex):
     _vertices(vertices),
+    _colors(colors),
     _kdNodes(nodes),
     _triangles(triangles),
     _new_texid(NULL)
     {
         _new_triangles =  new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
         _new_vertices = new osg::Vec3Array;
+        _new_colors = new osg::Vec4Array;
+
         int texCoordSize= multTex ? 4:1;
         _new_texcoords.resize(texCoordSize);
         for(int f=0; f< texCoordSize; f++){
@@ -71,10 +75,14 @@ struct IntersectKdTreeBbox
 
     //bool intersectAndClip(osg::Vec3& s, osg::Vec3& e, const osg::BoundingBox& bb) const;
     const osg::Vec3Array&               _vertices;
+    const osg::Vec4Array&               _colors;
+
     const osg::KdTree::KdNodeList&           _kdNodes;
     const osg::KdTree::TriangleList&         _triangles;
     osg::DrawElementsUInt * _new_triangles;
     osg::Vec3Array *   _new_vertices;
+    osg::Vec4Array *   _new_colors;
+
     TexBlendCoord  _new_texcoords;
     osg::Vec4Array *   _new_texid;
     osg::Vec3Array *_gapPts;
@@ -92,9 +100,9 @@ class KdTreeBbox : public osg::KdTree {
 
 public:
     KdTreeBbox(const KdTree& rhs) : KdTree(rhs){}
-    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &overlapmode,osg::Vec3Array *&dumpPts,bool multTex) const;
+    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,osg::Vec4Array *colors,const IntersectKdTreeBbox::OverlapMode &overlapmode,osg::Vec3Array *&dumpPts,bool multTex) const;
 
-    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,osg::Vec4Array *ids, const TexBlendCoord &texcoord,TexBlendCoord  &new_texcoord,
+    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,osg::Vec4Array *colors,osg::Vec4Array *ids, const TexBlendCoord &texcoord,TexBlendCoord  &new_texcoord,
                                       osg::ref_ptr<osg::Vec4Array> &new_ids,
                                       const IntersectKdTreeBbox::OverlapMode &overlapmode) const;
 

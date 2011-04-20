@@ -5,6 +5,7 @@ varying vec3 L;
 varying vec3 E;
 varying vec3 H;
 varying vec3 VaryingTexCoord[4];
+varying float ao;
 
 uniform sampler2DArray theTexture;
 vec4 jetColorMap(float val) {
@@ -197,7 +198,8 @@ void main()
     float range= zrangeHi-zrangeLow;
     float val =(height-zrangeLow)/range;
     vec4 jet=rainbowColorMap(val);
-    color = jet * (ambient + diffuse + specular);
+    vec4 aoV=vec4(ao,ao,ao,1.0);
+    color = jet * aoV * (ambient + diffuse + specular);
   }
   else
     color=texture2DArray(theTexture,VaryingTexCoord[0].xyz);

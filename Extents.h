@@ -59,6 +59,7 @@ class MyDataSet;
         _texCoordsAlias2 = AttributeAlias(9, "osg_texCoord2");
         _texCoordsAlias3 = AttributeAlias(10, "osg_texCoord3");
         _texCoordsAlias4 = AttributeAlias(11, "osg_texCoord4");
+        _colorAlias = AttributeAlias(3, "osg_Color");
 
         levelToTextureLevel[0]=2;
         levelToTextureLevel[1]=2;
@@ -105,7 +106,7 @@ class MyDataSet;
         void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
         void remapArrayForTexturing(osg::Vec4Array *v,const TexBlendCoord &texCoordsArray,idmap_t allIds);
 
-        void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
+        void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::Vec4Array &colors,const osg::PrimitiveSet& prset,
                                                             const TexBlendCoord  &texCoordsArray,
                                                             const osg::Vec3Array &verts,int tex_size);
         static const int TEX_UNIT=0;
@@ -115,6 +116,8 @@ class MyDataSet;
         AttributeAlias _texCoordsAlias2;
         AttributeAlias _texCoordsAlias3;
         AttributeAlias _texCoordsAlias4;
+        AttributeAlias _colorAlias;
+
          osg::Node * createScene(void);
          OpenThreads::Mutex _texCoordMutex;
          OpenThreads::Mutex _modelMutex;

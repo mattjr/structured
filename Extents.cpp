@@ -411,6 +411,7 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
     program->addBindAttribLocation(_texCoordsAlias2.second,_texCoordsAlias2.first);
     program->addBindAttribLocation(_texCoordsAlias3.second,_texCoordsAlias3.first);
     program->addBindAttribLocation(_texCoordsAlias4.second,_texCoordsAlias4.first);
+    program->addBindAttribLocation(_colorAlias.second,_colorAlias.first);
 
 
 
@@ -452,7 +453,7 @@ void MyDestinationTile::unrefData()
     _stateset = 0;
 }
 
-void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
+void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &geoms,osg::Vec4Array *v,const osg::Vec4Array &colors, const osg::PrimitiveSet& prset,
                                                        const TexBlendCoord  &texCoordsArray,
                                                        const osg::Vec3Array &verts,int tex_size){
     if(!v)
@@ -474,12 +475,14 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
     int numberOfGeoms=texture_images.size();
     std::vector<osg::DrawElementsUInt *>  primsets(numberOfGeoms+1);;
     std::vector<osg::Vec3Array *>  vertSplit(numberOfGeoms+1);
+    std::vector<osg::Vec4Array *>  colorSplit(numberOfGeoms+1);
     std::vector<TexBlendCoord> texSplit(numberOfGeoms+1);
     geoms.resize(numberOfGeoms+1);
     int untexidx=(geoms.size()-1);
     for(int i=0; i< (int)geoms.size(); i++){
         geoms[i]= new osg::Geometry;
         vertSplit[i]=new osg::Vec3Array;
+        colorSplit[i]=new osg::Vec4Array;
         geoms[i]->setVertexArray(vertSplit[i]);
         primsets[i] = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
         geoms[i]->addPrimitiveSet(primsets[i]);
@@ -496,6 +499,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
             setVertexAttrib(*geoms[i],_texCoordsAlias2,texSplit[i][1],false,osg::Geometry::BIND_PER_VERTEX);
             setVertexAttrib(*geoms[i],_texCoordsAlias3,texSplit[i][2],false,osg::Geometry::BIND_PER_VERTEX);
             setVertexAttrib(*geoms[i],_texCoordsAlias4,texSplit[i][3],false,osg::Geometry::BIND_PER_VERTEX);
+            setVertexAttrib(*geoms[i], _colorAlias, colorSplit[i], false, osg::Geometry::BIND_PER_VERTEX);
         }else{
             geoms[i]->setTexCoordArray(TEX_UNIT,texSplit[i][0]);
         }
@@ -570,6 +574,8 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         program->addBindAttribLocation(_texCoordsAlias2.second,_texCoordsAlias2.first);
         program->addBindAttribLocation(_texCoordsAlias3.second,_texCoordsAlias3.first);
         program->addBindAttribLocation(_texCoordsAlias4.second,_texCoordsAlias4.first);
+        program->addBindAttribLocation(_colorAlias.second,_colorAlias.first);
+
         if(_mydataSet->_useBlending)
             stateset->setAttributeAndModes( program, osg::StateAttribute::ON );
 
@@ -582,6 +588,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
 
     assert(numIdx ==(int) v->size());
     for(int i=0; i<numIdx-2; i+=3){
+        vector<osg::Vec4> cP;
         vector<osg::Vec3> vP;
         vector<osg::Vec3> tP[4];
         vector<unsigned int> iP;
@@ -613,6 +620,8 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
             }
             //  idP.push_back(atlas);
             vP.push_back((verts)[prset.index(i+k)]);
+            cP.push_back((colors)[prset.index(i+k)]);
+
         }
         // assert(idP[0]== idP[1] == idP[2]);
         // if(idP[0]!= idP[1] || idP[1]!= idP[2] || idP[0]!= idP[2])
@@ -622,11 +631,14 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         for(int k=0; k <3; k++){
             if(!untex){
                 vertSplit[id]->push_back(vP[k]);
+                colorSplit[id]->push_back(cP[k]);
+                std::cout <<  cP[k]<<"\n";
                 for(int t=0; t<4; t++)
                     texSplit[id][t]->push_back(tP[t][k]);
                 primsets[id]->push_back(iP[k]);
             }else{
                 vertSplit[untexidx]->push_back(vP[k]);
+                colorSplit[untexidx]->push_back(cP[k]);
                 primsets[untexidx]->push_back(untexSize+k);
             }
         }
@@ -1175,6 +1187,8 @@ osg::Node* MyDestinationTile::createScene()
                             setVertexAttrib(*geom,_texCoordsAlias2,texCoords[1],false,osg::Geometry::BIND_PER_VERTEX);
                             setVertexAttrib(*geom,_texCoordsAlias3,texCoords[2],false,osg::Geometry::BIND_PER_VERTEX);
                             setVertexAttrib(*geom,_texCoordsAlias4,texCoords[3],false,osg::Geometry::BIND_PER_VERTEX);
+                            setVertexAttrib(*geom, _colorAlias, geom->getColorArray(), false, osg::Geometry::BIND_PER_VERTEX);
+
                             geom->setUseDisplayList(_mydataSet->_useDisplayLists);
                             geom->setStateSet(stateset);
                         }else{
@@ -1182,6 +1196,8 @@ osg::Node* MyDestinationTile::createScene()
                             osg::Group *group=dynamic_cast<osg::Group*>(_createdScene.get());
                             osg::ref_ptr<osg::Geode> geode = dynamic_cast<osg::Geode*> (group->getChild(0));
                             osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+                            osg::Vec4Array *colors=static_cast<const osg::Vec4Array*>(geom->getColorArray());
+
                             osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
                             int s=primitiveSets[0]->getNumIndices();
                             osg::PrimitiveSet &primset=*(primitiveSets.begin()->get());
@@ -1195,7 +1211,7 @@ osg::Node* MyDestinationTile::createScene()
                             s=primitiveSets[0]->getNumIndices();
                             s2=v->size();
                             s3=texCoords[0]->size();
-                            generateStateAndSplitDrawables(geoms,v,primset,texCoords,*verts,tex_size);
+                            generateStateAndSplitDrawables(geoms,v,*colors,primset,texCoords,*verts,tex_size);
                             geode->removeDrawables(0);
                             for(int i=0; i < (int)geoms.size(); i++)
                                 geode->addDrawable(geoms[i]);
@@ -1737,7 +1753,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     if(src->_kdTree){
         osg::ref_ptr<KdTreeBbox> kdtreeBbox=new KdTreeBbox(*src->_kdTree);
         //  if(projectSucess){
-        root=kdtreeBbox->intersect(ext_bbox, ids,*texCoords,new_texCoords,new_ids,IntersectKdTreeBbox::DUP);
+        root=kdtreeBbox->intersect(ext_bbox,src->colors, ids,*texCoords,new_texCoords,new_ids,IntersectKdTreeBbox::DUP);
         //printf("0x%x\n",(long int)root.get());
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_texCoordMutex);
         for(int f=0; f< new_texCoords.size(); f++)

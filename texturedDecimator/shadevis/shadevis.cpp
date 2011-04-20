@@ -77,7 +77,7 @@ Added GPL comments
   #include <GL/glut.h>
 #endif
 
-
+#include <osgDB/FileNameUtils>
 
 #include <wrap/gl/space.h>
 #include <iostream>
@@ -579,7 +579,7 @@ int main(int argc, char** argv)
 	  exit(0);
 	  break;
 	case 'n'  : SampleNum = atoi(argv[i]+2); break;
-	case 'f'  : SwapFlag=false; break;
+        case 'f'  : SwapFlag=true; break;
 	case 'c'  : ClosedFlag=true; break;
         case 'w'  : WindowRes= atoi(argv[i]+2); 
 	  printf("Set WindowRes to %i\n",WindowRes ); break;
@@ -606,9 +606,15 @@ int main(int argc, char** argv)
   // loading original mesh
   int ret=tri::io::ImporterPLY<AMesh>::Open(m,argv[i]);
   if(ret) {printf("Error unable to open mesh %s : '%s' \n",argv[i],tri::io::ImporterPLY<AMesh>::ErrorMsg(ret));exit(-1);}
+  if(SwapFlag){
+      printf("Flipping normal\n");
+      tri::Clean<CMeshO>::FlipMesh(m);
+
+  }
   tri::UpdateNormals<AMesh>::PerVertexNormalized(m);
   tri::UpdateBounding<AMesh>::Box(m);
   tri::UpdateColor<AMesh>::VertexConstant(m,Color4b::White);
+
   Vis.IsClosedFlag=ClosedFlag;
   Vis.Init();
   UpdateVis();
@@ -617,9 +623,10 @@ int main(int argc, char** argv)
 	 m.bbox.min[0],m.bbox.min[1],m.bbox.min[2],
 	 m.bbox.max[0],m.bbox.max[1],m.bbox.max[2]);
 
-  OutNameMsh=(string(argv[i]).substr(0,strlen(argv[i])-4));
-  OutNameMsh+="_vis.ply";
-  
+  string path=(osgDB::getFilePath(string(argv[i])));
+  OutNameMsh="vis-"+osgDB::getSimpleFileName(string(argv[i]));
+  OutNameMsh=path+"/"+OutNameMsh;
+
   printf("Mesh       Output filename %s\n",OutNameMsh.c_str());
   
   printf("Mesh %iv %if bbox Diag %g\n",m.vn,m.fn,m.bbox.Diag());

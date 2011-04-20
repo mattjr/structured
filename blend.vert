@@ -1,7 +1,7 @@
 #version 110
 
 uniform float tilingFactor;
-
+varying float ao;
 varying vec4 normal;
 varying vec3  L, E, H;
 varying vec3 VaryingTexCoord[4];
@@ -9,6 +9,8 @@ attribute vec3 osg_texCoord1;
 attribute vec3 osg_texCoord2;
 attribute vec3 osg_texCoord3;
 attribute vec3 osg_texCoord4;
+attribute vec4 osg_Color;
+
 void main()
 {
   normal.xyz = normalize( /*gl_NormalMatrix * */gl_Normal);
@@ -25,4 +27,5 @@ void main()
      VaryingTexCoord[1] = osg_texCoord2;
      VaryingTexCoord[2] = osg_texCoord3;
      VaryingTexCoord[3] = osg_texCoord4;
+     ao=osg_Color.r;
 }

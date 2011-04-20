@@ -33,6 +33,8 @@ public:
   std::string tex_cache_dir;
   TexturedSource::CameraVector _cameras;
   osg::Vec4Array *ids;
+  osg::Vec4Array *colors;
+
   TexBlendCoord  tex;
 
 protected:

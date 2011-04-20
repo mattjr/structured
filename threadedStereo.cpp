@@ -27,6 +27,7 @@
 #include "auv_stereo_keypoint_finder.hpp"
 #include "adt_image_norm.hpp"
 #include "auv_stereo_dense.hpp"
+#include "auv_stereo_geometry_compat.hpp"
 #include <osg/ComputeBoundsVisitor>
 #include "auv_concurrency.hpp"
 #include "OSGExport.h"
@@ -205,10 +206,10 @@ int pos_lod0_min_depth,pos_lod2_min_depth;
 int pos_lod0_depth,pos_lod2_depth;
 void runC(Stereo_Pose_Data &name);
 void print_uv_3dpts( list<Feature*>          &features,
-		     list<Stereo_Feature_Estimate> &feature_positions,
-		     unsigned int                   left_frame_id,
-		     unsigned int                   right_frame_id,
-		     double timestamp, string leftname,string rightname);
+                     list<Stereo_Feature_Estimate> &feature_positions,
+                     unsigned int                   left_frame_id,
+                     unsigned int                   right_frame_id,
+                     double timestamp, string leftname,string rightname);
 void get_cov_mat(ifstream *cov_file,Matrix &mat){
 
     for(int i=0; i < 0; i ++)
@@ -269,17 +270,17 @@ gboolean image_count_verbose ( guint number, guint total)
     return FALSE;
 }
 void print_uv_3dpts( list<Feature*>          &features,
-		     list<Stereo_Feature_Estimate> &feature_positions,
-		     unsigned int                   left_frame_id,
-		     unsigned int                   right_frame_id,
-		     double timestamp, string leftname,string rightname){
+                     list<Stereo_Feature_Estimate> &feature_positions,
+                     unsigned int                   left_frame_id,
+                     unsigned int                   right_frame_id,
+                     double timestamp, string leftname,string rightname){
     list<Stereo_Feature_Estimate>::iterator litr;
     list<Feature *>::iterator fitr;
     fprintf(uv_fp,"%f %s %s %d %d\n",timestamp, leftname.c_str(),
             rightname.c_str(),(int)feature_positions.size(),(int)features.size());
 
     for( litr  = feature_positions.begin( ),
-	 fitr = features.begin();
+         fitr = features.begin();
     litr != feature_positions.end( ) || fitr != features.end();
     litr++,fitr++ ){
         const Feature_Obs *p1_left_obs;

@@ -545,7 +545,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
 
 
         stateset->setTextureAttributeAndModes(TEX_UNIT,texture,osg::StateAttribute::ON);
-        stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::ON );
+        stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
 
         osg::Program* program = new osg::Program;
         program->setName( "projective_tex" );
@@ -1028,7 +1028,7 @@ osg::StateSet* createSS()
         stateset->setTextureAttributeAndModes(0,texture, osg::StateAttribute::ON);
     }
 
-    stateset->setMode(GL_LIGHTING, osg::StateAttribute::ON);
+    stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
     return stateset;
 }

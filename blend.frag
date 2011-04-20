@@ -1,12 +1,28 @@
 uniform vec3 weights;
 uniform int shaderOut;
-varying float height;
-
-
+varying vec4 normal;
+varying vec3 L;
+varying vec3 E;
+varying vec3 H;
 varying vec3 VaryingTexCoord[4];
-vec4 texture( void );
-void lighting( inout vec4 color );
+
 uniform sampler2DArray theTexture;
+vec4 jetColorMap(float val) {
+  val= clamp(val,0.0,1.0);
+  
+  vec4 jet;
+        jet.x = min(4.0 * val - 1.5,-4.0 * val + 4.5) ;
+        jet.y = min(4.0 * val - 0.5,-4.0 * val + 3.5) ;
+        jet.z = min(4.0 * val + 0.5,-4.0 * val + 2.5) ;
+
+
+        jet.x = clamp(jet.x, 0.0, 1.0);
+        jet.y = clamp(jet.y, 0.0, 1.0);
+        jet.z = clamp(jet.z, 0.0, 1.0);
+	jet.w = 1.0;
+        return jet;
+}
+
 vec4 HSV_to_RGB (vec4 hsv){
   vec4 color;
   float f,p,q,t;
@@ -72,8 +88,6 @@ vec4 HSV_to_RGB (vec4 hsv){
 vec4 rainbowColorMap(float hue) {
   return HSV_to_RGB(vec4(hue, 1.0f, 1.0f,1.0));
 }
-
-
 
 vec4 avgC(){
    vec4 c[4];
@@ -149,9 +163,10 @@ vec4 freq3Blend(vec3 Cb){
 
 void main()
 {
-  vec4 color=vec4(1.0,0,0,1.0);
+  vec4 color;
   vec3 usedWeights;
   usedWeights=weights;
+
 
   if(usedWeights.x==0.0 && usedWeights.y==0.0 &&usedWeights.z==0.0)
     usedWeights=vec3(0.710000,0.650000,0.070000);
@@ -161,36 +176,33 @@ void main()
   else if(shaderOut ==1)
     color=texture2DArray(theTexture,VaryingTexCoord[0].xyz);
   else if(shaderOut ==3){
-    color = texture();
-    lighting( color );
+    vec3 NNormal = normalize(normal.xyz);
+    vec3 Light  = normalize(vec3(1,  2.5,  -1));
+    vec4 specular_val=vec4( 0.18, 0.18, 0.18, 0.18 );
+    
+    float mat_shininess = 64.0f ;
+    vec4 ambient_val = vec4(0.92, 0.92, 0.92, 0.95 );
+    vec4 diffuse_val =vec4( 0.8, 0.8, 0.8, 0.85 );
+    vec3 Eye    = normalize(E);
+    vec3 Half   = normalize(E + Light);
+    float Kd = max(dot(NNormal, Light), 0.0);
+    float Ks = pow(max(dot(Half, NNormal), 0.0),
+		   mat_shininess);
+    float Ka = 1.0;
+    
+    vec4 diffuse  = Kd * diffuse_val;
+    vec4 specular = Ks * specular_val;
+    vec4 ambient  = Ka * vec4(0.35,0.35,0.35,1.0) ;
+    float height = normal.w;;
+    float range= zrangeHi-zrangeLow;
+    float val =(height-zrangeLow)/range;
+    vec4 jet=rainbowColorMap(val);
+    color = jet * (ambient + diffuse + specular);
   }
   else
     color=texture2DArray(theTexture,VaryingTexCoord[0].xyz);
 
+
   gl_FragColor = color;
 } 
-varying vec3 Normal;
-varying vec3 Position; // not used for directional lighting
-void lighting( inout vec4 color )
-{
-    vec3 n = normalize( Normal );
-    float NdotL = dot( n, normalize(gl_LightSource[0].position.xyz) );
-    NdotL = max( 0.0, NdotL );
-    float NdotHV = dot( n, gl_LightSource[0].halfVector.xyz );
-    NdotHV = max( 0.0, NdotHV );
-    color *= gl_FrontLightModelProduct.sceneColor +
-             gl_FrontLightProduct[0].ambient +
-             gl_FrontLightProduct[0].diffuse * NdotL;
-
-   if ( NdotL * NdotHV > 0.0 )
-        color += gl_FrontLightProduct[0].specular *
-                 pow( NdotHV, gl_FrontMaterial.shininess );
-}
-
-vec4 texture( void )
-{
-
-    float range= zrangeHi-zrangeLow;
-    float val =(height-zrangeLow)/range;
-    return rainbowColorMap(val);
-}
+ 

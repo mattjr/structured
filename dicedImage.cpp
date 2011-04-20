@@ -812,7 +812,7 @@ void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned in
         if(count == totalCount){
             time << "Time: ";
         } else{
-            time <<"ETA: ";
+            time <<"ETA:  ";
             currentTime= currentTime*totalCount/count - currentTime;
         }
         double hours=floor(currentTime/60.0/60.0);
@@ -824,7 +824,7 @@ void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned in
 
     std::stringstream bar;
 
-    bar << name << " " <<  setw(3)<<(int)(round(100.0*percentage))<<"% " <<setw(countlength)<< count <<"/"<<totalCount;
+    bar << name << " " <<  setw(3)<<(int)(round(100.0*percentage))<<"% " <<setfill('0')<<setw(countlength+1)<< count <<"/"<<setfill('0')<<setw(countlength+1)<<totalCount;
     bar <<" |";
     int length=term_width-bar.str().size()-time.str().size()-2;
     for(int i=0; i< length; i++){

@@ -441,14 +441,17 @@ void ViewKey(unsigned char key, int , int )
     Vis.SmoothVisibility(true);
     UpdateVis(); break;
   case 'S' :
-    { 
+    {
+        LightFlag=false;FalseColorFlag=false;
+        UpdateVis();
       vcg::tri::io::PlyInfo p; 
       p.mask|=vcg::tri::io::Mask::IOM_VERTCOLOR  /* | vcg::ply::PLYMask::PM_VERTQUALITY*/ ;
            tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),false,p);
       //tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),false);
+           exit(0);
     }
     break;
-  case 'C' : LightFlag = !LightFlag; 
+  case 'C' : LightFlag = !LightFlag;
     printf("Toggled Light %s\n",LightFlag?"on":"off"); 		
     UpdateVis(); break;
   case 'c' : ColorFlag = !ColorFlag; 
@@ -636,7 +639,16 @@ int main(int argc, char** argv)
   
   ViewInit();	
   glewInit();	
-  glutMainLoop();
+  Vis.ComputeUniformCone(SampleNum,ViewVector, ConeAngleRad,ConeDir,cb);
+          LightFlag=false;FalseColorFlag=false;
+          UpdateVis();
+        vcg::tri::io::PlyInfo p;
+        p.mask|=vcg::tri::io::Mask::IOM_VERTCOLOR  /* | vcg::ply::PLYMask::PM_VERTQUALITY*/ ;
+             tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),true,p);
+        //tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),false);
+        //     exit(0);
+
+ // glutMainLoop();
   
   return(0);
 }

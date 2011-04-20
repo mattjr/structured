@@ -192,7 +192,8 @@ void Compute( CallBack *cb)
 	VV.resize(m.vert.size());
   std::vector<int> PixSeen(VV.size(),0);
 	int TotRay=0,HitRay=0;
-	for(unsigned int i=0;i<VN.size();++i)
+
+        for(unsigned int i=0;i<VN.size();++i)
 		{
       int t0=clock(); 
 			fill(PixSeen.begin(),PixSeen.end(),0);
@@ -202,7 +203,7 @@ void Compute( CallBack *cb)
       HitRay+=added;
       TotRay+=VV.size();
       printf("%3i/%i : %i msec -- TotRays %i, HitRays %i, ray/sec %3.1fk \n ",i,VN.size(),t1-t0,TotRay,HitRay,float(TotRay)/(clock()-t00));
-		}
+                }
   
   printf("Tot Time %i msec TotRays %i, HitRays %i, ray/sec %3.1fk \n ",clock()-t00,TotRay,HitRay,float(TotRay)/(clock()-t00));
 	RestoreGL();

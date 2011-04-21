@@ -395,7 +395,7 @@ static void recursive_split_area( const vector<const Stereo_Pose_Data *> &poses,
       exit(1);
    }
 
-int dM=4;
+int dM=5;
 
 
   if(bounds.area() < max_cell_area_even ){

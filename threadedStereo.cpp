@@ -2296,7 +2296,6 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     vrip_cells[i].bounds.max_y,
                     FLT_MAX,
                     i);
-            fprintf(vripcmds_fp,"setenv DISPLAY :0.0;$BASEDIR/texturedDecimator/bin/shadevis -n128  -f ../mesh-diced/tmp-clipped-diced-%08d.ply ;",i);
             if(have_mb_ply){
                 fprintf(vripcmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply;",i,i);
                 for(int k=0; k < (int)mb_ply_filenames.size(); k++){
@@ -2599,7 +2598,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 }
 
                 vector<string> mergeandcleanCmds;
-                mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"vis-tmp-clipped-diced","total",vrip_res));
+                mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"tmp-clipped-diced","total",vrip_res));
                 //mergeandcleanCmds.push_back("cd mesh-diced;");
                 /* string tcmd2;
                 char tmp100[8096];
@@ -2652,7 +2651,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
                             osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
 
-                    osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("mesh-diced/total.ply"+rot);
+                    osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("mesh-diced/vis-total.ply"+rot);
                     osg::Drawable *drawable = model->asGroup()->getChild(0)->asGeode()->getDrawable(0);
                     if(!drawable){
                         fprintf(stderr,"Failed to load model\n");
@@ -2662,7 +2661,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     numberFacesAll=geom->getPrimitiveSet(0)->getNumPrimitives();
 
                     if(!model.valid() || !model->getBound().radius()){
-                        std::cerr << " Cant open total.ply\n";
+                        std::cerr << " Cant open vis-total.ply\n";
                         exit(-1);
                     }
                     bs=model->getBound();
@@ -2800,7 +2799,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int i=0; i <(int)vrip_cells.size(); i++){
                     if(vrip_cells[i].poses.size() == 0)
                         continue;
-                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/total.ply %f %f %f %f %f %f -dup --outfile mesh-diced/clipped-diced-%08d.ply;",
+                    fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/vis-total.ply %f %f %f %f %f %f -dup --outfile mesh-diced/clipped-diced-%08d.ply;",
                             cwd,
                             basepath.c_str(),
                             vrip_cells[i].bounds.min_x,
@@ -2920,7 +2919,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 #define SINGLE_MESH_TEX 1
 #if SINGLE_MESH_TEX
                 std::ostringstream p2;
-                p2 << basepath << "/singleImageTex " << "mesh-diced/total.ply --outfile mesh-diced/totaltex.ply";
+                p2 << basepath << "/singleImageTex " << "mesh-diced/vis-total.ply --outfile mesh-diced/totaltex.ply";
                 postcmdv.push_back(p2.str());
 
 

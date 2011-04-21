@@ -176,7 +176,7 @@ void main()
     color= freq3Blend(usedWeights);
   else if(shaderOut ==1)
     color=texture2DArray(theTexture,VaryingTexCoord[0].xyz);
-  else if(shaderOut ==3){
+  else if(shaderOut ==3 || shaderOut ==4){
     vec3 NNormal = normalize(normal.xyz);
     vec3 Light  = normalize(vec3(1,  2.5,  -1));
     vec4 specular_val=vec4( 0.18, 0.18, 0.18, 0.18 );
@@ -195,8 +195,15 @@ void main()
     vec4 specular = Ks * specular_val;
     vec4 ambient  = Ka * vec4(0.35,0.35,0.35,1.0) ;
     float height = normal.w;;
-    float range= zrangeHi-zrangeLow;
-    float val =(height-zrangeLow)/range;
+    float range=0.0;
+    float val=0.0;
+    if(shaderOut==3){
+        range= zrangeHi-zrangeLow;
+        val =(height-zrangeLow)/range;
+    }else{
+        range=zrangeLocalHi-zrangeLocalLow;
+        val =(height-zrangeLocalLow)/range;
+    }
     vec4 jet=rainbowColorMap(val);
     vec4 aoV=vec4(ao,ao,ao,1.0);
     color = jet * aoV * (ambient + diffuse + specular);

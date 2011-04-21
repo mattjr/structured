@@ -190,7 +190,7 @@ class MyDataSet :  public DataSet
         osg::Matrix getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<osg::Image> &image,osg::Vec4 &ratio,int level);
         std::string _basePath;
         void loadShaderSourcePrelude(osg::Shader* obj, const std::string& fileName );
-        osg::Vec2 _zrange;
+        osg::Vec4 _zrange;
         bool _useStub;
     protected:
         virtual ~MyDataSet() {if(in) delete in;}

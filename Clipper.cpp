@@ -156,11 +156,12 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::Bound
             osg::Vec3 v0 = _vertices[tri.p0];
             osg::Vec3 v1 = _vertices[tri.p1];
             osg::Vec3 v2 = _vertices[tri.p2];
-
-            osg::Vec4 c0 = _colors[tri.p0];
-            osg::Vec4 c1 = _colors[tri.p1];
-            osg::Vec4 c2 = _colors[tri.p2];
-
+            osg::Vec4 c0,c1,c2;
+            if(_colors){
+                c0 = (*_colors)[tri.p0];
+                c1 = (*_colors)[tri.p1];
+                c2 = (*_colors)[tri.p2];
+            }
             int contains=0;
             contains+=clipbox.contains(v0);
             contains+=clipbox.contains(v1);
@@ -281,9 +282,12 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
             const KdTree::Triangle& tri = _triangles[i];
             // OSG_NOTICE<<"   tri("<<tri.p1<<","<<tri.p2<<","<<tri.p3<<")"<<std::endl;
 
-            osg::Vec4 c0 = _colors[tri.p0];
-            osg::Vec4 c1 = _colors[tri.p1];
-            osg::Vec4 c2 = _colors[tri.p2];
+            osg::Vec4 c0,c1,c2;
+            if(_colors){
+                c0 = (*_colors)[tri.p0];
+                c1 = (*_colors)[tri.p1];
+                c2 = (*_colors)[tri.p2];
+            }
 
             osg::Vec3 v0 = _vertices[tri.p0];
             osg::Vec3 v1 = _vertices[tri.p1];
@@ -370,11 +374,11 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
             _new_vertices->push_back(v0);
             _new_vertices->push_back(v1);
             _new_vertices->push_back(v2);
-
-            _new_colors->push_back(c0);
-            _new_colors->push_back(c1);
-            _new_colors->push_back(c2);
-
+            if(_new_colors){
+                _new_colors->push_back(c0);
+                _new_colors->push_back(c1);
+                _new_colors->push_back(c2);
+            }
             _new_triangles->push_back(counter);
             _new_triangles->push_back(counter+1);
             _new_triangles->push_back(counter+2);
@@ -427,7 +431,7 @@ osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,osg::V
 
 
     IntersectKdTreeBbox intersector(*_vertices,
-                                    *colors,
+                                    colors,
                                     _kdNodes,
                                     _triangles,multTex
                                     );
@@ -448,8 +452,7 @@ osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,osg::V
                                               const IntersectKdTreeBbox::OverlapMode &overlapmode) const
 
 {
-#warning "Fix no color pass"
-    assert(colors && ids);
+
     if (_kdNodes.empty())
     {
         OSG_NOTICE<<"Warning: _kdTree is empty"<<std::endl;
@@ -459,7 +462,7 @@ osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,osg::V
 
 
     IntersectKdTreeBbox intersector(*_vertices,
-                                    *colors,
+                                    colors,
                                     _kdNodes,
                                     _triangles,
                                     (ids != NULL));

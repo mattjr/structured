@@ -100,7 +100,9 @@ void MyDataSet::loadShaderSourcePrelude(osg::Shader* obj, const std::string& fil
             "#extension GL_EXT_gpu_shader4 : enable\n"
             "const float zrangeLow=%f;\n"
             "const float zrangeHi=%f;\n"
-            ,_zrange[0],_zrange[1]);
+            "const float zrangeLocalLow=%f;\n"
+            "const float zrangeLocalHi=%f;\n"
+            ,_zrange[0],_zrange[1],_zrange[2],_zrange[3]);
     filestr.append(prelude);
     filestr.append("\n");
 

@@ -3,6 +3,7 @@
 #include <osg/io_utils>
 #include "Clipper.h"
 #include <osgUtil/SmoothingVisitor>
+#include <osg/ComputeBoundsVisitor>
 #include "PLYWriterNodeVisitor.h"
 #include "TexturedSource.h"
 #include "TexturingQuery.h"
@@ -48,7 +49,7 @@ int main( int argc, char **argv )
     bool reimage=false;
     std::string tex_cache_dir;
     texcache_t cache;
-    osg::Vec2 zrange;
+    osg::Vec4 zrange;
     arguments.read("--zrange",zrange[0],zrange[1]);
 
     int size;
@@ -89,7 +90,11 @@ int main( int argc, char **argv )
     xform->addChild(model);
     xform->accept(fstv);
     fstv.removeTransforms(xform);
-
+    osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+    model->accept(cbbv);
+    osg::BoundingBox bb = cbbv.getBoundingBox();
+    zrange[2]=bb.zMin();
+    zrange[3]=bb.zMax();
     if (model)
     {
         vpb::SourceData* data = new vpb::SourceData(sourceModel);

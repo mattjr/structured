@@ -629,6 +629,8 @@ int main(int argc, char** argv)
 	 m.bbox.max[0],m.bbox.max[1],m.bbox.max[2]);
 
   string path=(osgDB::getFilePath(string(argv[i])));
+  if(path.size()==0 || path=="/")
+      path=".";
   OutNameMsh="vis-"+osgDB::getSimpleFileName(string(argv[i]));
   OutNameMsh=path+"/"+OutNameMsh;
 

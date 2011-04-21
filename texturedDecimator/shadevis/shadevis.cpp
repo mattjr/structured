@@ -606,6 +606,11 @@ int main(int argc, char** argv)
   // loading original mesh
   int ret=tri::io::ImporterPLY<AMesh>::Open(m,argv[i]);
   if(ret) {printf("Error unable to open mesh %s : '%s' \n",argv[i],tri::io::ImporterPLY<AMesh>::ErrorMsg(ret));exit(-1);}
+ if(m.fn == 0){
+    printf("No faces empty mesh \n");
+    return 1;
+ }
+
   if(SwapFlag){
       printf("Flipping normal\n");
       tri::Clean<CMeshO>::FlipMesh(m);

@@ -2296,7 +2296,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     vrip_cells[i].bounds.max_y,
                     FLT_MAX,
                     i);
-            fprintf(vripcmds_fp,"$BASEDIR/texturedDecimator/bin/shadevis -n128  -f ../mesh-diced/tmp-clipped-diced-%08d.ply ;",i);
+            fprintf(vripcmds_fp,"setenv DISPLAY :0.0;$BASEDIR/texturedDecimator/bin/shadevis -n128  -f ../mesh-diced/tmp-clipped-diced-%08d.ply ;",i);
             if(have_mb_ply){
                 fprintf(vripcmds_fp,"mv ../mesh-diced/clipped-diced-%08d.ply ../mesh-diced/nomb-diced-%08d.ply;",i,i);
                 for(int k=0; k < (int)mb_ply_filenames.size(); k++){

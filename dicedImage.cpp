@@ -921,7 +921,7 @@ int main(int argc, char** argv)
     _file.close();
 
     std::ostringstream os;
-    os <<"subtile.v";//<<":deflate";
+    os <<"subtile.ppm";//<<":deflate";
     vips::VImage raw;
     vips::VImage raw_untex;
 
@@ -1064,7 +1064,7 @@ int main(int argc, char** argv)
 
     raw.write("subtile.v");
     if(untex)
-        raw_untex.write("subtile_untex.v");
+        raw_untex.write("subtile_untex.ppm");
     printf("Done\n");
     applyGeoTags(osg::Vec2(lat,lon),view,proj,raw.Xsize(),raw.Ysize());
 

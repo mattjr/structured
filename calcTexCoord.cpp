@@ -113,14 +113,15 @@ int main( int argc, char **argv )
         //atlasGen._useAtlas=true;
         vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,basepath,false,false,false);
         dataset->_zrange=zrange;
-        dataset->_useAtlas=false;
+        bool useAtlas=true;
+        dataset->_useAtlas=useAtlas;
         dataset->_useBlending=true;
    //     dataset->_useDisplayLists=false;
 
         vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(cache);
         tile->_mydataSet=dataset;
         tile->_dataSet=dataset;
-        tile->_atlasGen->_useAtlas=false;
+        tile->_atlasGen->_useAtlas=useAtlas;
         tile->_atlasGen->_useStub=false;
 
         TexturingQuery *tq=new TexturingQuery(sourceModel,calib->left_calib,*tile->_atlasGen,true);

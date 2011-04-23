@@ -455,6 +455,17 @@ void MyDestinationTile::unrefData()
     _createdScene = 0;
     _stateset = 0;
 }
+static inline void
+ RGB2RGBA(unsigned int w, unsigned int h,
+                unsigned char *src, unsigned char *dst) {
+   for (unsigned int i=w*h; i; i--) {
+        memmove(dst, src, 3) ;
+        dst += 3 ;
+        src += 3 ;
+        *dst++ = 255 ;
+   }
+ }
+
 void compressFast(osg::State *state,osg::Texture2D* texture2D, osg::Texture::InternalFormatMode internalFormatMode){
 
 
@@ -466,11 +477,18 @@ void compressFast(osg::State *state,osg::Texture2D* texture2D, osg::Texture::Int
       //     (image->s()>=32 && image->t()>=32)){
     //internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION;
     byte *out;
+    byte *in;
+
     int width=image->s();
     int height=image->t();
+    in = (byte*)memalign(16, width*height*4);
+    memset(in, 0, width*height*4);
+    RGB2RGBA(width,height,image->data(),in);
     out = (byte*)memalign(16, width*height*4);
     memset(out, 0, width*height*4);
-   int nbytes =CompressDXT(image->data(), out, width, height, FORMAT_DXT1, 4);
+   int nbytes =CompressDXT(in, out, width, height, FORMAT_DXT1, 4);
+   memfree(in);
+
    /* // need to disable the unref after apply, other the image could go out of scope.
     bool unrefImageDataAfterApply = texture2D->getUnRefImageDataAfterApply();
     texture2D->setUnRefImageDataAfterApply(false);

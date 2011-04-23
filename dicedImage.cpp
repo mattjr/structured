@@ -853,8 +853,8 @@ int main(int argc, char** argv)
     unsigned int width=512;
     unsigned int height=512;
     arguments.read("--pbuffer-only",width,height);
-    int _tileColumns;
-    int _tileRows;
+    int _tileColumns=0;
+    int _tileRows=0;
 
     osg::BoundingBox totalbb;
 

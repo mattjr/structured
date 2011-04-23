@@ -33,7 +33,6 @@ INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOpenMP.cmake )
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindUF.cmake ) 
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOSG.cmake )
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOpenCV.cmake ) 
-INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindLapack.cmake ) 
 INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindGDAL.cmake )
 
 #--------------------------------#

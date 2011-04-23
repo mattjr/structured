@@ -107,6 +107,7 @@ ADD_LIBRARY(fastdxt STATIC ${SRCS})
 
 ## Compiler flags
 if(CMAKE_COMPILER_IS_GNUCXX)
+SET (CMAKE_CXX_COMPILER g++-4.4)
     set(CMAKE_CXX_FLAGS "-O3 -funroll-loops -fomit-frame-pointer  -msse2 -DDXT_INTR")        ## Optimize
 endif()
 ADD_EXECUTABLE( example  example.cpp  )

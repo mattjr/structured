@@ -486,26 +486,14 @@ void compressFast(osg::State *state,osg::Texture2D* texture2D, osg::Texture::Int
     RGB2RGBA(width,height,image->data(),in);
     out = (byte*)memalign(16, width*height*4);
     memset(out, 0, width*height*4);
-   int nbytes =CompressDXT(in, out, width, height, FORMAT_DXT1, 4);
-   memfree(in);
+    int nbytes =CompressDXT(in, out, width, height, FORMAT_DXT1, 4);
 
-   /* // need to disable the unref after apply, other the image could go out of scope.
-    bool unrefImageDataAfterApply = texture2D->getUnRefImageDataAfterApply();
-    texture2D->setUnRefImageDataAfterApply(false);
-
-    // get OpenGL driver to create texture from image.
-    texture2D->apply(*state);
-
-    // restore the original setting
-    texture2D->setUnRefImageDataAfterApply(unrefImageDataAfterApply);
-
-    image->readImageFromCurrentTexture(state->getContextID(),true);
-*/
     image->setImage(width,height,1,GL_COMPRESSED_RGB_S3TC_DXT1_EXT,GL_COMPRESSED_RGB_S3TC_DXT1_EXT,GL_UNSIGNED_BYTE,out,osg::Image::USE_MALLOC_FREE);
     int think=image->getTotalDataSize();
-    printf("Size ocmpra %d %d\n",nbytes,think);
-   // image->setInternalTextureFormat(internalFormatMode);
+  //  printf("Size ocmpra %d %d\n",nbytes,think);
     texture2D->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+    memfree(in);
+
   }
 
 }

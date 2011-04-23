@@ -15,6 +15,7 @@ TexPyrAtlas::TexPyrAtlas(texcache_t imgdir):_imgdir(imgdir)
     _useTextureArray=false;
     _useAtlas=true;
     _useStub=true;
+    srand(getpid());
 }
 
 

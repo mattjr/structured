@@ -456,45 +456,61 @@ void MyDestinationTile::unrefData()
     _stateset = 0;
 }
 static inline void
- RGB2RGBA(unsigned int w, unsigned int h,
-                unsigned char *src, unsigned char *dst) {
-   for (unsigned int i=w*h; i; i--) {
+        RGB2RGBA(unsigned int w, unsigned int h,
+                 unsigned char *src, unsigned char *dst) {
+    for (unsigned int i=w*h; i; i--) {
         memmove(dst, src, 3) ;
         dst += 3 ;
         src += 3 ;
         *dst++ = 255 ;
-   }
- }
+    }
+}
+void compressJP2(osg::State *state,osg::Texture2D* texture2D, osg::Texture::InternalFormatMode internalFormatMode){
+    osg::ref_ptr<osg::Image> image = texture2D->getImage();
+    if (image.valid() &&
+        (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) ){//&&
+        int width=image->s();
+        int height=image->t();
+        char cwd[2048];
+        char *dirres;
+            dirres=getcwd(cwd,2048);
+        std::string fname=string(cwd)+"/mesh-diced/"+getUUID()+".jp2";
+        osgDB::writeImageFile(*image,fname);
 
+        image->setFileName(fname);
+        image->setImage(width,height,1,GL_RGB, GL_RGB, GL_UNSIGNED_BYTE,NULL,osg::Image::NO_DELETE);
+        image->setWriteHint(osg::Image::EXTERNAL_FILE);
+    }
+}
 void compressFast(osg::State *state,osg::Texture2D* texture2D, osg::Texture::InternalFormatMode internalFormatMode){
 
 
 
 
-  osg::ref_ptr<osg::Image> image = texture2D->getImage();
-  if (image.valid() &&
-      (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) ){//&&
-      //     (image->s()>=32 && image->t()>=32)){
-    //internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION;
-    byte *out;
-    byte *in;
+    osg::ref_ptr<osg::Image> image = texture2D->getImage();
+    if (image.valid() &&
+        (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) ){//&&
+        //     (image->s()>=32 && image->t()>=32)){
+        //internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION;
+        byte *out;
+        byte *in;
 
-    int width=image->s();
-    int height=image->t();
-    in = (byte*)memalign(16, width*height*4);
-    memset(in, 0, width*height*4);
-    RGB2RGBA(width,height,image->data(),in);
-    out = (byte*)memalign(16, width*height*4);
-    memset(out, 0, width*height*4);
-    int nbytes =CompressDXT(in, out, width, height, FORMAT_DXT1, 4);
+        int width=image->s();
+        int height=image->t();
+        in = (byte*)memalign(16, width*height*4);
+        memset(in, 0, width*height*4);
+        RGB2RGBA(width,height,image->data(),in);
+        out = (byte*)memalign(16, width*height*4);
+        memset(out, 0, width*height*4);
+        int nbytes =CompressDXT(in, out, width, height, FORMAT_DXT1, 4);
 
-    image->setImage(width,height,1,GL_COMPRESSED_RGB_S3TC_DXT1_EXT,GL_COMPRESSED_RGB_S3TC_DXT1_EXT,GL_UNSIGNED_BYTE,out,osg::Image::USE_MALLOC_FREE);
-    int think=image->getTotalDataSize();
-  //  printf("Size ocmpra %d %d\n",nbytes,think);
-    texture2D->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
-    memfree(in);
+        image->setImage(width,height,1,GL_COMPRESSED_RGB_S3TC_DXT1_EXT,GL_COMPRESSED_RGB_S3TC_DXT1_EXT,GL_UNSIGNED_BYTE,out,osg::Image::USE_MALLOC_FREE);
+        int think=image->getTotalDataSize();
+        //  printf("Size ocmpra %d %d\n",nbytes,think);
+        texture2D->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+        memfree(in);
 
-  }
+    }
 
 }
 void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &geoms,osg::Vec4Array *v,const osg::Vec4Array &colors, const osg::PrimitiveSet& prset,
@@ -585,8 +601,9 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
 
             bool generateMiMap = getImageOptions(layerNum)->getMipMappingMode()==DataSet::MIP_MAPPING_IMAGERY;
             bool resizePowerOfTwo = getImageOptions(layerNum)->getPowerOfTwoImages();
-           // vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
-            compressFast(_dataSet->getState(),texture,internalFormatMode);
+            // vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
+            //compressFast(_dataSet->getState(),texture,internalFormatMode);
+            compressJP2(_dataSet->getState(),texture,internalFormatMode);
             log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");
 
         }
@@ -676,7 +693,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
             if(!untex){
                 vertSplit[id]->push_back(vP[k]);
                 colorSplit[id]->push_back(cP[k]);
-             //   std::cout <<  cP[k]<<"\n";
+                //   std::cout <<  cP[k]<<"\n";
                 for(int t=0; t<4; t++)
                     texSplit[id][t]->push_back(tP[t][k]);
                 primsets[id]->push_back(iP[k]);
@@ -834,7 +851,7 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
     }
 
     cutOffDistance =(pagedLOD->getBound().radius()*_dataSet->getRadiusToMaxVisibleDistanceRatio());// osg::maximum(cutOffDistance,(float)(pagedLOD->getBound().radius()*_dataSet->getRadiusToMaxVisibleDistanceRatio()));
-   // printf("AP Level %d Cutoff distance %f Radius %f \n",_level,cutOffDistance,pagedLOD->getBound().radius());
+    // printf("AP Level %d Cutoff distance %f Radius %f \n",_level,cutOffDistance,pagedLOD->getBound().radius());
     //cout << "AP Center " <<pagedLOD->getBound().center()<<std::endl;
     pagedLOD->setRange(0,cutOffDistance,farDistance);
 

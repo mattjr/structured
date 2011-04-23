@@ -49,6 +49,7 @@
 #include <algorithm>
 #include <vips/vips.h>
 #include "VPBInterface.hpp"
+#include "libdxt.h"
 bool checkInBounds(osg::Vec3 tc);
 
 using namespace vpb;
@@ -454,7 +455,42 @@ void MyDestinationTile::unrefData()
     _createdScene = 0;
     _stateset = 0;
 }
+void compressFast(osg::State *state,osg::Texture2D* texture2D, osg::Texture::InternalFormatMode internalFormatMode){
 
+
+
+
+  osg::ref_ptr<osg::Image> image = texture2D->getImage();
+  if (image.valid() &&
+      (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) ){//&&
+      //     (image->s()>=32 && image->t()>=32)){
+    //internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION;
+    byte *out;
+    int width=image->s();
+    int height=image->t();
+    out = (byte*)memalign(16, width*height*4);
+    memset(out, 0, width*height*4);
+   int nbytes =CompressDXT(image->data(), out, width, height, FORMAT_DXT1, 4);
+   /* // need to disable the unref after apply, other the image could go out of scope.
+    bool unrefImageDataAfterApply = texture2D->getUnRefImageDataAfterApply();
+    texture2D->setUnRefImageDataAfterApply(false);
+
+    // get OpenGL driver to create texture from image.
+    texture2D->apply(*state);
+
+    // restore the original setting
+    texture2D->setUnRefImageDataAfterApply(unrefImageDataAfterApply);
+
+    image->readImageFromCurrentTexture(state->getContextID(),true);
+*/
+    image->setImage(width,height,1,GL_COMPRESSED_RGB_S3TC_DXT1_EXT,GL_COMPRESSED_RGB_S3TC_DXT1_EXT,GL_UNSIGNED_BYTE,out,osg::Image::USE_MALLOC_FREE);
+    int think=image->getTotalDataSize();
+    printf("Size ocmpra %d %d\n",nbytes,think);
+   // image->setInternalTextureFormat(internalFormatMode);
+    texture2D->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+  }
+
+}
 void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &geoms,osg::Vec4Array *v,const osg::Vec4Array &colors, const osg::PrimitiveSet& prset,
                                                        const TexBlendCoord  &texCoordsArray,
                                                        const osg::Vec3Array &verts,int tex_size){
@@ -537,14 +573,14 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         bool compressedImageRequired = (internalFormatMode != osg::Texture::USE_IMAGE_DATA_FORMAT);
         //  image->s()>=minumCompressedTextureSize && image->t()>=minumCompressedTextureSize &&
 
-        if (0&&compressedImageSupported && compressedImageRequired )
+        if (1&&compressedImageSupported && compressedImageRequired )
         {
             log(osg::NOTICE,"Compressed image");
 
             bool generateMiMap = getImageOptions(layerNum)->getMipMappingMode()==DataSet::MIP_MAPPING_IMAGERY;
             bool resizePowerOfTwo = getImageOptions(layerNum)->getPowerOfTwoImages();
-            vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
-
+           // vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
+            compressFast(_dataSet->getState(),texture,internalFormatMode);
             log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");
 
         }
@@ -634,7 +670,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
             if(!untex){
                 vertSplit[id]->push_back(vP[k]);
                 colorSplit[id]->push_back(cP[k]);
-                std::cout <<  cP[k]<<"\n";
+             //   std::cout <<  cP[k]<<"\n";
                 for(int t=0; t<4; t++)
                     texSplit[id][t]->push_back(tP[t][k]);
                 primsets[id]->push_back(iP[k]);

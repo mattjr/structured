@@ -147,19 +147,26 @@ int main( int argc, char **argv )
                 xform->setDataVariance( osg::Object::STATIC );
                 xform->setMatrix(inverseM);
                 xform->addChild(node);
+                osgDB::writeNodeFile(*xform,osgDB::getNameLessExtension(outfilename).append("-uncomp.ive"));
+
                /* osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
                 xform->accept(fstv);
                 fstv.removeTransforms(xform);
 */
-               /* osgDB::ReaderWriter::Options* options = new osgDB::ReaderWriter::Options;
+            /*   osgDB::ReaderWriter::Options* options = new osgDB::ReaderWriter::Options;
                      printf("AAAA %s\n",options->getOptionString().c_str());
-                  //   options->setOptionString("compressed=0");
+                     options->setOptionString("compressed=0");
                        osgDB::Registry::instance()->setOptions(options);*/
-               osgDB::writeNodeFile(*node,osgDB::getNameLessExtension(outfilename).append(".ive"),osgDB::Registry::instance()->getOptions());
-                       //osgDB::Registry::instance()->writeNode(*node,osgDB::getNameLessExtension(outfilename).append(".ive"), osgDB::Registry::instance()->getOptions() );
+             /*   osgDB::ReaderWriter::WriteResult wr;
+
+                osgDB::ReaderWriter* rw =  osgDB::Registry::instance()->getReaderWriterForExtension("ive");
+                wr = rw->writeNode( *dynamic_cast<osg::Geode*>(model), osgDB::getNameLessExtension(outfilename).append(".ive"), new osgDB::Options("compressed 1") );
+            //   osgDB::writeNodeFile(*model,osgDB::getNameLessExtension(outfilename).append(".ivez"),osgDB::Registry::instance()->getOptions());
+                       //osgDB::Registry::instance()->writeNode(*node,osgDB::getNameLessExtension(outfilename).append(".ive"), osgDB::Registry::instance()->getOptions() );*/
               /*  std::ofstream f(outfilename.c_str());
                 PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second));
                 model->accept(nv);*/
+            //    if (!wr.success() )     OSG_NOTIFY( osg::WARN ) << "ERROR: Savefailed: " << wr.message() << std::endl;
             }
 
         }else

@@ -368,7 +368,6 @@ TexturingQuery.cpp
 		quadmerge/envelope.cpp
 		quadmerge/fileio.cpp
 		)
-
 ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} ${SPINDEX_SRC})
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
@@ -391,8 +390,8 @@ ADD_EXECUTABLE(singleImageTex singleImageTex.cpp)
 #ADD_EXECUTABLE( bin/mergeMesh mergeMesh/mergeMesh.cpp mergeMesh/plylib.cpp)
 #ADD_EXECUTABLE( bin/texturedDecimator mergeMesh/texturedDecimator.cpp mergeMesh/plylib.cpp mergeMesh/quadric_simp.cpp mergeMesh/quadric_tex_simp.cpp)
 
-LINK_LIBRARIES(osgTerrain vpb osgFX osg  spindex vips vipsCC)
-TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf vips vipsCC)
+LINK_LIBRARIES(osgTerrain  osgFX osg  spindex vips vipsCC)
+TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf vips vipsCC vpb)
 TARGET_LINK_LIBRARIES( testImageModel ts  )
 TARGET_LINK_LIBRARIES( genTex ts plankton )
 TARGET_LINK_LIBRARIES( remapReimaged ts  vips vipsCC vpb)
@@ -408,7 +407,7 @@ TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC)
 
 TARGET_LINK_LIBRARIES( loadCamRender ts spindex vpb vips vipsCC )
 TARGET_LINK_LIBRARIES( screencap vips vipsCC)
-TARGET_LINK_LIBRARIES( dicedImage vips vipsCC)
+TARGET_LINK_LIBRARIES( dicedImage vips vipsCC z)
 
 #TARGET_LINK_LIBRARIES( threshold ts )
 

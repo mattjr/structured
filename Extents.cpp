@@ -474,7 +474,7 @@ void compressJP2(osg::State *state,osg::Texture2D* texture2D, osg::Texture::Inte
         char cwd[2048];
         char *dirres;
             dirres=getcwd(cwd,2048);
-        std::string fname=string(cwd)+"/mesh-diced/"+getUUID()+".jp2";
+        std::string fname=string(cwd)+"/mesh-diced/"+getUUID()+".jpg";
         osgDB::writeImageFile(*image,fname);
 
         image->setFileName(fname);

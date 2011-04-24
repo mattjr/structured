@@ -475,7 +475,10 @@ void compressJP2(osg::State *state,osg::Texture2D* texture2D, osg::Texture::Inte
         char *dirres;
             dirres=getcwd(cwd,2048);
         std::string fname=string(cwd)+"/mesh-diced/"+getUUID()+".jpg";
-        osgDB::writeImageFile(*image,fname);
+        osg::ref_ptr<osgDB::ReaderWriter::Options> op = new osgDB::ReaderWriter::Options();
+        op->setOptionString("JPEG_QUALITY 20");
+
+        osgDB::writeImageFile(*image,fname,op);
 
         image->setFileName(fname);
         image->setImage(width,height,1,GL_RGB, GL_RGB, GL_UNSIGNED_BYTE,NULL,osg::Image::NO_DELETE);

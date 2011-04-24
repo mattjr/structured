@@ -147,10 +147,19 @@ int main( int argc, char **argv )
                 xform->setDataVariance( osg::Object::STATIC );
                 xform->setMatrix(inverseM);
                 xform->addChild(node);
-                osgDB::writeNodeFile(*xform,osgDB::getNameLessExtension(outfilename).append(".ive"));
-                std::ofstream f(outfilename.c_str());
+               /* osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
+                xform->accept(fstv);
+                fstv.removeTransforms(xform);
+*/
+               /* osgDB::ReaderWriter::Options* options = new osgDB::ReaderWriter::Options;
+                     printf("AAAA %s\n",options->getOptionString().c_str());
+                  //   options->setOptionString("compressed=0");
+                       osgDB::Registry::instance()->setOptions(options);*/
+               osgDB::writeNodeFile(*node,osgDB::getNameLessExtension(outfilename).append(".ive"),osgDB::Registry::instance()->getOptions());
+                       //osgDB::Registry::instance()->writeNode(*node,osgDB::getNameLessExtension(outfilename).append(".ive"), osgDB::Registry::instance()->getOptions() );
+              /*  std::ofstream f(outfilename.c_str());
                 PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second));
-                model->accept(nv);
+                model->accept(nv);*/
             }
 
         }else

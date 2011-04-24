@@ -362,6 +362,7 @@ VPBInterface.cpp
 PLYWriterNodeVisitor.cc
 vertexData.cpp
 TexPyrAtlas.cpp
+Semaphore.cpp
 TexturingQuery.cpp
 		stereo_cells.cpp
                 tridecimator/plylib.cpp

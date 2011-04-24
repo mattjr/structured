@@ -367,7 +367,8 @@ TexturingQuery.cpp
                 tridecimator/plylib.cpp
 		quadmerge/envelope.cpp
 		quadmerge/fileio.cpp
-		)
+GLImaging.cpp
+                )
 ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} ${SPINDEX_SRC})
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
@@ -407,7 +408,7 @@ TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC)
 
 TARGET_LINK_LIBRARIES( loadCamRender ts spindex vpb vips vipsCC )
 TARGET_LINK_LIBRARIES( screencap vips vipsCC)
-TARGET_LINK_LIBRARIES( dicedImage vips vipsCC z)
+TARGET_LINK_LIBRARIES( dicedImage vips vipsCC ts z)
 
 #TARGET_LINK_LIBRARIES( threshold ts )
 

@@ -11,6 +11,7 @@
 #include "auv_stereo_geometry.hpp"
 #include "calcTexCoord.h"
 #include "PLYWriterNodeVisitor.h"
+#include "GLImaging.h"
 using namespace libsnapper;
 using namespace std;
 
@@ -24,10 +25,10 @@ int main( int argc, char **argv )
     arguments.getApplicationUsage()->setCommandLineUsage(arguments.getApplicationName()+" filename");
     Stereo_Calib *calib=NULL;
     string path=string(argv[0]);
-      unsigned int loc=path.rfind("/");
+    unsigned int loc=path.rfind("/");
 
-      string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
-      basepath= osgDB::getRealPath (basepath);
+    string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
+    basepath= osgDB::getRealPath (basepath);
     string base_dir=argv[1];
     string stereo_calib_file_name = "stereo.calib";
     stereo_calib_file_name= base_dir+string("/")+stereo_calib_file_name;
@@ -51,6 +52,8 @@ int main( int argc, char **argv )
     texcache_t cache;
     osg::Vec4 zrange;
     arguments.read("--zrange",zrange[0],zrange[1]);
+    int row,col,numRows,numCols;
+    bool imageNode=arguments.read("--imageNode",row,col,numRows,numCols);
 
     int size;
     if(arguments.read("--tex_cache",tex_cache_dir,size)){
@@ -116,7 +119,7 @@ int main( int argc, char **argv )
         bool useAtlas=true;
         dataset->_useAtlas=useAtlas;
         dataset->_useBlending=true;
-   //     dataset->_useDisplayLists=false;
+        //     dataset->_useDisplayLists=false;
 
         vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(cache);
         tile->_mydataSet=dataset;
@@ -147,18 +150,37 @@ int main( int argc, char **argv )
                 xform->setDataVariance( osg::Object::STATIC );
                 xform->setMatrix(inverseM);
                 xform->addChild(node);
-                osgDB::ReaderWriter::Options* options = new osgDB::ReaderWriter::Options;
-                      printf("AAAA %s\n",options->getOptionString().c_str());
-                      options->setOptionString("compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1");
-                        osgDB::Registry::instance()->setOptions(options);
-                osgDB::writeNodeFile(*xform,osgDB::getNameLessExtension(outfilename).append(".ive"));
+                if(imageNode){
+                    osg::Matrixd view,proj;
 
-               /* osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
+
+                    std::stringstream os2;
+                    os2<< "view.mat";
+
+                    std::fstream _file(os2.str().c_str(),std::ios::binary|std::ios::in);
+                    for(int i=0; i<4; i++)
+                        for(int j=0; j<4; j++)
+                            _file.read(reinterpret_cast<char*>(&(view(i,j))),sizeof(double));
+                    for(int i=0; i<4; i++)
+                        for(int j=0; j<4; j++)
+                            _file.read(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
+                    _file.close();
+                    imageNodeGL(xform.get(),numRows,numCols,512,512,row,col,view,proj,false,"png");
+
+                }
+                if(!imageNode){
+                    osgDB::ReaderWriter::Options* options = new osgDB::ReaderWriter::Options;
+                    printf("AAAA %s\n",options->getOptionString().c_str());
+                    options->setOptionString("compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1");
+                    osgDB::Registry::instance()->setOptions(options);
+                    osgDB::writeNodeFile(*xform,osgDB::getNameLessExtension(outfilename).append(".ive"));
+                }
+                /* osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
                 xform->accept(fstv);
                 fstv.removeTransforms(xform);
 */
 
-             /*   osgDB::ReaderWriter::WriteResult wr;
+                /*   osgDB::ReaderWriter::WriteResult wr;
 
                 osgDB::ReaderWriter* rw =  osgDB::Registry::instance()->getReaderWriterForExtension("ive");
                 wr = rw->writeNode( *dynamic_cast<osg::Geode*>(model), osgDB::getNameLessExtension(outfilename).append(".ive"), new osgDB::Options("compressed 1") );
@@ -167,7 +189,7 @@ int main( int argc, char **argv )
               /*  std::ofstream f(outfilename.c_str());
                 PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second));
                 model->accept(nv);*/
-            //    if (!wr.success() )     OSG_NOTIFY( osg::WARN ) << "ERROR: Savefailed: " << wr.message() << std::endl;
+                //    if (!wr.success() )     OSG_NOTIFY( osg::WARN ) << "ERROR: Savefailed: " << wr.message() << std::endl;
             }
 
         }else

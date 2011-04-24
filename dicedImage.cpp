@@ -472,6 +472,19 @@ void WindowCaptureCallback::ContextData::updateTimings(osg::Timer_t tick_start,
     }
 
 }
+int gpuUsage(int gpu,int &mem){
+    char cmd[1024];
+    system("nvidia-smi -a | grep Mb |tee debugLog.txt");
+    sprintf(cmd,"nvidia-smi -a | grep Mb| grep Free| cut -c34-38 ");
+    FILE *lsofFile_p = popen(cmd, "r");
+
+    if (!lsofFile_p) { return -1; }
+    for(int i=0; i<gpu+1; i++){
+        char buffer[1024];fgets(buffer, sizeof(buffer), lsofFile_p); pclose(lsofFile_p);
+        mem=atoi(buffer);
+    }
+    return 0;
+}
 
 void WindowCaptureCallback::ContextData::readPixels()
 {
@@ -834,8 +847,8 @@ void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned in
             bar <<" ";
     }
     bar << "| "<<time.str();
-   // if(count==totalCount)
-     //   bar<<"\n";
+    // if(count==totalCount)
+    //   bar<<"\n";
     printf("\r%s",bar.str().c_str());
     fflush(stdout);
 }
@@ -937,10 +950,13 @@ int main(int argc, char** argv)
     }
     osg::Timer_t startTick = osg::Timer::instance()->tick();
     formatBar("Img",startTick,0,validCount);
+    FILE *logfp=fopen("DItiming.txt","w");
 
     int count=0;
     for(int i=0; i < (int)cells.size(); i++)
     {
+        osg::Timer_t startTick = osg::Timer::instance()->tick();
+
         if(cells[i].name == "null")
             continue;
         osgViewer::Viewer viewer(arguments);
@@ -1020,6 +1036,8 @@ int main(int argc, char** argv)
 
             addCallbackToViewer(viewer, wcc);
         }
+        osg::Timer_t timeEndSetup = osg::Timer::instance()->tick();
+        double setupTime = osg::Timer::instance()->delta_s(startTick, timeEndSetup);
 
         // load the data
         osg::Matrix offsetMatrix=osg::Matrix::scale(_tileColumns, _tileRows, 1.0)*osg::Matrix::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
@@ -1027,7 +1045,11 @@ int main(int argc, char** argv)
         fflush(stdout);
 */
         osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(cells[i].name);
+        osg::Timer_t timeEndLoad = osg::Timer::instance()->tick();
 
+        double loadTime = osg::Timer::instance()->delta_s(timeEndSetup, timeEndLoad);
+
+        int mem=0;
         if (node.valid() )
         {
             viewer.setSceneData( node );
@@ -1037,6 +1059,11 @@ int main(int argc, char** argv)
             viewer.advance();
             viewer.updateTraversal();
             viewer.renderingTraversals();
+            osg::Timer_t timeEndRender = osg::Timer::instance()->tick();
+            double renderTime = osg::Timer::instance()->delta_s(timeEndLoad, timeEndRender);
+
+            gpuUsage(0,mem);
+            fprintf(logfp,"cnt: %d setup %.1fs load %.1fs render: %.1fs mem1: %d MB ",count,setupTime,loadTime,renderTime,mem);
             osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
             vips::VImage tmp(img->data(),img->s(),img->t(),4,vips::VImage::FMTUCHAR);
             raw.insertplace(tmp.flipver().extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
@@ -1047,25 +1074,44 @@ int main(int argc, char** argv)
                 viewer.advance();
                 viewer.updateTraversal();
                 viewer.renderingTraversals();
+                osg::Timer_t timeEndRender2 = osg::Timer::instance()->tick();
+                double renderTime2 = osg::Timer::instance()->delta_s(timeEndRender, timeEndRender2);
+
+                gpuUsage(0,mem);
                 osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
                 vips::VImage tmp(img->data(),img->s(),img->t(),4,vips::VImage::FMTUCHAR);
                 raw_untex.insertplace(tmp.flipver().extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
-            }
+                fprintf(logfp," render2: %.1fs mem2: %d\n",renderTime2,mem);
 
+            }else
+                fprintf(logfp,"\n");
+            fflush(logfp);
         }else{
             std::cout << "Invalid " << cells[i].name << "\n";
         }
-       formatBar("Img",startTick,++count,validCount);
+        formatBar("Img",startTick,++count,validCount);
 
 
 
     }
     formatBar("Img",startTick,validCount,validCount);
+    osg::Timer_t writeStart = osg::Timer::instance()->tick();
 
     raw.write("subtile.ppm");
-    if(untex)
+    double writeTime = osg::Timer::instance()->delta_s(writeStart, osg::Timer::instance()->tick());
+    fprintf(logfp,"Write Time %.1fs\n",writeTime);
+
+    if(untex){
+        osg::Timer_t writeStart = osg::Timer::instance()->tick();
+
         raw_untex.write("subtile_untex.ppm");
+        double writeTime = osg::Timer::instance()->delta_s(writeStart, osg::Timer::instance()->tick());
+        fprintf(logfp,"Write Time 2 %.1fs\n",writeTime);
+
+    }
     printf("Done\n");
+    fclose(logfp);
+
     applyGeoTags(osg::Vec2(lat,lon),view,proj,raw.Xsize(),raw.Ysize());
 
 }

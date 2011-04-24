@@ -307,7 +307,7 @@ else
 
    tcmd+=tmp100;
 
-   sprintf(tmp100,"setenv DISPLAY :0.0;%s/texturedDecimator/bin/shadevis -n128  -f mesh-diced/%s.ply >mesh-diced/shadevislog.txt;",basepath,outname.c_str());
+   sprintf(tmp100,"export DISPLAY=:0.0;%s/texturedDecimator/bin/shadevis -n128  -f mesh-diced/%s.ply >mesh-diced/shadevislog.txt;",basepath,outname.c_str());
    tcmd+=tmp100;
 
 

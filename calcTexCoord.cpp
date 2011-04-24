@@ -147,16 +147,17 @@ int main( int argc, char **argv )
                 xform->setDataVariance( osg::Object::STATIC );
                 xform->setMatrix(inverseM);
                 xform->addChild(node);
-                osgDB::writeNodeFile(*xform,osgDB::getNameLessExtension(outfilename).append("-uncomp.ive"));
+                osgDB::ReaderWriter::Options* options = new osgDB::ReaderWriter::Options;
+                      printf("AAAA %s\n",options->getOptionString().c_str());
+                      options->setOptionString("compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1");
+                        osgDB::Registry::instance()->setOptions(options);
+                osgDB::writeNodeFile(*xform,osgDB::getNameLessExtension(outfilename).append(".ive"));
 
                /* osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
                 xform->accept(fstv);
                 fstv.removeTransforms(xform);
 */
-            /*   osgDB::ReaderWriter::Options* options = new osgDB::ReaderWriter::Options;
-                     printf("AAAA %s\n",options->getOptionString().c_str());
-                     options->setOptionString("compressed=0");
-                       osgDB::Registry::instance()->setOptions(options);*/
+
              /*   osgDB::ReaderWriter::WriteResult wr;
 
                 osgDB::ReaderWriter* rw =  osgDB::Registry::instance()->getReaderWriterForExtension("ive");

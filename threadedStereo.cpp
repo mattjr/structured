@@ -376,15 +376,6 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--skipsparse",skip_sparse);
     argp.read("--bkmb",background_mb);
     argp.read("--overlap",overlap);
-    argp.read("--reimageres",reimageSize.x(),reimageSize.y());
-    for(int i=0; i< 2; i++){
-        if(osg::Image::computeNearestPowerOfTwo(reimageSize[i]) != reimageSize[i]){
-            fprintf(stderr,"Clamping reimage %d res %f to ",i,reimageSize[i]);
-            reimageSize[i]=osg::Image::computeNearestPowerOfTwo(reimageSize[i]);
-            fprintf(stderr,"%f\n ",reimageSize[i]);
-
-        }
-    }
 
 
 
@@ -523,6 +514,15 @@ static bool parse_args( int argc, char *argv[ ] )
 
     sprintf(cachedsegtex,"cache-seg-coords/");
 
+    argp.read("--reimageres",reimageSize.x(),reimageSize.y());
+    for(int i=0; i< 2; i++){
+        if(osg::Image::computeNearestPowerOfTwo(reimageSize[i]) != reimageSize[i]){
+            fprintf(stderr,"Clamping reimage %d res %f to ",i,reimageSize[i]);
+            reimageSize[i]=osg::Image::computeNearestPowerOfTwo(reimageSize[i]);
+            fprintf(stderr,"%f\n ",reimageSize[i]);
+
+        }
+    }
 
     string mbfile;
 

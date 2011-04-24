@@ -186,10 +186,10 @@ int main(int argc, char** argv)
         //double setupTime = osg::Timer::instance()->delta_s(loopTick, timeEndSetup);
 
         // load the data
-        osg::Matrixd offsetMatrix=osg::Matrixd::identity()*osg::Matrixd::scale(_tileColumns, _tileRows, 1.0)*osg::Matrixd::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
+        osg::Matrixd offsetMatrix=osg::Matrixd::scale(_tileColumns, _tileRows, 1.0)*osg::Matrixd::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
         /* printf("\r%03d/%03d",i,(int)cells.size());
         fflush(stdout);
-*/        std::cout <<"row: "<<cells[i].row << " col: "<<cells[i].col<<" tc: "<<_tileColumns << " "<<_tileRows<<" "<<"\n"<<osg::Matrix::scale(_tileColumns, _tileRows, 1.0) << "\n"<<osg::Matrix::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0) <<"\n"<<offsetMatrix<<endl;
+*/       // std::cout <<"row: "<<cells[i].row << " col: "<<cells[i].col<<" tc: "<<_tileColumns << " "<<_tileRows<<" "<<"\n"<<osg::Matrix::scale(_tileColumns, _tileRows, 1.0) << "\n"<<osg::Matrix::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0) <<"\n"<<offsetMatrix<<endl;
 
         osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(cells[i].name);
         osg::Timer_t timeEndLoad = osg::Timer::instance()->tick();

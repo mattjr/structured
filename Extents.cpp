@@ -598,7 +598,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         bool compressedImageRequired = (internalFormatMode != osg::Texture::USE_IMAGE_DATA_FORMAT);
         //  image->s()>=minumCompressedTextureSize && image->t()>=minumCompressedTextureSize &&
 
-        if (1&&compressedImageSupported && compressedImageRequired )
+        if (0&&compressedImageSupported && compressedImageRequired )
         {
             log(osg::NOTICE,"Compressed image");
 

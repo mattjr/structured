@@ -602,7 +602,7 @@ if(node == NULL)
         osgViewer::Viewer viewer;
 
 
-
+        viewer.setThreadingModel( osgViewer::Viewer::SingleThreaded );
         GLenum readBuffer = GL_BACK;
         WindowCaptureCallback::FramePosition position = WindowCaptureCallback::END_FRAME;
         WindowCaptureCallback::Mode mode = WindowCaptureCallback::SINGLE_PBO;
@@ -669,13 +669,17 @@ if(node == NULL)
 
                 viewer.startThreading();
             }
+        }else{
+            std::cerr<<"Can't Init Pbuffer\n"<<std::endl;
+            return -1;
         }
-        else
+        /*else
         {
             viewer.realize();
 
             addCallbackToViewer(viewer, wcc);
-        }
+        }*/
+
 
         // load the data
         osg::Matrix offsetMatrix=osg::Matrix::scale((double)_tileColumns,(double) _tileRows, 1.0)*osg::Matrix::translate((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0);

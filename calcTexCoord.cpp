@@ -54,7 +54,7 @@ int main( int argc, char **argv )
     arguments.read("--zrange",zrange[0],zrange[1]);
     int row,col,numRows,numCols;
     bool imageNode=arguments.read("--imageNode",row,col,numRows,numCols);
-
+    bool untex=arguments.read("--untex");
     int size;
     if(arguments.read("--tex_cache",tex_cache_dir,size)){
         reimage=true;
@@ -116,7 +116,7 @@ int main( int argc, char **argv )
         //atlasGen._useAtlas=true;
         vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,basepath,false,false,false);
         dataset->_zrange=zrange;
-        bool useAtlas=true;
+        bool useAtlas=false;
         dataset->_useAtlas=useAtlas;
         dataset->_useBlending=true;
         //     dataset->_useDisplayLists=false;
@@ -165,7 +165,8 @@ int main( int argc, char **argv )
                         for(int j=0; j<4; j++)
                             _file.read(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
                     _file.close();
-                    imageNodeGL(xform.get(),numRows,numCols,512,512,row,col,view,proj,false,"png");
+
+                    imageNodeGL(xform.get(),numRows,numCols,512,512,row,col,view,proj,untex,"png");
 
                 }
                 if(!imageNode){

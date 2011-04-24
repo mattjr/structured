@@ -2892,7 +2892,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int i=0; i <(int)cells.size(); i++){
                     if(cells[i].images.size() == 0)
                         continue;
-                    fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f",
+                    fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.0;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f",
                             cwd,
                             basepath.c_str(),
                             base_dir.c_str(),
@@ -2901,7 +2901,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             cells[i].row,cells[i].col,
                             vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax());
                     fprintf(texcmds_fp," --tex_cache %s %d --invrot %f %f %f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,rx,ry,rz);
-                    fprintf(texcmds_fp," --imageNode %d %d %d %d\n",cells[i].row,cells[i].col,_tileRows,_tileColumns);
+                    fprintf(texcmds_fp," --imageNode %d %d %d %d --untex\n",cells[i].row,cells[i].col,_tileRows,_tileColumns);
 
                    /* fprintf(texcmds_fp,"osgconv -O \"compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1\" mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d-uncomp.ive  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive\n",
 
@@ -2919,7 +2919,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 std::ostringstream p;
                 int tileSize=256;
 
-                p << basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << (int)reimageSize.x()-((reimageSize.x()/tileSize)*2*tileBorder) << " "<< (int)reimageSize.y()-((reimageSize.y()/tileSize)*2*tileBorder)  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
+                p << "#"<<basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << (int)reimageSize.x()-((reimageSize.x()/tileSize)*2*tileBorder) << " "<< (int)reimageSize.y()-((reimageSize.y()/tileSize)*2*tileBorder)  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
                 if(untex)
                     p<< " -untex " << totalbb_unrot.zMin() << " " << totalbb_unrot.zMax();
                 postcmdv.push_back(p.str());

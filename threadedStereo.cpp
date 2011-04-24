@@ -2901,7 +2901,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             cells[i].row,cells[i].col,
                             vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax());
                     fprintf(texcmds_fp," --tex_cache %s %d --invrot %f %f %f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,rx,ry,rz);
-                    fprintf(texcmds_fp," --imageNode %d %d %d %d --untex\n",cells[i].row,cells[i].col,_tileRows,_tileColumns);
+                    fprintf(texcmds_fp," --imageNode %d %d %d %d %d %d --untex\n",cells[i].row,cells[i].col,_tileRows,_tileColumns,(int)reimageSize.x(),(int)reimageSize.y());
 
                    /* fprintf(texcmds_fp,"osgconv -O \"compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1\" mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d-uncomp.ive  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive\n",
 

@@ -52,8 +52,8 @@ int main( int argc, char **argv )
     texcache_t cache;
     osg::Vec4 zrange;
     arguments.read("--zrange",zrange[0],zrange[1]);
-    int row,col,numRows,numCols;
-    bool imageNode=arguments.read("--imageNode",row,col,numRows,numCols);
+    int row,col,numRows,numCols,width,height;
+    bool imageNode=arguments.read("--imageNode",row,col,numRows,numCols,width,height);
     bool untex=arguments.read("--untex");
     int size;
     if(arguments.read("--tex_cache",tex_cache_dir,size)){
@@ -166,7 +166,7 @@ int main( int argc, char **argv )
                             _file.read(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
                     _file.close();
 
-                    imageNodeGL(xform.get(),numRows,numCols,512,512,row,col,view,proj,untex,"png");
+                    imageNodeGL(xform.get(),numRows,numCols,width,height,row,col,view,proj,untex,"png");
 
                 }
                 if(!imageNode){

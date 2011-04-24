@@ -678,9 +678,9 @@ if(node == NULL)
         }
 
         // load the data
-        osg::Matrix offsetMatrix=osg::Matrix::identity()*osg::Matrixd::scale(_tileColumns, _tileRows, 1.0)*osg::Matrixd::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
+        osg::Matrix offsetMatrix=osg::Matrix::scale((double)_tileColumns,(double) _tileRows, 1.0)*osg::Matrix::translate((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0);
         osg::Timer_t beginRender = osg::Timer::instance()->tick();
-        {  std::cout <<"row: "<<row << " col: "<<col<<" tc: "<<_tileColumns << " "<<_tileRows<<" "<<"\n"<<osg::Matrixd::scale(_tileColumns, _tileRows, 1.0) << "\n"<<osg::Matrixd::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0) <<"\n"<<offsetMatrix<<endl;
+        {  //std::cout <<"row: "<<row << " col: "<<col<<" tc: "<<_tileColumns << " "<<_tileRows<<" "<<"\n"<<view << "\n"<<proj <<"\n"<<offsetMatrix<<endl;
 
             viewer.setSceneData( node );
             viewer.getCamera()->setProjectionMatrix(proj*offsetMatrix);

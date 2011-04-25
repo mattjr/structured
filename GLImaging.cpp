@@ -1,4 +1,5 @@
 #include "GLImaging.h"
+#include "Semaphore.h"
 
 void ConvertRGBA_BGRA_SSE2(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch)
 {
@@ -168,16 +169,16 @@ void WindowCaptureCallback::ContextData::updateTimings(osg::Timer_t tick_start,
 }
 int gpuUsage(int gpu,int &mem){
     char cmd[1024];
-   // system("nvidia-smi -a | grep Mb >> debugLog.txt");
+    // system("nvidia-smi -a | grep Mb >> debugLog.txt");
     sprintf(cmd,"nvidia-smi -q --gpu=%d | grep Mb| grep Free| cut -c34-38 ",gpu);
     FILE *lsofFile_p = popen(cmd, "r");
 
     if (!lsofFile_p) { return -1; }
-        char buffer[1024];char *lp=fgets(buffer, sizeof(buffer), lsofFile_p); pclose(lsofFile_p);
-        if(lp==NULL){
-            fprintf(stderr,"error on read\n");
-        }
-        mem=atoi(buffer);
+    char buffer[1024];char *lp=fgets(buffer, sizeof(buffer), lsofFile_p); pclose(lsofFile_p);
+    if(lp==NULL){
+        fprintf(stderr,"error on read\n");
+    }
+    mem=atoi(buffer);
 
     return 0;
 }
@@ -594,15 +595,28 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
                 const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,std::string ext)
 {
 
-if(node == NULL)
-    return -1;
+    if(node == NULL)
+        return -1;
+    key_t semkey;
 
+#define KEY (1492)
 
+    semkey=KEY;//ftok("/tmp/glimagesem",'a');
 
+    osg::ref_ptr<osg::Image> tmpImg1,tmpImg2;
+
+    android::Semaphore sem;
+    if(!sem.attach(semkey))
+    {
+        fprintf(stderr,"Semaphore Failure FATAL ERROR\n");
+        exit(-1);
+    }
+
+    {
         osgViewer::Viewer viewer;
 
 
-        viewer.setThreadingModel( osgViewer::Viewer::SingleThreaded );
+        //viewer.setThreadingModel( osgViewer::Viewer::SingleThreaded );
         GLenum readBuffer = GL_BACK;
         WindowCaptureCallback::FramePosition position = WindowCaptureCallback::END_FRAME;
         WindowCaptureCallback::Mode mode = WindowCaptureCallback::SINGLE_PBO;
@@ -683,9 +697,19 @@ if(node == NULL)
 
         // load the data
         osg::Matrix offsetMatrix=osg::Matrix::scale((double)_tileColumns,(double) _tileRows, 1.0)*osg::Matrix::translate((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0);
+
+
         osg::Timer_t beginRender = osg::Timer::instance()->tick();
         {  //std::cout <<"row: "<<row << " col: "<<col<<" tc: "<<_tileColumns << " "<<_tileRows<<" "<<"\n"<<view << "\n"<<proj <<"\n"<<offsetMatrix<<endl;
 
+
+            // sem.create(semkey,1,false);
+
+            sem.acquire();
+            for(int i=0; i< 5; i++){
+                printf("Spining...\n");
+                sleep(1);
+            }
             viewer.setSceneData( node );
             viewer.getCamera()->setProjectionMatrix(proj*offsetMatrix);
             viewer.getCamera()->setViewMatrix(view);
@@ -698,10 +722,10 @@ if(node == NULL)
             printf("Render %.1f\n",renderTime);
             int mem;
             gpuUsage(1,mem);
-            char tmp[1024];
-            sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d.%s",row,col,_tileRows,_tileColumns,ext.c_str());
-            osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
-            osgDB::writeImageFile(*img,tmp);
+
+            // osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
+            tmpImg1 =  dynamic_cast<osg::Image*>(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]->clone(osg::CopyOp::DEEP_COPY_ALL));
+
             if(untex){
                 node->getOrCreateStateSet()->addUniform(new osg::Uniform("shaderOut",3));
                 viewer.setSceneData( node );
@@ -713,17 +737,27 @@ if(node == NULL)
                 double renderTime2 = osg::Timer::instance()->delta_s(timeEndRender, timeEndRender2);
                 printf("Render %.1f\n",renderTime2);
                 gpuUsage(1,mem);
-                osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
-                sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d_untex.%s",row,col,_tileRows,_tileColumns,ext.c_str());
-                osgDB::writeImageFile(*img,tmp);
-
-
-
+                tmpImg2 =  dynamic_cast<osg::Image*>(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]->clone(osg::CopyOp::DEEP_COPY_ALL));
             }
+
         }
+    }
 
+    sem.release();
+    char tmp[1024];
 
+    sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d.%s",row,col,_tileRows,_tileColumns,ext.c_str());
+    if(tmpImg1.valid()){
+        osgDB::writeImageFile(*tmpImg1,tmp);
+    }else
+        fprintf(stderr,"Failed to copy image into RAM\n");
+    if(untex){
 
-
-        return 0;
+        sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d_untex.%s",row,col,_tileRows,_tileColumns,ext.c_str());
+        if(tmpImg2.valid()){
+            osgDB::writeImageFile(*tmpImg2,tmp);
+        }else
+            fprintf(stderr,"Failed to copy image into RAM\n");
+    }
+    return 0;
 }

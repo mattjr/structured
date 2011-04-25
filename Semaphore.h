@@ -9,9 +9,25 @@
 #ifndef __LIBS_SEMAPHORE_H
 #define __LIBS_SEMAPHORE_H
 
-#ifdef HAVE_ANDROID_OS
-#error DO NOT USE THIS FILE IN THE DEVICE BUILD
+#if defined(__APPLE__)
+# include <semaphore.h>
+#elif defined(__linux__)
+# include <sys/types.h>
+# include <sys/ipc.h>
+# include <sys/sem.h>
+#elif defined(_WIN32)
+# include <windows.h>
+#else
+# error "unknown sem config"
 #endif
+#include <stdio.h>
+#define LOG(priority, tag, ...) \
+    printf(__VA_ARGS__)
+
+
+#define LOG_ERROR(priority, tag, ...) \
+            printf(__VA_ARGS__)
+
 
 namespace android {
 

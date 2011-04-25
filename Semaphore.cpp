@@ -2,27 +2,10 @@
 //
 #include "Semaphore.h"
 
-#if defined(__APPLE__)
-# include <semaphore.h>
-#elif defined(__linux__)
-# include <sys/types.h>
-# include <sys/ipc.h>
-# include <sys/sem.h>
-#elif defined(_WIN32)
-# include <windows.h>
-#else
-# error "unknown sem config"
-#endif
-#include <stdio.h>
-#define LOG(priority, tag, ...) \
-    printf(__VA_ARGS__)
-
-
-#define LOG_ERROR(priority, tag, ...) \
-            printf(__VA_ARGS__)
-
 #include <errno.h>
 #include <assert.h>
+#include <stdint.h>
+#include <string.h>
 
 using namespace android;
 
@@ -232,8 +215,8 @@ bool Semaphore::create(int key, int initialValue, bool deleteExisting)
 
     semid = semget(key, 1, 0600 | IPC_CREAT | IPC_EXCL);
     if (semid == -1) {
-        LOG(LOG_ERROR, "sem", "Failed to create key=%d (errno=%d)\n",
-            key, errno);
+        LOG(LOG_ERROR, "sem", "Failed to create key=%d (errno=%d) %s\n",
+            key, errno,strerror(errno));
         return false;
     }
 
@@ -320,8 +303,8 @@ bool Semaphore::adjust(int adj, bool wait)
     if (cc != 0) {
         if (wait || errno != EAGAIN) {
             LOG(LOG_WARN, "sem",
-                "semaphore adjust by %d failed for semid=%ld (errno=%d)\n",
-                adj, mHandle, errno);
+                "semaphore adjust by %d failed for semid=%ld (errno=%d) %s\n",
+                adj, mHandle, errno,strerror(errno));
         }
         return false;
     }

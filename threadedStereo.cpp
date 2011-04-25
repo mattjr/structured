@@ -71,6 +71,7 @@ static int skip_sparse=0;
 static string background_mb;
 static string contents_file_name;
 static string dir_name;
+static bool novpb=false;
 static bool use_cached=true;
 static bool output_uv_file=false;
 static bool further_clean=false;
@@ -377,6 +378,7 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--bkmb",background_mb);
     argp.read("--overlap",overlap);
 
+    novpb=argp.read("--novpb");
 
 
     if(argp.read("--noarray"))
@@ -2913,7 +2915,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 }
                 fclose(texcmds_fp);
                 int tileBorder=1;
+                std::ostringstream p1;
 
+                vector<std::string> precmd;
+                   p1 <<basepath << "/createSem";
+                   precmd.push_back(p1.str());
                 string texcmd="tex.py";
                 vector<std::string> postcmdv;
                 std::ostringstream p;
@@ -2942,7 +2948,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" tex.tif ";
                 postcmdv.push_back(p3.str());
 
-                shellcm.write_generic(texcmd,texcmds_fn,"Tex",NULL,&(postcmdv),num_threads);
+                shellcm.write_generic(texcmd,texcmds_fn,"Tex",&(precmd),&(postcmdv),num_threads);
                 if(!no_tex)
                     sysres=system("./tex.py");
 
@@ -3084,6 +3090,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     mgc = new MyGraphicsContext();
                 bool useVirtTex=true;
                 bool useReimage=false;
+                if(!novpb)
                 doQuadTreeVPB(basepath,cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb);
 
 

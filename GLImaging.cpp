@@ -1,5 +1,75 @@
 #include "GLImaging.h"
 #include "Semaphore.h"
+#include <osg/Texture3D>
+class PBOTexturesVisitor : public osg::NodeVisitor
+{
+public:
+
+    PBOTexturesVisitor(osg::PixelBufferObject* buffer):
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        _buffer(buffer) {}
+
+    virtual void apply(osg::Node& node)
+    {
+        if (node.getStateSet()) apply(*node.getStateSet());
+        traverse(node);
+    }
+
+    virtual void apply(osg::Geode& node)
+    {
+        if (node.getStateSet()) apply(*node.getStateSet());
+
+        for(unsigned int i=0;i<node.getNumDrawables();++i)
+        {
+            osg::Drawable* drawable = node.getDrawable(i);
+            if (drawable && drawable->getStateSet()) apply(*drawable->getStateSet());
+        }
+
+        traverse(node);
+    }
+
+    virtual void apply(osg::StateSet& stateset)
+    {
+        // search for the existence of any texture object attributes
+        for(unsigned int i=0;i<stateset.getTextureAttributeList().size();++i)
+        {
+            osg::Texture* texture = dynamic_cast<osg::Texture*>(stateset.getTextureAttribute(i,osg::StateAttribute::TEXTURE));
+            if (texture)
+            {
+                _textureSet.insert(texture);
+            }
+        }
+    }
+
+    void addPBO()
+    {
+
+        for(TextureSet::iterator itr=_textureSet.begin();
+            itr!=_textureSet.end();
+            ++itr)
+        {
+            osg::Texture* texture = const_cast<osg::Texture*>(itr->get());
+
+            osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(texture);
+            osg::Texture3D* texture3D = dynamic_cast<osg::Texture3D*>(texture);
+
+            osg::ref_ptr<osg::Image> image = texture2D ? texture2D->getImage() : (texture3D ? texture3D->getImage() : 0);
+            if (image.valid() &&
+                (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) &&
+                (image->s()>=32 && image->t()>=32))
+            {
+               image->setPixelBufferObject(new osg::PixelBufferObject(image));
+            }
+        }
+    }
+
+
+
+    typedef std::set< osg::ref_ptr<osg::Texture> > TextureSet;
+    TextureSet                          _textureSet;
+    osg::PixelBufferObject   *_buffer;
+
+};
 
 void ConvertRGBA_BGRA_SSE2(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch)
 {
@@ -616,7 +686,7 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
         osgViewer::Viewer viewer;
 
 
-        //viewer.setThreadingModel( osgViewer::Viewer::SingleThreaded );
+        viewer.setThreadingModel( osgViewer::Viewer::SingleThreaded );
         GLenum readBuffer = GL_BACK;
         WindowCaptureCallback::FramePosition position = WindowCaptureCallback::END_FRAME;
         WindowCaptureCallback::Mode mode = WindowCaptureCallback::SINGLE_PBO;
@@ -639,7 +709,7 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
             traits->sharedContext = 0;
 
             pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
-            //std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
+           // std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
             if (pbuffer.valid())
             {
                 //   osg::notify(osg::INFO)<<"Pixel buffer has been created successfully."<<std::endl;
@@ -655,7 +725,12 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
 
         osg::ref_ptr<WindowCaptureCallback> wcc=new WindowCaptureCallback(mode, position, readBuffer);
         osg::ref_ptr<osg::Camera> camera;
-
+        /* NOT FASTER
+    osg::ref_ptr<osg::PixelBufferObject> pboWriteBuffer=new osg::PixelBufferObject;
+        osg::ref_ptr<PBOTexturesVisitor> pbotv=new PBOTexturesVisitor(pboWriteBuffer.get());
+        node->accept(*pbotv.get());
+        pbotv->addPBO();
+*/
         if (pbuffer.valid())
         {camera = new osg::Camera;
             camera->setGraphicsContext(pbuffer.get());

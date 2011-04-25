@@ -706,10 +706,6 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
             // sem.create(semkey,1,false);
 
             sem.acquire();
-            for(int i=0; i< 5; i++){
-                printf("Spining...\n");
-                sleep(1);
-            }
             viewer.setSceneData( node );
             viewer.getCamera()->setProjectionMatrix(proj*offsetMatrix);
             viewer.getCamera()->setViewMatrix(view);

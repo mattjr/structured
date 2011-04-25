@@ -172,7 +172,7 @@ int main( int argc, char **argv )
                 if(!imageNode){
                     osgDB::ReaderWriter::Options* options = new osgDB::ReaderWriter::Options;
                     printf("AAAA %s\n",options->getOptionString().c_str());
-                    options->setOptionString("compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1");
+                   // options->setOptionString("compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1");
                     osgDB::Registry::instance()->setOptions(options);
                     osgDB::writeNodeFile(*xform,osgDB::getNameLessExtension(outfilename).append(".ive"));
                 }

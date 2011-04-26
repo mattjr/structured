@@ -153,19 +153,19 @@ void TexPyrAtlas::loadTextureFiles(int size){
 
 
     if(_useAtlas){
-        buildAtlas();
+        buildAtlas(loc_images);
         computeImageNumberToAtlasMap();
         for(int i=0; i < (int)getNumAtlases(); i++){
-                _images.push_back(getAtlasByNumber(i));
-                _images.back()->setFileName(getUUID());
-            }
-        //Free ref created by source new above which is leaks after copy from sources
-       // for(int i=0; i < (int)loc_images.size(); i++){
+            _images.push_back(getAtlasByNumber(i));
+            _images.back()->setFileName(getUUID());
+        }
+        //Free ref created by source new above which leaks after copy from sources
+        // for(int i=0; i < (int)loc_images.size(); i++){
         //    loc_images[i]->unref();
         //}
 
     }
-       /* for(int i=0; i < loc_images.size(); i++){
+    /* for(int i=0; i < loc_images.size(); i++){
             OSG_ALWAYS << loc_images[i]->referenceCount() << endl;
         }*/
 }
@@ -178,10 +178,10 @@ osg::ref_ptr<osg::Texture> TexPyrAtlas::getTexture(int index,int sizeIndex){
 }
 
 bool
-        TexPyrAtlas::resizeImage(const osg::Image* input,
-                                 unsigned int out_s, unsigned int out_t,
-                                 osg::ref_ptr<osg::Image>& output,
-                                 unsigned int mipmapLevel )
+TexPyrAtlas::resizeImage(const osg::Image* input,
+                         unsigned int out_s, unsigned int out_t,
+                         osg::ref_ptr<osg::Image>& output,
+                         unsigned int mipmapLevel )
 {
     if ( !input && out_s == 0 && out_t == 0 )
         return false;
@@ -238,9 +238,9 @@ bool
                         (output_col*output->getPixelSizeInBits())/8+output_row*dataRowSizeBytes;
 
                 memcpy(
-                        outaddr,
-                        input->data( input_col, input_row ),
-                        pixel_size_bytes );
+                            outaddr,
+                            input->data( input_col, input_row ),
+                            pixel_size_bytes );
             }
         }
     }
@@ -249,22 +249,22 @@ bool
 }
 
 
-void TexPyrAtlas::buildAtlas()
+void TexPyrAtlas::buildAtlas(    std::vector<osg::ref_ptr<osg::Image> > &loc_images)
 {
     //printf("Number of sources %d\n",(int)_sourceList.size());
     // assign the source to the atlas
     _atlasList.clear();
     for(SourceList::iterator sitr = _sourceList.begin();
-    sitr != _sourceList.end();
-    ++sitr)
+        sitr != _sourceList.end();
+        ++sitr)
     {
         Source* source = sitr->get();
         if (source->suitableForAtlas(_maximumAtlasWidth,_maximumAtlasHeight,_margin))
         {
             bool addedSourceToAtlas = false;
             for(AtlasList::iterator aitr = _atlasList.begin();
-            aitr != _atlasList.end() && !addedSourceToAtlas;
-            ++aitr)
+                aitr != _atlasList.end() && !addedSourceToAtlas;
+                ++aitr)
             {
                 OSG_INFO<<"checking source "<<source->_image->getFileName()<<" to see it it'll fit in atlas "<<aitr->get()<<std::endl;
                 if ((*aitr)->doesSourceFit(source))
@@ -297,8 +297,8 @@ void TexPyrAtlas::buildAtlas()
     // build the atlas which are suitable for use, and discard the rest.
     AtlasList activeAtlasList;
     for(AtlasList::iterator aitr = _atlasList.begin();
-    aitr != _atlasList.end();
-    ++aitr)
+        aitr != _atlasList.end();
+        ++aitr)
     {
         Atlas* atlas = aitr->get();
 
@@ -325,10 +325,29 @@ void TexPyrAtlas::buildAtlas()
                 ++itr)
             {
                 Source* source = itr->get();
-               // printf("source %d\n",source->_image.)
+                // printf("source %d\n",source->_image.)
+                //   cout << "refs: "<<source->_image->referenceCount()<<std::endl;
+                /*   while(source->_image->referenceCount())
+                    source->_image->unref();*/
+                // osg::Image *img=(osg::Image *)(source->_image.get());
+                //  img->setImage(source->_image->s(),source->_image->t(),1,GL_RGBA,GL_RGBA,GL_UNSIGNED_BYTE,NULL,osg::Image::NO_DELETE);
+                for(int i=0; i < (int)loc_images.size(); i++){
+                    if(source->_image->data() == loc_images[i]->data()){
+                        printf("Unrefed %s\n",loc_images[i]->getFileName().c_str());
+                        if(loc_images[i]->getAllocationMode()==osg::Image::USE_MALLOC_FREE){
+                            free(loc_images[i]->data());
+                            loc_images[i]->setAllocationMode(osg::Image::NO_DELETE);
+                        }    else if(loc_images[i]->getAllocationMode()==osg::Image::USE_NEW_DELETE){
+                            delete loc_images[i]->data();
+                            loc_images[i]->setAllocationMode(osg::Image::NO_DELETE);
+                        }
+                        //while(loc_images[i]->referenceCount())
+                        //  loc_images[i]->unref();
 
-                source->_image=0;
+                    }
+                }
             }
+            printf("unref complete\n");
 
         }
     }

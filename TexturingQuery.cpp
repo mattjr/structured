@@ -246,6 +246,7 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord
             }
         }
     }
+    printf("Size of reproj %.1fMB %d\n",reproj.size()*sizeof(std::multimap<int,SpatialIndex::id_type>::value_type)/1024.0/1024.0,reproj.size());
     camIdxArr->resize(verts.size(),osg::Vec4(-1,-1,-1,-1));
     for(int f=0; f < (int)texCoordsArray.size() && f < maxNumTC; f++){
         if(texCoordsArray[f])
@@ -558,6 +559,8 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
                 OSG_ALWAYS << "Freakout shouldn't be anything but triangles\n";
             }
         }
+        reproj.clear();
+
     }
     return false;
 }

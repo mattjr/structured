@@ -597,8 +597,8 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
             bool generateMiMap = getImageOptions(layerNum)->getMipMappingMode()==DataSet::MIP_MAPPING_IMAGERY;
             bool resizePowerOfTwo = getImageOptions(layerNum)->getPowerOfTwoImages();
             // vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
-            //compressFast(_dataSet->getState(),texture,internalFormatMode);
-            compressJP2(_dataSet->getState(),texture,internalFormatMode);
+            compressFast(_dataSet->getState(),texture,internalFormatMode);
+            //compressJP2(_dataSet->getState(),texture,internalFormatMode);
             log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");
 
         }

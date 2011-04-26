@@ -119,8 +119,9 @@ int main( int argc, char **argv )
         bool useAtlas=true;
         dataset->_useAtlas=useAtlas;
         dataset->_useBlending=true;
-             dataset->_useDisplayLists=(!imageNode);
-
+            // dataset->_useDisplayLists=(!imageNode);
+   dataset->_useDisplayLists=true;
+    dataset->_useVBO =true;
         vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(cache);
         tile->_mydataSet=dataset;
         tile->_dataSet=dataset;

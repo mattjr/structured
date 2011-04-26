@@ -16,8 +16,8 @@ void OptFormatTexturesVisitor::opt()
 {
 
     for(TextureSet::iterator itr=_textureSet.begin();
-    itr!=_textureSet.end();
-    ++itr)
+        itr!=_textureSet.end();
+        ++itr)
     {
         osg::Texture* texture = const_cast<osg::Texture*>(itr->get());
 
@@ -25,19 +25,23 @@ void OptFormatTexturesVisitor::opt()
         osg::Texture3D* texture3D = dynamic_cast<osg::Texture3D*>(texture);
 
         osg::ref_ptr<osg::Image> image = texture2D ? texture2D->getImage() : (texture3D ? texture3D->getImage() : 0);
-        if (image.valid() &&
-            (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) &&
-            (image->s()>=32 && image->t()>=32))
-        {
-            optImage(image);
+        if (image.valid()){
+
+            if((image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) &&
+                (image->s()>=32 && image->t()>=32))
+            {
+                optImage(image);
+
+            }
+            _imageSizeMB+=(image->getImageSizeInBytes())/1024.0/1024.0;
 
         }
     }
 }
 
 void
-        RGB2RGBA(unsigned int w, unsigned int h,
-                 unsigned char *src, unsigned char *dst) {
+RGB2RGBA(unsigned int w, unsigned int h,
+         unsigned char *src, unsigned char *dst) {
     for (unsigned int i=w*h; i; i--) {
         memmove(dst, src, 3) ;
         dst += 3 ;
@@ -82,15 +86,15 @@ void ConvertRGBA_BGRA_SSE2(u32 *dst, const int dstPitch, u32 *pIn, const int wid
                 const __m128i rNew = _mm_srli_epi32(_mm_and_si128(rgba, rMask), 16);
                 // Now mask off the old R and B components from the rgba data to get 0g0a:
                 const __m128i _g_a = _mm_or_si128(
-                        _mm_and_si128(
+                            _mm_and_si128(
                                 rgba,
                                 _mm_or_si128(
-                                        _mm_slli_epi32(bMask, 8),
-                                        _mm_slli_epi32(rMask, 8)
-                                        )
+                                    _mm_slli_epi32(bMask, 8),
+                                    _mm_slli_epi32(rMask, 8)
+                                    )
                                 ),
-                        _mm_or_si128(rNew, bNew)
-                        );
+                            _mm_or_si128(rNew, bNew)
+                            );
                 // Finally, OR up all the individual components to get BGRA:
                 const __m128i bgra = _mm_or_si128(_g_a, _mm_or_si128(rNew, bNew));
                 _mm_storeu_si128(dst128, bgra);
@@ -204,7 +208,7 @@ void WindowCaptureCallback::ContextData::updateTimings(osg::Timer_t tick_start,
         else
         {
             osg::notify(osg::INFO)<<"fps = "<<fps<<", full frame copy = "<<timeForFullCopy*1000.0f<<"ms rate = "<<numMPixels / timeForFullCopy<<" Mpixel/sec, "<<numMb / timeForFullCopy<< " Mb/sec "<<
-                    "time for memcpy = "<<timeForMemCpy*1000.0<<"ms  memcpy speed = "<<numMb / timeForMemCpy<<" Mb/sec"<<std::endl;
+                                     "time for memcpy = "<<timeForMemCpy*1000.0<<"ms  memcpy speed = "<<numMb / timeForMemCpy<<" Mb/sec"<<std::endl;
         }
         osg::notify(osg::INFO).precision(prec);
 
@@ -284,7 +288,7 @@ void WindowCaptureCallback::ContextData::singlePBO(osg::GLBufferObject::Extensio
 
     osg::Image* image = _imageBuffer[_currentImageIndex].get();
     if (image->s() != _width ||
-        image->t() != _height)
+            image->t() != _height)
     {
         osg::notify(osg::INFO)<<"Allocating image "<<std::endl;
         image->allocateImage(_width, _height, 1, GL_RGBA, _type);
@@ -366,7 +370,7 @@ void WindowCaptureCallback::ContextData::multiPBO(osg::GLBufferObject::Extension
 
     osg::Image* image = _imageBuffer[_currentImageIndex].get();
     if (image->s() != _width ||
-        image->t() != _height)
+            image->t() != _height)
     {
         osg::notify(osg::INFO)<<"Allocating image "<<std::endl;
         image->allocateImage(_width, _height, 1, _pixelFormat, _type);
@@ -455,15 +459,15 @@ void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* c
         osgViewer::ViewerBase::Windows windows;
         viewer.getWindows(windows);
         for(osgViewer::ViewerBase::Windows::iterator itr = windows.begin();
-        itr != windows.end();
-        ++itr)
+            itr != windows.end();
+            ++itr)
         {
             osgViewer::GraphicsWindow* window = *itr;
             osg::GraphicsContext::Cameras& cameras = window->getCameras();
             osg::Camera* firstCamera = 0;
             for(osg::GraphicsContext::Cameras::iterator cam_itr = cameras.begin();
-            cam_itr != cameras.end();
-            ++cam_itr)
+                cam_itr != cameras.end();
+                ++cam_itr)
             {
                 if (firstCamera)
                 {
@@ -472,7 +476,7 @@ void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* c
                         firstCamera = (*cam_itr);
                     }
                     if ((*cam_itr)->getRenderOrder() == firstCamera->getRenderOrder() &&
-                        (*cam_itr)->getRenderOrderNum() < firstCamera->getRenderOrderNum())
+                            (*cam_itr)->getRenderOrderNum() < firstCamera->getRenderOrderNum())
                     {
                         firstCamera = (*cam_itr);
                     }
@@ -500,15 +504,15 @@ void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* c
         osgViewer::ViewerBase::Windows windows;
         viewer.getWindows(windows);
         for(osgViewer::ViewerBase::Windows::iterator itr = windows.begin();
-        itr != windows.end();
-        ++itr)
+            itr != windows.end();
+            ++itr)
         {
             osgViewer::GraphicsWindow* window = *itr;
             osg::GraphicsContext::Cameras& cameras = window->getCameras();
             osg::Camera* lastCamera = 0;
             for(osg::GraphicsContext::Cameras::iterator cam_itr = cameras.begin();
-            cam_itr != cameras.end();
-            ++cam_itr)
+                cam_itr != cameras.end();
+                ++cam_itr)
             {
                 if (lastCamera)
                 {
@@ -517,7 +521,7 @@ void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* c
                         lastCamera = (*cam_itr);
                     }
                     if ((*cam_itr)->getRenderOrder() == lastCamera->getRenderOrder() &&
-                        (*cam_itr)->getRenderOrderNum() >= lastCamera->getRenderOrderNum())
+                            (*cam_itr)->getRenderOrderNum() >= lastCamera->getRenderOrderNum())
                     {
                         lastCamera = (*cam_itr);
                     }
@@ -602,7 +606,7 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
     osg::Vec3 br(width,height,0);
     char szProj4[4096];
     sprintf( szProj4,
-             "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",geoOrigin.x(),geoOrigin.y(),1.0,0.0,0.0);
+            "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",geoOrigin.x(),geoOrigin.y(),1.0,0.0,0.0);
 
     osg::Vec3 tlGlobal=tl*screenToWorld;
     osg::Vec3 blGlobal=bl*screenToWorld;
@@ -638,7 +642,7 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
 int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns,unsigned int width,unsigned int height,int row,int col,
                 const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,std::string ext)
 {
-
+    int pid=getpid();
     if(node == NULL)
         return -1;
     //Convert to a fast upload format currently seems to be GL_RGB, GL_BGRA for nvidia cards 280-580 gtx
@@ -646,7 +650,8 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
     osg::ref_ptr<OptFormatTexturesVisitor> oftv=new OptFormatTexturesVisitor();
     node->accept(*oftv.get());
     oftv->opt();
-
+    double sizeImages=oftv->getImageSizeMB();
+    printf("Size of textures %.2f MB\n",sizeImages);
     key_t semkey;
 
 #define KEY (1492)
@@ -773,6 +778,10 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
             printf("Render %.1f\n",renderTime);
             int mem;
             gpuUsage(1,mem);
+            char aa[1024];sprintf(aa,"render-time-%d.txt",pid);
+            FILE *fp=fopen(aa,"w");
+            fprintf(fp,"%f s %.2f MB\n",renderTime,sizeImages);
+            fclose(fp);
 
             // osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
             tmpImg1 =  dynamic_cast<osg::Image*>(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]->clone(osg::CopyOp::DEEP_COPY_ALL));

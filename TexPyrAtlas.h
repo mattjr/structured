@@ -47,7 +47,7 @@ public:
     bool _useAtlas;
     std::map<id_type,int>  _allIDs;
 protected:
-    void buildAtlas();
+    void buildAtlas(  std::vector<osg::ref_ptr<osg::Image> > &loc_images);
     osg::ref_ptr<osg::Image> getImageFullorStub(std::string fname,int size);
     std::vector<int> _downsampleSizes;
     osg::ref_ptr<osg::State> _state;

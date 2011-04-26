@@ -313,7 +313,7 @@ class OptFormatTexturesVisitor : public osg::NodeVisitor
 public:
 
     OptFormatTexturesVisitor():
-            osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
+            osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),_imageSizeMB(0.0)
            {}
 
     virtual void apply(osg::Node& node)
@@ -351,9 +351,10 @@ public:
 
     void opt(void);
 
-
+    double getImageSizeMB(){return _imageSizeMB;}
     typedef std::set< osg::ref_ptr<osg::Texture> > TextureSet;
     TextureSet                          _textureSet;
+    double _imageSizeMB;
 
 };
 int gpuUsage(int gpu,int &mem);

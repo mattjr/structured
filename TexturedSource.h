@@ -28,14 +28,14 @@ public:
     typedef std::map<SpatialIndex::id_type,ProjectionCamera>  CameraVector;
     SpatialIndex::ISpatialIndex* tree;
     void intersectsWithQuery(const SpatialIndex::IShape& query, SpatialIndex::IVisitor& v);
-  osg::BoundingBox _bb;
-  osg::ref_ptr<osg::KdTree> _kdTree;
-  std::string tex_cache_dir;
-  TexturedSource::CameraVector _cameras;
-  osg::Vec4Array *ids;
-  osg::Vec4Array *colors;
+    osg::BoundingBox _bb;
+    osg::ref_ptr<osg::KdTree> _kdTree;
+    std::string tex_cache_dir;
+    TexturedSource::CameraVector _cameras;
+    osg::Vec4Array *ids;
+    osg::Vec4Array *colors;
 
-  TexBlendCoord  tex;
+    TexBlendCoord  tex;
 
 protected:
     SpatialIndex::IStorageManager* memstore;
@@ -97,10 +97,14 @@ private:
     uint32_t m_indexIO;
     uint32_t m_leafIO;
     std::vector<SpatialIndex::id_type> m_vector;
+    double minDist;
     uint32_t nResults;
+    const SpatialIndex::IShape& m_center;
+    int _maxCount;
+
 
 public:
-    ObjVisitor(): nResults(0) {}
+    ObjVisitor(const SpatialIndex::IShape& center,int maxCount): nResults(0),m_center(center),minDist(DBL_MAX),_maxCount(maxCount) {}
 
     ~ObjVisitor() {}
 
@@ -113,8 +117,21 @@ public:
     void visitData(const SpatialIndex::IData& d)
     {
         nResults += 1;
+        SpatialIndex::IShape *s;
+        d.getShape(&s);
+        SpatialIndex::Point pt;
+        if(s){
+            s->getCenter(pt);
+            double dist=s->getMinimumDistance(m_center);
+            bool insert= (m_vector.size() < _maxCount);
+            if(!insert && minDist > dist){
+                minDist=dist;
+                insert=true;
+            }
+            if(insert)
+                m_vector.push_back(d.getIdentifier());
 
-        m_vector.push_back(d.getIdentifier());
+        }
     }
 
     void visitData(std::vector<const SpatialIndex::IData*>& v)

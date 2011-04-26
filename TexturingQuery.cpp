@@ -236,7 +236,7 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord
         pt[1]=verts[i].y();
         pt[2]=verts[i].z();
         Point p = Point(pt, 3);
-        ObjVisitor vis;
+        ObjVisitor vis(p,8);
         // cout << p <<endl;
         _source->intersectsWithQuery(p,vis);
         if(vis.GetResultCount()){

@@ -50,6 +50,7 @@
 #include <vips/vips.h>
 #include "VPBInterface.hpp"
 #include "libdxt.h"
+#include "GLImaging.h"
 bool checkInBounds(osg::Vec3 tc);
 
 using namespace vpb;

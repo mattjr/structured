@@ -455,16 +455,7 @@ void MyDestinationTile::unrefData()
     _createdScene = 0;
     _stateset = 0;
 }
-static inline void
-        RGB2RGBA(unsigned int w, unsigned int h,
-                 unsigned char *src, unsigned char *dst) {
-    for (unsigned int i=w*h; i; i--) {
-        memmove(dst, src, 3) ;
-        dst += 3 ;
-        src += 3 ;
-        *dst++ = 255 ;
-    }
-}
+
 void compressJP2(osg::State *state,osg::Texture2D* texture2D, osg::Texture::InternalFormatMode internalFormatMode){
     osg::ref_ptr<osg::Image> image = texture2D->getImage();
     if (image.valid() &&

@@ -1,76 +1,50 @@
 #include "GLImaging.h"
 #include "Semaphore.h"
 #include <osg/Texture3D>
-class PBOTexturesVisitor : public osg::NodeVisitor
+#include <stddef.h>
+void optImage(osg::ref_ptr<osg::Image> &image){
+    int pitch=image->getRowSizeInBytes();
+    unsigned char *dataBGRA=new unsigned char[image->s()*image->t()*4];
+    unsigned char *dataRGBA=new unsigned char[image->s()*image->t()*4];
+    RGB2RGBA(image->s(),image->t(),image->data(),dataRGBA);
+    ConvertRGBA_BGRA_SSSE3((unsigned int *)dataRGBA,pitch,(unsigned int *)dataBGRA,image->s(),image->t(),pitch/4);
+    delete dataRGBA;
+    image->setImage(4096,4096,1,GL_RGB,GL_BGRA,GL_UNSIGNED_BYTE,dataBGRA,osg::Image::USE_NEW_DELETE,1);
+    //image->setPixelBufferObject(new osg::PixelBufferObject(image)); SLOWER
+}
+void OptFormatTexturesVisitor::opt()
 {
-public:
 
-    PBOTexturesVisitor(osg::PixelBufferObject* buffer):
-        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-        _buffer(buffer) {}
-
-    virtual void apply(osg::Node& node)
+    for(TextureSet::iterator itr=_textureSet.begin();
+    itr!=_textureSet.end();
+    ++itr)
     {
-        if (node.getStateSet()) apply(*node.getStateSet());
-        traverse(node);
-    }
+        osg::Texture* texture = const_cast<osg::Texture*>(itr->get());
 
-    virtual void apply(osg::Geode& node)
-    {
-        if (node.getStateSet()) apply(*node.getStateSet());
+        osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(texture);
+        osg::Texture3D* texture3D = dynamic_cast<osg::Texture3D*>(texture);
 
-        for(unsigned int i=0;i<node.getNumDrawables();++i)
+        osg::ref_ptr<osg::Image> image = texture2D ? texture2D->getImage() : (texture3D ? texture3D->getImage() : 0);
+        if (image.valid() &&
+            (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) &&
+            (image->s()>=32 && image->t()>=32))
         {
-            osg::Drawable* drawable = node.getDrawable(i);
-            if (drawable && drawable->getStateSet()) apply(*drawable->getStateSet());
-        }
+            optImage(image);
 
-        traverse(node);
-    }
-
-    virtual void apply(osg::StateSet& stateset)
-    {
-        // search for the existence of any texture object attributes
-        for(unsigned int i=0;i<stateset.getTextureAttributeList().size();++i)
-        {
-            osg::Texture* texture = dynamic_cast<osg::Texture*>(stateset.getTextureAttribute(i,osg::StateAttribute::TEXTURE));
-            if (texture)
-            {
-                _textureSet.insert(texture);
-            }
         }
     }
+}
 
-    void addPBO()
-    {
-
-        for(TextureSet::iterator itr=_textureSet.begin();
-            itr!=_textureSet.end();
-            ++itr)
-        {
-            osg::Texture* texture = const_cast<osg::Texture*>(itr->get());
-
-            osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(texture);
-            osg::Texture3D* texture3D = dynamic_cast<osg::Texture3D*>(texture);
-
-            osg::ref_ptr<osg::Image> image = texture2D ? texture2D->getImage() : (texture3D ? texture3D->getImage() : 0);
-            if (image.valid() &&
-                (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) &&
-                (image->s()>=32 && image->t()>=32))
-            {
-               image->setPixelBufferObject(new osg::PixelBufferObject(image));
-            }
-        }
+void
+        RGB2RGBA(unsigned int w, unsigned int h,
+                 unsigned char *src, unsigned char *dst) {
+    for (unsigned int i=w*h; i; i--) {
+        memmove(dst, src, 3) ;
+        dst += 3 ;
+        src += 3 ;
+        *dst++ = 255 ;
     }
-
-
-
-    typedef std::set< osg::ref_ptr<osg::Texture> > TextureSet;
-    TextureSet                          _textureSet;
-    osg::PixelBufferObject   *_buffer;
-
-};
-
+}
 void ConvertRGBA_BGRA_SSE2(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch)
 {
     // Converts RGBA to BGRA:
@@ -709,7 +683,7 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
             traits->sharedContext = 0;
 
             pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
-           // std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
+            // std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
             if (pbuffer.valid())
             {
                 //   osg::notify(osg::INFO)<<"Pixel buffer has been created successfully."<<std::endl;

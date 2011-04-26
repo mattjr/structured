@@ -43,8 +43,6 @@ public:
     bool checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCoords);
 
     void addImagesToAtlasGen(std::map<SpatialIndex::id_type,int> allIds);
-    bool _useTextureArray;
-    TexPyrAtlas &_atlasGen;
 
 protected:
     typedef std::multimap<int,SpatialIndex::id_type> ProjectsToMap;
@@ -63,7 +61,6 @@ protected:
     osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  osg::Vec2Array* texCoordsArray, int texSizeIdx);
     ProjectsToMap reproj;
 
-    bool _useAtlas;
     typedef std::pair<unsigned int, std::string> AttributeAlias;
     std::vector<osg::ref_ptr<osg::Image> >getRemappedImages(std::map<SpatialIndex::id_type,int> allIds,int sizeIdx);
     void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
@@ -72,7 +69,16 @@ protected:
     osg::Vec2 reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v);
     AttributeAlias _vertexAlias;
 
+public :
+
+    bool _useTextureArray;
+    TexPyrAtlas &_atlasGen;
+    bool _useAtlas;
     TexturedSource *_source;
+
+
+
+
 
 };
 

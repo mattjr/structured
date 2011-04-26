@@ -97,14 +97,15 @@ private:
     uint32_t m_indexIO;
     uint32_t m_leafIO;
     std::vector<SpatialIndex::id_type> m_vector;
-    double minDist;
     uint32_t nResults;
     const SpatialIndex::IShape& m_center;
-    int _maxCount;
+    unsigned int _maxCount;
+
+    double minDist;
 
 
 public:
-    ObjVisitor(const SpatialIndex::IShape& center,int maxCount): nResults(0),m_center(center),minDist(DBL_MAX),_maxCount(maxCount) {}
+    ObjVisitor(const SpatialIndex::IShape& center,unsigned int maxCount): nResults(0),m_center(center),_maxCount(maxCount),minDist(DBL_MAX) {}
 
     ~ObjVisitor() {}
 

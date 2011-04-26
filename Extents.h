@@ -176,7 +176,6 @@ class MyDataSet :  public DataSet
         int _run();
         void processTile(MyDestinationTile *tile,TexturedSource *src);
         texcache_t _cachedDirs;
-        bool _useTextureArray;
         bool _useDisplayLists;
         bool _useAtlas;
         bool _useBlending;
@@ -184,11 +183,8 @@ class MyDataSet :  public DataSet
         osg::Matrix viewProj;
         osg::Matrix rotMat;
 
-        bool _useReImage;
         vips::VImage *in;
-        bool _useVirtualTex;
         osg::Matrix getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<osg::Image> &image,osg::Vec4 &ratio,int level);
-        std::string _basePath;
         void loadShaderSourcePrelude(osg::Shader* obj, const std::string& fileName );
         osg::Vec4 _zrange;
         bool _useStub;
@@ -198,10 +194,18 @@ class MyDataSet :  public DataSet
          void _writeRow(Row& row);
          void init();
          const Camera_Calib &_calib;
+
          MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
          std::ofstream _file;
          OpenThreads::Mutex _fileMutex;
          OpenThreads::Mutex _imageMutex;
+public:
+         std::string _basePath;
+         bool _useTextureArray;
+         bool _useReImage;
+         bool _useVirtualTex;
+
+
 
 };
 

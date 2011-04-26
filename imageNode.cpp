@@ -297,7 +297,7 @@ int renderAll(osg::Node *scene, std::vector<osg::Matrixd> &views,std::vector<osg
     }
     // Poster arguments
     bool activeMode = false;
-    bool outputPoster = true;
+    //bool outputPoster = true;
     assert(sizes[2]== sizes[3]);
     int tileWidth = sizes[0], tileHeight = sizes[1];
     int posterWidth = sizes[2], posterHeight = sizes[3];
@@ -677,7 +677,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         render(group,image,*_gc,toScreen,texSizes);
     }else{
         //std::cout << minV << " "<<maxV<<std::endl;
-        int start_pow=9;
+        //int start_pow=9;
         //tex_size=1024;//log2 = 10
         int leveloffset=(_numLevels-_level);
         leveloffset=std::min(leveloffset,5);

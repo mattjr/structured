@@ -7,9 +7,9 @@ void optImage(osg::ref_ptr<osg::Image> &image){
     unsigned char *dataBGRA=new unsigned char[image->s()*image->t()*4];
     unsigned char *dataRGBA=new unsigned char[image->s()*image->t()*4];
     RGB2RGBA(image->s(),image->t(),image->data(),dataRGBA);
-    ConvertRGBA_BGRA_SSSE3((unsigned int *)dataRGBA,pitch,(unsigned int *)dataBGRA,image->s(),image->t(),pitch/4);
+    ConvertRGBA_BGRA_SSSE3((unsigned int *)dataBGRA,pitch,(unsigned int *)dataRGBA,image->s(),image->t(),pitch/4);
     delete dataRGBA;
-    image->setImage(4096,4096,1,GL_RGB,GL_BGRA,GL_UNSIGNED_BYTE,dataBGRA,osg::Image::USE_NEW_DELETE,1);
+    image->setImage(image->s(),image->t(),1,GL_RGB,GL_BGRA,GL_UNSIGNED_BYTE,dataBGRA,osg::Image::USE_NEW_DELETE,1);
     //image->setPixelBufferObject(new osg::PixelBufferObject(image)); SLOWER
 }
 void OptFormatTexturesVisitor::opt()
@@ -641,6 +641,12 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
 
     if(node == NULL)
         return -1;
+    //Convert to a fast upload format currently seems to be GL_RGB, GL_BGRA for nvidia cards 280-580 gtx
+    //Driver specific worth checking on new cards
+    osg::ref_ptr<OptFormatTexturesVisitor> oftv=new OptFormatTexturesVisitor();
+    node->accept(*oftv.get());
+    oftv->opt();
+
     key_t semkey;
 
 #define KEY (1492)

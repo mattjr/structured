@@ -320,6 +320,15 @@ void TexPyrAtlas::buildAtlas()
             activeAtlasList.push_back(atlas);
             atlas->clampToNearestPowerOfTwoSize();
             atlas->copySources();
+            for(SourceList::iterator itr = atlas->_sourceList.begin();
+                itr !=atlas->_sourceList.end();
+                ++itr)
+            {
+                Source* source = itr->get();
+               // printf("source %d\n",source->_image.)
+
+                source->_image=0;
+            }
 
         }
     }

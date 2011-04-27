@@ -86,6 +86,10 @@ int main( int argc, char **argv )
     TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
     osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
+    if(!model){
+        fprintf(stderr,"Can't load model %s\n",sourceModel->getFileName().c_str());
+        return -1;
+    }
     osg::ref_ptr<osg::MatrixTransform>xform = new osg::MatrixTransform;
     xform->setDataVariance( osg::Object::STATIC );
     xform->setMatrix(rotM);

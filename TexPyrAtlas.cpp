@@ -161,6 +161,9 @@ static void recursive_split_area(const osg::Vec3Array *pts,
 
     if(bounds.ptset.size() <= max_img_per_atlas ){
         sets.push_back(bounds.ptset);
+        for(int i=0; i < atlasmap.size(); i++)
+            atlasmap[i]=sets.size()-1;
+
         return ;
     }
     unsigned int best_axis;

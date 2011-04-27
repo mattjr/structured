@@ -312,8 +312,7 @@ void MyDestinationTile::remapArrayPerAtlas(osg::Vec4Array *v,const TexBlendCoord
         char atlas=atlasMap->at(i);
         for(int j=0; j< 4; j++){
             int id=(int)((*v)[i][j]);
-            if(id >= 0){
-                assert(atlas >=0);
+            if(id >= 0 || atlas <0){
                 (*v)[i][j]=(float)atlas;
                 osg::Matrix matrix=_atlasGen->getTextureMatrixByIDAtlas(id,atlas);
                 osg::Vec3 tc=texCoordsArray[j]->at(i);

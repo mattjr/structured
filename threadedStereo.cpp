@@ -2688,10 +2688,17 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 std::cout << "Target LOD height is : " << vpblod <<std::endl;
 
                 osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
+                double xrange=totalbb.xMax()-totalbb.xMin();
+                double yrange=totalbb.yMax()-totalbb.yMin();
+                double largerSide=std::max(xrange,yrange);
                 osg::Matrixd matrix;
                 matrix.makeTranslate( eye );
                 osg::Matrixd view=osg::Matrix::inverse(matrix);
-                osg::Matrixd proj= osg::Matrixd::ortho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
+                osg::Matrixd proj= osg::Matrixd::ortho2D(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
+/* proj= osg::Matrixd::ortho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
+ printf("%f %f %f %f AAAA\n",-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
+ printf("%f %f %f %f AAAA\n",-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
+*/
 
                 std::stringstream os2;
                 os2<< "view.mat";
@@ -2889,7 +2896,10 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 }
 
                 string texcmds_fn="mesh-diced/texcmds";
-
+                int VTtileSize=256;
+                int tileBorder=1;
+                int ajustedGLImageSizeX=(int)reimageSize.x()-((reimageSize.x()/VTtileSize)*2*tileBorder);
+                int ajustedGLImageSizeY=(int)reimageSize.y()-((reimageSize.y()/VTtileSize)*2*tileBorder);
                 FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
 
                 for(int i=0; i <(int)cells.size(); i++){
@@ -2905,10 +2915,10 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax());
                     fprintf(texcmds_fp," --tex_cache %s %d --invrot %f %f %f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,rx,ry,rz);
                     if(!storeTexMesh)
-                        fprintf(texcmds_fp," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,_tileRows,_tileColumns,(int)reimageSize.x(),(int)reimageSize.y());
+                        fprintf(texcmds_fp," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,_tileRows,_tileColumns,ajustedGLImageSizeX,ajustedGLImageSizeY);
                     fprintf(texcmds_fp,"\n");
 
-                   /* fprintf(texcmds_fp,"osgconv -O \"compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1\" mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d-uncomp.ive  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive\n",
+                    /* fprintf(texcmds_fp,"osgconv -O \"compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1\" mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d-uncomp.ive  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive\n",
 
                             cells[i].row,cells[i].col,
                             vpblod,
@@ -2917,20 +2927,20 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 }
                 fclose(texcmds_fp);
-                int tileBorder=1;
                 std::ostringstream p1;
 
                 vector<std::string> precmd;
-                   p1 <<basepath << "/createSem";
-                   precmd.push_back(p1.str());
+                p1 <<basepath << "/createSem";
+                precmd.push_back(p1.str());
                 string texcmd="tex.py";
                 vector<std::string> postcmdv;
                 std::ostringstream p;
-                int tileSize=256;
-
-                p << "#"<<basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << (int)reimageSize.x()-((reimageSize.x()/tileSize)*2*tileBorder) << " "<< (int)reimageSize.y()-((reimageSize.y()/tileSize)*2*tileBorder)  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
+                bool singleThreadedDicedTex=false;
+                p<<basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << ajustedGLImageSizeX << " "<< ajustedGLImageSizeY  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
+                if(!singleThreadedDicedTex)
+                    p<<" -nogfx";
                 if(untex)
-                    p<< " -untex " << totalbb_unrot.zMin() << " " << totalbb_unrot.zMax();
+                    p<< " -untex ";
                 postcmdv.push_back(p.str());
 #define SINGLE_MESH_TEX 1
 #if SINGLE_MESH_TEX
@@ -2998,11 +3008,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                     for(int j=vpblod-1; j >= 0; j--){
 
-                            fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s total-lod%d.ply total-lod%d.ply %d -P -Oy -By;",
-                                    cwd,
-                                    basepath.c_str(),
-                                    app.c_str(),
-                                    j+1,j, sizeStepTotal[j]);
+                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s total-lod%d.ply total-lod%d.ply %d -P -Oy -By;",
+                                cwd,
+                                basepath.c_str(),
+                                app.c_str(),
+                                j+1,j, sizeStepTotal[j]);
 
                     }
                     for(int lod=0; lod <= vpblod; ){
@@ -3094,7 +3104,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 bool useVirtTex=true;
                 bool useReimage=false;
                 if(!novpb)
-                doQuadTreeVPB(basepath,cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb);
+                    doQuadTreeVPB(basepath,cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb);
 
 
                 vector<string> gentexnames;

@@ -20,8 +20,8 @@ int main(int argc, char** argv)
     double lat=0,lon=0;
     arguments.read("-lat",lat);
     arguments.read("-lon",lon);
-    osg::Vec2 zrange;
-    bool untex= arguments.read("-untex",zrange[0],zrange[1]);
+    bool untex= arguments.read("-untex");
+    bool nogfx= arguments.read("-nogfx");
 
     std::vector<picture_cell> cells;
     FILE *fp=fopen(argv[1],"r");
@@ -105,134 +105,151 @@ int main(int argc, char** argv)
         if(cells[i].name == "null")
             continue;
 
-        osgViewer::Viewer viewer(arguments);
+        if(nogfx){
+            char tmp[1024];
+            string ext="png";
+            {
+                sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
+                vips::VImage tmpI(tmp);
+                raw.insertplace(tmpI.extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
+            }
+            if(untex){
+                sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d_untex.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
+                vips::VImage tmpI(tmp);
+                raw_untex.insertplace(tmpI.extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
+            }
+        }else{
+
+
+            osgViewer::Viewer viewer(arguments);
 
 
 
-        GLenum readBuffer = GL_BACK;
-        WindowCaptureCallback::FramePosition position = WindowCaptureCallback::END_FRAME;
-        WindowCaptureCallback::Mode mode = WindowCaptureCallback::SINGLE_PBO;
+            GLenum readBuffer = GL_BACK;
+            WindowCaptureCallback::FramePosition position = WindowCaptureCallback::END_FRAME;
+            WindowCaptureCallback::Mode mode = WindowCaptureCallback::SINGLE_PBO;
 
 
-        osg::ref_ptr<osg::GraphicsContext> pbuffer;
-        {
-            osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-            traits->x = 0;
-            traits->y = 0;
-            traits->width = width;
-            traits->height = height;
-            traits->red = 8;
-            traits->green = 8;
-            traits->blue = 8;
-            traits->alpha = 8;
-            traits->windowDecoration = false;
-            traits->pbuffer = true;
-            traits->doubleBuffer = true;
-            traits->sharedContext = 0;
+            osg::ref_ptr<osg::GraphicsContext> pbuffer;
+            {
+                osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+                traits->x = 0;
+                traits->y = 0;
+                traits->width = width;
+                traits->height = height;
+                traits->red = 8;
+                traits->green = 8;
+                traits->blue = 8;
+                traits->alpha = 8;
+                traits->windowDecoration = false;
+                traits->pbuffer = true;
+                traits->doubleBuffer = true;
+                traits->sharedContext = 0;
 
-            pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
-            //std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
+                pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
+                //std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
+                if (pbuffer.valid())
+                {
+                    //   osg::notify(osg::INFO)<<"Pixel buffer has been created successfully."<<std::endl;
+                }
+                else
+                {
+                    osg::notify(osg::INFO)<<"Pixel buffer has not been created successfully."<<std::endl;
+                }
+
+            }
+
+
+
+            osg::ref_ptr<WindowCaptureCallback> wcc=new WindowCaptureCallback(mode, position, readBuffer);
+            osg::ref_ptr<osg::Camera> camera;
+
             if (pbuffer.valid())
-            {
-                //   osg::notify(osg::INFO)<<"Pixel buffer has been created successfully."<<std::endl;
-            }
-            else
-            {
-                osg::notify(osg::INFO)<<"Pixel buffer has not been created successfully."<<std::endl;
-            }
+            {camera = new osg::Camera;
+                camera->setGraphicsContext(pbuffer.get());
+                camera->setViewport(new osg::Viewport(0,0,width,height));
+                GLenum buffer = pbuffer->getTraits()->doubleBuffer ? GL_BACK : GL_FRONT;
+                camera->setDrawBuffer(buffer);
+                camera->setReadBuffer(buffer);
+                camera->setFinalDrawCallback(wcc);
 
-        }
+                if (pbufferOnly)
+                {
+                    viewer.addSlave(camera.get(), osg::Matrixd(), osg::Matrixd());
 
+                    viewer.realize();
+                }
+                else
+                {
+                    viewer.realize();
 
+                    viewer.stopThreading();
 
-        osg::ref_ptr<WindowCaptureCallback> wcc=new WindowCaptureCallback(mode, position, readBuffer);
-        osg::ref_ptr<osg::Camera> camera;
+                    pbuffer->realize();
 
-        if (pbuffer.valid())
-        {camera = new osg::Camera;
-            camera->setGraphicsContext(pbuffer.get());
-            camera->setViewport(new osg::Viewport(0,0,width,height));
-            GLenum buffer = pbuffer->getTraits()->doubleBuffer ? GL_BACK : GL_FRONT;
-            camera->setDrawBuffer(buffer);
-            camera->setReadBuffer(buffer);
-            camera->setFinalDrawCallback(wcc);
+                    viewer.addSlave(camera.get(), osg::Matrixd(), osg::Matrixd());
 
-            if (pbufferOnly)
-            {
-                viewer.addSlave(camera.get(), osg::Matrixd(), osg::Matrixd());
-
-                viewer.realize();
+                    viewer.startThreading();
+                }
             }
             else
             {
                 viewer.realize();
 
-                viewer.stopThreading();
-
-                pbuffer->realize();
-
-                viewer.addSlave(camera.get(), osg::Matrixd(), osg::Matrixd());
-
-                viewer.startThreading();
+                addCallbackToViewer(viewer, wcc);
             }
-        }
-        else
-        {
-            viewer.realize();
+            osg::Timer_t timeEndSetup = osg::Timer::instance()->tick();
+            //double setupTime = osg::Timer::instance()->delta_s(loopTick, timeEndSetup);
 
-            addCallbackToViewer(viewer, wcc);
-        }
-        osg::Timer_t timeEndSetup = osg::Timer::instance()->tick();
-        //double setupTime = osg::Timer::instance()->delta_s(loopTick, timeEndSetup);
-
-        // load the data
-        osg::Matrixd offsetMatrix=osg::Matrixd::scale(_tileColumns, _tileRows, 1.0)*osg::Matrixd::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
-        /* printf("\r%03d/%03d",i,(int)cells.size());
+            // load the data
+            osg::Matrixd offsetMatrix=osg::Matrixd::scale(_tileColumns, _tileRows, 1.0)*osg::Matrixd::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0);
+            /* printf("\r%03d/%03d",i,(int)cells.size());
         fflush(stdout);
 */       // std::cout <<"row: "<<cells[i].row << " col: "<<cells[i].col<<" tc: "<<_tileColumns << " "<<_tileRows<<" "<<"\n"<<osg::Matrix::scale(_tileColumns, _tileRows, 1.0) << "\n"<<osg::Matrix::translate(_tileColumns-1-2*cells[i].col, _tileRows-1-2*cells[i].row, 0.0) <<"\n"<<offsetMatrix<<endl;
 
-        osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(cells[i].name);
-        osg::Timer_t timeEndLoad = osg::Timer::instance()->tick();
+            osg::ref_ptr<osg::Node> node=osgDB::readNodeFile(cells[i].name);
+            osg::Timer_t timeEndLoad = osg::Timer::instance()->tick();
 
-        double loadTime = osg::Timer::instance()->delta_s(timeEndSetup, timeEndLoad);
+            double loadTime = osg::Timer::instance()->delta_s(timeEndSetup, timeEndLoad);
 
-        int mem=0;
-        if (node.valid() )
-        {
-            viewer.setSceneData( node );
-            viewer.getCamera()->setProjectionMatrix(proj*offsetMatrix);
-            viewer.getCamera()->setViewMatrix(view);
-            viewer.frame();
-            viewer.advance();
-            viewer.updateTraversal();
-            viewer.renderingTraversals();
-            osg::Timer_t timeEndRender = osg::Timer::instance()->tick();
-            double renderTime = osg::Timer::instance()->delta_s(timeEndLoad, timeEndRender);
-
-            gpuUsage(1,mem);
-            fprintf(logfp,"cnt: %d load %.1fs render: %.1fs mem1: %d MB",count,loadTime,renderTime,mem);
-            osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
-            vips::VImage tmp(img->data(),img->s(),img->t(),4,vips::VImage::FMTUCHAR);
-            raw.insertplace(tmp.flipver().extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
-            if(untex){
-                node->getOrCreateStateSet()->addUniform(new osg::Uniform("shaderOut",3));
+            int mem=0;
+            if (node.valid() )
+            {
                 viewer.setSceneData( node );
+                viewer.getCamera()->setProjectionMatrix(proj*offsetMatrix);
+                viewer.getCamera()->setViewMatrix(view);
                 viewer.frame();
                 viewer.advance();
                 viewer.updateTraversal();
                 viewer.renderingTraversals();
-                osg::Timer_t timeEndRender2 = osg::Timer::instance()->tick();
-                double renderTime2 = osg::Timer::instance()->delta_s(timeEndRender, timeEndRender2);
+                osg::Timer_t timeEndRender = osg::Timer::instance()->tick();
+                double renderTime = osg::Timer::instance()->delta_s(timeEndLoad, timeEndRender);
 
                 gpuUsage(1,mem);
+                fprintf(logfp,"cnt: %d load %.1fs render: %.1fs mem1: %d MB",count,loadTime,renderTime,mem);
                 osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
                 vips::VImage tmp(img->data(),img->s(),img->t(),4,vips::VImage::FMTUCHAR);
-                raw_untex.insertplace(tmp.flipver().extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
-                fprintf(logfp," render2: %.1fs mem2: %d",renderTime2,mem);
+                raw.insertplace(tmp.flipver().extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
+                if(untex){
+                    node->getOrCreateStateSet()->addUniform(new osg::Uniform("shaderOut",3));
+                    viewer.setSceneData( node );
+                    viewer.frame();
+                    viewer.advance();
+                    viewer.updateTraversal();
+                    viewer.renderingTraversals();
+                    osg::Timer_t timeEndRender2 = osg::Timer::instance()->tick();
+                    double renderTime2 = osg::Timer::instance()->delta_s(timeEndRender, timeEndRender2);
 
+                    gpuUsage(1,mem);
+                    osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
+                    vips::VImage tmp(img->data(),img->s(),img->t(),4,vips::VImage::FMTUCHAR);
+                    raw_untex.insertplace(tmp.flipver().extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
+                    fprintf(logfp," render2: %.1fs mem2: %d",renderTime2,mem);
+
+                }
+            }else{
+                std::cout << "Invalid " << cells[i].name << "\n";
             }
-        }else{
-            std::cout << "Invalid " << cells[i].name << "\n";
         }
         formatBar("Img",startTick,++count,validCount);
 

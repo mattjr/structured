@@ -627,7 +627,7 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
     if(!fp)
         std::cerr << "Failed!\n";
     fprintf(fp,"#!/bin/bash\n");
-    fprintf(fp,"vips im_vips2tiff subtile tex.tif:none:tile:256x256\n");
+    fprintf(fp,"vips im_vips2tiff subtile.ppm tex.tif:none:tile:256x256\n");
 
 
     fprintf(fp,"gdal_translate %s tex.tif geo_tif.tif\n",gdal_param);

@@ -26,7 +26,7 @@ public:
     }
     void setAllID(std::map<id_type,int>  allIDs){_allIDs=allIDs;}
     std::vector<osg::ref_ptr<osg::Image> > getImages(void){
-    return _images;
+        return _images;
     }
     bool getClosestDir(std::string &str,int size){
         for(int i=0; i< (int)_imgdir.size(); i++){
@@ -37,6 +37,9 @@ public:
         }
         return false;
     }
+    int getMaxNumImagesPerAtlas(void);
+
+    osg::Matrix getTextureMatrixByIDAtlas(id_type id,char atlas);
 
     osg::Matrix getTextureMatrixByID(id_type id);
     osg::Matrix computeTextureMatrixFreedImage(Source *s) ;
@@ -46,14 +49,21 @@ public:
     bool _useTextureArray;
     bool _useAtlas;
     std::map<id_type,int>  _allIDs;
+    std::vector<std::set<id_type> > *_sets;
+    void setSets(std::vector<std::set<id_type> > *sets){
+        _sets=sets;
+    }
+    std::vector <char> *_vertexToAtlas;
+
 protected:
-    void buildAtlas(  std::vector<osg::ref_ptr<osg::Image> > &loc_images);
+    void buildAtlas(  );
     osg::ref_ptr<osg::Image> getImageFullorStub(std::string fname,int size);
     std::vector<int> _downsampleSizes;
     osg::ref_ptr<osg::State> _state;
     std::vector<osg::ref_ptr<osg::Image> > _images;
     std::map<Source*,osg::Vec2> _sourceToSize;
     std::map<Source*,id_type> _sourceToId;
+
     /**
           * Resizes an image using nearest-neighbor resampling. Returns a new image, leaving
           * the input image unaltered.
@@ -75,11 +85,25 @@ protected:
                         unsigned int mipmapLevel=0 );
     texcache_t _imgdir;
     std::map<id_type,int> _idToAtlas;
-    std::map<id_type,Source*> _idToSource;
+   // std::map<id_type,Source*> _idToSource;
+    std::vector<std::map<id_type,Source*> > _idToSourceAtlas;
+
+    std::map<id_type,Source* > _idToSource;
     OpenThreads::Mutex _imageListMutex;
+    int maxImageSize;
 
 
 
-};
+        };
+typedef long id_type;
+typedef   long blend_id_t[4];
+#define POSE_INDEX_X 0
+#define POSE_INDEX_Y 1
+typedef std::vector<std::pair<unsigned int,blend_id_t> > blend_pt_t;
+std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
+                                        const osg::PrimitiveSet& prset,
+                                        const osg::Vec4Array *blendIdx,
+                                        std::vector<char> &atlasmap,
+                                        int max_img_per_atlas );
 std::string getUUID(void);
 #endif // TEXPYRATLAS_H

@@ -105,6 +105,7 @@ class MyDataSet;
         std::map< osg::Node * ,TexBlendCoord> texCoordsPerModel;
         void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
         void remapArrayForTexturing(osg::Vec4Array *v,const TexBlendCoord &texCoordsArray,idmap_t allIds);
+        void remapArrayPerAtlas(osg::Vec4Array *v,const TexBlendCoord &texCoordsArray,const std::vector<char> *atlasMap);
 
         void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::Vec4Array &colors,const osg::PrimitiveSet& prset,
                                                             const TexBlendCoord  &texCoordsArray,

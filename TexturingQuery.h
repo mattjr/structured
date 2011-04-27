@@ -40,9 +40,9 @@ public:
         }
     };
     vpb::MyDestinationTile *_tile;
-    bool checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCoords);
+    //bool checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCoords);
 
-    void addImagesToAtlasGen(std::map<SpatialIndex::id_type,int> allIds);
+    void addImagesToAtlasGen(std::map<SpatialIndex::id_type,int> allIds,  std::vector<std::set<SpatialIndex::id_type> > *sets);
 
 protected:
     typedef std::multimap<int,SpatialIndex::id_type> ProjectsToMap;
@@ -70,13 +70,12 @@ protected:
     AttributeAlias _vertexAlias;
 
 public :
-
     bool _useTextureArray;
     TexPyrAtlas &_atlasGen;
     bool _useAtlas;
     TexturedSource *_source;
 
-
+    std::vector<std::set<long> > sets;
 
 
 

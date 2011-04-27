@@ -298,6 +298,41 @@ void MyDestinationTile::remapArrayForTexturing(osg::Vec4Array *v,const TexBlendC
 
 }
 
+
+void MyDestinationTile::remapArrayPerAtlas(osg::Vec4Array *v,const TexBlendCoord &texCoordsArray,const std::vector<char> *atlasMap){
+    //Remap
+    assert(atlasMap);
+    if(!atlasMap ){
+        fprintf(stderr,"failed to get valid atlas map\n");
+        exit(-1);
+    }
+    assert(atlasMap->size() == v->size());
+
+    for(int i=0; i< (int)atlasMap->size(); i++){
+        char atlas=atlasMap->at(i);
+        for(int j=0; j< 4; j++){
+            int id=(int)((*v)[i][j]);
+            if(id >= 0){
+                assert(atlas >=0);
+                (*v)[i][j]=(float)atlas;
+                osg::Matrix matrix=_atlasGen->getTextureMatrixByIDAtlas(id,atlas);
+                osg::Vec3 tc=texCoordsArray[j]->at(i);
+                if(checkInBounds(tc)){
+                    double r=(osg::Vec2(tc[0],tc[1])-osg::Vec2(0.5,0.5)).length();
+                    texCoordsArray[j]->at(i)=osg::Vec3(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
+                                                       tc[0]*matrix(0,1) + tc[1]*matrix(1,1) + matrix(3,1),r);
+                }else{
+                    //    texCoordsArray[j]->at(i)=osg::Vec3(-1,-1,-1);
+                }
+
+            }else{
+                texCoordsArray[j]->at(i)=osg::Vec3(-1,-1,-1);
+            }
+        }
+    }
+
+}
+
 osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *v,  const TexBlendCoord &texCoordsArray,int texSizeIdx){
     if(!v)
         return NULL;
@@ -465,7 +500,7 @@ void compressJP2(osg::State *state,osg::Texture2D* texture2D, osg::Texture::Inte
         int height=image->t();
         char cwd[2048];
         char *dirres;
-            dirres=getcwd(cwd,2048);
+        dirres=getcwd(cwd,2048);
         std::string fname=string(cwd)+"/mesh-diced/"+getUUID()+".jpg";
         osg::ref_ptr<osgDB::ReaderWriter::Options> op = new osgDB::ReaderWriter::Options();
         op->setOptionString("JPEG_QUALITY 20");
@@ -526,7 +561,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         assert(a == verts.size());
     assert(a == b);
     std::vector<osg::ref_ptr<osg::Image> > texture_images=_atlasGen->getImages();
-    remapArrayForTexturing(v,texCoordsArray,allIds);
+    remapArrayPerAtlas(v,texCoordsArray,_atlasGen->_vertexToAtlas);
     int numberOfGeoms=texture_images.size();
     std::vector<osg::DrawElementsUInt *>  primsets(numberOfGeoms+1);;
     std::vector<osg::Vec3Array *>  vertSplit(numberOfGeoms+1);
@@ -640,8 +675,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
     numIdx=prset.getNumIndices();
     int numIV=v->size();
     // printf("Num idx %d\n",numIdx);
-    printf("Num idx %d %d\n",numIdx,v->size());
-
+//    printf("Num idx %d %d\n",numIdx,v->size());
     assert(numIdx ==(int) v->size());
     for(int i=0; i<numIdx-2; i+=3){
         vector<osg::Vec4> cP;
@@ -662,7 +696,8 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
                 //    OSG_ALWAYS << "Atlas mapping incorrect id: " << id << " index: " << prset.index(i+k) << endl;
                 //   exit(-1);
                 //}
-
+                if(id >= numberOfGeoms)
+                    std::cout << "Atlas mapping incorrect id: " << id << " index: " << prset.index(i+k) << endl;
 
                 osg::Vec3 tc[4];
                 for(int t=0; t <4; t++){
@@ -699,6 +734,12 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
             }
         }
     }
+
+    printf("vertSplit[0]= %d",vertSplit[0]->size());
+    printf("vertSplit[0]= %d",vertSplit[1]->size());
+
+    printf("primsets[0]= %d",primsets[0]->size());
+    printf("primsets[1]= %d\n",primsets[1]->size());
 
     if(!vertSplit[geoms.size()-1]->size()){
         geoms.resize(geoms.size()-1);
@@ -1839,7 +1880,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
                 OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_texCoordMutex);
 
                 map<SpatialIndex::id_type,int> allIds=calcAllIds(tile->texCoordIDIndexPerModel[root.get()]);
-                tq->addImagesToAtlasGen(allIds);
+                tq->addImagesToAtlasGen(allIds,NULL);
                 //int level=tile->_level;
                 //int total=tq->_atlasGen._totalImageList.size();
                 //  printf("%d %d %d %d 0x%x AAAAAA\n",level,total,tile->_tileX,tile->_tileY,(long int)&(tq->_atlasGen));

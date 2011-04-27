@@ -296,9 +296,18 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord
             }
         }
     }
-
+    _atlasGen._vertexToAtlas = new std::vector <char>(camIdxArr->size(),-1);
+    sets=calc_atlases(&verts,prset,camIdxArr,*_atlasGen._vertexToAtlas,_atlasGen.getMaxNumImagesPerAtlas());
+    printf("Sets %d\n",sets.size());
+    printf("AAAAAAAAAAAAA %d %d\n",verts.size(), _atlasGen._vertexToAtlas->size());
+    for(int i=0; i< sets.size(); i++){
+        std::set<long>:: iterator iter=sets[i].begin();
+        for(; iter!=sets[i].end(); iter++)
+            std::cout<<*iter<<" ";
+        std::cout <<"******\n";
+    }
     map<SpatialIndex::id_type,int> allIds=calcAllIds(camIdxArr);
-    addImagesToAtlasGen(allIds);
+    addImagesToAtlasGen(allIds,&sets);
     //cout << "Number of prim" << prset.getNumIndices() << " " << prset.getNumPrimitives() << endl;
 
     osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
@@ -330,7 +339,7 @@ bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
         return true;
     }
 }
-void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds){
+void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds,  std::vector<std::set<SpatialIndex::id_type> > *sets){
     //cout << "Adding " << allIds.size() <<  endl;/
     //printf("0x%x\n",(int)this);
     std::vector<std::pair<SpatialIndex::id_type,string> > files(allIds.size());
@@ -344,6 +353,7 @@ void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds){
 
     _atlasGen.addSources(files);
     //_atlasGen.setAllID(allIds);
+    _atlasGen.setSets(sets);
 }
 
 
@@ -473,7 +483,7 @@ void addDups(osg::Geode *geode){
     printf("Dups to be added %d\n",(int)tif.indices_double_counted.size());
 }
 
-bool TexturingQuery::checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCoords){
+/*bool TexturingQuery::checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCoords){
     assert(ids != NULL && texCoords != NULL);
     string hash;
     string cachedfile=_source->tex_cache_dir+osgDB::getNameLessExtension(osgDB::getSimpleFileName(_source->getFileName()))+".txt";
@@ -493,7 +503,7 @@ bool TexturingQuery::checkAndLoadCache(osg::Vec4Array *ids,osg::Vec2Array *texCo
     ids=NULL;
     texCoords=NULL;
     return false;
-}
+}*/
 bool TexturingQuery::projectModel(osg::Geode *geode){
 
     //No cached

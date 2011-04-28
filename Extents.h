@@ -107,9 +107,9 @@ class MyDataSet;
         void remapArrayForTexturing(osg::Vec4Array *v,const TexBlendCoord &texCoordsArray,idmap_t allIds);
         void remapArrayPerAtlas(osg::Vec4Array *v,const TexBlendCoord &texCoordsArray,const std::vector<char> *atlasMap);
 
-        void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::Vec4Array &colors,const osg::PrimitiveSet& prset,
-                                                            const TexBlendCoord  &texCoordsArray,
-                                                            const osg::Vec3Array &verts,int tex_size);
+        void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v,const osg::Vec4Array &colors,const osg::Vec3Array &normals, const osg::PrimitiveSet& prset,
+                                                               const TexBlendCoord  &texCoordsArray,
+                                                               const osg::Vec3Array &verts,int tex_size);
         static const int TEX_UNIT=0;
         void unrefData();
 

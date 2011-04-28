@@ -120,7 +120,7 @@ int main( int argc, char **argv )
         //atlasGen._useAtlas=true;
         vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,basepath,false,false,false);
         dataset->_zrange=zrange;
-        bool useAtlas=true;
+        bool useAtlas=false;
         dataset->_useAtlas=useAtlas;
         dataset->_useBlending=true;
             // dataset->_useDisplayLists=(!imageNode);
@@ -155,6 +155,9 @@ int main( int argc, char **argv )
                 xform->setDataVariance( osg::Object::STATIC );
                 xform->setMatrix(inverseM);
                 xform->addChild(node);
+                osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
+                                xform->accept(fstv);
+                                fstv.removeTransforms(xform);
                 if(imageNode){
                     osg::Matrixd view,proj;
 
@@ -179,7 +182,8 @@ int main( int argc, char **argv )
                     printf("AAAA %s\n",options->getOptionString().c_str());
                    // options->setOptionString("compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1");
                     osgDB::Registry::instance()->setOptions(options);
-                    osgDB::writeNodeFile(*xform,osgDB::getNameLessExtension(outfilename).append(".ive"));
+
+                    osgDB::writeNodeFile(*node,osgDB::getNameLessExtension(outfilename).append(".ive"));
                 }
                 /* osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
                 xform->accept(fstv);

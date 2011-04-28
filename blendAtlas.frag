@@ -1,18 +1,11 @@
-#version 110
-#pragma optionNV(fastmath on)
-#pragma optionNV(fastprecision on)
-#pragma optionNV(ifcvt none)
-#pragma optionNV(inline all)
-#pragma optionNV(strict on)
-#pragma optionNV(unroll all)
 uniform vec3 weights;
 uniform int shaderOut;
 varying vec4 normal;
-uniform vec3 zrange;
 varying vec3 L;
 varying vec3 E;
 varying vec3 H;
 varying vec3 VaryingTexCoord[4];
+varying float ao;
 
 uniform sampler2D theTexture;
 vec4 jetColorMap(float val) {
@@ -31,6 +24,71 @@ vec4 jetColorMap(float val) {
         return jet;
 }
 
+vec4 HSV_to_RGB (vec4 hsv){
+  vec4 color;
+  float f,p,q,t;
+  float h,s,v;
+  float r=0.0,g=0.0,b=0.0;
+  float i;
+  if (hsv[1] == 0.0){
+    if (hsv[2] != 0.0){
+      color.x = hsv[2];
+    }
+  }
+  else{
+    h = hsv.x * 360.0;
+    s = hsv.y;
+    v = hsv.z;
+    if (h == 360.0) {
+      h=0.0;
+    }
+    h /=60.0;
+    i = floor (h);
+    f = h-i;
+    p = v * (1.0 - s);
+    q = v * (1.0 - (s * f));
+    t = v * (1.0 - (s * (1.0 -f)));
+    if (i == 0.0){
+      r = v;
+      g = t;
+      b = p;
+    }
+    else if (i == 1.0){
+      r = q;
+      g = v;
+      b = p;
+    }
+    else if (i == 2.0){
+      r = p;
+      g = v;
+      b = t;
+    }
+    else if (i == 3.0) {
+      r = p;
+      g = q;
+      b = v;
+    }
+    else if (i == 4.0) {
+      r = t;
+      g = p;
+      b = v;
+    }
+    else if (i == 5.0) {
+      r = v;
+      g = p;
+      b = q;
+    }
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    color.w = hsv.w;
+  }
+  return color;
+}
+
+vec4 rainbowColorMap(float hue) {
+  return HSV_to_RGB(vec4(hue, 1.0f, 1.0f,1.0));
+}
 
 vec4 freq3Blend(vec3 Cb){
   vec3 mipmapL = vec3(0,2,4);
@@ -77,27 +135,6 @@ vec4 freq3Blend(vec3 Cb){
 
 }
 
-vec4 avgA(){
-  vec4 c[4];
-vec3 v[4];
-v[0]=VaryingTexCoord[0].xyz;
-v[1]=VaryingTexCoord[1].xyz;
-v[2]=VaryingTexCoord[2].xyz;
-v[3]=VaryingTexCoord[3].xyz;
-
-  c[0]=texture2D(theTexture,VaryingTexCoord[0].xy);
-  c[1]=texture2D(theTexture,VaryingTexCoord[1].xy);
-  c[2]=texture2D(theTexture,VaryingTexCoord[2].xy);
-  c[3]=texture2D(theTexture,VaryingTexCoord[3].xy);
-
-  float blendA = 0.5;
-  vec4 t1 = mix(c[0],c[1],blendA);
-  vec4 t2 = mix(c[1],c[2],blendA);
-	
-  vec4 avg= mix(t1,t2,blendA);	
-   
-  return avg;
-}
 
 void main()
 {
@@ -105,40 +142,51 @@ void main()
   vec3 usedWeights;
   usedWeights=weights;
 
+
   if(usedWeights.x==0.0 && usedWeights.y==0.0 &&usedWeights.z==0.0)
     usedWeights=vec3(0.710000,0.650000,0.070000);
- 
-  if(shaderOut == 0)
+
+ if(shaderOut == 0)
     color= freq3Blend(usedWeights);
   else if(shaderOut ==1)
     color=texture2D(theTexture,VaryingTexCoord[0].xy);
-  else if(shaderOut ==2){
+  else if(shaderOut ==3 || shaderOut ==4){
     vec3 NNormal = normalize(normal.xyz);
     vec3 Light  = normalize(vec3(1,  2.5,  -1));
     vec4 specular_val=vec4( 0.18, 0.18, 0.18, 0.18 );
-    
-    float mat_shininess = 64.0;
+
+    float mat_shininess = 64.0f ;
     vec4 ambient_val = vec4(0.92, 0.92, 0.92, 0.95 );
     vec4 diffuse_val =vec4( 0.8, 0.8, 0.8, 0.85 );
     vec3 Eye    = normalize(E);
     vec3 Half   = normalize(E + Light);
     float Kd = max(dot(NNormal, Light), 0.0);
     float Ks = pow(max(dot(Half, NNormal), 0.0),
-		   mat_shininess);
+                   mat_shininess);
     float Ka = 1.0;
-    
+
     vec4 diffuse  = Kd * diffuse_val;
     vec4 specular = Ks * specular_val;
     vec4 ambient  = Ka * vec4(0.35,0.35,0.35,1.0) ;
     float height = normal.w;;
-    float range= zrange.y-zrange.x;
-    float val =(height-zrange.x)/range;
-    vec4 jet=jetColorMap(1.0-val);
-    color = jet * (ambient + diffuse + specular);
+    float range=0.0;
+    float val=0.0;
+    if(shaderOut==3){
+        range= zrangeHi-zrangeLow;
+        val =(height-zrangeLow)/range;
+    }else{
+        range=zrangeLocalHi-zrangeLocalLow;
+        val =(height-zrangeLocalLow)/range;
+    }
+    vec4 jet=rainbowColorMap(val);
+    vec4 aoV=vec4(ao,ao,ao,1.0);
+    color = jet * aoV * (ambient + diffuse + specular);
   }
   else
     color=texture2D(theTexture,VaryingTexCoord[0].xy);
-  
+
+
   gl_FragColor = color;
-} 
- 
+}
+
+

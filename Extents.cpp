@@ -542,7 +542,7 @@ void compressFast(osg::State *state,osg::Texture2D* texture2D, osg::Texture::Int
     }
 
 }
-void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &geoms,osg::Vec4Array *v,const osg::Vec4Array &colors, const osg::PrimitiveSet& prset,
+void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &geoms,osg::Vec4Array *v,const osg::Vec4Array &colors,const osg::Vec3Array &normals, const osg::PrimitiveSet& prset,
                                                        const TexBlendCoord  &texCoordsArray,
                                                        const osg::Vec3Array &verts,int tex_size){
     if(!v)
@@ -564,6 +564,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
     int numberOfGeoms=texture_images.size();
     std::vector<osg::DrawElementsUInt *>  primsets(numberOfGeoms+1);;
     std::vector<osg::Vec3Array *>  vertSplit(numberOfGeoms+1);
+    std::vector<osg::Vec3Array *>  normSplit(numberOfGeoms+1);
     std::vector<osg::Vec4Array *>  colorSplit(numberOfGeoms+1);
     std::vector<TexBlendCoord> texSplit(numberOfGeoms+1);
     geoms.resize(numberOfGeoms+1);
@@ -571,8 +572,10 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
     for(int i=0; i< (int)geoms.size(); i++){
         geoms[i]= new osg::Geometry;
         vertSplit[i]=new osg::Vec3Array;
+        normSplit[i]=new osg::Vec3Array;
         colorSplit[i]=new osg::Vec4Array;
         geoms[i]->setVertexArray(vertSplit[i]);
+        geoms[i]->setNormalArray(normSplit[i]);
         primsets[i] = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
         geoms[i]->addPrimitiveSet(primsets[i]);
         //No texture in last set
@@ -639,7 +642,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
 
 
         stateset->setTextureAttributeAndModes(TEX_UNIT,texture,osg::StateAttribute::ON);
-        stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+        //stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
 
         osg::Program* program = new osg::Program;
         program->setName( "projective_tex" );
@@ -649,13 +652,13 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
             loadShaderSource( lerpV, _mydataSet->_basePath+"/blend.vert" );
 
             if(_mydataSet->_useAtlas){
-                loadShaderSource( lerpF,  _mydataSet->_basePath+"/blendAtlas.frag" );
+                _mydataSet->loadShaderSourcePrelude( lerpF,  _mydataSet->_basePath+"/blendAtlas.frag" );
             }else{
-                loadShaderSource( lerpF,  _mydataSet->_basePath+"/blend.frag" );
+                _mydataSet->loadShaderSourcePrelude( lerpF,  _mydataSet->_basePath+"/blend.frag" );
             }
 
         }else{
-            loadShaderSource( lerpF,  _mydataSet->_basePath+"/pass.frag" );
+            _mydataSet->loadShaderSourcePrelude( lerpF,  _mydataSet->_basePath+"/pass.frag" );
             loadShaderSource( lerpV,  _mydataSet->_basePath+"/blend.vert" );
         }
         program->addShader(  lerpF );
@@ -679,6 +682,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
     for(int i=0; i<numIdx-2; i+=3){
         vector<osg::Vec4> cP;
         vector<osg::Vec3> vP;
+        vector<osg::Vec3> nP;
         vector<osg::Vec3> tP[4];
         vector<unsigned int> iP;
         vector<SpatialIndex::id_type> idP;
@@ -711,6 +715,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
             //  idP.push_back(atlas);
             vP.push_back((verts)[prset.index(i+k)]);
             cP.push_back((colors)[prset.index(i+k)]);
+            nP.push_back((normals)[prset.index(i+k)]);
 
         }
         // assert(idP[0]== idP[1] == idP[2]);
@@ -721,6 +726,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         for(int k=0; k <3; k++){
             if(!untex){
                 vertSplit[id]->push_back(vP[k]);
+                normSplit[id]->push_back(nP[k]);
                 colorSplit[id]->push_back(cP[k]);
                 //   std::cout <<  cP[k]<<"\n";
                 for(int t=0; t<4; t++)
@@ -1287,12 +1293,16 @@ osg::Node* MyDestinationTile::createScene()
 
                             geom->setUseDisplayList(_mydataSet->_useDisplayLists);
                             geom->setStateSet(stateset);
+                            //osg::Vec3Array *normals=static_cast<const osg::Vec3Array*>(geom->getNormalArray());
+                          //  for(int i=0; i<100; i++)
+                            //    cout << normals->at(i) << "\n";
                         }else{
                             vector<osg::Geometry*> geoms;
                             osg::Group *group=dynamic_cast<osg::Group*>(_createdScene.get());
                             osg::ref_ptr<osg::Geode> geode = dynamic_cast<osg::Geode*> (group->getChild(0));
                             osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
                             osg::Vec4Array *colors=static_cast<const osg::Vec4Array*>(geom->getColorArray());
+                            osg::Vec3Array *normals=static_cast<const osg::Vec3Array*>(geom->getNormalArray());
 
                             osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
                             int s=primitiveSets[0]->getNumIndices();
@@ -1307,10 +1317,14 @@ osg::Node* MyDestinationTile::createScene()
                             s=primitiveSets[0]->getNumIndices();
                             s2=v->size();
                             s3=texCoords[0]->size();
-                            generateStateAndSplitDrawables(geoms,v,*colors,primset,texCoords,*verts,tex_size);
+                            generateStateAndSplitDrawables(geoms,v,*colors,*normals,primset,texCoords,*verts,tex_size);
                             geode->removeDrawables(0);
-                            for(int i=0; i < (int)geoms.size(); i++)
+                            for(int i=0; i < (int)geoms.size(); i++){
                                 geode->addDrawable(geoms[i]);
+                          /*      osg::Vec3Array *normals=static_cast<const osg::Vec3Array*>(geoms[0]->getNormalArray());
+                                for(int i=0; i<100; i++)
+                                    cout << normals->at(i) << "\n";*/
+                            }
                         }
 
                     }

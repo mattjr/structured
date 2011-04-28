@@ -90,32 +90,6 @@ vec4 rainbowColorMap(float hue) {
   return HSV_to_RGB(vec4(hue, 1.0f, 1.0f,1.0));
 }
 
-vec4 avgC(){
-   vec4 c[4];
-   vec3 v[4];
-   v[0]=VaryingTexCoord[0].xyz;
-   v[1]=VaryingTexCoord[1].xyz;
-   v[2]=VaryingTexCoord[2].xyz;
-   v[3]=VaryingTexCoord[3].xyz;
-
-  c[0]=texture2DArray(theTexture,VaryingTexCoord[0].xyz);
-  c[1]=texture2DArray(theTexture,VaryingTexCoord[1].xyz);
-  c[2]=texture2DArray(theTexture,VaryingTexCoord[2].xyz);
-  c[3]=texture2DArray(theTexture,VaryingTexCoord[3].xyz);
-
-  float blendA = 0.5;
-  vec4 t1 = mix(c[0],c[1],blendA);
-  vec4 t2 = mix(c[1],c[2],blendA);
-	
-  vec4 avg= mix(t1,t2,blendA);	
-
- 
-   
-  return avg;
-}
-
-
-
 vec4 freq3Blend(vec3 Cb){
   vec3 mipmapL = vec3(0,2,4);
   float rmax=0.70710678;

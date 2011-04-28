@@ -187,6 +187,7 @@ static double vrip_mb_clip_margin;
 static double vrip_mb_clip_margin_extra;
 static bool do_hw_blend=false;
 // Image normalisation
+static bool cmvs=false;
 bool image_norm=true;
 int normalised_mean;
 int normalised_var;
@@ -378,6 +379,7 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--skipsparse",skip_sparse);
     argp.read("--bkmb",background_mb);
     argp.read("--overlap",overlap);
+    cmvs=argp.read("--mvs");
 
     novpb=argp.read("--novpb");
 
@@ -2341,7 +2343,18 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
         fclose(diced_lod_fp);
         FILE *quadmerge_seg_fp;
         char quadmerge_seg_fname[2048];
+        if(cmvs){
+            FILE *cfp= fopen("runmvs.sh","w");
+            fprintf(cfp,"#!/bin/bash\n");
+            fprintf(cfp,"bash %s/../auv2mv/runauv2mv.sh %s %d %d\n",basepath.c_str(), base_dir.c_str(),max_frame_count,num_threads);
 
+            fprintf(cfp,"%s/texturedDecimator/bin/triangulate  pmvs/models/option-0000.ply\n",basepath.c_str());
+
+            fprintf(cfp,"cp out.ply mesh-diced/vis-total.ply\n");
+            fchmod(fileno(cfp),0777);
+            fclose(cfp);
+             sysres=system("./runmvs.sh");
+        }
         string quadmergecmd_fn="mesh-quad/quadmergecmds";
         FILE *quadmergecmds_fp=fopen(quadmergecmd_fn.c_str(),"w");
         diced_fp=fopen("mesh-quad/diced.txt","w");
@@ -2635,7 +2648,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 string vripcmd="runvrip.py";
                 shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip",NULL,&mergeandcleanCmds);
-                if(!no_vrip)
+                if(!no_vrip && !cmvs)
                     sysres=system("./runvrip.py");
                 osg::BoundingBox totalbb;
                 osg::BoundingBox totalbb_unrot;
@@ -2695,7 +2708,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 matrix.makeTranslate( eye );
                 osg::Matrixd view=osg::Matrix::inverse(matrix);
                 osg::Matrixd proj= osg::Matrixd::ortho2D(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
-/* proj= osg::Matrixd::ortho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
+                /* proj= osg::Matrixd::ortho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
  printf("%f %f %f %f AAAA\n",-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
  printf("%f %f %f %f AAAA\n",-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
 */

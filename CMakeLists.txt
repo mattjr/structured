@@ -346,6 +346,7 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 #SUBDIRS(src include tools )
 SUBDIRS( FastDXT spatialindex-src-1.6.1/src texture_image retex mbosg texturedDecimator mesh2hmap mesh2xy grd2ply  quadmerge single_mesh_gen)
 SET( SRCS OSGExport.cpp
+MSC.cpp
 		auv_clipped_texture_atlas.cpp
 		Depth.cpp
                 Extents.cpp

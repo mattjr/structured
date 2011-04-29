@@ -183,7 +183,7 @@ int main( int argc, char **argv )
                    // options->setOptionString("compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1");
                     osgDB::Registry::instance()->setOptions(options);
 
-                    osgDB::writeNodeFile(*node,osgDB::getNameLessExtension(outfilename).append(".ive"));
+                    osgDB::writeNodeFile(*xform,osgDB::getNameLessExtension(outfilename).append(".ive"));
                 }
                 /* osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
                 xform->accept(fstv);

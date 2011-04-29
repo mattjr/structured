@@ -120,7 +120,7 @@ int main( int argc, char **argv )
         //atlasGen._useAtlas=true;
         vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,basepath,false,false,false);
         dataset->_zrange=zrange;
-        bool useAtlas=false;
+        bool useAtlas=true;
         dataset->_useAtlas=useAtlas;
         dataset->_useBlending=true;
             // dataset->_useDisplayLists=(!imageNode);

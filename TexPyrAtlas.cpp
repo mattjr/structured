@@ -340,7 +340,7 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
         currSet.insert(-1);
 
         sets.push_back(currSet);
-        for(int i = 0; i < (int)result.size(); i++) {
+       /* for(int i = 0; i < (int)result.size(); i++) {
             if((int)sets.back().size()+maxNumTC > max_img_per_atlas){
                 set<long> currSet;
                 currSet.insert(-1);
@@ -352,7 +352,22 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
               //  cout << " " << vec[j];
             }
             cout << endl;
-        }
+        }*/
+
+        it=list_sets.begin();
+        for(; it!= list_sets.end(); it++){
+            vector<int> set1(it->second.begin(),it->second.end());
+                   if((int)set1.size()+maxNumTC > max_img_per_atlas){
+                       set<long> currSet;
+                       currSet.insert(-1);
+                       sets.push_back(currSet);
+                   }
+                   for(int j = 0; j < (int)set1.size(); j++){
+                       sets.back().insert(set1[j]);
+                     //  cout << " " << vec[j];
+                   }
+                  // cout << endl;
+               }
         int numIdx=prset.getNumIndices();
         for(int i=0; i<numIdx-2; i+=3){
             std::set<long> id_per_vert;

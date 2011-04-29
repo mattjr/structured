@@ -266,9 +266,9 @@ public:
         else{
             if(includes(first.second.begin(),first.second.end(),second.second.begin(),second.second.end()))
                 return true;
-            else
-                if(includes(second.second.begin(),second.second.end(),first.second.begin(),first.second.end()))
-                    return true;
+           // else
+             //   if(includes(second.second.begin(),second.second.end(),first.second.begin(),first.second.end()))
+               //     return true;
             else
                 return false;
 
@@ -340,7 +340,9 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
         currSet.insert(-1);
 
         sets.push_back(currSet);
-       /* for(int i = 0; i < (int)result.size(); i++) {
+        bool opt=false;
+     if(opt){
+         for(int i = 0; i < (int)result.size(); i++) {
             if((int)sets.back().size()+maxNumTC > max_img_per_atlas){
                 set<long> currSet;
                 currSet.insert(-1);
@@ -351,13 +353,12 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
                 sets.back().insert(vec[j]);
               //  cout << " " << vec[j];
             }
-            cout << endl;
-        }*/
-
+        }
+}else{
         it=list_sets.begin();
         for(; it!= list_sets.end(); it++){
             vector<int> set1(it->second.begin(),it->second.end());
-                   if((int)set1.size()+maxNumTC > max_img_per_atlas){
+                   if((int)set1.size()+ sets.back().size() > max_img_per_atlas){
                        set<long> currSet;
                        currSet.insert(-1);
                        sets.push_back(currSet);
@@ -368,6 +369,7 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
                    }
                   // cout << endl;
                }
+     }
         int numIdx=prset.getNumIndices();
         for(int i=0; i<numIdx-2; i+=3){
             std::set<long> id_per_vert;
@@ -400,6 +402,11 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
             }
         }
 
+        int pid=getpid();
+        char aa[1024];sprintf(aa,"numatlas-%d.txt",pid);
+        FILE *fp=fopen(aa,"w");
+        fprintf(fp,"%d\n",sets.size());
+        fclose(fp);
 
         printf("Size of list sets %d %d %d\n",(int)list_sets.size(),(int)result.size(),(int)sets.size());
     }

@@ -2346,7 +2346,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
         if(cmvs){
             FILE *cfp= fopen("runmvs.sh","w");
             fprintf(cfp,"#!/bin/bash\n");
-            fprintf(cfp,"bash %s/../auv2mv/runauv2mv.sh %s %d %d\n",basepath.c_str(), base_dir.c_str(),max_frame_count,num_threads);
+            fprintf(cfp,"bash %s/../auv2mv/runauv2mv.sh %s %d %d %f\n",basepath.c_str(), base_dir.c_str(),max_frame_count,num_threads,0.15);
 
             fprintf(cfp,"%s/texturedDecimator/bin/triangulate  pmvs/models/option-0000.ply\n",basepath.c_str());
 

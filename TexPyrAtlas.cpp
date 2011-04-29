@@ -28,6 +28,7 @@ int TexPyrAtlas::getMaxNumImagesPerAtlas(void)
     //printf("%f %d\n",area,_imgdir[0].second);
     return (int)floor((_maximumAtlasWidth*_maximumAtlasHeight)/area);
 }
+#if 0
 unsigned int max_tree_depth=100;
 
 class AtlasBounds
@@ -160,9 +161,9 @@ static void recursive_split_area(const osg::Vec3Array *pts,
 
 
 
-    if(bounds.ptset.size() <= max_img_per_atlas ){
+    if((int)bounds.ptset.size() <= max_img_per_atlas ){
         sets.push_back(bounds.ptset);
-        for(int i=0; i < atlasmap.size(); i++)
+        for(int i=0; i < (int)atlasmap.size(); i++)
             atlasmap[i]=sets.size()-1;
 
         return ;
@@ -180,7 +181,7 @@ static void recursive_split_area(const osg::Vec3Array *pts,
     // Perform the split
     AtlasBounds bounds1, bounds2;
     split_data( pts,prset,blendIdx, bounds, best_axis, best_split_point,
-               bounds1,  bounds2 );
+                bounds1,  bounds2 );
 
 
     // Check if the subsets need to be recursively split
@@ -204,14 +205,14 @@ static void recursive_split_area(const osg::Vec3Array *pts,
 
 #if VERBOSE
         printf( "Area Cell %d at depth %d area: %f %f %f %f %f, poses: %d vertex %d\n", sets.size(), depth,
-               bounds1.area(), bounds1.min_x,bounds1.max_x,bounds1.min_y,bounds1.max_y,bounds1.ptset.size() ,bounds1.idxset.size());
+                bounds1.area(), bounds1.min_x,bounds1.max_x,bounds1.min_y,bounds1.max_y,bounds1.ptset.size() ,bounds1.idxset.size());
         /*     for(int i=0; i < bounds1.idxset.size(); i++)
             std::cout<< pts->at(bounds1.idxset[i]) << "\n";
         std::cout<<"!!!!!!!!!!!\n";
 */
         for(std::set<long>::iterator itr=bounds1.ptset.begin();
-            itr!=bounds1.ptset.end();
-            ++itr)
+        itr!=bounds1.ptset.end();
+        ++itr)
             printf("%d ",*itr);
         printf("************\n");
 
@@ -238,25 +239,28 @@ static void recursive_split_area(const osg::Vec3Array *pts,
 
 #if VERBOSE
         printf( "Area Cell %d at depth %d area: %f %f %f %f %f, poses: %d vertex %d\n", sets.size(), depth,
-               bounds2.area(), bounds2.min_x,bounds2.max_x,bounds2.min_y,bounds2.max_y,bounds2.ptset.size() ,bounds2.idxset.size());
+                bounds2.area(), bounds2.min_x,bounds2.max_x,bounds2.min_y,bounds2.max_y,bounds2.ptset.size() ,bounds2.idxset.size());
         /*  for(int i=0; i < bounds2.idxset.size(); i++)
             std::cout<< pts->at(bounds2.idxset[i]) << "\n";
         std::cout<<"!!!!!!!!!!!\n";
       */  for(std::set<long>::iterator itr=bounds2.ptset.begin();
-              itr!=bounds2.ptset.end();
-              ++itr)
-            printf("%d ",*itr);
-        printf("************\n");
+          itr!=bounds2.ptset.end();
+          ++itr)
+              printf("%d ",*itr);
+          printf("************\n");
 
 #endif
-    }
+      }
 
 }
+#endif
 class is_same
 {
 public:
     bool operator() (pair<int,set<long> > &first, pair<int,set<long> > &second)
     {
+        if(first.second.size() ==0 || second.second.size() == 0)
+            return false;
         if(first.second == second.second)
             return true;
         else{
@@ -265,8 +269,8 @@ public:
             else
                 if(includes(second.second.begin(),second.second.end(),first.second.begin(),first.second.end()))
                     return true;
-                else
-                    return false;
+            else
+                return false;
 
         }
     }
@@ -284,7 +288,8 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
     vector< std::set<long>  >sets;
 
     printf("Max Images per Atlas %d\n",max_img_per_atlas);
-    bool area_split=false;
+    //bool area_split=false;
+#if 0
     if(area_split){
 
 
@@ -292,7 +297,7 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
         AtlasBounds bounds( pts,blendIdx );
 #if VERBOSE
         printf( "Bounds: %f %f %f %f\n", bounds.min_x, bounds.max_x ,
-               bounds.min_y, bounds.max_y );
+                bounds.min_y, bounds.max_y );
 #endif
 
 
@@ -300,11 +305,13 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
         // Perform binary division until termination criteria
 
         recursive_split_area( pts,prset,blendIdx,atlasmap,max_img_per_atlas, bounds,0, sets );
-    }else{
+    }else
+#endif
+    {
         set<long> imgcount;
 
         list<pair<int,set<long> >  > list_sets;
-        for(int i=0;i <blendIdx->size(); i++){
+        for(int i=0;i <(int)blendIdx->size(); i++){
             pair<int,set<long> > iForV;
             iForV.first=i;
             for(int j=0; j<4; j++){
@@ -313,37 +320,73 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
                     iForV.second.insert(idx);
                 imgcount.insert(idx);
             }
-            list_sets.push_back(iForV);
+            if(iForV.second.size())
+                list_sets.push_back(iForV);
         }
+        printf("Pre unique sets %d\n",(int)list_sets.size());
+
         list_sets.unique(is_same());
-        printf("Sets %d\n",list_sets.size());
+        printf("Unique sets %d\n",(int)list_sets.size());
         vector<vector<int> > input;
 
-       list<pair<int,set<long> >  >::iterator it=list_sets.begin();
-       for(; it!= list_sets.end(); it++){
-           vector<int> set1(it->second.begin(),it->second.end());
-           input.push_back(set1);
-       }
+        list<pair<int,set<long> >  >::iterator it=list_sets.begin();
+        for(; it!= list_sets.end(); it++){
+            vector<int> set1(it->second.begin(),it->second.end());
+            input.push_back(set1);
+        }
 
-       vector<int> result = set_cover(input);
-       set<long> currSet;
-       currSet.insert(-1);
+        vector<int> result = set_cover(input);
+        set<long> currSet;
+        currSet.insert(-1);
 
-       sets.push_back(currSet);
-       for(int i = 0; i < result.size(); i++) {
-         if(sets.back().size()+maxNumTC > max_img_per_atlas){
-             set<long> currSet;
-             currSet.insert(-1);
-             sets.push_back(currSet);
-         }
-         vector<int> &vec = input[result[i]];
-         for(int j = 0; j < vec.size(); j++){
-             sets.back().insert(vec[j]);
-             //cout << " " << vec[j];
-         }
-         cout << endl;
-       }
-        printf("Size of list sets %d %d %d\n",list_sets.size(),result.size(),sets.size());
+        sets.push_back(currSet);
+        for(int i = 0; i < (int)result.size(); i++) {
+            if((int)sets.back().size()+maxNumTC > max_img_per_atlas){
+                set<long> currSet;
+                currSet.insert(-1);
+                sets.push_back(currSet);
+            }
+            vector<int> &vec = input[result[i]];
+            for(int j = 0; j < (int)vec.size(); j++){
+                sets.back().insert(vec[j]);
+              //  cout << " " << vec[j];
+            }
+            cout << endl;
+        }
+        int numIdx=prset.getNumIndices();
+        for(int i=0; i<numIdx-2; i+=3){
+            std::set<long> id_per_vert;
+            for(int k=0; k <3; k++){
+                for(int j=0; j<maxNumTC; j++){
+                    long id=(int)blendIdx->at(prset.index(i+k))[j];
+                           if(id>=0)
+                                id_per_vert.insert(id);
+                }
+
+            }
+            bool setface=false;
+            for(int s=0; s< (int)sets.size(); s++){
+                std::set<long>:: iterator iter=sets[s].begin();
+                if(includes(sets[s].begin(),sets[s].end(),id_per_vert.begin(),id_per_vert.end())){
+                    for(int k=0; k <3; k++)
+                        atlasmap[prset.index(i+k)]=s;
+                    setface=true;
+                    break;
+                }
+            }
+            if(!setface){
+                fprintf(stderr,"Can't find atlas for index %d\n",i);
+                std::set<long>:: iterator iter=id_per_vert.begin();
+                for(; iter!=id_per_vert.end(); iter++)
+                   std::cerr<<*iter<<" ";
+                std::cerr<<"!!!!!\n";
+
+               exit(-1);
+            }
+        }
+
+
+        printf("Size of list sets %d %d %d\n",(int)list_sets.size(),(int)result.size(),(int)sets.size());
     }
     return sets;
 }
@@ -512,10 +555,10 @@ osg::ref_ptr<osg::Texture> TexPyrAtlas::getTexture(int index,int sizeIndex){
 }
 
 bool
-TexPyrAtlas::resizeImage(const osg::Image* input,
-                         unsigned int out_s, unsigned int out_t,
-                         osg::ref_ptr<osg::Image>& output,
-                         unsigned int mipmapLevel )
+        TexPyrAtlas::resizeImage(const osg::Image* input,
+                                 unsigned int out_s, unsigned int out_t,
+                                 osg::ref_ptr<osg::Image>& output,
+                                 unsigned int mipmapLevel )
 {
     if ( !input && out_s == 0 && out_t == 0 )
         return false;
@@ -572,9 +615,9 @@ TexPyrAtlas::resizeImage(const osg::Image* input,
                         (output_col*output->getPixelSizeInBits())/8+output_row*dataRowSizeBytes;
 
                 memcpy(
-                            outaddr,
-                            input->data( input_col, input_row ),
-                            pixel_size_bytes );
+                        outaddr,
+                        input->data( input_col, input_row ),
+                        pixel_size_bytes );
             }
         }
     }
@@ -591,7 +634,7 @@ void TexPyrAtlas::buildAtlas(   )
 
     if(_sets){
         _idToSourceAtlas.resize(_sets->size());
-        for(int i=0; i < _sets->size(); i++){
+        for(int i=0; i < (int)_sets->size(); i++){
 
             osg::ref_ptr<Atlas> atlas = new Atlas(_maximumAtlasWidth,_maximumAtlasHeight,_margin);
             if(_atlasList.size() && _useTextureArray){
@@ -609,7 +652,7 @@ void TexPyrAtlas::buildAtlas(   )
                         atlas->addSource(source);
                     }
                     else
-                        fprintf(stderr,"Failed to find source for id %d\n",idx);
+                        fprintf(stderr,"Failed to find source for id %d\n",(int)idx);
 
                 }
 
@@ -617,8 +660,8 @@ void TexPyrAtlas::buildAtlas(   )
         }
     }else{
         for(SourceList::iterator sitr = _sourceList.begin();
-            sitr != _sourceList.end();
-            ++sitr)
+        sitr != _sourceList.end();
+        ++sitr)
         {
             Source* source = sitr->get();
             _sourceToSize[source]=osg::Vec2(source->_image->s(),source->_image->t());
@@ -627,8 +670,8 @@ void TexPyrAtlas::buildAtlas(   )
             {
                 bool addedSourceToAtlas = false;
                 for(AtlasList::iterator aitr = _atlasList.begin();
-                    aitr != _atlasList.end() && !addedSourceToAtlas;
-                    ++aitr)
+                aitr != _atlasList.end() && !addedSourceToAtlas;
+                ++aitr)
                 {
                     OSG_INFO<<"checking source "<<source->_image->getFileName()<<" to see it it'll fit in atlas "<<aitr->get()<<std::endl;
                     if ((*aitr)->doesSourceFit(source))
@@ -663,8 +706,8 @@ void TexPyrAtlas::buildAtlas(   )
     // build the atlas which are suitable for use, and discard the rest.
     AtlasList activeAtlasList;
     for(AtlasList::iterator aitr = _atlasList.begin();
-        aitr != _atlasList.end();
-        ++aitr)
+    aitr != _atlasList.end();
+    ++aitr)
     {
         Atlas* atlas = aitr->get();
 

@@ -27,6 +27,7 @@
 #include "auv_stereo_keypoint_finder.hpp"
 #include "adt_image_norm.hpp"
 #include "auv_stereo_dense.hpp"
+#include "auv_geometry.hpp"
 #include "auv_stereo_geometry_compat.hpp"
 #include <osg/ComputeBoundsVisitor>
 #include "auv_concurrency.hpp"

@@ -206,9 +206,11 @@ SET( GMT_LIBRARY gmt netcdf )
 SET( GMT_DIR /usr/lib/gmt/lib )
 
 # libsnapper 
-SET( LIBSNAPPER_INC ${LIBSNAPPER_PREFIX}/include/libsnapper )
-SET( LIBSNAPPER_LIBRARY snapper )
-
+SET( LIBSNAPPER_INC ${LIBSNAPPER_PREFIX}/include/libcarp )
+SET( LIBSNAPPER_LIBRARY carp )
+# libsnapper
+SET( LIBCARP_INC ${LIBSNAPPER_PREFIX}/include/libsnapper )
+SET( LIBCARP_LIBRARY carp )
 # libpolyp 
 SET( LIBPOLYP_INC ${LIBPOLYP_PREFIX}/include/libpolyp )
 SET( LIBPOLYP_LIBRARY polyp )
@@ -236,6 +238,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${ULAPACK_INCLUDE_DIR}
 		     ${LIBADT_INCLUDE_DIR}
   		     ${LIBSNAPPER_INC}
+${LIBCARP_INC}
 		     ${LIBPOLYP_INC}
                      ${LIBPLANKTON_INCLUDE_DIR}
                      ${LIBKEYPOINT_INCLUDE_DIR}
@@ -282,6 +285,7 @@ osgSim
 		${LIBPLANKTON_LIBRARY}	
 		${LIBSNAPPER_LIBRARY}
 		${GTS_LIBRARIES}
+${LIBCARP_LIBRARY}
 		${LAPACK_LIBRARY}
 		${Boost_LIBRARIES}
         ${LIBKEYPOINT_LIB}

@@ -39,10 +39,10 @@ public:
     }
     int getMaxNumImagesPerAtlas(void);
 
-    osg::Matrix getTextureMatrixByIDAtlas(id_type id,char atlas);
+    bool getTextureMatrixByIDAtlas(osg::Matrix &matrix,id_type id,char atlas);
 
     osg::Matrix getTextureMatrixByID(id_type id);
-    osg::Matrix computeTextureMatrixFreedImage(Source *s) ;
+    bool computeTextureMatrixFreedImage(osg::Matrix &matrix,Source *s);
     void computeImageNumberToAtlasMap(void);
     bool _useStub;
     std::map<id_type ,std::string> _totalImageList;

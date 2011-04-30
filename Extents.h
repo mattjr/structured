@@ -69,6 +69,12 @@ class MyDataSet;
         levelToTextureLevel[5]=0;
         _hintTextureNumber=0;
         _hintNumLevels=0;
+        tex_size=0;
+        for(int i=0; i<imageDir.size(); i++)
+            if(tex_size<imageDir[i].second)
+                tex_size=imageDir[i].second;
+        if(tex_size == 0)
+            fprintf(stderr,"Can't get tex size\n");
 
     }
 
@@ -127,6 +133,7 @@ class MyDataSet;
          int _hintTextureNumber;
          int _hintNumLevels;
          MyDataSet *_mydataSet;
+         int tex_size;
     };
     class ClippedCopy{
     public:

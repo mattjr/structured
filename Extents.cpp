@@ -314,7 +314,13 @@ void MyDestinationTile::remapArrayPerAtlas(osg::Vec4Array *v,const TexBlendCoord
             int id=(int)((*v)[i][j]);
             if(id >= 0 || atlas <0){
                 (*v)[i][j]=(float)atlas;
-                osg::Matrix matrix=_atlasGen->getTextureMatrixByIDAtlas(id,atlas);
+                osg::Matrix matrix;
+                if(!_atlasGen->getTextureMatrixByIDAtlas(matrix,id,atlas)){
+                    fprintf(stderr,"Cant get matrix for atlas %d idx %d\n",atlas,id);
+                    ((*v)[i][j])=-1.0;
+                    texCoordsArray[j]->at(i)=osg::Vec3(-1,-1,-1);
+                    continue;
+                }
                 osg::Vec3 tc=texCoordsArray[j]->at(i);
                 if(checkInBounds(tc)){
                     double r=(osg::Vec2(tc[0],tc[1])-osg::Vec2(0.5,0.5)).length();
@@ -1176,7 +1182,6 @@ osg::Node* MyDestinationTile::createScene()
         }
         else*/
         {
-            int tex_size;
 
             if(!_mydataSet->_useVirtualTex){
 
@@ -1191,11 +1196,12 @@ osg::Node* MyDestinationTile::createScene()
             //Got the size that was over target get size under target
             tex_size=max(16,tex_size/2);*/
 #warning "Need to update log2"
-                int start_pow=10;
-                tex_size=1024;//log2 = 10
+               // int start_pow=10;
+              //  tex_size=1024;//log2 = 10
                 int leveloffset=(_hintNumLevels-_level);
                 //printf("level offset %d level %d\n",leveloffset,_level);
-                tex_size=pow(2,start_pow-leveloffset);
+                //tex_size=pow(2,start_pow-leveloffset);
+                tex_size=tex_size/pow(2,leveloffset);
                 tex_size=max(tex_size,8);
                 memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
 

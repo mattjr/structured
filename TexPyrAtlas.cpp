@@ -266,9 +266,9 @@ public:
         else{
             if(includes(first.second.begin(),first.second.end(),second.second.begin(),second.second.end()))
                 return true;
-           // else
-             //   if(includes(second.second.begin(),second.second.end(),first.second.begin(),first.second.end()))
-               //     return true;
+            // else
+            //   if(includes(second.second.begin(),second.second.end(),first.second.begin(),first.second.end()))
+            //     return true;
             else
                 return false;
 
@@ -338,46 +338,50 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
         vector<int> result = set_cover(input);
         set<long> currSet;
         currSet.insert(-1);
+        list< set<long>  > sets_tmp;
 
-        sets.push_back(currSet);
+        sets_tmp.push_back(currSet);
+
         bool opt=false;
-     if(opt){
-         for(int i = 0; i < (int)result.size(); i++) {
-            if((int)sets.back().size()+maxNumTC > max_img_per_atlas){
-                set<long> currSet;
-                currSet.insert(-1);
-                sets.push_back(currSet);
+        if(opt){
+            for(int i = 0; i < (int)result.size(); i++) {
+                if((int)sets.back().size()+maxNumTC > max_img_per_atlas){
+                    set<long> currSet;
+                    currSet.insert(-1);
+                    sets.push_back(currSet);
+                }
+                vector<int> &vec = input[result[i]];
+                for(int j = 0; j < (int)vec.size(); j++){
+                    sets.back().insert(vec[j]);
+                    //  cout << " " << vec[j];
+                }
             }
-            vector<int> &vec = input[result[i]];
-            for(int j = 0; j < (int)vec.size(); j++){
-                sets.back().insert(vec[j]);
-              //  cout << " " << vec[j];
+        }else{
+            it=list_sets.begin();
+            for(; it!= list_sets.end(); it++){
+                vector<int> set1(it->second.begin(),it->second.end());
+                if((int)set1.size()+ sets_tmp.back().size() > max_img_per_atlas){
+                    set<long> currSet;
+                    currSet.insert(-1);
+                    sets_tmp.push_back(currSet);
+                }
+                for(int j = 0; j < (int)set1.size(); j++){
+                    sets_tmp.back().insert(set1[j]);
+                    //  cout << " " << vec[j];
+                }
+                // cout << endl;
             }
+            sets_tmp.unique();
+            sets.insert(sets.begin(),sets_tmp.begin(),sets_tmp.end());
         }
-}else{
-        it=list_sets.begin();
-        for(; it!= list_sets.end(); it++){
-            vector<int> set1(it->second.begin(),it->second.end());
-                   if((int)set1.size()+ sets.back().size() > max_img_per_atlas){
-                       set<long> currSet;
-                       currSet.insert(-1);
-                       sets.push_back(currSet);
-                   }
-                   for(int j = 0; j < (int)set1.size(); j++){
-                       sets.back().insert(set1[j]);
-                     //  cout << " " << vec[j];
-                   }
-                  // cout << endl;
-               }
-     }
         int numIdx=prset.getNumIndices();
         for(int i=0; i<numIdx-2; i+=3){
             std::set<long> id_per_vert;
             for(int k=0; k <3; k++){
                 for(int j=0; j<maxNumTC; j++){
                     long id=(int)blendIdx->at(prset.index(i+k))[j];
-                           if(id>=0)
-                                id_per_vert.insert(id);
+                    if(id>=0)
+                        id_per_vert.insert(id);
                 }
 
             }
@@ -395,10 +399,10 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
                 fprintf(stderr,"Can't find atlas for index %d\n",i);
                 std::set<long>:: iterator iter=id_per_vert.begin();
                 for(; iter!=id_per_vert.end(); iter++)
-                   std::cerr<<*iter<<" ";
+                    std::cerr<<*iter<<" ";
                 std::cerr<<"!!!!!\n";
 
-               exit(-1);
+                exit(-1);
             }
         }
 
@@ -431,30 +435,48 @@ int TexPyrAtlas::getAtlasId(id_type id){
     return -1;
 }
 osg::Matrix TexPyrAtlas::getTextureMatrixByID(id_type id){
+    osg::Matrix matrix;
     if(_idToSource.count(id))
-        return computeTextureMatrixFreedImage(_idToSource[id]);     //   return _idToSource[id]->computeTextureMatrix(); This was using images we had freed
+        if( computeTextureMatrixFreedImage(matrix,_idToSource[id]))
+            return matrix;
+    //   return _idToSource[id]->computeTextureMatrix(); This was using images we had freed
 
     return osg::Matrix::identity();
 }
 
-osg::Matrix TexPyrAtlas::getTextureMatrixByIDAtlas(id_type id,char atlas){
-    if(atlas >=0 && _idToSourceAtlas[atlas].count(id))
-        return computeTextureMatrixFreedImage(_idToSourceAtlas[atlas][id]);     //   return _idToSource[id]->computeTextureMatrix(); This was using images we had freed
-
-    return osg::Matrix::identity();
+bool TexPyrAtlas::getTextureMatrixByIDAtlas(osg::Matrix &matrix,id_type id,char atlas){
+    if(atlas >=0 && _idToSourceAtlas[atlas].count(id)){
+        if(computeTextureMatrixFreedImage(matrix,_idToSourceAtlas[atlas][id]))     //   return _idToSource[id]->computeTextureMatrix(); This was using images we had freed
+            return true;
+    }
+    matrix= osg::Matrix::identity();
+    return false;
 }
-osg::Matrix TexPyrAtlas::computeTextureMatrixFreedImage(Source *s)
+bool TexPyrAtlas::computeTextureMatrixFreedImage(osg::Matrix &matrix,Source *s)
 {
-    if (!s->_atlas) return osg::Matrix();
+    if (!s->_atlas){
+        cerr<< "no valid atlas\n";
+        matrix= osg::Matrix();
+        return false;
+    }
     double image_t,image_s;
-    if(!_sourceToSize.count(s))return osg::Matrix();
+    if(!_sourceToSize.count(s)){
+        matrix= osg::Matrix();
+        cerr<< "no source stored already\n";
+        return false;
+    }
     image_s=_sourceToSize[s][0];
     image_t=_sourceToSize[s][1];
 
-    if (!(s->_atlas->_image)) return osg::Matrix();
+    if (!(s->_atlas->_image)){
+        cerr<< "no atlas image";
 
-    return osg::Matrix::scale(float(image_s)/float(s->_atlas->_image->s()), float(image_t)/float(s->_atlas->_image->t()), 1.0)*
+        matrix= osg::Matrix();
+        return false;
+    }
+    matrix= osg::Matrix::scale(float(image_s)/float(s->_atlas->_image->s()), float(image_t)/float(s->_atlas->_image->t()), 1.0)*
             osg::Matrix::translate(float(s->_x)/float(s->_atlas->_image->s()), float(s->_y)/float(s->_atlas->_image->t()), 0.0);
+    return true;
 }
 void TexPyrAtlas::addSources(std::vector<std::pair<id_type ,std::string> > imageList){
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_imageListMutex);
@@ -556,7 +578,7 @@ void TexPyrAtlas::loadTextureFiles(int size){
         computeImageNumberToAtlasMap();
         for(int i=0; i < (int)getNumAtlases(); i++){
             _images.push_back(getAtlasByNumber(i));
-            _images.back()->setFileName(getUUID());
+            _images.back()->setFileName(getUUID()+".png");
         }
         //Free ref created by source new above which leaks after copy from sources
         // for(int i=0; i < (int)loc_images.size(); i++){
@@ -671,7 +693,9 @@ void TexPyrAtlas::buildAtlas(   )
                     if(source){
                         _idToSourceAtlas[i][idx]=source;
                         _sourceToSize[source]=osg::Vec2(_idToSource[idx]->_image->s(),_idToSource[idx]->_image->t());
-                        atlas->addSource(source);
+                        if(!atlas->addSource(source)){
+                            fprintf(stderr,"Failed to add source doesn't fit %d %d \n",_idToSource[idx]->_image->s(),_idToSource[idx]->_image->t());
+                        }
                     }
                     else
                         fprintf(stderr,"Failed to find source for id %d\n",(int)idx);

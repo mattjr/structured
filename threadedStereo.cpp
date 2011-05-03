@@ -116,6 +116,7 @@ static bool use_proj_tex=false;
 static vector<string> mb_ply_filenames;
 static bool have_mb_ply=false;
 static bool have_mb_grd=false;
+static int gpunum=0;
 static bool have_cov_file=false;
 static string stereo_calib_file_name;
 static bool no_simp=true;
@@ -380,6 +381,8 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--skipsparse",skip_sparse);
     argp.read("--bkmb",background_mb);
     argp.read("--overlap",overlap);
+    argp.read("--gpu",gpunum);
+
     cmvs=argp.read("--mvs");
 
     novpb=argp.read("--novpb");
@@ -2349,7 +2352,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
             fprintf(cfp,"#!/bin/bash\n");
             fprintf(cfp,"bash %s/../auv2mv/runauv2mv.sh %s %d %d %f\n",basepath.c_str(), base_dir.c_str(),max_frame_count,num_threads,0.15);
 
-            fprintf(cfp,"%s/texturedDecimator/bin/triangulate  pmvs/models/option-0000.ply\n",basepath.c_str());
+            fprintf(cfp,"%s/texturedDecimator/bin/triangulate  pmvs/models/option-*.ply\n",basepath.c_str());
 
             fprintf(cfp,"cp out.ply mesh-diced/vis-total.ply\n");
             fchmod(fileno(cfp),0777);
@@ -2919,8 +2922,9 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 for(int i=0; i <(int)cells.size(); i++){
                     if(cells[i].images.size() == 0)
                         continue;
-                    fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.0;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f",
+                    fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f",
                             cwd,
+                            gpunum,
                             basepath.c_str(),
                             base_dir.c_str(),
                             cells[i].row,cells[i].col,

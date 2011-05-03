@@ -100,7 +100,7 @@ private:
     uint32_t nResults;
     const SpatialIndex::IShape& m_center;
     unsigned int _maxCount;
-
+    static const bool limitadd=false;
     double minDist;
 
 
@@ -118,20 +118,24 @@ public:
     void visitData(const SpatialIndex::IData& d)
     {
         nResults += 1;
-        SpatialIndex::IShape *s;
-        d.getShape(&s);
-        SpatialIndex::Point pt;
-        if(s){
-            s->getCenter(pt);
-            double dist=s->getMinimumDistance(m_center);
-            bool insert= (m_vector.size() < _maxCount);
-            if(!insert && minDist > dist){
-                minDist=dist;
-                insert=true;
-            }
-            if(insert)
-                m_vector.push_back(d.getIdentifier());
+        if(!limitadd)
+            m_vector.push_back(d.getIdentifier());
+        else{
+            SpatialIndex::IShape *s;
+            d.getShape(&s);
+            SpatialIndex::Point pt;
+            if(s){
+                s->getCenter(pt);
+                double dist=s->getMinimumDistance(m_center);
+                bool insert= (m_vector.size() < _maxCount);
+                if(!insert && minDist > dist){
+                    minDist=dist;
+                    insert=true;
+                }
+                if(insert)
+                    m_vector.push_back(d.getIdentifier());
 
+            }
         }
     }
 

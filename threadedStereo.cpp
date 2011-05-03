@@ -190,6 +190,7 @@ static       int sysres=0;
 static double vrip_mb_clip_margin;
 static double vrip_mb_clip_margin_extra;
 static bool do_hw_blend=false;
+static bool useAtlas=false;
 // Image normalisation
 static bool cmvs=false;
 bool image_norm=true;
@@ -386,7 +387,7 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--gpu",gpunum);
 
     cmvs=argp.read("--mvs");
-
+    useAtlas=argp.read("--atlas");
     novpb=argp.read("--novpb");
 
     storeTexMesh=argp.read("--storetex");
@@ -2939,6 +2940,9 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     fprintf(texcmds_fp," --tex_cache %s %d --invrot %f %f %f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,rx,ry,rz);
                     if(!storeTexMesh)
                         fprintf(texcmds_fp," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,_tileRows,_tileColumns,ajustedGLImageSizeX,ajustedGLImageSizeY);
+                    if(useAtlas)
+                         fprintf(texcmds_fp," --atlas");
+
                     fprintf(texcmds_fp,"\n");
 
                     /* fprintf(texcmds_fp,"osgconv -O \"compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1\" mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d-uncomp.ive  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive\n",

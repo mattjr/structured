@@ -52,6 +52,8 @@ int main( int argc, char **argv )
     texcache_t cache;
     osg::Vec4 zrange;
     arguments.read("--zrange",zrange[0],zrange[1]);
+    bool useAtlas=arguments.read("--atlas");
+
     int row,col,numRows,numCols,width,height;
     bool imageNode=arguments.read("--imageNode",row,col,numRows,numCols,width,height);
     bool untex=arguments.read("--untex");
@@ -120,7 +122,6 @@ int main( int argc, char **argv )
         //atlasGen._useAtlas=true;
         vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,basepath,false,false,false);
         dataset->_zrange=zrange;
-        bool useAtlas=false;
         dataset->_useAtlas=useAtlas;
         dataset->_useBlending=true;
             // dataset->_useDisplayLists=(!imageNode);

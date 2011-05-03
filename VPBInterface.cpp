@@ -111,7 +111,7 @@ else
 
             std::string bbox_file;
             TexturedSource *sourceModel;
-            if(!useVirtualTex){
+            if(!useVirtualTex && !useReimage){
                 bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
                 sourceModel =new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
             }else{

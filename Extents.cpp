@@ -150,8 +150,8 @@ void MyDataSet::init()
     readMatrixToScreen("view.mat",viewProj);
 
     if(_useReImage){
-        if(osgDB::fileExists("subtile.v"))
-            in = new vips::VImage("subtile.v");
+        if(osgDB::fileExists("subtile.ppm"))
+            in = new vips::VImage("subtile.ppm");
         else
             std::cerr << "Can't open subtile on reimaging run\n";
 

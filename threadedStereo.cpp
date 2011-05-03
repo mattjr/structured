@@ -50,7 +50,7 @@ using namespace libplankton;
 using namespace ulapack;
 using namespace libsnapper;
 #define DEFAULT_NUM_THREADS (int)(get_num_processors( )*1.5)
-
+static bool useOrthoTex=true;
 bool reimage=true;
 static int meshNum;
 static double start_time = 0.0;
@@ -137,6 +137,8 @@ static double cell_scale=1.0;
 static bool do_classes=false;
 static bool do_classes_interp=false;
 static bool useVirtTex=true;
+static bool useReimage=false;
+
 static bool use_dense_feature=false;
 //StereoMatching* stereo;
 //StereoImage simage;
@@ -552,7 +554,10 @@ static bool parse_args( int argc, char *argv[ ] )
 
     argp.read( "--monoskip" ,mono_skip);
     argp.read( "--vpblod" ,vpblod_override);
-
+    if(argp.read("--static")){
+        useReimage=true;
+        useVirtTex=false;
+    }
     if(argp.read(  "--noposclip"))
         pos_clip=false;
     argp.read(  "--imagesplit",_tileRows,_tileColumns);
@@ -606,7 +611,7 @@ static bool parse_args( int argc, char *argv[ ] )
         even_split= true;
     argp.read("--cellscale",cell_scale );
 
-    if(!useVirtTex){
+    if(!useOrthoTex){
         for(int i=0; (lodTexSize[0]/pow(2,i)) >= 8; i++){
             char tmppp[1024];
             int size=lodTexSize[0]/pow(2,i);
@@ -2357,7 +2362,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
             fprintf(cfp,"cp out.ply mesh-diced/vis-total.ply\n");
             fchmod(fileno(cfp),0777);
             fclose(cfp);
-             sysres=system("./runmvs.sh");
+            sysres=system("./runmvs.sh");
         }
         string quadmergecmd_fn="mesh-quad/quadmergecmds";
         FILE *quadmergecmds_fp=fopen(quadmergecmd_fn.c_str(),"w");
@@ -2975,10 +2980,10 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 //int embedSize=(intDiv* adjustedSize);
                 std::ostringstream p3;
                 // p3 << "vips " << " im_extract_area " << "out.tif "<< " tex.tif " << " 0 0 " <<  embedSize << " "<<embedSize<< ";";
-
-                p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" tex.tif ";
-                postcmdv.push_back(p3.str());
-
+                if(useVirtTex){
+                    p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" tex.tif ";
+                    postcmdv.push_back(p3.str());
+                }
                 shellcm.write_generic(texcmd,texcmds_fn,"Tex",&(precmd),&(postcmdv),num_threads);
                 if(!no_tex)
                     sysres=system("./tex.py");
@@ -3019,8 +3024,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 {
                     char tmp[1024];
+                    if(useVirtTex)
+                        fprintf(simpcmds_fp,"cd %s/mesh-diced;cp totaltex.ply total-lod%d.ply;",cwd,vpblod);
+                    else
+                        fprintf(simpcmds_fp,"cd %s/mesh-diced;cp vis-total.ply total-lod%d.ply;",cwd,vpblod);
 
-                    fprintf(simpcmds_fp,"cd %s/mesh-diced;cp totaltex.ply total-lod%d.ply;",cwd,vpblod);
                     sprintf(tmp,"mesh-diced/total-lod%d.ply",vpblod);//std::min(lod,2)
                     std::vector<string> level;
 
@@ -3119,8 +3127,6 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 if(!mgc)
                     mgc = new MyGraphicsContext();
-                bool useVirtTex=true;
-                bool useReimage=false;
                 if(!novpb)
                     doQuadTreeVPB(basepath,cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb);
 

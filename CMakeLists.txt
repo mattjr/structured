@@ -129,12 +129,6 @@ IF( NOT OSG_FOUND )
   MESSAGE( FATAL_ERROR  "ERROR - Can't find OSG" )
 ENDIF( NOT OSG_FOUND )
 
-# lapack
-IF( NOT LAPACK_FOUND )
-   MESSAGE( FATAL_ERROR  "ERROR - Can't find lapack" )
-ENDIF( NOT LAPACK_FOUND )
-
-  
 # Gts
 pkg_check_modules( GTS "gts" )
 IF( NOT GTS_FOUND )

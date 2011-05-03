@@ -316,8 +316,12 @@ typedef struct _picture_cell{
     int row;
     int col;
     osg::BoundingBox bbox;
+    osg::BoundingBox bboxMargin;
+
     std::string name;
     std::vector<int> images;
+    std::vector<int> imagesMargin;
+
 }picture_cell;
 //
 // Parse command line arguments into global variables
@@ -2751,11 +2755,15 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
                         double left,right,bottom,top,znear,zfar;
                         (view*proj*offsetMatrix).getOrtho(left,right,bottom,top,znear,zfar);
-
+                        double margin=0.1;
                         osg::BoundingBox thisCellBbox(left,bottom,bs.center()[2]-bs.radius(),right,top,bs.center()[2]+bs.radius());
+                        osg::BoundingBox thisCellBboxMargin(left-fabs(margin*left),bottom-fabs(margin*bottom),bs.center()[2]-bs.radius(),right+fabs(margin*right),top+fabs(margin*top),bs.center()[2]+bs.radius());
+                       // std::cout<< thisCellBbox._min << " "<< thisCellBbox._max<<"\n";
+                        //std::cout<< "A"<<thisCellBboxMargin._min << " "<< thisCellBboxMargin._max<<"\n";
 
                         picture_cell cell;
                         cell.bbox=thisCellBbox;
+                        cell.bboxMargin=thisCellBbox;
                         cell.row=row;
                         cell.col=col;
                         sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",row,col,vpblod);
@@ -2771,6 +2779,9 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             //        cout <<thisCellBbox._min << " "<< thisCellBbox._max<<" bbox\n";
                             if(thisCellBbox.intersects(imgBox)){
                                 cell.images.push_back(i);
+                            }
+                            if(thisCellBboxMargin.intersects(imgBox)){
+                                cell.imagesMargin.push_back(i);
                             }
                         }
                         cells.push_back(cell);
@@ -2799,11 +2810,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/totalrot.ive %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ive;",
                             cwd,
                             basepath.c_str(),
-                            cells[i].bbox.xMin(),
-                            cells[i].bbox.yMin(),
+                            cells[i].bboxMargin.xMin(),
+                            cells[i].bboxMargin.yMin(),
                             -FLT_MAX,
-                            cells[i].bbox.xMax(),
-                            cells[i].bbox.yMax(),
+                            cells[i].bboxMargin.xMax(),
+                            cells[i].bboxMargin.yMax(),
                             FLT_MAX,
                             cells[i].row,cells[i].col);
                     fprintf(splitcmds_fp,"cp mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ive mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive \n",
@@ -2813,8 +2824,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     sprintf(tp,"mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
                     FILE *bboxfp=fopen(tp,"w");
 
-                    for(int k=0; k < (int)cells[i].images.size(); k++){
-                        const Stereo_Pose_Data *pose=(&tasks[cells[i].images[k]]);
+                    for(int k=0; k < (int)cells[i].imagesMargin.size(); k++){
+                        const Stereo_Pose_Data *pose=(&tasks[cells[i].imagesMargin[k]]);
                         if(pose && pose->valid){
                             fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
                             save_bbox_frame(pose->bbox,bboxfp);

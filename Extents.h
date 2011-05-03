@@ -70,7 +70,7 @@ class MyDataSet;
         _hintTextureNumber=0;
         _hintNumLevels=0;
         tex_size=0;
-        for(int i=0; i<imageDir.size(); i++)
+        for(int i=0; i<(int)imageDir.size(); i++)
             if(tex_size<imageDir[i].second)
                 tex_size=imageDir[i].second;
         if(tex_size == 0)

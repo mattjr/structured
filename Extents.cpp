@@ -1195,7 +1195,6 @@ osg::Node* MyDestinationTile::createScene()
             }
             //Got the size that was over target get size under target
             tex_size=max(16,tex_size/2);*/
-#warning "Need to update log2"
                // int start_pow=10;
               //  tex_size=1024;//log2 = 10
                 int leveloffset=(_hintNumLevels-_level);

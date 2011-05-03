@@ -3012,7 +3012,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 FILE *simpcmds_fp=fopen(simpcmds_fn.c_str(),"w");
                 string app;
-                if(0)
+                if(useReimage)
                     app="tridecimator";
                 else
                     app="texturedDecimator";
@@ -3128,7 +3128,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 if(!mgc)
                     mgc = new MyGraphicsContext();
                 if(!novpb)
-                    doQuadTreeVPB(basepath,cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb);
+                    doQuadTreeVPB(basepath,cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot);
 
 
                 vector<string> gentexnames;

@@ -38,6 +38,75 @@
 #include <math.h>
 #include <osgUtil/ShaderGen>
 #include "Extents.h"
+#include <osg/LightModel>
+#include <osg/Material>
+#include <osg/TexEnvCombine>
+#include <osgUtil/SmoothingVisitor>
+osg::Vec4 HSV_to_RGB (osg::Vec4 hsv){
+    osg::Vec4 color;
+    float f,p,q,t;
+    float h,s,v;
+    float r=0.0,g=0.0,b=0.0;
+    float i;
+    if (hsv[1] == 0.0){
+        if (hsv[2] != 0.0){
+            color[0] = hsv[2];
+        }
+    }
+    else{
+        h = hsv[0] * 360.0;
+        s = hsv[1];
+        v = hsv[2];
+        if (h == 360.0) {
+            h=0.0;
+        }
+        h /=60.0;
+        i = floor (h);
+        f = h-i;
+        p = v * (1.0 - s);
+        q = v * (1.0 - (s * f));
+        t = v * (1.0 - (s * (1.0 -f)));
+        if (i == 0.0){
+            r = v;
+            g = t;
+            b = p;
+        }
+        else if (i == 1.0){
+            r = q;
+            g = v;
+            b = p;
+        }
+        else if (i == 2.0){
+            r = p;
+            g = v;
+            b = t;
+        }
+        else if (i == 3.0) {
+            r = p;
+            g = q;
+            b = v;
+        }
+        else if (i == 4.0) {
+            r = t;
+            g = p;
+            b = v;
+        }
+        else if (i == 5.0) {
+            r = v;
+            g = p;
+            b = q;
+        }
+        color[0] = r;
+        color[1] = g;
+        color[2] = b;
+        color[3] = hsv[3];
+    }
+    return color;
+}
+
+osg::Vec4 rainbowColorMap(float hue) {
+    return HSV_to_RGB(osg::Vec4(hue, 1.0f, 1.0f,1.0));
+}
 /* CustomRenderer: Do culling only while loading PagedLODs */
 class CustomRenderer : public osgViewer::Renderer
 {
@@ -521,8 +590,8 @@ osg::Matrix vpb::MyDataSet::getImageSection(vips::VImage &in,const osg::Vec2 min
 
     double downsampleFactor=pow(2,level);
     double downsampleRatio=1.0/downsampleFactor;
-   // std::cout<< minT << " " << maxT<<std::endl;
-   // printf("%f %f\n",downsampleRatio,downsampleRatio);
+    // std::cout<< minT << " " << maxT<<std::endl;
+    // printf("%f %f\n",downsampleRatio,downsampleRatio);
     int x=(int)std::max((int)floor(minT.x()),0);
     int y=(int)std::max((int)floor(minT.y()),0);
     int xMax=(int)std::min((int)ceil(maxT.x()),origX);
@@ -558,13 +627,13 @@ osg::Matrix vpb::MyDataSet::getImageSection(vips::VImage &in,const osg::Vec2 min
         exit(-1);
     }
     {
-      //  vips::VImage tmp("subtile.v");
-     //   OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_imageMutex);
+        //  vips::VImage tmp("subtile.v");
+        //   OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_imageMutex);
         vips::VImage *osgImage = new vips::VImage(image->data(),downsampleSize.x(),downsampleSize.y(),3,vips::VImage::FMTUCHAR);
 #warning "memleak"
         in.extract_area(x,y,xRange,yRange).embed(1,0,0,subSize.x(),subSize.y())./*shrink(downsampleFactor,downsampleFactor)*/affine(downsampleRatio,0,0,downsampleRatio,0,0,0,0,downsampleSize.x(),downsampleSize.y())
-                                                                                                                                    .write(*osgImage);
-       // delete osgImage;
+                .write(*osgImage);
+        // delete osgImage;
     }
     ratio=osg::Vec4(x,y,subSize.x(),subSize.y());
     //osg::Vec2 f(xRange-subSize.x(),yRange-subSize.y());
@@ -597,6 +666,8 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     osg::Geometry *newGeom = new osg::Geometry;
     // osg::Group *group= findTopMostNodeOfType<osg::Group>(model);
     osg::Vec3Array *newVerts= new osg::Vec3Array;
+    osg::Vec4Array *newColors= new osg::Vec4Array;
+
     osg::DrawElementsUInt* newPrimitiveSet = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
     osg::Geode *newGeode=new osg::Geode;
     osg::Vec2 minT(DBL_MAX,DBL_MAX),maxT(-DBL_MAX,-DBL_MAX);
@@ -631,7 +702,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
             osg::Vec4 proj=rotpt*toTex;
             proj.x() /= proj.w();
             proj.y() /= proj.w();
-          //  std::cout << pt << " rot " <<pt*dynamic_cast<MyDataSet*>(_dataSet)->rotMat<<" proj "<< proj << "\n";
+            //  std::cout << pt << " rot " <<pt*dynamic_cast<MyDataSet*>(_dataSet)->rotMat<<" proj "<< proj << "\n";
 
             for(int k=0; k <2; k++){
                 if(proj[k]< minT[k])
@@ -640,9 +711,20 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
                     maxT[k]=proj[k];
             }
             newVerts->push_back(verts->at(j));
+            float height=verts->at(j)[2];
+            osg::Vec4 zrange=dynamic_cast<MyDataSet*>(_dataSet)->_zrange;
+            float range=zrange[1]-zrange[0];
+            //printf("%f %f\n",zrange[0],height);
+            float val =(height-zrange[0])/range;
+            //printf("val %f\n",val);
+
+            newColors->push_back(rainbowColorMap(val));
+
         }
         for(int j=0; j< (int)primitiveSet->getNumIndices(); j++){
+
             newPrimitiveSet->addElement(offset+primitiveSet->getElement(j));
+
         }
 
     }
@@ -702,6 +784,9 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
 
     newGeom->setTexCoordArray(0,texCoord);
     newGeom->setVertexArray(newVerts);
+    newGeom->setColorArray(newColors);
+    newGeom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+
     newGeom->addPrimitiveSet(newPrimitiveSet);
     newGeom->setUseDisplayList(_useDisplayLists);
     newGeom->setUseVertexBufferObjects(_useVBO);
@@ -752,11 +837,25 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     osg::StateSet *stateset=newGeode->getOrCreateStateSet();
 
     stateset->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
-    stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+    // stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+    osg::TexEnvCombine *te = new osg::TexEnvCombine;
+    // Modulate diffuse texture with vertex color.
+    te->setCombine_RGB(osg::TexEnvCombine::REPLACE);
+    te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
+    te->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+    te->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
+    te->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+
+    // Alpha doesn't matter.
+    te->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
+    te->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
+    te->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+
+    stateset->setTextureAttribute(0, te);
 
     stateset->setDataVariance(osg::Object::STATIC);
- //   osgUtil::ShaderGenVisitor sgv;
-   // newGeode->accept(sgv);
+    //   osgUtil::ShaderGenVisitor sgv;
+    // newGeode->accept(sgv);
 
     // osg::Vec3 v(1972.38,3932.55,0);
     //osg::Vec3 v(302.3,334.3,0);
@@ -764,6 +863,9 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     // osgDB::Registry::instance()->writeImage( *image,"ass.png",NULL);
     osg::Group *newGroup=new osg::Group;
     newGroup->addChild(newGeode);
+    osgUtil::SmoothingVisitor sv;
+    newGroup->accept(sv);
+
     return newGroup;
 
 }

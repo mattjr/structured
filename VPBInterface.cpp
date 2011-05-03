@@ -85,6 +85,7 @@ void doQuadTreeVPB(std::string basePath,std::string cacheddir,std::vector<std::v
         useReimage=false;
     osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,basePath,useTextureArray,useReimage,useVirtualTex);
     m->_cachedDirs=cachedDirs;
+    m->_zrange=osg::Vec4(bbox.zMin(),bbox.zMax(),bbox.zMin(),bbox.zMax());
     m->setNumReadThreadsToCoresRatio(1.5);
     m->setNumWriteThreadsToCoresRatio(1.5);
     // m->setCompressionMethod(vpb::BuildOptions::NVTT);

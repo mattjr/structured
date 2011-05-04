@@ -723,7 +723,7 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
             camera->setDrawBuffer(buffer);
             camera->setReadBuffer(buffer);
             camera->setFinalDrawCallback(wcc);
-            camera->setClearColor(osg::Vec4(1.0,0.0,0.0,0.0));
+            camera->setClearColor(osg::Vec4(0.0,0.0,0.0,0.0));
 
             if (/*pbufferOnly*/1)
             {

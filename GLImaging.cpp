@@ -670,7 +670,6 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
     {
         osgViewer::Viewer viewer;
 
-
         viewer.setThreadingModel( osgViewer::Viewer::SingleThreaded );
         GLenum readBuffer = GL_BACK;
         WindowCaptureCallback::FramePosition position = WindowCaptureCallback::END_FRAME;
@@ -724,6 +723,7 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
             camera->setDrawBuffer(buffer);
             camera->setReadBuffer(buffer);
             camera->setFinalDrawCallback(wcc);
+            camera->setClearColor(osg::Vec4(0.0,0.0,0.0,0.0));
 
             if (/*pbufferOnly*/1)
             {

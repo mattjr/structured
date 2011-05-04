@@ -2793,20 +2793,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 string splitcmds_fn="mesh-diced/splitcmds";
 
                 FILE *splitcmds_fp=fopen(splitcmds_fn.c_str(),"w");
-                FILE *reFP=fopen("rebbox.txt","w");
-                fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
-                        totalbb.zMax(),_tileColumns,_tileRows);
+
 
                 for(int i=0; i <(int)cells.size(); i++){
 
-                    if(cells[i].images.size() == 0){
-                        fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
-                                cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
-                        continue;
 
-                    }
-                    fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
-                            cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
                     fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/totalrot.ive %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ive;",
                             cwd,
                             basepath.c_str(),
@@ -2817,8 +2808,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                             cells[i].bboxMargin.yMax(),
                             FLT_MAX,
                             cells[i].row,cells[i].col);
-                    fprintf(splitcmds_fp,"cp mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ive mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive \n",
-                            //basepath.c_str(),
+                    fprintf(splitcmds_fp,"%s/vertCheck mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ive mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive \n",
+                            basepath.c_str(),
                             cells[i].row,cells[i].col,  cells[i].row,cells[i].col,vpblod);
                     char tp[1024];
                     sprintf(tp,"mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
@@ -2860,7 +2851,6 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 }
 
                 fclose(splitcmds_fp);
-                fclose(reFP);
 
                 string splitcmd="split.py";
                 shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
@@ -2935,10 +2925,23 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 int ajustedGLImageSizeX=(int)reimageSize.x()-((reimageSize.x()/VTtileSize)*2*tileBorder);
                 int ajustedGLImageSizeY=(int)reimageSize.y()-((reimageSize.y()/VTtileSize)*2*tileBorder);
                 FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
+                FILE *reFP=fopen("rebbox.txt","w");
+                fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
+                        totalbb.zMax(),_tileColumns,_tileRows);
+
 
                 for(int i=0; i <(int)cells.size(); i++){
-                    if(cells[i].images.size() == 0)
+                    char tmpfn[1024];
+                    sprintf(tmpfn,"mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive", cells[i].row,cells[i].col,vpblod);
+                    if(cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn)){
+                        fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
+                                cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
                         continue;
+                    }
+                    fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
+                            cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
+
+
                     fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f",
                             cwd,
                             gpunum,
@@ -2965,6 +2968,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                 }
                 fclose(texcmds_fp);
+                fclose(reFP);
+
                 std::ostringstream p1;
 
                 vector<std::string> precmd;

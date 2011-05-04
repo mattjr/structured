@@ -2755,9 +2755,9 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
                         double left,right,bottom,top,znear,zfar;
                         (view*proj*offsetMatrix).getOrtho(left,right,bottom,top,znear,zfar);
-                        double margin=0.05;
+                        double margin=vrip_res*4;
                         osg::BoundingBox thisCellBbox(left,bottom,bs.center()[2]-bs.radius(),right,top,bs.center()[2]+bs.radius());
-                        osg::BoundingBox thisCellBboxMargin(left-fabs(margin*(right-left)),bottom-fabs(margin*(top-bottom)),bs.center()[2]-bs.radius(),right+fabs(margin*(right-left)),top+fabs(margin*(top-bottom)),bs.center()[2]+bs.radius());
+                        osg::BoundingBox thisCellBboxMargin(left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
                     //   std::cout<< thisCellBbox._min << " "<< thisCellBbox._max<<"\n";
                       //  std::cout<< "A"<<thisCellBboxMargin._min << " "<< thisCellBboxMargin._max<<"\n\n";
 

@@ -2769,8 +2769,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",row,col,vpblod);
                         cell.name=string(tmp4);
                         for(int i=0; i < (int)tasks.size(); i++){
-                            osg::Vec3 m1=osg::Vec3(tasks[i].pose[AUV_POSE_INDEX_X]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]-tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Z]-tasks[i].radius)*rotM;
-                            osg::Vec3 m2=osg::Vec3(tasks[i].pose[AUV_POSE_INDEX_X]+tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Y]+tasks[i].radius,tasks[i].pose[AUV_POSE_INDEX_Z]+tasks[i].radius)*rotM;
+                            osg::Vec3 m1=osg::Vec3(tasks[i].bbox->x1,tasks[i].bbox->y1,tasks[i].bbox->z1)*rotM;
+                            osg::Vec3 m2=osg::Vec3(tasks[i].bbox->x2,tasks[i].bbox->y2,tasks[i].bbox->z2)*rotM;
 
                             osg::BoundingBox imgBox;
                             imgBox.expandBy(m1);

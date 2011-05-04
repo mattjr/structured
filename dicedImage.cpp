@@ -102,7 +102,7 @@ int main(int argc, char** argv)
     for(int i=0; i < (int)cells.size(); i++)
     {
         osg::Timer_t loopTick = osg::Timer::instance()->tick();
-        if(cells[i].name == "null")
+        if(cells[i].name == "null" )
             continue;
 
         if(nogfx){

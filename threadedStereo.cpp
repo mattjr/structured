@@ -2757,13 +2757,13 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         (view*proj*offsetMatrix).getOrtho(left,right,bottom,top,znear,zfar);
                         double margin=0.1;
                         osg::BoundingBox thisCellBbox(left,bottom,bs.center()[2]-bs.radius(),right,top,bs.center()[2]+bs.radius());
-                        osg::BoundingBox thisCellBboxMargin(left-fabs(margin*left),bottom-fabs(margin*bottom),bs.center()[2]-bs.radius(),right+fabs(margin*right),top+fabs(margin*top),bs.center()[2]+bs.radius());
-                       // std::cout<< thisCellBbox._min << " "<< thisCellBbox._max<<"\n";
-                        //std::cout<< "A"<<thisCellBboxMargin._min << " "<< thisCellBboxMargin._max<<"\n";
+                        osg::BoundingBox thisCellBboxMargin(left-fabs(margin*(right-left)),bottom-fabs(margin*(top-bottom)),bs.center()[2]-bs.radius(),right+fabs(margin*(right-left)),top+fabs(margin*(top-bottom)),bs.center()[2]+bs.radius());
+                    //   std::cout<< thisCellBbox._min << " "<< thisCellBbox._max<<"\n";
+                      //  std::cout<< "A"<<thisCellBboxMargin._min << " "<< thisCellBboxMargin._max<<"\n\n";
 
                         picture_cell cell;
                         cell.bbox=thisCellBbox;
-                        cell.bboxMargin=thisCellBbox;
+                        cell.bboxMargin=thisCellBboxMargin;
                         cell.row=row;
                         cell.col=col;
                         sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",row,col,vpblod);

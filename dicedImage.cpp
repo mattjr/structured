@@ -113,16 +113,26 @@ int main(int argc, char** argv)
                 if(osgDB::fileExists(tmp)){
                     vips::VImage tmpI(tmp);
                     raw.insertplace(tmpI.extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
-                }else
+                }else{
+                    vips::VImage tmpI;
+                    tmpI.initdesc(width,height,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
+                    memset(tmpI.data(),255,width*height*3);
+                    raw.insertplace(tmpI,width*cells[i].col,height*(_tileRows-cells[i].row-1));
                     fprintf(stderr,"Can't find %s\n",tmp);
+                }
             }
             if(untex){
                 sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d_untex.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
                 if(osgDB::fileExists(tmp)){
                     vips::VImage tmpI(tmp);
                     raw_untex.insertplace(tmpI.extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
-                }else
+                }else{
+                    vips::VImage tmpI;
+                    tmpI.initdesc(width,height,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
+                    memset(tmpI.data(),255,width*height*3);
+                    raw.insertplace(tmpI,width*cells[i].col,height*(_tileRows-cells[i].row-1));
                     fprintf(stderr,"Can't find %s\n",tmp);
+                }
             }
         }else{
 

@@ -628,11 +628,11 @@ osg::Matrix vpb::MyDataSet::getImageSection(vips::VImage &in,const osg::Vec2 min
     }
     {
         //  vips::VImage tmp("subtile.v");
-        //   OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_imageMutex);
-        vips::VImage *osgImage = new vips::VImage(image->data(),downsampleSize.x(),downsampleSize.y(),3,vips::VImage::FMTUCHAR);
-#warning "memleak"
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_imageMutex);
+        vips::VImage osgImage(image->data(),downsampleSize.x(),downsampleSize.y(),3,vips::VImage::FMTUCHAR);
+//#warning "memleak"
         in.extract_area(x,y,xRange,yRange).embed(1,0,0,subSize.x(),subSize.y())./*shrink(downsampleFactor,downsampleFactor)*/affine(downsampleRatio,0,0,downsampleRatio,0,0,0,0,downsampleSize.x(),downsampleSize.y())
-                .write(*osgImage);
+                .write(osgImage);
         // delete osgImage;
     }
     ratio=osg::Vec4(x,y,subSize.x(),subSize.y());

@@ -110,13 +110,19 @@ int main(int argc, char** argv)
             string ext="png";
             {
                 sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
-                vips::VImage tmpI(tmp);
-                raw.insertplace(tmpI.extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
+                if(osgDB::fileExists(tmp)){
+                    vips::VImage tmpI(tmp);
+                    raw.insertplace(tmpI.extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
+                }else
+                    fprintf(stderr,"Can't find %s\n",tmp);
             }
             if(untex){
                 sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d_untex.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
-                vips::VImage tmpI(tmp);
-                raw_untex.insertplace(tmpI.extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
+                if(osgDB::fileExists(tmp)){
+                    vips::VImage tmpI(tmp);
+                    raw_untex.insertplace(tmpI.extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
+                }else
+                    fprintf(stderr,"Can't find %s\n",tmp);
             }
         }else{
 

@@ -2758,8 +2758,8 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         double margin=vrip_res*4;
                         osg::BoundingBox thisCellBbox(left,bottom,bs.center()[2]-bs.radius(),right,top,bs.center()[2]+bs.radius());
                         osg::BoundingBox thisCellBboxMargin(left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
-                    //   std::cout<< thisCellBbox._min << " "<< thisCellBbox._max<<"\n";
-                      //  std::cout<< "A"<<thisCellBboxMargin._min << " "<< thisCellBboxMargin._max<<"\n\n";
+                        //   std::cout<< thisCellBbox._min << " "<< thisCellBbox._max<<"\n";
+                        //  std::cout<< "A"<<thisCellBboxMargin._min << " "<< thisCellBboxMargin._max<<"\n\n";
 
                         picture_cell cell;
                         cell.bbox=thisCellBbox;
@@ -2955,7 +2955,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     if(!storeTexMesh)
                         fprintf(texcmds_fp," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,_tileRows,_tileColumns,ajustedGLImageSizeX,ajustedGLImageSizeY);
                     if(useAtlas)
-                         fprintf(texcmds_fp," --atlas");
+                        fprintf(texcmds_fp," --atlas");
 
                     fprintf(texcmds_fp,"\n");
 
@@ -3150,7 +3150,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 if(!novpb)
                     doQuadTreeVPB(basepath,cachedsegtex,datalist_lod,bounds,calib->left_calib,cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot);
 
-
+                char zipstr[1024];
+                sprintf(zipstr,"7z a -r -sfx7z.sfx mesharchive.7z.exe real.ive real_root_L0_X0_Y0/ -m0=lzma2 -mmt%d -mx9",num_threads);
+                FILE *zfp=fopen("zip.sh","w");
+                fprintf(zfp,"#!/bin/bash\n%s\n",zipstr);
+                fclose(zfp);
                 vector<string> gentexnames;
                 gentexnames.push_back("./gentex.py");
                 gentexnames.push_back("./posgentex.py");

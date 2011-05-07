@@ -1237,7 +1237,7 @@ osg::Node* MyDestinationTile::createScene()
                     }else{
                         const TexBlendCoord &tmp2=texCoordsPerModel[*itr];
                         //  cout << tmp->size() << " ASS " << tmp2[0]->size() << endl;
-                        if(!_mydataSet->_useVirtualTex){
+                        if(!_mydataSet->_useVirtualTex && !_mydataSet->_useReImage){
                             osg::Vec4Array *tmp=texCoordIDIndexPerModel[*itr];
                             if(tmp && tmp->size()){
                                 for(int i=0; i<(int)tmp->size(); i++)

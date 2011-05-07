@@ -600,6 +600,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
             setVertexAttrib(*geoms[i], _colorAlias, colorSplit[i], false, osg::Geometry::BIND_PER_VERTEX);
         }else{
             geoms[i]->setTexCoordArray(TEX_UNIT,texSplit[i][0]);
+            geoms[i]->setColorArray(colorSplit[i]);
         }
         //geoms[i]->setUseDisplayList(false);
         osg::StateSet *stateset=geoms[i]->getOrCreateStateSet();
@@ -1273,7 +1274,6 @@ osg::Node* MyDestinationTile::createScene()
                 osgUtil::Optimizer::MergeGeometryVisitor mgv;
                 mgv.setTargetMaximumNumberOfVertices(INT_MAX);
                 _createdScene->accept(mgv);
-
                 osgUtil::GeometryCollector gc(NULL, osgUtil::Optimizer::DEFAULT_OPTIMIZATIONS);
                 _createdScene->accept(gc);
                 osgUtil::GeometryCollector::GeometryList geomList = gc.getGeometryList();
@@ -1284,9 +1284,11 @@ osg::Node* MyDestinationTile::createScene()
 
                 }
                 if(!_mydataSet->_useVirtualTex){
+                    /*osg::Geometry *geom=*geomList.begin();
+                    osg::Vec4Array *colors=static_cast<const osg::Vec4Array*>(geom->getColorArray());
+                    */
                     if(geomList.size() && _atlasGen->_totalImageList.size()> 0 ){
                         osg::Geometry *geom=*geomList.begin();
-
                         if(_mydataSet->_useTextureArray && !_mydataSet->_useAtlas){
                             osg::StateSet *stateset=generateStateAndArray2DRemap(v,texCoords,0);
                             //setVertexAttrib(*geom,_projCoordAlias,v,false,osg::Geometry::BIND_PER_VERTEX);

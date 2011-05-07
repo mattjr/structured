@@ -686,6 +686,10 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         osg::Drawable *drawable=geode->getDrawable(0);
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
         osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+        /*osg::Vec4Array *colors=static_cast<const osg::Vec4Array*>(geom->getColorArray());
+        for(int i=0; i<colors->size(); i++){
+            printf("%f %f\n",colors->at(i)[0],colors->at(i)[1]);
+        }*/
         osg::DrawElementsUInt* primitiveSet = dynamic_cast<osg::DrawElementsUInt*>(geom->getPrimitiveSet(0));
         int offset=newVerts->size();
         if(!verts || !primitiveSet)
@@ -818,15 +822,21 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     bool compressedImageRequired = (internalFormatMode != osg::Texture::USE_IMAGE_DATA_FORMAT);
     //  image->s()>=minumCompressedTextureSize && image->t()>=minumCompressedTextureSize &&
 
-    if (0 &&/*compressedImageSupported && */compressedImageRequired )
+    if (1 &&/*compressedImageSupported && */compressedImageRequired )
     {
         log(osg::NOTICE,"Compressed image");
 
         bool generateMiMap = true;//getImageOptions(layerNum)->getMipMappingMode()==DataSet::MIP_MAPPING_IMAGERY;
         bool resizePowerOfTwo = true;//getImageOptions(layerNum)->getPowerOfTwoImages();
-        vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
+        if(_dataSet->getCompressionMethod()==vpb::BuildOptions::GL_DRIVER){
+            OpenThreads::ScopedLock<OpenThreads::Mutex> lock(dynamic_cast<MyDataSet*>(_dataSet)->_imageMutex);
+            vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
+        }else{
+            vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
+        }
+      //  vpb::generateMipMap(*_dataSet->getState(),*texture,resizePowerOfTwo,vpb::BuildOptions::GL_DRIVER);
 
-        log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");
+     //   log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");
 
     }
 

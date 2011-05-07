@@ -206,12 +206,12 @@ class MyDataSet :  public DataSet
          MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
          std::ofstream _file;
          OpenThreads::Mutex _fileMutex;
-         OpenThreads::Mutex _imageMutex;
 public:
          std::string _basePath;
          bool _useTextureArray;
          bool _useReImage;
          bool _useVirtualTex;
+         OpenThreads::Mutex _imageMutex;
 
 
 

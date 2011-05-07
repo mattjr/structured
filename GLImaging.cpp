@@ -778,11 +778,11 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
             printf("Render %.1f\n",renderTime);
             int mem;
             gpuUsage(1,mem);
-            char aa[1024];sprintf(aa,"render-time-%d.txt",pid);
+        /*    char aa[1024];sprintf(aa,"render-time-%d.txt",pid);
             FILE *fp=fopen(aa,"w");
             fprintf(fp,"%f s %.2f MB\n",renderTime,sizeImages);
             fclose(fp);
-
+*/
             // osg::Image *img=(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]);
             tmpImg1 =  dynamic_cast<osg::Image*>(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]->clone(osg::CopyOp::DEEP_COPY_ALL));
 

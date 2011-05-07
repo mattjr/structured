@@ -406,12 +406,12 @@ std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
             }
         }
 
-        int pid=getpid();
+       /* int pid=getpid();
         char aa[1024];sprintf(aa,"numatlas-%d.txt",pid);
         FILE *fp=fopen(aa,"w");
         fprintf(fp,"%d\n",sets.size());
         fclose(fp);
-
+*/
         printf("Size of list sets %d %d %d\n",(int)list_sets.size(),(int)result.size(),(int)sets.size());
     }
     return sets;

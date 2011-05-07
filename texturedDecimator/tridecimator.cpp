@@ -184,8 +184,10 @@ if(argc<4) Usage();
 
   if(CleaningFlag){
       int dup = tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh);
+      int dup2 = tri::Clean<MyMesh>::RemoveDuplicateFace(mesh);
       int unref =  tri::Clean<MyMesh>::RemoveUnreferencedVertex(mesh);
-      printf("Removed %i duplicate and %i unreferenced vertices from mesh \n",dup,unref);
+      printf("Removed %i duplicate vetex %i duplicate faces  and %i unreferenced vertices from mesh \n",dup,dup2,unref);
+
   }
   printf("mesh loaded %d %d \n",mesh.vn,mesh.fn);
 

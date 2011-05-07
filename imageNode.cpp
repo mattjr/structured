@@ -686,10 +686,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         osg::Drawable *drawable=geode->getDrawable(0);
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
         osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
-        /*osg::Vec4Array *colors=static_cast<const osg::Vec4Array*>(geom->getColorArray());
-        for(int i=0; i<colors->size(); i++){
-            printf("%f %f\n",colors->at(i)[0],colors->at(i)[1]);
-        }*/
+        osg::Vec4Array *colors=static_cast<const osg::Vec4Array*>(geom->getColorArray());
         osg::DrawElementsUInt* primitiveSet = dynamic_cast<osg::DrawElementsUInt*>(geom->getPrimitiveSet(0));
         int offset=newVerts->size();
         if(!verts || !primitiveSet)
@@ -717,8 +714,10 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
             //printf("%f %f\n",zrange[0],height);
             float val =(height-zrange[0])/range;
             //printf("val %f\n",val);
-
-            newColors->push_back(rainbowColorMap(val));
+            double ao=1.0;
+            if(colors)
+                ao=colors->at(j)[0];
+            newColors->push_back(rainbowColorMap(val)*ao);
 
         }
         for(int j=0; j< (int)primitiveSet->getNumIndices(); j++){

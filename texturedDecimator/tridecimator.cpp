@@ -54,6 +54,7 @@ struct MyUsedTypes: public UsedTypes<Use<MyVertex>::AsVertexType,Use<MyEdge>::As
 class MyVertex  : public Vertex< MyUsedTypes,
   vertex::VFAdj, 
   vertex::Coord3f, 
+  vertex::Color4b,
   vertex::Normal3f, 
   vertex::Mark, 
   vertex::BitFlags  >{
@@ -133,7 +134,9 @@ if(argc<4) Usage();
 
 
 	//int t0=clock();	
+
   int err=vcg::tri::io::Importer<MyMesh>::Open(mesh,argv[1]);
+
   if(err) 
   {
     printf("Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::Importer<MyMesh>::ErrorMsg(err));
@@ -210,8 +213,9 @@ if(FinalSize ==0 )
   int t3=clock();	
   printf("mesh  %d %d Error %g \n",mesh.vn,mesh.fn,DeciSession.currMetric);
   printf("\nCompleted in (%i+%i) msec\n",t2-t1,t3-t2);
-	
-  vcg::tri::io::ExporterPLY<MyMesh>::Save(mesh,argv[2]);
+  vcg::tri::io::PlyInfo pi;
+  pi.mask |= vcg::tri::io::Mask::IOM_VERTCOLOR;
+  vcg::tri::io::ExporterPLY<MyMesh>::Save(mesh,argv[2],true,pi);
 	return 0;
 
 }

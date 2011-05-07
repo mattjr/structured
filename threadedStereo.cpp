@@ -2851,7 +2851,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 }
 
                 fclose(splitcmds_fp);
-
+                int targetScreenFaces=150000;
                 string splitcmd="split.py";
                 shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
                 if(!no_split)
@@ -2860,7 +2860,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 std::vector<int > sizeStepTotal(vpblod+1);
 
                 for(int j=vpblod; j >=0; j--){
-                    sizeStepTotal[j]= numberFacesAll/(pow(4,vpblod-j));
+                    sizeStepTotal[j]= std::max(numberFacesAll/((int)pow(4,vpblod-j)),std::min(targetScreenFaces,numberFacesAll));
                     printf("%d\n",sizeStepTotal[j]);
 
                 }

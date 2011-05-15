@@ -27,6 +27,8 @@ int main( int argc, char **argv )
         fprintf(stderr,"Need outfile name\n");
         return -1;
     }
+    string extraOutput;
+    arguments.read("--extra",extraOutput);
 
     bool debug=false;
     osg::Vec2 size;
@@ -106,10 +108,17 @@ int main( int argc, char **argv )
             osgDB::writeNodeFile(*model,osgDB::getNameLessExtension(outfilename).append(".ive"));
 
         }else{
-            std::ofstream f(outfilename.c_str());
+            if(osgDB::getFileExtension(outfilename) == "ply"){
+                std::ofstream f(outfilename.c_str());
 
-            PLYWriterNodeVisitor nv(f,NULL,&(coordsArray));
-            model->accept(nv);
+                PLYWriterNodeVisitor nv(f,NULL,&(coordsArray));
+                model->accept(nv);
+                if(extraOutput.length()){
+                    osgDB::writeNodeFile(*model,extraOutput);
+                }
+            }else{
+                osgDB::writeNodeFile(*model,outfilename);
+            }
 
         }
 

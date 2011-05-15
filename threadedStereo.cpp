@@ -81,6 +81,7 @@ static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
 static bool use_poisson_recon=true;
 static int max_feature_count;
+static bool exportForStaticRender=true;
 static bool use_mb_ply =false;
 static double eps=1.0;
 static double subvol;
@@ -2988,7 +2989,10 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 #define SINGLE_MESH_TEX 1
 #if SINGLE_MESH_TEX
                 std::ostringstream p2;
-                p2 << basepath << "/singleImageTex " << "mesh-diced/vis-total.ply --outfile mesh-diced/totaltex.ply";
+                p2 << basepath << "/singleImageTex " << "mesh-diced/vis-total.ply --outfile mesh-diced/ totaltex.ply ";
+                if(exportForStaticRender)
+                p2      <<" --extra totaltex.obj";
+
                 postcmdv.push_back(p2.str());
 
 

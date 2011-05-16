@@ -2989,7 +2989,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 #define SINGLE_MESH_TEX 1
 #if SINGLE_MESH_TEX
                 std::ostringstream p2;
-                p2 << basepath << "/singleImageTex " << "mesh-diced/vis-total.ply --outfile mesh-diced/ totaltex.ply ";
+                p2 << basepath << "/singleImageTex " << "mesh-diced/vis-total.ply --outfile mesh-diced/totaltex.ply ";
                 if(exportForStaticRender)
                 p2      <<" --extra totaltex.obj";
 
@@ -3004,10 +3004,11 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                 //int embedSize=(intDiv* adjustedSize);
                 std::ostringstream p3;
                 // p3 << "vips " << " im_extract_area " << "out.tif "<< " tex.tif " << " 0 0 " <<  embedSize << " "<<embedSize<< ";";
-                if(useVirtTex){
-                    p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" tex.tif ";
-                    postcmdv.push_back(p3.str());
-                }
+                if(!useVirtTex)
+                    p3<<"#";
+                p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" tex.tif ";
+                postcmdv.push_back(p3.str());
+
                 shellcm.write_generic(texcmd,texcmds_fn,"Tex",&(precmd),&(postcmdv),num_threads);
                 if(!no_tex)
                     sysres=system("./tex.py");

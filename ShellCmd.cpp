@@ -301,13 +301,13 @@ else
 
    tcmd+= tmp100;
    if(lod >=0)
-       sprintf(tmp100,"  %s/texturedDecimator/bin/mergeMesh mesh-diced/%s-unmerged-lod%d.ply -tex -thresh %f -out mesh-diced/%s-lod%d.ply;",basepath,outname.c_str(),lod,0.9*vrip_res,outname.c_str(),lod);
+       sprintf(tmp100,"  %s/vcgapps/bin/mergeMesh mesh-diced/%s-unmerged-lod%d.ply -tex -thresh %f -out mesh-diced/%s-lod%d.ply;",basepath,outname.c_str(),lod,0.9*vrip_res,outname.c_str(),lod);
    else
-       sprintf(tmp100,"  %s/texturedDecimator/bin/mergeMesh mesh-diced/%s-unmerged.ply -color -cleansize %f -thresh %f -out mesh-diced/%s.ply;",basepath,outname.c_str(),cleanPercentage,0.9*vrip_res,outname.c_str());
+       sprintf(tmp100,"  %s/vcgapps/bin/mergeMesh mesh-diced/%s-unmerged.ply -color -cleansize %f -thresh %f -out mesh-diced/%s.ply;",basepath,outname.c_str(),cleanPercentage,0.9*vrip_res,outname.c_str());
 
    tcmd+=tmp100;
 
-   sprintf(tmp100,"export DISPLAY=:0.0;%s/texturedDecimator/bin/shadevis -n128  -f mesh-diced/%s.ply >mesh-diced/shadevislog.txt;",basepath,outname.c_str());
+   sprintf(tmp100,"export DISPLAY=:0.0;%s/vcgapps/bin/shadevis -n128  -f mesh-diced/%s.ply >mesh-diced/shadevislog.txt;",basepath,outname.c_str());
    tcmd+=tmp100;
 
 

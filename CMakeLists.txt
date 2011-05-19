@@ -223,8 +223,6 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${OPENCV_INCLUDE_DIRS}
 		     ${OPENGL_INCLUDE_DIR}
  		     ${GTS_INCLUDE_DIRS}
-                     "${PROJECT_SOURCE_DIR}/mergeMesh/"
-		     "tridecimator/"
 		     "mesh2hmap/"
 		     ${GDAL_INCLUDE_DIR}
                     spatialindex-src-1.6.1/src spatialindex-src-1.6.1/include
@@ -342,7 +340,7 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS( FastDXT spatialindex-src-1.6.1/src texture_image retex mbosg texturedDecimator mesh2hmap mesh2xy grd2ply  quadmerge single_mesh_gen)
+SUBDIRS( vcgapps FastDXT spatialindex-src-1.6.1/src texture_image retex mbosg  mesh2hmap mesh2xy grd2ply  quadmerge single_mesh_gen)
 SET( SRCS OSGExport.cpp
 MSC.cpp
 		auv_clipped_texture_atlas.cpp
@@ -364,7 +362,6 @@ TexPyrAtlas.cpp
 Semaphore.cpp
 TexturingQuery.cpp
 		stereo_cells.cpp
-                tridecimator/plylib.cpp
 		quadmerge/envelope.cpp
 		quadmerge/fileio.cpp
 GLImaging.cpp

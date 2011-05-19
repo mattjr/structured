@@ -51,6 +51,7 @@ ENDIF( NOT CMAKE_INSTALL_PREFIX )
 INCLUDE_DIRECTORIES( "."
 		     "vcg"
 ".."
+"../VirtualPlanetBuilder/include"
 		     )
 
 
@@ -121,8 +122,8 @@ ADD_EXECUTABLE( triangulate triangle.c triangulate.cpp ${SRCS} )
 ADD_EXECUTABLE( mergeMesh mergeMesh.cpp ${SRCS} )
 ADD_EXECUTABLE( texturedDecimator  texturedDecimator.cpp ${SRCS} )
 TARGET_LINK_LIBRARIES(texturedDecimator ts)
-TARGET_LINK_LIBRARIES( triGap ts spatialindex )
-TARGET_LINK_LIBRARIES( triangulate ts spatialindex )
+TARGET_LINK_LIBRARIES( triGap ts spindex )
+TARGET_LINK_LIBRARIES( triangulate ts spindex )
 
 ADD_EXECUTABLE( shadevis shadevis/shadevis.cpp ./wrap/ply/plylib.cpp wrap/gui/trackball.cpp wrap/gui/trackmode.cpp   )
 IF( APPLE )

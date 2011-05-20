@@ -362,6 +362,8 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
 void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* callback);
 void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned int totalCount);
  void ConvertRGBA_BGRA_SSSE3(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch);
+ void ConvertRGBA_BGRA_SSE2(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch);
+
  void RGB2RGBA(unsigned int w, unsigned int h,
                  unsigned char *src, unsigned char *dst);
 int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns,unsigned int width,unsigned int height,int row,int col,

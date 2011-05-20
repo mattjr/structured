@@ -2,12 +2,24 @@
 #include "Semaphore.h"
 #include <osg/Texture3D>
 #include <stddef.h>
+#include "CPUDetect.h"
 void optImage(osg::ref_ptr<osg::Image> &image){
     int pitch=image->getRowSizeInBytes();
     unsigned char *dataBGRA=new unsigned char[image->s()*image->t()*4];
     unsigned char *dataRGBA=new unsigned char[image->s()*image->t()*4];
     RGB2RGBA(image->s(),image->t(),image->data(),dataRGBA);
-    ConvertRGBA_BGRA_SSSE3((unsigned int *)dataBGRA,pitch,(unsigned int *)dataRGBA,image->s(),image->t(),pitch/4);
+#if _M_SSE >= 0x301
+    cpu_inf
+                                        // Uses SSSE3 intrinsics to optimize RGBA -> BGRA swizzle:
+                                        if (cpu_info.bSSSE3) {
+                                            ConvertRGBA_BGRA_SSSE3((unsigned int *)dataBGRA,pitch,(unsigned int *)dataRGBA,image->s(),image->t(),pitch/4);
+                                        } else
+#endif
+                                        // Uses SSE2 intrinsics to optimize RGBA -> BGRA swizzle:
+                                        {
+                                            ConvertRGBA_BGRA_SSE2((unsigned int *)dataBGRA,pitch,(unsigned int *)dataRGBA,image->s(),image->t(),pitch/4);
+
+                                        }
     delete dataRGBA;
     image->setImage(image->s(),image->t(),1,GL_RGB,GL_BGRA,GL_UNSIGNED_BYTE,dataBGRA,osg::Image::USE_NEW_DELETE,1);
     //image->setPixelBufferObject(new osg::PixelBufferObject(image)); SLOWER
@@ -331,7 +343,19 @@ void WindowCaptureCallback::ContextData::singlePBO(osg::GLBufferObject::Extensio
         //memcpy(image->data(), src, image->getTotalSizeInBytes());
         int pitch=image->getRowSizeInBytes();//4*_width;
         image->setPixelFormat(GL_RGBA);
-        ConvertRGBA_BGRA_SSSE3((unsigned int *)image->data(),pitch,(unsigned int *)src,_width,_height,pitch/4);
+#if _M_SSE >= 0x301
+    cpu_inf
+                                        // Uses SSSE3 intrinsics to optimize RGBA -> BGRA swizzle:
+                                        if (cpu_info.bSSSE3) {
+                                            ConvertRGBA_BGRA_SSSE3((unsigned int *)image->data(),pitch,(unsigned int *)src,_width,_height,pitch/4);
+                                        } else
+#endif
+                                        // Uses SSE2 intrinsics to optimize RGBA -> BGRA swizzle:
+                                        {
+                                            ConvertRGBA_BGRA_SSE2((unsigned int *)image->data(),pitch,(unsigned int *)src,_width,_height,pitch/4);
+
+
+                                        }
         ext->glUnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
     }
 
@@ -776,8 +800,8 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
             osg::Timer_t timeEndRender = osg::Timer::instance()->tick();
             double renderTime = osg::Timer::instance()->delta_s(beginRender, timeEndRender);
             printf("Render %.1f\n",renderTime);
-            int mem;
-            gpuUsage(1,mem);
+            //int mem;
+            //gpuUsage(1,mem);
         /*    char aa[1024];sprintf(aa,"render-time-%d.txt",pid);
             FILE *fp=fopen(aa,"w");
             fprintf(fp,"%f s %.2f MB\n",renderTime,sizeImages);
@@ -796,7 +820,7 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
                 osg::Timer_t timeEndRender2 = osg::Timer::instance()->tick();
                 double renderTime2 = osg::Timer::instance()->delta_s(timeEndRender, timeEndRender2);
                 printf("Render %.1f\n",renderTime2);
-                gpuUsage(1,mem);
+                //gpuUsage(1,mem);
                 tmpImg2 =  dynamic_cast<osg::Image*>(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]->clone(osg::CopyOp::DEEP_COPY_ALL));
             }
 

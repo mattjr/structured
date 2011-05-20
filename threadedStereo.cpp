@@ -2363,7 +2363,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
             fprintf(cfp,"#!/bin/bash\n");
             fprintf(cfp,"bash %s/../auv2mv/runauv2mv.sh %s %d %d %f\n",basepath.c_str(), base_dir.c_str(),max_frame_count,num_threads,0.15);
 
-            fprintf(cfp,"%s/texturedDecimator/bin/triangulate  pmvs/models/option-*.ply\n",basepath.c_str());
+            fprintf(cfp,"%s/vcgapps/bin/triangulate  pmvs/models/option-*.ply\n",basepath.c_str());
 
             fprintf(cfp,"cp out.ply mesh-diced/vis-total.ply\n");
             fchmod(fileno(cfp),0777);
@@ -3059,7 +3059,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
 
                     for(int j=vpblod-1; j >= 0; j--){
 
-                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s total-lod%d.ply total-lod%d.ply %d -P -Oy -By;",
+                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/vcgapps/bin/%s total-lod%d.ply total-lod%d.ply %d -P -Oy -By;",
                                 cwd,
                                 basepath.c_str(),
                                 app.c_str(),
@@ -3086,7 +3086,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                     if(vrip_cells[i].poses.size() == 0)
                         continue;
                     for(int j=vpblod; j >0; j--){
-                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/texturedDecimator/bin/%s clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %d -By -P;",
+                        fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/vcgapps/bin/%s clipped-diced-%08d-lod%d.ply clipped-diced-%08d-lod%d.ply %d -By -P;",
                                 cwd,
                                 basepath.c_str(),
                                 app.c_str(),
@@ -3115,7 +3115,7 @@ printf("Task Size %d Valid %d Invalid %d\n",taskSize,(int)tasks.size(),(int)task
                         else
                             sprintf(srcfile,"total-lod%d.ply",i+1);
 
-                        sprintf(tmp8,"cd %s/mesh-diced;time %s/texturedDecimator/bin/%s %s total-lod%d.ply %d -By -P;",
+                        sprintf(tmp8,"cd %s/mesh-diced;time %s/vcgapps/bin/%s %s total-lod%d.ply %d -By -P;",
                                 cwd,
                                 basepath.c_str(),
                                 app.c_str(),

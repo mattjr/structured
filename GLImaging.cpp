@@ -21,7 +21,7 @@ void optImage(osg::ref_ptr<osg::Image> &image){
 
     }
     */
-    RGB2RGBA(image->s(),image->t(),dataRGBA,dataBGRA);
+    RGBA2BGRA(image->s(),image->t(),(uint32_t*)dataRGBA,(uint32_t*)dataBGRA);
 
     delete dataRGBA;
     image->setImage(image->s(),image->t(),1,GL_RGB,GL_BGRA,GL_UNSIGNED_BYTE,dataBGRA,osg::Image::USE_NEW_DELETE,1);
@@ -69,10 +69,10 @@ void
 RGBA2BGRA(unsigned int w, unsigned int h,
           uint32_t *src, uint32_t *dst) {
     for (unsigned int i=0; i<w*h; i++) {
-#if __LITTLE_ENDIAN__
-        dst[i] = ((src[i] >> 16) & 0xFF) | (src[i] & 0xFF00FF00) | ((src[i] & 0xFF) << 16);
-#else
+#if __BYTE_ORDER == __BIG_ENDIAN
         dst[i] = ((src[i] & 0xFF00) << 16) | (src[i] & 0xFF00FF) | ((src[i] >> 16) & 0xFF00);
+#else
+        dst[i] = ((src[i] >> 16) & 0xFF) | (src[i] & 0xFF00FF00) | ((src[i] & 0xFF) << 16);
 #endif
     }
 }

@@ -37,12 +37,7 @@
 #include <sstream>
 #include <osg/GLObjects>
 #include <string.h>
-//#if _M_SSE >= 0x401
-#include <smmintrin.h>
-#include <emmintrin.h>
-//#elif _M_SSE >= 0x301 && !(defined __GNUC__ && !defined __SSSE3__)
-#include <tmmintrin.h>
-//#endif
+
 #include <vips/vips.h>
 #include <vips/vips>
 #include <iomanip>
@@ -51,6 +46,13 @@
 
 using namespace std;
 #include <osg/io_utils>
+#if 0
+//#if _M_SSE >= 0x401
+#include <smmintrin.h>
+#include <emmintrin.h>
+//#elif _M_SSE >= 0x301 && !(defined __GNUC__ && !defined __SSSE3__)
+#include <tmmintrin.h>
+//#endif
 #define u32 unsigned int
 #define u16 unsigned short
 #define u8 unsigned char
@@ -107,6 +109,7 @@ typedef __m128d __cl_double2;
 #define __CL_ULONG2__   1
 #define __CL_LONG2__    1
 #define __CL_DOUBLE2__  1
+#endif
 #endif
 class WindowCaptureCallback : public osg::Camera::DrawCallback
 {
@@ -361,9 +364,11 @@ int gpuUsage(int gpu,int &mem);
 void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMatrix,int width,int height);
 void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* callback);
 void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned int totalCount);
- void ConvertRGBA_BGRA_SSSE3(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch);
+/* void ConvertRGBA_BGRA_SSSE3(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch);
  void ConvertRGBA_BGRA_SSE2(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch);
-
+*/
+void RGBA2BGRA(unsigned int w, unsigned int h,
+                uint32_t *src,  uint32_t *dst);
  void RGB2RGBA(unsigned int w, unsigned int h,
                  unsigned char *src, unsigned char *dst);
 int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns,unsigned int width,unsigned int height,int row,int col,

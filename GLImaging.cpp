@@ -8,18 +8,21 @@ void optImage(osg::ref_ptr<osg::Image> &image){
     unsigned char *dataBGRA=new unsigned char[image->s()*image->t()*4];
     unsigned char *dataRGBA=new unsigned char[image->s()*image->t()*4];
     RGB2RGBA(image->s(),image->t(),image->data(),dataRGBA);
-#if _M_SSE >= 0x301
+    /*#if _M_SSE >= 0x301
     cpu_inf
-                                        // Uses SSSE3 intrinsics to optimize RGBA -> BGRA swizzle:
-                                        if (cpu_info.bSSSE3) {
-                                            ConvertRGBA_BGRA_SSSE3((unsigned int *)dataBGRA,pitch,(unsigned int *)dataRGBA,image->s(),image->t(),pitch/4);
-                                        } else
+            // Uses SSSE3 intrinsics to optimize RGBA -> BGRA swizzle:
+            if (cpu_info.bSSSE3) {
+        ConvertRGBA_BGRA_SSSE3((unsigned int *)dataBGRA,pitch,(unsigned int *)dataRGBA,image->s(),image->t(),pitch/4);
+    } else
 #endif
-                                        // Uses SSE2 intrinsics to optimize RGBA -> BGRA swizzle:
-                                        {
-                                            ConvertRGBA_BGRA_SSE2((unsigned int *)dataBGRA,pitch,(unsigned int *)dataRGBA,image->s(),image->t(),pitch/4);
+    // Uses SSE2 intrinsics to optimize RGBA -> BGRA swizzle:
+    {
+        ConvertRGBA_BGRA_SSE2((unsigned int *)dataBGRA,pitch,(unsigned int *)dataRGBA,image->s(),image->t(),pitch/4);
 
-                                        }
+    }
+    */
+    RGB2RGBA(image->s(),image->t(),dataRGBA,dataBGRA);
+
     delete dataRGBA;
     image->setImage(image->s(),image->t(),1,GL_RGB,GL_BGRA,GL_UNSIGNED_BYTE,dataBGRA,osg::Image::USE_NEW_DELETE,1);
     //image->setPixelBufferObject(new osg::PixelBufferObject(image)); SLOWER
@@ -40,7 +43,7 @@ void OptFormatTexturesVisitor::opt()
         if (image.valid()){
 
             if((image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) &&
-                (image->s()>=32 && image->t()>=32))
+                    (image->s()>=32 && image->t()>=32))
             {
                 optImage(image);
 
@@ -61,6 +64,20 @@ RGB2RGBA(unsigned int w, unsigned int h,
         *dst++ = 255 ;
     }
 }
+
+void
+RGBA2BGRA(unsigned int w, unsigned int h,
+          uint32_t *src, uint32_t *dst) {
+    for (unsigned int i=0; i<w*h; i++) {
+#if __LITTLE_ENDIAN__
+        dst[i] = ((src[i] >> 16) & 0xFF) | (src[i] & 0xFF00FF00) | ((src[i] & 0xFF) << 16);
+#else
+        dst[i] = ((src[i] & 0xFF00) << 16) | (src[i] & 0xFF00FF) | ((src[i] >> 16) & 0xFF00);
+#endif
+    }
+}
+
+#if 0
 void ConvertRGBA_BGRA_SSE2(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch)
 {
     // Converts RGBA to BGRA:
@@ -173,7 +190,7 @@ void ConvertRGBA_BGRA_SSSE3(u32 *dst, const int dstPitch, u32 *pIn, const int wi
     // Memory fence to make sure the stores are good:
     _mm_mfence();
 }
-
+#endif
 
 void WindowCaptureCallback::ContextData::updateTimings(osg::Timer_t tick_start,
                                                        osg::Timer_t tick_afterReadPixels,
@@ -343,19 +360,27 @@ void WindowCaptureCallback::ContextData::singlePBO(osg::GLBufferObject::Extensio
         //memcpy(image->data(), src, image->getTotalSizeInBytes());
         int pitch=image->getRowSizeInBytes();//4*_width;
         image->setPixelFormat(GL_RGBA);
+        uint32_t *p = (uint32_t *)src;
+        uint32_t *dst = (uint32_t *)image->data();
+        RGBA2BGRA(image->s(),image->t(),(uint32_t*)src,(uint32_t*)image->data());
+
+
+
+#if 0
 #if _M_SSE >= 0x301
-    cpu_inf
-                                        // Uses SSSE3 intrinsics to optimize RGBA -> BGRA swizzle:
-                                        if (cpu_info.bSSSE3) {
-                                            ConvertRGBA_BGRA_SSSE3((unsigned int *)image->data(),pitch,(unsigned int *)src,_width,_height,pitch/4);
-                                        } else
+        cpu_inf
+                // Uses SSSE3 intrinsics to optimize RGBA -> BGRA swizzle:
+                if (cpu_info.bSSSE3) {
+            ConvertRGBA_BGRA_SSSE3((unsigned int *)image->data(),pitch,(unsigned int *)src,_width,_height,pitch/4);
+        } else
 #endif
-                                        // Uses SSE2 intrinsics to optimize RGBA -> BGRA swizzle:
-                                        {
-                                            ConvertRGBA_BGRA_SSE2((unsigned int *)image->data(),pitch,(unsigned int *)src,_width,_height,pitch/4);
+        // Uses SSE2 intrinsics to optimize RGBA -> BGRA swizzle:
+        {
+            ConvertRGBA_BGRA_SSE2((unsigned int *)image->data(),pitch,(unsigned int *)src,_width,_height,pitch/4);
 
+        }
+#endif
 
-                                        }
         ext->glUnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
     }
 
@@ -802,7 +827,7 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
             printf("Render %.1f\n",renderTime);
             //int mem;
             //gpuUsage(1,mem);
-        /*    char aa[1024];sprintf(aa,"render-time-%d.txt",pid);
+            /*    char aa[1024];sprintf(aa,"render-time-%d.txt",pid);
             FILE *fp=fopen(aa,"w");
             fprintf(fp,"%f s %.2f MB\n",renderTime,sizeImages);
             fclose(fp);

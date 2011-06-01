@@ -217,7 +217,7 @@ SET( LIBADT_LIBRARY adt )
 # Compiler setup        #
 #-----------------------#
 ADD_DEFINITIONS( ${GTS_CFLAGS} )
-ADD_DEFINITIONS( "-Wall -msse4.1" )
+ADD_DEFINITIONS( "-Wall" )
 
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${OPENCV_INCLUDE_DIRS}
@@ -379,7 +379,7 @@ ADD_EXECUTABLE( monoDriver monoDriver.cpp ShellCmd.cpp)
 ADD_EXECUTABLE( testImageModel testImageModel.cpp )
 ADD_EXECUTABLE( loadCamRender loadCamRender.cpp )
 ADD_EXECUTABLE( loadCamRender loadCamRender.cpp )
-ADD_EXECUTABLE( screencap screencap.cpp )
+#ADD_EXECUTABLE( screencap screencap.cpp )
 ADD_EXECUTABLE( remapReimaged remapReimaged.cpp )
 ADD_EXECUTABLE( dicedImage dicedImage.cpp )
 ADD_EXECUTABLE(deepzoomVIPS DeepZoom.cpp)
@@ -406,7 +406,7 @@ TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC)
 TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC)
 
 TARGET_LINK_LIBRARIES( loadCamRender ts spindex vpb vips vipsCC )
-TARGET_LINK_LIBRARIES( screencap vips vipsCC)
+#TARGET_LINK_LIBRARIES( screencap vips vipsCC)
 TARGET_LINK_LIBRARIES( dicedImage vips vipsCC ts z)
 
 #TARGET_LINK_LIBRARIES( threshold ts )

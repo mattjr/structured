@@ -60,7 +60,7 @@ static int vpblod_override=0;
 //
 // Command-line arguments
 //
-static bool untex;
+static bool untex=true;
 using namespace std;
 int proj_tex_size;
 static bool rugosity=false;
@@ -548,7 +548,8 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--spline_dist",spline_dist);
     if(  argp.read("--clean"))
         further_clean=true;
-    untex=argp.read( "--untex" );
+    if(argp.read( "--nountex" ))
+        untex=false;
 
     argp.read("-r",image_scale);
     argp.read( "--edgethresh" ,edgethresh);

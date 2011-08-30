@@ -16,7 +16,7 @@ using namespace std;
 
 #define VERBOSE 0
 
-#define POSE_INDEX_X 0 
+#define POSE_INDEX_X 0
 #define POSE_INDEX_Y 1
 
 
@@ -24,8 +24,8 @@ using namespace std;
 // Parameters
 //
 
-static unsigned int max_cell_poses    = 300;
-static unsigned int max_tree_depth    = 1000;  // Max recursion level 
+unsigned int max_cell_poses    = 300;
+unsigned int max_tree_depth    = 1000;  // Max recursion level
 
 
 
@@ -87,76 +87,8 @@ double Bounds::area( void ) const
  }
 
 //----------------------------------------------------------------------------//
-//   Class Cell_Data                                                          //
-//----------------------------------------------------------------------------//
-template <class A>
-Cell_Data<A>::Cell_Data( ): valid(false)
-{ 
-
-}
-template <class A>
-Cell_Data<A>::Cell_Data( const vector<const A*> &poses,
-                     const Bounds                          &bounds,
-                     const std::pair<int,int> &idx)
-    : bounds( bounds),
-      poses( poses ),
-      idx(idx),valid(poses.size() > 0)
-{ 
-
-}               
-template <class A>
-Cell_Data<A>::Cell_Data( const vector<const A*> &poses,
-                     const Bounds                          &bounds)
-    : bounds( bounds),
-      poses( poses ),valid(poses.size() > 0)
-{
-
-}
-
-
-//----------------------------------------------------------------------------//
 //  Private Helper Functions                                                  //
 //----------------------------------------------------------------------------//
-template <class A>
-static void split_data( const vector<const A *> &poses,
-                       const Bounds                           &bounds,
-                       unsigned int                            split_axis,
-                       double                                  split_value,
-                       vector<const A *>       &poses1,
-                       Bounds                                 &bounds1,
-                       vector<const A *>       &poses2,
-                       Bounds                                 &bounds2 )
-{
-    // Split the data - here we don't just consider if the center of the stereo
-    // is in a cell, but if any part of the footprint is. Therefore a pose can
-    // be in multiple cells.
-
-
-
-    // Create the bounds for the split data sets
-    if( split_axis == POSE_INDEX_X )
-    {
-        bounds1.set( bounds.bbox.xMin(), split_value , bounds.bbox.yMin(), bounds.bbox.yMax() );
-        bounds2.set( split_value , bounds.bbox.xMax(), bounds.bbox.yMin(), bounds.bbox.yMax() );
-    }
-    else
-    {
-        bounds1.set( bounds.bbox.xMin(), bounds.bbox.xMax(), bounds.bbox.yMin(), split_value );
-        bounds2.set( bounds.bbox.xMin(), bounds.bbox.xMax(), split_value , bounds.bbox.yMax() );
-    }
-
-    for( unsigned int i=0 ; i<poses.size() ; i++ )
-    {
-        if(poses[i]->bbox.radius2() <= 0 || !poses[i]->valid || !poses[i]->bbox.valid())
-            continue;
-        if( bounds1.bbox.intersects((poses[i]->bbox )))
-            poses1.push_back( poses[i] );
-
-        if( bounds2.bbox.intersects((poses[i]->bbox )))
-            poses2.push_back( poses[i] );
-
-    }
-}
 
 #if 0
 
@@ -386,73 +318,7 @@ static void recursive_split_even( const vector<const Stereo_Pose_Data *> &poses,
 
 
 #endif
-template <class A>
-static void recursive_split_poses( const vector<const A *> &poses,
-                                  const Bounds &bounds,
-                                  unsigned int depth,
-                                  vector<Cell_Data<A> > &cells)
-{
-    if( depth > max_tree_depth )
-    {
-        cerr << "ERROR - maximum recursion level reached in recursive_split" << endl;
-        exit(1);
-    }
 
-
-
-    if(poses.size() < max_cell_poses ){
-        Cell_Data<A> new_cell( poses, bounds );
-        cells.push_back( new_cell );
-        return ;
-    }
-    unsigned int best_axis;
-    double best_split_point;
-
-    if(bounds.bbox.xMax()-bounds.bbox.xMin()  > bounds.bbox.yMax()-bounds.bbox.yMin()){
-        best_axis= POSE_INDEX_X ;
-        best_split_point=(bounds.bbox.xMax()+bounds.bbox.xMin())/2;
-    }else{
-        best_axis= POSE_INDEX_Y ;
-        best_split_point=(bounds.bbox.yMax()+bounds.bbox.yMin())/2;
-    }
-    // Perform the split
-    vector<const A*> poses1, poses2;
-    Bounds bounds1, bounds2;
-    split_data( poses, bounds, best_axis, best_split_point,
-               poses1, bounds1, poses2, bounds2 );
-
-
-    // Check if the subsets need to be recursively split
-    if( poses1.size() > max_cell_poses)
-    {
-        recursive_split_poses( poses1, bounds1, depth+1 ,cells );
-    }
-    else
-    {
-        Cell_Data<A> new_cell( poses1, bounds1 );
-        cells.push_back( new_cell  );
-#if VERBOSE
-        printf( "Area Cell %d at depth %d area: %f %f %f %f %f, poses: %d %04d_%04d\n", cells.size(), depth,
-               bounds1.area(), bounds1.bbox.xMin(),bounds1.bbox.xMax(),bounds1.bbox.yMin(),bounds1.bbox.yMax(),poses2.size() ,row,col);
-#endif
-    }
-
-
-    if( poses2.size() > max_cell_poses)
-    {
-        recursive_split_poses( poses2, bounds2, depth+1,cells );
-    }
-    else
-    {
-        Cell_Data<A> new_cell( poses2, bounds2  );
-        cells.push_back( new_cell );
-#if VERBOSE
-        printf( "Area Cell %d at depth %d area: %f %f %f %f %f, poses: %d %04d_%04d\n", cells.size(), depth,
-               bounds2.area(), bounds2.bbox.xMin(),bounds2.bbox.xMax(),bounds2.bbox.yMin(),bounds2.bbox.yMax(),poses2.size() ,row,col);
-#endif
-    }
-
-}
 
 //----------------------------------------------------------------------------//
 //  Public Functions                                                          //
@@ -503,43 +369,3 @@ vector<Stereo_Pose_Data> load_stereo_pose_file( const string &file_name )
 }
 
 
-
- template <class A>
-vector<Cell_Data<A> > calc_cells( const vector<A> &poses,int max_poses )
-{
-    // Calculate the bounds of the stereo data
-    Bounds bounds( poses );
-#if VERBOSE
-    printf( "Bounds: %f %f %f %f\n", bounds.bbox.xMin(), bounds.bbox.xMax() ,
-           bounds.bbox.yMin(), bounds.bbox.yMax() );
-#endif
-
-    // m->_buildDestination(true);
-
-    // vpb::Commandline cl;
-
-
-    // Root node of the binary tree has all poses
-    vector<const A *> node_poses( poses.size() );
-    for( unsigned int i=0 ; i<poses.size() ; i++ )
-        node_poses[i] = &poses[i];
-
-    max_cell_poses= max_poses;
-
-
-    // Perform binary division until termination criteria
-    vector<Cell_Data<A> > cells;
-
-    recursive_split_poses( node_poses, bounds,0, cells );
-
-    return cells;
-}
- void tmp(void){
-     std::vector<Tex_Pose_Data> tasks;
-     std::vector<Cell_Data<Tex_Pose_Data> > vrip_cells;
-     vrip_cells=calc_cells<Tex_Pose_Data> (tasks,100);
-
-     std::vector<Stereo_Pose_Data> tasks2;
-     std::vector<Cell_Data<Stereo_Pose_Data> > vrip_cells2;
-     vrip_cells2=calc_cells<Stereo_Pose_Data> (tasks2,100);
- }

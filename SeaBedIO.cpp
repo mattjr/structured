@@ -1,6 +1,6 @@
 #include "SeaBedIO.h"
 #include "TexPyrAtlas.h"
-
+#include "stereo_cells.hpp"
 #include <sstream>
 
 

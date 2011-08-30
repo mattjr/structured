@@ -238,7 +238,7 @@ ADD_EXECUTABLE(deepzoomVIPS DeepZoom.cpp)
 ADD_EXECUTABLE(singleImageTex singleImageTex.cpp)
 ADD_EXECUTABLE(createSem createSem.cpp)
 ADD_EXECUTABLE(vertCheck vertCheck.cpp)
-ADD_EXECUTABLE(temp temp.cpp)
+#ADD_EXECUTABLE(temp temp.cpp)
 
 LINK_LIBRARIES(osgTerrain  osgFX osg  spindex vips vipsCC)
 TARGET_LINK_LIBRARIES( threadedStereo ts  vips vipsCC vpb spindex)

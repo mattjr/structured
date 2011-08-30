@@ -97,13 +97,7 @@ protected:
 
         };
 typedef   long blend_id_t[4];
- enum{ POSE_INDEX_X,
-      POSE_INDEX_Y,
-      POSE_INDEX_Z,
-      POSE_INDEX_PHI,
-      POSE_INDEX_THETA,
-      POSE_INDEX_PSI,
-      NUM_POSE_STATES } ;
+
 typedef std::vector<std::pair<unsigned int,blend_id_t> > blend_pt_t;
 std::vector< std::set<SpatialIndex::id_type>  >  calc_atlases(const osg::Vec3Array *pts,
                                         const osg::PrimitiveSet& prset,

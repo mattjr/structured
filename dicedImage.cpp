@@ -79,8 +79,8 @@ int main(int argc, char** argv)
             _file.read(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
     _file.close();
 
-    std::ostringstream os;
-    os <<"subtile.ppm";//<<":deflate";
+   // std::ostringstream os;
+   // os <<"subtile.ppm";//<<":deflate";
     vips::VImage raw;
     vips::VImage raw_untex;
 
@@ -279,14 +279,14 @@ int main(int argc, char** argv)
     formatBar("Img",startTick,validCount,validCount);
     osg::Timer_t writeStart = osg::Timer::instance()->tick();
 
-    raw.write("subtile.ppm");
+    raw.write("subtile.png:9,");
     double writeTime = osg::Timer::instance()->delta_s(writeStart, osg::Timer::instance()->tick());
     fprintf(logfp,"Write Time %.1fs\n",writeTime);
 
     if(untex){
         osg::Timer_t writeStart = osg::Timer::instance()->tick();
 
-        raw_untex.write("subtile_untex.ppm");
+        raw_untex.write("subtile_untex.png:9,");
         double writeTime = osg::Timer::instance()->delta_s(writeStart, osg::Timer::instance()->tick());
         fprintf(logfp,"Write Time 2 %.1fs\n",writeTime);
 

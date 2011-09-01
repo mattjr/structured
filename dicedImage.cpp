@@ -279,14 +279,14 @@ int main(int argc, char** argv)
     formatBar("Img",startTick,validCount,validCount);
     osg::Timer_t writeStart = osg::Timer::instance()->tick();
 
-    raw.write("subtile.png:9,");
+    raw.write("subtile.v,");
     double writeTime = osg::Timer::instance()->delta_s(writeStart, osg::Timer::instance()->tick());
     fprintf(logfp,"Write Time %.1fs\n",writeTime);
 
     if(untex){
         osg::Timer_t writeStart = osg::Timer::instance()->tick();
 
-        raw_untex.write("subtile_untex.png:9,");
+        raw_untex.write("subtile_untex.v,");
         double writeTime = osg::Timer::instance()->delta_s(writeStart, osg::Timer::instance()->tick());
         fprintf(logfp,"Write Time 2 %.1fs\n",writeTime);
 

@@ -28,6 +28,8 @@ TexPyrAtlas::TexPyrAtlas(texcache_t imgdir):_imgdir(imgdir)
 int TexPyrAtlas::getMaxNumImagesPerAtlas(void)
 
 {
+    if(!_imgdir.size())
+        return 0;
     double area=pow((double)_imgdir[0].second + 2*_margin,2);
     //printf("%f %d\n",area,_imgdir[0].second);
     return (int)floor((_maximumAtlasWidth*_maximumAtlasHeight)/area);

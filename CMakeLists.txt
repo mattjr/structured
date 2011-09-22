@@ -201,7 +201,7 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS(VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src  )
+SUBDIRS(VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender )
 SET( SRCS
                 Extents.cpp
 calibFile.cpp

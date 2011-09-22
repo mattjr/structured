@@ -21,7 +21,8 @@ int main(int argc, char** argv)
     arguments.read("-lat",lat);
     arguments.read("-lon",lon);
     bool untex= arguments.read("-untex");
-    bool nogfx= arguments.read("-nogfx");
+    string ext;
+    bool nogfx= arguments.read("-nogfx",ext);
 
     std::vector<picture_cell> cells;
     FILE *fp=fopen(argv[1],"r");
@@ -107,7 +108,6 @@ int main(int argc, char** argv)
 
         if(nogfx){
             char tmp[1024];
-            string ext="png";
             {
                 sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
                 if(osgDB::fileExists(tmp)){

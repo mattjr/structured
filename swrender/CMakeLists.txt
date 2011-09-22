@@ -15,6 +15,9 @@ find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
 
    include_directories( ${SDL_INCLUDE_DIR} ${OSG_INCLUDE_DIR} ${VIPS_INCLUDE_DIRS})
 add_executable (nonmem nonmem.cpp render_utils.cpp vertexData.cpp plyfile.cpp IMG_savepng.c renderer/geometry_processor.cpp )
+
+add_executable (calcTexCoordOutCore  calcTexCoordOutCore.cpp render_utils.cpp vertexData.cpp plyfile.cpp IMG_savepng.c renderer/geometry_processor.cpp )
+
 add_executable (blendincore blendincore.cpp render_utils.cpp vertexData.cpp plyfile.cpp IMG_savepng.c renderer/geometry_processor.cpp)
 add_executable (rendertest example2.cpp render_utils.cpp vertexData.cpp plyfile.cpp IMG_savepng.c renderer/geometry_processor.cpp)
    target_link_libraries( rendertest ${SDL_LIBRARY} SDL_image ${OSG_LIBRARY} png cv highgui
@@ -25,6 +28,10 @@ add_executable (rendertest example2.cpp render_utils.cpp vertexData.cpp plyfile.
                ${OSGUTIL_LIBRARY} ${VIPS_LIBRARIES} vips vipsCC)
 
    target_link_libraries( blendincore ${SDL_LIBRARY} SDL_image ${OSG_LIBRARY} png cv highgui
+ ${OSGDB_LIBRARY}
+               ${OSGUTIL_LIBRARY})
+
+   target_link_libraries( calcTexCoordOutCore  ${SDL_LIBRARY} SDL_image ${OSG_LIBRARY} png cv highgui
  ${OSGDB_LIBRARY}
                ${OSGUTIL_LIBRARY})
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR})

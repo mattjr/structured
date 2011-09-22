@@ -40,8 +40,43 @@ int main( int argc, char **argv )
         return -1;
     }
 
-        osg::ref_ptr<osg::GraphicsContext> pbuffer;
+    osg::ref_ptr<osg::GraphicsContext> pbuffer;
 
+    osg::State *state= new osg::State;
+
+    bool reimage=false;
+    std::string tex_cache_dir;
+    texcache_t cache;
+    osg::Vec4 zrange;
+    arguments.read("--zrange",zrange[0],zrange[1]);
+    bool useAtlas=arguments.read("--atlas");
+
+    int row,col,numRows,numCols,width,height;
+    bool imageNode=arguments.read("--imageNode",row,col,numRows,numCols,width,height);
+    bool untex=arguments.read("--untex");
+    bool debug=arguments.read("--debug-shader");
+    bool depth=arguments.read("--depth");
+
+    int size;
+    if(arguments.read("--tex_cache",tex_cache_dir,size)){
+        reimage=true;
+        cache.push_back(std::make_pair<std::string,int>(tex_cache_dir,size));
+    }else{
+        cache.push_back(std::make_pair<std::string,int>(tex_cache_dir,std::max(calib.camera_calibs[0].width,calib.camera_calibs[0].height)));
+    }
+    float rx, ry, rz;
+    osg::Matrix inverseM=osg::Matrix::identity();
+
+    if(arguments.read("--invrot",rx,ry,rz)){
+        inverseM =osg::Matrix::rotate(
+                osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+    }
+    osg::Matrix rotM=osg::Matrix::inverse(inverseM);
+
+
+    if(reimage){
         osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
         traits->x = 0;
         traits->y = 0;
@@ -72,37 +107,8 @@ int main( int argc, char **argv )
         {
             pbuffer->realize();
             pbuffer->makeCurrent();
-}
-osg::State *state= new osg::State;
-
-    bool reimage=false;
-    std::string tex_cache_dir;
-    texcache_t cache;
-    osg::Vec4 zrange;
-    arguments.read("--zrange",zrange[0],zrange[1]);
-    bool useAtlas=arguments.read("--atlas");
-
-    int row,col,numRows,numCols,width,height;
-    bool imageNode=arguments.read("--imageNode",row,col,numRows,numCols,width,height);
-    bool untex=arguments.read("--untex");
-    bool debug=arguments.read("--debug-shader");
-    bool depth=arguments.read("--depth");
-
-    int size;
-    if(arguments.read("--tex_cache",tex_cache_dir,size)){
-        reimage=true;
-        cache.push_back(std::make_pair<std::string,int>(tex_cache_dir,size));
+        }
     }
-    float rx, ry, rz;
-    osg::Matrix inverseM=osg::Matrix::identity();
-
-    if(arguments.read("--invrot",rx,ry,rz)){
-        inverseM =osg::Matrix::rotate(
-                osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
-                osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
-                osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
-    }
-    osg::Matrix rotM=osg::Matrix::inverse(inverseM);
 
     std::string mf=argv[2];
     /* std::string sha2hash;
@@ -157,9 +163,9 @@ osg::State *state= new osg::State;
         dataset->_useAtlas=useAtlas;
         dataset->_useBlending=true;
         dataset->_useDebugShader=debug;
-            // dataset->_useDisplayLists=(!imageNode);
-   dataset->_useDisplayLists=true;
-    dataset->_useVBO =true;
+        // dataset->_useDisplayLists=(!imageNode);
+        dataset->_useDisplayLists=true;
+        dataset->_useVBO =true;
         vpb::MyDestinationTile *tile=new vpb::MyDestinationTile(cache);
         tile->_mydataSet=dataset;
         tile->_dataSet=dataset;
@@ -190,8 +196,8 @@ osg::State *state= new osg::State;
                 xform->setMatrix(inverseM);
                 xform->addChild(node);
                 osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
-                                xform->accept(fstv);
-                                fstv.removeTransforms(xform);
+                xform->accept(fstv);
+                fstv.removeTransforms(xform);
                 if(imageNode){
                     osg::Matrixd view,proj;
 
@@ -214,7 +220,7 @@ osg::State *state= new osg::State;
                 if(!imageNode){
                     osgDB::ReaderWriter::Options* options = new osgDB::ReaderWriter::Options;
                     printf("AAAA %s\n",options->getOptionString().c_str());
-                   // options->setOptionString("compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1");
+                    // options->setOptionString("compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1");
                     osgDB::Registry::instance()->setOptions(options);
 
                     osgDB::writeNodeFile(*xform,osgDB::getNameLessExtension(outfilename).append(".ive"));

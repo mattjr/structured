@@ -134,6 +134,7 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord
         ObjVisitor vis(p,8);
         // cout << p <<endl;
         _source->intersectsWithQuery(p,vis);
+        //printf("%d\n",vis.GetResultCount());
         if(vis.GetResultCount()){
             for(unsigned int r=0; r < vis.GetResults().size(); r++){
                 if(_source->_cameras.count(vis.GetResults()[r]))

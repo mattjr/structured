@@ -41,6 +41,8 @@ static int vpblod_override=0;
 //
 // Command-line arguments
 //
+static bool hw_image=false;
+static bool blending=true;
 static bool untex=true;
 using namespace std;
 static FILE *conf_ply_file;
@@ -151,7 +153,7 @@ vector<Tex_Pose_Data> load_tex_pose_file( const string &file_name )
     if( !in_file )
     {
         cerr << "ERROR - Unable to load stereo pose file '" << file_name << "'"
-             << endl;
+                << endl;
         exit(1);
     }
 
@@ -161,38 +163,38 @@ vector<Tex_Pose_Data> load_tex_pose_file( const string &file_name )
         Tex_Pose_Data new_pose;
 
         if( in_file >> new_pose.id
-                >> new_pose.file_name
-                >> new_pose.bbox.xMin()
-                >> new_pose.bbox.yMin()
-                >> new_pose.bbox.zMin()
-                >> new_pose.bbox.xMax()
-                >> new_pose.bbox.yMax()
-                >> new_pose.bbox.zMax()
-                >> new_pose.mat(0,0)
-                >> new_pose.mat(0,1)
-                >> new_pose.mat(0,2)
-                >> new_pose.mat(0,3)
+            >> new_pose.file_name
+            >> new_pose.bbox.xMin()
+            >> new_pose.bbox.yMin()
+            >> new_pose.bbox.zMin()
+            >> new_pose.bbox.xMax()
+            >> new_pose.bbox.yMax()
+            >> new_pose.bbox.zMax()
+            >> new_pose.mat(0,0)
+            >> new_pose.mat(0,1)
+            >> new_pose.mat(0,2)
+            >> new_pose.mat(0,3)
 
-                >> new_pose.mat(1,0)
-                >> new_pose.mat(1,1)
-                >> new_pose.mat(1,2)
-                >> new_pose.mat(1,3)
+            >> new_pose.mat(1,0)
+            >> new_pose.mat(1,1)
+            >> new_pose.mat(1,2)
+            >> new_pose.mat(1,3)
 
-                >> new_pose.mat(2,0)
-                >> new_pose.mat(2,1)
-                >> new_pose.mat(2,2)
-                >> new_pose.mat(2,3)
+            >> new_pose.mat(2,0)
+            >> new_pose.mat(2,1)
+            >> new_pose.mat(2,2)
+            >> new_pose.mat(2,3)
 
-                >> new_pose.mat(3,0)
-                >> new_pose.mat(3,1)
-                >> new_pose.mat(3,2)
-                >> new_pose.mat(3,3)
-               )
+            >> new_pose.mat(3,0)
+            >> new_pose.mat(3,1)
+            >> new_pose.mat(3,2)
+            >> new_pose.mat(3,3)
+            )
         {
             new_pose.valid = true;
 
-  //         new_pose.mat = osg::Matrix::inverse(new_pose.mat);
-//cout <<new_pose.mat<<endl;
+            //         new_pose.mat = osg::Matrix::inverse(new_pose.mat);
+            //cout <<new_pose.mat<<endl;
             poses.push_back( new_pose );
             if(have_max_frame_count && poses.size() >= max_frame_count)
                 done=true;
@@ -267,6 +269,7 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--poses",contents_file_name );
     apply_aug =argp.read("--apply_aug");
     argp.read("--gpu",gpunum);
+    hw_image=argp.read("--hwblend");
 
     cmvs=argp.read("--mvs");
     useAtlas=argp.read("--atlas");
@@ -337,17 +340,17 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("IMAGE_SPLIT_COL",_tileColumns,-1);
     recon_config_file->get_value("IMAGE_SPLIT_ROW",_tileRows,-1);
     recon_config_file->get_value( "SRC_TEX_SIZE", lodTexSize[0],
-                                 512);
+                                  512);
     recon_config_file->get_value( "TARGET_SCREEN_FACES", targetScreenFaces,
-                                 150000);
+                                  150000);
     recon_config_file->get_value( "MM_PER_PIXEL", mmperpixel,
-                                 4);
+                                  4);
     if(recon_config_file->get_value( "REIMAGE_RES",reimageSize.x(),-1)){
         reimageSize.y()=reimageSize.x();
     }
 
     recon_config_file->get_value( "WKT_DEST_COORD",wkt_coord_system,
-                               "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AXIS[\"Lat\",NORTH],AXIS[\"Long\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]");
+                                  "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AXIS[\"Lat\",NORTH],AXIS[\"Long\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]");
 
 
     //sprintf(cachedtexdir,"cache-tex-%d/",lodTexSize[1]);
@@ -564,9 +567,9 @@ void fill_osg_matrix(double *cam_pose,osg::Matrix &trans){
 
 
 static int get_auv_image_name( const string  &contents_dir_name,
-                              Stereo_Pose pose,
-                              Stereo_Pose_Data &name
-                              )
+                               Stereo_Pose pose,
+                               Stereo_Pose_Data &name
+                               )
 {
 
     //name.cam_pose = new Vector(AUV_NUM_POSE_STATES);
@@ -704,7 +707,7 @@ int main( int argc, char *argv[ ] )
     //
     // Open the contents file
     //
-   /* contents_file.open( contents_file_name.c_str( ) );
+    /* contents_file.open( contents_file_name.c_str( ) );
     if( !contents_file )
     {
         cerr << "ERROR - unable to open contents file: " << contents_file_name
@@ -746,7 +749,7 @@ int main( int argc, char *argv[ ] )
     vector<Tex_Pose_Data> tasks;
     tasks=load_tex_pose_file("camboxdata.txt");
     char texfilename[1024];
-    for(int i=0; i< tasks.size(); i++){
+    for(int i=0; i< (int)tasks.size(); i++){
         sprintf(texfilename,"%s/%s.png",
                 cachedtexdir[0].first.c_str(),osgDB::getSimpleFileName(osgDB::getNameLessExtension(tasks[i].file_name.c_str())).c_str());
         if(!osgDB::fileExists(texfilename)){
@@ -759,7 +762,7 @@ int main( int argc, char *argv[ ] )
                 fprintf(stderr,"Can't load %s\n",(base_dir+"/img/"+tasks[i].file_name).c_str());
         }
     }
-/*
+    /*
     vector<Stereo_Pose_Data> tasks;
     unsigned int stereo_pair_count =0;
 
@@ -924,7 +927,7 @@ int main( int argc, char *argv[ ] )
     Bounds bounds( tasks );
     std::vector<Cell_Data<Tex_Pose_Data > >  vrip_cells;
     vrip_cells=calc_cells<Tex_Pose_Data>(tasks,vrip_img_per_cell);
- /*   osg::Timer_t startTick= osg::Timer::instance()->tick();
+    /*   osg::Timer_t startTick= osg::Timer::instance()->tick();
     int totalTodoCount=tasks.size();
     int progCount=0;
     OpenThreads::Mutex mutex;
@@ -1112,9 +1115,9 @@ int main( int argc, char *argv[ ] )
             string rot=string(tmp);
 
             rotM =osg::Matrix::rotate(
-                        osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
-                        osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
-                        osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+                    osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                    osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                    osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
             cout << "Loading full mesh...\n";
             osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("mesh-diced/vis-total.ply"+rot);
             osg::Drawable *drawable = model->asGroup()->getChild(0)->asGeode()->getDrawable(0);
@@ -1370,16 +1373,16 @@ int main( int argc, char *argv[ ] )
 */
                 //Not thread SAFE!!!!!! TODO fix
                 osg::ref_ptr<KdTreeBbox> kdbb=setupKdTree(model);
-//#pragma omp parallel num_threads(num_threads)
+                //#pragma omp parallel num_threads(num_threads)
                 {
                     {
-//#pragma omp for
+                        //#pragma omp for
                         for(int i=0; i <(int)cells.size(); i++){
                             sprintf(tmpname,"mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",
                                     cells[i].row,cells[i].col,vpblod);
                             cut_model(kdbb,tmpname,cells[i].bboxMargin,IntersectKdTreeBbox::DUP);
                             formatBar("Split",startTick,progCount,totalTodoCount);
-//#pragma omp atomic
+                            //#pragma omp atomic
                             progCount++;
                             char tp[1024];
                             sprintf(tp,"mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
@@ -1412,9 +1415,9 @@ int main( int argc, char *argv[ ] )
                         exit(-1);
                     }
                     osg::ref_ptr<KdTreeBbox> kdbb=setupKdTree(model);
-//#pragma omp parallel num_threads(num_threads)
+                    //#pragma omp parallel num_threads(num_threads)
                     {
-//#pragma omp for
+                        //#pragma omp for
                         for(int i=0; i <(int)vrip_cells.size(); i++){
                             if(vrip_cells[i].poses.size() == 0){
                                 vrip_cells[i].valid=false;
@@ -1425,7 +1428,7 @@ int main( int argc, char *argv[ ] )
                                     i,vpblod);
                             vrip_cells[i].valid=cut_model(kdbb,tmpname,box,IntersectKdTreeBbox::DUP);
                             formatBar("Split",startTick,progCount,totalTodoCount);
-//#pragma omp atomic
+                            //#pragma omp atomic
                             progCount++;
 
                         }
@@ -1442,7 +1445,7 @@ int main( int argc, char *argv[ ] )
 
         for(int j=vpblod; j >=0; j--){
             sizeStepTotal[j]= std::max(numberFacesAll/((int)pow(4.0,vpblod-j)),std::min(targetScreenFaces,numberFacesAll));
-           // printf("%d\n",sizeStepTotal[j]);
+            // printf("%d\n",sizeStepTotal[j]);
 
         }
 
@@ -1524,7 +1527,7 @@ int main( int argc, char *argv[ ] )
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
 
 
-            fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f",
+            fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f",
                     cwd,
                     gpunum,
                     basepath.c_str(),
@@ -1532,14 +1535,31 @@ int main( int argc, char *argv[ ] )
                     cells[i].row,cells[i].col,
                     vpblod,
                     cells[i].row,cells[i].col,
-                    vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax());
-            fprintf(texcmds_fp," --tex_cache %s %d --invrot %f %f %f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,rx,ry,rz);
-            if(use_debug_shader)
-                fprintf(texcmds_fp," --debug-shader ");
-            if(!storeTexMesh)
-                fprintf(texcmds_fp," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,_tileRows,_tileColumns,ajustedGLImageSizeX,ajustedGLImageSizeY);
-            if(useAtlas)
-                fprintf(texcmds_fp," --atlas");
+                    vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
+                    rx,ry,rz);
+            if(hw_image){
+                fprintf(texcmds_fp," --tex_cache %s %d  ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second);
+                if(use_debug_shader)
+                    fprintf(texcmds_fp," --debug-shader ");
+                if(!storeTexMesh)
+                    fprintf(texcmds_fp," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,_tileRows,_tileColumns,ajustedGLImageSizeX,ajustedGLImageSizeY);
+                if(useAtlas)
+                    fprintf(texcmds_fp," --atlas");
+            }
+            else{
+                fprintf(texcmds_fp,";%s/nonmem  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --invrot %f %f %f --size %d %d --imagename mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d",
+                        basepath.c_str(),
+                        cells[i].row,cells[i].col,
+                        vpblod,
+                        cells[i].row,cells[i].col,
+                        (base_dir+"/img/").c_str(),
+                        rx,ry,rz,
+                        ajustedGLImageSizeX,ajustedGLImageSizeY,
+                        cells[i].row,cells[i].col,_tileRows,_tileColumns);
+                if(blending)
+                    fprintf(texcmds_fp," --blend");
+            }
+
 
             fprintf(texcmds_fp,"\n");
 
@@ -1555,17 +1575,18 @@ int main( int argc, char *argv[ ] )
         fclose(reFP);
 
         std::ostringstream p1;
-
         vector<std::string> precmd;
-        p1 <<basepath << "/createSem";
-        precmd.push_back(p1.str());
+        if(hw_image){
+            p1 <<basepath << "/createSem";
+            precmd.push_back(p1.str());
+        }
         string texcmd="tex.py";
         vector<std::string> postcmdv;
         std::ostringstream p;
         bool singleThreadedDicedTex=false;
         p<<basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << ajustedGLImageSizeX << " "<< ajustedGLImageSizeY  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
         if(!singleThreadedDicedTex)
-            p<<" -nogfx";
+            p<<" -nogfx " << (hw_image ? "png" : "v");
         if(untex)
             p<< " -untex ";
         postcmdv.push_back(p.str());
@@ -1733,7 +1754,7 @@ int main( int argc, char *argv[ ] )
 
         char szProj4[4096];
         sprintf( szProj4,
-                "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",latOrigin,longOrigin,1.0,0.0,0.0);
+                 "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",latOrigin,longOrigin,1.0,0.0,0.0);
 
         if(!mgc)
             mgc = new MyGraphicsContext();

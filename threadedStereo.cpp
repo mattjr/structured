@@ -28,7 +28,8 @@
 #include "VPBInterface.hpp"
 #include <osgDB/WriteFile>
 #include <osgDB/ReadFile>
-
+static bool hw_image=false;
+static bool blending=true;
 void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned int totalCount);
 string wkt_coord_system;
 using namespace std;
@@ -215,7 +216,7 @@ static bool parse_args( int argc, char *argv[ ] )
     if(argp.read("--noarray"))
         useTextureArray=false;
 
-
+    hw_image=argp.read("--hwblend");
     deltaT_config_name=base_dir+string("/")+"localiser.cfg";
     double lat_orig,lon_orig;
 
@@ -1460,7 +1461,7 @@ int main( int argc, char *argv[ ] )
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
 
 
-            fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f",
+            fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f",
                     cwd,
                     gpunum,
                     basepath.c_str(),
@@ -1468,14 +1469,30 @@ int main( int argc, char *argv[ ] )
                     cells[i].row,cells[i].col,
                     vpblod,
                     cells[i].row,cells[i].col,
-                    vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax());
-            fprintf(texcmds_fp," --tex_cache %s %d --invrot %f %f %f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,rx,ry,rz);
-            if(use_debug_shader)
-                fprintf(texcmds_fp," --debug-shader ");
-            if(!storeTexMesh)
-                fprintf(texcmds_fp," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,_tileRows,_tileColumns,ajustedGLImageSizeX,ajustedGLImageSizeY);
-            if(useAtlas)
-                fprintf(texcmds_fp," --atlas");
+                    vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
+                    rx,ry,rz);
+            if(hw_image){
+                fprintf(texcmds_fp," --tex_cache %s %d  ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second);
+                if(use_debug_shader)
+                    fprintf(texcmds_fp," --debug-shader ");
+                if(!storeTexMesh)
+                    fprintf(texcmds_fp," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,_tileRows,_tileColumns,ajustedGLImageSizeX,ajustedGLImageSizeY);
+                if(useAtlas)
+                    fprintf(texcmds_fp," --atlas");
+            }
+            else{
+                fprintf(texcmds_fp,";%s/nonmem  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --invrot %f %f %f --size %d %d --imagename mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d",
+                        basepath.c_str(),
+                        cells[i].row,cells[i].col,
+                        vpblod,
+                        cells[i].row,cells[i].col,
+                        (base_dir+"/img/").c_str(),
+                        rx,ry,rz,
+                        ajustedGLImageSizeX,ajustedGLImageSizeY,
+                        cells[i].row,cells[i].col,_tileRows,_tileColumns);
+                if(blending)
+                      fprintf(texcmds_fp," --blend");
+            }
 
             fprintf(texcmds_fp,"\n");
 
@@ -1493,15 +1510,17 @@ int main( int argc, char *argv[ ] )
         std::ostringstream p1;
 
         vector<std::string> precmd;
-        p1 <<basepath << "/createSem";
-        precmd.push_back(p1.str());
+        if(hw_image){
+            p1 <<basepath << "/createSem";
+            precmd.push_back(p1.str());
+        }
         string texcmd="tex.py";
         vector<std::string> postcmdv;
         std::ostringstream p;
         bool singleThreadedDicedTex=false;
         p<<basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << ajustedGLImageSizeX << " "<< ajustedGLImageSizeY  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
         if(!singleThreadedDicedTex)
-            p<<" -nogfx";
+            p<<" -nogfx " << (hw_image ? "png" : "v");
         if(untex)
             p<< " -untex ";
         postcmdv.push_back(p.str());

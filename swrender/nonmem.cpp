@@ -61,6 +61,7 @@ using namespace std;
 #include <fstream>
 #include <string>
 #include <vips/vips>
+#include <osgDB/FileUtils>
 #include <vips/vips.h>
 static osg::Vec3 debugV;
 bool USE_BGR=false;
@@ -581,8 +582,12 @@ const int FragmentShaderBlendingMain::mipmapL[]= {0,2,4};
 int FragmentShaderBlendingMain::idx;
 
 void readFile(string fname,map<int,imgData> &imageList){
-    std::ifstream m_fin(fname.c_str());
 
+    std::ifstream m_fin(fname.c_str());
+    if(!osgDB::fileExists(fname.c_str())||!m_fin.good() ){
+        fprintf(stderr,"Can't load %s\n",fname.c_str());
+        exit(-1);
+    }
     while(!m_fin.eof()){
         imgData cam;
         double low[3], high[3];
@@ -662,6 +667,12 @@ int main(int ac, char *av[]) {
     outputImage=NULL;
     rangeImage=NULL;
     arguments.read("--size",sizeX,sizeY);
+    string imageName,depthName;
+    string tmp;
+    arguments.read("--imagename",tmp);
+    imageName=tmp+".v";
+    depthName=tmp+"-tmp_dist.v";
+
     bool blending = arguments.read("--blend");
     if(blending)
         printf("Blending Enabled\n");
@@ -673,7 +684,7 @@ int main(int ac, char *av[]) {
     gRect.width=128;
     gRect.height=1;
 
-    IMAGE *diskFile=im_open("output.v","w");
+    IMAGE *diskFile=im_open(imageName.c_str(),"w");
     im_copy(outputImage,diskFile);
     im_close(outputImage);
     outputImage=diskFile;
@@ -685,7 +696,7 @@ int main(int ac, char *av[]) {
             fprintf(stderr,"Can't create range image\n");
             return -1;
         }
-        IMAGE *diskFileRange=im_open("range.v","w");
+        IMAGE *diskFileRange=im_open(depthName.c_str(),"w");
         im_copy(rangeImage,diskFileRange);
         im_close(rangeImage);
         rangeImage=diskFileRange;

@@ -31,8 +31,7 @@ int log2i(uint32_t value) ;
 int log2i(uint64_t value) ;
 void fast_mipmap_downsize( const IplImage *source, IplImage *dest );
 extern bool USE_BGR;
-void process_mem_usage(double& vm_usage, double& resident_set);
-std::string get_size_string(double kb);
+
 
 class TriangleIndexVisitor
 {

@@ -218,6 +218,7 @@ TexturingQuery.cpp
 configFile.cpp
 SeaBedIO.cpp
 SpatialReference.cpp
+MemUtils.cpp
 		stereo_cells.cpp
 GLImaging.cpp
                 )

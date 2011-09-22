@@ -51,6 +51,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include "mipmap.h"
+#include "../MemUtils.h"
 #include "render_utils.h"
 // the software renderer stuff is located in the namespace "swr" so include
 // that here

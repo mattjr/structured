@@ -9,15 +9,18 @@
 #include <osg/io_utils>
 #include <osg/TriangleIndexFunctor>
 #include "calcTexCoord.h"
+#include "MemUtils.h"
+#include <algorithm>  // for std::set_intersection
+#include <iterator>   // for std::inserter
 using namespace SpatialIndex;
 using namespace std;
 
 TexturingQuery::TexturingQuery(TexturedSource *source,const CameraCalib &calib,TexPyrAtlas &atlasGen,bool useTextureArray) :
-    _calib(calib),
-    _useTextureArray(useTextureArray),
-    _atlasGen(atlasGen),
-    _useAtlas(true),
-    _source(source)
+        _calib(calib),
+        _useTextureArray(useTextureArray),
+        _atlasGen(atlasGen),
+        _useAtlas(true),
+        _source(source)
 {
     _vertexAlias = AttributeAlias(0, "osg_Vertex");
 
@@ -54,8 +57,8 @@ const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3
     // printf("Size of original %d %d\n",cam_counter.size(),tri_v.size());
     set<SpatialIndex::id_type> seeninalltri;
     for (multimap<SpatialIndex::id_type, int>::iterator it = cam_counter.begin();
-         it != cam_counter.end();
-         ++it){
+    it != cam_counter.end();
+    ++it){
         if(cam_counter.count((*it).first) == 3){
             seeninalltri.insert((*it).first);
         }
@@ -74,6 +77,7 @@ const CamDists TexturingQuery::getClosest(std::vector<int> tri_v,const osg::Vec3
 */
     return orderedProj;
 }
+
 osg::Vec2 TexturingQuery::convertToUV(const osg::Vec2 &pix){
     osg::Vec2 ratioPow2;
     osg::Vec2 pow2size(osg::Image::computeNearestPowerOfTwo(_calib.width),osg::Image::computeNearestPowerOfTwo(_calib.height));
@@ -89,7 +93,7 @@ osg::Vec2 TexturingQuery::convertToUV(const osg::Vec2 &pix){
 
 void TexturingQuery::findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,SpatialIndex::id_type id){
     cpad.id=id;
-  //  std::cout << "Id "<< id << _source->_cameras[id].m << " " << v<<std::endl;
+    //  std::cout << "Id "<< id << _source->_cameras[id].m << " " << v<<std::endl;
 
     osg::Vec2 texC=reprojectPt(_source->_cameras[id].m,v);
     if(texC.x() < 0.0 || texC.x() > _calib.width || texC.y() < 0.0 || texC.y() > _calib.height )
@@ -118,7 +122,9 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord
                                          const osg::PrimitiveSet& prset, const osg::Vec3Array &verts){
     int numIdx=prset.getNumIndices();
     osg::Timer_t before_computeMax = osg::Timer::instance()->tick();
-
+    double vm, rss;
+    process_mem_usage(vm, rss);
+    cout << "Pre Project All Triangles VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
 
 
     if(numIdx < 3 || !camIdxArr)
@@ -143,11 +149,15 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord
         }
     }
     printf("Size of reproj %.1fMB %d\n",reproj.size()*sizeof(std::multimap<int,SpatialIndex::id_type>::value_type)/1024.0/1024.0,(int)reproj.size());
+    process_mem_usage(vm, rss);
+    cout << "Post Reproj Est Triangles VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
     camIdxArr->resize(verts.size(),osg::Vec4(-1,-1,-1,-1));
     for(int f=0; f < (int)texCoordsArray.size() && f < maxNumTC; f++){
         if(texCoordsArray[f])
             texCoordsArray[f]->resize(verts.size());
     }
+    process_mem_usage(vm, rss);
+    cout << "Post Resize Est Triangles VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
     //multimap<unsigned int, int> vert_reproj;
 
     for(int i=0; i<numIdx-2; i+=3){
@@ -196,7 +206,7 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord
         _atlasGen._vertexToAtlas = new std::vector <char>(camIdxArr->size(),-1);
         sets=calc_atlases(&verts,prset,camIdxArr,*_atlasGen._vertexToAtlas,_atlasGen.getMaxNumImagesPerAtlas());
         //printf("Sets %d\n",sets.size());
-       // printf("AAAAAAAAAAAAA %d %d\n",verts.size(), _atlasGen._vertexToAtlas->size());
+        // printf("AAAAAAAAAAAAA %d %d\n",verts.size(), _atlasGen._vertexToAtlas->size());
         for(int i=0; i< (int)sets.size(); i++){
             std::set<SpatialIndex::id_type>:: iterator iter=sets[i].begin();
             for(; iter!=sets[i].end(); iter++)
@@ -214,8 +224,119 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord
 
     osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
 
-       osg::notify(osg::INFO) << "Time for projectAllTriangles = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
+    osg::notify(osg::INFO) << "Time for projectAllTriangles = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
+    process_mem_usage(vm, rss);
+    cout << "End Reproj aLL Triangles VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
+    return true;
+}
 
+
+
+bool TexturingQuery::projectAllTrianglesOutCore(osg::Vec4Array* camIdxArr,TexBlendCoord &texCoordsArray,
+                                                const osg::PrimitiveSet& prset, const osg::Vec3Array &verts){
+    int numIdx=prset.getNumIndices();
+    osg::Timer_t before_computeMax = osg::Timer::instance()->tick();
+    double vm, rss;
+    process_mem_usage(vm, rss);
+    cout << "Pre Project All Triangles VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
+
+
+    if(numIdx < 3 || !camIdxArr)
+        return false;
+
+    process_mem_usage(vm, rss);
+    cout << "Post Reproj Est Triangles VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
+    camIdxArr->resize(verts.size(),osg::Vec4(-1,-1,-1,-1));
+    for(int f=0; f < (int)texCoordsArray.size() && f < maxNumTC; f++){
+        if(texCoordsArray[f])
+            texCoordsArray[f]->resize(verts.size());
+    }
+    process_mem_usage(vm, rss);
+    cout << "Post Resize Est Triangles VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
+    //multimap<unsigned int, int> vert_reproj;
+
+    for(int i=0; i<numIdx-2; i+=3){
+        vector<int> tri_v;
+        set<SpatialIndex::id_type> tri_cam_ids[3];
+        set<SpatialIndex::id_type> tmp,intersect;
+        osg::Vec3d avgV(0.0,0.0,0.0);
+        for(int k=0; k <3; k++){
+            int idx=prset.index(i+k);
+            tri_v.push_back(idx);
+            double pt[3];
+            avgV+=verts[idx];
+            pt[0]=verts[idx].x();
+            pt[1]=verts[idx].y();
+            pt[2]=verts[idx].z();
+            Point p = Point(pt, 3);
+            ObjVisitor vis(p,8);
+            _source->intersectsWithQuery(p,vis);
+            if(vis.GetResultCount()){
+                for(unsigned int r=0; r < vis.GetResults().size(); r++){
+                    if(_source->_cameras.count(vis.GetResults()[r]))
+                        tri_cam_ids[k].insert(vis.GetResults()[r]);
+                }
+            }
+        }
+        avgV.x()/=3.0;
+        avgV.y()/=3.0;
+        avgV.z()/=3.0;
+
+        osg::Vec4 camIdx(-1,-1,-1,-1);
+
+        std::set_intersection( tri_cam_ids[0].begin(), tri_cam_ids[0].end(), tri_cam_ids[1].begin(), tri_cam_ids[1].end(),
+                               std::insert_iterator< std::set<SpatialIndex::id_type> >( tmp, tmp.begin() ) );
+
+        std::set_intersection( tri_cam_ids[2].begin(), tri_cam_ids[2].end(), tmp.begin(), tmp.end(),
+                               std::insert_iterator< std::set<SpatialIndex::id_type> >( intersect, intersect.begin() ) );
+
+        CamDists orderedProj;
+        for( std::set<SpatialIndex::id_type>::iterator itr=intersect.begin(); itr!=intersect.end(); itr++){
+            CamProjAndDist tmp;
+            findCamProjAndDist(tmp,avgV,(*itr));
+            orderedProj.push_back(tmp);
+        }
+        std::sort(orderedProj.begin(), orderedProj.end(), sort_pred());
+        for(int v=0; v<(int)orderedProj.size() && v <4; v++){
+            if(orderedProj[v].id >= 0)
+                camIdx[v]=orderedProj[v].id;
+        }
+
+        for(int k=0; k <3; k++){
+            camIdxArr->at(prset.index(i+k))=camIdx;
+            for(int f=0; f <(int)orderedProj.size() && f<maxNumTC; f++){
+                if(texCoordsArray[f]) {
+                    osg::Vec2 tc=convertToUV(reprojectPt(_source->_cameras[orderedProj[f].id].m,verts[tri_v[k]]));
+                    osg::Vec3 tmp(tc[0],tc[1],-1);
+                    if(!checkInBounds(tmp))
+                        texCoordsArray[f]->at(prset.index(i+k))=osg::Vec3(-1,-1,-1);
+                    else
+                        texCoordsArray[f]->at(prset.index(i+k))=tmp;
+                }
+            }
+        }
+
+
+        /*if(invalid){
+            for(int k=0; k <3; k++){
+                for(int f=0; f <(int)orderedProj.size() && f<maxNumTC; f++){
+                    texCoordsArray[f]->at(prset.index(i+k))=osg::Vec3(-1,-1,-1);
+
+                }
+            }
+        }*/
+    }
+    map<SpatialIndex::id_type,int> allIds=calcAllIds(camIdxArr);
+
+    addImagesToAtlasGen(allIds,NULL);
+
+    //cout << "Number of prim" << prset.getNumIndices() << " " << prset.getNumPrimitives() << endl;
+
+    osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
+
+    osg::notify(osg::INFO) << "Time for projectAllTriangles = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
+    process_mem_usage(vm, rss);
+    cout << "End Reproj aLL Triangles VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
     return true;
 }
 bool loadShaderSource(osg::Shader* obj, const std::string& fileName )
@@ -248,9 +369,9 @@ void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds, 
     map<SpatialIndex::id_type,int>::const_iterator end = allIds.end();
     for (map<SpatialIndex::id_type,int>::const_iterator it = allIds.begin(); it != end; ++it)
     {   if(_source->_cameras.count(it->first) && _source->_cameras[it->first].filename.size())
-            files[it->second]=make_pair<SpatialIndex::id_type,string> (it->first,_source->_cameras[it->first].filename);
+        files[it->second]=make_pair<SpatialIndex::id_type,string> (it->first,_source->_cameras[it->first].filename);
         else
-                osg::notify(osg::ALWAYS) << " Failed " <<it->first << " : " << it->second << '\n';
+            osg::notify(osg::ALWAYS) << " Failed " <<it->first << " : " << it->second << '\n';
     }
 
     _atlasGen.addSources(files);
@@ -410,7 +531,7 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
 
     //No cached
     if(!geode){
-            osg::notify(osg::ALWAYS) << "Not valid geode\n";
+        osg::notify(osg::ALWAYS) << "Not valid geode\n";
         return false;
     }
     for (unsigned int i=0; i<geode->getNumDrawables(); i++){
@@ -425,7 +546,7 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
         //setVertexAttrib(*geom, _vertexAlias, geom->getVertexArray(), false, osg::Geometry::BIND_PER_VERTEX);
         // geom->setVertexArray(0);
         if(!verts || !verts->size()){
-                osg::notify(osg::INFO)<< "Empty mesh continuing!" <<endl;
+            osg::notify(osg::INFO)<< "Empty mesh continuing!" <<endl;
             continue;
         }
         //OSG_INFO
@@ -451,24 +572,28 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
             switch(mode){
             case(osg::PrimitiveSet::TRIANGLES):
                 //remapSharedVert(*(*itr), *verts,tif.indices_double_counted);
-                projectValid=projectAllTriangles(v,texCoords,*(*itr), *verts);
+                if(1)
+                    projectValid=projectAllTrianglesOutCore(v,texCoords,*(*itr), *verts);
+                else
+                    projectValid= projectAllTriangles(v,texCoords,*(*itr), *verts);
+
                 if(!v||!projectValid){
-                      osg::notify(osg::ALWAYS) << "Failed to create reprojection array" <<endl;
+                    osg::notify(osg::ALWAYS) << "Failed to create reprojection array" <<endl;
                     continue;
                 }
 
-            {
-                OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_tile->_texCoordMutex);
+                {
+                    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_tile->_texCoordMutex);
 
-                _tile->texCoordIDIndexPerModel[geode]=v;
-                //printf("v %d %d\n",v->size(), *itr->getNumIndices());
+                    _tile->texCoordIDIndexPerModel[geode]=v;
+                    //printf("v %d %d\n",v->size(), *itr->getNumIndices());
 
-                _tile->texCoordsPerModel[geode]=texCoords;
-            }
+                    _tile->texCoordsPerModel[geode]=texCoords;
+                }
                 return true;
                 break;
-            default:
-                    osg::notify(osg::ALWAYS) << "Freakout shouldn't be anything but triangles\n";
+                default:
+                osg::notify(osg::ALWAYS) << "Freakout shouldn't be anything but triangles\n";
             }
         }
         reproj.clear();

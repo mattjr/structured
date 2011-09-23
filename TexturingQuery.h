@@ -54,6 +54,8 @@ protected:
     //void remapSharedVert(osg::PrimitiveSet& prset, osg::Vec3Array &verts,std::map<int,int> remap);
 
     std::string baseName;
+    bool projectAllTrianglesOutCore(osg::Vec4Array* camIdxArr,TexBlendCoord &texCoordsArray,
+                                             const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
 
     bool projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord  &texCoordsArray,
                                              const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);

@@ -145,7 +145,7 @@ struct VertexShader {
 
         vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, X(1));
 
-//        const mat4x &m = modelview_matrix;
+        //        const mat4x &m = modelview_matrix;
 
         out.x = tvertex.x.intValue;
         out.y = tvertex.y.intValue;
@@ -669,10 +669,19 @@ int main(int ac, char *av[]) {
     rangeImage=NULL;
     arguments.read("--size",sizeX,sizeY);
     string imageName,depthName;
-    string tmp;
-    arguments.read("--imagename",tmp);
-    imageName=tmp+".v";
-    depthName=tmp+"-tmp_dist.v";
+    unsigned int _tileRows;
+    unsigned int _tileColumns;
+    int row;
+    int col;
+    char tmp[1024];
+    if(!arguments.read("--image",row,col,_tileRows,_tileColumns)){
+        fprintf(stderr,"Fail to get image params\n");
+        return -1;
+    }
+    sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d",row,col,_tileRows,_tileColumns);
+
+    imageName=string(tmp)+".v";
+    depthName=string(tmp)+"-tmp_dist.v";
 
     bool blending = arguments.read("--blend");
     if(blending)
@@ -767,35 +776,83 @@ int main(int ac, char *av[]) {
         }
         osg::Matrix rotM=osg::Matrix::inverse(inverseM);
 
-
-        osg::BoundingBox totalbb;
-
         osg::Vec3Array *verts=vertexData._vertices;
+
+          osg::BoundingBox totalbb;
+
         for(int i=0; i <(int)verts->size(); i++){
             verts->at(i)=verts->at(i)*rotM;
             totalbb.expandBy(verts->at(i));
         }
 
-        osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
+        /*osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
         double xrange=totalbb.xMax()-totalbb.xMin();
         double yrange=totalbb.yMax()-totalbb.yMin();
-        double largerSide=std::max(xrange,yrange);
-        osg::Matrixd matrix;
+        double largerSide=std::max(xrange,yrange);*/
+/*        osg::Matrixd matrix;
         matrix.makeTranslate( eye );
 
         osg::Matrixd view=osg::Matrix::inverse(matrix);
+*/
+        osg::Matrixd view,proj;
+        mat4x viewA,projA;
 
-        mat4x viewA=fast_inverse<fixed16_t>(translation_matrix<fixed16_t>(eye.x(),eye.y(),eye.z()));
-        osg::Matrixd proj= osg::Matrixd::ortho2D(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
+        std::fstream _file("view.mat",std::ios::binary|std::ios::in);
+        for(int i=0; i<4; i++)
+            for(int j=0; j<4; j++){
+            _file.read(reinterpret_cast<char*>(&(view(i,j))),sizeof(double));
+            viewA.elem[j][i]=fixed16_t(view(i,j));
+        }
+        for(int i=0; i<4; i++)
+            for(int j=0; j<4; j++){
+            _file.read(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
+            projA.elem[j][i]=fixed16_t(proj(i,j));
 
-        mat4x projA=ortho_matrix<fixed16_t>(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0),totalbb.zMin(),totalbb.zMax());
-        osg::Matrixd viewprojmat=view*proj;
+        }
+        _file.close();
 
+//        printf("AAAA %d %d %d %d\n",row,col,_tileRows,_tileColumns);
+
+        osg::Matrix offsetMatrix=osg::Matrix::scale((double)_tileColumns,(double) _tileRows, 1.0)*osg::Matrix::translate((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0);
+
+
+        mat4x offsetMatrixA=translation_matrix<fixed16_t>((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0)*scaling_matrix<fixed16_t>((double)_tileColumns,(double) _tileRows, 1.0);
+
+        //mat4x viewA2=fast_inverse<fixed16_t>(translation_matrix<fixed16_t>(eye.x(),eye.y(),eye.z()));
+        //osg::Matrixd proj= osg::Matrixd::ortho2D(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
+
+        //mat4x projA2=ortho_matrix<fixed16_t>(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0),totalbb.zMin(),totalbb.zMax());
+        osg::Matrixd viewprojmat=view*(proj*offsetMatrix);
+        mat4x viewprojmatA=(offsetMatrixA*projA)*viewA;
+      /*  cout << view <<endl;
+        for(int i=0; i<4; i++){
+            for(int j=0; j<4; j++){
+                cout << fix2float<16>(viewprojmatA.elem[i][j].intValue) << " ";
+            }
+            cout <<endl;
+        }
+        cout <<endl;
+
+        for(int i=0; i<4; i++){
+            for(int j=0; j<4; j++){
+                cout << fix2float<16>(viewA.elem[i][j].intValue) << " ";
+            }
+            cout <<endl;
+        }
+        cout <<endl;
+
+        for(int i=0; i<4; i++){
+            for(int j=0; j<4; j++){
+                cout << fix2float<16>(viewA2.elem[i][j].intValue) << " ";
+            }
+            cout <<endl;
+        }
+        cout <<endl;*/
         if(!blending)
-            VertexShader::modelviewprojection_matrix=projA*viewA;
+            VertexShader::modelviewprojection_matrix=viewprojmatA;
         else{
-            VertexShaderBlendingDistPass::modelviewprojection_matrix=projA*viewA;
-            VertexShaderBlending::modelviewprojection_matrix=projA*viewA;
+            VertexShaderBlendingDistPass::modelviewprojection_matrix=viewprojmatA;
+            VertexShaderBlending::modelviewprojection_matrix=viewprojmatA;
         }
 
         start = osg::Timer::instance()->tick();

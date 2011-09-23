@@ -1547,7 +1547,7 @@ int main( int argc, char *argv[ ] )
                     fprintf(texcmds_fp," --atlas");
             }
             else{
-                fprintf(texcmds_fp,";%s/nonmem  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --invrot %f %f %f --size %d %d --imagename mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d",
+                fprintf(texcmds_fp,";%s/nonmem  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --invrot %f %f %f --size %d %d --image %d %d %d %d",
                         basepath.c_str(),
                         cells[i].row,cells[i].col,
                         vpblod,

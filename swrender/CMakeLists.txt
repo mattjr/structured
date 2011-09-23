@@ -19,11 +19,11 @@ add_executable (nonmem ../MemUtils.cpp nonmem.cpp render_utils.cpp vertexData.cp
 
 add_executable (blendincore ../MemUtils.cpp blendincore.cpp render_utils.cpp vertexData.cpp plyfile.cpp renderer/geometry_processor.cpp)
 #add_executable (rendertest example2.cpp render_utils.cpp vertexData.cpp plyfile.cpp IMG_savepng.c renderer/geometry_processor.cpp)
-   target_link_libraries( nonmem ${SDL_LIBRARY} SDL_image ${OSG_LIBRARY} png cv highgui
+   target_link_libraries( nonmem   ${OSG_LIBRARY} png cv highgui
  ${OSGDB_LIBRARY}
                ${OSGUTIL_LIBRARY} ${VIPS_LIBRARIES} vips vipsCC)
 
-   target_link_libraries( blendincore ${SDL_LIBRARY} SDL_image ${OSG_LIBRARY} png cv highgui
+   target_link_libraries( blendincore  ${OSG_LIBRARY} png cv highgui
  ${OSGDB_LIBRARY}
                ${OSGUTIL_LIBRARY})
 

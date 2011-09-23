@@ -386,6 +386,6 @@ int main(int argc, char** argv)
         im_close(rawI);
 
     }
-//    applyGeoTags(osg::Vec2(lat,lon),view,proj,Xsize,Ysize);
+    applyGeoTags(osg::Vec2(lat,lon),view,proj,Xsize,Ysize);
 
 }

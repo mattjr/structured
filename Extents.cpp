@@ -95,7 +95,7 @@ MyDataSet::MyDataSet(const CameraCalib &calib,string basePath,bool useTextureArr
     init();
 }
 bool
-MyCompositeDestination::clampGeocentric( osg::CoordinateSystemNode* csn, double lat_rad, double lon_rad, osg::Vec3d& out ) const
+        MyCompositeDestination::clampGeocentric( osg::CoordinateSystemNode* csn, double lat_rad, double lon_rad, osg::Vec3d& out ) const
 {
     osg::Vec3d start, end;
 
@@ -105,26 +105,26 @@ MyCompositeDestination::clampGeocentric( osg::CoordinateSystemNode* csn, double 
 
     osgUtil::IntersectionVisitor iv;
     iv.setIntersector( i );
-   /* static_cast<CachingReadCallback*>(_readCallback.get())->reset();
+    /* static_cast<CachingReadCallback*>(_readCallback.get())->reset();
     iv.setReadCallback( _readCallback.get() );
     iv.setTraversalMask( _traversalMask );
 */
-  //  _mapNode->accept( iv );
+    //  _mapNode->accept( iv );
 
     osgUtil::LineSegmentIntersector::Intersections& results = i->getIntersections();
     if ( !results.empty() )
     {
         const osgUtil::LineSegmentIntersector::Intersection& result = *results.begin();
         out = result.matrix.valid() ?
-            result.localIntersectionPoint * (*result.matrix) :
-            result.localIntersectionPoint;
+              result.localIntersectionPoint * (*result.matrix) :
+              result.localIntersectionPoint;
         return true;
     }
     return false;
 }
 
 bool
-MyCompositeDestination::clampProjected( osg::CoordinateSystemNode* csn, double x, double y, osg::Vec3d& out ) const
+        MyCompositeDestination::clampProjected( osg::CoordinateSystemNode* csn, double x, double y, osg::Vec3d& out ) const
 {
     osg::Vec3d start( x, y, 50000 );
     osg::Vec3d end(x, y, -50000);
@@ -136,26 +136,26 @@ MyCompositeDestination::clampProjected( osg::CoordinateSystemNode* csn, double x
     iv.setReadCallback( _readCallback.get() );
     iv.setTraversalMask( _traversalMask );
 */
-  //  _mapNode->accept( iv );
+    //  _mapNode->accept( iv );
 
     osgUtil::LineSegmentIntersector::Intersections& results = i->getIntersections();
     if ( !results.empty() )
     {
         const osgUtil::LineSegmentIntersector::Intersection& result = *results.begin();
         out = result.matrix.valid() ?
-            result.localIntersectionPoint * (*result.matrix) :
-            result.localIntersectionPoint;
+              result.localIntersectionPoint * (*result.matrix) :
+              result.localIntersectionPoint;
         return true;
     }
     return false;
 }
 
 bool
-MyCompositeDestination::createPlacerMatrix(  const SpatialReference* srs, double lat_deg, double lon_deg, double height, osg::Matrixd& out_result ,bool clamp) const
+        MyCompositeDestination::createPlacerMatrix(  const SpatialReference* srs, double lat_deg, double lon_deg, double height, osg::Matrixd& out_result ,bool clamp) const
 {
     if ( !srs|| !_cs.valid() )
     {
-       cerr << "ObjectPlacer: terrain is missing either a Map or CSN node" << srs<< " "<< _cs.valid()<< std::endl;
+        cerr << "ObjectPlacer: terrain is missing either a Map or CSN node" << srs<< " "<< _cs.valid()<< std::endl;
         return false;
     }
 
@@ -212,13 +212,13 @@ void MyDataSet::setSourceCoordinateSystemProj4(const std::string proj4_src){
 
     _SrcSRS =  SpatialReference::create(proj4_src);
 
-//    cout << pszWKT << " "<<proj4_src<<endl;
+    //    cout << pszWKT << " "<<proj4_src<<endl;
 }
 bool MyDataSet::reprojectPoint(const osg::Vec3d &src,osg::Vec3d &dst){
     //if(!poCT){
-      //  poCT = OGRCreateCoordinateTransformation( &oSourceSRS,
-        //                                          &oTargetSRS );
-        /*char    *pszWKT = NULL;
+    //  poCT = OGRCreateCoordinateTransformation( &oSourceSRS,
+    //                                          &oTargetSRS );
+    /*char    *pszWKT = NULL;
         char    *pszWKT2 = NULL;
           oSourceSRS.exportToWkt( &pszWKT );
                   oTargetSRS.exportToWkt( &pszWKT2 );
@@ -228,7 +228,7 @@ bool MyDataSet::reprojectPoint(const osg::Vec3d &src,osg::Vec3d &dst){
     double x,y;
     x=src.x();
     y=src.y();
-  /*  if( poCT == NULL || !poCT->Transform( 1, &x, &y ) ){
+    /*  if( poCT == NULL || !poCT->Transform( 1, &x, &y ) ){
         printf( "Transformation failed.\n" );
         return false;
     }
@@ -2796,7 +2796,11 @@ osg::Matrix vpb::MyDataSet::getImageSection(vips::VImage &in,const osg::Vec2 min
     {
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_imageMutex);
         vips::VImage osgImage(image->data(),downsampleSize.x(),downsampleSize.y(),3,vips::VImage::FMTUCHAR);
-        in.extract_area(x,y,xRange,yRange).embed(1,0,0,subSize.x(),subSize.y()).shrink(downsampleFactor,downsampleFactor).write(osgImage);
+        if(in.Bands() == 3)
+            in.extract_area(x,y,xRange,yRange).embed(1,0,0,subSize.x(),subSize.y()).shrink(downsampleFactor,downsampleFactor).write(osgImage);
+        else
+            in.extract_area(x,y,xRange,yRange).extract_bands(0,3).embed(1,0,0,subSize.x(),subSize.y()).shrink(downsampleFactor,downsampleFactor).write(osgImage);
+
     }
     ratio=osg::Vec4(x,y,subSize.x(),subSize.y());
     //osg::Vec2 f(xRange-subSize.x(),yRange-subSize.y());
@@ -3193,12 +3197,12 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     cout << "Lat Long Height" << midPointLatLong<<endl;
     //et->computeLocalToWorldTransformFromLatLongHeight(osg::DegreesToRadians(midPointLatLong[0]),osg::DegreesToRadians(midPointLatLong[1]),midPointLatLong[2],_localToWorld);
     createPlacerMatrix(dynamic_cast<MyDataSet*>(_dataSet)->_TargetSRS,22.988098333,36.517776667,0,_localToWorld);
-                                     //osg::Matrix::translate(midPointLatLong);
-   //
+    //osg::Matrix::translate(midPointLatLong);
+    //
     osg::MatrixTransform* mt = new osg::MatrixTransform;
     mt->setMatrix(_localToWorld);
     mt->addChild(newGeode);
-   // osg::Group *newGroup=new osg::Group;
+    // osg::Group *newGroup=new osg::Group;
     //newGroup->addChild(newGeode);
     osgUtil::SmoothingVisitor sv;
     mt->accept(sv);

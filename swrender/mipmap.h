@@ -188,7 +188,7 @@ public:
         /// Check for NaNs
         inline bool isNaN() const {
                 for (int i=0; i<SPECTRUM_SAMPLES; i++)
-                        if (isnan(s[i]))
+		  if (std::isnan(s[i]))
                                 return true;
                 return false;
         }
@@ -196,7 +196,7 @@ public:
         /// Returns whether the spectrum only contains valid (non-NaN, nonnegative) samples
         inline bool isValid() const {
                 for (int i=0; i<SPECTRUM_SAMPLES; i++)
-                        if (isnan(s[i]) || s[i] < 0.0f)
+		  if (std::isnan(s[i]) || s[i] < 0.0f)
                                 return false;
                 return true;
         }

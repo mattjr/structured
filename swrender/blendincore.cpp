@@ -100,7 +100,7 @@ struct VertexShaderBlending {
         out.z = static_cast<int>((v.z * (1 << 16)));
         out.w = 1 << 16;
 */
-        vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, X(1));
+        vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, fixed16_t(1));
         // cout << fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " "<<        fixedpoint::fix2float<16>(tvertex.z.intValue)<<endl;
 
         //  cout << v.id << " "<<v.tx << " " << v.ty<<endl;
@@ -120,7 +120,7 @@ struct VertexShaderBlending {
 */
         out.x = tvertex.x.intValue;
         out.y = tvertex.y.intValue;
-        out.z = X(1.0).intValue;//tvertex.z.intValue;
+        out.z = fixed16_t(1.0).intValue;//tvertex.z.intValue;
         out.w = 1 << 16;//tvertex.w.intValue;
         // bring the texture coordinates into the appropriate range for the rasterizer.
         // this mean it has to be converted to fixed point and premultiplied with the width, height of the

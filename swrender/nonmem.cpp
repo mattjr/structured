@@ -143,13 +143,13 @@ struct VertexShader {
         // x, y, z and w are the components that must be written by the vertex
         // shader. They all have to be specified in 16.16 fixed point format.
 
-        vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, X(1));
+        vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, fixed16_t(1));
 
         //        const mat4x &m = modelview_matrix;
 
         out.x = tvertex.x.intValue;
         out.y = tvertex.y.intValue;
-        out.z = X(1.0).intValue;//tvertex.z.intValue;
+        out.z = fixed16_t(1.0).intValue;//tvertex.z.intValue;
         out.w = 1 << 16;//tvertex.w.intValue;
         // bring the texture coordinates into the appropriate range for the rasterizer.
         // this mean it has to be converted to fixed point and premultiplied with the width, height of the
@@ -246,13 +246,13 @@ struct VertexShaderBlending {
         // x, y, z and w are the components that must be written by the vertex
         // shader. They all have to be specified in 16.16 fixed point format.
 
-        vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, X(1));
+        vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, fixed16_t(1));
 
         //const mat4x &m = modelview_matrix;
 
         out.x = tvertex.x.intValue;
         out.y = tvertex.y.intValue;
-        out.z = X(1.0).intValue;//tvertex.z.intValue;
+        out.z = fixed16_t(1.0).intValue;//tvertex.z.intValue;
         out.w = 1 << 16;//tvertex.w.intValue;
         // bring the texture coordinates into the appropriate range for the rasterizer.
         // this mean it has to be converted to fixed point and premultiplied with the width, height of the
@@ -303,7 +303,7 @@ struct VertexShaderBlendingDistPass {
         out.z = static_cast<int>((v.z * (1 << 16)));
         out.w = 1 << 16;
 */
-        vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, X(1));
+        vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, fixed16_t(1));
         // cout << fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " "<<        fixedpoint::fix2float<16>(tvertex.z.intValue)<<endl;
 
         //  cout << v.id << " "<<v.tx << " " << v.ty<<endl;
@@ -323,7 +323,7 @@ struct VertexShaderBlendingDistPass {
 */
         out.x = tvertex.x.intValue;
         out.y = tvertex.y.intValue;
-        out.z = X(1.0).intValue;//tvertex.z.intValue;
+        out.z = fixed16_t(1.0).intValue;//tvertex.z.intValue;
         out.w = 1 << 16;//tvertex.w.intValue;
         // bring the texture coordinates into the appropriate range for the rasterizer.
         // this mean it has to be converted to fixed point and premultiplied with the width, height of the

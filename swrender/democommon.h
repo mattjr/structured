@@ -46,7 +46,7 @@ typedef vec3<fixed16_t> vec3x;
 typedef vec4<fixed16_t> vec4x;
 typedef mat4<fixed16_t> mat4x;
 
-#define X(a) fixed16_t(a)
+//#define X(a) fixed16_t(a)
 
 #include <algorithm>
 

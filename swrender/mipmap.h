@@ -21,7 +21,7 @@
 #include <opencv/cv.h>
 #include <osg/Vec2>
 #define MIPMAP_LUTSIZE 128
-
+#include <math.h>
 /** \brief Isotropic/anisotropic EWA mip-map texture map class based on PBRT 
  * \ingroup librender
  */

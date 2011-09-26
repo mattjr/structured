@@ -48,6 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <osg/MatrixTransform>
 #include <osgUtil/Optimizer>
 #include <opencv/cv.h>
+#include <osgDB/FileNameUtils>
 #include <opencv/highgui.h>
 #include "mipmap.h"
 #include "render_utils.h"
@@ -778,7 +779,7 @@ int main(int ac, char *av[]) {
 
         osg::Vec3Array *verts=vertexData._vertices;
 
-          osg::BoundingBox totalbb;
+        osg::BoundingBox totalbb;
 
         for(int i=0; i <(int)verts->size(); i++){
             verts->at(i)=verts->at(i)*rotM;
@@ -789,7 +790,7 @@ int main(int ac, char *av[]) {
         double xrange=totalbb.xMax()-totalbb.xMin();
         double yrange=totalbb.yMax()-totalbb.yMin();
         double largerSide=std::max(xrange,yrange);*/
-/*        osg::Matrixd matrix;
+        /*        osg::Matrixd matrix;
         matrix.makeTranslate( eye );
 
         osg::Matrixd view=osg::Matrix::inverse(matrix);
@@ -811,7 +812,7 @@ int main(int ac, char *av[]) {
         }
         _file.close();
 
-//        printf("AAAA %d %d %d %d\n",row,col,_tileRows,_tileColumns);
+        //        printf("AAAA %d %d %d %d\n",row,col,_tileRows,_tileColumns);
 
         osg::Matrix offsetMatrix=osg::Matrix::scale((double)_tileColumns,(double) _tileRows, 1.0)*osg::Matrix::translate((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0);
 
@@ -824,7 +825,7 @@ int main(int ac, char *av[]) {
         //mat4x projA2=ortho_matrix<fixed16_t>(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0),totalbb.zMin(),totalbb.zMax());
         osg::Matrixd viewprojmat=view*(proj*offsetMatrix);
         mat4x viewprojmatA=(offsetMatrixA*projA)*viewA;
-      /*  cout << view <<endl;
+        /*  cout << view <<endl;
         for(int i=0; i<4; i++){
             for(int j=0; j<4; j++){
                 cout << fix2float<16>(viewprojmatA.elem[i][j].intValue) << " ";
@@ -960,12 +961,37 @@ int main(int ac, char *av[]) {
         process_mem_usage(vm, rss);
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
         im_region_free(regOutput);
-        im_close(outputImage);
 
         if(blending){
             im_region_free(regRange);
             im_close(rangeImage);
+
+
+            if( remove( depthName.c_str() ) != 0 )
+                perror( "Error deleting file" );
+            else
+                puts( "File successfully deleted" );
         }
+        process_mem_usage(vm, rss);
+        cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
+
+        start=osg::Timer::instance()->tick();
+
+        im_vips2tiff(outputImage,(osgDB::getNameLessExtension(imageName)+".tif:packbits,tile:256x256,pyramid").c_str());
+        elapsed=osg::Timer::instance()->delta_s(start,osg::Timer::instance()->tick());
+        std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
+        process_mem_usage(vm, rss);
+        cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
+        im_close(outputImage);
+
+
+
+
+        if( remove( imageName.c_str() ) != 0 )
+            perror( "Error deleting file" );
+        else
+            puts( "File successfully deleted" );
+
 
     }
 

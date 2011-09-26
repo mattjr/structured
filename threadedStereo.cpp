@@ -1518,7 +1518,7 @@ int main( int argc, char *argv[ ] )
         vector<std::string> postcmdv;
         std::ostringstream p;
         bool singleThreadedDicedTex=false;
-        p<<basepath << "/dicedImage rebbox.txt  " << cwd  << " --pbuffer-only " << ajustedGLImageSizeX << " "<< ajustedGLImageSizeY  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
+        p<<basepath << "/sparseJoin rebbox.txt  " << cwd  << " --pbuffer-only " << ajustedGLImageSizeX << " "<< ajustedGLImageSizeY  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
         if(!singleThreadedDicedTex)
             p<<" -nogfx " << (hw_image ? "png" : "v");
         if(untex)

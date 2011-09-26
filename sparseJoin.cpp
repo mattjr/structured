@@ -283,7 +283,7 @@ int main(int argc, char** argv)
 
 
 
-    rawI=im_open("tmp.v","w");
+    rawI=im_open("subtile.tif:deflate","w");
 
     process_mem_usage(vm, rss);
     cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
@@ -294,7 +294,7 @@ int main(int argc, char** argv)
             validCount++;
     }
     osg::Timer_t startTick = osg::Timer::instance()->tick();
-    formatBar("Img",startTick,0,validCount);
+  //  formatBar("Img",startTick,0,validCount);
     std::vector<IMAGE *> subs;		/* Sub image */
     std::vector<Rect> rsubs;		/* Positions of sub i */
 

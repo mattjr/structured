@@ -32,7 +32,7 @@ int main( int argc, char **argv )
     osg::Vec2 size;
     {
 
-        vips::VImage in("subtile.v");
+        vips::VImage in("subtile.tif");
         size.x()=in.Xsize();
         size.y()=in.Ysize();
        /* if(debug) {

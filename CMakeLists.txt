@@ -239,6 +239,8 @@ ADD_EXECUTABLE(deepzoomVIPS DeepZoom.cpp)
 ADD_EXECUTABLE(singleImageTex singleImageTex.cpp)
 ADD_EXECUTABLE(createSem createSem.cpp)
 ADD_EXECUTABLE(vertCheck vertCheck.cpp)
+ADD_EXECUTABLE(sparseJoin sparseJoin.cpp)
+
 #ADD_EXECUTABLE(temp temp.cpp)
 
 LINK_LIBRARIES(osgTerrain  osgFX osg  spindex vips vipsCC)
@@ -257,6 +259,7 @@ TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC)
 TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC)
 
 TARGET_LINK_LIBRARIES( dicedImage vips vipsCC ts z)
+TARGET_LINK_LIBRARIES( sparseJoin vips vipsCC ts z)
 
 #TARGET_LINK_LIBRARIES( threshold ts )
 

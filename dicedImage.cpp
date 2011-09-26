@@ -85,7 +85,7 @@ int main(int argc, char** argv)
     // os <<"subtile.ppm";//<<":deflate";
     vips::VImage raw;
     vips::VImage raw_untex;
-
+    printf("X: %d Y: %d\n",width*_tileColumns,height*_tileRows);
     raw.initdesc(width*_tileColumns,height*_tileRows,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
     if(untex)
         raw_untex.initdesc(width*_tileColumns,height*_tileRows,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);

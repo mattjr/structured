@@ -668,9 +668,10 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
     cout << "brGlobal " << brGlobal<< " tlGlobal " << tlGlobal << endl;
     cout << "trGlobal " << trGlobal<< " " << blGlobal << endl;
 
-    std::ofstream worldfile("geo_tif.tfw");
+    std::ofstream worldfile("subtile.tfw");
     worldfile << std::setprecision(12) << scalePix.x() << std::endl<< 0 <<std::endl<< 0 << std::endl<<scalePix.y() << std::endl<<tlGlobal.x()<<std::endl<<tlGlobal.y()<<std::endl;
     std::cout << tlGlobal << " " << blGlobal <<" " <<trGlobal<< " " << brGlobal <<"\n";
+    worldfile.close();
     char gdal_param[4096];
     sprintf(gdal_param," -of GTiff -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
 
@@ -678,10 +679,12 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
     if(!fp)
         std::cerr << "Failed!\n";
     fprintf(fp,"#!/bin/bash\n");
-    fprintf(fp,"vips im_vips2tiff subtile.v tex.tif:none:tile:256x256\n");
+    //fprintf(fp,"vips im_vips2tiff subtile.v tex.tif:none:tile:256x256\n");
 
 
-    fprintf(fp,"gdal_translate %s tex.tif geo_tif.tif\n",gdal_param);
+    fprintf(fp,"gdal_translate %s subtile.tif geo_tif.tif\n",gdal_param);
+    fprintf(fp,"geotifcp -e subtile.tfw subtile.tif subtile.tif\n");
+
     fchmod(fileno(fp),0777);
     fclose (fp);
     //gdalwarp  -t_srs '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs' geo_tif2.tif utm.tif

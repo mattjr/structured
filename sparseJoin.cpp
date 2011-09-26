@@ -283,7 +283,7 @@ int main(int argc, char** argv)
 
 
 
-    rawI=im_open("subtile.tif:deflate","w");
+    rawI=im_open("subtile.tif:deflate,tile:256x256,pyramid","w");
 
     process_mem_usage(vm, rss);
     cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
@@ -352,7 +352,8 @@ int main(int argc, char** argv)
     printf("Done\n");
     im_close(rawI);
 
-
-    //applyGeoTags(osg::Vec2(lat,lon),view,proj,Xsize,Ysize);
+    double totalTime = osg::Timer::instance()->delta_s(startTick, osg::Timer::instance()->tick());
+    printf("Total Time %.1fs\n",totalTime);
+    applyGeoTags(osg::Vec2(lat,lon),view,proj,Xsize,Ysize);
 
 }

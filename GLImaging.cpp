@@ -682,8 +682,8 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
     //fprintf(fp,"vips im_vips2tiff subtile.v tex.tif:none:tile:256x256\n");
 
 
-    fprintf(fp,"gdal_translate %s subtile.tif geo_tif.tif\n",gdal_param);
-    fprintf(fp,"geotifcp -e subtile.tfw subtile.tif subtile.tif\n");
+    fprintf(fp,"#gdal_translate %s subtile.tif geo_tif.tif\n",gdal_param);
+    fprintf(fp,"#geotifcp -e subtile.tfw subtile.tif subtile.tif\n");
 
     fchmod(fileno(fp),0777);
     fclose (fp);

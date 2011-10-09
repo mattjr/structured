@@ -1520,7 +1520,7 @@ int main( int argc, char *argv[ ] )
         bool singleThreadedDicedTex=false;
         p<<basepath << "/sparseJoin rebbox.txt  " << cwd  << " --pbuffer-only " << ajustedGLImageSizeX << " "<< ajustedGLImageSizeY  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
         if(!singleThreadedDicedTex)
-            p<<" -nogfx " << (hw_image ? "png" : "v");
+            p<<" -nogfx " << (hw_image ? "png" : "tif");
         if(untex)
             p<< " -untex ";
         postcmdv.push_back(p.str());

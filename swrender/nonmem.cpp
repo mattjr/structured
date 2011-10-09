@@ -669,6 +669,7 @@ int main(int ac, char *av[]) {
     outputImage=NULL;
     rangeImage=NULL;
     arguments.read("--size",sizeX,sizeY);
+    bool useDisk=arguments.read("--outofcore");
     string imageName,depthName;
     unsigned int _tileRows;
     unsigned int _tileColumns;
@@ -695,11 +696,12 @@ int main(int ac, char *av[]) {
     gRect.width=128;
     gRect.height=1;
 
-    IMAGE *diskFile=im_open(imageName.c_str(),"w");
-    im_copy(outputImage,diskFile);
-    im_close(outputImage);
-    outputImage=diskFile;
-
+    if(useDisk){
+        IMAGE *diskFile=im_open(imageName.c_str(),"w");
+        im_copy(outputImage,diskFile);
+        im_close(outputImage);
+        outputImage=diskFile;
+    }
 
     if(blending){
         rangeImage=im_open("tmp_range","p");
@@ -707,10 +709,13 @@ int main(int ac, char *av[]) {
             fprintf(stderr,"Can't create range image\n");
             return -1;
         }
-        IMAGE *diskFileRange=im_open(depthName.c_str(),"w");
-        im_copy(rangeImage,diskFileRange);
-        im_close(rangeImage);
-        rangeImage=diskFileRange;
+        if(useDisk){
+
+            IMAGE *diskFileRange=im_open(depthName.c_str(),"w");
+            im_copy(rangeImage,diskFileRange);
+            im_close(rangeImage);
+            rangeImage=diskFileRange;
+        }
     }
 
 
@@ -966,18 +971,23 @@ int main(int ac, char *av[]) {
             im_region_free(regRange);
             im_close(rangeImage);
 
-
-            if( remove( depthName.c_str() ) != 0 )
-                perror( "Error deleting file" );
-            else
-                puts( "File successfully deleted" );
+            if(useDisk){
+                if( remove( depthName.c_str() ) != 0 )
+                    perror( "Error deleting file" );
+                else
+                    puts( "File successfully deleted" );
+            }
         }
         process_mem_usage(vm, rss);
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
 
         start=osg::Timer::instance()->tick();
 
-        im_vips2tiff(outputImage,(osgDB::getNameLessExtension(imageName)+".tif:packbits,tile:256x256,pyramid").c_str());
+        if( im_vips2tiff(outputImage,(osgDB::getNameLessExtension(imageName)+".tif:packbits,tile:256x256").c_str())){
+            fprintf(stderr,"Failed to write\n");
+            cerr << im_error_buffer()<<endl;
+            exit(-1);
+        }
         elapsed=osg::Timer::instance()->delta_s(start,osg::Timer::instance()->tick());
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
         process_mem_usage(vm, rss);
@@ -986,12 +996,12 @@ int main(int ac, char *av[]) {
 
 
 
-
-        if( remove( imageName.c_str() ) != 0 )
-            perror( "Error deleting file" );
-        else
-            puts( "File successfully deleted" );
-
+        if(useDisk){
+            if( remove( imageName.c_str() ) != 0 )
+                perror( "Error deleting file" );
+            else
+                puts( "File successfully deleted" );
+        }
 
     }
 

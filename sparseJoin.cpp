@@ -2,6 +2,46 @@
 #include "MemUtils.h"
 /* Hold our state in this.
  */
+std::string format_elapsed(double d)
+{
+    char buf[256] = {0};
+
+    if( d < 0.00000001 )
+    {
+        // show in ps with 4 digits
+        sprintf(buf, "%0.4f ps", d * 1000000000000.0);
+    }
+    else if( d < 0.00001 )
+    {
+        // show in ns
+        sprintf(buf, "%0.0f ns", d * 1000000000.0);
+    }
+    else if( d < 0.001 )
+    {
+        // show in us
+        sprintf(buf, "%0.0f us", d * 1000000.0);
+    }
+    else if( d < 0.1 )
+    {
+        // show in ms
+        sprintf(buf, "%0.0f ms", d * 1000.0);
+    }
+    else if( d <= 60.0 )
+    {
+        // show in seconds
+        sprintf(buf, "%0.2f s", d);
+    }
+    else if( d < 3600.0 )
+    {
+        // show in min:sec
+        sprintf(buf, "%01.0f:%02.2f", floor(d/60.0), fmod(d,60.0));
+    }
+    // show in h:min:sec
+    else
+        sprintf(buf, "%01.0f:%02.0f:%02.2f", floor(d/3600.0), floor(fmod(d,3600.0)/60.0), fmod(d,60.0));
+
+    return buf;
+}
 typedef struct {
     /* Args.
          */
@@ -21,7 +61,6 @@ static int
         just_one( REGION *outr, REGION *ir, int x, int y )
 {
     Rect need;
-
     /* Find the part of pos we need.
          */
     need = outr->valid;
@@ -41,24 +80,23 @@ static int
  * image positioned at pos within or.
  */
 static int
-        paste_region( REGION *outr, REGION *ir, Rect *pos )
+        paste_region( REGION *outr, REGION *ir, Rect *pos,Rect *irec )
 {
     Rect ovl;
 
     /* Does any of the sub-image appear in the area we have been asked
          * to make?
          */
-    im_rect_intersectrect( &outr->valid, pos, &ovl );
+    im_rect_intersectrect( &outr->valid, irec, &ovl );
     if( !im_rect_isempty( &ovl ) ) {
         /* Find the part of in we need.
                  */
-        ovl.left -= pos->left;
-        ovl.top -= pos->top;
-
+        ovl.left -= irec->left;
+        ovl.top -= irec->top;
         /* Paint this area of pixels into or.
                  */
         if( im_prepare_to( ir, outr, &ovl,
-                           ovl.left + pos->left, ovl.top + pos->top ) )
+                           pos->left,  pos->top ) )
             return( -1 );
     }
 
@@ -72,7 +110,6 @@ static int
 {
     REGION **ir = (REGION **) seq;
     InsertVecState *ins = (InsertVecState *) b;
-    Rect ovl;
 
     /* Does the rect we have been asked for fall entirely inside the
          * sub-image?
@@ -87,10 +124,11 @@ static int
          * sub?
          */
     for(int i=0; i < ins->count; i++ ){
+        Rect ovl;
         im_rect_intersectrect( &outr->valid, ins->rsubs[i], &ovl );
         if( !im_rect_isempty( &ovl ))
 
-            if( paste_region( outr, ir[i], &ovl) ){
+            if( paste_region( outr, ir[i], &ovl,ins->rsubs[i]) ){
             fprintf(stderr,"Region %d Fail!\n",i);
             return( -1 );
         }
@@ -133,7 +171,7 @@ int
         fprintf(stderr,"No input images\n");
         return -1;
     }
-    IMAGE **vec = new IMAGE*[subs.size()];
+    IMAGE **vec = new IMAGE*[subs.size()+1];
     int t=0;
     for(t=0; t< (int) subs.size(); t++){
         vec[t]=subs[t];
@@ -152,6 +190,7 @@ int
     ins->subs = vec;
     ins->out = out;
     ins->count=rects.size();
+    printf("%d\n",rects.size());
     ins->rsubs=new Rect*[rects.size()];
     for(int i=0; i<  rects.size(); i++){
         ins->rsubs[i]=  &(rects[i]);
@@ -283,7 +322,7 @@ int main(int argc, char** argv)
 
 
 
-    rawI=im_open("subtile.tif:deflate,tile:256x256,pyramid","w");
+    rawI=im_open("subtile.v","w");//tif:deflate,tile:256x256","w");
 
     process_mem_usage(vm, rss);
     cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
@@ -318,6 +357,7 @@ int main(int argc, char** argv)
             r.top=height*(_tileRows-cells[i].row-1);
             r.width=tmpI->Xsize;
             r.height=tmpI->Ysize;
+
             subs.push_back(tmpI);
             rsubs.push_back(r);
         }
@@ -353,7 +393,7 @@ int main(int argc, char** argv)
     im_close(rawI);
 
     double totalTime = osg::Timer::instance()->delta_s(startTick, osg::Timer::instance()->tick());
-    printf("Total Time %.1fs\n",totalTime);
+    printf("Total Time %s\n",format_elapsed(totalTime).c_str());
     applyGeoTags(osg::Vec2(lat,lon),view,proj,Xsize,Ysize);
 
 }

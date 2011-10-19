@@ -1042,13 +1042,15 @@ int main( int argc, char *argv[ ] )
             sysres=system("./runvrip.py");
         char tmpfn[8192];
         for(int i=0; i <(int)vrip_cells.size(); i++){
+            if(vrip_cells[i].poses.size() == 0)
+                continue;
             sprintf(tmpfn,"mesh-diced/tmp-clipped-diced-%08d.ply",i);
             osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpfn);
             osg::Drawable *drawable = NULL;
             if(model.valid())
                 drawable = model->asGeode()->getDrawable(0);
             if(!drawable){
-                fprintf(stderr,"Failed to load model\n");
+                fprintf(stderr,"Failed to load model %s\n",tmpfn);
                 exit(-1);
             }
             osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);

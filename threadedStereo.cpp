@@ -828,7 +828,14 @@ int main( int argc, char *argv[ ] )
     }
 
 
-
+    if(!diced_fp){
+        printf("Can't open mesh-diced/diced.txt");
+        exit(-1);
+    }
+    if(!diced_lod_fp){
+        printf("Can't open mesh-diced/dicedld.txt");
+        exit(-1);
+    }
 
     //const char *simplogdir="/mnt/shared/log-simp";
     const char *pos_simp_log_dir="/mnt/shared/log-possimp";

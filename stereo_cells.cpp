@@ -10,7 +10,7 @@
 #include <cstdlib>
 
 #include "stereo_cells.hpp"
-
+#include <osg/io_utils>
 #include <osgDB/ReadFile>
 using namespace std;
 
@@ -50,20 +50,21 @@ Bounds::Bounds( const vector<Tex_Pose_Data> &poses )
 {
     for( unsigned int i=0; i<poses.size( ) ; i++ )
     {
+        //cout << poses[i].bbox._min<< " " << poses[i].bbox._max<<endl;
         bbox.expandBy(poses[i].bbox);
     }
-    bbox._min[2]=-FLT_MAX;
-    bbox._max[2]=FLT_MAX;
+   // bbox._min[2]=-FLT_MAX;
+    //bbox._max[2]=FLT_MAX;
 
 }
 Bounds::Bounds( const vector<Stereo_Pose_Data> &poses )
 {
     for( unsigned int i=0; i<poses.size( ) ; i++ )
-    {
+    {   //cout << poses[i].bbox._min<< " " << poses[i].bbox._max<<endl;
         bbox.expandBy(poses[i].bbox);
     }
-    bbox._min[2]=-FLT_MAX;
-    bbox._max[2]=FLT_MAX;
+   // bbox._min[2]=-FLT_MAX;
+   // bbox._max[2]=FLT_MAX;
 
 }
 void Bounds::set( double min_x, double max_x, double min_y, double max_y )

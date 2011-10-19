@@ -48,7 +48,7 @@ typedef SSIZE_T    ssize_t;
 #include <iostream>
 #include <string>
 
-namespace ply 
+namespace plyA
 {
     
     

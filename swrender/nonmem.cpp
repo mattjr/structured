@@ -53,6 +53,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mipmap.h"
 #include "render_utils.h"
 #include "../MemUtils.h"
+#include "../GLImaging.h"
 // the software renderer stuff is located in the namespace "swr" so include 
 // that here
 using namespace swr;
@@ -613,7 +614,7 @@ int FragmentShaderBlendingDistPass::idx =-1;
 int FragmentShaderBlendingMain::triIdx;
 static Vertex tmp_vertices[3];
 
-inline bool process_tri(ply::tri_t &tri,osg::Vec3Array *verts, std::vector<osg::ref_ptr<osg::Vec3Array> >   &texCoord, bool blending)
+inline bool process_tri(plyA::tri_t &tri,osg::Vec3Array *verts, std::vector<osg::ref_ptr<osg::Vec3Array> >   &texCoord, bool blending)
 {
     int pos=tri.pos;
 
@@ -663,7 +664,7 @@ int main(int ac, char *av[]) {
 
     osg::Timer_t start;
     osg::ref_ptr<osg::Node> model;//= osgDB::readNodeFile(av[1]);
-    ply::VertexData vertexData;
+    plyA::VertexData vertexData;
     osg::ArgumentParser arguments(&ac,av);
     int sizeX,sizeY; sizeX=sizeY=1024;
     outputImage=NULL;
@@ -684,7 +685,11 @@ int main(int ac, char *av[]) {
 
     imageName=string(tmp)+".v";
     depthName=string(tmp)+"-tmp_dist.v";
-
+    double lat=0,lon=0;
+    if(!arguments.read("-lat",lat)|| !arguments.read("-lon",lon)){
+        fprintf(stderr,"Can't get lat long\n");
+        return -1;
+    }
     bool blending = arguments.read("--blend");
     if(blending)
         printf("Blending Enabled\n");
@@ -900,7 +905,7 @@ int main(int ac, char *av[]) {
             g.vertex_shader<VertexShaderBlending>();
             r.fragment_shader<FragmentShaderBlendingDistPass>();
             TextureMipMap *sizeI=NULL;
-            map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin();
+            map<int,vector<plyA::tri_t> >::iterator itr=vertexData._img2tri.begin();
             while((!sizeI || sizeI->surface==NULL) && itr!=vertexData._img2tri.end()){
                 string tmp=string(string(av[3])+string("/")+imageList[itr->first].filename);
 
@@ -910,7 +915,7 @@ int main(int ac, char *av[]) {
             VertexShaderBlending::texture =sizeI;
             FragmentShaderBlendingDistPass::texture =sizeI;
 
-            for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
+            for( map<int,vector<plyA::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
                 for(int t=0; t< (int)itr->second.size(); t++){
                     if(process_tri(itr->second[t],verts,vertexData._texCoord,blending))
                         g.draw_triangles(3, indices);
@@ -924,7 +929,7 @@ int main(int ac, char *av[]) {
                 delete sizeI;
             }
         }
-        for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
+        for( map<int,vector<plyA::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
             string tmp=string(string(av[3])+string("/")+imageList[itr->first].filename);
 
             Texture *texture=NULL;
@@ -983,7 +988,7 @@ int main(int ac, char *av[]) {
 
         start=osg::Timer::instance()->tick();
 
-        if( im_vips2tiff(outputImage,(osgDB::getNameLessExtension(imageName)+".tif:packbits,tile:256x256").c_str())){
+        if( im_vips2tiff(outputImage,(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str())){
             fprintf(stderr,"Failed to write\n");
             cerr << im_error_buffer()<<endl;
             exit(-1);
@@ -994,6 +999,12 @@ int main(int ac, char *av[]) {
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
         im_close(outputImage);
 
+        if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),view,(proj*offsetMatrix),sizeX,sizeY)){
+            if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
+                perror( "Error deleting file" );
+            else
+                puts( "File successfully deleted" );
+        }
 
 
         if(useDisk){

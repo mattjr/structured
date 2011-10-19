@@ -1,7 +1,9 @@
 #include <osgDB/ReadFile>
 #include <osg/NodeVisitor>
 #include <osgDB/WriteFile>
-
+#include <osgDB/FileNameUtils>
+#include "PLYWriterNodeVisitor.h"
+#include <osgUtil/Optimizer>
 unsigned int countGeometryVertices( osg::Geometry* geom )
 {
     if (!geom->getVertexArray())
@@ -64,11 +66,45 @@ int main( int argc, char **argv )
 {
     // use an ArgumentParser object to manage the program arguments.
     osg::ArgumentParser arguments(&argc,argv);
-    osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(argv[1]);
+    bool rot=false;
+    float rx, ry, rz;
+    osg::Matrix inverseM=osg::Matrix::identity();
+    if(arguments.read("--invrot",rx,ry,rz)){
+        inverseM =osg::Matrix::rotate(
+                osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+        rot=true;
+    }
+    osg::Matrix rotM=osg::Matrix::inverse(inverseM);
+    osg::ref_ptr<osg::Node> model = osgDB::readNodeFiles(arguments);
+    if(rot){
+        osg::ref_ptr<osg::MatrixTransform>xform = new osg::MatrixTransform;
+        xform->setDataVariance( osg::Object::STATIC );
+        xform->setMatrix(rotM);
+        osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
+        xform->addChild(model);
+        xform->accept(fstv);
+        fstv.removeTransforms(xform);
+    }
+    std::string outfilename;
+    if(!arguments.read("--outfile",outfilename)){
+        fprintf(stderr,"Need outfile name\n");
+        return -1;
+    }
     VertexCounter vc( 100 );
     model->accept( vc );
-    if(vc.getTotal()>0)
-        osgDB::writeNodeFile(*model,argv[2]);
+    if(vc.getTotal()>0){
+        if(osgDB::getFileExtension(outfilename) == "ply"){
 
+            std::ofstream f(argv[2]);
+            PLYWriterNodeVisitor nv(f);
+            model->accept(nv);
+        }else{
+
+
+            osgDB::writeNodeFile(*model,argv[2]);
+        }
+    }
 }
 

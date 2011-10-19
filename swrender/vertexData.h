@@ -28,7 +28,7 @@
 // defined elsewhere
 struct PlyFile;
 
-namespace ply 
+namespace plyA
 {
     typedef struct _tri_t{
         int idx[3];

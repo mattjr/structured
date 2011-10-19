@@ -366,7 +366,7 @@ void ply_describe_element(
   if (elem == NULL) {
     char error[100];
     sprintf (error, "ply_describe_element: can't find element '%s'\n",elem_name);
-    throw ply::MeshException( error );
+    throw plyA::MeshException( error );
   }
 
   elem->num = nelems;
@@ -514,7 +514,7 @@ void ply_element_count(
   if (elem == NULL) {
     char error[100];
     sprintf (error, "ply_element_count: can't find element '%s'\n",elem_name);
-    throw ply::MeshException( error );
+    throw plyA::MeshException( error );
   }
 
   elem->num = nelems;
@@ -552,7 +552,7 @@ void ply_header_complete(PlyFile *plyfile)
       char error[100];
       sprintf (error, "ply_header_complete: bad file type = %d\n",
                plyfile->file_type);
-      throw ply::MeshException( error );
+      throw plyA::MeshException( error );
   }
 
   /* write out the comments */
@@ -611,7 +611,7 @@ void ply_put_element_setup(PlyFile *plyfile, const char *elem_name)
   if (elem == NULL) {
     char error[100];
     sprintf (error, "ply_elements_setup: can't find element '%s'\n", elem_name);
-    throw ply::MeshException( error );
+    throw plyA::MeshException( error );
   }
 
   plyfile->which_elem = elem;
@@ -1353,7 +1353,7 @@ PlyOtherElems *ply_get_other_element (
   if (elem == NULL) {
     char error[100];
     sprintf (error, "ply_get_other_element: can't find element '%s'\n", elem_name);
-    throw ply::MeshException( error );
+    throw plyA::MeshException( error );
   }
 
   /* create room for the new "other" element, initializing the */
@@ -1673,7 +1673,7 @@ void ascii_get_element(PlyFile *plyfile, char *elem_ptr)
   if (words == NULL) {
     char error[100];
     sprintf (error, "ply_get_element: unexpected end of file\n");
-    throw ply::MeshException( error );
+    throw plyA::MeshException( error );
   }
 
   which_word = 0;
@@ -1871,7 +1871,7 @@ void write_scalar_type (FILE *fp, int code)
   if (code <= PLY_START_TYPE || code >= PLY_END_TYPE) {
     char error[100];
     sprintf (error, "write_scalar_type: bad data code = %d\n", code);
-    throw ply::MeshException( error );
+    throw plyA::MeshException( error );
   }
 
   /* write the code to a file */
@@ -2143,7 +2143,7 @@ void write_binary_item(PlyFile *plyfile,
     default:
       char error[100];
       sprintf (error, "write_binary_item: bad type = %d\n", type);
-      throw ply::MeshException( error );
+      throw plyA::MeshException( error );
   }
 }
 
@@ -2188,7 +2188,7 @@ void write_ascii_item(
     default:
       char error[100];
       sprintf (error, "write_ascii_item: bad type = %d\n", type);
-      throw ply::MeshException( error );
+      throw plyA::MeshException( error );
   }
 }
 
@@ -2261,7 +2261,7 @@ void get_stored_item(
     default:
       char error[100];
       sprintf (error, "get_stored_item: bad type = %d\n", type);
-      throw ply::MeshException( error );
+      throw plyA::MeshException( error );
   }
 }
 
@@ -2299,7 +2299,7 @@ void get_binary_item(
       result = fread (ptr, 1, 1, plyfile->fp);
       if(result < 1)
       {
-          throw ply::MeshException( "Error in reading PLY file."
+          throw plyA::MeshException( "Error in reading PLY file."
                                  "fread not succeeded." );
       }
       *int_val = *((char *) ptr);
@@ -2311,7 +2311,7 @@ void get_binary_item(
           result = fread (ptr, 1, 1, plyfile->fp);
           if(result < 1)
           {
-              throw ply::MeshException( "Error in reading PLY file."
+              throw plyA::MeshException( "Error in reading PLY file."
                                  "fread not succeeded." );
           }
           *uint_val = *((unsigned char *) ptr);
@@ -2322,7 +2322,7 @@ void get_binary_item(
           result = fread (ptr, 2, 1, plyfile->fp);
           if(result < 1 )
           {
-              throw ply::MeshException( "Error in reading PLY file."
+              throw plyA::MeshException( "Error in reading PLY file."
                                  "fread not succeeded." );
           }
           if( plyfile->file_type == PLY_BINARY_BE )
@@ -2341,7 +2341,7 @@ void get_binary_item(
           result = fread (ptr, 2, 1, plyfile->fp);
           if(result < 1)
           {
-              throw ply::MeshException( "Error in reading PLY file."
+              throw plyA::MeshException( "Error in reading PLY file."
                                  "fread not succeeded." );
           }
           if( plyfile->file_type == PLY_BINARY_BE )
@@ -2361,7 +2361,7 @@ void get_binary_item(
           result = fread (ptr, 4, 1, plyfile->fp);
           if(result < 1)
           {
-              throw ply::MeshException( "Error in reading PLY file."
+              throw plyA::MeshException( "Error in reading PLY file."
                                  "fread not succeeded." );
           }
           if( plyfile->file_type == PLY_BINARY_BE )
@@ -2380,7 +2380,7 @@ void get_binary_item(
           result = fread (ptr, 4, 1, plyfile->fp);
           if(result < 1)
           {
-              throw ply::MeshException( "Error in reading PLY file."
+              throw plyA::MeshException( "Error in reading PLY file."
                                  "fread not succeeded." );
           }
           if( plyfile->file_type == PLY_BINARY_BE )
@@ -2400,7 +2400,7 @@ void get_binary_item(
           result = fread (ptr, 4, 1, plyfile->fp);
           if(result < 1)
           {
-              throw ply::MeshException( "Error in reading PLY file."
+              throw plyA::MeshException( "Error in reading PLY file."
                                  "fread not succeeded." );
           }
           if( plyfile->file_type == PLY_BINARY_BE )
@@ -2419,7 +2419,7 @@ void get_binary_item(
         result = fread (ptr, 8, 1, plyfile->fp);
         if(result < 1)
         {
-            throw ply::MeshException( "Error in reading PLY file."
+            throw plyA::MeshException( "Error in reading PLY file."
                                 "fread not succeeded." );
         }
         if( plyfile->file_type == PLY_BINARY_BE )
@@ -2437,7 +2437,7 @@ void get_binary_item(
     default:
       char error[100];
       sprintf (error, "get_binary_item: bad type = %d\n", type);
-      throw ply::MeshException( error );
+      throw plyA::MeshException( error );
   }
 }
 
@@ -2494,7 +2494,7 @@ void get_ascii_item(
     default:
       char error[100];
       sprintf (error, "get_ascii_item: bad type = %d\n", type);
-      throw ply::MeshException( error );
+      throw plyA::MeshException( error );
   }
 }
 
@@ -2567,7 +2567,7 @@ void store_item (
     default:
       char error[100];
       sprintf (error, "store_item: bad type = %d\n", type);
-      throw ply::MeshException( error );
+      throw plyA::MeshException( error );
   }
 }
 

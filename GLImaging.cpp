@@ -644,7 +644,7 @@ void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned in
     fflush(stdout);
 }
 
-
+/*
 void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMatrix,int width,int height){
 
     osg::Matrix modWindow =( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*width,0.5*height,0.5f));
@@ -691,7 +691,7 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
     int res= system("./add_geo.sh");
     if(res != 0)
         printf("Failed on run\n");
-}
+}*/
 
 int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns,unsigned int width,unsigned int height,int row,int col,
                 const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,bool depth,std::string ext)

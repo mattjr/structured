@@ -61,7 +61,6 @@ static double longOrigin,latOrigin;
 static int _tileRows;
 static int _tileColumns;
 static int targetFaces=40000;
-static bool run_pos=false;
 static bool storeTexMesh=false;
 static bool do_novelty=false;
 static double dense_scale;
@@ -71,10 +70,8 @@ static bool use_debug_shader=false;
 static vector<string> mb_xyz_files;
 static int desired_area=250.0;
 static bool have_max_frame_count = false;
-static bool do_shader_color=false;
 static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
-static bool use_sift_features = false;
 
 static bool run_stereo=true;
 static double max_alt_cutoff=10.0;
@@ -92,7 +89,6 @@ static bool no_depth=false;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 static int num_threads=1;
 static FILE *fpp,*fpp2;
-static double connected_comp_size_clean;
 static bool useVirtTex=false;
 static bool useReimage=true;
 
@@ -135,6 +131,8 @@ typedef struct _picture_cell{
     int col;
     osg::BoundingBox bbox;
     osg::BoundingBox bboxMargin;
+
+    osg::BoundingBox bboxUnRot;
 
     std::string name;
     std::vector<int> images;
@@ -272,11 +270,11 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("IMAGE_SPLIT_COL",_tileColumns,-1);
     recon_config_file->get_value("IMAGE_SPLIT_ROW",_tileRows,-1);
     recon_config_file->get_value( "SRC_TEX_SIZE", lodTexSize[0],
-                                 512);
+                                  512);
     recon_config_file->get_value( "WKT_DEST_COORD",wkt_coord_system,
-                               "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AXIS[\"Lat\",NORTH],AXIS[\"Long\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]");
+                                  "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AXIS[\"Lat\",NORTH],AXIS[\"Long\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]");
     recon_config_file->get_value( "TARGET_SCREEN_FACES", targetScreenFaces,
-                                 150000);
+                                  150000);
 
     if(recon_config_file->get_value( "REIMAGE_RES",reimageSize.x(),-1)){
         reimageSize.y()=reimageSize.x();
@@ -471,13 +469,13 @@ void save_bbox_frame (const osg::BoundingBox &bb, FILE * fptr){
 
 }
 
- osg::Matrix  osgTranspose( const osg::Matrix& src )
+osg::Matrix  osgTranspose( const osg::Matrix& src )
 {
-     osg::Matrix dest;
-   for( int i = 0; i < 4; i++ )
-      for( int j = 0; j < 4; j++ )
-         dest(i,j) = src(j,i);
-   return dest;
+    osg::Matrix dest;
+    for( int i = 0; i < 4; i++ )
+        for( int j = 0; j < 4; j++ )
+            dest(i,j) = src(j,i);
+    return dest;
 }
 void fill_osg_matrix(double *cam_pose,osg::Matrix &trans){
 
@@ -495,11 +493,11 @@ void fill_osg_matrix(double *cam_pose,osg::Matrix &trans){
     //cout << trans<<endl;
 
     trans*=osg::Matrix::translate(slam_x,slam_y,slam_z);
-  //  trans=osgTranspose(trans);
+    //  trans=osgTranspose(trans);
 
 
-//   trans=osg::Matrix::inverse(trans);
-   // cout << trans<<endl;
+    //   trans=osg::Matrix::inverse(trans);
+    // cout << trans<<endl;
 
 
     /* trans(0, 3) = slam_x;
@@ -512,9 +510,9 @@ void fill_osg_matrix(double *cam_pose,osg::Matrix &trans){
 
 
 static int get_auv_image_name( const string  &contents_dir_name,
-                              Stereo_Pose pose,
-                              Stereo_Pose_Data &name
-                              )
+                               Stereo_Pose pose,
+                               Stereo_Pose_Data &name
+                               )
 {
 
     //name.cam_pose = new Vector(AUV_NUM_POSE_STATES);
@@ -656,7 +654,7 @@ int main( int argc, char *argv[ ] )
     if( !contents_file )
     {
         cerr << "ERROR - unable to open contents file: " << contents_file_name
-             << endl;
+                << endl;
         exit( 1 );
     }
     StereoCalib calib(stereo_calib_file_name);
@@ -905,6 +903,7 @@ int main( int argc, char *argv[ ] )
 
 
     printf("Split into %d cells for VRIP\n",(int)vrip_cells.size());
+    int numberFacesAll=0;
 
     for(int i=0; i <(int)vrip_cells.size(); i++){
 
@@ -929,7 +928,7 @@ int main( int argc, char *argv[ ] )
         fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
         fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,vrip_ramp,i,i,redirstr);
 
-        fprintf(vripcmds_fp,"$BASEDIR/treeBBClip ../mesh-agg/seg-%08d.ply %f %f %f %f %f %f -dup --outfile ../mesh-diced/tmp-clipped-diced-%08d.ply;",
+        fprintf(vripcmds_fp,"$BASEDIR/treeBBClip ../mesh-agg/seg-%08d.ply --bbox %f %f %f %f %f %f -dup --outfile ../mesh-diced/tmp-clipped-diced-%08d.ply;",
                 i,
                 vrip_cells[i].bounds.bbox.xMin(),
                 vrip_cells[i].bounds.bbox.yMin(),
@@ -998,7 +997,7 @@ int main( int argc, char *argv[ ] )
 
 
         vector<string> mergeandcleanCmds;
-        mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"tmp-clipped-diced","total",vrip_res));
+       // mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"tmp-clipped-diced","total",vrip_res));
         //mergeandcleanCmds.push_back("cd mesh-diced;");
         /* string tcmd2;
                 char tmp100[8096];
@@ -1034,22 +1033,59 @@ int main( int argc, char *argv[ ] )
         shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip",NULL,&mergeandcleanCmds);
         if(!no_vrip && !cmvs)
             sysres=system("./runvrip.py");
+        char tmpfn[8192];
+        for(int i=0; i <(int)vrip_cells.size(); i++){
+            sprintf(tmpfn,"mesh-diced/tmp-clipped-diced-%08d.ply",i);
+            osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpfn);
+            osg::Drawable *drawable = NULL;
+            if(model.valid())
+                drawable = model->asGeode()->getDrawable(0);
+            if(!drawable){
+                fprintf(stderr,"Failed to load model\n");
+                exit(-1);
+            }
+            osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+            numberFacesAll+=geom->getPrimitiveSet(0)->getNumPrimitives();
+
+        }
         osg::BoundingBox totalbb;
         osg::BoundingBox totalbb_unrot;
 
         osg::BoundingSphere bs;
         osg::Matrix rotM;
         float rx=0,ry=180.0,rz=-90;
-        int numberFacesAll=0;
+
+        rotM =osg::Matrix::rotate(
+                osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+
+
+        totalbb_unrot.expandBy(bounds.bbox._min);
+        totalbb_unrot.expandBy(bounds.bbox._max);
+        totalbb.expandBy(osg::Vec3(totalbb_unrot._min[1],totalbb_unrot._min[0],-totalbb_unrot._min[2]));
+        totalbb.expandBy(osg::Vec3(totalbb_unrot._max[1],totalbb_unrot._max[0],-totalbb_unrot._max[2]));
+
+        cout << totalbb_unrot._min<< " " << totalbb_unrot._max<<endl;
+        cout << totalbb._min<< " " << totalbb._max<<endl;
+       /* osg::BoundingBox tmp=totalbb;
+        tmp._min[2]= tmp._min[1];
+        tmp._max[2]= tmp._max[1];
+*/
+
+        bs.expandBy(totalbb);
+#if 0
+       // float rx=0,ry=180.0,rz=-90;
+       // int numberFacesAll=0;
         {
             char tmp[1024];
             sprintf(tmp,".%d,%d,%d.rot",(int)rx,(int)ry,(int)rz);
             string rot=string(tmp);
 
             rotM =osg::Matrix::rotate(
-                        osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
-                        osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
-                        osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+                    osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                    osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                    osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
             cout << "Loading full mesh...\n";
             osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("mesh-diced/vis-total.ply"+rot);
             osg::Drawable *drawable = model->asGroup()->getChild(0)->asGeode()->getDrawable(0);
@@ -1077,6 +1113,7 @@ int main( int argc, char *argv[ ] )
             totalbb_unrot.expandBy(totalbb._max*osg::Matrix::inverse(rotM));
 
         }
+#endif
         double rangeX=totalbb.xMax()-totalbb.xMin();
         double rangeY=totalbb.yMax()-totalbb.yMin();
         int minTexSize=8192;
@@ -1175,6 +1212,8 @@ int main( int argc, char *argv[ ] )
                     picture_cell cell;
                     cell.bbox=thisCellBbox;
                     cell.bboxMargin=thisCellBboxMargin;
+                    cell.bboxUnRot.expandBy(cell.bbox._min*osg::Matrix::inverse(rotM));
+                    cell.bboxUnRot.expandBy(cell.bbox._max*osg::Matrix::inverse(rotM));
                     cell.row=row;
                     cell.col=col;
                     sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",row,col,vpblod);
@@ -1206,6 +1245,126 @@ int main( int argc, char *argv[ ] )
             }
 
         }
+        {
+            vector<std::string> postcmdv;
+            string tcmd =basepath+string("/vrip/bin/plymerge ");
+            char tmp100[8096];
+           // sprintf(tmp100," --invrot %f %f %f ",rx,ry,rz);
+           // tcmd+=tmp100;
+            string splitcmds_fn="mesh-diced/splitcmds";
+
+            FILE *splitcmds_fp=fopen(splitcmds_fn.c_str(),"w");
+            char shr_tmp[8192];
+            for(int i=0; i <(int)cells.size(); i++){
+                int v_count=0;
+                //cout << cells[i].bboxMarginUnRot._max << " " <<cells[i].bboxMargin._max <<endl;
+                sprintf(shr_tmp,"cd %s;%s/treeBBClip ",           cwd,
+                        basepath.c_str());
+                for(int j=0; j <(int)vrip_cells.size(); j++){
+                    if(vrip_cells[j].poses.size() == 0 || !cells[i].bboxUnRot.intersects(vrip_cells[j].bounds.bbox))
+                        continue;
+                    sprintf(shr_tmp,"%s mesh-diced/tmp-clipped-diced-%08d.ply",shr_tmp,j);
+                    v_count++;
+                }
+                if(v_count== 0)
+                    continue;
+                sprintf(shr_tmp,"%s --invrot %f %f %f --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply;",
+                        shr_tmp,rx,ry,rz,
+                        cells[i].bboxUnRot.xMin(),
+                        cells[i].bboxUnRot.yMin(),
+                        -FLT_MAX,
+                        cells[i].bboxUnRot.xMax(),
+                        cells[i].bboxUnRot.yMax(),
+                        FLT_MAX,
+                        cells[i].row,cells[i].col);
+                sprintf(shr_tmp,"%s  %s/vcgapps/bin/mergeMesh mesh-diced/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply -flip -cleansize %f -thresh %f -out mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ply ;",shr_tmp,
+                        basepath.c_str(),cells[i].row,cells[i].col,0.05,0.9*vrip_res,cells[i].row,cells[i].col);
+
+                fprintf(splitcmds_fp,"%s;",shr_tmp);
+                fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup --outfile mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive \n",
+                        basepath.c_str(),
+                        -FLT_MAX,-FLT_MAX,-FLT_MAX,
+                        FLT_MAX,FLT_MAX,FLT_MAX,
+                        cells[i].row,cells[i].col,  cells[i].row,cells[i].col,vpblod);
+
+                char tp[1024];
+                sprintf(tp,"mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
+                FILE *bboxfp=fopen(tp,"w");
+
+                for(int k=0; k < (int)cells[i].imagesMargin.size(); k++){
+                    const Stereo_Pose_Data *pose=(&tasks[cells[i].imagesMargin[k]]);
+                    if(pose && pose->valid){
+                        fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
+                        save_bbox_frame(pose->bbox,bboxfp);
+                        osg::Matrix texmat=osgTranspose(pose->mat);
+                        texmat=osg::Matrix::inverse(texmat);
+                        for(int k=0; k < 4; k++)
+                            for(int n=0; n < 4; n++)
+                                fprintf(bboxfp," %lf",texmat(k,n));
+                        fprintf(bboxfp,"\n");
+                    }
+
+                }
+                fclose(bboxfp);
+            }
+            for(int i=0; i <(int)vrip_cells.size(); i++){
+                if(vrip_cells[i].poses.size() == 0)
+                    continue;
+                sprintf(tmp100, " mesh-diced/vis-clipped-diced-%08d-lod%d.ply ",i,vpblod);
+                tcmd+=tmp100;
+            }
+
+
+            sprintf(tmp100, " > mesh-diced/vis-total.ply");
+          /*  sprintf(tmp100,"%s; %s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/vis-total.ive -dup --outfile mesh-diced/vis-total.ply ",
+                    tmp100,basepath.c_str(),
+                    -FLT_MAX,-FLT_MAX,-FLT_MAX,
+                    FLT_MAX,FLT_MAX,FLT_MAX);*/
+            tcmd+=tmp100;
+            postcmdv.push_back(tcmd);
+
+            for(int i=0; i <(int)vrip_cells.size(); i++){
+                if(vrip_cells[i].poses.size() == 0)
+                    continue;
+                int v_count=0;
+                //cout << cells[i].bboxMarginUnRot._max << " " <<cells[i].bboxMargin._max <<endl;
+                sprintf(shr_tmp,"cd %s;%s/treeBBClip ",           cwd,
+                        basepath.c_str());
+                for(int j=0; j <(int)vrip_cells.size(); j++){
+
+                    if(vrip_cells[j].poses.size() == 0 || !vrip_cells[j].bounds.bbox.intersects(vrip_cells[j].bounds.bbox))
+                        continue;
+                    sprintf(shr_tmp,"%s mesh-diced/tmp-clipped-diced-%08d.ply",shr_tmp,j);
+                    v_count++;
+                }
+                if(v_count== 0)
+                    continue;
+                sprintf(shr_tmp,"%s --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/un-clipped-diced-%08d.ply;",
+                        shr_tmp,
+                           vrip_cells[i].bounds.bbox.xMin(),
+                           vrip_cells[i].bounds.bbox.yMin(),
+                        -FLT_MAX,
+                       vrip_cells[i].bounds.bbox.xMax(),
+                           vrip_cells[i].bounds.bbox.yMax(),
+                        FLT_MAX,
+                        i);
+
+                sprintf(shr_tmp,"%s  %s/vcgapps/bin/mergeMesh mesh-diced/un-clipped-diced-%08d.ply -thresh %f -out mesh-diced/clipped-diced-%08d-lod%d.ply ;",shr_tmp,
+                        basepath.c_str(),i,0.9*vrip_res,i,vpblod);
+                sprintf(shr_tmp,"%s setenv DISPLAY:0.0; %s/vcgapps/bin/shadevis -n128  -f mesh-diced/clipped-diced-%08d-lod%d.ply ",shr_tmp,basepath.c_str(),i,vpblod);
+
+                fprintf(splitcmds_fp,"%s\n",shr_tmp);
+
+
+            }
+
+
+            fclose(splitcmds_fp);
+            string splitcmd="split.py";
+            shellcm.write_generic(splitcmd,splitcmds_fn,"Split",NULL,&postcmdv);
+            if(!no_split)
+                sysres=system("./split.py");
+        }
         //  fprintf(reFP,"%f %f %f %f clipped-diced-%08d-lod%d.ive\n",vrip_cells[i].bounds.min_x,vrip_cells[i].bounds.max_x,vrip_cells[i].bounds.min_y,vrip_cells[i].bounds.max_y,i,vpblod);
 #ifdef USE_PROCESSES_SPLIT
         string splitcmds_fn="mesh-diced/splitcmds";
@@ -1216,7 +1375,7 @@ int main( int argc, char *argv[ ] )
         for(int i=0; i <(int)cells.size(); i++){
 
 
-            fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/totalrot.ive %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ive;",
+            fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/totalrot.ive --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ive;",
                     cwd,
                     basepath.c_str(),
                     cells[i].bboxMargin.xMin(),
@@ -1252,7 +1411,7 @@ int main( int argc, char *argv[ ] )
         for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
                 continue;
-            fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/vis-total.ply %f %f %f %f %f %f -dup --outfile mesh-diced/clipped-diced-%08d.ply;",
+            fprintf(splitcmds_fp,"cd %s;%s/treeBBClip mesh-diced/vis-total.ply --bbox %f %f %f %f %f %f -dup --outfile mesh-diced/clipped-diced-%08d.ply;",
                     cwd,
                     basepath.c_str(),
                     vrip_cells[i].bounds.min_x,
@@ -1273,7 +1432,7 @@ int main( int argc, char *argv[ ] )
         shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
         if(!no_split)
             sysres=system("./split.py");
-#else
+//#else
         //printf("Split for Tex %d\n",(int)cells.size());
         osg::Timer_t startTick= osg::Timer::instance()->tick();
         int totalTodoCount=cells.size()+vrip_cells.size();
@@ -1305,16 +1464,16 @@ int main( int argc, char *argv[ ] )
 */
                 //Not thread SAFE!!!!!! TODO fix
                 osg::ref_ptr<KdTreeBbox> kdbb=setupKdTree(model);
-//#pragma omp parallel num_threads(num_threads)
+                //#pragma omp parallel num_threads(num_threads)
                 {
                     {
-//#pragma omp for
+                        //#pragma omp for
                         for(int i=0; i <(int)cells.size(); i++){
-                            sprintf(tmpname,"mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",
+                            sprintf(tmpname,"mesh-diced/1tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",
                                     cells[i].row,cells[i].col,vpblod);
                             cut_model(kdbb,tmpname,cells[i].bboxMargin,IntersectKdTreeBbox::DUP);
                             formatBar("Split",startTick,progCount,totalTodoCount);
-//#pragma omp atomic
+                            //#pragma omp atomic
                             progCount++;
                             char tp[1024];
                             sprintf(tp,"mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
@@ -1349,9 +1508,9 @@ int main( int argc, char *argv[ ] )
                         exit(-1);
                     }
                     osg::ref_ptr<KdTreeBbox> kdbb=setupKdTree(model);
-//#pragma omp parallel num_threads(num_threads)
+                    //#pragma omp parallel num_threads(num_threads)
                     {
-//#pragma omp for
+                        //#pragma omp for
                         for(int i=0; i <(int)vrip_cells.size(); i++){
                             if(vrip_cells[i].poses.size() == 0){
                                 vrip_cells[i].valid=false;
@@ -1362,7 +1521,7 @@ int main( int argc, char *argv[ ] )
                                     i,vpblod);
                             vrip_cells[i].valid=cut_model(kdbb,tmpname,box,IntersectKdTreeBbox::DUP);
                             formatBar("Split",startTick,progCount,totalTodoCount);
-//#pragma omp atomic
+                            //#pragma omp atomic
                             progCount++;
 
                         }
@@ -1379,7 +1538,7 @@ int main( int argc, char *argv[ ] )
 
         for(int j=vpblod; j >=0; j--){
             sizeStepTotal[j]= std::max(numberFacesAll/((int)pow(4.0,vpblod-j)),std::min(targetScreenFaces,numberFacesAll));
-           // printf("%d\n",sizeStepTotal[j]);
+            // printf("%d\n",sizeStepTotal[j]);
 
         }
 
@@ -1481,7 +1640,7 @@ int main( int argc, char *argv[ ] )
                     fprintf(texcmds_fp," --atlas");
             }
             else{
-                fprintf(texcmds_fp,";%s/nonmem  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --invrot %f %f %f --size %d %d --image %d %d %d %d",
+                fprintf(texcmds_fp,";%s/nonmem  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
                         basepath.c_str(),
                         cells[i].row,cells[i].col,
                         vpblod,
@@ -1489,9 +1648,10 @@ int main( int argc, char *argv[ ] )
                         (base_dir+"/img/").c_str(),
                         rx,ry,rz,
                         ajustedGLImageSizeX,ajustedGLImageSizeY,
-                        cells[i].row,cells[i].col,_tileRows,_tileColumns);
+                        cells[i].row,cells[i].col,_tileRows,_tileColumns,
+                        latOrigin , longOrigin);
                 if(blending)
-                      fprintf(texcmds_fp," --blend");
+                    fprintf(texcmds_fp," --blend");
             }
 
             fprintf(texcmds_fp,"\n");
@@ -1690,7 +1850,7 @@ int main( int argc, char *argv[ ] )
         sprintf(wkt,"PROJCS[\"unnamed\",GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AUTHORITY[\"EPSG\",\"4326\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",%.12f],PARAMETER[\"central_meridian\",%.12f],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"Meter\",1]]",
                 latOrigin,longOrigin);
         sprintf( szProj4,
-                "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",latOrigin,longOrigin,1.0,0.0,0.0);
+                 "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",latOrigin,longOrigin,1.0,0.0,0.0);
 
 
 

@@ -55,7 +55,7 @@ public:
 
 
 
-class Bounds  : public osg::BoundingBoxd
+class Bounds
 {
 public:
    Bounds( );

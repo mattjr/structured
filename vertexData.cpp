@@ -19,7 +19,7 @@
 #include <osg/io_utils>
 
 using namespace std;
-using namespace ply;
+using namespace plyV;
 
 
 struct Normal{

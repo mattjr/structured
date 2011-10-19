@@ -218,7 +218,7 @@ public:
         if (m_fin.good())
         {
             cam.m=m;//osg::Matrix::inverse(m);
-            std::cout << m<<std::endl;
+            //std::cout << m<<std::endl;
 
             cam.bb = osg::BoundingBox(low[0],low[1],low[2],high[0],high[1],high[2]);
             m_camVec[cam.id]=cam;

@@ -284,8 +284,9 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
         {
             //const Triangle& tri = _triangles[_primitiveIndices[i]];
             const KdTree::Triangle& tri = _triangles[i];
-            // OSG_NOTICE<<"   tri("<<tri.p1<<","<<tri.p2<<","<<tri.p3<<")"<<std::endl;
-
+           // cout <<"   tri("<<tri.p0<<","<<tri.p1<<","<<tri.p2<<")"<<std::endl;
+           // cout << (*_vertices)[tri.p0] << " ";
+          //  cout <<clipbox._min<< " "<< clipbox._max<<endl;
             osg::Vec4 c0,c1,c2;
             if(_colors){
                 c0 = (*_colors)[tri.p0];
@@ -464,11 +465,16 @@ osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,  geom
                                               const IntersectKdTreeBbox::OverlapMode &overlapmode)
 
 {
-
+    //cout << "CRA"<<getNode(0).bb._min << "  "<< getNode(0).bb._max<<endl;
+   /* if(getNode(0).bb < 0){
+        fprintf(stderr,"Null tree\n");
+        return NULL;
+    }*/
     osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
     osg::Geometry *new_geom=new osg::Geometry;
     newGeode->addDrawable(new_geom);
     intersector.intersect(getNode(0),dst,bbox,overlapmode);
+    //printf("Size of output %d %d\n",dst.vertices->size(),_vertices->size());
     new_geom->addPrimitiveSet(dst.faces);
     new_geom->setVertexArray(dst.vertices);
     new_geom->setColorArray(dst.colors);

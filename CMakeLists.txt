@@ -253,8 +253,9 @@ TARGET_LINK_LIBRARIES( deepzoomVIPS  vips vipsCC)
 TARGET_LINK_LIBRARIES( testImageModel ts  )
 
 TARGET_LINK_LIBRARIES( stereo_mesh_gen ts  )
-
 TARGET_LINK_LIBRARIES( treeBBClip ts spindex )
+
+TARGET_LINK_LIBRARIES( vertCheck ts spindex )
 TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC)
 TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC)
 

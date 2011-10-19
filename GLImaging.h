@@ -367,7 +367,6 @@ public:
 
 };
 int gpuUsage(int gpu,int &mem);
-void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMatrix,int width,int height);
 void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* callback);
 void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned int totalCount);
 /* void ConvertRGBA_BGRA_SSSE3(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch);

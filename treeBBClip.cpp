@@ -8,6 +8,9 @@
 #include <osgUtil/DelaunayTriangulator>
 #include <osg/Point>
 #include <iostream>
+#include <osg/ComputeBoundsVisitor>
+#include "vertexData.h"
+
 void addDups(osg::Geode *geode);
 using namespace std;
 int main( int argc, char **argv )
@@ -42,28 +45,50 @@ int main( int argc, char **argv )
         arguments.writeErrorMessages(std::cout);
         return 1;
     }
-    if(arguments.argc() < (2+6)  ){
+  /*  if(arguments.argc() < (2+6)  ){
         fprintf(stderr,"Must pass two meshes and bbox arg must be base dir\n");
         arguments.getApplicationUsage()->write(std::cerr,osg::ApplicationUsage::COMMAND_LINE_OPTION);
         exit(-1);
-    }
+    }*/
 
     osg::Vec3 minV,maxV;
-    minV.x() = atof(arguments[2]);
+   /* minV.x() = atof(arguments[2]);
     minV.y() = atof(arguments[3]);
     minV.z() = atof(arguments[4]);
 
     maxV.x() = atof(arguments[5]);
     maxV.y() = atof(arguments[6]);
-    maxV.z() = atof(arguments[7]);
+    maxV.z() = atof(arguments[7]);*/
+    if(!arguments.read("--bbox",minV.x(),minV.y(),minV.z(),maxV.x() ,maxV.y() ,maxV.z() )){
+        fprintf(stderr,"Must pass two meshes and bbox arg must be base dir\n");
+        arguments.getApplicationUsage()->write(std::cerr,osg::ApplicationUsage::COMMAND_LINE_OPTION);
+        exit(-1);
+    }
+
+    osg::Matrix inverseM=osg::Matrix::identity();
+bool rot=false;
+double rx,ry,rz;
+    if(arguments.read("--invrot",rx,ry,rz)){
+        rot=true;
+    }
+
+
     osg::BoundingBox bb(minV,maxV);
     osg::notify(osg::NOTICE) << bb._min << " " << bb._max << endl;
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
-    osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(arguments[1]);
-    osg::ref_ptr<osg::Node> root;
+    osg::ref_ptr<osg::Node> model = osgDB::readNodeFiles(arguments);
+    if(!model.valid()){
+        fprintf(stderr,"Can't load model %s",arguments[1]);
+        exit(-1);
+    }
+
+      osg::ref_ptr<osg::Node> root;
     // osg::Vec3Array *dumpPts=NULL;
     // do
-
+    osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+    model->accept(cbbv);
+    osg::BoundingBox bb2 = cbbv.getBoundingBox();
+    std::cout << bb2._min << " "<< bb2._max <<std::endl;
     //while(result);
     if(model.valid()){
         osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
@@ -85,6 +110,10 @@ int main( int argc, char **argv )
                 KdTreeBbox *kdtreeBbox=new KdTreeBbox(*kdTree,srcGeom);
 
                 root=kdtreeBbox->intersect(bb,dstGeom,mode);
+            }else{
+                fprintf(stderr,"Can't load kdTreee\n");
+                root=new osg::Geode;
+
             }
         }else{
             osg::notify(osg::ALWAYS) << "Model can't be converted to geode\n";
@@ -118,7 +147,22 @@ int main( int argc, char **argv )
             osgDB::writeNodeFile(*geode,outdump);
         }
     }*/
+    if(rot){
+        inverseM =osg::Matrix::rotate(
+                osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+        osg::ref_ptr<osg::MatrixTransform>xform = new osg::MatrixTransform;
+        xform->setDataVariance( osg::Object::STATIC );
+        xform->setMatrix(inverseM);
+        xform->addChild(root);
+        osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
+        xform->accept(fstv);
+        fstv.removeTransforms(xform);
+    }
+
     if(osgDB::getFileExtension(outfilename) == "ply"){
+
         osgUtil::SmoothingVisitor sv;
         root->accept(sv);
         std::ofstream f(outfilename.c_str());

@@ -298,6 +298,6 @@ int main(int argc, char** argv)
     printf("Done\n");
     fclose(logfp);
 
-    applyGeoTags(osg::Vec2(lat,lon),view,proj,raw.Xsize(),raw.Ysize());
+    applyGeoTags("subtile.tif",osg::Vec2(lat,lon),view,proj,raw.Xsize(),raw.Ysize());
 
 }

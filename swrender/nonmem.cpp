@@ -80,8 +80,14 @@ static Rect gRect;
 /* Generate function --- just black out the region.*/
 static int white_gen( REGION *reg, void *seq, void *a, void *b )
 {
-    im_region_paint( reg,&reg->valid ,255);
-
+  PEL *q = (PEL *) IM_REGION_ADDR( reg, reg->valid.left, reg->valid.top );
+  int wd = IM_REGION_SIZEOF_LINE( reg );
+  int ls = IM_REGION_LSKIP( reg );
+  int y;
+  
+  for( y = 0; y < reg->valid.height; y++, q += ls )
+    memset( (char *) q, 255, wd );
+  
     return( 0 );
 }
 

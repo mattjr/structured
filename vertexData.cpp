@@ -20,7 +20,7 @@
 
 using namespace std;
 using namespace plyV;
-
+//int tmpaa=0;
 
 struct Normal{
     osg::Vec3 triNormal;
@@ -48,7 +48,7 @@ VertexData::VertexData()
     for(int f=0; f< (int)_texCoord.size(); f++)
         _texCoord[f]=NULL;
     _texIds=NULL;
-    
+    _bbox=NULL;
 }
 
 
@@ -92,20 +92,31 @@ void VertexData::readVertices( PlyFile* file, const int nVertices,
         if(!_colors.valid())
             _colors = new osg::Vec4Array;
     }
-    
+
     // read in the vertices
     for( int i = 0; i < nVertices; ++i )
     {
         ply_get_element( file, static_cast< void* >( &vertex ) );
-        _vertices->push_back( osg::Vec3( vertex.x, vertex.y, vertex.z ) );
+        osg::Vec3 tmp( vertex.x, vertex.y, vertex.z );
+        /*if(_bbox){
+            //cout << tmp << " "<< _bbox->_min<<endl;
+            if(!_bbox->contains(tmp)){
+                continue;
+            }
+           // tmpaa++;
+            outbboxVert[i]=_vertices->size();
+        }*/
+        _tmp_verts.push_back(tmp);
+        //_vertices->push_back( tmp );
+      //  cout << tmp <<" " << _vertices->size()<<endl;
         if( readColors )
-            _colors->push_back( osg::Vec4( (unsigned int) vertex.r / 256.0, (unsigned int) vertex.g / 256.0 , (unsigned int) vertex.b/ 256.0, 0.0 ) );
+            _tmp_colors.push_back( osg::Vec4( (unsigned int) vertex.r / 256.0, (unsigned int) vertex.g / 256.0 , (unsigned int) vertex.b/ 256.0, 0.0 ) );
     }
 }
 
 
 /*  Read the index data from the open file.  */
-void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex )
+void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,bool tex )
 {
     // temporary face structure for ply loading
     struct _Face
@@ -132,7 +143,8 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex )
     };
     
     ply_get_property( file, "face", &faceProps[0] );
-    ply_get_property( file, "face", &faceProps[1] );
+    if(tex)
+        ply_get_property( file, "face", &faceProps[1] );
     if(multTex){
         ply_get_property( file, "face", &faceProps[2] );
         ply_get_property( file, "face", &faceProps[3] );
@@ -150,7 +162,7 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex )
 
         if(!_texIds.valid())
             _texIds = new osg::Vec4Array;
-    }else{
+    }else if(tex){
         _texCoord.resize(1);
         for(int f=0; f<(int)_texCoord.size(); f++){
             if(!_texCoord[f].valid())
@@ -177,46 +189,84 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex )
             throw MeshException( "Error reading PLY file. Encountered a "
                                  "face which does not have three vertices." );
         }
-        // Add the face indices in the premitive set
-        _triangles->push_back( face.vertices[ind1]);
-        _triangles->push_back( face.vertices[1]);
-        _triangles->push_back( face.vertices[ind3] );
-        if(multTex){
-            MESHASSERT( face.ids != 0 );
-            if( (unsigned int)(face.nIds) != 12 )
-            {
-                free( face.vertices );
-                printf("%d \n",face.nIds);
+        //remap
+        bool add=true;
+        if(_bbox){
+           /* if(outbboxVert.count(face.vertices[ind1]) == 0 || outbboxVert.count(face.vertices[1]) == 0  || outbboxVert.count(face.vertices[ind3]) == 0 ){
+                add=false;
+            }else{
+                face.vertices[ind1]= outbboxVert[face.vertices[ind1]];
+                face.vertices[1]= outbboxVert[face.vertices[1]];
+                face.vertices[ind3]= outbboxVert[face.vertices[ind3]];
+            }*/
+            if(!_bbox->contains(_tmp_verts[face.vertices[ind1]]) && !_bbox->contains(_tmp_verts[face.vertices[1]]) && !_bbox->contains(_tmp_verts[face.vertices[ind3]])){
+               add=false;
 
-                throw MeshException( "Error reading PLY file. Encountered a "
-                                     "face which does not have 9 ids." );
             }
         }
-        MESHASSERT( face.texcoord != 0 );
-        if( (unsigned int)(face.nTex) < 2  )
-        {
-            free( face.texcoord );
-            printf("%d \n",face.nTex);
+        if(add){
+            if(_colors){
+                _colors->push_back(_tmp_colors[face.vertices[ind1]]);
+            }
+            _vertices->push_back(_tmp_verts[face.vertices[ind1]]);
+            face.vertices[ind1]=_vertices->size()-1;
 
-            throw MeshException( "Error reading PLY file. Encountered a "
-                                 "face which does not have tex coord." );
-        }
-        for(int k=0,f=0; k <face.nTex; k+=6){
-            _texCoord[f]->push_back(osg::Vec3(face.texcoord[k],face.texcoord[k+1],-1));
-            _texCoord[f]->push_back(osg::Vec3(face.texcoord[k+2],face.texcoord[k+3],-1));
-            _texCoord[f]->push_back(osg::Vec3(face.texcoord[k+4],face.texcoord[k+5],-1));
-            f++;
-        }
-        if(multTex){
-            for(int k=0; k<face.nIds; k+=4){
-                _texIds->push_back(osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]));
-                //cout << (int)face.nIds << " "<<osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]) << endl;
+            if(_colors){
+                _colors->push_back(_tmp_colors[face.vertices[1]]);
+            }
+            _vertices->push_back(_tmp_verts[face.vertices[1]]);
+            face.vertices[1]=_vertices->size()-1;
+
+            if(_colors){
+                _colors->push_back(_tmp_colors[face.vertices[ind3]]);
+            }
+            _vertices->push_back(_tmp_verts[face.vertices[ind3]]);
+            face.vertices[ind3]=_vertices->size()-1;
+
+            // Add the face indices in the premitive set
+            _triangles->push_back( face.vertices[ind1]);
+            _triangles->push_back( face.vertices[1]);
+            _triangles->push_back( face.vertices[ind3] );
+            if(multTex){
+                MESHASSERT( face.ids != 0 );
+                if( (unsigned int)(face.nIds) != 12 )
+                {
+                    free( face.vertices );
+                    printf("%d \n",face.nIds);
+
+                    throw MeshException( "Error reading PLY file. Encountered a "
+                                         "face which does not have 9 ids." );
+                }
+            }
+            if(tex){
+                MESHASSERT( face.texcoord != 0 );
+                if( (unsigned int)(face.nTex) < 2  )
+                {
+                    free( face.texcoord );
+                    printf("%d \n",face.nTex);
+
+                    throw MeshException( "Error reading PLY file. Encountered a "
+                                         "face which does not have tex coord." );
+                }
+                for(int k=0,f=0; k <face.nTex; k+=6){
+                    _texCoord[f]->push_back(osg::Vec3(face.texcoord[k],face.texcoord[k+1],-1));
+                    _texCoord[f]->push_back(osg::Vec3(face.texcoord[k+2],face.texcoord[k+3],-1));
+                    _texCoord[f]->push_back(osg::Vec3(face.texcoord[k+4],face.texcoord[k+5],-1));
+                    f++;
+                }
+            }
+            if(multTex){
+                for(int k=0; k<face.nIds; k+=4){
+                    _texIds->push_back(osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]));
+                    //cout << (int)face.nIds << " "<<osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]) << endl;
+                }
             }
         }
 
         // free the memory that was allocated by ply_get_element
         free( face.vertices );
-        free( face.texcoord );
+        if(tex)
+            free( face.texcoord );
         if(multTex)
             free( face.ids );
 
@@ -225,7 +275,7 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex )
 
 
 /*  Open a PLY file and read vertex, color and index data. and returns the node  */
-osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColors )
+osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColors,osg::BoundingBox *bbox )
 {
     int     nPlyElems;
     char**  elemNames;
@@ -236,7 +286,11 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
     char**  comments;
 
     PlyFile* file = NULL;
-
+    _bbox=bbox;
+    outbboxVert.clear();
+    _tmp_verts.clear();
+    _tmp_colors.clear();
+    printf("%s\n",filename);
     // Try to open ply file as for reading
     try{
         file  = ply_open_for_reading( const_cast< char* >( filename ),
@@ -318,15 +372,26 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
                 MESHINFO << "Colors in PLY file ignored per request." << endl;
 
             try {   
+                int startcount=_vertices.valid() ? _vertices->size():0;
                 // Read vertices and store in a std::vector array
                 readVertices( file, nElems, hasColors && !ignoreColors );
                 // Check whether all vertices are loaded or not
-                MESHASSERT( _vertices->size() == static_cast< size_t >( nElems ) );
+                //printf("%d %d\n",startcount,_vertices->size());
+               /* if(!bbox){
+                    MESHASSERT( _vertices->size()-startcount == static_cast< size_t >( nElems ) );
+                }else{
+                    MESHASSERT( _vertices->size()-startcount == outbboxVert.size() );
+                }*/
                 // Check all color elements read or not
-                if( hasColors && !ignoreColors )
+               /* if( hasColors && !ignoreColors )
                 {
-                    MESHASSERT( _colors->size() == static_cast< size_t >( nElems ) );
+                    if(!bbox){
+                    MESHASSERT( _colors->size()-startcount == static_cast< size_t >( nElems ) );
+                }else{
+                    MESHASSERT( _colors->size()-startcount == outbboxVert.size() );
+
                 }
+                }*/
 
                 result = true;
             }
@@ -343,16 +408,23 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
         // If the string is face means triangle info started
         else if( equal_strings( elemNames[i], "face" ) ){
             bool multTex=false;
-            for( int j = 0; j < nProps; ++j )
+            bool tex=false;
+            for( int j = 0; j < nProps; ++j ){
                 // if the string have the red means color info is there
                 if( equal_strings( props[j]->name, "texnumber" ) )
                     multTex = true;
+                if( equal_strings( props[j]->name, "texcoord" ) )
+                    tex = true;
+            }
             try
             {
+                int startcount= _triangles.valid()? _triangles->size()/3 : 0 ;
                 // Read Triangles
-                readTriangles( file, nElems ,multTex);
+                readTriangles( file, nElems ,multTex,tex);
                 // Check whether all face elements read or not
-                MESHASSERT( _triangles->size()/3  == static_cast< size_t >( nElems ) );
+                if(!_bbox){
+                    MESHASSERT( (_triangles->size()/3) -startcount  == static_cast< size_t >( nElems ) );
+                }
                 result = true;
             }
             catch( exception& e )
@@ -382,10 +454,11 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
     if(result)
     {
         // Create geometry node
-        osg::Geometry* geom  =  new osg::Geometry;
+        if(!_geom.valid())
+            _geom  =  new osg::Geometry;
 
         // set the vertex array
-        geom->setVertexArray(_vertices.get());
+        _geom->setVertexArray(_vertices.get());
 
         // If the normals are not calculated calculate the normals for faces
         if(_triangles.valid())
@@ -394,21 +467,24 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
                 _calculateNormals();
 
             // set the normals
-            geom->setNormalArray(_normals.get());
-            geom->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+            _geom->setNormalArray(_normals.get());
+            _geom->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
         }
+        printf("tri %d\n",_triangles->size());
         
         // Add the premetive set
-        if (_triangles.valid() && _triangles->size() > 0 )
-            geom->addPrimitiveSet(_triangles.get());
-        else
-            geom->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, _vertices->size()));
+        if(_geom->getPrimitiveSetList().size() ==0){
 
+        if (_triangles.valid() && _triangles->size() > 0 )
+                _geom->addPrimitiveSet(_triangles.get());
+        //else
+          //  _geom->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, _vertices->size()));
+    }
         // if color info is given set the color array
         if(_colors.valid())
         {
-            geom->setColorArray(_colors.get());
-            geom->setColorBinding( osg::Geometry::BIND_PER_VERTEX );
+            _geom->setColorArray(_colors.get());
+            _geom->setColorBinding( osg::Geometry::BIND_PER_VERTEX );
             
         }
 
@@ -422,12 +498,15 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
         }*/
         
         // set flage true to activate the vertex buffer object of drawable
-        geom->setUseVertexBufferObjects(true);
+        _geom->setUseVertexBufferObjects(true);
         
-
-        osg::Geode* geode = new osg::Geode;
-        geode->addDrawable(geom);
-        return geode;
+        if(!_geode.valid()){
+            _geode = new osg::Geode;
+        }
+        if(_geode->getDrawableList().size() == 0 )
+            _geode->addDrawable(_geom);
+       // printf("Verts %d\n",tmpaa);
+        return _geode;
     }
     
     return NULL;

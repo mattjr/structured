@@ -15,9 +15,9 @@
 
 #include <osg/Node>
 #include <osg/PrimitiveSet>
-
+#include <osg/BoundingBox>
 #include <vector>
-
+#include <osg/Geometry>
 ///////////////////////////////////////////////////////////////////////////////
 //!
 //! \class VertexData
@@ -38,7 +38,7 @@ namespace plyV
         VertexData();
         
         // Reads ply file and convert in to osg::Node and returns the same
-        osg::Node* readPlyFile( const char* file, const bool ignoreColors = false );
+        osg::Node* readPlyFile( const char* file, const bool ignoreColors = false,osg::BoundingBox *bbox=NULL );
         
         // to set the flag for using inverted face
         void useInvertedFaces() { _invertFaces = true; }
@@ -52,7 +52,7 @@ namespace plyV
                            const bool readColors );
 
         // Reads the triangle indices from the ply file
-        void readTriangles( PlyFile* file, const int nFaces, bool multTex );
+        void readTriangles( PlyFile* file, const int nFaces, bool multTex ,bool tex);
 
         // Calculates the normals according to passed flag
         // if vertexNormals is true then computes normal per vertices
@@ -60,17 +60,24 @@ namespace plyV
         void _calculateNormals( const bool vertexNormals = true );
         
         bool        _invertFaces;
-
+        osg::ref_ptr<osg::Geode>   _geode;
+        osg::ref_ptr<osg::Geometry>   _geom;
+    public:
         // Vertex array in osg format
         osg::ref_ptr<osg::Vec3Array>   _vertices;
+        std::vector<osg::Vec3> _tmp_verts;
+        std::vector<osg::Vec4> _tmp_colors;
+
         // Color array in osg format
         osg::ref_ptr<osg::Vec4Array>   _colors;
         // Color array in osg format
-
+        osg::BoundingBox * _bbox;
         // Normals in osg format
         osg::ref_ptr<osg::Vec3Array> _normals;
         // The indices of the faces in premitive set
         osg::ref_ptr<osg::DrawElementsUInt> _triangles;
+        std::map<int,int> outbboxVert;
+        bool tex;
     };
 }
 

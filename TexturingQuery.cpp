@@ -239,7 +239,7 @@ bool TexturingQuery::projectAllTrianglesOutCore(osg::Vec4Array* camIdxArr,TexBle
     double vm, rss;
     process_mem_usage(vm, rss);
     cout << "Pre Project All Triangles VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
-
+    int valid=0;
 
     if(numIdx < 3 || !camIdxArr)
         return false;
@@ -310,12 +310,14 @@ bool TexturingQuery::projectAllTrianglesOutCore(osg::Vec4Array* camIdxArr,TexBle
                     osg::Vec3 tmp(tc[0],tc[1],-1);
                     if(!checkInBounds(tmp))
                         texCoordsArray[f]->at(prset.index(i+k))=osg::Vec3(-1,-1,-1);
-                    else
+                    else{
+                        if(f==0)
+                            valid++;
                         texCoordsArray[f]->at(prset.index(i+k))=tmp;
+                    }
                 }
             }
         }
-
 
         /*if(invalid){
             for(int k=0; k <3; k++){
@@ -326,6 +328,8 @@ bool TexturingQuery::projectAllTrianglesOutCore(osg::Vec4Array* camIdxArr,TexBle
             }
         }*/
     }
+    printf("Valid Count: %d/%d\n",valid,(int)texCoordsArray[0]->size());
+
     map<SpatialIndex::id_type,int> allIds=calcAllIds(camIdxArr);
 
     addImagesToAtlasGen(allIds,NULL);

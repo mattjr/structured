@@ -13,6 +13,70 @@
 
 void addDups(osg::Geode *geode);
 using namespace std;
+void write_header(std::ostream& _fout,int total_face_count,bool color){
+    _fout <<"ply\n";
+    _fout <<"format binary_little_endian 1.0\n";
+    //_fout <<"comment PLY exporter written by Paul Adams\n";
+    _fout <<"element vertex "<<total_face_count <<std::endl;
+    _fout <<"property float x\n";
+    _fout <<"property float y\n";
+    _fout <<"property float z\n";
+    if(color){
+        _fout <<"property uchar red\n";
+        _fout <<"property uchar green\n";
+        _fout <<"property uchar blue\n";
+    }
+    _fout <<"element face " <<total_face_count/3<<std::endl;
+    _fout <<"property list uchar int vertex_indices\n";
+
+    _fout <<"end_header\n";
+}
+void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,bool flip,osg::Matrix m){
+    int cnt=0;
+    for(int i=0; i< (int)tri->size()-2; i+=3){
+        for(int j=0; j<3; j++){
+            osg::Vec3 v=verts->at(tri->at(i+j))*m;
+            float vf[3];
+            vf[0]=v[0];
+            vf[1]=v[1];
+            vf[2]=v[2];
+            _fout.write((char *)vf,3*sizeof(float));
+            if(colors && i+j <(int)colors->size() ){
+                unsigned char col[3];
+                osg::Vec4 c=colors->at(i+j);
+               // cout <<c<<endl;
+                col[0]=c[0]*255.0;
+                col[1]=c[1]*255.0;
+                col[2]=c[2]*255.0;
+                _fout.write((char *)col,3*sizeof(unsigned char));
+
+            }
+        }
+    }
+    int iout[3];
+    unsigned char c=3;
+    for(int i=0; i<(int) tri->size()-2; i+=3){
+        _fout.write((char *)&c,sizeof(char));
+
+        if(flip){
+            iout[0]=i;
+            iout[1]=i+1;
+            iout[2]=i+2;
+        }else{
+            iout[0]=i+2;
+            iout[1]=i+1;
+            iout[2]=i+0;
+
+        }
+        _fout.write((char*)iout,sizeof(int)*3);
+        cnt++;
+
+    }
+    printf("%d\n",cnt);
+
+
+}
+
 int main( int argc, char **argv )
 {
     // use an ArgumentParser object to manage the program arguments.
@@ -24,6 +88,7 @@ int main( int argc, char **argv )
     arguments.getApplicationUsage()->setCommandLineUsage(arguments.getApplicationName()+" filename");
     string outfilename="out.ply";
     arguments.read("--outfile",outfilename);
+    bool flip=arguments.read("-F");
     IntersectKdTreeBbox::OverlapMode mode;
     if(arguments.read("-gap"))
         mode=IntersectKdTreeBbox::GAP;
@@ -45,14 +110,14 @@ int main( int argc, char **argv )
         arguments.writeErrorMessages(std::cout);
         return 1;
     }
-  /*  if(arguments.argc() < (2+6)  ){
+    /*  if(arguments.argc() < (2+6)  ){
         fprintf(stderr,"Must pass two meshes and bbox arg must be base dir\n");
         arguments.getApplicationUsage()->write(std::cerr,osg::ApplicationUsage::COMMAND_LINE_OPTION);
         exit(-1);
     }*/
 
     osg::Vec3 minV,maxV;
-   /* minV.x() = atof(arguments[2]);
+    /* minV.x() = atof(arguments[2]);
     minV.y() = atof(arguments[3]);
     minV.z() = atof(arguments[4]);
 
@@ -66,15 +131,29 @@ int main( int argc, char **argv )
     }
 
     osg::Matrix inverseM=osg::Matrix::identity();
-bool rot=false;
-double rx,ry,rz;
+    bool rot=false;
+    double rx,ry,rz;
     if(arguments.read("--invrot",rx,ry,rz)){
         rot=true;
     }
 
-
+    plyV::VertexData vertexData;
+    osg::Node *root;
     osg::BoundingBox bb(minV,maxV);
     osg::notify(osg::NOTICE) << bb._min << " " << bb._max << endl;
+    for(int pos=1;pos<arguments.argc();++pos)
+    {
+        if (!arguments.isOption(pos))
+        {
+            // not an option so assume string is a filename.
+            string fname= arguments[pos];
+            cout <<"Loading:"<< fname <<endl;
+            root= vertexData.readPlyFile(fname.c_str(),false,&bb);
+
+
+        }
+    }
+    /*
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
     osg::ref_ptr<osg::Node> model = osgDB::readNodeFiles(arguments);
     if(!model.valid()){
@@ -124,6 +203,7 @@ double rx,ry,rz;
         osg::notify(osg::ALWAYS)  << "Model can't be loaded\n";
         exit(-1);
     }
+    */
 
     /*if( mode==IntersectKdTreeBbox::DUMP){
         // create triangulator and set the points as the area
@@ -152,6 +232,22 @@ double rx,ry,rz;
                 osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
                 osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
                 osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+
+    }else
+        inverseM=osg::Matrix::identity();
+
+    if(osgDB::getFileExtension(outfilename) == "ply"){
+
+        // osgUtil::SmoothingVisitor sv;
+        //root->accept(sv);
+        std::ofstream f(outfilename.c_str());
+        bool color = vertexData._colors.valid() ? (vertexData._colors->size() >0) : false;
+        write_header(f,vertexData._triangles->size(),color);
+        write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,flip,inverseM);
+        //PLYWriterNodeVisitor nv(f);
+        //root->accept(nv);
+        f.close();;
+    }else{
         osg::ref_ptr<osg::MatrixTransform>xform = new osg::MatrixTransform;
         xform->setDataVariance( osg::Object::STATIC );
         xform->setMatrix(inverseM);
@@ -159,17 +255,6 @@ double rx,ry,rz;
         osgUtil::Optimizer::FlattenStaticTransformsVisitor fstv(NULL);
         xform->accept(fstv);
         fstv.removeTransforms(xform);
-    }
-
-    if(osgDB::getFileExtension(outfilename) == "ply"){
-
-        osgUtil::SmoothingVisitor sv;
-        root->accept(sv);
-        std::ofstream f(outfilename.c_str());
-        PLYWriterNodeVisitor nv(f);
-        root->accept(nv);
-
-    }else{
         osgUtil::SmoothingVisitor sv;
         root->accept(sv);
         osgDB::writeNodeFile(*root,outfilename);

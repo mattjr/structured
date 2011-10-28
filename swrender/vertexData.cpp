@@ -220,8 +220,9 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex )
             }
             if(_texIds->at(_texIds->size()-1) != _texIds->at(_texIds->size()-2) || _texIds->at(_texIds->size()-1) != _texIds->at(_texIds->size()-3)
                 || _texIds->at(_texIds->size()-2) != _texIds->at(_texIds->size()-3)){
+                cerr<< _texIds->at(_texIds->size()-1) << " " <<_texIds->at(_texIds->size()-2) << " "<<_texIds->at(_texIds->size()-3)<<endl;
                 fprintf(stderr,"All the texIDs not aligned\n");
-                exit(-1);
+                //exit(-1);
             }
             for(int l=0; l<4; l++){
                 int id=(int)_texIds->back()[l];

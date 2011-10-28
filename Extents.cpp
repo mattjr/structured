@@ -3023,7 +3023,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         }
         for(int j=0; j< (int)primitiveSet->getNumIndices(); j++){
 
-            newPrimitiveSet->addElement(offset+primitiveSet->getElement(j));
+            newPrimitiveSet->push_back(offset+primitiveSet->at(j));
 
         }
 
@@ -3048,7 +3048,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
 
     }
     for(int j=0; j< (int)newPrimitiveSet->getNumIndices(); j++){
-        if(newPrimitiveSet->getElement(j) < 0 || newPrimitiveSet->getElement(j) > newVerts->size() ){
+        if(newPrimitiveSet->at(j) < 0 || newPrimitiveSet->at(j) > newVerts->size() ){
             printf("ASDADASDASDASDADS\n");
             exit(-1);
         }

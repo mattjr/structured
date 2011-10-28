@@ -58,7 +58,7 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
                     newidx=verts->size();
                     verts->push_back(v);
                     vertsAdded++;
-                    dynamic_cast<osg::DrawElementsUInt*>(prim)->setElement(i+k,newidx);
+                    (*dynamic_cast<osg::DrawElementsUInt*>(prim))[i+k]=newidx;
                     for(int f=0; f< (int)texcoord.size(); f++)
                         newTexCoord[f]->push_back(texcoord[f]->at(i+k));
                     if(texcoord.size() > 1)

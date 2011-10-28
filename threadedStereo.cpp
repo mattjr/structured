@@ -1290,7 +1290,7 @@ int main( int argc, char *argv[ ] )
                         basepath.c_str(),cells[i].row,cells[i].col,0.05,0.9*vrip_res,cells[i].row,cells[i].col);
 
                 fprintf(splitcmds_fp,"%s;",shr_tmp);
-                fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup --outfile mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive \n",
+                fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup -F --outfile mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
                         basepath.c_str(),
                         -FLT_MAX,-FLT_MAX,-FLT_MAX,
                         FLT_MAX,FLT_MAX,FLT_MAX,
@@ -1339,29 +1339,51 @@ int main( int argc, char *argv[ ] )
                 //cout << cells[i].bboxMarginUnRot._max << " " <<cells[i].bboxMargin._max <<endl;
                 sprintf(shr_tmp,"cd %s;%s/treeBBClip ",           cwd,
                         basepath.c_str());
+                double xRange=vrip_cells[i].bounds.bbox.xMax()-vrip_cells[i].bounds.bbox.xMin();
+                double yRange=vrip_cells[i].bounds.bbox.yMax()-vrip_cells[i].bounds.bbox.yMin();
+                double xMargin=xRange*0.1;
+                double yMargin=yRange*0.1;
+                osg::BoundingBox tmp_bbox=vrip_cells[i].bounds.bbox;
+                tmp_bbox.expandBy(osg::Vec3(tmp_bbox._min[0]-xMargin,tmp_bbox._min[1]-yMargin,tmp_bbox._min[2]));
+                tmp_bbox.expandBy(osg::Vec3(tmp_bbox._max[0]+xMargin,tmp_bbox._max[1]+yMargin,tmp_bbox._max[2]));
+
                 for(int j=0; j <(int)vrip_cells.size(); j++){
 
-                    if(vrip_cells[j].poses.size() == 0 || !vrip_cells[j].bounds.bbox.intersects(vrip_cells[j].bounds.bbox))
+                    if(vrip_cells[j].poses.size() == 0 || !vrip_cells[j].bounds.bbox.intersects(tmp_bbox))
                         continue;
                     sprintf(shr_tmp,"%s mesh-diced/tmp-clipped-diced-%08d.ply",shr_tmp,j);
                     v_count++;
                 }
                 if(v_count== 0)
                     continue;
+
+
+
                 sprintf(shr_tmp,"%s --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/un-clipped-diced-%08d.ply;",
                         shr_tmp,
+                           tmp_bbox.xMin(),
+                          tmp_bbox.yMin(),
+                        -FLT_MAX,
+                       tmp_bbox.xMax(),
+                          tmp_bbox.yMax(),
+                        FLT_MAX,
+                        i);
+                sprintf(shr_tmp,"%s    %s/vcgapps/bin/mergeMesh mesh-diced/un-clipped-diced-%08d.ply -thresh %f -out mesh-diced/un2-clipped-diced-%08d-lod%d.ply ;",shr_tmp,
+                        basepath.c_str(),i,0.9*vrip_res,i,vpblod);
+                sprintf(shr_tmp,"%s setenv DISPLAY:0.0; %s/vcgapps/bin/shadevis -n128  -f mesh-diced/un2-clipped-diced-%08d-lod%d.ply ;",shr_tmp,basepath.c_str(),i,vpblod);
+
+
+                sprintf(shr_tmp,"%s %s/treeBBClip  mesh-diced/vis-un2-clipped-diced-%08d-lod%d.ply --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dup -F --outfile mesh-diced/vis-clipped-diced-%08d-lod%d.ply ",
+                        shr_tmp,
+                           basepath.c_str(),
+                           i,vpblod,
                            vrip_cells[i].bounds.bbox.xMin(),
                            vrip_cells[i].bounds.bbox.yMin(),
                         -FLT_MAX,
                        vrip_cells[i].bounds.bbox.xMax(),
                            vrip_cells[i].bounds.bbox.yMax(),
                         FLT_MAX,
-                        i);
-
-                sprintf(shr_tmp,"%s  %s/vcgapps/bin/mergeMesh mesh-diced/un-clipped-diced-%08d.ply -thresh %f -out mesh-diced/clipped-diced-%08d-lod%d.ply ;",shr_tmp,
-                        basepath.c_str(),i,0.9*vrip_res,i,vpblod);
-                sprintf(shr_tmp,"%s setenv DISPLAY:0.0; %s/vcgapps/bin/shadevis -n128  -f mesh-diced/clipped-diced-%08d-lod%d.ply ",shr_tmp,basepath.c_str(),i,vpblod);
-
+                        i,vpblod);
                 fprintf(splitcmds_fp,"%s\n",shr_tmp);
 
 
@@ -1563,7 +1585,7 @@ int main( int argc, char *argv[ ] )
             if(vrip_cells[i].poses.size() == 0 || !vrip_cells[i].valid)
                 continue;
             char tmpf[1024];
-            sprintf(tmpf,"mesh-diced/clipped-diced-%08d-lod%d.ply",i,vpblod);
+            sprintf(tmpf,"mesh-diced/vis-clipped-diced-%08d-lod%d.ply",i,vpblod);
             osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpf);
             //assert(model.valid());
             if(!model.valid()){
@@ -1619,7 +1641,7 @@ int main( int argc, char *argv[ ] )
 
         for(int i=0; i <(int)cells.size(); i++){
             char tmpfn[1024];
-            sprintf(tmpfn,"mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive", cells[i].row,cells[i].col,vpblod);
+            sprintf(tmpfn,"mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply", cells[i].row,cells[i].col,vpblod);
             if(cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn)){
                 fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                         cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
@@ -1629,7 +1651,7 @@ int main( int argc, char *argv[ ] )
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
 
 
-            fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f",
+            fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f",
                     cwd,
                     gpunum,
                     basepath.c_str(),

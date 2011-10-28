@@ -116,7 +116,7 @@ int main( int argc, char *argv[ ] )
     double quality=0.0001;
     StereoEngine engine(stereocal,edgethresh,max_triangulation_len,max_feature_count,min_feat_dist,quality,tex_size,mutex);
     osg::BoundingBox bbox;
-    engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,feature_depth_guess);
+    engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,feature_depth_guess,true);
 
 
     //

@@ -72,12 +72,12 @@ double get_time( void )
 // Load the next pair of images from the contents file
 //
 bool get_stereo_pair(
-    const string contents_dir_name,
-    IplImage     *&left_image,
-    IplImage     *&right_image,
-    IplImage *&color_image,
-    const string        &left_image_name,
-    const string        &right_image_name )
+        const string contents_dir_name,
+        IplImage     *&left_image,
+        IplImage     *&right_image,
+        IplImage *&color_image,
+        const string        &left_image_name,
+        const string        &right_image_name )
 {
 
     //
@@ -159,11 +159,11 @@ bool checkmkdir(std::string dir){
     return true;
 }
 void apply_epipolar_constraints(
-    const CvMat *F,  double max_dist,
-    const vector<CvPoint2D64f> &undist_coords1,
-    const vector<CvPoint2D64f> &undist_coords2,
-    char *valid,
-    const StereoCalib &_calib)
+        const CvMat *F,  double max_dist,
+        const vector<CvPoint2D64f> &undist_coords1,
+        const vector<CvPoint2D64f> &undist_coords2,
+        char *valid,
+        const StereoCalib &_calib)
 {
     assert( undist_coords1.size()==undist_coords2.size() );
 
@@ -182,17 +182,17 @@ void apply_epipolar_constraints(
     for( unsigned int i=0; i<num_coords; i++ )
     {
         cvmSet( feature_matrix, 0, i, undist_coords1[i].x*_calib.camera_calibs[0].fcx
-               +_calib.camera_calibs[0].ccx);
+                +_calib.camera_calibs[0].ccx);
         cvmSet( feature_matrix, 1, i, undist_coords1[i].y*_calib.camera_calibs[0].fcy
-               +_calib.camera_calibs[0].ccy );
+                +_calib.camera_calibs[0].ccy );
     }
 
     // Calculate epipolar lines for coords in frame 2
     CvMat *epi_lines = cvCreateMat( 3, num_coords, CV_32F );
     cvComputeCorrespondEpilines( feature_matrix,
-                                1,
-                                const_cast<CvMat *>(F),
-                                epi_lines );
+                                 1,
+                                 const_cast<CvMat *>(F),
+                                 epi_lines );
 
 
     // Check the distances of the current features from the epipolar lines
@@ -207,9 +207,9 @@ void apply_epipolar_constraints(
         double C = cvmGet( epi_lines, 2, i );
 
         double x = undist_coords2[i].x*_calib.camera_calibs[1].fcx+
-                +_calib.camera_calibs[1].ccx;
+                   +_calib.camera_calibs[1].ccx;
         double y = undist_coords2[i].y*_calib.camera_calibs[1].fcy+
-                +_calib.camera_calibs[1].ccy;
+                   +_calib.camera_calibs[1].ccy;
         double dist = fabs(A*x+B*y+C);
         if( dist<=max_dist )
             valid[i] = true;
@@ -227,8 +227,8 @@ void apply_epipolar_constraints(
 
 
 StereoEngine::StereoEngine(const StereoCalib &calib,double edgethresh,double max_triangulation_len,int max_feature_count,double min_feat_dist,double feat_quality,int tex_size,OpenThreads::Mutex &mutex):
-    _calib(calib),edgethresh(edgethresh),max_triangulation_len(max_triangulation_len),max_feature_count(max_feature_count),min_feat_dist(min_feat_dist),feat_quality(feat_quality), tex_size(tex_size),
-    verbose(false),display_debug_images(false),pause_after_each_frame(false),_osgDBMutex(mutex)
+        _calib(calib),edgethresh(edgethresh),max_triangulation_len(max_triangulation_len),max_feature_count(max_feature_count),min_feat_dist(min_feat_dist),feat_quality(feat_quality), tex_size(tex_size),
+        verbose(false),display_debug_images(false),pause_after_each_frame(false),_osgDBMutex(mutex)
 {
 
 
@@ -360,9 +360,9 @@ void StereoEngine::captureCalibrationImages(int number)
 }
 
 void StereoEngine::stereoCalibrate(std::string imageList, int nx, int ny, int useUncalibrated)
-//Learning OpenCV: Computer Vision with the OpenCV Library
-//by Gary Bradski and Adrian Kaehler
-//Published by O'Reilly Media, October 3, 2008
+        //Learning OpenCV: Computer Vision with the OpenCV Library
+        //by Gary Bradski and Adrian Kaehler
+        //Published by O'Reilly Media, October 3, 2008
 {
     int displayCorners = 1;
     int showUndistorted = 1;
@@ -429,17 +429,17 @@ void StereoEngine::stereoCalibrate(std::string imageList, int nx, int ny, int us
                 cvResize( img, timg, CV_INTER_CUBIC );
             }
             result = cvFindChessboardCorners( timg, cvSize(nx, ny),
-                                             &temp[0], &count,
-                                             CV_CALIB_CB_ADAPTIVE_THRESH |
-                                             CV_CALIB_CB_NORMALIZE_IMAGE);
+                                              &temp[0], &count,
+                                              CV_CALIB_CB_ADAPTIVE_THRESH |
+                                              CV_CALIB_CB_NORMALIZE_IMAGE);
             if ( timg != img )
                 cvReleaseImage( &timg );
             if ( result || s == maxScale )
                 for ( j = 0; j < count; j++ )
                 {
-                    temp[j].x /= s;
-                    temp[j].y /= s;
-                }
+                temp[j].x /= s;
+                temp[j].y /= s;
+            }
             if ( result )
                 break;
         }
@@ -450,7 +450,7 @@ void StereoEngine::stereoCalibrate(std::string imageList, int nx, int ny, int us
 
             cvCvtColor( img, cimg, CV_GRAY2BGR );
             cvDrawChessboardCorners( cimg, cvSize(nx, ny), &temp[0],
-                                    count, result );
+                                     count, result );
             cvShowImage( "corners", cimg );
             cvReleaseImage( &cimg );
             int c = cvWaitKey(1000);
@@ -467,9 +467,9 @@ void StereoEngine::stereoCalibrate(std::string imageList, int nx, int ny, int us
         {
             //Calibration will suffer without subpixel interpolation
             cvFindCornerSubPix( img, &temp[0], count,
-                               cvSize(11, 11), cvSize(-1,-1),
-                               cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,
-                                              30, 0.01) );
+                                cvSize(11, 11), cvSize(-1,-1),
+                                cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,
+                                               30, 0.01) );
             copy( temp.begin(), temp.end(), pts.begin() + N );
         }
         cvReleaseImage( &img );
@@ -485,7 +485,7 @@ void StereoEngine::stereoCalibrate(std::string imageList, int nx, int ny, int us
                     cvPoint3D32f(i*squareSize, j*squareSize, 0);
     for ( i = 1; i < nframes; i++ )
         copy( objectPoints.begin(), objectPoints.begin() + n,
-             objectPoints.begin() + i*n );
+              objectPoints.begin() + i*n );
     npoints.resize(nframes,n);
     N = nframes*n;
     CvMat _objectPoints = cvMat(1, N, CV_32FC3, &objectPoints[0] );
@@ -501,14 +501,14 @@ void StereoEngine::stereoCalibrate(std::string imageList, int nx, int ny, int us
     printf("Running stereo calibration ...");
     fflush(stdout);
     cvStereoCalibrate( &_objectPoints, &_imagePoints1,
-                      &_imagePoints2, &_npoints,
-                      &_M1, &_D1, &_M2, &_D2,
-                      imageSize, &_R, &_T, &_E, &_F,
-                      cvTermCriteria(CV_TERMCRIT_ITER+
-                                     CV_TERMCRIT_EPS, 100, 1e-5),
-                      CV_CALIB_FIX_ASPECT_RATIO +
-                      CV_CALIB_ZERO_TANGENT_DIST +
-                      CV_CALIB_SAME_FOCAL_LENGTH );
+                       &_imagePoints2, &_npoints,
+                       &_M1, &_D1, &_M2, &_D2,
+                       imageSize, &_R, &_T, &_E, &_F,
+                       cvTermCriteria(CV_TERMCRIT_ITER+
+                                      CV_TERMCRIT_EPS, 100, 1e-5),
+                       CV_CALIB_FIX_ASPECT_RATIO +
+                       CV_CALIB_ZERO_TANGENT_DIST +
+                       CV_CALIB_SAME_FOCAL_LENGTH );
     printf(" done\n");
     // CALIBRATION QUALITY CHECK
     // because the output fundamental matrix implicitly
@@ -526,9 +526,9 @@ void StereoEngine::stereoCalibrate(std::string imageList, int nx, int ny, int us
     CvMat _L2 = cvMat(1, N, CV_32FC3, &line[1][0]);
     //Always work in undistorted space
     cvUndistortPoints( &_imagePoints1, &_imagePoints1,
-                      &_M1, &_D1, 0, &_M1 );
+                       &_M1, &_D1, 0, &_M1 );
     cvUndistortPoints( &_imagePoints2, &_imagePoints2,
-                      &_M2, &_D2, 0, &_M2 );
+                       &_M2, &_D2, 0, &_M2 );
     cvComputeCorrespondEpilines( &_imagePoints1, 1, &_F, &_L1 );
     cvComputeCorrespondEpilines( &_imagePoints2, 2, &_F, &_L2 );
     double avgErr = 0;
@@ -569,9 +569,9 @@ void StereoEngine::findDisparity()
     // IF BY CALIBRATED (BOUGUET'S METHOD)
 
     cvStereoRectify( M1, M2, D1, D2, imageSize,
-                    R, T,
-                    R1, R2, P1, P2, Q,
-                    CV_CALIB_ZERO_DISPARITY);
+                     R, T,
+                     R1, R2, P1, P2, Q,
+                     CV_CALIB_ZERO_DISPARITY);
     int isVerticalStereo = fabs(CV_MAT_ELEM(*P1,double,1,3)) > fabs(CV_MAT_ELEM(*P2,double,0,3));
     //Precompute maps for cvRemap()
     cvInitUndistortRectifyMap(M1,D1,R1,P1,mx1,my1);
@@ -689,10 +689,10 @@ void StereoEngine::sparseDepth(const int MAX_COUNT, list<osg::Vec3> &points, lis
 
     count = MAX_COUNT;
     cvGoodFeaturesToTrack( leftGrey, eig, temp, goodPoints[0], &count,
-                          quality, min_distance, 0, 3, 0, 0.04 );
+                           quality, min_distance, 0, 3, 0, 0.04 );
     cvFindCornerSubPix( leftGrey, goodPoints[0], count,
-                       cvSize(win_size,win_size), cvSize(-1,-1),
-                       cvTermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
+                        cvSize(win_size,win_size), cvSize(-1,-1),
+                        cvTermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
     CvMat imagePoints0 = cvMat(1, count, CV_32FC2, &goodPoints[0][0] );
     CvMat imagePoints1 = cvMat(1, count, CV_32FC2, &goodPoints[1][0] );
 
@@ -717,25 +717,25 @@ void StereoEngine::sparseDepth(const int MAX_COUNT, list<osg::Vec3> &points, lis
     //SCF_TRACK_EPSILON       0.03
 
     CvTermCriteria criteria = cvTermCriteria( CV_TERMCRIT_ITER| CV_TERMCRIT_EPS,
-                                             20,
-                                             0.03  );
+                                              20,
+                                              0.03  );
     int pyramid_level=3;
     float error[count];
     char feature_status[count];
     cvCalcOpticalFlowPyrLK( leftGrey,
-                           rightGrey,
-                           leftPyr,
-                           rightPyr,
-                           goodPoints[0],
-                           goodPoints[1],
-                           count,
-                           cvSize(win_size,win_size),
-                           pyramid_level,
-                           feature_status,
-                           error,
-                           criteria,
-                           flags
-                           );
+                            rightGrey,
+                            leftPyr,
+                            rightPyr,
+                            goodPoints[0],
+                            goodPoints[1],
+                            count,
+                            cvSize(win_size,win_size),
+                            pyramid_level,
+                            feature_status,
+                            error,
+                            criteria,
+                            flags
+                            );
     CvMat *triPoints = cvCreateMat(4,count, CV_32F );
 
     cvTriangulatePoints(P1,P2,&imagePoints0,&imagePoints1,triPoints);
@@ -784,13 +784,13 @@ void StereoEngine::displayDisparity()
     cvGetCols( pair, &part, 0, imageSize.width );
     cvCvtColor( leftGreyR, &part, CV_GRAY2BGR );
     cvGetCols( pair, &part, imageSize.width,
-              imageSize.width*2 );
+               imageSize.width*2 );
     cvCvtColor( rightGreyR, &part, CV_GRAY2BGR );
 
     for (int j = 0; j < imageSize.height; j += 16 )
         cvLine( pair, cvPoint(0,j),
-               cvPoint(imageSize.width*2,j),
-               CV_RGB(0,255,0));
+                cvPoint(imageSize.width*2,j),
+                CV_RGB(0,255,0));
     cvShowImage( "disparity", vdisp );
     cvShowImage( "rectified", pair );
 }
@@ -1068,13 +1068,13 @@ void print_matrix(const char *str,CvMat *C){
     }
 }
 bool is_new_corner_valid(
-    double                x,
-    double                y,
-    int skip,
-    double                min_dist,
-    const CvPoint2D32f *corners,
-    const char *valid,
-    int count)
+        double                x,
+        double                y,
+        int skip,
+        double                min_dist,
+        const CvPoint2D32f *corners,
+        const char *valid,
+        int count)
 {
     double min_dist_squared = min_dist*min_dist;
 
@@ -1131,10 +1131,10 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
     int blocksize=5;
     bool useharris=true;
     cvGoodFeaturesToTrack( leftGrey, eig, temp, goodPoints[0], &count,
-                          feat_quality, min_feat_dist, 0, blocksize, useharris);
+                           feat_quality, min_feat_dist, 0, blocksize, useharris);
     cvFindCornerSubPix( leftGrey, goodPoints[0], count,
-                       cvSize(win_size,win_size), cvSize(-1,-1),
-                       cvTermCriteria(CV_TERMCRIT_ITER,10,0.0));
+                        cvSize(win_size,win_size), cvSize(-1,-1),
+                        cvTermCriteria(CV_TERMCRIT_ITER,10,0.0));
 
 
     vector<CvPoint2D64f> undist_coords1;
@@ -1311,9 +1311,9 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
         double x= goodPoints[0][i].x;
         double y= goodPoints[0][i].y;
         if(!is_new_corner_valid( x,
-                                y,
-                                i,
-                                min_feat_dist,goodPoints[0],Lstatus,count ))
+                                 y,
+                                 i,
+                                 min_feat_dist,goodPoints[0],Lstatus,count ))
 
             Lstatus[i]=false;
         else
@@ -1323,16 +1323,16 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
     int cnt1=0;
     for(int i=0; i< count; i++)
         if(Lstatus[i]){
-            cnt1++;
-        }
+        cnt1++;
+    }
     ///           printf("%d %f %f\n",cnt1++,goodPoints[0][i].x,
     //               goodPoints[0][i].y);
     cvZero(leftPyr);
     cvZero(rightPyr);
 
     cvCalcOpticalFlowPyrLK( leftGrey, rightGrey, leftPyr, rightPyr,
-                           goodPoints[0], goodPoints[2], count, cvSize(25,25), 3, Rstatus, error,
-                           cvTermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03), flags );
+                            goodPoints[0], goodPoints[2], count, cvSize(25,25), 3, Rstatus, error,
+                            cvTermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03), flags );
 
     for(int i=0; i< count; i++){
         double x= goodPoints[2][i].x;
@@ -1497,18 +1497,18 @@ void StereoEngine::displayOpticalFlow()
     cvGetCols( pair, &part, 0, imageSize.width );
     cvCvtColor( leftGreyR, &part, CV_GRAY2BGR );
     cvGetCols( pair, &part, imageSize.width,
-              imageSize.width*2 );
+               imageSize.width*2 );
     cvCvtColor( rightGreyR, &part, CV_GRAY2BGR );
 
     for (int j = 0; j < imageSize.height; j += 16 )
         cvLine( pair, cvPoint(0,j),
-               cvPoint(imageSize.width*2,j),
-               CV_RGB(0,255,0));
+                cvPoint(imageSize.width*2,j),
+                CV_RGB(0,255,0));
     cvShowImage( "rectified", pair );
 }
 
 #endif
-bool StereoEngine::processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,const double feature_depth_guess){
+bool StereoEngine::processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,const double feature_depth_guess,bool cache_img){
 
     char cachedtexdir[1024];
     char meshfilename[1024];
@@ -1520,16 +1520,17 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
     checkmkdir(cached_dir);
     string outputdir="mesh-agg/";
     checkmkdir(outputdir);
-    sprintf(cachedtexdir,"%s/cache-tex-%d",basedir.c_str(),tex_size);
-    checkmkdir(cachedtexdir);
-
+    if(cache_img){
+        sprintf(cachedtexdir,"%s/cache-tex-%d",basedir.c_str(),tex_size);
+        checkmkdir(cachedtexdir);
+    }
     sprintf(meshfilename,"%s/surface-%s.ply",cached_dir.c_str(),osgDB::getSimpleFileName(osgDB::getNameLessExtension(left_file_name)).c_str());
 
     sprintf(tcmeshfilename,"%s/surface-%s.tc.ply",outputdir.c_str(),osgDB::getSimpleFileName(osgDB::getNameLessExtension(left_file_name)).c_str());
     sprintf(texfilename,"%s/%s.png",
             cachedtexdir,osgDB::getSimpleFileName(osgDB::getNameLessExtension(left_file_name)).c_str());
     bool cachedMesh=osgDB::fileExists(meshfilename);
-    bool cachedTex=osgDB::fileExists(texfilename);
+    bool cachedTex=cache_img ? osgDB::fileExists(texfilename) : true;
 
     IplImage *left_frame;
     IplImage *color_image;
@@ -1550,16 +1551,16 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
             cout << "Loading images..." << endl;
 
         if( !get_stereo_pair(
-                    imgdir,
-                    left_frame, right_frame,color_image,
-                    left_file_name, right_file_name ) )
+                imgdir,
+                left_frame, right_frame,color_image,
+                left_file_name, right_file_name ) )
         {
             return false;
         }
         load_end_time = get_time( );
         if(verbose)
             cout << "Loaded images: " << left_file_name << " and "
-                 << right_file_name << endl;
+                    << right_file_name << endl;
 
         if(!cachedTex)
             cacheImage(color_image,texfilename,tex_size);

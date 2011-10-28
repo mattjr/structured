@@ -86,7 +86,7 @@ public:
     void drawPoints(CvArr* image, CvPoint2D32f points[], int count);
     void calculateOpticalFlow();
     void displayOpticalFlow();
-    bool processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,const double feature_depth_guess);
+    bool processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,const double feature_depth_guess,bool cache_img);
     double edgethresh;
     double max_triangulation_len;
     int max_feature_count;

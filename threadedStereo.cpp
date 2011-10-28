@@ -876,7 +876,7 @@ int main( int argc, char *argv[ ] )
 #pragma omp for
         for(int i=0; i < (int)tasks.size(); i++){
             tasks[i].valid=engine.processPair(base_dir,tasks[i].left_name,
-                                              tasks[i].right_name,tasks[i].mat,tasks[i].bbox,tasks[i].alt);
+                                              tasks[i].right_name,tasks[i].mat,tasks[i].bbox,tasks[i].alt,hw_image);
 
 #pragma omp atomic
             progCount++;
@@ -1371,6 +1371,7 @@ int main( int argc, char *argv[ ] )
                 sprintf(shr_tmp,"%s    %s/vcgapps/bin/mergeMesh mesh-diced/un-clipped-diced-%08d.ply -thresh %f -out mesh-diced/un2-clipped-diced-%08d-lod%d.ply ;",shr_tmp,
                         basepath.c_str(),i,0.9*vrip_res,i,vpblod);
                 sprintf(shr_tmp,"%s setenv DISPLAY:0.0; %s/vcgapps/bin/shadevis -n128  -f mesh-diced/un2-clipped-diced-%08d-lod%d.ply ;",shr_tmp,basepath.c_str(),i,vpblod);
+                //sprintf(shr_tmp,"%s setenv DISPLAY:0.0; cp mesh-diced/un2-clipped-diced-%08d-lod%d.ply mesh-diced/vis-un2-clipped-diced-%08d-lod%d.ply;",shr_tmp,i,vpblod,i,vpblod);
 
 
                 sprintf(shr_tmp,"%s %s/treeBBClip  mesh-diced/vis-un2-clipped-diced-%08d-lod%d.ply --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dup -F --outfile mesh-diced/vis-clipped-diced-%08d-lod%d.ply ",

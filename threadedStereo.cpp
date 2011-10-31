@@ -1148,7 +1148,7 @@ int main( int argc, char *argv[ ] )
 
         int split= std::max(_tileRows,_tileColumns);
         if(reimageSize.x() < 0.0)
-            reimageSize = osg::Vec2(adjustedSize / split,adjustedSize / split);
+            reimageSize = osg::Vec2(osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0),osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0));
 
         if(reimageSize.x() > 8192){
             fprintf(stderr, "Can't have an imaging size %f its larger then 8192 dropping\n",reimageSize.x());
@@ -1161,7 +1161,7 @@ int main( int argc, char *argv[ ] )
             reimageSize=osg::Vec2(8192,8192);
         }
         printf("Texture Cells %dx%d\n",_tileRows,_tileColumns);
-
+printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
         int vpblod=1;
         int faceTmp=numberFacesAll;
         do{
@@ -1717,7 +1717,7 @@ int main( int argc, char *argv[ ] )
         fclose(texcmds_fp);
         fclose(reFP);
         fclose(FP2);
-        fprintf(FP3,"\ngdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16\n");
+        fprintf(FP3,"\n#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16 32\n");
         fchmod(fileno(FP3),0777);
 
         fclose(FP3);

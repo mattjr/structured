@@ -30,16 +30,7 @@ int main( int argc, char **argv )
 
     bool debug=false;
     osg::Vec2 size;
-    {
-
-        vips::VImage in("subtile.tif");
-        size.x()=in.Xsize();
-        size.y()=in.Ysize();
-       /* if(debug) {
-            double downsampleRatio=1.0;
-            in.affine(downsampleRatio,0,0,downsampleRatio,0,0,0,0,size.x()*downsampleRatio,downsampleRatio*size.y()).write("tmp.jpg");
-        }*/
-    }
+    arguments.read("--size",size.x(),size.y());
     std::string mf=argv[1];
     osg::Matrixd viewProj,rotMat;
     readMatrixToScreen("view.mat",viewProj);

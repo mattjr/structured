@@ -1637,7 +1637,8 @@ int main( int argc, char *argv[ ] )
         int ajustedGLImageSizeX=(int)reimageSize.x();//-((reimageSize.x()/VTtileSize)*2*tileBorder);
         int ajustedGLImageSizeY=(int)reimageSize.y();//-((reimageSize.y()/VTtileSize)*2*tileBorder);
         FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
-
+        int totalX=ajustedGLImageSizeX*_tileRows;
+        int totalY=ajustedGLImageSizeY*_tileColumns;
 
         FILE *FP2=fopen("image_areas.txt","w");
         FILE *reFP=fopen("rebbox.txt","w");
@@ -1698,7 +1699,7 @@ int main( int argc, char *argv[ ] )
                 if(blending)
                     fprintf(texcmds_fp," --blend");
             }
-            int totalX=ajustedGLImageSizeX*_tileRows;
+
             fprintf(FP2,"%d %d %d %d mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),
                     (totalX-ajustedGLImageSizeX*(cells[i].row)),ajustedGLImageSizeY*cells[i].col,ajustedGLImageSizeY*(cells[i].col+1),cells[i].row,cells[i].col,_tileRows,_tileColumns);
             fprintf(FP3,"image_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
@@ -1745,7 +1746,7 @@ int main( int argc, char *argv[ ] )
 #define SINGLE_MESH_TEX 1
 #if SINGLE_MESH_TEX
         std::ostringstream p2;
-        p2 << basepath << "/singleImageTex " << "mesh-diced/vis-total.ply --outfile mesh-diced/totaltex.ply ";
+        p2 << basepath << "/singleImageTex " << "mesh-diced/vis-total.ply --outfile mesh-diced/totaltex.ply "<< "--size " << totalX << " "<<totalY;
         if(exportForStaticRender)
             p2      <<" --extra totaltex.obj";
 

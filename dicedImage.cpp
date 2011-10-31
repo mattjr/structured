@@ -112,7 +112,7 @@ int main(int argc, char** argv)
         if(nogfx){
             char tmp[1024];
             {
-                sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
+                sprintf(tmp,"mosaic/image_r%04d_c%04d_rs%04d_cs%04d.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
                 if(osgDB::fileExists(tmp)){
                     vips::VImage tmpI(tmp);
                     raw.insertplace(tmpI.extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
                 }
             }
             if(untex){
-                sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d_untex.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
+                sprintf(tmp,"mosaic/image_r%04d_c%04d_rs%04d_cs%04d_untex.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
                 if(osgDB::fileExists(tmp)){
                     vips::VImage tmpI(tmp);
                     raw_untex.insertplace(tmpI.extract_bands(0,3),width*cells[i].col,height*(_tileRows-cells[i].row-1));

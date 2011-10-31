@@ -106,7 +106,7 @@ static string deltaT_config_name;
 static string deltaT_dir;
 const char *uname="mesh";
 const char *dicedir="mesh-diced";
-const char *quaddir="mesh-quad";
+const char *mosdir="mosaic";
 const char *aggdir="mesh-agg";
 static string recon_config_file_name;
 static int lodTexSize[3];
@@ -621,13 +621,15 @@ int main( int argc, char *argv[ ] )
     ifstream      contents_file;
 
 
-    osgDB::makeDirectory(quaddir);
+    osgDB::makeDirectory(mosdir);
 
-    chmod(quaddir,   0777);
+    chmod(mosdir,   0777);
 
     osgDB::makeDirectory(aggdir);
 
     chmod(aggdir,   0777);
+
+
 
 
     osgDB::makeDirectory(dicedir);
@@ -1632,13 +1634,24 @@ int main( int argc, char *argv[ ] )
         string texcmds_fn="mesh-diced/texcmds";
         int VTtileSize=256;
         int tileBorder=1;
-        int ajustedGLImageSizeX=(int)reimageSize.x()-((reimageSize.x()/VTtileSize)*2*tileBorder);
-        int ajustedGLImageSizeY=(int)reimageSize.y()-((reimageSize.y()/VTtileSize)*2*tileBorder);
+        int ajustedGLImageSizeX=(int)reimageSize.x();//-((reimageSize.x()/VTtileSize)*2*tileBorder);
+        int ajustedGLImageSizeY=(int)reimageSize.y();//-((reimageSize.y()/VTtileSize)*2*tileBorder);
         FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
+
+
+        FILE *FP2=fopen("image_areas.txt","w");
         FILE *reFP=fopen("rebbox.txt","w");
+        FILE *FP3=fopen("createmosaic.sh","w");
+        if(!FP2 || ! FP3){
+            fprintf(stderr,"Can't open mosaic scripts\n");
+            exit(-1);
+        }
+        fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt mosaic.vrt ");
+
         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
                 totalbb.zMax(),_tileColumns,_tileRows);
 
+        fprintf(FP2,"0 %d 0 %d total\n",ajustedGLImageSizeX*_tileRows,ajustedGLImageSizeY*_tileColumns);
 
         for(int i=0; i <(int)cells.size(); i++){
             char tmpfn[1024];
@@ -1685,6 +1698,10 @@ int main( int argc, char *argv[ ] )
                 if(blending)
                     fprintf(texcmds_fp," --blend");
             }
+            int totalX=ajustedGLImageSizeX*_tileRows;
+            fprintf(FP2,"%d %d %d %d mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),
+                    (totalX-ajustedGLImageSizeX*(cells[i].row)),ajustedGLImageSizeY*cells[i].col,ajustedGLImageSizeY*(cells[i].col+1),cells[i].row,cells[i].col,_tileRows,_tileColumns);
+            fprintf(FP3,"image_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
 
             fprintf(texcmds_fp,"\n");
 
@@ -1698,7 +1715,11 @@ int main( int argc, char *argv[ ] )
         }
         fclose(texcmds_fp);
         fclose(reFP);
+        fclose(FP2);
+        fprintf(FP3,"\ngdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16\n");
+        fchmod(fileno(FP3),0777);
 
+        fclose(FP3);
         std::ostringstream p1;
 
         vector<std::string> precmd;
@@ -1706,15 +1727,20 @@ int main( int argc, char *argv[ ] )
             p1 <<basepath << "/createSem";
             precmd.push_back(p1.str());
         }
+
+
+
         string texcmd="tex.py";
         vector<std::string> postcmdv;
         std::ostringstream p;
         bool singleThreadedDicedTex=false;
-        p<<basepath << "/sparseJoin rebbox.txt  " << cwd  << " --pbuffer-only " << ajustedGLImageSizeX << " "<< ajustedGLImageSizeY  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
+        /*p<<"#"<<basepath << "/sparseJoin rebbox.txt  " << cwd  << " --pbuffer-only " << ajustedGLImageSizeX << " "<< ajustedGLImageSizeY  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
         if(!singleThreadedDicedTex)
-            p<<" -nogfx " << (hw_image ? "png" : "tif");
+            p<<" -nogfx " << (hw_image ? "png" : "ppm");
         if(untex)
-            p<< " -untex ";
+            p<< " -untex ";*/
+        p<< "cd " << cwd <<";./createmosaic.sh";
+
         postcmdv.push_back(p.str());
 #define SINGLE_MESH_TEX 1
 #if SINGLE_MESH_TEX

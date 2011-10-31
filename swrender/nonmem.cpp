@@ -993,12 +993,16 @@ int main(int ac, char *av[]) {
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
 
         start=osg::Timer::instance()->tick();
-
-        if( im_vips2tiff(outputImage,(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str())){
+//(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str()
+        IMAGE *tmpI=im_open("tmp","p");
+        im_extract_bands(outputImage,tmpI,0,3);
+        if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str())){
             fprintf(stderr,"Failed to write\n");
             cerr << im_error_buffer()<<endl;
+            im_close(tmpI);
             exit(-1);
         }
+        im_close(tmpI);
         elapsed=osg::Timer::instance()->delta_s(start,osg::Timer::instance()->tick());
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
         process_mem_usage(vm, rss);
@@ -1006,10 +1010,10 @@ int main(int ac, char *av[]) {
         im_close(outputImage);
 
         if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),view,(proj*offsetMatrix),sizeX,sizeY)){
-            if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
+           /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
                 perror( "Error deleting file" );
             else
-                puts( "File successfully deleted" );
+                puts( "File successfully deleted" );*/
         }
 
 

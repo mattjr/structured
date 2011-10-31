@@ -878,21 +878,21 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
     sem.release();
     char tmp[1024];
 
-    sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d.%s",row,col,_tileRows,_tileColumns,ext.c_str());
+    sprintf(tmp,"mosaic/image_r%04d_c%04d_rs%04d_cs%04d.%s",row,col,_tileRows,_tileColumns,ext.c_str());
     if(tmpImg1.valid()){
         osgDB::writeImageFile(*tmpImg1,tmp);
     }else
         fprintf(stderr,"Failed to copy image into RAM\n");
     if(untex){
 
-        sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d_untex.%s",row,col,_tileRows,_tileColumns,ext.c_str());
+        sprintf(tmp,"mosaic/image_r%04d_c%04d_rs%04d_cs%04d_untex.%s",row,col,_tileRows,_tileColumns,ext.c_str());
         if(tmpImg2.valid()){
             osgDB::writeImageFile(*tmpImg2,tmp);
         }else
             fprintf(stderr,"Failed to copy image into RAM\n");
     }
     if(depth){
-        sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d_depth.%s",row,col,_tileRows,_tileColumns,ext.c_str());
+        sprintf(tmp,"mosaic/image_r%04d_c%04d_rs%04d_cs%04d_depth.%s",row,col,_tileRows,_tileColumns,ext.c_str());
         if(depthImage.valid()){
             osgDB::writeImageFile(*depthImage,tmp);
         }else

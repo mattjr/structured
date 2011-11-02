@@ -394,6 +394,6 @@ int main(int argc, char** argv)
 
     double totalTime = osg::Timer::instance()->delta_s(startTick, osg::Timer::instance()->tick());
     printf("Total Time %s\n",format_elapsed(totalTime).c_str());
-    applyGeoTags("subtile.tif",osg::Vec2(lat,lon),view,proj,Xsize,Ysize);
+    applyGeoTags("subtile.tif",osg::Vec2(lat,lon),view*proj,Xsize,Ysize);
 
 }

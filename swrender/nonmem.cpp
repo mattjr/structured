@@ -687,6 +687,23 @@ int main(int ac, char *av[]) {
         fprintf(stderr,"Fail to get image params\n");
         return -1;
     }
+    std::string matfile;
+    if(!arguments.read("--mat",matfile)){
+        fprintf(stderr,"Fail mat file\n");
+        return -1;
+    }
+    mat4x  viewProjReadA ;
+            osg::Matrixd viewProjRead;
+    std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
+    if(!_file.good()){
+        fprintf(stderr,"Can't load %s\n",matfile.c_str());
+        exit(-1);
+    }
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++){
+        _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
+        viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
+    }
     sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d",row,col,_tileRows,_tileColumns);
 
     imageName=string(tmp)+".v";
@@ -830,7 +847,7 @@ int main(int ac, char *av[]) {
 
         //        printf("AAAA %d %d %d %d\n",row,col,_tileRows,_tileColumns);
 
-        osg::Matrix offsetMatrix=osg::Matrix::scale((double)_tileColumns,(double) _tileRows, 1.0)*osg::Matrix::translate((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0);
+     /*   osg::Matrix offsetMatrix=osg::Matrix::scale((double)_tileColumns,(double) _tileRows, 1.0)*osg::Matrix::translate((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0);
 
 
         mat4x offsetMatrixA=translation_matrix<fixed16_t>((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0)*scaling_matrix<fixed16_t>((double)_tileColumns,(double) _tileRows, 1.0);
@@ -841,7 +858,6 @@ int main(int ac, char *av[]) {
         //mat4x projA2=ortho_matrix<fixed16_t>(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0),totalbb.zMin(),totalbb.zMax());
         osg::Matrixd viewprojmat=view*(proj*offsetMatrix);
         mat4x viewprojmatA=(offsetMatrixA*projA)*viewA;
-        /*  cout << view <<endl;
         for(int i=0; i<4; i++){
             for(int j=0; j<4; j++){
                 cout << fix2float<16>(viewprojmatA.elem[i][j].intValue) << " ";
@@ -852,12 +868,16 @@ int main(int ac, char *av[]) {
 
         for(int i=0; i<4; i++){
             for(int j=0; j<4; j++){
-                cout << fix2float<16>(viewA.elem[i][j].intValue) << " ";
+                cout << fix2float<16>(viewProjReadA.elem[i][j].intValue) << " ";
             }
             cout <<endl;
         }
         cout <<endl;
+        cout <<"OSG\n";
+        cout <<viewprojmat<< endl;
 
+        cout <<viewProjRead<< endl;*/
+/*
         for(int i=0; i<4; i++){
             for(int j=0; j<4; j++){
                 cout << fix2float<16>(viewA2.elem[i][j].intValue) << " ";
@@ -866,10 +886,10 @@ int main(int ac, char *av[]) {
         }
         cout <<endl;*/
         if(!blending)
-            VertexShader::modelviewprojection_matrix=viewprojmatA;
+            VertexShader::modelviewprojection_matrix=viewProjReadA;
         else{
-            VertexShaderBlendingDistPass::modelviewprojection_matrix=viewprojmatA;
-            VertexShaderBlending::modelviewprojection_matrix=viewprojmatA;
+            VertexShaderBlendingDistPass::modelviewprojection_matrix=viewProjReadA;
+            VertexShaderBlending::modelviewprojection_matrix=viewProjReadA;
         }
 
         start = osg::Timer::instance()->tick();
@@ -1009,7 +1029,7 @@ int main(int ac, char *av[]) {
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
         im_close(outputImage);
 
-        if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),view,(proj*offsetMatrix),sizeX,sizeY)){
+        if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY)){
            /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
                 perror( "Error deleting file" );
             else

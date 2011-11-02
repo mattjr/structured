@@ -133,7 +133,8 @@ typedef struct _picture_cell{
     osg::BoundingBox bboxMargin;
 
     osg::BoundingBox bboxUnRot;
-
+    osg::BoundingBox bboxMarginUnRot;
+    osg::Matrixd m;
     std::string name;
     std::vector<int> images;
     std::vector<int> imagesMargin;
@@ -1006,7 +1007,7 @@ int main( int argc, char *argv[ ] )
 
 
         vector<string> mergeandcleanCmds;
-       // mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"tmp-clipped-diced","total",vrip_res));
+        // mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"tmp-clipped-diced","total",vrip_res));
         //mergeandcleanCmds.push_back("cd mesh-diced;");
         /* string tcmd2;
                 char tmp100[8096];
@@ -1079,15 +1080,15 @@ int main( int argc, char *argv[ ] )
 
         cout << totalbb_unrot._min<< " " << totalbb_unrot._max<<endl;
         cout << totalbb._min<< " " << totalbb._max<<endl;
-       /* osg::BoundingBox tmp=totalbb;
+        /* osg::BoundingBox tmp=totalbb;
         tmp._min[2]= tmp._min[1];
         tmp._max[2]= tmp._max[1];
 */
 
         bs.expandBy(totalbb);
 #if 0
-       // float rx=0,ry=180.0,rz=-90;
-       // int numberFacesAll=0;
+        // float rx=0,ry=180.0,rz=-90;
+        // int numberFacesAll=0;
         {
             char tmp[1024];
             sprintf(tmp,".%d,%d,%d.rot",(int)rx,(int)ry,(int)rz);
@@ -1161,7 +1162,7 @@ int main( int argc, char *argv[ ] )
             reimageSize=osg::Vec2(8192,8192);
         }
         printf("Texture Cells %dx%d\n",_tileRows,_tileColumns);
-printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
+        printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
         int vpblod=1;
         int faceTmp=numberFacesAll;
         do{
@@ -1213,11 +1214,12 @@ printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
                 for(int col=0; col<_tileColumns; col++){
                     osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
                     double left,right,bottom,top,znear,zfar;
-                    (view*proj*offsetMatrix).getOrtho(left,right,bottom,top,znear,zfar);
-                    double margin=vrip_res*4;
+                    osg::Matrix m=(view*proj*offsetMatrix);
+                    m.getOrtho(left,right,bottom,top,znear,zfar);
+                    double margin=vrip_res*10;
                     osg::BoundingBox thisCellBbox(left,bottom,bs.center()[2]-bs.radius(),right,top,bs.center()[2]+bs.radius());
                     osg::BoundingBox thisCellBboxMargin(left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
-                    //   std::cout<< thisCellBbox._min << " "<< thisCellBbox._max<<"\n";
+                  //  std::cout<< thisCellBbox._max-thisCellBbox._min <<"\n";
                     //  std::cout<< "A"<<thisCellBboxMargin._min << " "<< thisCellBboxMargin._max<<"\n\n";
 
                     picture_cell cell;
@@ -1225,13 +1227,25 @@ printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
                     cell.bboxMargin=thisCellBboxMargin;
                     cell.bboxUnRot.expandBy(cell.bbox._min*osg::Matrix::inverse(rotM));
                     cell.bboxUnRot.expandBy(cell.bbox._max*osg::Matrix::inverse(rotM));
+
+                    cell.bboxMarginUnRot.expandBy(cell.bboxMargin._min*osg::Matrix::inverse(rotM));
+                    cell.bboxMarginUnRot.expandBy(cell.bboxMargin._max*osg::Matrix::inverse(rotM));
+
                     cell.row=row;
                     cell.col=col;
+                    cell.m=m;
                     sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",row,col,vpblod);
                     cell.name=string(tmp4);
+                    sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat",row,col);
+                    std::fstream _file(tmp4,std::ios::binary|std::ios::out);
+
                     for(int i=0; i < (int)tasks.size(); i++){
                         if(!tasks[i].valid || !tasks[i].bbox.valid())
                             continue;
+                        for(int k=0; k<4; k++)
+                            for(int l=0; l<4; l++)
+                                _file.write(reinterpret_cast<char*>(&(cell.m(k,l))),sizeof(double));
+                        _file.close();
                         osg::Vec3 m1=osg::Vec3(tasks[i].bbox.xMin(),tasks[i].bbox.yMin(),tasks[i].bbox.zMin())*rotM;
                         osg::Vec3 m2=osg::Vec3(tasks[i].bbox.xMax(),tasks[i].bbox.yMax(),tasks[i].bbox.zMax())*rotM;
 
@@ -1260,8 +1274,8 @@ printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
             vector<std::string> postcmdv;
             string tcmd =basepath+string("/vrip/bin/plymerge ");
             char tmp100[8096];
-           // sprintf(tmp100," --invrot %f %f %f ",rx,ry,rz);
-           // tcmd+=tmp100;
+            // sprintf(tmp100," --invrot %f %f %f ",rx,ry,rz);
+            // tcmd+=tmp100;
             string splitcmds_fn="mesh-diced/splitcmds";
 
             FILE *splitcmds_fp=fopen(splitcmds_fn.c_str(),"w");
@@ -1272,7 +1286,7 @@ printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
                 sprintf(shr_tmp,"cd %s;%s/treeBBClip ",           cwd,
                         basepath.c_str());
                 for(int j=0; j <(int)vrip_cells.size(); j++){
-                    if(vrip_cells[j].poses.size() == 0 || !cells[i].bboxUnRot.intersects(vrip_cells[j].bounds.bbox))
+                    if(vrip_cells[j].poses.size() == 0 || !cells[i].bboxMarginUnRot.intersects(vrip_cells[j].bounds.bbox))
                         continue;
                     sprintf(shr_tmp,"%s mesh-diced/tmp-clipped-diced-%08d.ply",shr_tmp,j);
                     v_count++;
@@ -1281,11 +1295,11 @@ printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
                     continue;
                 sprintf(shr_tmp,"%s --invrot %f %f %f --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply;",
                         shr_tmp,rx,ry,rz,
-                        cells[i].bboxUnRot.xMin(),
-                        cells[i].bboxUnRot.yMin(),
+                        cells[i].bboxMarginUnRot.xMin(),
+                        cells[i].bboxMarginUnRot.yMin(),
                         -FLT_MAX,
-                        cells[i].bboxUnRot.xMax(),
-                        cells[i].bboxUnRot.yMax(),
+                        cells[i].bboxMarginUnRot.xMax(),
+                        cells[i].bboxMarginUnRot.yMax(),
                         FLT_MAX,
                         cells[i].row,cells[i].col);
                 sprintf(shr_tmp,"%s  %s/vcgapps/bin/mergeMesh mesh-diced/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply -flip -cleansize %f -thresh %f -out mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ply ;",shr_tmp,
@@ -1327,7 +1341,7 @@ printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
 
 
             sprintf(tmp100, " > mesh-diced/vis-total.ply");
-          /*  sprintf(tmp100,"%s; %s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/vis-total.ive -dup --outfile mesh-diced/vis-total.ply ",
+            /*  sprintf(tmp100,"%s; %s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/vis-total.ive -dup --outfile mesh-diced/vis-total.ply ",
                     tmp100,basepath.c_str(),
                     -FLT_MAX,-FLT_MAX,-FLT_MAX,
                     FLT_MAX,FLT_MAX,FLT_MAX);*/
@@ -1363,11 +1377,11 @@ printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
 
                 sprintf(shr_tmp,"%s --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile mesh-diced/un-clipped-diced-%08d.ply;",
                         shr_tmp,
-                           tmp_bbox.xMin(),
-                          tmp_bbox.yMin(),
+                        tmp_bbox.xMin(),
+                        tmp_bbox.yMin(),
                         -FLT_MAX,
-                       tmp_bbox.xMax(),
-                          tmp_bbox.yMax(),
+                        tmp_bbox.xMax(),
+                        tmp_bbox.yMax(),
                         FLT_MAX,
                         i);
                 sprintf(shr_tmp,"%s    %s/vcgapps/bin/mergeMesh mesh-diced/un-clipped-diced-%08d.ply -thresh %f -out mesh-diced/un2-clipped-diced-%08d-lod%d.ply ;",shr_tmp,
@@ -1378,13 +1392,13 @@ printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
 
                 sprintf(shr_tmp,"%s %s/treeBBClip  mesh-diced/vis-un2-clipped-diced-%08d-lod%d.ply --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dup -F --outfile mesh-diced/vis-clipped-diced-%08d-lod%d.ply ",
                         shr_tmp,
-                           basepath.c_str(),
-                           i,vpblod,
-                           vrip_cells[i].bounds.bbox.xMin(),
-                           vrip_cells[i].bounds.bbox.yMin(),
+                        basepath.c_str(),
+                        i,vpblod,
+                        vrip_cells[i].bounds.bbox.xMin(),
+                        vrip_cells[i].bounds.bbox.yMin(),
                         -FLT_MAX,
-                       vrip_cells[i].bounds.bbox.xMax(),
-                           vrip_cells[i].bounds.bbox.yMax(),
+                        vrip_cells[i].bounds.bbox.xMax(),
+                        vrip_cells[i].bounds.bbox.yMax(),
                         FLT_MAX,
                         i,vpblod);
                 fprintf(splitcmds_fp,"%s\n",shr_tmp);
@@ -1466,7 +1480,7 @@ printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
         shellcm.write_generic(splitcmd,splitcmds_fn,"Split");
         if(!no_split)
             sysres=system("./split.py");
-//#else
+        //#else
         //printf("Split for Tex %d\n",(int)cells.size());
         osg::Timer_t startTick= osg::Timer::instance()->tick();
         int totalTodoCount=cells.size()+vrip_cells.size();
@@ -1686,12 +1700,13 @@ printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
                     fprintf(texcmds_fp," --atlas");
             }
             else{
-                fprintf(texcmds_fp,";%s/nonmem  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
+                fprintf(texcmds_fp,";%s/nonmem  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
                         basepath.c_str(),
                         cells[i].row,cells[i].col,
                         vpblod,
                         cells[i].row,cells[i].col,
                         (base_dir+"/img/").c_str(),
+                        cells[i].row,cells[i].col,
                         rx,ry,rz,
                         ajustedGLImageSizeX,ajustedGLImageSizeY,
                         cells[i].row,cells[i].col,_tileRows,_tileColumns,

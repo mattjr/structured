@@ -71,11 +71,11 @@ void process_mem_usage(double& vm_usage, double& resident_set)
     vm_usage     = vsize / 1024.0;
     resident_set = rss * page_size_kb;
 }
-bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMatrix,int width,int height){
+bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int width,int height){
 
     osg::Matrix modWindow =( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*width,0.5*height,0.5f));
     osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,height,0));
-    osg::Matrix worldtoScreen=viewMatrix * projMatrix * modWindow*bottomLeftToTopLeft;
+    osg::Matrix worldtoScreen=/*viewMatrix * projMatrix*/ viewproj * modWindow*bottomLeftToTopLeft;
     osg::Matrix screenToWorld=osg::Matrix::inverse(worldtoScreen);
     osg::Vec3 tl(0,0,0);
     osg::Vec3 bl(0,height,0);

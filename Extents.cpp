@@ -300,47 +300,69 @@ void MyDataSet::init()
     readMatrixToScreen("view.mat",viewProj);
 
     if(_useReImage){
-        FILE *fp=fopen("image_areas.txt","r");
-        if(!fp){
+        ifstream inf( "image_areas.txt" );
+
+
+        if(!inf.good()){
             fprintf(stderr,"Can't open image_areas.txt\n");
             exit(-1);
         }
         int cnt=0;
-        while(!feof(fp)){
+        while(!inf.eof()){
             char fname[1024];
+            char fname_tif[1024];
             int minx,maxx,miny,maxy;
-            int res=fscanf(fp,"%d %d %d %d %s\n",&minx,&maxx,&miny,&maxy,fname);
-            if(res != 5){
-                fprintf(stderr,"Bad parse\n");
-                exit(-1);
-            }
-            if(cnt ==0){
-                totalX=maxx;
-                totalY=maxy;
+            std::vector<int> levels;
+            char tmp_l[8192];
+            int num_levels;
+            if( inf>> minx >>maxx >>miny>>maxy>>fname>>fname_tif >>num_levels){
 
-            }else{
-                mosaic_cell cell;
-                cell.bbox=osg::BoundingBox(miny,minx/*totalX-minx-(maxx-minx)*/,-FLT_MAX,maxy,/*totalX-maxx-(maxx-minx)*/ maxx,FLT_MAX);
-                cell.name=std::string(fname);
-                if(osgDB::fileExists(cell.name)){
-                    cell.img = new vips::VImage(cell.name.c_str());
-                    cell.mutex=new OpenThreads::Mutex;
-                    mosaic_cells.push_back(cell);
 
-                }
-                else{
-                    std::cerr << "Can't open "<<cell.name<<  "on reimaging run\n";
-                    cell.img=NULL;
+                for(int i=0;i< num_levels; i++){
+                    int tmp_level;
+                    inf>>tmp_level;
+                    levels.push_back(tmp_level);
                 }
 
-            }
-            cnt++;
+                if(cnt ==0){
+                    totalX=maxx;
+                    totalY=maxy;
 
+                }else{
+                    mosaic_cell cell;
+                    cell.bbox=osg::BoundingBox(miny,minx/*totalX-minx-(maxx-minx)*/,-FLT_MAX,maxy,/*totalX-maxx-(maxx-minx)*/ maxx,FLT_MAX);
+                    cell.name=std::string(fname);
+                    cell.levels_ds=levels;
+
+                    if(osgDB::fileExists(cell.name)){
+                        cell.img = new vips::VImage(cell.name.c_str());
+                        cell.img_ds.resize(cell.levels_ds.size(),NULL);
+                        cell.name_ds.resize(cell.levels_ds.size());
+
+                        for(int i=0;i <(int)cell.levels_ds.size(); i++){
+                            sprintf(tmp_l,"%s:%d",fname_tif,i+1);
+                           /* vips::VImage *img=new vips::VImage(tmp_l);
+                            if(!img){
+                                std::cerr << "Can't open downsampled "<<tmp_l<<  " on reimaging run\n";
+                            }
+                            cell.img_ds[i]=img;*/
+                            cell.name_ds[i]=string(tmp_l);
+                        }
+                        cell.mutex=new OpenThreads::Mutex;
+
+                        mosaic_cells.push_back(cell);
+
+                    }
+                    else{
+                        std::cerr << "Can't open "<<cell.name<<  " on reimaging run\n";
+                        cell.img=NULL;
+                    }
+
+                }
+                cnt++;
+
+            }
         }
-
-
-
-
     }
 
 }
@@ -2791,7 +2813,7 @@ void MyDataSet::_writeRow(Row& row)
 osg::Matrix vpb::MyDataSet::getImageSection(const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<osg::Image> &image,osg::Vec4 &ratio,int level){
 
     double downsampleFactor=pow(2.0,level);
-  //  printf("Downsample Factor %f\n",downsampleFactor);
+    //  printf("Downsample Factor %f\n",downsampleFactor);
     double downsampleRatio=1.0/downsampleFactor;
     // std::cout<< minT << " " << maxT<<std::endl;
     // printf("%f %f\n",downsampleRatio,downsampleRatio);
@@ -2833,7 +2855,7 @@ osg::Matrix vpb::MyDataSet::getImageSection(const osg::Vec2 minT, const osg::Vec
     }
     {
 
-      /*  unsigned char *tmpI=new unsigned char[totalX*totalY*3];     vips::VImage tmpT(tmpI,totalX,totalY,3,vips::VImage::FMTUCHAR);
+        /*  unsigned char *tmpI=new unsigned char[totalX*totalY*3];     vips::VImage tmpT(tmpI,totalX,totalY,3,vips::VImage::FMTUCHAR);
 
         for(int i=0; i < mosaic_cells.size(); i++){
             if(mosaic_cells[i].mutex && mosaic_cells[i].img){
@@ -2842,10 +2864,10 @@ osg::Matrix vpb::MyDataSet::getImageSection(const osg::Vec2 minT, const osg::Vec
             }
         }
         tmpT.write("dang.v");*/
-       // exit(-1);
+        // exit(-1);
         vips::VImage osgImage(image->data(),downsampleSize.x(),downsampleSize.y(),3,vips::VImage::FMTUCHAR);
         bzero(image->data(),downsampleSize.x()*downsampleSize.y()*3);
-        for(int i=0; i < mosaic_cells.size(); i++){
+        for(int i=0; i < (int)mosaic_cells.size(); i++){
             // cout << "AREA " <<areaBB._min << " " << areaBB._max<<"\n";
             // cout << "MOSIAC " <<i << " "<<mosaic_cells[i].bbox._min << " " << mosaic_cells[i].bbox._max<<"\n";
 
@@ -2854,7 +2876,30 @@ osg::Matrix vpb::MyDataSet::getImageSection(const osg::Vec2 minT, const osg::Vec
                     fprintf(stderr,"Fail to get mutex or img\n");
                     exit(-1);
                 }
-                OpenThreads::ScopedLock<OpenThreads::Mutex> lock(*mosaic_cells[i].mutex);
+                vips::VImage *used_img=NULL;
+                int ratio=1;
+
+                int closestDownsample;
+                for(closestDownsample=0; closestDownsample< (int)mosaic_cells[i].levels_ds.size()-1; closestDownsample++){
+                    if(mosaic_cells[i].levels_ds[closestDownsample] >= downsampleFactor)
+                        break;
+                }
+                if(downsampleFactor == 1){
+                    used_img=mosaic_cells[i].img;
+                    ratio=1;
+
+                }else{
+
+
+                    ratio=downsampleFactor/mosaic_cells[i].levels_ds[closestDownsample];
+                    if(mosaic_cells[i].levels_ds[closestDownsample] == 1)
+                        used_img=mosaic_cells[i].img;
+                    else
+                        used_img=new vips::VImage(mosaic_cells[i].name_ds[closestDownsample].c_str(),"r");
+
+
+                }
+
                 osg::BoundingBox imgBB=areaBB.intersect(mosaic_cells[i].bbox);
                 int tileStartX= (int)(imgBB.xMin()-mosaic_cells[i].bbox.xMin());
                 int tileStartY= (int)(imgBB.yMin()-mosaic_cells[i].bbox.yMin());
@@ -2868,7 +2913,14 @@ osg::Matrix vpb::MyDataSet::getImageSection(const osg::Vec2 minT, const osg::Vec
                 //downsampledYoff=0;
                 int downsampledXoff=outOffsetX/downsampleFactor;
                 int downsampledYoff=outOffsetY/downsampleFactor;
-              /*  int fullTileSize=mosaic_cells[i].bbox.xMax()-mosaic_cells[i].bbox.xMin();
+                int downsampledtileStartX=(int)floor(tileStartX/downsampleFactor);
+                int downsampledtileStartY=(int)floor(tileStartY/downsampleFactor);
+
+
+
+                int downsampledtileRangeX=(int)floor(tileRangeX/downsampleFactor);
+                int downsampledtileRangeY=(int)floor(tileRangeY/downsampleFactor);
+                /*  int fullTileSize=mosaic_cells[i].bbox.xMax()-mosaic_cells[i].bbox.xMin();
                 while(tmpCntX<outOffsetX){
                     tmpCntX+=fullTileSize;
                     downsampledXoff++;
@@ -2900,22 +2952,35 @@ downsampledYoff,
                        );
 */
                 // if(mosaic_cells[i].img->Bands() == 3)
-                if(tileRangeX < downsampleFactor || tileRangeY < downsampleFactor)
+                if(tileRangeX < ratio || tileRangeY < ratio)
                     continue;
-              //  vips::VImage tmpI=mosaic_cells[i].img->extract_area(tileStartX,
+                //  vips::VImage tmpI=mosaic_cells[i].img->extract_area(tileStartX,
                 //                                                    tileStartY,
-                  //                                                  tileRangeX,
-                    //                                                tileRangeY).shrink(downsampleFactor,downsampleFactor);
-      //          printf(" Size [%d %d]\n",tmpI.Xsize(),tmpI.Ysize());
+                //                                                  tileRangeX,
+                //                                                tileRangeY).shrink(downsampleFactor,downsampleFactor);
+                //printf(" Size [%d %d]\n",used_img->Xsize(),used_img->Ysize());
+              /*  osgImage.insertplace(used_img->extract_area(downsampledtileStartX,
+                                                            downsampledtileStartY,
+                                                            downsampledtileRangeX,
+                                                            downsampledtileRangeY).shrink(ratio,ratio),*/
+                {
+
+                    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(*mosaic_cells[i].mutex);
+
                 osgImage.insertplace(mosaic_cells[i].img->extract_area(tileStartX,
-                                                                       tileStartY,
-                                                                       tileRangeX,
-                                                                       tileRangeY).shrink(downsampleFactor,downsampleFactor),
+                                                                                      tileStartY,
+                                                                                      tileRangeX,
+                                                                                      tileRangeY).shrink(downsampleFactor,downsampleFactor),
                                      downsampledXoff,downsampledYoff );
+            }
+                if(downsampleFactor != 1 || mosaic_cells[i].levels_ds[closestDownsample] != 1){
+                 //   delete used_img;
+                }
+
             }
         }
         // osgImage.write("tmp.v");
-       //exit(-1);
+        //exit(-1);
     }
     ratio=osg::Vec4(x,y,subSize.x(),subSize.y());
     //osg::Vec2 f(xRange-subSize.x(),yRange-subSize.y());
@@ -3309,7 +3374,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     double midLat,midLong,midZ;
     osg::Vec3d midPointLatLong;
     dynamic_cast<MyDataSet*>(_dataSet)->reprojectPoint(bbox.center(),midPointLatLong);
- //   cout << "Lat Long Height" << midPointLatLong<<endl;
+    //   cout << "Lat Long Height" << midPointLatLong<<endl;
     //et->computeLocalToWorldTransformFromLatLongHeight(osg::DegreesToRadians(midPointLatLong[0]),osg::DegreesToRadians(midPointLatLong[1]),midPointLatLong[2],_localToWorld);
     createPlacerMatrix(dynamic_cast<MyDataSet*>(_dataSet)->_TargetSRS,22.988098333,36.517776667,0,_localToWorld);
     //osg::Matrix::translate(midPointLatLong);

@@ -13,17 +13,21 @@ set(OSG_COMPONENTS osg osgUtil osgViewer osgGA osgManipulator osgText osgDB)
 find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
 
    include_directories( ${OSG_INCLUDE_DIR} ${VIPS_INCLUDE_DIRS})
-add_executable (nonmem ../MemUtils.cpp nonmem.cpp render_utils.cpp vertexData.cpp plyfile.cpp renderer/geometry_processor.cpp )
+add_library(swrender render_utils.cpp vertexData.cpp plyfile.cpp renderer/geometry_processor.cpp ../MemUtils.cpp ar.cpp)
+add_executable (nonmem . nonmem.cpp  )
 
 #add_executable (calcTexCoordOutCore  calcTexCoordOutCore.cpp render_utils.cpp vertexData.cpp plyfile.cpp IMG_savepng.c renderer/geometry_processor.cpp )
+add_executable (rangeimg rangeimg.cpp)
 
-add_executable (blendincore ../MemUtils.cpp blendincore.cpp render_utils.cpp vertexData.cpp plyfile.cpp renderer/geometry_processor.cpp)
+add_executable (blendincore  blendincore.cpp)
 #add_executable (rendertest example2.cpp render_utils.cpp vertexData.cpp plyfile.cpp IMG_savepng.c renderer/geometry_processor.cpp)
-   target_link_libraries( nonmem   ${OSG_LIBRARY} png cv highgui
+   target_link_libraries( nonmem  swrender ${OSG_LIBRARY} png cv highgui
  ${OSGDB_LIBRARY}
                ${OSGUTIL_LIBRARY} ${VIPS_LIBRARIES} vips vipsCC)
-
-   target_link_libraries( blendincore  ${OSG_LIBRARY} png cv highgui
+   target_link_libraries( rangeimg  swrender ${OSG_LIBRARY} png cv highgui
+ ${OSGDB_LIBRARY}
+               ${OSGUTIL_LIBRARY} ${VIPS_LIBRARIES} vips vipsCC)
+   target_link_libraries( blendincore swrender ${OSG_LIBRARY} png cv highgui
  ${OSGDB_LIBRARY}
                ${OSGUTIL_LIBRARY})
 

@@ -116,8 +116,7 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     fclose (fp);
     //gdalwarp  -t_srs '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs' geo_tif2.tif utm.tif
     //  int res= system(("add_geo-"+name+".sh").c_str());
-    sprintf(tmp,"gdal_translate %s %s-tmp.ppm %s;gdaladdo -r average %s 2 4 8 16 32",gdal_param,osgDB::getNameLessExtension(name).c_str(),
-            ("mosaic/"+osgDB::getSimpleFileName(name)).c_str(),
+    sprintf(tmp,"gdal_translate %s %s-tmp.ppm %s",gdal_param,osgDB::getNameLessExtension(name).c_str(),
             ("mosaic/"+osgDB::getSimpleFileName(name)).c_str());
     int res= system(tmp);
     // printf("%s\n",tmp);

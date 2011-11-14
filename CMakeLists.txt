@@ -228,6 +228,7 @@ ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
 ADD_EXECUTABLE( engine engine.cpp ShellCmd.cpp )
 
 ADD_EXECUTABLE( stereo_mesh_gen stereo_mesh_gen.cpp )
+ADD_EXECUTABLE(  genRangeImg genRangeImg.cpp )
 
 ADD_EXECUTABLE( osgdem  VirtualPlanetBuilder/applications/osgdem/osgdem.cpp )
 
@@ -254,6 +255,7 @@ TARGET_LINK_LIBRARIES( testImageModel ts  )
 
 TARGET_LINK_LIBRARIES( stereo_mesh_gen ts  )
 TARGET_LINK_LIBRARIES( treeBBClip ts spindex )
+TARGET_LINK_LIBRARIES( genRangeImg ts spindex )
 
 TARGET_LINK_LIBRARIES( vertCheck ts spindex )
 TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC)

@@ -236,7 +236,10 @@ public:
              osg::BoundingBox bbox;
              std::string name;
              vips::VImage *img;
+             std::vector<vips::VImage *> img_ds;
              OpenThreads::Mutex *mutex;
+             std::vector<int> levels_ds;
+             std::vector<std::string> name_ds;
          };
          std::vector<mosaic_cell> mosaic_cells;
 

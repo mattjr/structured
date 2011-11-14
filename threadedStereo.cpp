@@ -1646,7 +1646,7 @@ int main( int argc, char *argv[ ] )
         }
 
         string texcmds_fn="mesh-diced/texcmds";
-        int VTtileSize=256;
+        //int VTtileSize=256;
         int tileBorder=1;
         int ajustedGLImageSizeX=(int)reimageSize.x();//-((reimageSize.x()/VTtileSize)*2*tileBorder);
         int ajustedGLImageSizeY=(int)reimageSize.y();//-((reimageSize.y()/VTtileSize)*2*tileBorder);
@@ -1666,7 +1666,7 @@ int main( int argc, char *argv[ ] )
         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
                 totalbb.zMax(),_tileColumns,_tileRows);
 
-        fprintf(FP2,"0 %d 0 %d total\n",ajustedGLImageSizeX*_tileRows,ajustedGLImageSizeY*_tileColumns);
+        fprintf(FP2,"0 %d 0 %d total total 0\n",ajustedGLImageSizeX*_tileRows,ajustedGLImageSizeY*_tileColumns);
 
         for(int i=0; i <(int)cells.size(); i++){
             char tmpfn[1024];
@@ -1714,12 +1714,19 @@ int main( int argc, char *argv[ ] )
                 if(blending)
                     fprintf(texcmds_fp," --blend");
             }
+            char tmp_ds[1024];
+            tmp_ds[0]='\0';
+            int num_samples=0;
+            for(int p=0; p<num_samples; p++)
+                sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
+            fprintf(texcmds_fp,";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
 
-            fprintf(FP2,"%d %d %d %d mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),
-                    (totalX-ajustedGLImageSizeX*(cells[i].row)),ajustedGLImageSizeY*cells[i].col,ajustedGLImageSizeY*(cells[i].col+1),cells[i].row,cells[i].col,_tileRows,_tileColumns);
+            fprintf(FP2,"%d %d %d %d mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %d 1%s\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),
+                    (totalX-ajustedGLImageSizeX*(cells[i].row)),ajustedGLImageSizeY*cells[i].col,ajustedGLImageSizeY*(cells[i].col+1),cells[i].row,cells[i].col,_tileRows,_tileColumns,
+                    cells[i].row,cells[i].col,_tileRows,_tileColumns,num_samples+1,tmp_ds);
             fprintf(FP3,"image_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
 
-            fprintf(texcmds_fp,"\n");
+           // fprintf(texcmds_fp,"\n");
 
             /* fprintf(texcmds_fp,"osgconv -O \"compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1\" mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d-uncomp.ive  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive\n",
 
@@ -1749,7 +1756,7 @@ int main( int argc, char *argv[ ] )
         string texcmd="tex.py";
         vector<std::string> postcmdv;
         std::ostringstream p;
-        bool singleThreadedDicedTex=false;
+        //bool singleThreadedDicedTex=false;
         /*p<<"#"<<basepath << "/sparseJoin rebbox.txt  " << cwd  << " --pbuffer-only " << ajustedGLImageSizeX << " "<< ajustedGLImageSizeY  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
         if(!singleThreadedDicedTex)
             p<<" -nogfx " << (hw_image ? "png" : "ppm");

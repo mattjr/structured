@@ -39,6 +39,7 @@ static double start_time = 0.0;
 static bool apply_aug=false;
 static double stop_time = numeric_limits<double>::max();
 static int vpblod_override=0;
+static bool compositeMission=false;
 //
 // Command-line arguments
 //
@@ -755,7 +756,11 @@ int main( int argc, char *argv[ ] )
         fprintf(fpp," %f %f %f %f %f %f",name.bbox.xMin(),name.bbox.yMin(),
                 name.bbox.zMin(),
                 name.bbox.xMax(),name.bbox.yMax(),name.bbox.zMax());
-
+        if(ct==1){
+            if(name.left_name.size() != osgDB::getSimpleFileName(name.left_name).size()){
+                compositeMission=true;
+            }
+        }
         for(int i=0; i< 4; i++){
             for(int j=0; j < 4; j++){
                 osg::Matrix texmat=osgTranspose(name.mat);
@@ -1042,7 +1047,7 @@ int main( int argc, char *argv[ ] )
         string vripcmd="runvrip.py";
         shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip",NULL,&mergeandcleanCmds);
         if(!no_vrip && !cmvs)
-            sysres=system("./runvrip.py");
+            sysres=system("python runvrip.py");
         char tmpfn[8192];
         for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
@@ -1274,6 +1279,7 @@ int main( int argc, char *argv[ ] )
             vector<std::string> postcmdv;
             string tcmd =basepath+string("/vrip/bin/plymerge ");
             char tmp100[8096];
+            std::vector<string> cfiles;
             // sprintf(tmp100," --invrot %f %f %f ",rx,ry,rz);
             // tcmd+=tmp100;
             string splitcmds_fn="mesh-diced/splitcmds";
@@ -1335,8 +1341,8 @@ int main( int argc, char *argv[ ] )
             for(int i=0; i <(int)vrip_cells.size(); i++){
                 if(vrip_cells[i].poses.size() == 0)
                     continue;
-                sprintf(tmp100, " mesh-diced/vis-clipped-diced-%08d-lod%d.ply ",i,vpblod);
-                tcmd+=tmp100;
+                sprintf(tmp100, "mesh-diced/vis-clipped-diced-%08d-lod%d.ply",i,vpblod);
+                cfiles.push_back(tmp100);
             }
 
 
@@ -1345,8 +1351,8 @@ int main( int argc, char *argv[ ] )
                     tmp100,basepath.c_str(),
                     -FLT_MAX,-FLT_MAX,-FLT_MAX,
                     FLT_MAX,FLT_MAX,FLT_MAX);*/
-            tcmd+=tmp100;
-            postcmdv.push_back(tcmd);
+            //tcmd+=tmp100;
+            //postcmdv.push_back(tcmd);
 
             for(int i=0; i <(int)vrip_cells.size(); i++){
                 if(vrip_cells[i].poses.size() == 0)
@@ -1409,9 +1415,12 @@ int main( int argc, char *argv[ ] )
 
             fclose(splitcmds_fp);
             string splitcmd="split.py";
-            shellcm.write_generic(splitcmd,splitcmds_fn,"Split",NULL,&postcmdv);
+            string cwdmeshdiced=cwd;
+            std::string extraCheckCmd=createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
+
+            shellcm.write_generic(splitcmd,splitcmds_fn,"Split",NULL,NULL,0,extraCheckCmd);
             if(!no_split)
-                sysres=system("./split.py");
+                sysres=system("python split.py");
         }
         //  fprintf(reFP,"%f %f %f %f clipped-diced-%08d-lod%d.ive\n",vrip_cells[i].bounds.min_x,vrip_cells[i].bounds.max_x,vrip_cells[i].bounds.min_y,vrip_cells[i].bounds.max_y,i,vpblod);
 #ifdef USE_PROCESSES_SPLIT
@@ -1646,6 +1655,7 @@ int main( int argc, char *argv[ ] )
         }
 
         string texcmds_fn="mesh-diced/texcmds";
+        string imgbase=(compositeMission? "/":"/img/");
         //int VTtileSize=256;
         int tileBorder=1;
         int ajustedGLImageSizeX=(int)reimageSize.x();//-((reimageSize.x()/VTtileSize)*2*tileBorder);
@@ -1705,7 +1715,7 @@ int main( int argc, char *argv[ ] )
                         cells[i].row,cells[i].col,
                         vpblod,
                         cells[i].row,cells[i].col,
-                        (base_dir+"/img/").c_str(),
+                        (base_dir+imgbase).c_str(),
                         cells[i].row,cells[i].col,
                         rx,ry,rz,
                         ajustedGLImageSizeX,ajustedGLImageSizeY,
@@ -1793,7 +1803,7 @@ int main( int argc, char *argv[ ] )
 
         shellcm.write_generic(texcmd,texcmds_fn,"Tex",&(precmd),&(postcmdv),num_threads);
         if(!no_tex)
-            sysres=system("./tex.py");
+            sysres=system("python tex.py");
 
         if(useVirtTex){
             string vttexcmds_fn="mesh-diced/vttexcmds";

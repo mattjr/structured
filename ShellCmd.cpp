@@ -1,5 +1,6 @@
 #include "ShellCmd.h"
-void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds,int thread_override){
+#include <sstream>
+void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds,int thread_override,string custom){
     FILE *fp=fopen(filename.c_str(),"w");
     fprintf(fp,"#!/usr/bin/python\n");
     fprintf(fp,"import sys\n");
@@ -22,9 +23,28 @@ void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const
         for(int i=0; i<(int) postcmds->size(); i++)
             fprintf(fp,"os.system('%s')\n",(*postcmds)[i].c_str());
     }
+    fprintf(fp,"%s\n",custom.c_str());
+
     fchmod(fileno(fp),0777);
 
     fclose(fp);
+}
+std::string createFileCheckPython(std::string cmd,std::string cwd,std::vector<std::string> files,std::string output,int size){
+    std::stringstream ss;
+    ss<<"finlst = []\n";
+    ss<< "tmplst = [";
+    for(int i=0; i<(int)files.size(); i++)
+        ss<<"'"<<cwd+"/"+files[i]<< "',";
+    ss<<"]\n";
+    ss<<"for i in tmplst:\n";
+    ss<<"\tif os.path.isfile(i) and os.path.getsize(i) > " << size << ":\n";
+    ss<<"\t\tfinlst.append(i)\n";
+    ss<<"if len(finlst) > 0:\n";
+    ss<<"\tos.system('"<<cmd<<" '+\" \".join(finlst)+" <<"'"<<output<<"'"<< ")\n";
+    ss<<"else:\n";
+    ss<<"\tprint 'Not running commmand all files invalid ' + \" \".join(tmplst)\n";
+
+    return ss.str();
 }
 
 void ShellCmd::write_setup(void){

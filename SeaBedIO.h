@@ -74,5 +74,8 @@ public:
 
 Stereo_Pose_File read_stereo_pose_est_file( const std::string &file_name );
 
+void write_stereo_pose_est_file( const std::string &file_name,
+                                 const std::string &custom_header,
+                                 const Stereo_Pose_File &data );
 
 #endif // SEABEDIO_H

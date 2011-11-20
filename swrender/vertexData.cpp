@@ -10,7 +10,7 @@
 
 #include "typedefs.h"
 #include "vertexData.h"
-#include "ply.h"
+#include "../ply.h"
 
 #include <cstdlib>
 #include <algorithm>

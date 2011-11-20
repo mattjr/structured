@@ -98,6 +98,7 @@ void VertexData::readVertices( PlyFile* file, const int nVertices,
     {
         ply_get_element( file, static_cast< void* >( &vertex ) );
         osg::Vec3 tmp( vertex.x, vertex.y, vertex.z );
+        //cout << tmp << " "<< _bbox->_min<<":"<<_bbox->contains(tmp)<<endl;
         /*if(_bbox){
             //cout << tmp << " "<< _bbox->_min<<endl;
             if(!_bbox->contains(tmp)){

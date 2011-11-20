@@ -30,19 +30,61 @@ WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 
 */
 
+/*
+--------------------------------------------------------------------------------
+Joao Fradinho Oliveira, July 2005
+Copyright (c) 2005 University College London 
+copyright conditions as above
+
+update for ply reading of multi OS ply files, in any OS (Unix, Macintosh, PC)
+--------------------------------------------------------------------------------
+
+ply_open_for_reading
+
+* was changed to always open files in binary mode, files written in ascii can also be
+read with this binary mode.
+
+* allows opening of filenames that are alias files in macintosh
+
+* code tested on pc and mac
+
+
+get_words
+
+* was changed to handle line breaks in UNIX, MACINTOSH, PC, it resets the file pointer
+accordingly for the next read.
+
+
+NOTES:
+The ply file, has always an ascii part for the header, and a binary or ascii
+part for the data.
+The header part in ascii, dictates that linebreaks are used, this make models 
+operating system dependent, as a line break in unix is indicated with the escape character \n,
+on a macintosh, with \r, and on a pc with \r\n  <--2 unsigned chars, 2 bytes, instead of 1 byte.
+
+get_words allows reading of any OS, text editors such as BBEdit do not save the linebreaks
+properly to target OSs with binary files.  
+
+*/
+
 #ifndef __PLY_H__
 #define __PLY_H__
 
-// include to quieten down silly VS warnings
-#include <osg/Export>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
-
-#define PLY_ASCII      1        /* ascii PLY file */
-#define PLY_BINARY_BE  2        /* binary PLY file, big endian */
-#define PLY_BINARY_LE  3        /* binary PLY file, little endian */
-
+#include <string.h>
+    
+#define PLY_ASCII         1      /* ascii PLY file */
+#define PLY_BINARY_BE     2      /* binary PLY file, big endian */
+#define PLY_BINARY_LE     3      /* binary PLY file, little endian */
+#define PLY_BINARY_NATIVE 4      /* binary PLY file, same endianness as
+				    current architecture */
+    
 #define PLY_OKAY    0           /* ply routine worked okay */
 #define PLY_ERROR  -1           /* error in ply routine */
 
@@ -57,10 +99,7 @@ WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 #define PLY_UINT       6
 #define PLY_FLOAT      7
 #define PLY_DOUBLE     8
-#define PLY_FLOAT32    9
-#define PLY_UINT8      10
-#define PLY_INT32      11
-#define PLY_END_TYPE   12
+#define PLY_END_TYPE   9
 
 #define  PLY_SCALAR  0
 #define  PLY_LIST    1
@@ -68,7 +107,7 @@ WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 
 typedef struct PlyProperty {    /* description of a property */
 
-  const char *name;                           /* property name */
+  char *name;                           /* property name */
   int external_type;                    /* file's data type */
   int internal_type;                    /* program's data type */
   int offset;                           /* offset bytes of prop in a struct */
@@ -132,24 +171,61 @@ typedef struct PlyFile {        /* description of PLY file */
 extern char *my_alloc();
 #define myalloc(mem_size) my_alloc((mem_size), __LINE__, __FILE__)
 
+#ifndef ALLOCN
+#define REALLOCN(PTR,TYPE,OLD_N,NEW_N)							\
+        {										\
+	    if ((OLD_N) == 0)                                           		\
+	    {   ALLOCN((PTR),TYPE,(NEW_N));}                            		\
+	    else									\
+	    {								    		\
+	       (PTR) = (TYPE *)realloc((PTR),(NEW_N)*sizeof(TYPE));			\
+	       if (((PTR) == NULL) && ((NEW_N) != 0))					\
+	       {									\
+		   fprintf(stderr, "Memory reallocation failed on line %d in %s\n", 	\
+		           __LINE__, __FILE__);                             		\
+		   fprintf(stderr, "  tried to reallocate %d->%d\n",       		\
+			   (OLD_N), (NEW_N));                              		\
+		   exit(-1);								\
+	       }									\
+	       if ((NEW_N)>(OLD_N))							\
+		   memset((char *)(PTR)+(OLD_N)*sizeof(TYPE), 0,			\
+		          ((NEW_N)-(OLD_N))*sizeof(TYPE));				\
+	    }										\
+	}
+
+#define  ALLOCN(PTR,TYPE,N) 					\
+	{ (PTR) = (TYPE *) calloc(((unsigned)(N)),sizeof(TYPE));\
+	  if ((PTR) == NULL) {    				\
+	  fprintf(stderr, "Memory allocation failed on line %d in %s\n", \
+		 __LINE__, __FILE__);                           \
+	  exit(-1);                                             \
+	  }							\
+	}
+
+
+#define FREE(PTR)  { free((PTR)); (PTR) = NULL; }
+#endif
+    
 
 /*** delcaration of routines ***/
+
+int get_native_binary_type2();
 
 extern PlyFile *ply_write(FILE *, int, char **, int);
 extern PlyFile *ply_open_for_writing(char *, int, char **, int, float *);
 extern void ply_describe_element(PlyFile *, char *, int, int, PlyProperty *);
 extern void ply_describe_property(PlyFile *, char *, PlyProperty *);
-extern void ply_element_count(PlyFile *, const char *, int);
+extern void ply_element_count(PlyFile *, char *, int);
 extern void ply_header_complete(PlyFile *);
-extern void ply_put_element_setup(PlyFile *, const char *);
+extern void ply_put_element_setup(PlyFile *, char *);
 extern void ply_put_element(PlyFile *, void *);
-extern void ply_put_comment(PlyFile *, const char *);
-extern void ply_put_obj_info(PlyFile *, const char *);
+extern void ply_put_comment(PlyFile *, char *);
+extern void ply_put_obj_info(PlyFile *, char *);
 extern PlyFile *ply_read(FILE *, int *, char ***);
 extern PlyFile *ply_open_for_reading( char *, int *, char ***, int *, float *);
 extern PlyProperty **ply_get_element_description(PlyFile *, char *, int*, int*);
 extern void ply_get_element_setup( PlyFile *, char *, int, PlyProperty *);
-extern void ply_get_property(PlyFile *, const char *, PlyProperty *);
+extern void ply_get_property(PlyFile *, char *, PlyProperty *);
 extern PlyOtherProp *ply_get_other_properties(PlyFile *, char *, int);
 extern void ply_get_element(PlyFile *, void *);
 extern char **ply_get_comments(PlyFile *, int *);
@@ -160,8 +236,13 @@ extern PlyOtherElems *ply_get_other_element (PlyFile *, char *, int);
 extern void ply_describe_other_elements ( PlyFile *, PlyOtherElems *);
 extern void ply_put_other_elements (PlyFile *);
 extern void ply_free_other_elements (PlyOtherElems *);
+extern void ply_describe_other_properties(PlyFile *, PlyOtherProp *, int);
 
-extern int equal_strings(const char *, const char *);
+extern int equal_strings(char *, char *);
 
+
+#ifdef __cplusplus
+}
+#endif
 #endif /* !__PLY_H__ */
 

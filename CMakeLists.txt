@@ -206,7 +206,7 @@ SET( SRCS
                 Extents.cpp
 calibFile.cpp
 StereoEngine.cpp
-plyfile.cpp
+plyfile.c
 TexturedSource.cpp
 Clipper.cpp
 VPBInterface.cpp

@@ -1392,7 +1392,7 @@ int main( int argc, char *argv[ ] )
                         i);
                 sprintf(shr_tmp,"%s    %s/vcgapps/bin/mergeMesh mesh-diced/un-clipped-diced-%08d.ply -thresh %f -out mesh-diced/un2-clipped-diced-%08d-lod%d.ply ;",shr_tmp,
                         basepath.c_str(),i,0.9*vrip_res,i,vpblod);
-                sprintf(shr_tmp,"%s setenv DISPLAY:0.0; %s/vcgapps/bin/shadevis -n128  -f mesh-diced/un2-clipped-diced-%08d-lod%d.ply ;",shr_tmp,basepath.c_str(),i,vpblod);
+                sprintf(shr_tmp,"%s setenv DISPLAY :0.0; %s/vcgapps/bin/shadevis -n128  -f mesh-diced/un2-clipped-diced-%08d-lod%d.ply ;",shr_tmp,basepath.c_str(),i,vpblod);
                 //sprintf(shr_tmp,"%s setenv DISPLAY:0.0; cp mesh-diced/un2-clipped-diced-%08d-lod%d.ply mesh-diced/vis-un2-clipped-diced-%08d-lod%d.ply;",shr_tmp,i,vpblod,i,vpblod);
 
 

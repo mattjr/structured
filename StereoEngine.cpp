@@ -1514,7 +1514,8 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
     char meshfilename[1024];
     char tcmeshfilename[1024];
     char texfilename[1024];
-    string imgdir=basedir+"/img/";
+    string imgadd= ((left_file_name.size() == osgDB::getSimpleFileName(left_file_name).size())? "/img/": "/");
+    string imgdir=basedir+imgadd;
 
     string cached_dir=basedir+"/cache-mesh-feat";
     checkmkdir(cached_dir);
@@ -1581,35 +1582,37 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
         if(!node.valid()){
             fprintf(stderr,"Can't load ply file\n");
             cachedMesh=false;
-        }
-        geode=node->asGeode();
-        if(!geode.valid()){
+	    return false;
+        }else{
+	  geode=node->asGeode();
+	  if(!geode.valid()){
             fprintf(stderr,"Can't load ply file not GEODE\n");
             cachedMesh=false;
-        }
-        osg::Drawable *drawable = geode->getDrawable(0);
-        gm = dynamic_cast< osg::Geometry*>(drawable);
-        if(!gm.valid()){
+	  }
+	  osg::Drawable *drawable = geode->getDrawable(0);
+	  gm = dynamic_cast< osg::Geometry*>(drawable);
+	  if(!gm.valid()){
             fprintf(stderr,"Can't load ply file not GEOM\n");
             cachedMesh=false;
-        }
-        points=static_cast<const osg::Vec3Array*>(gm->getVertexArray());
-        tris=static_cast<const osg::DrawElementsUInt *>(gm->getPrimitiveSet(0));
-
-        if(!points || !tris){
+	  }
+	  points=static_cast<const osg::Vec3Array*>(gm->getVertexArray());
+	  tris=static_cast<const osg::DrawElementsUInt *>(gm->getPrimitiveSet(0));
+	  
+	  if(!points || !tris){
             fprintf(stderr,"Can't load ply file no points\n");
             cachedMesh=false;
-        }
-        if(points->size()< 3 || !tris->size()){
+	  }
+	  if(points->size()< 3 || !tris->size()){
             if(!cachedTex){
-                cvReleaseImage( &left_frame );
-                cvReleaseImage( &right_frame );
-                if(color_image)
-                    cvReleaseImage( &color_image );
-
+	      cvReleaseImage( &left_frame );
+	      cvReleaseImage( &right_frame );
+	      if(color_image)
+		cvReleaseImage( &color_image );
+	      
             }
             return false;
-        }
+	  }
+	}
     }
 
 

@@ -45,5 +45,5 @@ int main( int argc, char *argv[ ] )
     }
     write_stereo_pose_est_file(argv[3],"",output);
 
-    printf("Stored %d/%d to %s\n",(int)output.poses.size(), (int)src_pose_data.poses.size(),argv[3]);
+    printf("Stored %d/%d to %s from filter of %d\n",(int)output.poses.size(), (int)src_pose_data.poses.size(),argv[3],(int)overlap_pose_data.poses.size());
 }

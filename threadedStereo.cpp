@@ -1775,7 +1775,7 @@ int main( int argc, char *argv[ ] )
             p<<" -nogfx " << (hw_image ? "png" : "ppm");
         if(untex)
             p<< " -untex ";*/
-        p<< "cd " << cwd <<";./createmosaic.sh";
+        p<< "cd " << cwd <<";sh createmosaic.sh";
 
         postcmdv.push_back(p.str());
 #define SINGLE_MESH_TEX 1
@@ -1820,7 +1820,7 @@ int main( int argc, char *argv[ ] )
             fclose(vttexcmds_fp);
             shellcm.write_generic(vttex,vttexcmds_fn,"VT Tex",NULL,NULL,num_threads);
             if(!no_vttex)
-                sysres=system("./vttex.py");
+                sysres=system("python vttex.py");
 
         }
 
@@ -1937,7 +1937,7 @@ int main( int argc, char *argv[ ] )
         string simpcmd="simp.py";
         shellcm.write_generic(simpcmd,simpcmds_fn,"simp",NULL,&mergeandcleanCmdsSimp);
         if(!no_simp)
-            sysres=system("./simp.py");
+            sysres=system("python simp.py");
 
         char szProj4[4096];
         char wkt[4096];

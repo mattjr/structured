@@ -20,6 +20,8 @@ add_executable (nonmem . nonmem.cpp  )
 add_executable (rangeimg rangeimg.cpp)
 
 add_executable (blendincore  blendincore.cpp)
+add_executable (meshvar  meshvar.cpp)
+
 #add_executable (rendertest example2.cpp render_utils.cpp vertexData.cpp plyfile.c IMG_savepng.c renderer/geometry_processor.cpp)
    target_link_libraries( nonmem  swrender ${OSG_LIBRARY} png cv highgui
  ${OSGDB_LIBRARY}
@@ -30,6 +32,8 @@ add_executable (blendincore  blendincore.cpp)
    target_link_libraries( blendincore swrender ${OSG_LIBRARY} png cv highgui
  ${OSGDB_LIBRARY}
                ${OSGUTIL_LIBRARY})
-
+   target_link_libraries( meshvar swrender ${OSG_LIBRARY} png cv highgui
+ ${OSGDB_LIBRARY}
+               ${OSGUTIL_LIBRARY})
  #  target_link_libraries( calcTexCoordOutCore  ${SDL_LIBRARY} SDL_image ${OSG_LIBRARY} png cv highgui ${OSGDB_LIBRARY}               ${OSGUTIL_LIBRARY})
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR})

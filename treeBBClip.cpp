@@ -137,7 +137,7 @@ int main( int argc, char **argv )
         rot=true;
     }
 
-    plyV::VertexData vertexData;
+    ply::VertexData vertexData;
     osg::Node *root;
     osg::BoundingBox bb(minV,maxV);
     osg::notify(osg::NOTICE) << bb._min << " " << bb._max << endl;

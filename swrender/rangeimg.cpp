@@ -36,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <osg/TriangleIndexFunctor>
 #include <osg/Timer>
+#include "ar.h"
 // requires software renderer source
 #include "renderer/geometry_processor.h"
 #include "renderer/rasterizer_subdivaffine.h"
@@ -48,7 +49,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <osgDB/ReadFile>
 #include <osg/MatrixTransform>
 #include <osgUtil/Optimizer>
+#include "Clipper.h"
 #include <opencv/cv.h>
+#include "../GLImaging.h"
 #include <opencv/highgui.h>
 #include "mipmap.h"
 #include "../MemUtils.h"
@@ -62,7 +65,7 @@ using namespace std;
 #include <iostream>
 #include <fstream>
 #include <string>
-
+#include "calibFile.h"
 
 struct InputVertex {
     vec3x vertex;
@@ -71,7 +74,29 @@ struct InputVertex {
 static IplImage *outputImage;
 static IplImage *rangeImage;
 
+osg::Vec3 reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v,const CameraCalib &_calib){
 
+    osg::Vec3 cam_frame=mat*v;
+   // cout << "beat" <<cam_frame<<endl;
+
+    osg::Vec3 und_n;
+    und_n.x()=cam_frame.x()/cam_frame.z();
+    und_n.y()=cam_frame.y()/cam_frame.z();
+  //  cout << "ff" <<und_n<<endl;
+    double r_2 = pow(und_n.x(),2) + pow(und_n.y(),2);
+    double k_radial = 1 + _calib.kc1*r_2 + _calib.kc2*pow(r_2,2) + _calib.kc5*pow(r_2,3);
+    double delta_x = 2*_calib.kc3*und_n.x()*und_n.y() + _calib.kc4*(r_2 + 2*pow(und_n.x(),2));
+    double delta_y = _calib.kc3*(r_2 + 2*pow(und_n.y(),2)) + 2*_calib.kc4*und_n.x()*und_n.y();
+    osg::Matrix m1=osg::Matrix::scale(_calib.fcx,_calib.fcy,1);
+    osg::Matrix m2=osg::Matrix::translate(_calib.ccx,_calib.ccy,0);
+    osg::Matrix k1=osg::Matrix::scale(k_radial,k_radial,1);
+    osg::Matrix delta=osg::Matrix::translate(delta_x,delta_y,0);
+    osg::Vec3 norm_c=k1*und_n*delta;
+    osg::Vec3 pixel_c=(m1*norm_c*m2);
+  //  cout << "ff2" <<norm_c<<endl;
+
+    return osg::Vec3(pixel_c.x(),pixel_c.y(),cam_frame.z());
+}
 // this is the vertex shader which is executed for each individual vertex that
 // needs to ne processed.
 struct VertexShaderBlending {
@@ -82,16 +107,21 @@ struct VertexShaderBlending {
 
     // this specifies the number of varyings the shader will output. This is
     // for instance used when clipping.
-    static const unsigned varying_count = 12;
+    static const unsigned varying_count = 1;
     static mat4x modelview_matrix;
     static mat4x modelviewprojection_matrix;
+    static osg::Matrix viewproj;
+    static osg::Matrix view;
+    static CameraCalib _calib;
+
+    static osg::Matrix scaledevice;
     // this static function is called for each vertex to be processed.
     // "in" is an array of void* pointers with the location of the individial
     // vertex attributes. The "out" structure has to be written to.
     static void shade(const GeometryProcessor::VertexInput in, GeometryProcessor::VertexOutput &out)
     {
         // cast the first attribute array to the input vertex type
-        const VertexBlend &v = *static_cast<const VertexBlend*>(in[0]);
+        const Vertex &v = *static_cast<const Vertex*>(in[0]);
 
         // x, y, z and w are the components that must be written by the vertex
         // shader. They all have to be specified in 16.16 fixed point format.
@@ -100,9 +130,21 @@ struct VertexShaderBlending {
         out.z = static_cast<int>((v.z * (1 << 16)));
         out.w = 1 << 16;
 */
-        vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, fixed16_t(1));
-        // cout << fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " "<<        fixedpoint::fix2float<16>(tvertex.z.intValue)<<endl;
+        //   vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, fixed16_t(1));
+        osg::Vec3 pt(v.x,v.y,v.z);
+        double zrange= (view*pt).length();
+        osg::Vec3 tmpv= viewproj * pt;
+        tmpv.x()/=tmpv.z();
+        tmpv.y()/=tmpv.z();
+       // cout <<"tmp1 " <<tmpv<<endl;
 
+        osg::Vec3 tmpv2=  reprojectPt(view,pt,_calib);
+      //cout <<"tmp2 " <<tmpv2<<endl;
+        osg::Vec3 tvertex=  scaledevice*tmpv2;
+        //   cout << "V:" << tvertex<<endl;
+        //cout <<"V:"<<v.x<<" "<<v.y<<" "<<v.z<<endl;
+        //cout << "T:"<<fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " "<<        fixedpoint::fix2float<16>(tvertex.z.intValue)<<endl;
+        //cout << tvertex.x << " " << tvertex.y<< " " <<tcer
         //  cout << v.id << " "<<v.tx << " " << v.ty<<endl;
         // const vec3x &v = i.vertex;
         //const mat4x &m = modelview_matrix;
@@ -118,46 +160,37 @@ struct VertexShaderBlending {
             d = X(1) - (d-start)/(end-start);
         }
 */
-        out.x = tvertex.x.intValue;
-        out.y = tvertex.y.intValue;
-        out.z = fixed16_t(1.0).intValue;//tvertex.z.intValue;
+        out.x =fixed16_t(tvertex.x()).intValue;//tvertex.x.intValue;
+        out.y = fixed16_t(tvertex.y()).intValue;//tvertex.y.intValue;
+        out.z = fixed16_t(1.0).intValue;//fixedpoint::float2fix<16>(tvertex.z());//tvertex.z.intValue;
         out.w = 1 << 16;//tvertex.w.intValue;
         // bring the texture coordinates into the appropriate range for the rasterizer.
         // this mean it has to be converted to fixed point and premultiplied with the width, height of the
         // texture minus 1. Doing this in the vertex shader saves us from doing this in the fragment shader
         // which makes things faster.
-        for(int i=0; i <4; i++){
-            out.varyings[i*2+0] = static_cast<int>(v.tx[i] * (1 << 16));
-            out.varyings[i*2+1] = static_cast<int>(v.ty[i] * (1 << 16));
-        }
-        for(int i=0; i <4; i++){
-            out.varyings[i+9]= static_cast<int>(v.id[i]/1.0 * (1 << 16));
-           // printf("B:%f \n",fix2float<16>(out.varyings[i+9]));
-        }
+        out.varyings[0] = fixed16_t(zrange).intValue;
 
     }
 
-    static TextureMipMap *texture;
 
 };
 mat4x VertexShaderBlending::modelview_matrix;
 mat4x VertexShaderBlending::modelviewprojection_matrix;
 
-TextureMipMap *VertexShaderBlending::texture = 0;
+osg::Matrix VertexShaderBlending::scaledevice;
+osg::Matrix VertexShaderBlending::viewproj;
+osg::Matrix VertexShaderBlending::view;
 
-
+CameraCalib VertexShaderBlending::_calib;
 
 // this is the fragment shader
 struct FragmentShaderBlendingMain : public SpanDrawer32BitColorAndDepth<FragmentShaderBlendingMain> {
     // varying_count = 3 tells the rasterizer that it only needs to interpolate
     // three varying values (the r, g and b in this context).
-    static const unsigned varying_count = 12;
-    static const int mipmapL[];
-    static const float rmax=0.70710678;
+    static const unsigned varying_count = 1;
     static int idx;
     // we don't need to interpolate z in this example
     static const bool interpolate_z = false;
-    static map<int,TextureMipMap*> texturepool;
 
     // per triangle callback. This could for instance be used to select the
     // mipmap level of detail. We don't need it but it still needs to be defined
@@ -167,160 +200,28 @@ struct FragmentShaderBlendingMain : public SpanDrawer32BitColorAndDepth<Fragment
             const IRasterizer::Vertex& v2,
             const IRasterizer::Vertex& v3,
             int area2)
-    /*{printf("T1 %f %f\nT2 %f %f\nT3 %f %f\n",fix2float<16>(v1.x),fix2float<16>(v1.y),fix2float<16>(v2.x),fix2float<16>(v2.y),fix2float<16>(v3.x)
-            ,fix2float<16>(v3.y));}*/
-    {}
+    {/*printf("T1 %f %f\nT2 %f %f\nT3 %f %f\n",fix2float<16>(v1.x),fix2float<16>(v1.y),fix2float<16>(v2.x),fix2float<16>(v2.y),fix2float<16>(v3.x)
+                    ,fix2float<16>(v3.y));**/}//{}
 
     // the fragment shader is called for each pixel and has read/write access to
     // the destination color and depth buffers.
     static void single_fragment(const IRasterizer::FragmentData &fd, unsigned int &color, unsigned int &depth)
     {
-        float Cb[]={0.710000,0.650000,0.070000};
-        /*int x=fd.varyings[0] >> 16;
-        int y=fd.varyings[1] >> 16;
-        unsigned char dist_curr=reinterpret_cast<unsigned char *>(&depth)[idx];
-        //Need to handle invalid dist*/
-        osg::Vec4f x;// >> 16;
-        osg::Vec4f y;
-int id[4];
-for(int i=0;i <4; i++){
-            x[i]=fix2float<16>(fd.varyings[i*2+0]);
-            y[i]=fix2float<16>(fd.varyings[i*2+1]);// >> 16;
-            x[i]=clamp(x[i],0.0,1.0);
-            y[i]=clamp(y[i],0.0,1.0);
-        }
-        for(int i=0;i <4; i++){
-           id[i]=(int)fix2float<16>(fd.varyings[9+i])*1.0;
- //printf("A: %f \n",fix2float<16>(fd.varyings[9+i]));
+        //printf("Ge\n");
+
+        float r=fixedpoint::fix2float<16>(fd.varyings[0]);
+        unsigned char ri=(int)clamp((float)round((r/5.0)*255.0),(float)0.0,(float)255.0);
+        // r=-1;
+        int tmp=color;
+        float tmpr=-1;
+        memcpy((void*)&tmpr,&tmp,sizeof(float));
+        if(tmpr > r || tmpr == -1.0){
+            //  printf("%f\n",r);
+            memcpy((void*)&tmp,&r,sizeof(float));
+            color=tmp;
+            depth = 0 | 0 << 8 | (ri) << 16 | 255 << 24;
 
         }
-       //s TextureMipMap *texture;
-      //  if(ids[0] >= 0)
-        //    texture=texturepool[ids[0]];
-        //float local_r=(dist_curr/255.0)*rmax;
-      //  cout << "x "<<x << "\ny "<<y <<endl;
-//cout <<"id "<<id[0]<< " "<<id[1]<< " "<<id[2]<<" "<<id[3]<<endl;
-        float distx;
-        float disty;
-        float r1[4];
-        for(int i=0; i <4; i++){
-            distx=(x[i]-0.5);
-               disty=(y[i]-0.5);
-
-         r1[i]= sqrtf( distx*distx + disty*disty);
-        unsigned char dist=clamp((int)((r1[i]/rmax)*255.0),0,255);
-         r1[i]=(dist/255.0)*rmax;
-          //  printf("%f %f %d %f %d\n",x[i],y[i],dist,r1[i],id[i]);
-
-       // printf("x1 %f y1 %f %f\n",x[i],y[i],r1[i]);
-                }
-        //   unsigned char dist=clamp((int)((r1/rmax)*255.0),0,255);
-        //printf("dist %d\n",dist);
-        //   float r2=(dist/255.0)*rmax;
-        //printf("%.6f %.6f\n",r1,r2);
-        osg::Vec3d outComp[3];
-        osg::Vec3 WSum(0.0,0.0,0.0);
-
-    for(int i=0;i<4; i++){
-   // printf("%d %d", id[i] ,texturepool.count(id[i]));
-
-    if(id[i]<=0 || !texturepool.count(id[i]))
-    continue;
-TextureMipMap *texturec=texturepool[id[i]];
-if(!texturec){
-    printf("Can't load %d",id[i]);
-continue;
-}
-        for(int j=0; j < 3; j++){
-
-//cout<<"id "<< id[i] << "\n";
-if(x[i]<0 || y[i]<0)
-continue;
-
-            float W=exp(-r1[i]*10.0*16.0*Cb[j]);
-
-          //  printf("%d W:%f %f\n",W,r1[i],dist);
-            int cx,cy;
-            cx=static_cast<int>((x[i]*texturec->w_minus1) * (1 << 16));
-            cy=static_cast<int>((y[i]*texturec->h_minus1) * (1 << 16));
-//assert((int)(x[i]*texturec->w_minus1)  != 1299 && (y[i]*texturec->h_minus1) != 627);
-            // sample the texture and write the color information
-            if(j == 0){
-//cout<<"outComp[0] W: "<< W << " "<<((texturec->sample_nearest(cx,cy,mipmapL[0])-texturec->sample_nearest(cx,cy,mipmapL[1]))*W)<< "\n";
-
-outComp[j]+=((texturec->sample_nearest(cx,cy,mipmapL[0])-texturec->sample_nearest(cx,cy,mipmapL[1]))*W);
-                }
-            else if (j==1){
-                outComp[j]+=((texturec->sample_nearest(cx,cy,mipmapL[1])-texturec->sample_nearest(cx,cy,mipmapL[2]))*W);
-//cout <<"outComp[1] W: "<<W<<" "<<((texturec->sample_nearest(cx,cy,mipmapL[1])-texturec->sample_nearest(cx,cy,mipmapL[2]))*W)<<"\n";
-
-}
-            else if(j==2){
-                outComp[j]+=(texturec->sample_nearest(cx,cy,mipmapL[2])*W);
-//cout <<"outComp[2] W: "<< W<< " "<<(texturec->sample_nearest(cx,cy,mipmapL[2])*W)<<endl;
-
-}
-                WSum[j]+=W;
-
-            // always write the color;
-      // cout << j << " "<<outComp[j]<< " "<<r1[i]<<endl;
-        }
-       /* osg::Vec4 r4;
-        for(int j=0; j < 3; j++){
-            for(int i=0;i<4; i++){
-                unsigned char dist=reinterpret_cast<unsigned char *>(&depth)[i];
-                //Need to handle invalid dist
-                float local_r=(dist/255.0)*rmax;
-                r4[i]=local_r;
-                //printf("Local r %d %f\n",i,local_r);
-                float W=1.0;//exp(-local_r*10.0*16.0*Cb[j]);
-                WSum[j]+=W;
-            }
-        }*/
-        // cout << r4 <<endl;
-      //  cout << WSum[0] << " "<<WSum[1] << " "<<WSum[2]<<endl;
-}
-       // cout << WSum[0] << " "<<WSum[1] << " "<<WSum[2]<<endl;
-//exit(0);
-    // cout <<"WSUM "<< WSum[0] << " "<<WSum[1] << " "<<WSum[2]<<endl;
-
-        outComp[0]=outComp[0]/WSum[0];
-        outComp[1]=outComp[1]/WSum[1];
-        outComp[2]=outComp[2]/WSum[2];
-        //printf("%f \n",outComp[0][0]);
-       // cout << "\n"<<outComp[0] << "\n"<<outComp[1] << "\n"<<outComp[2]<<endl;
-       // cout << endl<<"Beed " <<outComp[0] << " "<<outComp[1] << " "<<outComp[2]<<endl;
-
-        osg::Vec3 outP = outComp[0]+outComp[1]+outComp[2];
-         //cout << "outP "<<outP<<endl;
-        int cx,cy;
-       TextureMipMap *texturec= texturepool[id[0]];
-       if(texturec)
-       {
-        cx=static_cast<int>((x[0]*texturec->w_minus1) * (1 << 16));
-        cy=static_cast<int>((y[0]*texturec->h_minus1) * (1 << 16));
-      //  outP=outComp[2];
-    }
-       //cout << "FFF" <<outP<<endl;
-        unsigned char r,g,b;
-        unsigned int c=0;
-        int oldblue = c & 0xFF;
-        int oldgreen = (c >> 8) & 0xFF;
-        int oldred = (c >> 16) & 0xFF;
-        //outP=texture->sample_nearest(fd.varyings[0], fd.varyings[1],2)-texture->sample_nearest(fd.varyings[0], fd.varyings[1],4);
-        r=clamp((int)(outP.x()*255.0),0,255);
-        g=clamp((int)(outP.y()*255.0),0,255);
-        b=clamp((int)(outP.z()*255.0),0,255);
-        //  cout << x << " "<< y<<endl;
-        //   cout << (int)r << " " << (int)g << " " <<(int)b << endl;
-        //        cout << oldred << " " << oldgreen << " " <<oldblue << endl;
-
-        c= (b+oldblue) | (g+oldgreen) << 8 | (r+oldred) << 16 | 255 << 24;
-       // c= 0xff | 0xff << 8 | 0xff << 16 | 255 << 24;
-
-        // if(idx ==0)
-        color = c;
-
     }
 
     // this is called by the span drawing function to get the location of the color buffer
@@ -328,7 +229,7 @@ outComp[j]+=((texturec->sample_nearest(cx,cy,mipmapL[0])-texturec->sample_neares
     {
         IplImage *screen = outputImage;///SDL_GetVideoSurface();
         //return static_cast<unsigned short*>(screen->pixels) + x + y * screen->w;
-        return &(CV_IMAGE_ELEM(screen,unsigned char,y,x*screen->nChannels));
+        return &(CV_IMAGE_ELEM(screen,float,y,x*screen->nChannels));
     }
 
     // this is called by the span drawing function to get the location of the depth buffer
@@ -340,11 +241,8 @@ outComp[j]+=((texturec->sample_nearest(cx,cy,mipmapL[0])-texturec->sample_neares
     }
     // static TextureMipMap *texture;
 };
-const int FragmentShaderBlendingMain::mipmapL[]= {0,2,4};
 int FragmentShaderBlendingMain::idx;
-//int FragmentShaderBlendingMain::ids[4];
 
-map<int,TextureMipMap*> FragmentShaderBlendingMain::texturepool;
 
 void readFile(string fname,map<int,imgData> &imageList){
     std::ifstream m_fin(fname.c_str());
@@ -352,7 +250,9 @@ void readFile(string fname,map<int,imgData> &imageList){
     while(!m_fin.eof()){
         imgData cam;
         double low[3], high[3];
-        if(m_fin >> cam.id >> cam.filename >> low[0] >> low[1] >> low[2] >> high[0] >> high[1] >> high[2]
+        string tmp;
+        double time;
+        if(m_fin >> cam.id >>cam.filename >> low[0] >> low[1] >> low[2] >> high[0] >> high[1] >> high[2]
            >> cam.m(0,0) >>cam.m(0,1)>>cam.m(0,2) >>cam.m(0,3)
            >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
            >> cam.m(2,0) >>cam.m(2,1)>>cam.m(2,2) >>cam.m(2,3)
@@ -360,20 +260,36 @@ void readFile(string fname,map<int,imgData> &imageList){
             cam.bbox.expandBy(low[0],low[1],low[2]);
             cam.bbox.expandBy(high[0],high[1],high[2]);
             imageList[cam.id]=cam;
+        }else{
+            fprintf(stderr,"Failed to read line\n");
         }
     }
 }
 
-//TextureMipMap *FragmentShaderBlendingMain::texture = 0;
+static void PFMWrite( float *pFloatImage, const char *pFilename, int width, int height )
+{
+    FILE *fp;
+    fp = fopen( pFilename, "wb" );
+    fprintf( fp, "Pf\n%d %d\n-1.000000\n", width, height );
+    int i;
+    for( i = height-1; i >= 0; i-- )
+    {
+        float *pRow = &pFloatImage[ width * i];
+        fwrite( pRow, width * sizeof( float ), 1, fp );
+    }
+    fclose( fp );
+}
 
 int main(int ac, char *av[]) {
 
     osg::Timer_t start;
-    osg::ref_ptr<osg::Node> model;//= osgDB::readNodeFile(av[1]);
-    plyA::VertexData vertexData;
+    //osg::ref_ptr<osg::Node> model;//= osgDB::readNodeFile(av[1]);
     osg::ArgumentParser arguments(&ac,av);
     int sizeX,sizeY; sizeX=sizeY=1024;
+    int num_threads=    num_threads=OpenThreads::GetNumberOfProcessors();
 
+    arguments.read("-t",num_threads);
+  //  printf("Using %d threads\n",num_threads);
     arguments.read("--size",sizeX,sizeY);
 
     unsigned int _tileRows;
@@ -381,7 +297,7 @@ int main(int ac, char *av[]) {
     int row;
     int col;
     char tmp[1024];
-    if(!arguments.read("--image",row,col,_tileRows,_tileColumns)){
+    /* if(!arguments.read("--image",row,col,_tileRows,_tileColumns)){
         fprintf(stderr,"Fail to get image params\n");
         return -1;
     }
@@ -391,7 +307,7 @@ int main(int ac, char *av[]) {
         return -1;
     }
     mat4x  viewProjReadA ;
-            osg::Matrixd viewProjRead;
+    osg::Matrixd viewProjRead;
     std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
     if(!_file.good()){
         fprintf(stderr,"Can't load %s\n",matfile.c_str());
@@ -402,18 +318,60 @@ int main(int ac, char *av[]) {
         _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
         viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
     }
-
-    sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d",row,col,_tileRows,_tileColumns);
-    outputImage=cvCreateImage(cvSize(sizeX,sizeY),IPL_DEPTH_8U,4);
+*/
+    //sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d",row,col,_tileRows,_tileColumns);
+    outputImage=cvCreateImage(cvSize(sizeX,sizeY),IPL_DEPTH_32F,1);
     rangeImage=cvCreateImage(cvSize(sizeX,sizeY),IPL_DEPTH_8U,4);
     cvZero(rangeImage);
-    cvZero(outputImage);
+    cvSet(outputImage,cvScalar(-1.0));
     map<int,imgData> imageList;
-    model= vertexData.readPlyFile(av[1]);
+    //model= vertexData.readPlyFile(av[1]);
+
+    osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
+    osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(av[1]);
+    if(!model.valid()){
+        fprintf(stderr,"Failed to load mesh-diced/totalrot.ive can't split bailing!\n");
+        exit(-1);
+    }
+    osg::ref_ptr<KdTreeBbox> kdbb=setupKdTree(model);
+
     readFile(av[2],imageList);
     bool blending = arguments.read("--blend");
+    string calibfile;
+    arguments.read("-calib",calibfile);
+    StereoCalib stereo_calib(calibfile);
+    mat4x projA;
+    const CameraCalib &calib = stereo_calib.camera_calibs[0];
+    double scale=1.0;
+
+
+    double cparam2[16] = {calib.fcx/scale, 0.000000, calib.ccx/scale, 0.0000 ,
+                          0,     calib.fcy/scale, calib.ccy/scale ,   0,
+                          0,            0,              1,             0,
+                          0,            0,              0,             1};
+
+
+    double cparam3[16] = {2.0/calib.width, 0.000000, 0.0, -1.0000 ,
+                          0,     2.0/calib.height, 0.0 ,   -1.00,
+                          0,            0,              1,             0,
+                          0,            0,              0,             1};
+
+    double intrinsic[16];
+
+
+    osg::Matrix proj(cparam2);
+    osg::Matrix scaledevice(cparam3);
+
+    for(int i=0; i<4; i++){
+        for(int j=0; j<4; j++){
+            projA.elem[j][i]=fixed16_t(proj(i,j));
+        }
+    }
+    cout <<proj<<endl;
+
+
     if(model.valid()){
-        osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
+     /*   osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
         if(!geode)
             geode=model->asGroup()->getChild(0)->asGeode();
         else{
@@ -425,7 +383,7 @@ int main(int ac, char *av[]) {
             printf("Fail2\n");
             exit(-1);
 
-        }
+        }*/
         float rx, ry, rz;
         osg::Matrix inverseM=osg::Matrix::identity();
 
@@ -440,12 +398,12 @@ int main(int ac, char *av[]) {
 
         osg::BoundingBox totalbb;
 
-        osg::Vec3Array *verts=vertexData._vertices;
+     /*   osg::Vec3Array *verts=vertexData._vertices;
         for(int i=0; i <(int)verts->size(); i++){
             verts->at(i)=verts->at(i)*rotM;
             totalbb.expandBy(verts->at(i));
         }
-
+*/
         /* osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
         model->accept(cbbv);
         osg::BoundingBox totalbb = cbbv.getBoundingBox();*/
@@ -457,64 +415,20 @@ int main(int ac, char *av[]) {
         osg::Matrixd matrix;
         matrix.makeTranslate( eye );
 
-        osg::Matrixd view=osg::Matrix::inverse(matrix);
+        /*        osg::Matrixd view=osg::Matrix::inverse(matrix);
         //cout << view << endl;
 
         mat4x viewA=fast_inverse<fixed16_t>(translation_matrix<fixed16_t>(eye.x(),eye.y(),eye.z()));
         osg::Matrixd proj= osg::Matrixd::ortho2D(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
 
-        mat4x projA=ortho_matrix<fixed16_t>(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0),totalbb.zMin(),totalbb.zMax());
-        osg::Matrixd viewprojmat=view*proj;
-        //cout <<viewprojmat <<endl;
+        mat4x projA=ortho_matrix<fixed16_t>(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0),totalbb.zMin(),totalbb.zMax());*/
+        // osg::Matrixd viewprojmat=view*proj;
 
-        //if(!blending)
-          //  VertexShader::modelviewprojection_matrix=projA*viewA;
-        //else{
-            //VertexShaderBlendingDistPass::modelviewprojection_matrix=projA*viewA;
-            VertexShaderBlending::modelviewprojection_matrix=viewProjReadA;//projA*viewA;
-        //}
-        /*       for(int k=0; k<4; k++){
-            cout << endl;
-            for(int j=0;j<4;j++)
-                cout << fixedpoint::fix2float<16>(VertexShader::modelviewprojection_matrix.elem[k][j].intValue) << " ";
-        }
-        cout <<endl;*/
-        //exit(-1);
-        /* osg::Drawable *drawable = geode->getDrawable(0);
-        osg::TriangleIndexFunctor<TriangleIndexVisitor> tif;
-        drawable->accept(tif);
-
-*/
-        //  printf("Size %d",(int)tif.indices_double_counted.size());
-        /* osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
-        //geom->setUseDisplayList(false);
-        osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
-        int origSize=tif.new_list.size();*/
-        //  verts->resize(origSize+tif.indices_double_counted.size());
         start = osg::Timer::instance()->tick();
 
-        // initialize SDL without error handling an all
-        //  SDL_Init(SDL_INIT_VIDEO);
-        //SDL_Surface *screen = SDL_SetVideoMode(1280, 1024, 16, 0);
 
-        // the four vertices of the textured quad together with the texture coordinates
+        Vertex tmp_vertices[3];
 
-        VertexBlend tmp_vertices[3];
-        // load the texture file
-        //texture = new Texture(load_surface_r5g5a1b5("texture.png"));
-        map<int,TextureMipMap*> pool;
-        for(map<int,imgData>::iterator itr= imageList.begin(); itr!= imageList.end(); itr++){
-            string tmp=string(string(av[3])+string("/")+itr->second.filename);
-            pool[itr->second.id]=new TextureMipMap(tmp.c_str());//load_surface_r5g5a1b5(tmp.c_str());
-            if(pool[itr->second.id]->surface == NULL){
-                printf("Can't load %s\n",tmp.c_str());
-                pool.erase(itr->second.id);
-            }
-        }
-        // texturepool = new TexturePool(surface);
-        // make the shaders know which texture to use
-        //	VertexShader::texture = texture;
-        FragmentShaderBlendingMain::texturepool = pool;
 
         // the indices we need for rendering
         unsigned indices[] = {0, 1, 2};
@@ -526,7 +440,7 @@ int main(int ac, char *av[]) {
         // it is necessary to set the viewport
         g.viewport(0, 0, outputImage->width, outputImage->height);
         // set the cull mode (CW is already the default mode)
-        g.cull_mode(GeometryProcessor::CULL_CW);
+        g.cull_mode(GeometryProcessor::CULL_NONE);
 
         // it is also necessary to set the clipping rectangle
         r.clip_rect(0, 0, outputImage->width, outputImage->height);
@@ -535,193 +449,124 @@ int main(int ac, char *av[]) {
 
 
         // specify where out data lies in memory
-        g.vertex_attrib_pointer(0, sizeof(VertexBlend), tmp_vertices);
+        g.vertex_attrib_pointer(0, sizeof(Vertex), tmp_vertices);
 
 
         int last_count=0;
-        // draw the triangle
-        //  VertexShader::modelviewprojection_matrix=identity4<fixed16_t>();
-        /* map<int,vector<ply::tri_t> > img2tri;
-
-        for(long int i=0; i<origSize-2; i+=3){
-            ply::tri_t tri;
-            tri.idx[0]=tif.new_list[i];
-            tri.idx[1]=tif.new_list[i+1];
-            tri.idx[2]=tif.new_list[i+2];
-            int id1=(int)vertexData._texIds->at(tri.idx[0])[0];
-            int id2=(int)vertexData._texIds->at(tri.idx[1])[0];
-            int id3=(int)vertexData._texIds->at(tri.idx[2])[0];
-            img2tri[id1].push_back(tri);
-        }
-        printf("%d %d\n",img2tri.size(),vertexData._img2tri.size());
-        for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++)
-        printf("%d ",itr->second.size());
-    printf("\n");
-        for( map<int,vector<ply::tri_t> >::iterator itr=img2tri.begin(); itr!=img2tri.end(); itr++)
-        printf("%d ",itr->second.size());
-        printf("\n");
-*/
         int cnt=0;
-        int origSize=verts->size();
-
-       /* if(!blending){
-            g.vertex_shader<VertexShader>();
-            r.fragment_shader<FragmentShader>();
-        }
-        else*/{
-            /*  g.vertex_shader<VertexShaderBlendingDistPass>();
-            r.fragment_shader<FragmentShaderBlendingDistPass>();
-            for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
-                for(int t=0; t< itr->second.size(); t++){
-                    int pos=itr->second[t].pos;
-                    FragmentShaderBlendingDistPass::idx =pos;
-                    osg::Vec3 v1=verts->at(itr->second[t].idx[0]);
-                    osg::Vec3 v2=verts->at(itr->second[t].idx[1]);
-                    osg::Vec3 v3=verts->at(itr->second[t].idx[2]);
-                    osg::Vec3 tc1,tc2,tc3;
-                    if(vertexData._texCoord.size()){
-
-                        tc1=vertexData._texCoord[pos]->at(itr->second[t].idx[0]);
-                        tc2=vertexData._texCoord[pos]->at(itr->second[t].idx[1]);;
-
-                        tc3=vertexData._texCoord[pos]->at(itr->second[t].idx[2]);;
+        //int origSize=verts->size();
 
 
-                    }
-                    //  cout << tc1 <<endl;
-                    if(tc1.x() <0 || tc1.y() <0)
-                        continue;
 
-                    tmp_vertices[0].x=v1.x();
-                    tmp_vertices[0].y=v1.y();
-                    tmp_vertices[0].tx=tc1.x();
-                    tmp_vertices[0].ty=1.0-tc1.y();
-                    tmp_vertices[0].id=tc1.z();
+        g.vertex_shader<VertexShaderBlending>();
+        r.fragment_shader<FragmentShaderBlendingMain>();
 
-                    tmp_vertices[1].x=v2.x();
-                    tmp_vertices[1].y=v2.y();
-                    tmp_vertices[1].tx=tc2.x();
-                    tmp_vertices[1].ty=1.0-tc2.y();
-                    tmp_vertices[1].id=tc2.z();
+        VertexShaderBlending::_calib=stereo_calib.camera_calibs[0];
+        osg::Timer_t startTick = osg::Timer::instance()->tick();
+        formatBar("Img",startTick,0,imageList.size());
 
-                    tmp_vertices[2].x=v3.x();
-                    tmp_vertices[2].y=v3.y();
-                    tmp_vertices[2].tx=tc3.x();
-                    tmp_vertices[2].ty=1.0-tc3.y();
-                    tmp_vertices[2].id=tc3.z();
-                    g.draw_triangles(3, indices);
-                    if(cnt++ % 300 == 0){
+        for( map<int,imgData >::iterator itr=imageList.begin(); itr!=imageList.end(); itr++){
+          //  printf("\r%04d/%04d",(int)++cnt,imageList.size());
+           // fflush(stdout);
+            mat4x viewA;
+            osg::Matrix view;
 
-
-                        printf("\rA %04d/%04d",(int)cnt,origSize);
-                        last_count=cnt;
-                        fflush(stdout);
-
-                    }
+            for(int i=0; i<4; i++){
+                for(int j=0; j<4; j++){
+                    viewA.elem[j][i]=fixed16_t(itr->second.m(j,i));
+                    view=itr->second.m;
                 }
-            }*/
-            g.vertex_shader<VertexShaderBlending>();
-            r.fragment_shader<FragmentShaderBlendingMain>();
-        }
-
-        //for(long int i=0; i<origSize-2; i+=3){
-        //for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
-        //   string tmp=string(string(av[3])+string("/")+imageList[itr->first].filename);
-
-        /*  IplImage *image=cvLoadImage(tmp.c_str(),1);
-            if(!image){
-                printf("Can't load %s\n",tmp.c_str());
-                continue;
             }
-            Texture *texture;
-            TextureMipMap *textureMipMap;
+            mat4x viewprojmatA=/*(projA)**/viewA;
+            VertexShaderBlending::view=(view);
+
+            VertexShaderBlending::viewproj=(proj*view);
+            VertexShaderBlending::scaledevice=scaledevice;
+            VertexShaderBlending::modelviewprojection_matrix=viewprojmatA;//projA*viewA;
+
+            osg::BoundingBox bbox;
+            bbox.expandBy((itr->second.bbox._min)*rotM);
+            bbox.expandBy((itr->second.bbox._max)*rotM);
+           // cout << bbox._min <<endl;
+           // cout << bbox._max <<endl;
+            double expandmult=bbox.radius();
+            bbox.expandBy(osg::Vec3(bbox._min.x()-expandmult,
+                                    bbox._min.y()-expandmult,
+                                    bbox._min.z()-expandmult));
+
+
+            bbox.expandBy(osg::Vec3(bbox._max.x()+expandmult,
+                                    bbox._max.y()+expandmult,
+                                    bbox._max.z()+expandmult));
+
+
+            /* cout << bbox._min <<endl;
+            cout << bbox._max <<endl;*/
+            geom_elems_dst dstGeom(0);
+            osg::ref_ptr<osg::Node> root=kdbb->intersect(bbox,dstGeom,IntersectKdTreeBbox::DUP);
+
+
+            for(int i=0; i<(int)dstGeom.faces->size()-2; i+=3){
+
+
+
+                const osg::Vec3 &v1=dstGeom.vertices->at(dstGeom.faces->at(i));
+                const osg::Vec3 &v2=dstGeom.vertices->at(dstGeom.faces->at(i+1));
+                const osg::Vec3 &v3=dstGeom.vertices->at(dstGeom.faces->at(i+2));
+
+
+                //cout <<"cam:"<<v1<<" "<<bbox._min<<" "<<bbox.contains(v1)<<endl;
+
+                if(!bbox.contains(v1) || !bbox.contains(v2) || !bbox.contains(v3))
+                    continue;
+                /*cout <<view<<endl;
+                cout <<"v1:" << v1<<endl;
+                osg::Vec3 pt=view*v1;
+                osg::Vec4 pt2(pt.x(),pt.y(),pt.z(),1.0);
+                cout <<"cam frame:"<<pt<<endl;
+                osg::Vec4 a=proj*pt2;
+                a.x()/=a.z();
+                a.y()/=a.z();
+
+                cout <<"proj:"<<a<<endl;
+                //  cout <<proj<<endl;
+                //cout <<scaless<<endl;
+                osg::Vec3 a2(a.x(),a.y(),a.z());
+                cout <<"ss: "<<scaledevice*(a2)<<endl;
+
 */
-        /* if(!blending){
-                texture = new Texture(image);
-                FragmentShader::texture = texture;
-                VertexShader::texture = texture;
-            }else*/
-        for(int i=0; i<(int)vertexData._triangles->size()-2; i+=3){
-
-            //textureMipMap = new TextureMipMap(image);
-            //FragmentShaderBlendingMain::texture = textureMipMap;
-            VertexShaderBlending::texture =pool.begin()->second;
-
-
-            /*for(int t=0; t< itr->second.size(); t++){
-                int pos=itr->second[t].pos;
-                if(!blending && pos !=0 )
-                    continue;
-                if(blending)
-                    FragmentShaderBlendingMain::idx=pos;*/
-           // printf("Tri %d %d %d\n",vertexData._triangles->at(i),vertexData._triangles->at(i+1),vertexData._triangles->at(i+2));
-            //if(vertexData._triangles->at(i) != 0 && vertexData._triangles->at(i+1) != 1 && vertexData._triangles->at(i+2)!= 2)
-              //  continue;
-            osg::Vec3 v1=verts->at(vertexData._triangles->at(i));
-            osg::Vec3 v2=verts->at(vertexData._triangles->at(i+1));
-            osg::Vec3 v3=verts->at(vertexData._triangles->at(i+2));
-            //cout << v1 << " "<<v2 << " "<<v3 <<endl;
-            osg::Vec3 tc1[4],tc2[4],tc3[4];
-            if(vertexData._texCoord.size()){
-
-                for(int a=0;a<4; a++){
-                    tc1[a]=vertexData._texCoord[a]->at(vertexData._triangles->at(i));
-                    tc1[a].z()=vertexData._texIds->at(vertexData._triangles->at(i))[a];
-                    tc2[a]=vertexData._texCoord[a]->at(vertexData._triangles->at(i+1));;
-                    tc2[a].z()=vertexData._texIds->at(vertexData._triangles->at(i))[a];
-
-                    tc3[a]=vertexData._texCoord[a]->at(vertexData._triangles->at(i+2));;
-                    tc3[a].z()=vertexData._texIds->at(vertexData._triangles->at(i))[a];
-                    //cout <<"Zig "<<tc1[a] << " "<< tc2[a]<< " "<<tc3[a]<<endl;
-
-                }
-
-            }
-            for(int a=0;a<4; a++){
-
-                //  cout << tc1 <<endl;
-                if(tc1[a].x() <0 || tc1[a].y() <0 || tc2[a].x() <0 || tc2[a].y() <0 || tc3[a].x() <0 || tc3[a].y() <0)
-                    continue;
+                /* osg::Vec3 t=*v1;
+                t.x()/=t.z();
+                t.y()/=t.z();
+                cout <<"comp "<<t<<endl;
+*/
                 tmp_vertices[0].x=v1.x();
                 tmp_vertices[0].y=v1.y();
-                tmp_vertices[0].tx[a]=tc1[a].x();
-                tmp_vertices[0].ty[a]=1.0-tc1[a].y();
-                tmp_vertices[0].id[a]=tc1[a].z();
+                tmp_vertices[0].z=v1.z();
 
                 tmp_vertices[1].x=v2.x();
                 tmp_vertices[1].y=v2.y();
-                tmp_vertices[1].tx[a]=tc2[a].x();
-                tmp_vertices[1].ty[a]=1.0-tc2[a].y();
-                tmp_vertices[1].id[a]=tc2[a].z();
+                tmp_vertices[1].z=v2.z();
 
                 tmp_vertices[2].x=v3.x();
                 tmp_vertices[2].y=v3.y();
-                tmp_vertices[2].tx[a]=tc3[a].x();
-                tmp_vertices[2].ty[a]=1.0-tc3[a].y();
-                tmp_vertices[2].id[a]=tc3[a].z();
+                tmp_vertices[2].z=v3.z();
+
+
+                g.draw_triangles(3, indices);
             }
-            g.draw_triangles(3, indices);
-            if(cnt++ % 300 == 0){
-
-
-                printf("\r%04d/%04d",(int)cnt,origSize);
-                last_count=cnt;
-                fflush(stdout);
-
-            }
-
-            //   SDL_FillRect( SDL_GetVideoSurface(), NULL, 0 );
+            char tmp[1024];
+            sprintf(tmp,"%s.pfm",itr->second.filename.c_str());
+            PFMWrite((float*)outputImage->imageData,tmp,outputImage->width,outputImage->height);
+            cvSet(outputImage,cvScalar(-1.0));
+            sprintf(tmp,"%s.png",itr->second.filename.c_str());
+            cvSaveImage(tmp,rangeImage);
+            cvZero(rangeImage);
+            formatBar("Img",startTick,++cnt,imageList.size());
 
         }
-        /* if(!blending){
-                cvReleaseImage(&image);
-                delete texture;
-            }
-            else*/{
-            //delete textureMipMap;
-        }
+        formatBar("Img",startTick,imageList.size(),imageList.size());
 
-        // }
         double elapsed=osg::Timer::instance()->delta_s(start,osg::Timer::instance()->tick());
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
         double vm, rss;
@@ -729,7 +574,6 @@ int main(int ac, char *av[]) {
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
 
         //  SDL_Flip(SDL_GetVideoSurface());
-        cvSaveImage("out.png",outputImage);
 
         // show everything on screen
 

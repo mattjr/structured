@@ -28,8 +28,13 @@
 // defined elsewhere
 struct PlyFile;
 
-namespace plyV
+namespace ply
 {
+    typedef struct _tri_t{
+          int idx[3];
+          int pos;
+          int tri_idx;
+      }tri_t;
     /*  Holds the flat data and offers routines to read, scale and sort it.  */
     class VertexData
     {
@@ -67,6 +72,7 @@ namespace plyV
         osg::ref_ptr<osg::Vec3Array>   _vertices;
         std::vector<osg::Vec3> _tmp_verts;
         std::vector<osg::Vec4> _tmp_colors;
+        std::map<int,std::vector<tri_t> > _img2tri;
 
         // Color array in osg format
         osg::ref_ptr<osg::Vec4Array>   _colors;

@@ -745,37 +745,7 @@ int main( int argc, char *argv[ ] )
 
 
 
-    int ct=0;
-    for(vector<Stereo_Pose_Data>::iterator itr=tasks.begin(); itr != tasks.end(); itr++){
-        const Stereo_Pose_Data &name=(*itr);
 
-
-
-        fprintf(fpp,"%d %f %s %s",
-                ct++,name.time,name.left_name.c_str(),name.right_name.c_str());
-        fprintf(fpp," %f %f %f %f %f %f",name.bbox.xMin(),name.bbox.yMin(),
-                name.bbox.zMin(),
-                name.bbox.xMax(),name.bbox.yMax(),name.bbox.zMax());
-        if(ct==1){
-            if(name.left_name.size() != osgDB::getSimpleFileName(name.left_name).size()){
-                compositeMission=true;
-            }
-        }
-        for(int i=0; i< 4; i++){
-            for(int j=0; j < 4; j++){
-                osg::Matrix texmat=osgTranspose(name.mat);
-                texmat=osg::Matrix::inverse(texmat);
-
-                //   trans=osg::Matrix::inverse(trans);
-                fprintf(fpp," %f",name.mat(i,j));
-            }
-        }
-        fprintf(fpp,"\n");
-
-        //      if(use_poisson_recon){
-        //	dump_pts(pos_fp,string("mesh-agg/"+name.mesh_name).c_str(),clean_pos_pts);
-        //    }
-    }
 
     char conf_name[2048];
 
@@ -876,7 +846,7 @@ int main( int argc, char *argv[ ] )
     int totalTodoCount=tasks.size();
     int progCount=0;
     OpenThreads::Mutex mutex;
-    double max_triangulation_len =  max_alt > 0.0 ? max_alt : edgethresh * 10;
+    double max_triangulation_len =  max_alt > 0.0 ? max_alt*3 : edgethresh * 20;
 #pragma omp parallel num_threads(num_threads)
     if(run_stereo){
         StereoEngine engine(calib,edgethresh,max_triangulation_len,max_feature_count,  min_feat_dist, feat_quality_level,lodTexSize[0],mutex);
@@ -911,11 +881,52 @@ int main( int argc, char *argv[ ] )
 
     }
 
+    FILE *totalfp=fopen("mesh-diced/totalbbox.txt","w");
 
+    int ct=0;
+    for(vector<Stereo_Pose_Data>::iterator itr=tasks.begin(); itr != tasks.end(); itr++){
+        const Stereo_Pose_Data &name=(*itr);
+
+
+
+        fprintf(fpp,"%d %f %s %s ",
+                ct++,name.time,name.left_name.c_str(),name.right_name.c_str());
+        fprintf(totalfp,"%d %s ",
+                ct,name.left_name.c_str());
+        save_bbox_frame(name.bbox,fpp);
+        save_bbox_frame(name.bbox,totalfp);
+
+        if(ct==1){
+            if(name.left_name.size() != osgDB::getSimpleFileName(name.left_name).size()){
+                compositeMission=true;
+            }
+        }
+        for(int i=0; i< 4; i++){
+            for(int j=0; j < 4; j++){
+                osg::Matrix texmat=osgTranspose(name.mat);
+                texmat=osg::Matrix::inverse(texmat);
+
+                //   trans=osg::Matrix::inverse(trans);
+                fprintf(fpp," %f",name.mat(i,j));
+            }
+        }
+        fprintf(fpp,"\n");
+
+
+        osg::Matrix texmat=osgTranspose(name.mat);
+        texmat=osg::Matrix::inverse(texmat);
+        for(int k=0; k < 4; k++)
+            for(int n=0; n < 4; n++)
+                fprintf(totalfp," %lf",texmat(k,n));
+        fprintf(totalfp,"\n");
+        //      if(use_poisson_recon){
+        //	dump_pts(pos_fp,string("mesh-agg/"+name.mesh_name).c_str(),clean_pos_pts);
+        //    }
+    }
+    fclose(totalfp);
     Bounds bounds( tasks );
     std::vector<Cell_Data<Stereo_Pose_Data> > vrip_cells;
     vrip_cells=calc_cells<Stereo_Pose_Data> (tasks,vrip_img_per_cell);
-
 
     printf("Split into %d cells for VRIP\n",(int)vrip_cells.size());
     int numberFacesAll=0;

@@ -19,7 +19,7 @@
 #include <osg/io_utils>
 
 using namespace std;
-using namespace plyV;
+using namespace ply;
 //int tmpaa=0;
 
 struct Normal{
@@ -109,7 +109,7 @@ void VertexData::readVertices( PlyFile* file, const int nVertices,
         }*/
         _tmp_verts.push_back(tmp);
         //_vertices->push_back( tmp );
-      //  cout << tmp <<" " << _vertices->size()<<endl;
+        //  cout << tmp <<" " << _vertices->size()<<endl;
         if( readColors )
             _tmp_colors.push_back( osg::Vec4( (unsigned int) vertex.r / 256.0, (unsigned int) vertex.g / 256.0 , (unsigned int) vertex.b/ 256.0, 0.0 ) );
     }
@@ -193,7 +193,7 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
         //remap
         bool add=true;
         if(_bbox){
-           /* if(outbboxVert.count(face.vertices[ind1]) == 0 || outbboxVert.count(face.vertices[1]) == 0  || outbboxVert.count(face.vertices[ind3]) == 0 ){
+            /* if(outbboxVert.count(face.vertices[ind1]) == 0 || outbboxVert.count(face.vertices[1]) == 0  || outbboxVert.count(face.vertices[ind3]) == 0 ){
                 add=false;
             }else{
                 face.vertices[ind1]= outbboxVert[face.vertices[ind1]];
@@ -201,7 +201,7 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
                 face.vertices[ind3]= outbboxVert[face.vertices[ind3]];
             }*/
             if(!_bbox->contains(_tmp_verts[face.vertices[ind1]]) && !_bbox->contains(_tmp_verts[face.vertices[1]]) && !_bbox->contains(_tmp_verts[face.vertices[ind3]])){
-               add=false;
+                add=false;
 
             }
         }
@@ -240,6 +240,7 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
                 }
             }
             if(tex){
+
                 MESHASSERT( face.texcoord != 0 );
                 if( (unsigned int)(face.nTex) < 2  )
                 {
@@ -257,9 +258,26 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
                 }
             }
             if(multTex){
+                tri_t t;
+                t.idx[0]=face.vertices[ind1];
+                t.idx[1]=face.vertices[1];
+                t.idx[2]=face.vertices[ind3];
+                t.tri_idx=_triangles->size()/3;
                 for(int k=0; k<face.nIds; k+=4){
                     _texIds->push_back(osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]));
                     //cout << (int)face.nIds << " "<<osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]) << endl;
+                }
+                if(_texIds->at(_texIds->size()-1) != _texIds->at(_texIds->size()-2) || _texIds->at(_texIds->size()-1) != _texIds->at(_texIds->size()-3)
+                    || _texIds->at(_texIds->size()-2) != _texIds->at(_texIds->size()-3)){
+                    cerr<< _texIds->at(_texIds->size()-1) << " " <<_texIds->at(_texIds->size()-2) << " "<<_texIds->at(_texIds->size()-3)<<endl;
+                    fprintf(stderr,"All the texIDs not aligned\n");
+                    //exit(-1);
+                }
+                for(int l=0; l<4; l++){
+                    int id=(int)_texIds->back()[l];
+                    t.pos=l;
+                    if(id >=0)
+                        _img2tri[id].push_back(t);
                 }
             }
         }
@@ -378,13 +396,13 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
                 readVertices( file, nElems, hasColors && !ignoreColors );
                 // Check whether all vertices are loaded or not
                 //printf("%d %d\n",startcount,_vertices->size());
-               /* if(!bbox){
+                /* if(!bbox){
                     MESHASSERT( _vertices->size()-startcount == static_cast< size_t >( nElems ) );
                 }else{
                     MESHASSERT( _vertices->size()-startcount == outbboxVert.size() );
                 }*/
                 // Check all color elements read or not
-               /* if( hasColors && !ignoreColors )
+                /* if( hasColors && !ignoreColors )
                 {
                     if(!bbox){
                     MESHASSERT( _colors->size()-startcount == static_cast< size_t >( nElems ) );
@@ -476,11 +494,11 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
         // Add the premetive set
         if(_geom->getPrimitiveSetList().size() ==0){
 
-        if (_triangles.valid() && _triangles->size() > 0 )
+            if (_triangles.valid() && _triangles->size() > 0 )
                 _geom->addPrimitiveSet(_triangles.get());
-        //else
-          //  _geom->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, _vertices->size()));
-    }
+            //else
+            //  _geom->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, _vertices->size()));
+        }
         // if color info is given set the color array
         if(_colors.valid())
         {
@@ -506,7 +524,7 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
         }
         if(_geode->getDrawableList().size() == 0 )
             _geode->addDrawable(_geom);
-       // printf("Verts %d\n",tmpaa);
+        // printf("Verts %d\n",tmpaa);
         return _geode;
     }
     

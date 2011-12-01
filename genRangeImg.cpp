@@ -75,11 +75,13 @@ int main(int argc, char** argv)
             cell.bbox=osg::BoundingBox(minx,miny,minz,maxx,maxy,maxz);
             cell.col=col;
             cell.row=row;
-            if(std::string(fname) != "null")
-                cell.name=std::string(argv[2])+"/"+std::string(fname);
+            if(std::string(fname) != "null"){
+                cell.name=std::string(fname);
+                cells.push_back(cell);
+
+            }
             else
                 cell.name=std::string(fname);
-            cells.push_back(cell);
 
         }
         cnt++;
@@ -112,11 +114,12 @@ int main(int argc, char** argv)
 
         sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
         sprintf(tmpbb,"mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
-        std::ifstream fin(tmpbb);
-        TexturedSource::ProjectionCamera cam;
-        if(fin.good())
-         readNextEntry(fin,cam);
-        fprintf(fpp,"%s/rangeimg ",basepath.c_str());
+       // std::ifstream fin(tmpbb);
+        //TexturedSource::ProjectionCamera cam;
+     //   if(fin.good())
+       //  readNextEntry(fin,cam);
+        fprintf(fpp,"%s/rangeimg mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt \n",basepath.c_str(),
+                cells[i].row,cells[i].col,cells[i].row,cells[i].col);
     }
     fclose(fpp);
 

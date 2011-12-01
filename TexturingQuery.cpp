@@ -385,11 +385,14 @@ void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds, 
 
 
 osg::Vec2 TexturingQuery::reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v){
-
     osg::Vec3 cam_frame=mat*v;
+    cout <<"cam_frame "<<cam_frame<<endl;
+
     osg::Vec3 und_n;
     und_n.x()=cam_frame.x()/cam_frame.z();
     und_n.y()=cam_frame.y()/cam_frame.z();
+    cout <<"ill "<<und_n<<endl;
+
     double r_2 = pow(und_n.x(),2) + pow(und_n.y(),2);
     double k_radial = 1 + _calib.kc1*r_2 + _calib.kc2*pow(r_2,2) + _calib.kc5*pow(r_2,3);
     double delta_x = 2*_calib.kc3*und_n.x()*und_n.y() + _calib.kc4*(r_2 + 2*pow(und_n.x(),2));
@@ -399,7 +402,11 @@ osg::Vec2 TexturingQuery::reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v
     osg::Matrix k1=osg::Matrix::scale(k_radial,k_radial,1);
     osg::Matrix delta=osg::Matrix::translate(delta_x,delta_y,0);
     osg::Vec3 norm_c=k1*und_n*delta;
+    cout <<"ill2 "<<norm_c<<endl;
+
     osg::Vec3 pixel_c=(m1*norm_c*m2);
+    cout <<"ill3 "<<pixel_c<<endl;
+
     return osg::Vec2(pixel_c.x(),pixel_c.y());
 }
 map<SpatialIndex::id_type,int> calcAllIds(osg::Vec4Array *v){

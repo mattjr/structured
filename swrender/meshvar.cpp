@@ -348,7 +348,7 @@ int main(int ac, char *av[]) {
 
   osg::Timer_t start;
   osg::ref_ptr<osg::Node> model;//= osgDB::readNodeFile(av[1]);
-  plyA::VertexData vertexData;
+  ply::VertexData vertexData;
   osg::ArgumentParser arguments(&ac,av);
   int sizeX,sizeY; sizeX=sizeY=1024;
 

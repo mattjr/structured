@@ -125,7 +125,7 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
             sourceModel->setMaxLevel(lod);
             sourceModel->setMinLevel(lod);
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
-            plyV::VertexData vertexData;
+            ply::VertexData vertexData;
             osg::Node* model;
             if(!m->_useReImage){
                 model= vertexData.readPlyFile(sourceModel->getFileName().c_str());

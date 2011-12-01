@@ -154,6 +154,7 @@ struct VertexShader {
         vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, fixed16_t(1));
 
         //        const mat4x &m = modelview_matrix;
+        cout << fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " "<<        fixedpoint::fix2float<16>(tvertex.z.intValue)<<endl;
 
         out.x = tvertex.x.intValue;
         out.y = tvertex.y.intValue;
@@ -257,6 +258,7 @@ struct VertexShaderBlending {
         vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, fixed16_t(1));
 
         //const mat4x &m = modelview_matrix;
+        //cout << fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " "<<        fixedpoint::fix2float<16>(tvertex.z.intValue)<<endl;
 
         out.x = tvertex.x.intValue;
         out.y = tvertex.y.intValue;
@@ -266,6 +268,7 @@ struct VertexShaderBlending {
         // this mean it has to be converted to fixed point and premultiplied with the width, height of the
         // texture minus 1. Doing this in the vertex shader saves us from doing this in the fragment shader
         // which makes things faster.
+
         out.varyings[0] = static_cast<int>(v.tx * texture->w_minus1 * (1 << 16));
         out.varyings[1] = static_cast<int>(v.ty * texture->h_minus1 * (1 << 16));
 
@@ -620,7 +623,7 @@ int FragmentShaderBlendingDistPass::idx =-1;
 int FragmentShaderBlendingMain::triIdx;
 static Vertex tmp_vertices[3];
 
-inline bool process_tri(plyA::tri_t &tri,osg::Vec3Array *verts, std::vector<osg::ref_ptr<osg::Vec3Array> >   &texCoord, bool blending)
+inline bool process_tri(ply::tri_t &tri,osg::Vec3Array *verts, std::vector<osg::ref_ptr<osg::Vec3Array> >   &texCoord, bool blending)
 {
     int pos=tri.pos;
 
@@ -670,7 +673,7 @@ int main(int ac, char *av[]) {
 
     osg::Timer_t start;
     osg::ref_ptr<osg::Node> model;//= osgDB::readNodeFile(av[1]);
-    plyA::VertexData vertexData;
+    ply::VertexData vertexData;
     osg::ArgumentParser arguments(&ac,av);
     int sizeX,sizeY; sizeX=sizeY=1024;
     outputImage=NULL;
@@ -931,7 +934,7 @@ int main(int ac, char *av[]) {
             g.vertex_shader<VertexShaderBlending>();
             r.fragment_shader<FragmentShaderBlendingDistPass>();
             TextureMipMap *sizeI=NULL;
-            map<int,vector<plyA::tri_t> >::iterator itr=vertexData._img2tri.begin();
+            map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin();
             while((!sizeI || sizeI->surface==NULL) && itr!=vertexData._img2tri.end()){
                 string tmp=string(string(av[3])+string("/")+imageList[itr->first].filename);
 
@@ -941,7 +944,7 @@ int main(int ac, char *av[]) {
             VertexShaderBlending::texture =sizeI;
             FragmentShaderBlendingDistPass::texture =sizeI;
 
-            for( map<int,vector<plyA::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
+            for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
                 for(int t=0; t< (int)itr->second.size(); t++){
                     if(process_tri(itr->second[t],verts,vertexData._texCoord,blending))
                         g.draw_triangles(3, indices);
@@ -955,7 +958,7 @@ int main(int ac, char *av[]) {
                 delete sizeI;
             }
         }
-        for( map<int,vector<plyA::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
+        for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
             string tmp=string(string(av[3])+string("/")+imageList[itr->first].filename);
 
             Texture *texture=NULL;

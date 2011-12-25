@@ -429,7 +429,7 @@ static void print_usage( void )
     cout << "   threadedStereo [OPTIONS] <basedir>" << endl;
     cout << "   <basedir> allows you to choose one directory under which the program "<<endl;
 
-    cout << "   will look for mesh.cfg stereo.calib stereo_pose_est.data and dir img for images"<< endl;
+    cout << "   will look for localiser.cfg mesh.cfg stereo.calib stereo_pose_est.data and dir img for images"<< endl;
     cout << "     I suggest creating symlinks to those files allowing for varible configuration."<< endl;
     cout << "OPTIONS:" << endl;
     cout << "   -r <texture size>       Final texture output size." << endl;
@@ -1157,13 +1157,13 @@ int main( int argc, char *argv[ ] )
                 if(tasks[i].valid)
                     validCount++;
             printf("Auto computing tile and column splits %d valid images...\n",validCount);
-            int numCells=(int)ceil(sqrt(ceil(validCount / tex_img_per_cell)));
+            int numCells=(int)max(ceil(sqrt(ceil(validCount / tex_img_per_cell))),1.0);
             _tileRows=numCells;
             _tileColumns=numCells;
         }
 
 
-        int split= std::max(_tileRows,_tileColumns);
+        int split= std::max(std::max(_tileRows,_tileColumns),1);
         if(reimageSize.x() < 0.0)
             reimageSize = osg::Vec2(osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0),osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0));
 

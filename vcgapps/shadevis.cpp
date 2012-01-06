@@ -33,7 +33,7 @@ shadevis
 Revision 1.11  2006/01/10 13:20:42  cignoni
 Changed ply::PlyMask to io::Mask
 
-Revision 1.10  2005/11/12 06:48:47  cignoni
+Revision 1.10  2005/11/12 06:48:47   cignoni
 Version 1.0
 Added management of point set, correct bug in printing on the screen,
 
@@ -658,6 +658,8 @@ int main(int argc, char** argv)
         Vis.ComputeUniformCone(SampleNum,ViewVector, ConeAngleRad,ConeDir,cb);
         LightFlag=false;FalseColorFlag=false;
         UpdateVis();
+        printf("Lo %f, Hi %f Gamma %f\n",lopass,hipass,gamma_correction);
+
     }
     vcg::tri::io::PlyInfo p;
     p.mask|=vcg::tri::io::Mask::IOM_VERTCOLOR  /* | vcg::ply::PLYMask::PM_VERTQUALITY*/ ;

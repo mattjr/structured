@@ -65,6 +65,7 @@ Added GPL comments
 #include <wrap/gl/math.h>
 #include "simplepic.h"
 #include "gen_normal.h"
+#include "../swrender/render_utils.h"
 #define SetRotate SetRotateRad
 namespace vcg {
   // Base Class che definisce le varie interfaccie;
@@ -549,6 +550,9 @@ void MapVisibility(float Gamma=1, float LowPass=0, float HighPass=1, float Scale
 	float minv=*min_element(VV.begin(),VV.end());
 	float maxv=*max_element(VV.begin(),VV.end());
 	printf("Visibility Range %f %f\n", minv,maxv);
+    minv=0.0;
+    maxv=255.0;
+    printf("Clamped Visibility Range %f %f\n", minv,maxv);
 
 	VertexIterator vi;
 			for(vi=m.vert.begin();vi!=m.vert.end();++vi){
@@ -694,10 +698,10 @@ void Compute( CallBack *cb)
       HitRay+=added;
       TotRay+=VV.size();
       printf("%3i/%i : %i msec -- TotRays %i, HitRays %i, ray/sec %3.1fk \n ",i,VN.size(),t1-t0,TotRay,HitRay,float(TotRay)/(clock()-t00));
-		}
+                }
   
-  printf("Tot Time %i msec TotRays %i, HitRays %i, ray/sec %3.1fk \n ",clock()-t00,TotRay,HitRay,float(TotRay)/(clock()-t00));
-	RestoreGL();
+        printf("Tot Time %s TotRays %i, HitRays %i, ray/sec %3.1fk \n ",format_elapsed((clock()-t00)/(double)CLOCKS_PER_SEC).c_str(),TotRay,HitRay,float(TotRay)/(clock()-t00));
+        RestoreGL();
 }
 
 void ComputeHalf(int nn, Point3x &dir, CallBack *cb)

@@ -197,5 +197,8 @@ private:
 };
 
 } // end namespace swr
+extern double MM[16];
+extern double MP[16];
+extern int VP[4];
 
 #endif

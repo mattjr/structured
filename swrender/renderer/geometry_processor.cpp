@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "geometry_processor.h"
 #include "fixed_func.h"
 #include "util.h"
-
+#include <stdio.h>
 namespace swr {
 	namespace detail {
 		static const unsigned SKIP_FLAG = static_cast<unsigned>(-1);
@@ -275,7 +275,7 @@ void GeometryProcessor::pdiv_and_vt()
 		if (!already_processed[indices_[i]]) {
 			// perspective divide
 			VertexOutput &v = vertices_[indices_[i]];
-#if 0
+#if 1
 			v.x = fixdiv<16>(v.x, v.w);
 			v.y = fixdiv<16>(v.y, v.w);
 			v.z = fixdiv<16>(v.z, v.w);
@@ -294,8 +294,11 @@ void GeometryProcessor::pdiv_and_vt()
 			// y needs to be flipped since the viewport has (0,0) in the 
 			// upper left but vs output is like in OpenGL
 			v.y = (viewport_.py * -v.y + viewport_.oy) >> 12;
-			v.z = fixmul<16>(depth_range_.fmndiv2,v.z) + depth_range_.npfdiv2;
-
+                       // printf("Orig Z: %f\n",fix2float<16>(v.z));
+                        //v.z = fixmul<16>(depth_range_.fmndiv2,v.z) + depth_range_.npfdiv2;
+                        int tmp=fixdiv<16>(v.z-depth_range_.npfdiv2,depth_range_.fmndiv2);
+                       // printf("!tra Z: %f\n",fix2float<16>(tmp));
+                      //  printf("leaveing 0x%x\n",v.z);
 			already_processed[indices_[i]] = true;
 		}
 	}

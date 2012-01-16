@@ -90,6 +90,21 @@ namespace vcg {
 		return true;
 	}
 
+        bool SavePFM( const char * filename )
+        {
+            FILE *fp;
+            fp = fopen( filename, "wb" );
+            fprintf( fp, "Pf\n%d %d\n-1.000000\n", sx, sy );
+            int i;
+            for(int i=0;i<sx*sy;++i)
+
+            {
+                //printf("%f \n",img[i]);
+                fwrite(&(img[i]),sizeof(float),1,fp);
+            }
+            fclose( fp );
+        }
+
 };
 
 }

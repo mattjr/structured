@@ -45,7 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <set>
 #include <stdio.h>
 #include "stepmacros.h"
-
+#include "util.h"
 namespace swr {
 
 	template <typename FragmentShader>

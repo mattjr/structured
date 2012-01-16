@@ -502,7 +502,7 @@ int main(int ac, char *av[]) {
     unsigned indices[] = {0, 1, 2};
 
     // create a rasterizer class that will be used to rasterize primitives
-    RasterizerSubdivAffine r;
+    swr::RasterizerSubdivAffine r;
     // create a geometry processor class used to feed vertex data.
     GeometryProcessor g(&r);
     // it is necessary to set the viewport

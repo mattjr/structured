@@ -61,41 +61,39 @@ struct GenericFragmentShader : public swr::GenericSpanDrawer<GenericFragmentShad
 
 			// only shift by 15 to take the most significant bit.
 			// the highest bit is just the sign and should always be positive
-                        const unsigned short depth = fd.z >> 15;
+                        //const unsigned short depth = fd.z >> 15;
 
                         const unsigned short depthbuf = *depth_buffer;
                         float f = fixedpoint::fix2float<16>(fd.z);
                         f = f * 0.5 + 0.5;
 
                         f=(f *(1.0-1e-3))+1e-3;
-
-                        float *ass =
+                        float depth = f;
+                        float *dbuf =
                                 depthZ +(s_depth_buffer.width*(s_depth_buffer.width-y-1)+x);
-                        *ass=f;
                         unsigned char *color =
                                                 static_cast<unsigned char*>(s_color_buffer.data) +(s_color_buffer.width*(s_color_buffer.width-y-1)+x);
 
-                        *color=flatcolor;
 
                         switch (depth_test_func) {
 			case GL_NEVER: return;
 			case GL_LESS:
-                                if (!(depth < *depth_buffer)) return;
+                                if (!(depth < *dbuf)) return;
 				break;
 			case GL_EQUAL: 
-				if (!(depth == *depth_buffer)) return; 
+                                if (!(depth == *dbuf)) return;
 				break;
 			case GL_LEQUAL: 
-				if (!(depth <= *depth_buffer)) return; 
+                                if (!(depth <= *dbuf)) return;
 				break;
 			case GL_GREATER: 
-				if (!(depth > *depth_buffer)) return; 
+                                if (!(depth > *dbuf)) return;
 				break;
 			case GL_NOTEQUAL: 
-				if (!(depth != *depth_buffer)) return; 
+                                if (!(depth != *dbuf)) return;
 				break;
 			case GL_GEQUAL: 
-				if (!(depth >= *depth_buffer)) return; 
+                                if (!(depth >= *dbuf)) return;
 				break;
 			case GL_ALWAYS: 
 				break;
@@ -108,7 +106,7 @@ struct GenericFragmentShader : public swr::GenericSpanDrawer<GenericFragmentShad
                           //                      static_cast<unsigned char*>(s_color_buffer.data) +(s_color_buffer.width*(s_color_buffer.width-y-1)+x);
 
                         *color=flatcolor;
-                        *ass=f;
+                        *dbuf=f;
 		}
 
 		// skip color computations when there is no color buffer

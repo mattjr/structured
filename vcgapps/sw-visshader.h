@@ -74,6 +74,7 @@ Added GPL comments
 #include "../swrender/fixedpoint/fixed_func.h"
 #include "../swrender/generic_fragment_shader.h"
 #include "../swrender/generic_vertex_shader.h"
+int cnter=0;
 #define SetRotate SetRotateRad
 namespace vcg {
   // Base Class che definisce le varie interfaccie;
@@ -459,7 +460,7 @@ for(int i=0; i<4; i++){
 // Genera la matrice di proj e model nel caso di un rendering ortogonale.
 // subx e suby indicano la sottoparte che si vuole
 
-void DrawSWFill(MESH_TYPE &mm,const F2X_RenderSurface &surf){
+void DrawSWFill(MESH_TYPE &mm,const F2X_RenderSurface &surf,const swr::GeometryProcessor::CullMode &cullmode){
     vec4x tmp_vertices[3];
 
     // the indices we need for rendering
@@ -472,7 +473,7 @@ void DrawSWFill(MESH_TYPE &mm,const F2X_RenderSurface &surf){
     // it is necessary to set the viewport
     g.viewport(0, 0, surf.width, surf.height);
     // set the cull mode (CW is already the default mode)
-    g.cull_mode(swr::GeometryProcessor::CULL_NONE);
+    g.cull_mode(cullmode);
     //Set glDepthRange(0.0,1.0);
     float zNear=2.0*ZTWIST;
     float zFar=1.0;
@@ -578,20 +579,36 @@ int GLAccumPixel(	std::vector<int> &PixSeen,      int width,int height,Matrix44d
         }
 
         GenericFragmentShader::depthZ=&(depthZ.img[0]);
+        GenericFragmentShader::flatcolor=0xff;
+        DrawSWFill(m,surf,swr::GeometryProcessor::CULL_CW);
 
-        DrawSWFill(m,surf);
-        for(int i=0; i<colorb.sx;i++)
-            for(int j=0; j<colorb.sy; j++){
-            unsigned char c=(( unsigned char*)color.data)[color.width*j+i];
-            colorb.Pix(i,j)=Color4b(c,0,0,0 );
-        }
+
+
   if(!IsClosedFlag) {
       glCullFace(GL_FRONT);
             glColor(Color4b::Black);
             DrawFill(m);
+            GenericFragmentShader::flatcolor=0x00;
+            DrawSWFill(m,surf,swr::GeometryProcessor::CULL_CCW);
       snapC.OpenGLSnap();
   }
+  for(int i=0; i<colorb.sx;i++)
+      for(int j=0; j<colorb.sy; j++){
+      unsigned char c=(( unsigned char*)color.data)[color.width*j+i];
+      colorb.Pix(i,j)=Color4b(c,0,0,0 );
+  }
+  char tmpc[1024];
+ sprintf(tmpc,"but-%03d-O.ppm",cnter);
+  snapC.SavePPM(tmpc);
+  sprintf(tmpc,"but-%03d-N.ppm",cnter);
 
+          colorb.SavePPM(tmpc);
+ /* sprintf(tmpc,"but-O.ppm",cnter);
+  snapC.SavePPM(tmpc);
+  sprintf(tmpc,"but-N.ppm",cnter);
+
+          colorb.SavePPM(tmpc);*/
+       //a64l()  exit(0);
 	int cnt=0;
 	snapZ.OpenGLSnap(GL_DEPTH_COMPONENT);
 
@@ -634,8 +651,9 @@ int GLAccumPixel(	std::vector<int> &PixSeen,      int width,int height,Matrix44d
                   unsigned char c01=(( unsigned char*)color.data)[color.width*(tyi+1)+(txi+0)];
                   unsigned char c11=(( unsigned char*)color.data)[color.width*(tyi+1)+(txi+1)];
               int    col2 =std::max( std::max( c00,c10),std::max(c01,c11));
-                 //printf("col %d %d\n",col,col2);
-
+              if(col != col2)
+              printf("col %d %d\n",col,col2);
+col=col2;
         // col=snapC.Pix(txi+0,tyi+0)[0];
         }
         if(col!=0 && tz<sd) {
@@ -844,6 +862,7 @@ void Compute(int height,int width, CallBack *cb)
         for(unsigned int i=0;i<VN.size();++i)
 		{
       int t0=clock(); 
+      cnter=i;
 			fill(PixSeen.begin(),PixSeen.end(),0);
       int added=SplittedRendering(height,width,VN[i], PixSeen,cb);
 		  AddPixelCount(VV,PixSeen);

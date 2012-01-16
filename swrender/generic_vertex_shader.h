@@ -49,28 +49,28 @@ struct GenericVertexShader {
 	{
 		// fetch vertex
                 vec4x v = *static_cast<const vec4x*>(in[0]);
-                double tx,ty,tz;
+              /*  double tx,ty,tz;
 
                         gluProject(fixedpoint::fix2float<16>(v.x.intValue),fixedpoint::fix2float<16>(v.y.intValue),
                                    fixedpoint::fix2float<16>(v.z.intValue),
                                    MM,MP,(GLint*)VP,
-                                &tx,&ty,&tz);
+                                &tx,&ty,&tz);*/
 		// transform and write position
                   //      printmatrix2(modelview_projection_matrix);
                     //    printmatrix3(modelview_projection_matrix_d);
                         vcg::Point4d v2(fixedpoint::fix2float<16>(v.x.intValue),fixedpoint::fix2float<16>(v.y.intValue),
                                         fixedpoint::fix2float<16>(v.z.intValue),1.0);
               // std::cout <<"A:"<< fixedpoint::fix2float<16>(v.x.intValue) << " " <<         fixedpoint::fix2float<16>(v.y.intValue) << " "<<        fixedpoint::fix2float<16>(v.z.intValue)<< " "<<fixedpoint::fix2float<16>(v.w.intValue)<<std::endl;
-                v = modelview_projection_matrix * v;
+               // v = modelview_projection_matrix * v;
                 //std::cout << fixedpoint::fix2float<16>(v.x.intValue) << " " <<         fixedpoint::fix2float<16>(v.y.intValue) << " "<<        fixedpoint::fix2float<16>(v.z.intValue)<<" "<<        fixedpoint::fix2float<16>(v.w.intValue)<<std::endl;
                  v2 = modelview_projection_matrix_d *v2;
                 // std::cout << v2.X()<<" " << v2.Y()<< " " << v2.Z()<<" "<<v2.W()<<std::endl;
                 //std::cout << fixedpoint::fix2float<16>(v.z.intValue) << "\n";
                 //std::cout << "Correct "<<tz <<std::endl;
-		out.x = v.x.intValue;
+                /*out.x = v.x.intValue;
 		out.y = v.y.intValue;
 		out.z = v.z.intValue;
-		out.w = v.w.intValue;
+                out.w = v.w.intValue;*/
 
                 out.x = float2fix<16>(v2.X());
                 out.y = float2fix<16>(v2.Y());

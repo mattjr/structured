@@ -63,7 +63,7 @@ int main( int argc, char **argv )
             assert(0);
 
         }
-        osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>((*geomList.begin())->getVertexArray());
+        osg::Vec3Array *verts=static_cast< osg::Vec3Array*>((*geomList.begin())->getVertexArray());
         if(!verts){
             fprintf(stderr,"Fail to convert verts\n");
             exit(-1);

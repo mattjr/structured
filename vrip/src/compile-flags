@@ -60,7 +60,7 @@ else
 		-Wmissing-declarations
 	CXXFLAGS = -DLINUX -D_BOOL -Wno-unused -fno-for-scope
 
-	INCLS = -I. -I$(ROOT)/include -I/usr/include/tcl8.4
+	INCLS = -I. -I$(ROOT)/include -I/usr/include/tcl8.4  -I/usr/include/tcl
 
 	LIBPATHS = -L. -L$(ROOT)/lib -L$(ROOT)/src/libply -L$(ROOT)/src/linear -L$(ROOT)/src/softrender
 

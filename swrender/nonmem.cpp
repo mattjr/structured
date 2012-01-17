@@ -958,6 +958,10 @@ int main(int ac, char *av[]) {
                 delete sizeI;
             }
         }
+        unsigned int total_tri_count=0,count=0;
+        for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++)
+            total_tri_count+=itr->second.size();
+
         for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
             string tmp=string(string(av[3])+string("/")+imageList[itr->first].filename);
 
@@ -979,6 +983,12 @@ int main(int ac, char *av[]) {
 
             }
             for(int t=0; t< (int)itr->second.size(); t++){
+                if(count % 300 == 0){
+                    printf("\r %02d%%: %d/%d",(int)(100.0*(count/(float)total_tri_count)),count,total_tri_count);
+                    fflush(stdout);
+                }
+                count++;
+
                 if(!blending && itr->second[t].pos !=0 )
                     continue;
                 if(process_tri(itr->second[t],verts,vertexData._texCoord,blending))
@@ -993,7 +1003,8 @@ int main(int ac, char *av[]) {
             }
 
         }
-
+        printf("\r %02d%%: %d/%d\n",(int)(100.0*(count/(float)total_tri_count)),count,total_tri_count);
+        fflush(stdout);
         double elapsed=osg::Timer::instance()->delta_s(start,osg::Timer::instance()->tick());
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
         double vm, rss;

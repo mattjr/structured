@@ -23,16 +23,16 @@ add_executable (blendincore  blendincore.cpp)
 add_executable (meshvar  meshvar.cpp)
 
 #add_executable (rendertest example2.cpp render_utils.cpp vertexData.cpp plyfile.c IMG_savepng.c renderer/geometry_processor.cpp)
-   target_link_libraries( nonmem  swrender ${OSG_LIBRARY} png cv highgui
+   target_link_libraries( nonmem  swrender ${OSG_LIBRARY} ${OpenCV_LIBS}
  ${OSGDB_LIBRARY}
                ${OSGUTIL_LIBRARY} ${VIPS_LIBRARIES} vips vipsCC)
-   target_link_libraries( rangeimg  swrender ${OSG_LIBRARY} png cv highgui ts
+   target_link_libraries( rangeimg  swrender ${OSG_LIBRARY} ${OpenCV_LIBS} ts
  ${OSGDB_LIBRARY}
                ${OSGUTIL_LIBRARY} ${VIPS_LIBRARIES} vips vipsCC)
-   target_link_libraries( blendincore swrender ${OSG_LIBRARY} png cv highgui
+   target_link_libraries( blendincore swrender ${OSG_LIBRARY} ${OpenCV_LIBS}
  ${OSGDB_LIBRARY}
                ${OSGUTIL_LIBRARY})
-   target_link_libraries( meshvar swrender ${OSG_LIBRARY} png cv highgui
+   target_link_libraries( meshvar swrender ${OSG_LIBRARY} ${OpenCV_LIBS}
  ${OSGDB_LIBRARY}
                ${OSGUTIL_LIBRARY})
  #  target_link_libraries( calcTexCoordOutCore  ${SDL_LIBRARY} SDL_image ${OSG_LIBRARY} png cv highgui ${OSGDB_LIBRARY}               ${OSGUTIL_LIBRARY})

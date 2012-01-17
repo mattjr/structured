@@ -31,7 +31,7 @@ CXXSRCS = vripInit.cc vripMain.cc vripMiscCmds.cc OccGrid.cc \
 
 TARGETS = vrip vriphead
 
-LIBS = -lply -llinear -ltk8.4 -ltcl8.4 -ldl \
+LIBS = -lply -llinear -ltk -ltcl -ldl \
 	-lsl -lc -lm 
 
 ROOT = ../..

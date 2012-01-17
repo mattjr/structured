@@ -501,7 +501,7 @@ void addDups(osg::Geode *geode){
     //  printf("Size %d",(int)tif.indices_double_counted.size());
     osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
     //geom->setUseDisplayList(false);
-    osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+    osg::Vec3Array *verts=dynamic_cast<osg::Vec3Array*>(geom->getVertexArray());
     int origSize=tif.new_list.size();
     //  verts->resize(origSize+tif.indices_double_counted.size());
     for(int i=0; i<origSize; i++){
@@ -552,7 +552,7 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
 
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
         //geom->setUseDisplayList(false);
-        osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+        osg::Vec3Array *verts=dynamic_cast< osg::Vec3Array*>(geom->getVertexArray());
 
         //setVertexAttrib(*geom, _vertexAlias, geom->getVertexArray(), false, osg::Geometry::BIND_PER_VERTEX);
         // geom->setVertexArray(0);

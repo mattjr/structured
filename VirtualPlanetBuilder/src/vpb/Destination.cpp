@@ -32,6 +32,7 @@
 #include <osgUtil/TriStripVisitor>
 
 #include <osgTerrain/GeometryTechnique>
+#include <osg/PagedLOD>
 
 using namespace vpb;
 

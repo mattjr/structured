@@ -20,7 +20,7 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
     osg::Drawable *drawable = geode->getDrawable(0);
 
     osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
-    osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+    osg::Vec3Array *verts=dynamic_cast< osg::Vec3Array*>(geom->getVertexArray());
     //osg::Vec2Array *texCoords=static_cast<const osg::Vec2Array*>(geom->getTexCoordArray(0));
     newTexCoord.resize(texcoord.size());
     newTexCoord[0]=new osg::Vec3Array;

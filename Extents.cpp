@@ -1623,9 +1623,9 @@ osg::Node* MyDestinationTile::createScene()
                             vector<osg::Geometry*> geoms;
                             osg::Group *group=dynamic_cast<osg::Group*>(_createdScene.get());
                             osg::ref_ptr<osg::Geode> geode = dynamic_cast<osg::Geode*> (group->getChild(0));
-                            osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
-                            osg::Vec4Array *colors=static_cast<const osg::Vec4Array*>(geom->getColorArray());
-                            osg::Vec3Array *normals=static_cast<const osg::Vec3Array*>(geom->getNormalArray());
+                            osg::Vec3Array *verts=static_cast< osg::Vec3Array*>(geom->getVertexArray());
+                            osg::Vec4Array *colors=static_cast< osg::Vec4Array*>(geom->getColorArray());
+                            osg::Vec3Array *normals=static_cast< osg::Vec3Array*>(geom->getNormalArray());
 
                             osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
                             int s=primitiveSets[0]->getNumIndices();
@@ -3166,8 +3166,8 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
 
         osg::Drawable *drawable=geode->getDrawable(0);
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
-        osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
-        osg::Vec4Array *colors=static_cast<const osg::Vec4Array*>(geom->getColorArray());
+        osg::Vec3Array *verts=static_cast< osg::Vec3Array*>(geom->getVertexArray());
+        osg::Vec4Array *colors=static_cast< osg::Vec4Array*>(geom->getColorArray());
         osg::DrawElementsUInt* primitiveSet = dynamic_cast<osg::DrawElementsUInt*>(geom->getPrimitiveSet(0));
         int offset=newVerts->size();
         if(!verts || !primitiveSet)

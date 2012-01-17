@@ -1595,8 +1595,8 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
             fprintf(stderr,"Can't load ply file not GEOM\n");
             cachedMesh=false;
 	  }
-	  points=static_cast<const osg::Vec3Array*>(gm->getVertexArray());
-	  tris=static_cast<const osg::DrawElementsUInt *>(gm->getPrimitiveSet(0));
+          points=static_cast<osg::Vec3Array*>(gm->getVertexArray());
+          tris=static_cast<osg::DrawElementsUInt *>(gm->getPrimitiveSet(0));
 	  
 	  if(!points || !tris){
             fprintf(stderr,"Can't load ply file no points\n");

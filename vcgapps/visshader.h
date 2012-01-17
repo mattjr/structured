@@ -62,7 +62,10 @@ Added GPL comments
 
 #include <bitset>
 #include <vcg/math/matrix44.h>
+#define USEGL 1
+
 #include <wrap/gl/math.h>
+
 #include "simplepic.h"
 #include "gen_normal.h"
 #include "../swrender/render_utils.h"

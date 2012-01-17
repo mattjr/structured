@@ -49,7 +49,7 @@ namespace vcg {
      img.resize(sx*sy);
    }
    PixType &Pix(int x, int y) {return img[sx*y+x];}
-
+#ifdef USEGL
    void OpenGLSnap(GLenum format=0)
 	{
 		int vp[4];
@@ -73,6 +73,7 @@ namespace vcg {
 		}
  		glReadPixels(vp[0],vp[1],vp[2],vp[3],format,mtype,(GLvoid *)&img[0]);
 	}
+#endif
 	bool SavePPM( const char * filename )
 	{
 		FILE * fp = fopen(filename,"wb");

@@ -70,6 +70,8 @@ Added GPL comments
 // this define is mandatory to avoid the conflicts due to the silly definition of 
 // min and max macros in windows.h (included by glut...)
 #define NOMINMAX 
+#ifdef USEGL
+
 #include <GL/glew.h>
 #ifdef __APPLE__
 #include <GLUT/glut.h>
@@ -77,14 +79,17 @@ Added GPL comments
 #include <GL/glut.h>
 #endif
 
-#include <osgDB/FileNameUtils>
-
 #include <wrap/gl/space.h>
+#include <wrap/gui/trackball.h>
+
+#endif
+
+
 #include <iostream>
 
+#include <osgDB/FileNameUtils>
 #include <wrap/callback.h>
 #include <vcg/math/base.h>
-#include <wrap/gui/trackball.h>
 /*#include <vcg/simplex/vertex/with/vcvn.h>
 #include <vcg/simplex/vertex/with/vcvn.h>
 #include <vcg/simplex/face/with/fn.h>
@@ -154,10 +159,12 @@ bool ShowDirFlag=false;
 int imgcnt=0;
 
 Color4b BaseColor=Color4b::White;
+#ifdef USEGL
+
 Trackball QV;
 Trackball QL;
 Trackball *Q=&QV;
-
+#endif
 int ScreenH,ScreenW;
 float ViewAngle=33;
 vector<Point3f> ViewVector;
@@ -167,6 +174,7 @@ bool cb(const char *buf)
     printf(buf);
     return true;
 }
+#ifdef USEGL
 
 void BuildOnePixelTexture(Color4b c, unsigned int &TexInd)
 {
@@ -208,7 +216,6 @@ void glutPrintf(int x, int y, const char * f, ... )
     glPopMatrix();
     glPopAttrib();
 }
-
 // prototypes
 void SaveTexturedGround();
 
@@ -271,6 +278,7 @@ void Draw(AMesh &mm)
         glEnd();
     }
 }
+#endif
 
 AMesh m;
 VertexVisShader<AMesh> Vis(m);
@@ -286,6 +294,7 @@ void  ViewReshape(GLsizei w, GLsizei h)
     ScreenW=w; ScreenH=h;
     glViewport(0,0,w,h);
 }
+#ifdef USEGL
 
 void  ViewDisplay (void)
 {
@@ -355,6 +364,7 @@ void ViewSpecialKey(int , int , int )
     glutPostRedisplay();
 }
 void Toggle(bool &flag) {flag = !flag;}
+#endif
 void UpdateVis()
 {
     if( LightFlag && !FalseColorFlag)
@@ -373,7 +383,7 @@ void ViewKey(unsigned char key, int , int )
     Point3f dir;
     switch (key) {
     case 27: exit(0);   	break;
-    case 9: if(Q==&QV) Q=&QL;else Q=&QV;   	break;
+    //case 9: if(Q==&QV) Q=&QL;else Q=&QV;   	break;
     case 'l' :
         lopass=lopass+.05;
         printf("Lo %f, Hi %f Gamma %f\n",lopass,hipass,gamma_correction);
@@ -413,7 +423,7 @@ void ViewKey(unsigned char key, int , int )
         //Vis.ComputeUniform(SampleNum,ViewVector,cb);
         Vis.ComputeUniformCone(WindowRes,WindowRes,SampleNum,ViewVector, ConeAngleRad,ConeDir,cb);
         UpdateVis(); break;
-    case ' ' : {
+/*  case ' ' : {
             Point3f dir = Q->camera.ViewPoint();
             printf("ViewPoint %f %f %f\n",dir[0],dir[1],dir[2]);
             dir.Normalize();
@@ -422,7 +432,7 @@ void ViewKey(unsigned char key, int , int )
             dir.Normalize();
             Vis.ComputeSingle(WindowRes,WindowRes,dir,ViewVector,cb);
             UpdateVis();
-        } break;
+        } break;*/
     case 'r' : BaseColor[0]=min(255,BaseColor[0]+2);     break;
     case 'R' : BaseColor[0]=max(  0,BaseColor[0]-2);     break;
     case 'g' : BaseColor[1]=min(255,BaseColor[1]+2);     break;
@@ -430,15 +440,15 @@ void ViewKey(unsigned char key, int , int )
     case 'b' : BaseColor[2]=min(255,BaseColor[2]+2);     break;
     case 'B' : BaseColor[2]=max(  0,BaseColor[2]-2);     break;
 
-    case 'v' : Toggle(ShowDirFlag); break;
-    case 'V' :
+    //case 'v' : Toggle(ShowDirFlag); break;
+    /*case 'V' :
         {
             SimplePic<Color4b> snapC;
-            snapC.OpenGLSnap();
+           snapC.OpenGLSnap();
             char buf[128];
             sprintf(buf,"Snap%03i.ppm",imgcnt++);
             snapC.SavePPM(buf);
-        }
+        }*/
     case 's' :
         Vis.SmoothVisibility();
         UpdateVis(); break;
@@ -470,8 +480,15 @@ void ViewKey(unsigned char key, int , int )
     case '3' : diff=0.45f; ambi=0.50f; gamma_correction=1.0; lopass=0.20f; hipass=0.75f; ColorFlag=true;  UpdateVis(); break;
     case '4' : diff=0.35f; ambi=0.60f; gamma_correction=1.0; lopass=0.25f; hipass=0.70f; ColorFlag=true;  UpdateVis(); break;
     }
+
+
+#ifdef USEGL
     glutPostRedisplay(); ;
+#endif
 } 
+#ifdef USEGL
+
+
 void ViewMenu(int val)
 {
     ViewKey(val, 0, 0);
@@ -543,7 +560,7 @@ void  ViewInit (void) {
 }
 
 
-
+#endif
 int main(int argc, char** argv)
 {
     if(argc<2) {
@@ -642,6 +659,7 @@ int main(int argc, char** argv)
         printf("Mesh       Output filename %s\n",OutNameMsh.c_str());
 
         printf("Mesh %iv %if bbox Diag %g\n",m.vn,m.fn,m.bbox.Diag());
+#ifdef USEGL
 
         glutInit(&argc, argv);
 
@@ -658,6 +676,7 @@ int main(int argc, char** argv)
 
         ViewInit();
         glewInit();
+#endif
         Vis.ComputeUniformCone(WindowRes,WindowRes,SampleNum,ViewVector, ConeAngleRad,ConeDir,cb);
         LightFlag=false;FalseColorFlag=false;
         UpdateVis();
@@ -666,11 +685,11 @@ int main(int argc, char** argv)
     }
     vcg::tri::io::PlyInfo p;
     p.mask|=vcg::tri::io::Mask::IOM_VERTCOLOR  /* | vcg::ply::PLYMask::PM_VERTQUALITY*/ ;
-    //tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),true,p);
+    tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),true,p);
     //tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),false);
     //     exit(0);
 
-     glutMainLoop();
+    // glutMainLoop();
 
     return(0);
 }

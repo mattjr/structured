@@ -62,7 +62,9 @@ Added GPL comments
 
 #include <bitset>
 #include <vcg/math/matrix44.h>
+#ifdef USEGL
 #include <wrap/gl/math.h>
+#endif
 #include "simplepic.h"
 #include "gen_normal.h"
 #include "../swrender/render_utils.h"
@@ -75,6 +77,7 @@ Added GPL comments
 #include "../swrender/generic_fragment_shader.h"
 #include "../swrender/generic_vertex_shader.h"
 int cnter=0;
+//#define USEGL 1
 #define SetRotate SetRotateRad
 namespace vcg {
   // Base Class che definisce le varie interfaccie;
@@ -309,6 +312,7 @@ void GenMatrix(Matrix44d &a, Point3d Axis, double angle)
 
 // Genera la matrice di proj e model nel caso di un rendering ortogonale.
 // subx e suby indicano la sottoparte che si vuole
+#ifdef USEGL
 void SetupOrthoViewMatrix1(Point3x &ViewDir, int subx, int suby,int LocSplit)
 {
 	glMatrixMode (GL_PROJECTION);   			
@@ -327,6 +331,7 @@ void SetupOrthoViewMatrix1(Point3x &ViewDir, int subx, int suby,int LocSplit)
 	glTranslate(-m.bbox.Center());
 }
 
+#endif
 void ComputeSingleDirection(Point3x BaseDir, std::vector<int> &PixSeen, CallBack *cb=DummyCallBack)
 {
 	int t0=clock();
@@ -404,7 +409,7 @@ template <class MESH_TYPE,int MAXVIS=2048> class VertexVisShader //: public VisS
 
 	void Init()  {		VV.resize(m.vert.size()); }
 	void Compute(int nn);
-
+#ifdef USEGL
 void DrawFill (MESH_TYPE &mm)
 {
   static GLuint dl=0;
@@ -457,6 +462,7 @@ for(int i=0; i<4; i++){
     cout <<endl;
 }
 }
+#endif
 // Genera la matrice di proj e model nel caso di un rendering ortogonale.
 // subx e suby indicano la sottoparte che si vuole
 
@@ -482,7 +488,7 @@ void DrawSWFill(MESH_TYPE &mm,const F2X_RenderSurface &surf,const swr::GeometryP
             fixedpoint::fixmul<16>(float2fix<16>(zFar), 0x3fffffff)
     );
 
-printf("AAA %f %d %f\n",2.0*ZTWIST,0x3fff-0x7fff,0x3fffffff/(float)0x7fffffff);
+//printf("AAA %f %d %f\n",2.0*ZTWIST,0x3fff-0x7fff,0x3fffffff/(float)0x7fffffff);
 
     // it is also necessary to set the clipping rectangle
     r.clip_rect(0, 0, surf.width, surf.height);
@@ -529,8 +535,10 @@ printf("AAA %f %d %f\n",2.0*ZTWIST,0x3fff-0x7fff,0x3fffffff/(float)0x7fffffff);
 
 int GLAccumPixel(	std::vector<int> &PixSeen,      int width,int height,Matrix44d viewproj)
 {
-	SimplePic<float> snapZ;
+#if USEGL
+        SimplePic<float> snapZ;
 	SimplePic<Color4b> snapC;
+#endif
         GenericVertexShader::modelview_projection_matrix_d=viewproj;
 
         GenericFragmentShader::depth_test_func =GL_LEQUAL;// GL_GREATER;//GL_LEQUAL;
@@ -550,7 +558,8 @@ int GLAccumPixel(	std::vector<int> &PixSeen,      int width,int height,Matrix44d
         color.data=new unsigned char[width*height];
         bzero(color.data,height*width*sizeof(unsigned char));
         GenericFragmentShader::s_color_buffer=color;
-  glClearColor(Color4b::Black);
+#ifdef USEGL
+        glClearColor(Color4b::Black);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT );
 	glDisable(GL_LIGHTING);	
@@ -568,11 +577,13 @@ int GLAccumPixel(	std::vector<int> &PixSeen,      int width,int height,Matrix44d
 	glColor(Color4b::Red);
 	DrawFill(m);
 
+
+#endif
         SimplePic<float> depthZ;
         depthZ.Create(width,height);
 
-        SimplePic<Color4b> colorb;
-        colorb.Create(width,height);
+       // SimplePic<Color4b> colorb;
+        //colorb.Create(width,height);
         for(int i=0; i<depthZ.sx;i++)
             for(int j=0; j<depthZ.sy; j++){
             depthZ.Pix(i,j)=1.0;
@@ -585,14 +596,16 @@ int GLAccumPixel(	std::vector<int> &PixSeen,      int width,int height,Matrix44d
 
 
   if(!IsClosedFlag) {
+#ifdef USEGL
       glCullFace(GL_FRONT);
             glColor(Color4b::Black);
             DrawFill(m);
+            snapC.OpenGLSnap();
+#endif
             GenericFragmentShader::flatcolor=0x00;
             DrawSWFill(m,surf,swr::GeometryProcessor::CULL_CCW);
-      snapC.OpenGLSnap();
   }
-  for(int i=0; i<colorb.sx;i++)
+ /* for(int i=0; i<colorb.sx;i++)
       for(int j=0; j<colorb.sy; j++){
       unsigned char c=(( unsigned char*)color.data)[color.width*j+i];
       colorb.Pix(i,j)=Color4b(c,0,0,0 );
@@ -602,15 +615,17 @@ int GLAccumPixel(	std::vector<int> &PixSeen,      int width,int height,Matrix44d
   snapC.SavePPM(tmpc);
   sprintf(tmpc,"but-%03d-N.ppm",cnter);
 
-          colorb.SavePPM(tmpc);
+          colorb.SavePPM(tmpc);*/
  /* sprintf(tmpc,"but-O.ppm",cnter);
   snapC.SavePPM(tmpc);
   sprintf(tmpc,"but-N.ppm",cnter);
 
           colorb.SavePPM(tmpc);*/
        //a64l()  exit(0);
-	int cnt=0;
-	snapZ.OpenGLSnap(GL_DEPTH_COMPONENT);
+int cnt=0;
+
+#ifdef USEGL
+  snapZ.OpenGLSnap(GL_DEPTH_COMPONENT);
 
 
        //  snapZ.SavePFM("assy.pfm");
@@ -628,32 +643,51 @@ int GLAccumPixel(	std::vector<int> &PixSeen,      int width,int height,Matrix44d
   glGetDoublev(GL_PROJECTION_MATRIX,MP);
 	int VP[4];
 	glGetIntegerv(GL_VIEWPORT,(GLint*)VP);
-	double tx,ty,tz;
-  
+#endif
+        double tx,ty,tz;
+
 	for(unsigned int i=0;i<m.vert.size();++i)
 	{
-		gluProject(m.vert[i].P()[0],m.vert[i].P()[1],m.vert[i].P()[2],
+                /*gluProject(m.vert[i].P()[0],m.vert[i].P()[1],m.vert[i].P()[2],
 			   MM,MP,(GLint*)VP,
 			&tx,&ty,&tz);
+                cout << tx<<" "<<ty<< " "<<tz<<endl;*/
+                vcg::Point4d v=viewproj* vcg::Point4d(m.vert[i].P()[0],m.vert[i].P()[1],m.vert[i].P()[2],1.0);
+                v.X()/=v.W();
+                v.Y()/=v.W();
+                v.Z()/=v.W();
+
+                v.X() = v.X() * 0.5 + 0.5;
+                v.Y() = v.Y() * 0.5 + 0.5;
+
+                v.Z() = v.Z() * 0.5 + 0.5;
+
+                v.X() *= width;
+                v.Y() *= height;
+                tx=v.X();
+                ty=v.Y();
+                tz=v.Z();
+             //   cout << tx<<" "<<ty<< " "<<tz<<endl;
+
     int col=1;
 		    
-    if(tx>=0 && tx<snapZ.sx && ty>=0 && ty<snapZ.sy)
+    if(tx>=0 && tx<depthZ.sx && ty>=0 && ty<depthZ.sy)
     {
 		    int txi=floor(tx),tyi=floor(ty);
-		    float sd=snapZ.Pix(tx,ty);
-                    sd=depthZ.Pix(tx,ty);
+                    //float sd=snapZ.Pix(tx,ty);
+                   float sd=depthZ.Pix(tx,ty);
                   //  printf("%f %f %f\n",sd-p,sd,p);
     		if(!IsClosedFlag) {
-          col = std::max( std::max(snapC.Pix(txi+0,tyi+0)[0],snapC.Pix(txi+1,tyi+0)[0]),
-                                                           std::max(snapC.Pix(txi+0,tyi+1)[0],snapC.Pix(txi+1,tyi+1)[0]));
+      //    col = std::max( std::max(snapC.Pix(txi+0,tyi+0)[0],snapC.Pix(txi+1,tyi+0)[0]),
+        //                                                   std::max(snapC.Pix(txi+0,tyi+1)[0],snapC.Pix(txi+1,tyi+1)[0]));
                   unsigned char c00=(( unsigned char*)color.data)[color.width*(tyi+0)+(txi+0)];
                   unsigned char c10=(( unsigned char*)color.data)[color.width*(tyi+0)+(txi+1)];
                   unsigned char c01=(( unsigned char*)color.data)[color.width*(tyi+1)+(txi+0)];
                   unsigned char c11=(( unsigned char*)color.data)[color.width*(tyi+1)+(txi+1)];
-              int    col2 =std::max( std::max( c00,c10),std::max(c01,c11));
-              if(col != col2)
-              printf("col %d %d\n",col,col2);
-col=col2;
+//              int    col2 =std::max( std::max( c00,c10),std::max(c01,c11));
+            //  if(col != col2)
+           //   printf("col %d %d\n",col,col2);
+col=std::max( std::max( c00,c10),std::max(c01,c11));//col2;
         // col=snapC.Pix(txi+0,tyi+0)[0];
         }
         if(col!=0 && tz<sd) {
@@ -966,19 +1000,24 @@ void GenMatrix(Matrix44d &a, Point3d Axis, double angle)
 
 void SetupOrthoViewMatrix2(Point3x &ViewDir, int subx, int suby,int LocSplit,Matrix44d &viewproj)
 {
-    printf("AAAAASDASDASD\n");
+    //printf("AAAAASDASDASD\n");
     mat4x projA;
      mat4x modelviewprojection_matrix=identity4<fixed16_t>();
-
+#ifdef USEGL
         glMatrixMode (GL_PROJECTION);
         glLoadIdentity ();
+#endif
   float dlt=2.0f/LocSplit;
+#ifdef USEGL
 
   glOrtho(-1+subx*dlt, -1+(subx+1)*dlt, -1+suby*dlt, -1+(suby+1)*dlt,-2,2);
+#endif
    projA=ortho_matrix<fixed16_t>(-1+subx*dlt, -1+(subx+1)*dlt, -1+suby*dlt, -1+(suby+1)*dlt,-2,2);
 Matrix44d projB;
+#ifdef USEGL
         glMatrixMode (GL_MODELVIEW);
         glLoadIdentity ();
+#endif
         Matrix44d rot,viewTMP,scalingM,tranM;
         Point3d qq; qq.Import(ViewDir);
         GenMatrix(rot,qq,0);
@@ -989,11 +1028,15 @@ Matrix44d projB;
             rotA.elem[i][j]=rot.ElementAt(i,j);
             projB.ElementAt(i,j)=fix2float<16>(projA.elem[i][j].intValue);
         }
+#ifdef USEGL
 
   glMultMatrix(rot);
+#endif
         double d=2.0/m.bbox.Diag();
+#ifdef USEGL
   glScalef(d,d,d);
         glTranslate(-m.bbox.Center());
+#endif
         scalingM.SetScale(d,d,d);
         tranM.SetTranslate(-m.bbox.Center()[0],-m.bbox.Center()[1],-m.bbox.Center()[2]);
         viewTMP=rot*scalingM*tranM;//scaling_matrix<fixed16_t>(d,d,d)*translation_matrix<fixed16_t>(-m.bbox.Center()[0],-m.bbox.Center()[1],-m.bbox.Center()[2]);
@@ -1015,6 +1058,8 @@ cout <<"\n";*/
 
 // Genera la matrice di proj e model nel caso di un rendering ortogonale.
 // subx e suby indicano la sottoparte che si vuole
+#ifdef USEGL
+
 void SetupOrthoViewMatrix(Point3x &ViewDir, int subx, int suby,int LocSplit)
 {
 	glMatrixMode (GL_PROJECTION);   			
@@ -1032,7 +1077,7 @@ void SetupOrthoViewMatrix(Point3x &ViewDir, int subx, int suby,int LocSplit)
   glScalef(d,d,d);
 	glTranslate(-m.bbox.Center());
 }
-
+#endif
 void ComputeSingleDirection(Point3x BaseDir, std::vector<int> &PixSeen, CallBack *cb=DummyCallBack)
 {
 	int t0=clock();

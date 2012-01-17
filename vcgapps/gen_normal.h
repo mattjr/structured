@@ -40,7 +40,9 @@ Initial Update
 
 #ifndef __VCG_GEN_NORMAL
 #define __VCG_GEN_NORMAL
+#ifdef USEGL
 #include <wrap/gl/math.h>
+#endif
 namespace vcg {
 
   

@@ -56,14 +56,11 @@ struct GenericFragmentShader : public swr::GenericSpanDrawer<GenericFragmentShad
 	{
 		// depth test moved before color computations
                 if (s_depth_buffer.data) {
-                        unsigned short *depth_buffer =
-                                static_cast<unsigned short*>(s_depth_buffer.data) + x + y * s_depth_buffer.pitch / 2;
 
 			// only shift by 15 to take the most significant bit.
 			// the highest bit is just the sign and should always be positive
                         //const unsigned short depth = fd.z >> 15;
 
-                        const unsigned short depthbuf = *depth_buffer;
                         float f = fixedpoint::fix2float<16>(fd.z);
                         f = f * 0.5 + 0.5;
 

@@ -77,6 +77,7 @@ Added GPL comments
 #include "../swrender/generic_fragment_shader.h"
 #include "../swrender/generic_vertex_shader.h"
 int cnter=0;
+extern int SampleNum;
 //#define USEGL 1
 #define SetRotate SetRotateRad
 namespace vcg {
@@ -756,7 +757,7 @@ void MapVisibility(float Gamma=1, float LowPass=0, float HighPass=1, float Scale
 	float maxv=*max_element(VV.begin(),VV.end());
 	printf("Visibility Range %f %f\n", minv,maxv);
     minv=0.0;
-    maxv=255.0;
+    maxv=SampleNum;
     printf("Clamped Visibility Range %f %f\n", minv,maxv);
 
 	VertexIterator vi;
@@ -936,6 +937,7 @@ void ComputeUniformCone(int height,int width,int nn, std::vector<Point3x> &vv, S
   
 	char buf[256];
 	sprintf(buf,"Asked %i normal, got %i normals\n",nn,VN.size());
+        SampleNum=nn;
   cb(buf);
   Compute(height,width,cb);
 }

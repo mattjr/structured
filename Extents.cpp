@@ -295,6 +295,8 @@ void MyDataSet::init()
     _useVBO=true;
     _useTextureArray=true;
     _useStub=false;
+    _no_hw_context =false;
+
     _file.open("/tmp/scope.txt");
     readMatrix("rot.mat",rotMat);
     readMatrixToScreen("view.mat",viewProj);
@@ -730,8 +732,8 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
 #if 0
     else{
         texture=new osg::Texture2D(texture_images[0]);
-        /* texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
-        texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
+        /* texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
+        texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
         texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
         texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);*/
         int layerNum=0;
@@ -920,8 +922,8 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         tex->setFileName(tmpf);
 
         osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(tex);
-        //  texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
-        //texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
+          texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
+        texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
         //texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
         // texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
         bool inlineImageFile = _dataSet->getDestinationTileExtension()==".ive" || _dataSet->getDestinationTileExtension()==".osgb" ;
@@ -2429,7 +2431,7 @@ int MyDataSet::_run()
     bool requiresGraphicsContextInWritingThread = (getCompressionMethod() == vpb::BuildOptions::GL_DRIVER);
 #else
     //bool requiresGraphicsContextInMainThread = true;
-    bool requiresGraphicsContextInWritingThread = true;
+    bool requiresGraphicsContextInWritingThread =  _no_hw_context ? false: true;
 #endif
 
     int numProcessors = OpenThreads::GetNumberOfProcessors();
@@ -3252,15 +3254,16 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     // osgDB::writeImageFile(*image.get(),tmp);
     //}
     osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(image);
-    texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
-    texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
+    texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
+    texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
     texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
     texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
     texture->setTextureSize(image->s(),image->t());
     //std::cout <<  "Check it "<<texture->getTextureWidth() << " "<< texture->getTextureHeight()<<"\n";
 
     osg::Texture::InternalFormatMode internalFormatMode = osg::Texture::USE_IMAGE_DATA_FORMAT;
-    internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
+    if(!dynamic_cast<MyDataSet*>(_dataSet)->_no_hw_context)
+       internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
     /*  switch(getImageOptions(layerNum)->getTextureType())
     {
     case(BuildOptions::RGB_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;

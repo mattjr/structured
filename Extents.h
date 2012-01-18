@@ -228,6 +228,7 @@ public:
          bool _useTextureArray;
          bool _useReImage;
          bool _useVirtualTex;
+         bool _no_hw_context;
          int totalX,totalY;
          OpenThreads::Mutex _imageMutex;
          bool _useDebugShader;
@@ -294,9 +295,9 @@ public:
 
         if (!_gc)
         {
-            if (buildLog) buildLog->log(osg::NOTICE,"Failed to create pbuffer, failing back to normal graphics window.");
+            if (buildLog) buildLog->log(osg::NOTICE,"STR: Failed to create pbuffer, failing back to normal graphics window.");
 else
-                osg::notify(osg::NOTICE)<<"Failed to create pbuffer, failing back to normal graphics window.\n";
+                osg::notify(osg::NOTICE)<<"STR: Failed to create pbuffer, failing back to normal graphics window.\n";
 
             traits->pbuffer = false;
             _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
@@ -311,6 +312,9 @@ else
 
             if (buildLog) buildLog->log(osg::NOTICE,"Realized window");
             else osg::notify(osg::NOTICE)<<"Realized window\n";
+        }else{
+            osg::notify(osg::NOTICE)<<" Failed to contex.\n";
+
         }
     }
 

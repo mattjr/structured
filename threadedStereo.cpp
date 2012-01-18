@@ -102,7 +102,7 @@ static double edgethresh;
 enum {END_FILE,NO_ADD,ADD_IMG};
 char cachedmeshdir[2048];
 texcache_t cachedtexdir;
-
+static bool no_hw_context=false;
 static string deltaT_config_name;
 static string deltaT_dir;
 const char *uname="mesh";
@@ -124,7 +124,7 @@ int tex_img_per_cell;
 static double min_feat_dist;
 static double feat_quality_level;
 
-MyGraphicsContext *mgc;
+MyGraphicsContext *mgc=NULL;
 
 
 typedef struct _picture_cell{
@@ -1959,10 +1959,16 @@ int main( int argc, char *argv[ ] )
 
 
 
-        if(!mgc)
-            mgc = new MyGraphicsContext();
+
         if(!novpb) {
-            doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot,wkt_coord_system,string(wkt));
+            if(!mgc){
+                mgc = new MyGraphicsContext();
+                if(!mgc->valid()){
+                    no_hw_context=true;
+                    printf("Forcing no hw compression due to lack of graphics card context\n");
+                }
+            }
+            doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot,wkt_coord_system,string(wkt),no_hw_context);
         }
 
         char zipstr[1024];

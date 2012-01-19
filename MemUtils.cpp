@@ -71,7 +71,7 @@ void process_mem_usage(double& vm_usage, double& resident_set)
     vm_usage     = vsize / 1024.0;
     resident_set = rss * page_size_kb;
 }
-bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int width,int height){
+bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int width,int height,string ext){
 
     osg::Matrix modWindow =( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*width,0.5*height,0.5f));
     osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,height,0));
@@ -116,7 +116,7 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     fclose (fp);
     //gdalwarp  -t_srs '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs' geo_tif2.tif utm.tif
     //  int res= system(("add_geo-"+name+".sh").c_str());
-    sprintf(tmp,"gdal_translate %s %s-tmp.ppm %s",gdal_param,osgDB::getNameLessExtension(name).c_str(),
+    sprintf(tmp,"gdal_translate %s %s-tmp.%s %s",gdal_param,osgDB::getNameLessExtension(name).c_str(),ext.c_str(),
             ("mosaic/"+osgDB::getSimpleFileName(name)).c_str());
     int res= system(tmp);
     // printf("%s\n",tmp);

@@ -361,6 +361,8 @@ struct FragmentShaderBlendingMain : public SpanDrawer32BitColorAndDepth<Fragment
             //scale from 0.5 max std to full 0 to 1.0 range
          //   outP[j]=std_dev_pixels[j];
         }
+       // printf("%f\n",std_dev_pixels[0]);
+        std_dev_pixels[0]=clamp((std_dev_pixels[0]/0.1f),0.0f,1.0f);
         outP=jetColorMap(std_dev_pixels[0]);
         //cout <<std_dev_pixels<<endl;
         //cout << "outP "<<outP<<endl;

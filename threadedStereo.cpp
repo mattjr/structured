@@ -73,7 +73,7 @@ static int desired_area=250.0;
 static bool have_max_frame_count = false;
 static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
-
+static bool var_tex=false;
 static bool run_stereo=true;
 static double max_alt_cutoff=10.0;
 //static bool use_ncc = false;
@@ -216,6 +216,8 @@ static bool parse_args( int argc, char *argv[ ] )
     if(argp.read("--noarray"))
         useTextureArray=false;
 
+    if(argp.read("--var"))
+        var_tex=true;
     hw_image=argp.read("--hwblend");
     deltaT_config_name=base_dir+string("/")+"localiser.cfg";
     double lat_orig,lon_orig;
@@ -524,9 +526,9 @@ static int get_auv_image_name( const string  &contents_dir_name,
     // Try to read timestamp and file names
     //
 
-    int index;
+    //int index;
 
-    index = pose.pose_id;
+   // index = pose.pose_id;
     name.time = pose.pose_time;
     name.pose[POSE_INDEX_X] = pose.pose_est[POSE_INDEX_X];
     name.pose[POSE_INDEX_Y] = pose.pose_est[POSE_INDEX_Y];
@@ -790,7 +792,10 @@ int main( int argc, char *argv[ ] )
     char cwd[2048];
     char *dirres;
     dirres=getcwd(cwd,2048);
+    if(dirres != cwd){
+        fprintf(stderr,"Can't get current working dir\n");
 
+    }
 
     FILE *vrip_seg_fp;
     char vrip_seg_fname[2048];
@@ -1666,23 +1671,29 @@ int main( int argc, char *argv[ ] )
         }
 
         string texcmds_fn="mesh-diced/texcmds";
+        string vartexcmds_fn="mesh-diced/vartexcmds";
+
         string imgbase=(compositeMission? "/":"/img/");
         //int VTtileSize=256;
         int tileBorder=1;
         int ajustedGLImageSizeX=(int)reimageSize.x();//-((reimageSize.x()/VTtileSize)*2*tileBorder);
         int ajustedGLImageSizeY=(int)reimageSize.y();//-((reimageSize.y()/VTtileSize)*2*tileBorder);
         FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
+        FILE *vartexcmds_fp=fopen(vartexcmds_fn.c_str(),"w");
         int totalX=ajustedGLImageSizeX*_tileRows;
         int totalY=ajustedGLImageSizeY*_tileColumns;
 
         FILE *FP2=fopen("image_areas.txt","w");
         FILE *reFP=fopen("rebbox.txt","w");
         FILE *FP3=fopen("createmosaic.sh","w");
+        FILE *FP4=fopen("createmosaicvar.sh","w");
+
         if(!FP2 || ! FP3){
             fprintf(stderr,"Can't open mosaic scripts\n");
             exit(-1);
         }
         fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt mosaic.vrt ");
+        fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt mosaicvar.vrt ");
 
         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
                 totalbb.zMax(),_tileColumns,_tileRows);
@@ -1734,6 +1745,20 @@ int main( int argc, char *argv[ ] )
                         latOrigin , longOrigin);
                 if(blending)
                     fprintf(texcmds_fp," --blend");
+
+                fprintf(vartexcmds_fp,"%s/meshvar  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
+                        basepath.c_str(),
+                        cells[i].row,cells[i].col,
+                        vpblod,
+                        cells[i].row,cells[i].col,
+                        (base_dir+imgbase).c_str(),
+                        cells[i].row,cells[i].col,
+                        rx,ry,rz,
+                        ajustedGLImageSizeX,ajustedGLImageSizeY,
+                        cells[i].row,cells[i].col,_tileRows,_tileColumns,
+                        latOrigin , longOrigin);
+                if(blending)
+                    fprintf(vartexcmds_fp," --blend");
             }
             char tmp_ds[1024];
             tmp_ds[0]='\0';
@@ -1741,6 +1766,8 @@ int main( int argc, char *argv[ ] )
             for(int p=0; p<num_samples; p++)
                 sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
             fprintf(texcmds_fp,";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+            fprintf(vartexcmds_fp,";gdaladdo -r average mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+
             tmp_ds[0]='\0';
             num_samples=0;
             for(int p=0; p<num_samples; p++)
@@ -1749,6 +1776,7 @@ int main( int argc, char *argv[ ] )
                     (totalX-ajustedGLImageSizeX*(cells[i].row)),ajustedGLImageSizeY*cells[i].col,ajustedGLImageSizeY*(cells[i].col+1),cells[i].row,cells[i].col,_tileRows,_tileColumns,
                     cells[i].row,cells[i].col,_tileRows,_tileColumns,num_samples+1,tmp_ds);
             fprintf(FP3,"image_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
+            fprintf(FP4,"var_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
 
            // fprintf(texcmds_fp,"\n");
 
@@ -1761,12 +1789,19 @@ int main( int argc, char *argv[ ] )
 
         }
         fclose(texcmds_fp);
+        fclose(vartexcmds_fp);
         fclose(reFP);
         fclose(FP2);
         fprintf(FP3,"\n#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16 32\n");
         fchmod(fileno(FP3),0777);
 
         fclose(FP3);
+
+        fprintf(FP4,"\n#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16 32\n");
+        fchmod(fileno(FP4),0777);
+
+        fclose(FP4);
+
         std::ostringstream p1;
 
         vector<std::string> precmd;
@@ -1776,9 +1811,14 @@ int main( int argc, char *argv[ ] )
         }
 
 
+        string vartexcmd="vartex.py";
 
         string texcmd="tex.py";
         vector<std::string> postcmdv;
+        vector<std::string> varpostcmdv;
+
+        std::ostringstream pvar;
+
         std::ostringstream p;
         //bool singleThreadedDicedTex=false;
         /*p<<"#"<<basepath << "/sparseJoin rebbox.txt  " << cwd  << " --pbuffer-only " << ajustedGLImageSizeX << " "<< ajustedGLImageSizeY  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
@@ -1787,6 +1827,8 @@ int main( int argc, char *argv[ ] )
         if(untex)
             p<< " -untex ";*/
         p<< "cd " << cwd <<";sh createmosaic.sh";
+        pvar<< "cd " << cwd <<";sh createmosaicvar.sh";
+        varpostcmdv.push_back(pvar.str());
 
         postcmdv.push_back(p.str());
 #define SINGLE_MESH_TEX 1
@@ -1813,9 +1855,13 @@ int main( int argc, char *argv[ ] )
         postcmdv.push_back(p3.str());
 
         shellcm.write_generic(texcmd,texcmds_fn,"Tex",&(precmd),&(postcmdv),num_threads);
+        shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),num_threads);
+
         if(!no_tex)
             sysres=system("python tex.py");
 
+        if(var_tex)
+            sysres=system("python vartex.py");
         if(useVirtTex){
             string vttexcmds_fn="mesh-diced/vttexcmds";
             string vttex="vttex.py";

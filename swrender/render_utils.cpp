@@ -82,17 +82,4 @@ void fast_mipmap_downsize( const IplImage *source, IplImage *dest )
     }
 }
 
-int log2i(uint32_t value) {
-    int r = 0;
-    while ((value >> r) != 0)
-        r++;
-    return r-1;
-}
-
-int log2i(uint64_t value) {
-    int r = 0;
-    while ((value >> r) != 0)
-        r++;
-    return r-1;
-}
 

@@ -10,6 +10,7 @@
 #include <map>
 #include <set>
 #include <vips/vips.h>
+#include "mipmap.h"
 // our vertex structure which will be used to store our triangle data
 struct Vertex {
     float x, y,z;
@@ -67,6 +68,7 @@ public:
 };
 inline int clamp(int x, int a, int b){    return x < a ? a : (x > b ? b : x);}
 inline float clamp(float x, float a, float b){    return x < a ? a : (x > b ? b : x);}
+#if 0
 
 // our texture class
 struct Texture {
@@ -123,7 +125,6 @@ struct Texture {
     }
 };
 
-
 class  TextureMipMap: public Texture {
 public:
 
@@ -154,26 +155,29 @@ public:
         }
     }
 
-    osg::Vec3 sample_nearest(int x, int y,int l) const
+    osg::Vec3 sample_nearest(float x, float y,int l) const
     {
-        x >>= 16;
-        y >>= 16;
+        //  x >>= 16;
+        //y >>= 16;
         // x &= w_minus1;
         // y &= h_minus1;
-        x=clamp(x,0,w_minus1);
-        y=clamp(y,0,h_minus1);
+        x=clamp(x*w_minus1,0.0,(float)w_minus1);
+        y=clamp(y*h_minus1,0.0,(float)h_minus1);
         unsigned char r,g,b;
         osg::Vec3 sample(0,0,0);
         if(l > numLevels)
             return sample;
         for(int i=0; i<l; i++){
-            x/=2;
-            y/=2;
+            x/=2.0;
+            y/=2.0;
         }
         IplImage *img=texture_pyr[l];
-        r=CV_IMAGE_ELEM(img,unsigned char,y,(img->nChannels*x)+2);
-        g=CV_IMAGE_ELEM(img,unsigned char,y,(img->nChannels*x)+1);
-        b=CV_IMAGE_ELEM(img,unsigned char,y,(img->nChannels*x)+0);
+        int ix=(int)round(x);
+        int iy=(int)round(y);
+
+        r=CV_IMAGE_ELEM(img,unsigned char,iy,(img->nChannels*ix)+2);
+        g=CV_IMAGE_ELEM(img,unsigned char,iy,(img->nChannels*ix)+1);
+        b=CV_IMAGE_ELEM(img,unsigned char,iy,(img->nChannels*ix)+0);
         //sample= b | g << 8 | r << 16 | 255 << 24;
         sample=osg::Vec3(r/255.0,g/255.0,b/255.0);
         return sample;
@@ -182,6 +186,100 @@ public:
     int numLevels;
     int id;
 };
+#else
+// our texture class
+struct Texture {
+    IplImage *surface;
+    MIPMap *mipmapTex;
+
+    unsigned w_minus1, h_minus1;
+
+    // create a texture from an SDL_Surface
+    Texture(std::string filename,const MIPMap::EFilterType &filt=MIPMap::ENone)
+    {
+        surface = cvLoadImage(filename.c_str(),1);
+
+        if(!surface){
+            fprintf(stderr,"Can't Load %s\n",filename.c_str());
+        }else{
+            w_minus1 = surface->width - 1;
+            h_minus1 = surface->height - 1;
+            mipmapTex = MIPMap::fromBitmap(surface,filt,MIPMap::EClamp);
+
+        }
+    }
+
+    ~Texture()
+    {
+        if(surface)
+            cvReleaseImage(&surface);
+        delete mipmapTex;
+
+    }
+
+
+
+    // samples the texture using the given texture coordinate.
+    // the integer texture coordinate is given in the upper 16 bits of the x and y variables.
+    // it is NOT in the range [0.0, 1.0] but rather in the range of [0, width - 1] or [0, height - 1].
+    // texture coordinates outside this range are wrapped.
+    unsigned int sample_nearest(float x, float y) const
+    {
+        osg::Vec3 tmp;
+        Spectrum c =mipmapTex->triangle(0,x,y);
+        c.toLinearRGB(tmp[0],tmp[1],tmp[2]);
+        unsigned char r,g,b;
+        r = (unsigned char)(tmp[0]*255);
+        g=(unsigned char)(tmp[1]*255);
+        b=(unsigned char)(tmp[2]*255);
+        unsigned int sample=0;
+
+        if(USE_BGR)
+            sample= b | g << 8 | r << 16 | 255 << 24;
+        else
+            sample= r | g << 8 | b << 16 | 255 << 24;
+
+
+        return sample;
+    }
+};
+
+class  TextureMipMap: public Texture {
+public:
+
+    TextureMipMap(std::string filename,int id=-1) : Texture(filename,MIPMap::EEWA),id(id){
+        if(!filename.size() || !surface){
+            fprintf(stderr,"Can't load %s\n",filename.c_str());
+            return;
+        }
+        numLevels = mipmapTex->getLevels();
+
+    }
+    unsigned int sample_nearest(float x, float y) const{
+        int res;
+
+        osg::Vec3 c=sample_nearest(x,y,0);
+        res= (unsigned char)(c[0]*255) | (unsigned char)(c[1]*255) << 8 | (unsigned char)(c[2]*255) << 16 | 255 << 24;
+        return res;
+    }
+    ~TextureMipMap()
+    {
+    }
+
+    osg::Vec3 sample_nearest(float x, float y,int l) const
+    {
+        osg::Vec3 sample;
+        Spectrum c =mipmapTex->triangle(l,x,y);
+        //sample= b | g << 8 | r << 16 | 255 << 24;
+        c.toLinearRGB(sample[0],sample[1],sample[2]);
+        return sample;
+    }
+    int numLevels;
+    int id;
+};
+
+
+#endif
 std::string format_elapsed(double d);
 
 

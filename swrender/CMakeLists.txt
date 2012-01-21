@@ -13,7 +13,7 @@ set(OSG_COMPONENTS osg osgUtil osgViewer osgGA osgManipulator osgText osgDB)
 find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
 
    include_directories( ../ ${OSG_INCLUDE_DIR} ${VIPS_INCLUDE_DIRS})
-add_library(swrender render_utils.cpp ../vertexData.cpp  ../plyfile.c renderer/geometry_processor.cpp ../MemUtils.cpp ar.cpp)
+add_library(swrender mipmap.cpp VertexShaders.cpp  FragmentShaders.cpp render_utils.cpp ../vertexData.cpp  ../plyfile.c renderer/geometry_processor.cpp ../MemUtils.cpp ar.cpp)
 add_executable (nonmem . nonmem.cpp )
 
 #add_executable (calcTexCoordOutCore  calcTexCoordOutCore.cpp render_utils.cpp vertexData.cpp plyfile.c IMG_savepng.c renderer/geometry_processor.cpp )

@@ -356,6 +356,7 @@ public:
 		EEWA,
 		/// Trilinear filtering
 		ETrilinear,
+                EBilinear,
 		/// No filtering
 		ENone
 	};

@@ -123,6 +123,7 @@ inline int clamp(int value, int min, int max) {
                 return max;
         else return value;
 }
+
 /* Isotropic/anisotropic EWA mip-map texture map class based on PBRT */
 MIPMap::MIPMap(int width, int height, Spectrum *pixels, 
 	EFilterType filterType, EWrapMode wrapMode, Float maxAnisotropy) 
@@ -130,7 +131,7 @@ MIPMap::MIPMap(int width, int height, Spectrum *pixels,
 		  m_wrapMode(wrapMode), m_maxAnisotropy(maxAnisotropy) {
 	Spectrum *texture = pixels;
 
-	if (filterType != ENone && (!isPowerOfTwo(width) || !isPowerOfTwo(height))) {
+        if (filterType != ENone && filterType != EBilinear && (!isPowerOfTwo(width) || !isPowerOfTwo(height))) {
 		m_width = (int) roundToPowerOfTwo((uint32_t) width);
 		m_height = (int) roundToPowerOfTwo((uint32_t) height);
 
@@ -218,7 +219,7 @@ MIPMap::MIPMap(int width, int height, Spectrum *pixels,
 		m_weightLut = static_cast<Float *>(allocAligned(sizeof(Float)*MIPMAP_LUTSIZE));
 		for (int i=0; i<MIPMAP_LUTSIZE; ++i) {
 			Float pos = (Float) i / (Float) (MIPMAP_LUTSIZE-1);
-			m_weightLut[i] = std::exp(-2.0f * pos) - std::exp(-2.0f);
+                       m_weightLut[i] = std::exp(-2.0f * pos) - std::exp(-2.0f);
 		}
 	}
 }
@@ -262,9 +263,9 @@ Spectrum MIPMap::getMaximum() const {
 
 	for (int y=0; y<height; y++) {
 		for (int x=0; x<width; x++) {
-                        float r = data[(y*width+x)*4+0]/255.0;
-                        float g = data[(y*width+x)*4+1]/255.0;
-                        float b = data[(y*width+x)*4+2]/255.0;
+                        float r = CV_IMAGE_ELEM(bitmap,unsigned char,y,(bitmap->nChannels*x)+2)/255.0;
+                        float g = CV_IMAGE_ELEM(bitmap,unsigned char,y,(bitmap->nChannels*x)+1)/255.0;
+                        float b = CV_IMAGE_ELEM(bitmap,unsigned char,y,(bitmap->nChannels*x)+0)/255.0;
 			/* Convert to a spectral representation */
                         s.fromLinearRGB(r, g, b);
 			s.clampNegative();

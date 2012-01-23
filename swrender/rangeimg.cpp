@@ -324,6 +324,9 @@ int main(int ac, char *av[]) {
     rangeImage=cvCreateImage(cvSize(sizeX,sizeY),IPL_DEPTH_8U,4);
     cvZero(rangeImage);
     cvSet(outputImage,cvScalar(-1.0));
+    string ddir="depthimg/";
+    if(!osgDB::fileExists(ddir))
+        osgDB::makeDirectory(ddir);
     map<int,imgData> imageList;
     //model= vertexData.readPlyFile(av[1]);
 
@@ -556,10 +559,10 @@ int main(int ac, char *av[]) {
                 g.draw_triangles(3, indices);
             }
             char tmp[1024];
-            sprintf(tmp,"%s.pfm",itr->second.filename.c_str());
+            sprintf(tmp,"%s/%s.pfm",ddir.c_str(),itr->second.filename.c_str());
             PFMWrite((float*)outputImage->imageData,tmp,outputImage->width,outputImage->height);
             cvSet(outputImage,cvScalar(-1.0));
-            sprintf(tmp,"%s.png",itr->second.filename.c_str());
+            sprintf(tmp,"%s/%s.png",ddir.c_str(),itr->second.filename.c_str());
             cvSaveImage(tmp,rangeImage);
             cvZero(rangeImage);
             formatBar("Img",startTick,++cnt,imageList.size());

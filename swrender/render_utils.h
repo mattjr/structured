@@ -211,9 +211,10 @@ struct Texture {
 
     ~Texture()
     {
-        if(surface)
-            cvReleaseImage(&surface);
+       // if(surface)
+         //   cvReleaseImage(&surface);
         delete mipmapTex;
+//Frees surface
 
     }
 

@@ -10,6 +10,8 @@
 #include <map>
 #include <set>
 #include <vips/vips.h>
+#include <numeric>
+
 #include "mipmap.h"
 // our vertex structure which will be used to store our triangle data
 struct Vertex {
@@ -282,6 +284,13 @@ public:
 
 #endif
 std::string format_elapsed(double d);
+osg::Vec3 rgb2lab(osg::Vec3 c) ;
+osg::Vec3 jetColorMap(const float& val) ;
+inline bool isZero(float f) { return fabs(f) < 1E-6; }
+inline bool isZero(double f) { return fabs(f) < 1E-10; }
+inline bool eq(double a, double b) { return isZero(fabsf(a - b));}
+inline bool eq(float a, float b) { return isZero(fabsf(a - b));}
 
+double standard_dev( std::vector<double> &v );
 
 #endif // RENDER_UTILS_H

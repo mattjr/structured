@@ -40,6 +40,7 @@ static bool apply_aug=false;
 static double stop_time = numeric_limits<double>::max();
 static int vpblod_override=0;
 static bool compositeMission=false;
+static bool writeout_meshvar=true;
 //
 // Command-line arguments
 //
@@ -1692,8 +1693,8 @@ int main( int argc, char *argv[ ] )
             fprintf(stderr,"Can't open mosaic scripts\n");
             exit(-1);
         }
-        fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt mosaic.vrt ");
-        fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt mosaicvar.vrt ");
+        fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  -srcnodata 0 mosaic.vrt ");
+        fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  -srcnodata 0 mosaicvar.vrt ");
 
         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
                 totalbb.zMax(),_tileColumns,_tileRows);
@@ -1757,8 +1758,8 @@ int main( int argc, char *argv[ ] )
                         ajustedGLImageSizeX,ajustedGLImageSizeY,
                         cells[i].row,cells[i].col,_tileRows,_tileColumns,
                         latOrigin , longOrigin);
-                if(blending)
-                    fprintf(vartexcmds_fp," --blend");
+                if(writeout_meshvar)
+                    fprintf(vartexcmds_fp," --write");
             }
             char tmp_ds[1024];
             tmp_ds[0]='\0';

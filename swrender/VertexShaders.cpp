@@ -11,3 +11,4 @@ mat4x VertexShaderBlendingDistPass::modelviewprojection_matrix;
 mat4x VertexShader::modelview_matrix;
 mat4x VertexShader::modelviewprojection_matrix;
 Texture *VertexShader::texture = 0;
+mat4x VertexShaderVar::modelviewprojection_matrix;

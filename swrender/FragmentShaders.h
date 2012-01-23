@@ -29,10 +29,10 @@ struct FragmentShader : public swr::SpanDrawer32BitColorAndDepth<FragmentShader>
     // mipmap level of detail. We don't need it but it still needs to be defined
     // for everything to work.
     static void begin_triangle(
-            const swr::IRasterizer::Vertex& v1,
-            const swr::IRasterizer::Vertex& v2,
-            const swr::IRasterizer::Vertex& v3,
-            int area2)
+        const swr::IRasterizer::Vertex& v1,
+        const swr::IRasterizer::Vertex& v2,
+        const swr::IRasterizer::Vertex& v3,
+        int area2)
     {}
 
     // the fragment shader is called for each pixel and has read/write access to
@@ -88,10 +88,10 @@ struct FragmentShaderBlendingDistPass : public swr::SpanDrawer32BitColorAndDepth
     // mipmap level of detail. We don't need it but it still needs to be defined
     // for everything to work.
     static void begin_triangle(
-            const swr::IRasterizer::Vertex& v1,
-            const swr::IRasterizer::Vertex& v2,
-            const swr::IRasterizer::Vertex& v3,
-            int area2)
+        const swr::IRasterizer::Vertex& v1,
+        const swr::IRasterizer::Vertex& v2,
+        const swr::IRasterizer::Vertex& v3,
+        int area2)
     {}
 
     // the fragment shader is called for each pixel and has read/write access to
@@ -100,8 +100,8 @@ struct FragmentShaderBlendingDistPass : public swr::SpanDrawer32BitColorAndDepth
     {
         // float x=fix2float<16>(fd.varyings[0]);// >> 16;
         // float y=fix2float<16>(fd.varyings[1]);// >> 16;
-    //    float x=fd.varyings[0];
-      //  float y=fd.varyings[1];
+        //    float x=fd.varyings[0];
+        //  float y=fd.varyings[1];
         float x=fix2float<16>(fd.varyings[0]);// >> 16;
         float y=fix2float<16>(fd.varyings[1]);
         // cout << "rig: "<<x*1359 << " " <<y*511;
@@ -182,12 +182,12 @@ struct FragmentShaderBlendingMain : public swr::SpanDrawer32BitColorAndDepthSetD
     // mipmap level of detail. We don't need it but it still needs to be defined
     // for everything to work.
     static void begin_triangle(
-            const swr::IRasterizer::Vertex& v1,
-            const swr::IRasterizer::Vertex& v2,
-            const swr::IRasterizer::Vertex& v3,
-            int area2)
-            //   {printf("T1 %f %f\nT2 %f %f\nT3 %f %f\n",fix2float<16>(v1.x),fix2float<16>(v1.y),fix2float<16>(v2.x),fix2float<16>(v2.y),fix2float<16>(v3.x)
-            //  ,fix2float<16>(v3.y));}
+        const swr::IRasterizer::Vertex& v1,
+        const swr::IRasterizer::Vertex& v2,
+        const swr::IRasterizer::Vertex& v3,
+        int area2)
+    //   {printf("T1 %f %f\nT2 %f %f\nT3 %f %f\n",fix2float<16>(v1.x),fix2float<16>(v1.y),fix2float<16>(v2.x),fix2float<16>(v2.y),fix2float<16>(v3.x)
+    //  ,fix2float<16>(v3.y));}
     {}
 
     // the fragment shader is called for each pixel and has read/write access to
@@ -310,5 +310,118 @@ struct FragmentShaderBlendingMain : public swr::SpanDrawer32BitColorAndDepthSetD
     static TextureMipMap *texture;
     static int triIdx;
 
+};
+
+// this is the fragment shader
+struct FragmentShaderVarMain : public swr::SpanDrawer32BitColorAndDepthSetDouble<FragmentShaderVarMain> {
+    // varying_count = 3 tells the rasterizer that it only needs to interpolate
+    // three varying values (the r, g and b in this context).
+    static const unsigned varying_count = 12;
+    static const int mipmapL[];
+    static const float rmax=0.70710678;
+    // we don't need to interpolate z in this example
+    static const bool interpolate_z = false;
+    static std::map<int,TextureMipMap*> texturepool;
+    static bool writeOut;
+    static FILE *totalfp;
+    static IplImage *outputImage;
+
+    // per triangle callback. This could for instance be used to select the
+    // mipmap level of detail. We don't need it but it still needs to be defined
+    // for everything to work.
+    static void begin_triangle(
+        const swr::IRasterizer::Vertex& v1,
+        const swr::IRasterizer::Vertex& v2,
+        const swr::IRasterizer::Vertex& v3,
+        int area2)
+    /*{printf("T1 %f %f\nT2 %f %f\nT3 %f %f\n",fix2float<16>(v1.x),fix2float<16>(v1.y),fix2float<16>(v2.x),fix2float<16>(v2.y),fix2float<16>(v3.x)
+        ,fix2float<16>(v3.y));}*/
+    {}
+
+    // the fragment shader is called for each pixel and has read/write access to
+    // the destination color and depth buffers.
+    static void single_fragment(const swr::IRasterizer::FragmentData &fd, int ix,int iy,unsigned int &color, unsigned int &depth)
+    {
+
+        osg::Vec4f x;// >> 16;
+        osg::Vec4f y;
+        int id[4];
+        for(int i=0;i <4; i++){
+            x[i]=fix2float<16>(fd.varyings[i*2+0]);
+            y[i]=fix2float<16>(fd.varyings[i*2+1]);// >> 16;
+            x[i]=clamp(x[i],0.0,1.0);
+            y[i]=clamp(y[i],0.0,1.0);
+        }
+        for(int i=0;i <4; i++){
+            id[i]=(int)fix2float<16>(fd.varyings[9+i])*1.0;
+
+        }
+
+
+
+        std::vector<double> outComp;
+        osg::Vec3 WSum(0.0,0.0,0.0);
+
+        for(int i=0;i<4; i++){
+
+            if(id[i]<=0 || !texturepool.count(id[i]))
+                continue;
+            TextureMipMap *texturec=texturepool[id[i]];
+            if(!texturec){
+                printf("Can't load %d",id[i]);
+                continue;
+            }
+
+            //cout<<"id "<< id[i] << "\n";
+            if(x[i]<0 || y[i]<0)
+                continue;
+            int mipmapL=6;
+            osg::Vec3 val=texturec->sample_nearest(x[i],y[i],mipmapL);
+            osg::Vec3 lab=rgb2lab(val);
+            outComp.push_back(lab[0]);
+
+
+
+        }
+
+        double std_dev_pixels;
+        osg::Vec3 outP;
+
+        for(int j=0; j <3; j++){
+            std_dev_pixels=standard_dev(outComp);
+            if(writeOut)
+                fwrite(&(std_dev_pixels),sizeof(double),1,totalfp);
+            //scale from 0.5 max std to full 0 to 1.0 range
+            //   outP[j]=std_dev_pixels[j];
+        }    // this is the fragment shader
+        // printf("%f\n",std_dev_pixels[0]);
+        std_dev_pixels=clamp((std_dev_pixels/0.1f),0.0f,1.0f);
+        outP=jetColorMap(std_dev_pixels);
+
+        unsigned char r,g,b;
+        r=clamp((int)(outP.x()*255.0),0,255);
+        g=clamp((int)(outP.y()*255.0),0,255);
+        b=clamp((int)(outP.z()*255.0),0,255);
+
+        color= (b) | (g) << 8 | (r) << 16 | 255 << 24;
+
+    }
+
+    // this is called by the span drawing function to get the location of the color buffer
+    static void* color_pointer(int x, int y)
+    {
+        IplImage *screen = outputImage;///SDL_GetVideoSurface();
+        //return static_cast<unsigned short*>(screen->pixels) + x + y * screen->w;
+        return &(CV_IMAGE_ELEM(screen,unsigned char,y,x*screen->nChannels));
+    }
+
+    // this is called by the span drawing function to get the location of the depth buffer
+    static void* depth_pointer(int x, int y)
+    {
+        //IplImage *screen = varImage;///SDL_GetVideoSurface();
+        //return static_cast<unsigned short*>(screen->pixels) + x + y * screen->w;
+        return NULL;//&(CV_IMAGE_ELEM(screen,unsigned char,y,x*screen->nChannels));
+    }
+    // static TextureMipMap *texture;
 };
 #endif // FRAGMENTSHADERS_H

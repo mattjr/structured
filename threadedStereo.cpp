@@ -1693,8 +1693,8 @@ int main( int argc, char *argv[ ] )
             fprintf(stderr,"Can't open mosaic scripts\n");
             exit(-1);
         }
-        fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  -srcnodata 0 mosaic.vrt ");
-        fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  -srcnodata 0 mosaicvar.vrt ");
+        fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  -addalpha -hidenodata mosaic.vrt ");
+        fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  -addalpha -hidenodata mosaicvar.vrt ");
 
         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
                 totalbb.zMax(),_tileColumns,_tileRows);
@@ -1766,8 +1766,8 @@ int main( int argc, char *argv[ ] )
             int num_samples=6;
             for(int p=0; p<num_samples; p++)
                 sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
-            fprintf(texcmds_fp,";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
-            fprintf(vartexcmds_fp,";gdaladdo -r average mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+            fprintf(texcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+            fprintf(vartexcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
 
             tmp_ds[0]='\0';
             num_samples=0;
@@ -1856,7 +1856,7 @@ int main( int argc, char *argv[ ] )
         postcmdv.push_back(p3.str());
 
         shellcm.write_generic(texcmd,texcmds_fn,"Tex",&(precmd),&(postcmdv),num_threads);
-        shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),num_threads);
+        shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),std::max(num_threads/2,1));
 
         if(!no_tex)
             sysres=system("python tex.py");

@@ -10,7 +10,7 @@ int FragmentShaderBlendingMain::triIdx;
 const int FragmentShaderBlendingMain::mipmapL[]= {0,2,4};
 int FragmentShaderBlendingMain::idx;
 bool FragmentShaderVarMain::writeOut;
-FILE *FragmentShaderVarMain::totalfp;
+FILE *FragmentShaderVarMain::f_arr[3];
 IplImage *FragmentShaderVarMain::outputImage;
 
 Rect gRect;

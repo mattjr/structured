@@ -323,7 +323,7 @@ struct FragmentShaderVarMain : public swr::SpanDrawer32BitColorAndDepthSetDouble
     static const bool interpolate_z = false;
     static std::map<int,TextureMipMap*> texturepool;
     static bool writeOut;
-    static FILE *totalfp;
+    static FILE *f_arr[3];
     static IplImage *outputImage;
 
     // per triangle callback. This could for instance be used to select the
@@ -359,7 +359,7 @@ struct FragmentShaderVarMain : public swr::SpanDrawer32BitColorAndDepthSetDouble
 
 
 
-        std::vector<double> outComp;
+        std::vector<double> outComp[3];
         osg::Vec3 WSum(0.0,0.0,0.0);
 
         for(int i=0;i<4; i++){
@@ -377,26 +377,27 @@ struct FragmentShaderVarMain : public swr::SpanDrawer32BitColorAndDepthSetDouble
                 continue;
             int mipmapL=6;
             osg::Vec3 val=texturec->sample_nearest(x[i],y[i],mipmapL);
-            osg::Vec3 lab=rgb2lab(val);
-            outComp.push_back(lab[0]);
+            //osg::Vec3 lab=rgb2lab(val);
+            for(int j=0; j<3; j++)
+                outComp[j].push_back(val[j]);
 
 
 
         }
 
-        double std_dev_pixels;
+        double std_dev_pixels[3];
         osg::Vec3 outP;
 
         for(int j=0; j <3; j++){
-            std_dev_pixels=standard_dev(outComp);
+            std_dev_pixels[j]=standard_dev(outComp[j]);
             if(writeOut)
-                fwrite(&(std_dev_pixels),sizeof(double),1,totalfp);
+                fwrite(&(std_dev_pixels[j]),sizeof(double),1,f_arr[j]);
             //scale from 0.5 max std to full 0 to 1.0 range
-            //   outP[j]=std_dev_pixels[j];
+              outP[j]=std_dev_pixels[j]/0.5;
         }    // this is the fragment shader
         // printf("%f\n",std_dev_pixels[0]);
-        std_dev_pixels=clamp((std_dev_pixels/0.1f),0.0f,1.0f);
-        outP=jetColorMap(std_dev_pixels);
+        //std_dev_pixels=clamp((std_dev_pixels/0.3f),0.0f,1.0f);
+        //outP=jetColorMap(std_dev_pixels);
 
         unsigned char r,g,b;
         r=clamp((int)(outP.x()*255.0),0,255);

@@ -74,8 +74,9 @@ struct InputVertex {
 };
 
 static IplImage *outputImage;
-FILE *totalfp;
+//FILE *totalfp;
 
+FILE *rfp,*gfp,*bfp;
 
 
 
@@ -152,14 +153,38 @@ int main(int ac, char *av[]) {
     outputImage=cvCreateImage(cvSize(sizeX,sizeY),IPL_DEPTH_8U,4);
     FragmentShaderVarMain::outputImage =outputImage;
     FragmentShaderVarMain::writeOut=writeOut;
-    FragmentShaderVarMain::totalfp=NULL;
+    FragmentShaderVarMain::f_arr[0]=NULL;
+    FragmentShaderVarMain::f_arr[1]=NULL;
+    FragmentShaderVarMain::f_arr[2]=NULL;
+
     //varImage=cvCreateImage(cvSize(sizeX,sizeY),IPL_DEPTH_32F,1);
     // cvZero(varImage);
-    if(writeOut){
-        sprintf(tmp,"mosaic/var_r%04d_c%04d_rs%04d_cs%04d.raw",row,col,_tileRows,_tileColumns);
 
-        totalfp=fopen(tmp,"w");
-        FragmentShaderVarMain::totalfp=totalfp;
+    if(writeOut){
+        sprintf(tmp,"mosaic/var_r%04d_c%04d_rs%04d_cs%04d.r.raw",row,col,_tileRows,_tileColumns);
+
+        rfp=fopen(tmp,"w");
+        if(!rfp){
+            fprintf(stderr,"can't open %s\n",tmp);
+            exit(-1);
+        }
+        sprintf(tmp,"mosaic/var_r%04d_c%04d_rs%04d_cs%04d.g.raw",row,col,_tileRows,_tileColumns);
+
+        gfp=fopen(tmp,"w");
+        if(!gfp){
+            fprintf(stderr,"can't open %s\n",tmp);
+            exit(-1);
+        }
+        sprintf(tmp,"mosaic/var_r%04d_c%04d_rs%04d_cs%04d.b.raw",row,col,_tileRows,_tileColumns);
+
+        bfp=fopen(tmp,"w");
+        if(!bfp){
+            fprintf(stderr,"can't open %s\n",tmp);
+            exit(-1);
+        }
+        FragmentShaderVarMain::f_arr[0]=rfp;
+        FragmentShaderVarMain::f_arr[1]=gfp;
+        FragmentShaderVarMain::f_arr[2]=bfp;
 
     }
 
@@ -353,14 +378,21 @@ int main(int ac, char *av[]) {
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
 
         //  SDL_Flip(SDL_GetVideoSurface());
-        cvSaveImage((osgDB::getNameLessExtension(imageName)+"-tmp.png").c_str(),outputImage);
+        IplImage *tmp = cvCreateImage(cvGetSize(outputImage), IPL_DEPTH_8U, 3);
+        cvCvtColor(outputImage, tmp, CV_RGBA2RGB);
+        cvReleaseImage(&outputImage);
+        cvSaveImage((osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str(),tmp);
+        cvReleaseImage(&tmp);
         if(writeOut){
-            fclose(totalfp);
+            fclose(rfp);
+            fclose(gfp);
+            fclose(bfp);
+
         }
         // show everything on screen
 
 
-        if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,"png")){
+        if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,"ppm")){
             /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
             perror( "Error deleting file" );
         else

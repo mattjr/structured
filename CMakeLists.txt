@@ -29,8 +29,8 @@ pkg_check_modules(GLIB2 REQUIRED glib-2.0)
 set(OSG_COMPONENTS osg osgUtil osgViewer osgGA osgManipulator osgText osgDB)
 find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
 #GDAL
-INCLUDE( ${PROJECT_SOURCE_DIR}/VirtualPlanetBuilder/CMakeModules/FindGDAL.cmake )
-
+#INCLUDE( ${PROJECT_SOURCE_DIR}/VirtualPlanetBuilder/CMakeModules/FindGDAL.cmake )
+find_package(GDAL REQUIRED)
 #--------------------------------#
 # Enforce an out-of-source build #
 #--------------------------------#

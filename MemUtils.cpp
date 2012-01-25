@@ -99,7 +99,8 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     std::cout << tlGlobal << " " << blGlobal <<" " <<trGlobal<< " " << brGlobal <<"\n";
     worldfile.close();
     char gdal_param[4096];
-    sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
+   // sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
+    sprintf(gdal_param," -of GTiff -co \"compress=JPEG\" -co \"TILED=YES\" -co \"PHOTOMETRIC=YCBCR\"  -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
     char tmp[8192];
     sprintf(tmp,"%s-add_geo.sh",name.c_str());
     FILE *fp=fopen(tmp,"w");

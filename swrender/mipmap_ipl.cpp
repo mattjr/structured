@@ -164,7 +164,7 @@ MIPMap::MIPMap(IplImage *image,
 		m_levelWidth[i]  = std::max(1, m_levelWidth[i-1]/2);
 		m_levelHeight[i] = std::max(1, m_levelHeight[i-1]/2);
                 m_pyramid[i] = cvCreateImage(cvSize(m_levelWidth[i] , m_levelHeight[i]),IPL_DEPTH_8U,texture->nChannels);
-                printf("[%d %d] [%d %d]\n",m_levelWidth[i],m_levelHeight[i],m_levelWidth[i-1],m_levelHeight[i-1]);
+              //  printf("[%d %d] [%d %d]\n",m_levelWidth[i],m_levelHeight[i],m_levelWidth[i-1],m_levelHeight[i-1]);
                 if(m_levelHeight[i]  == 1 || m_levelWidth[i]==1)
                     cvResize(m_pyramid[i-1],m_pyramid[i]);
                 else

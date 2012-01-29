@@ -360,6 +360,9 @@ struct FragmentShaderVarMain : public swr::SpanDrawer32BitColorAndDepthSetDouble
 
 
         std::vector<double> outComp[3];
+        std::vector<osg::Vec3> colors;
+        std::vector<double> grays;
+
         osg::Vec3 WSum(0.0,0.0,0.0);
 
         for(int i=0;i<4; i++){
@@ -377,6 +380,10 @@ struct FragmentShaderVarMain : public swr::SpanDrawer32BitColorAndDepthSetDouble
                 continue;
             int mipmapL=6;
             osg::Vec3 val=texturec->sample_nearest(x[i],y[i],mipmapL);
+            double grey=0.3*val[0]+0.59*val[1]+0.11*val[2];
+
+            colors.push_back(val);
+            grays.push_back(grey);
             //osg::Vec3 lab=rgb2lab(val);
             for(int j=0; j<3; j++)
                 outComp[j].push_back(val[j]);
@@ -393,11 +400,13 @@ struct FragmentShaderVarMain : public swr::SpanDrawer32BitColorAndDepthSetDouble
             if(writeOut)
                 fwrite(&(std_dev_pixels[j]),sizeof(double),1,f_arr[j]);
             //scale from 0.5 max std to full 0 to 1.0 range
-              outP[j]=std_dev_pixels[j]/0.5;
-        }    // this is the fragment shader
+       //       outP[j]=std_dev_pixels[j]/0.15;
+        }
+        // this is the fragment shader
         // printf("%f\n",std_dev_pixels[0]);
-        //std_dev_pixels=clamp((std_dev_pixels/0.3f),0.0f,1.0f);
-        //outP=jetColorMap(std_dev_pixels);
+        double std_dev_gray=standard_dev(grays);
+        std_dev_gray=clamp((std_dev_gray/0.3f),0.0f,1.0f);
+        outP=jetColorMap(std_dev_gray);
 
         unsigned char r,g,b;
         r=clamp((int)(outP.x()*255.0),0,255);

@@ -405,7 +405,8 @@ struct FragmentShaderVarMain : public swr::SpanDrawer32BitColorAndDepthSetDouble
         // this is the fragment shader
         // printf("%f\n",std_dev_pixels[0]);
         double std_dev_gray=standard_dev(grays);
-        std_dev_gray=clamp((std_dev_gray/0.3f),0.0f,1.0f);
+        //printf("%f\n",std_dev_gray);
+        std_dev_gray=clamp((std_dev_gray/0.05f),0.0f,1.0f);
         outP=jetColorMap(std_dev_gray);
 
         unsigned char r,g,b;

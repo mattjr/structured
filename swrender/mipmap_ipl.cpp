@@ -41,9 +41,23 @@ int log2i(uint64_t value) {
         return r-1;
 }
 /// Integer floor function
-inline int floorToInt(Float value) {
-        return (int) std::floor(value);
+inline int ifloor( float x )
+{
+   if (x >= 0)
+   {
+       return (int)x;
+   }
+   else
+   {
+       int y = (int)x;
+       return ((float)y == x) ? y : y - 1;
+   }
 }
+/// Integer floor function
+inline int floorToInt(Float value) {
+       return ifloor(value);
+}
+
 int modulo(int a, int b) {
         int result = a - (a/b) * b;
         return (result < 0) ? result+b : result;

@@ -1688,6 +1688,7 @@ int main( int argc, char *argv[ ] )
         FILE *reFP=fopen("rebbox.txt","w");
         FILE *FP3=fopen("createmosaic.sh","w");
         FILE *FP4=fopen("createmosaicvar.sh","w");
+        FILE *FP5=fopen("createrangeimg.sh","w");
 
         if(!FP2 || ! FP3){
             fprintf(stderr,"Can't open mosaic scripts\n");
@@ -1800,9 +1801,14 @@ int main( int argc, char *argv[ ] )
 
         fprintf(FP4,"\n#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16 32\n");
         fchmod(fileno(FP4),0777);
-
+        fprintf(FP5,"#!/bin/bash\n%s/rangeimg  mesh-diced/vis-total.ply mesh-diced/totalbbox.txt --size %d %d -calib %s\n",
+        basepath.c_str(),
+        calib.camera_calibs[0].width,
+        calib.camera_calibs[0].height,
+        stereo_calib_file_name.c_str()
+        );
         fclose(FP4);
-
+        fclose(FP5);
         std::ostringstream p1;
 
         vector<std::string> precmd;

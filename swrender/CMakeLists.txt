@@ -1,10 +1,7 @@
 
 cmake_minimum_required (VERSION 2.6) 
 project (render)
-IF (CMAKE_BUILD_TYPE STREQUAL "Release")
 
-add_definitions(-Wall -O3 -DNDEBUG -pipe -ffast-math -funroll-loops -ftree-vectorize -fomit-frame-pointer -pipe -mfpmath=sse -mmmx -msse -mtune=core2 -march=core2 -msse2 -msse3 -mssse3 -msse4)
-ENDIF()
 find_package(PkgConfig)
 
 pkg_check_modules( VIPS vips-7.24 )

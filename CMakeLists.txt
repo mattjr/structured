@@ -31,6 +31,8 @@ find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
 #GDAL
 #INCLUDE( ${PROJECT_SOURCE_DIR}/VirtualPlanetBuilder/CMakeModules/FindGDAL.cmake )
 find_package(GDAL REQUIRED)
+include ("${CMAKE_SOURCE_DIR}/OptimizeForArchitecture.cmake")
+
 #--------------------------------#
 # Enforce an out-of-source build #
 #--------------------------------#
@@ -198,7 +200,11 @@ SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/ )
 SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 ###
 
+IF (CMAKE_BUILD_TYPE STREQUAL "Release")
 
+OptimizeForArchitecture()
+#add_definitions(-Wall -O3 -DNDEBUG -pipe -ffast-math -funroll-loops -ftree-vectorize -fomit-frame-pointer -pipe -mfpmath=sse -mmmx -msse -mtune=core2 -march=core2 -msse2 -msse3 -mssse3 -msse4)
+ENDIF()
 #SUBDIRS(src include tools )
 SUBDIRS(VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender )
 SET( SRCS
@@ -218,6 +224,7 @@ configFile.cpp
 SeaBedIO.cpp
 SpatialReference.cpp
 MemUtils.cpp
+CheckThreadPool.cpp
 		stereo_cells.cpp
 GLImaging.cpp
                 )

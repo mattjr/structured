@@ -339,7 +339,7 @@ int main(int ac, char *av[]) {
     osg::ref_ptr<KdTreeBbox> kdbb=setupKdTree(model);
 
     readFile(av[2],imageList);
-    bool blending = arguments.read("--blend");
+   // bool blending = arguments.read("--blend");
     string calibfile;
     arguments.read("-calib",calibfile);
     StereoCalib stereo_calib(calibfile);

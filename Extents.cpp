@@ -49,6 +49,7 @@
 #include <vips/vips.h>
 #include "VPBInterface.hpp"
 #include "GLImaging.h"
+#include "CheckThreadPool.h"
 bool checkInBounds(osg::Vec3 tc);
 // Helper that collects all the unique Geometry objects in a subgraph.
 
@@ -2443,7 +2444,9 @@ int MyDataSet::_run()
         if (numReadThreads>=1)
         {
             log(osg::NOTICE,"Starting %i read threads.",numReadThreads);
-            _readThreadPool = new ThreadPool(numReadThreads, requiresGraphicsContextInWritingThread);
+            _readThreadPool = new CheckThreadPool(numReadThreads, requiresGraphicsContextInWritingThread);
+            if(!dynamic_cast<CheckThreadPool*>(_readThreadPool.get())->haveWorkingContext)
+                _no_hw_context=true;
             _readThreadPool->startThreads();
         }
 
@@ -2451,7 +2454,9 @@ int MyDataSet::_run()
         if (numWriteThreads>=1)
         {
             log(osg::NOTICE,"Starting %i write threads.",numWriteThreads);
-            _writeThreadPool = new ThreadPool(numWriteThreads, requiresGraphicsContextInWritingThread);
+            _writeThreadPool = new CheckThreadPool(numWriteThreads, requiresGraphicsContextInWritingThread);
+            if(!dynamic_cast<CheckThreadPool*>(_writeThreadPool.get())->haveWorkingContext)
+                _no_hw_context=true;
             _writeThreadPool->startThreads();
 
             //requiresGraphicsContextInMainThread = false;

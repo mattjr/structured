@@ -76,7 +76,7 @@ static unsigned int max_frame_count=INT_MAX;
 static bool display_debug_images = true;
 static bool var_tex=false;
 static bool run_stereo=true;
-static double max_alt_cutoff=10.0;
+static double max_alt_cutoff=20.0;
 //static bool use_ncc = false;
 static double vrip_ramp;
 static int num_skip=0;
@@ -860,7 +860,7 @@ int main( int argc, char *argv[ ] )
 #pragma omp for
         for(int i=0; i < (int)tasks.size(); i++){
             tasks[i].valid=engine.processPair(base_dir,tasks[i].left_name,
-                                              tasks[i].right_name,tasks[i].mat,tasks[i].bbox,tasks[i].alt,hw_image);
+                                              tasks[i].right_name,tasks[i].mat,tasks[i].bbox,AUV_NO_Z_GUESS,hw_image);
 
 #pragma omp atomic
             progCount++;
@@ -1725,7 +1725,10 @@ int main( int argc, char *argv[ ] )
                     vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
                     rx,ry,rz);
             if(hw_image){
-                fprintf(texcmds_fp," --tex_cache %s %d  ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second);
+                fprintf(texcmds_fp," --tex_cache %s %d  --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat -lat %.28f -lon %.28f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,
+                        cells[i].row,cells[i].col,
+                        latOrigin , longOrigin);
+                        
                 if(use_debug_shader)
                     fprintf(texcmds_fp," --debug-shader ");
                 if(!storeTexMesh)

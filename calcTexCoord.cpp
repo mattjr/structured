@@ -56,7 +56,26 @@ int main( int argc, char **argv )
     bool untex=arguments.read("--untex");
     bool debug=arguments.read("--debug-shader");
     bool depth=arguments.read("--depth");
-
+    string matfile;
+    if(!arguments.read("--mat",matfile)){
+        fprintf(stderr,"Fail mat file\n");
+        return -1;
+    }
+    double lat=0,lon=0;
+    if(!arguments.read("-lat",lat)|| !arguments.read("-lon",lon)){
+        fprintf(stderr,"Can't get lat long\n");
+        return -1;
+    }
+    osg::Matrixd viewProjRead;
+    std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
+    if(!_file.good()){
+        fprintf(stderr,"Can't load %s\n",matfile.c_str());
+        exit(-1);
+    }
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++){
+        _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
+    }
     int size;
     if(arguments.read("--tex_cache",tex_cache_dir,size)){
         reimage=true;
@@ -214,7 +233,7 @@ int main( int argc, char **argv )
                             _file.read(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
                     _file.close();
 
-                    imageNodeGL(xform.get(),numRows,numCols,width,height,row,col,view,proj,untex,depth,"png");
+                    imageNodeGL(xform.get(),numRows,numCols,width,height,row,col,view,proj,untex,depth,viewProjRead,osg::Vec2(lat,lon),"png");
 
                 }
                 if(!imageNode){

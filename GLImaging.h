@@ -379,7 +379,7 @@ void RGBA2BGRA(unsigned int w, unsigned int h,
  void RGB2RGBA(unsigned int w, unsigned int h,
                  unsigned char *src, unsigned char *dst);
 int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns,unsigned int width,unsigned int height,int row,int col,
-                const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,bool depth,std::string ext);
+                const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,bool depth,const osg::Matrixd& viewProjRead,const osg::Vec2 &latlong, std::string ext);
 typedef struct _picture_cell{
     int row;
     int col;

@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include "CPUDetect.h"
 #include <sys/stat.h>
-
+#include "MemUtils.h"
 void optImage(osg::ref_ptr<osg::Image> &image){
     //int pitch=image->getRowSizeInBytes();
     unsigned char *dataBGRA=new unsigned char[image->s()*image->t()*4];
@@ -27,6 +27,36 @@ void optImage(osg::ref_ptr<osg::Image> &image){
 
     delete dataRGBA;
     image->setImage(image->s(),image->t(),1,GL_RGB,GL_BGRA,GL_UNSIGNED_BYTE,dataBGRA,osg::Image::USE_NEW_DELETE,1);
+    //image->setPixelBufferObject(new osg::PixelBufferObject(image)); SLOWER
+}
+static inline void
+RGBA2RGB(unsigned int w, unsigned int h,
+               unsigned char *src, unsigned char *dst) {
+  for (unsigned int i=w*h; i; i--) {
+       memmove(dst, src, 3) ;
+       src += 4 ;
+       dst += 3 ;
+  }
+}
+void optImageRGBA2RGB(osg::ref_ptr<osg::Image> &image){
+    //int pitch=image->getRowSizeInBytes();
+    unsigned char *dataRGB=new unsigned char[image->s()*image->t()*3];
+    RGBA2RGB(image->s(),image->t(),image->data(),dataRGB);
+    /*#if _M_SSE >= 0x301
+    cpu_inf
+            // Uses SSSE3 intrinsics to optimize RGBA -> BGRA swizzle:
+            if (cpu_info.bSSSE3) {
+        ConvertRGBA_BGRA_SSSE3((unsigned int *)dataBGRA,pitch,(unsigned int *)dataRGBA,image->s(),image->t(),pitch/4);
+    } else
+#endif
+    // Uses SSE2 intrinsics to optimize RGBA -> BGRA swizzle:
+    {
+        ConvertRGBA_BGRA_SSE2((unsigned int *)dataBGRA,pitch,(unsigned int *)dataRGBA,image->s(),image->t(),pitch/4);
+
+    }
+    */
+
+    image->setImage(image->s(),image->t(),1,GL_RGB,GL_RGB,GL_UNSIGNED_BYTE,dataRGB,osg::Image::USE_NEW_DELETE,1);
     //image->setPixelBufferObject(new osg::PixelBufferObject(image)); SLOWER
 }
 void OptFormatTexturesVisitor::opt()
@@ -694,7 +724,7 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
 }*/
 
 int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns,unsigned int width,unsigned int height,int row,int col,
-                const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,bool depth,std::string ext)
+                const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,bool depth,const osg::Matrixd& viewProjRead,const osg::Vec2 &latlong, std::string ext)
 {
     //int pid=getpid();
     if(node == NULL)
@@ -878,9 +908,18 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
     sem.release();
     char tmp[1024];
 
-    sprintf(tmp,"mosaic/image_r%04d_c%04d_rs%04d_cs%04d.%s",row,col,_tileRows,_tileColumns,ext.c_str());
+    sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm",row,col,_tileRows,_tileColumns);//,ext.c_str());
     if(tmpImg1.valid()){
+        optImageRGBA2RGB(tmpImg1);
         osgDB::writeImageFile(*tmpImg1,tmp);
+        sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d.ppm",row,col,_tileRows,_tileColumns);//,ext.c_str());
+
+        if(applyGeoTags(osgDB::getNameLessExtension(tmp)+".tif",latlong,viewProjRead,tmpImg1->s(),tmpImg1->t(),"ppm")){
+            /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
+            perror( "Error deleting file" );
+        else
+            puts( "File successfully deleted" );*/
+        }
     }else
         fprintf(stderr,"Failed to copy image into RAM\n");
     if(untex){
@@ -898,6 +937,8 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
         }else
             fprintf(stderr,"Failed to copy image into RAM\n");
     }
+
+
     return 0;
 }
 void compress(osg::State& state, osg::Texture& texture, osg::Texture::InternalFormatMode compressedFormat, bool generateMipMap, bool resizeToPowerOfTwo)

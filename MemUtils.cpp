@@ -122,7 +122,7 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     int res= system(tmp);
     // printf("%s\n",tmp);
     if(res != 0){
-        printf("Failed on run geotifcp\n");
+        printf("Failed on run %s\n",tmp);
         return false;
     }
     return true;

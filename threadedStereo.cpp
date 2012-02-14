@@ -1066,6 +1066,8 @@ int main( int argc, char *argv[ ] )
         if(!no_vrip && !cmvs)
             sysres=system("python runvrip.py");
         char tmpfn[8192];
+        std::vector<Cell_Data<Stereo_Pose_Data> > stereo_poses_tmp;
+
         for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
                 continue;
@@ -1075,13 +1077,16 @@ int main( int argc, char *argv[ ] )
             if(model.valid())
                 drawable = model->asGeode()->getDrawable(0);
             if(!drawable){
-                fprintf(stderr,"Failed to load model %s\n",tmpfn);
-                exit(-1);
+                fprintf(stderr,"Failed to load model %s VRIP failed on one chunk\nThere may be holes in it!!!!!!\nAlso check if this is part of ascent or decent where lots of Z variation occurs.\n",tmpfn);
+                sleep(1);
+                continue;
+                //exit(-1);
             }
             osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
             numberFacesAll+=geom->getPrimitiveSet(0)->getNumPrimitives();
-
+            stereo_poses_tmp.push_back(vrip_cells[i]);
         }
+        vrip_cells.swap(stereo_poses_tmp);
         osg::BoundingBox totalbb;
         osg::BoundingBox totalbb_unrot;
 

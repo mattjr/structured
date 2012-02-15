@@ -56,41 +56,47 @@ int main( int argc, char **argv )
     bool untex=arguments.read("--untex");
     bool debug=arguments.read("--debug-shader");
     bool depth=arguments.read("--depth");
-    string matfile;
-    if(!arguments.read("--mat",matfile)){
-        fprintf(stderr,"Fail mat file\n");
-        return -1;
-    }
-    double lat=0,lon=0;
-    if(!arguments.read("-lat",lat)|| !arguments.read("-lon",lon)){
-        fprintf(stderr,"Can't get lat long\n");
-        return -1;
-    }
-    osg::Matrixd viewProjRead;
-    std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
-    if(!_file.good()){
-        fprintf(stderr,"Can't load %s\n",matfile.c_str());
-        exit(-1);
-    }
-    for(int i=0; i<4; i++)
-        for(int j=0; j<4; j++){
-        _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
-    }
     int size;
+
     if(arguments.read("--tex_cache",tex_cache_dir,size)){
         reimage=true;
         cache.push_back(std::make_pair<std::string,int>(tex_cache_dir,size));
     }else{
         cache.push_back(std::make_pair<std::string,int>(tex_cache_dir,std::max(calib.camera_calibs[0].width,calib.camera_calibs[0].height)));
     }
+    osg::Matrixd viewProjRead;
+    double lat=0,lon=0;
+
+    if(reimage){
+        string matfile;
+        if(!arguments.read("--mat",matfile)){
+            fprintf(stderr,"Fail mat file\n");
+            return -1;
+        }
+        if(!arguments.read("-lat",lat)|| !arguments.read("-lon",lon)){
+            fprintf(stderr,"Can't get lat long\n");
+            return -1;
+        }
+        std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
+        if(!_file.good()){
+            fprintf(stderr,"Can't load %s\n",matfile.c_str());
+            exit(-1);
+        }
+
+        for(int i=0; i<4; i++)
+            for(int j=0; j<4; j++){
+                _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
+            }
+    }
+
     float rx, ry, rz;
     osg::Matrix inverseM=osg::Matrix::identity();
 
     if(arguments.read("--invrot",rx,ry,rz)){
         inverseM =osg::Matrix::rotate(
-                osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
-                osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
-                osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+                    osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                    osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                    osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
     }
     osg::Matrix rotM=osg::Matrix::inverse(inverseM);
 
@@ -255,7 +261,7 @@ int main( int argc, char **argv )
                 wr = rw->writeNode( *dynamic_cast<osg::Geode*>(model), osgDB::getNameLessExtension(outfilename).append(".ive"), new osgDB::Options("compressed 1") );
             //   osgDB::writeNodeFile(*model,osgDB::getNameLessExtension(outfilename).append(".ivez"),osgDB::Registry::instance()->getOptions());
                        //osgDB::Registry::instance()->writeNode(*node,osgDB::getNameLessExtension(outfilename).append(".ive"), osgDB::Registry::instance()->getOptions() );*/
-              /*  std::ofstream f(outfilename.c_str());
+                /*  std::ofstream f(outfilename.c_str());
                 PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second));
                 model->accept(nv);*/
                 //    if (!wr.success() )     OSG_NOTIFY( osg::WARN ) << "ERROR: Savefailed: " << wr.message() << std::endl;

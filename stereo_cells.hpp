@@ -27,19 +27,23 @@ enum{ POSE_INDEX_X,
 
 extern unsigned int max_cell_poses;
 extern unsigned int max_tree_depth;
-class Tex_Pose_Data
+class TaskData{
+ public:
+    unsigned int id;
+    std::string file_name;
+    std::string dir;
+    osg::Matrixd mat;
+    osg::BoundingBox bbox;
+    bool valid;
+};
+
+class Tex_Pose_Data : public TaskData
 {
-public:
-  unsigned int id;
-  std::string file_name;
-  std::string dir;
-  osg::Matrixd mat;
-  osg::BoundingBox bbox;
-  bool valid;
+
 };
 
 
-class Stereo_Pose_Data : public Tex_Pose_Data
+class Stereo_Pose_Data : public TaskData
 {
 public:
   double time;

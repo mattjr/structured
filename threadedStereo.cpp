@@ -46,6 +46,8 @@ static bool writeout_meshvar=true;
 //
 static bool untex=true;
 using namespace std;
+static double sparseRatio=0.2;
+static bool isSparse=false;
 static FILE *conf_ply_file;
 static string background_mb;
 static string contents_file_name;
@@ -270,6 +272,7 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("VRIP_RAMP",vrip_ramp,500.0);
     recon_config_file->get_value("EDGE_THRESH",edgethresh,0.5);
 
+    recon_config_file->get_value("SPARSE_RATIO",sparseRatio,0.2);
 
     recon_config_file->get_value("VRIP_RES",vrip_res,0.033);
     recon_config_file->get_value("IMAGE_SPLIT_COL",_tileColumns,-1);
@@ -314,6 +317,8 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("-f",dir_name);
     argp.read("--target-screen-faces",targetScreenFaces);
     argp.read( "--vpblod" ,vpblod_override);
+    argp.read( "--sparseratio" ,sparseRatio);
+
     if(argp.read("--vt")){
         useReimage=false;
         useVirtTex=true;
@@ -529,7 +534,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
 
     //int index;
 
-   // index = pose.pose_id;
+    // index = pose.pose_id;
     name.time = pose.pose_time;
     name.pose[POSE_INDEX_X] = pose.pose_est[POSE_INDEX_X];
     name.pose[POSE_INDEX_Y] = pose.pose_est[POSE_INDEX_Y];
@@ -661,7 +666,7 @@ int main( int argc, char *argv[ ] )
     if( !contents_file )
     {
         cerr << "ERROR - unable to open contents file: " << contents_file_name
-                << endl;
+             << endl;
         exit( 1 );
     }
     StereoCalib calib(stereo_calib_file_name);
@@ -890,10 +895,14 @@ int main( int argc, char *argv[ ] )
     FILE *totalfp=fopen("mesh-diced/totalbbox.txt","w");
 
     int ct=0;
+    double totalValidArea=0;
     for(vector<Stereo_Pose_Data>::iterator itr=tasks.begin(); itr != tasks.end(); itr++){
         const Stereo_Pose_Data &name=(*itr);
 
-
+        double area= ((name.bbox.xMax()-name.bbox.xMin())*
+                     (name.bbox.yMax()-name.bbox.yMin()));
+        if(isfinite(area))
+       totalValidArea+=area;
 
         fprintf(fpp,"%d %f %s %s ",
                 ct++,name.time,name.left_name.c_str(),name.right_name.c_str());
@@ -931,6 +940,14 @@ int main( int argc, char *argv[ ] )
     }
     fclose(totalfp);
     Bounds bounds( tasks );
+
+    double fillRatio=(totalValidArea/bounds.area());
+    printf("Valid Area %.2f Total Area %.2f\n",totalValidArea,bounds.area());
+    printf("Fill Percentage %d%% (Doesn't account for overlap) Cut Off for Sparse %d%%\n",(int)floor(fillRatio*100.0),(int)floor(sparseRatio*100.0));
+    if(fillRatio < sparseRatio){
+        isSparse=true;
+        printf("Using sparse mode\n");
+    }
     std::vector<Cell_Data<Stereo_Pose_Data> > vrip_cells;
     vrip_cells=calc_cells<Stereo_Pose_Data> (tasks,vrip_img_per_cell);
 
@@ -1066,7 +1083,7 @@ int main( int argc, char *argv[ ] )
         if(!no_vrip && !cmvs)
             sysres=system("python runvrip.py");
         char tmpfn[8192];
-        std::vector<Cell_Data<Stereo_Pose_Data> > stereo_poses_tmp;
+        //std::vector<Cell_Data<Stereo_Pose_Data> > stereo_poses_tmp;
 
         for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
@@ -1078,15 +1095,15 @@ int main( int argc, char *argv[ ] )
                 drawable = model->asGeode()->getDrawable(0);
             if(!drawable){
                 fprintf(stderr,"Failed to load model %s VRIP failed on one chunk\nThere may be holes in it!!!!!!\nAlso check if this is part of ascent or decent where lots of Z variation occurs.\n",tmpfn);
-                sleep(1);
-                continue;
-                //exit(-1);
+                //sleep(1);
+               // continue;
+                exit(-1);
             }
             osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
             numberFacesAll+=geom->getPrimitiveSet(0)->getNumPrimitives();
-            stereo_poses_tmp.push_back(vrip_cells[i]);
+           // stereo_poses_tmp.push_back(vrip_cells[i]);
         }
-        vrip_cells.swap(stereo_poses_tmp);
+        //vrip_cells.swap(stereo_poses_tmp);
         osg::BoundingBox totalbb;
         osg::BoundingBox totalbb_unrot;
 
@@ -1095,9 +1112,9 @@ int main( int argc, char *argv[ ] )
         float rx=0,ry=180.0,rz=-90;
 
         rotM =osg::Matrix::rotate(
-                osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
-                osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
-                osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+                    osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                    osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                    osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
 
 
         totalbb_unrot.expandBy(bounds.bbox._min);
@@ -1122,9 +1139,9 @@ int main( int argc, char *argv[ ] )
             string rot=string(tmp);
 
             rotM =osg::Matrix::rotate(
-                    osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
-                    osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
-                    osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+                        osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                        osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                        osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
             cout << "Loading full mesh...\n";
             osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("mesh-diced/vis-total.ply"+rot);
             osg::Drawable *drawable = model->asGroup()->getChild(0)->asGeode()->getDrawable(0);
@@ -1234,11 +1251,14 @@ int main( int argc, char *argv[ ] )
 
         char tmp4[1024];
         cout << "Assign splits...\n";
+        int validF=0;
         //#pragma omp parallel num_threads(num_threads)
         {
             //#pragma omp parallel for shared(_tileRows, _tileColumns)
             for(int row=0; row< _tileRows; row++){
                 for(int col=0; col<_tileColumns; col++){
+                    printf("\r%04d/%04d %04d/%04d",row,_tileRows,col,_tileColumns);
+                    fflush(stdout);
                     osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
                     double left,right,bottom,top,znear,zfar;
                     osg::Matrix m=(view*proj*offsetMatrix);
@@ -1246,8 +1266,21 @@ int main( int argc, char *argv[ ] )
                     double margin=vrip_res*10;
                     osg::BoundingBox thisCellBbox(left,bottom,bs.center()[2]-bs.radius(),right,top,bs.center()[2]+bs.radius());
                     osg::BoundingBox thisCellBboxMargin(left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
-                  //  std::cout<< thisCellBbox._max-thisCellBbox._min <<"\n";
+                    osg::BoundingBox bboxMarginUnRot;
+                    bboxMarginUnRot.expandBy(thisCellBboxMargin._min*osg::Matrix::inverse(rotM));
+                    bboxMarginUnRot.expandBy(thisCellBboxMargin._max*osg::Matrix::inverse(rotM));
+                    //  std::cout<< thisCellBbox._max-thisCellBbox._min <<"\n";
                     //  std::cout<< "A"<<thisCellBboxMargin._min << " "<< thisCellBboxMargin._max<<"\n\n";
+                    bool hitcell=false;
+                    for(int k=0; k< (int)vrip_cells.size(); k++){
+                        if(bboxMarginUnRot.intersects(vrip_cells[k].bounds.bbox)){
+                            hitcell=true;
+                            break;
+                        }
+                    }
+                    if(!hitcell)
+                        continue;
+                    //osg::Timer_t st= osg::Timer::instance()->tick();
 
                     picture_cell cell;
                     cell.bbox=thisCellBbox;
@@ -1255,8 +1288,7 @@ int main( int argc, char *argv[ ] )
                     cell.bboxUnRot.expandBy(cell.bbox._min*osg::Matrix::inverse(rotM));
                     cell.bboxUnRot.expandBy(cell.bbox._max*osg::Matrix::inverse(rotM));
 
-                    cell.bboxMarginUnRot.expandBy(cell.bboxMargin._min*osg::Matrix::inverse(rotM));
-                    cell.bboxMarginUnRot.expandBy(cell.bboxMargin._max*osg::Matrix::inverse(rotM));
+                    cell.bboxMarginUnRot=bboxMarginUnRot;
 
                     cell.row=row;
                     cell.col=col;
@@ -1264,15 +1296,18 @@ int main( int argc, char *argv[ ] )
                     sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",row,col,vpblod);
                     cell.name=string(tmp4);
                     sprintf(tmp4,"mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat",row,col);
+                    validF++;
                     std::fstream _file(tmp4,std::ios::binary|std::ios::out);
-
+                    for(int k=0; k<4; k++)
+                        for(int l=0; l<4; l++)
+                            _file.write(reinterpret_cast<char*>(&(cell.m(k,l))),sizeof(double));
+                    _file.close();
+                   // double timeForReadPixels = osg::Timer::instance()->delta_s(st, osg::Timer::instance()->tick());
+                    //printf("Time %f\n",timeForReadPixels);
                     for(int i=0; i < (int)tasks.size(); i++){
                         if(!tasks[i].valid || !tasks[i].bbox.valid())
                             continue;
-                        for(int k=0; k<4; k++)
-                            for(int l=0; l<4; l++)
-                                _file.write(reinterpret_cast<char*>(&(cell.m(k,l))),sizeof(double));
-                        _file.close();
+
                         osg::Vec3 m1=osg::Vec3(tasks[i].bbox.xMin(),tasks[i].bbox.yMin(),tasks[i].bbox.zMin())*rotM;
                         osg::Vec3 m2=osg::Vec3(tasks[i].bbox.xMax(),tasks[i].bbox.yMax(),tasks[i].bbox.zMax())*rotM;
 
@@ -1297,6 +1332,7 @@ int main( int argc, char *argv[ ] )
             }
 
         }
+        printf("\nValid %d\n",validF);
         {
             vector<std::string> postcmdv;
             string tcmd =basepath+string("/vrip/bin/plymerge ");
@@ -1788,7 +1824,7 @@ int main( int argc, char *argv[ ] )
             fprintf(FP3,"image_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
             fprintf(FP4,"var_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
 
-           // fprintf(texcmds_fp,"\n");
+            // fprintf(texcmds_fp,"\n");
 
             /* fprintf(texcmds_fp,"osgconv -O \"compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1\" mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d-uncomp.ive  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive\n",
 
@@ -1920,14 +1956,14 @@ int main( int argc, char *argv[ ] )
 
             sprintf(tmp,"mesh-diced/total-lod%d.ply",vpblod);//std::min(lod,2)
             std::vector<string> level;
-
+            string boundry_preserve = isSparse ? "" : "-By";
             for(int j=vpblod-1; j >= 0; j--){
 
-                fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/vcgapps/bin/%s total-lod%d.ply total-lod%d.ply %d -P -Oy -By;",
+                fprintf(simpcmds_fp,"cd %s/mesh-diced;%s/vcgapps/bin/%s total-lod%d.ply total-lod%d.ply %d -P -Oy %s;",
                         cwd,
                         basepath.c_str(),
                         app.c_str(),
-                        j+1,j, sizeStepTotal[j]);
+                        j+1,j, sizeStepTotal[j],boundry_preserve.c_str());
 
             }
             for(int lod=0; lod <= vpblod; ){

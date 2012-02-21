@@ -3410,7 +3410,8 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     int leveloffset=(_numLevels-_level-1);
     leveloffset=std::min(leveloffset,5);
     leveloffset=std::max(leveloffset,0);
-
+    double downsampleFactor=pow(2.0,leveloffset);
+    double downsampleRatio=1.0/downsampleFactor;
 
 
     for(int i=0; i< (int)group->getNumChildren(); i++){
@@ -3477,10 +3478,10 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     SpatialIndex::IStorageManager* memstore;
     SpatialIndex::IStorageManager* manager;
 
-    //double utilization;
+    double utilization;
     int capacity;
 
-    //utilization=0.7;
+    utilization=0.7;
     capacity=4;
 
     memstore = StorageManager::createNewMemoryStorageManager();
@@ -3490,7 +3491,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     manager = StorageManager::createNewRandomEvictionsBuffer(*memstore, 10, false);
     tree = RTree::createNewRTree(*manager, 0.7, capacity,capacity,2, SpatialIndex::RTree::RV_RSTAR, indexIdentifier);
     double plow[2], phigh[2];
-    for(int i=0; i<(int)dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells.size(); i++){
+    for(int i=0; i<dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells.size(); i++){
         plow[0]= dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[i].bbox.xMin();
         plow[1]= dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[i].bbox.yMin();
 
@@ -3553,7 +3554,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         double virtArea=(maxT.x()-minT.x())*(maxT.y()-minT.y())*downsampleRatio*downsampleRatio;
         double totalArea=0;
         for(it=seenids.begin(); it!=seenids.end(); it++){
-            if(*it>=0 && *it < (int) dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells.size()){
+            if(*it>=0 && *it <  dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells.size()){
                 double xsize=dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.xMax()-dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.xMin();
                 double ysize=dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.yMax()-dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.yMin();
                 totalArea+=xsize*ysize*downsampleRatio*downsampleRatio;
@@ -3563,7 +3564,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
                 }
             }
         }
-        //printf("%f %f\n",atlasArea ,totalArea);
+        printf("%f %f\n",atlasArea ,totalArea);
         if(atlasArea >= totalArea){
             if(totalArea>0){
                 ratioFill=totalArea/virtArea;
@@ -3573,11 +3574,8 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
             break;
         }
         leveloffset++;
-    }while(leveloffset < 10000);
-    if(leveloffset == 10000){
-        fprintf(stderr,"Failed to downsample images to fit in one atlas %f %f \n",downsampleFactor,xsize);
-        exit(-1);
-    }
+    }while(leveloffset < 100);
+
     printf("Using mode SPARSE: %d %f %f\n",sparseMode,ratioFill,dynamic_cast<MyDataSet*>(_dataSet)->sparseRatio);
 
     osg::Vec4 texSizes;

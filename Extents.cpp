@@ -51,6 +51,7 @@
 #include "GLImaging.h"
 #include "CheckThreadPool.h"
 bool checkInBounds(osg::Vec3 tc);
+using namespace SpatialIndex;
 // Helper that collects all the unique Geometry objects in a subgraph.
 
 using namespace vpb;
@@ -96,7 +97,7 @@ MyDataSet::MyDataSet(const CameraCalib &calib,string basePath,bool useTextureArr
     init();
 }
 bool
-        MyCompositeDestination::clampGeocentric( osg::CoordinateSystemNode* csn, double lat_rad, double lon_rad, osg::Vec3d& out ) const
+MyCompositeDestination::clampGeocentric( osg::CoordinateSystemNode* csn, double lat_rad, double lon_rad, osg::Vec3d& out ) const
 {
     osg::Vec3d start, end;
 
@@ -117,15 +118,15 @@ bool
     {
         const osgUtil::LineSegmentIntersector::Intersection& result = *results.begin();
         out = result.matrix.valid() ?
-              result.localIntersectionPoint * (*result.matrix) :
-              result.localIntersectionPoint;
+                    result.localIntersectionPoint * (*result.matrix) :
+                    result.localIntersectionPoint;
         return true;
     }
     return false;
 }
 
 bool
-        MyCompositeDestination::clampProjected( osg::CoordinateSystemNode* csn, double x, double y, osg::Vec3d& out ) const
+MyCompositeDestination::clampProjected( osg::CoordinateSystemNode* csn, double x, double y, osg::Vec3d& out ) const
 {
     osg::Vec3d start( x, y, 50000 );
     osg::Vec3d end(x, y, -50000);
@@ -144,15 +145,15 @@ bool
     {
         const osgUtil::LineSegmentIntersector::Intersection& result = *results.begin();
         out = result.matrix.valid() ?
-              result.localIntersectionPoint * (*result.matrix) :
-              result.localIntersectionPoint;
+                    result.localIntersectionPoint * (*result.matrix) :
+                    result.localIntersectionPoint;
         return true;
     }
     return false;
 }
 
 bool
-        MyCompositeDestination::createPlacerMatrix(  const SpatialReference* srs, double lat_deg, double lon_deg, double height, osg::Matrixd& out_result ,bool clamp) const
+MyCompositeDestination::createPlacerMatrix(  const SpatialReference* srs, double lat_deg, double lon_deg, double height, osg::Matrixd& out_result ,bool clamp) const
 {
     if ( !srs|| !_cs.valid() )
     {
@@ -302,6 +303,7 @@ void MyDataSet::init()
     readMatrix("rot.mat",rotMat);
     readMatrixToScreen("view.mat",viewProj);
 
+
     if(_useReImage){
         ifstream inf( "image_areas.txt" );
 
@@ -333,7 +335,7 @@ void MyDataSet::init()
 
                 }else{
                     mosaic_cell cell;
-                    cell.bbox=osg::BoundingBox(miny,minx/*totalX-minx-(maxx-minx)*/,-FLT_MAX,maxy,/*totalX-maxx-(maxx-minx)*/ maxx,FLT_MAX);
+                    cell.bbox=osg::BoundingBoxd(miny,minx/*totalX-minx-(maxx-minx)*/,-FLT_MAX,maxy,/*totalX-maxx-(maxx-minx)*/ maxx,FLT_MAX);
                     cell.name=std::string(fname);
                     cell.levels_ds=levels;
 
@@ -344,7 +346,7 @@ void MyDataSet::init()
 
                         for(int i=0;i <(int)cell.levels_ds.size(); i++){
                             sprintf(tmp_l,"%s:%d",fname_tif,i+1);
-                           /* vips::VImage *img=new vips::VImage(tmp_l);
+                            /* vips::VImage *img=new vips::VImage(tmp_l);
                             if(!img){
                                 std::cerr << "Can't open downsampled "<<tmp_l<<  " on reimaging run\n";
                             }
@@ -353,7 +355,14 @@ void MyDataSet::init()
                         }
                         cell.mutex=new OpenThreads::Mutex;
 
+
+                        // cout << "id: "<< id <<" \n" << plow[0] << " "<< plow[1]<< "\n"<< phigh[0]<<" "<< phigh[1]<<endl;
+                        // cell_coordinate_map[rangeTC(minp,
+                        //                                               maxp)]=mosaic_cells.size();
                         mosaic_cells.push_back(cell);
+                        std::map< MyDataSet::rangeTC ,int>::iterator itr;
+                        for(itr=cell_coordinate_map.begin(); itr!=cell_coordinate_map.end(); itr++)
+                            cout << "["<<itr->first.min() <<" - "<< itr->first.max()<< "] : " << itr->second<<"\n";
 
                     }
                     else{
@@ -377,21 +386,21 @@ public:
     struct Triple
     {
         Triple():
-                _object(0),
-                _callback(0) {}
+            _object(0),
+            _callback(0) {}
 
         Triple(osg::NodePath nodePath, osg::Object* object, osg::ClusterCullingCallback* callback):
-                _nodePath(nodePath),
-                _object(object),
-                _callback(callback) {}
+            _nodePath(nodePath),
+            _object(object),
+            _callback(callback) {}
 
         Triple(const Triple& t):
-                _nodePath(t._nodePath),
-                _object(t._object),
-                _callback(t._callback) {}
+            _nodePath(t._nodePath),
+            _object(t._object),
+            _callback(t._callback) {}
 
         Triple& operator = (const Triple& t)
-                           {
+        {
             _nodePath = t._nodePath;
             _object = t._object;
             _callback = t._callback;
@@ -406,7 +415,7 @@ public:
     typedef std::vector<Triple> ClusterCullingCallbackList;
 
     CollectClusterCullingCallbacks():
-            osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {}
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {}
 
     virtual void apply(osg::Group& group)
     {
@@ -813,8 +822,8 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
 void MyCompositeDestination::unrefSubTileData()
 {
     for(MyCompositeDestination::ChildList::iterator citr=_children.begin();
-    citr!=_children.end();
-    ++citr)
+        citr!=_children.end();
+        ++citr)
     {
         ((MyCompositeDestination*)((*citr).get()))->unrefLocalData();
     }
@@ -822,8 +831,8 @@ void MyCompositeDestination::unrefSubTileData()
 void MyCompositeDestination::unrefLocalData()
 {
     for(CompositeDestination::TileList::iterator titr=_tiles.begin();
-    titr!=_tiles.end();
-    ++titr)
+        titr!=_tiles.end();
+        ++titr)
     {
         MyDestinationTile* tile = dynamic_cast<MyDestinationTile*>(titr->get());
         log(osg::INFO,"   unref tile level=%d X=%d Y=%d",tile->_level, tile->_tileX, tile->_tileY);
@@ -843,7 +852,7 @@ void MyDestinationTile::unrefData()
 void compressJP2(osg::State *state,osg::Texture2D* texture2D, osg::Texture::InternalFormatMode internalFormatMode){
     osg::ref_ptr<osg::Image> image = texture2D->getImage();
     if (image.valid() &&
-        (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) ){//&&
+            (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) ){//&&
         int width=image->s();
         int height=image->t();
         char cwd[2048];
@@ -923,7 +932,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         tex->setFileName(tmpf);
 
         osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(tex);
-          texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
+        texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
         texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
         //texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
         // texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
@@ -1098,8 +1107,8 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
     {
         osg::Group* group = new osg::Group;
         for(TileList::iterator titr=_tiles.begin();
-        titr!=_tiles.end();
-        ++titr)
+            titr!=_tiles.end();
+            ++titr)
         {
             DestinationTile *t=*titr;
 
@@ -1112,8 +1121,8 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
 
         // handle chilren
         for(ChildList::iterator citr=_children.begin();
-        citr!=_children.end();
-        ++citr)
+            citr!=_children.end();
+            ++citr)
         {
             CompositeDestination *c=*citr;
             MyCompositeDestination *child=dynamic_cast<MyCompositeDestination*>(c);
@@ -1130,8 +1139,8 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
     // collect all the local tiles
     NodeList tileNodes;
     for(TileList::iterator titr=_tiles.begin();
-    titr!=_tiles.end();
-    ++titr)
+        titr!=_tiles.end();
+        ++titr)
     {
         DestinationTile *t=*titr;
 
@@ -1143,8 +1152,8 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
 
     float cutOffDistance = -FLT_MAX;
     for(ChildList::iterator citr=_children.begin();
-    citr!=_children.end();
-    ++citr)
+        citr!=_children.end();
+        ++citr)
     {
         cutOffDistance = osg::maximum(cutOffDistance,(*citr)->_maxVisibleDistance);
     }
@@ -1166,8 +1175,8 @@ osg::Node* MyCompositeDestination::createPagedLODScene()
     {
         osg::Group* group = new osg::Group;
         for(NodeList::iterator itr=tileNodes.begin();
-        itr != tileNodes.end();
-        ++itr)
+            itr != tileNodes.end();
+            ++itr)
         {
             group->addChild(*itr);
         }
@@ -1398,15 +1407,15 @@ void MyDataSet::_equalizeRow(Row& row)
 {
     log(osg::INFO, "_equalizeRow %d",row.size());
     for(Row::iterator citr=row.begin();
-    citr!=row.end();
-    ++citr)
+        citr!=row.end();
+        ++citr)
     {
         CompositeDestination* cd = citr->second;
         //if(!cd)
         //     continue;
         for(CompositeDestination::TileList::iterator titr=cd->_tiles.begin();
-        titr!=cd->_tiles.end();
-        ++titr)
+            titr!=cd->_tiles.end();
+            ++titr)
         {
             DestinationTile* tile = titr->get();
             log(osg::INFO, "   equalizing tile level=%u X=%u Y=%u",tile->_level,tile->_tileX,tile->_tileY);
@@ -1545,8 +1554,8 @@ osg::Node* MyDestinationTile::createScene()
             }
 
             for(ModelList::iterator itr = _models->_models.begin();
-            itr != _models->_models.end();
-            ++itr,++cnt)
+                itr != _models->_models.end();
+                ++itr,++cnt)
             {
                 if(_atlasGen->_totalImageList.size()> 0 ||texCoordsPerModel.size()){
                     if(texCoordsPerModel.count(*itr) == 0 ){
@@ -1797,10 +1806,10 @@ MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int c
 }
 
 void MyDataSet::createNewDestinationGraph(
-        const GeospatialExtents& extents,
-        unsigned int maxImageSize,
-        unsigned int maxTerrainSize,
-        unsigned int maxNumLevels)
+    const GeospatialExtents& extents,
+    unsigned int maxImageSize,
+    unsigned int maxTerrainSize,
+    unsigned int maxNumLevels)
 {
 
 
@@ -1899,8 +1908,8 @@ void MyDataSet::createNewDestinationGraph(
     // printf("Total Size %d\n",(int)_quadMap.size());
     // now extend the sources upwards where required.
     for(QuadMap::iterator qitr = _quadMap.begin();
-    qitr != _quadMap.end();
-    ++qitr)
+        qitr != _quadMap.end();
+        ++qitr)
     {
         QuadMap::iterator temp_itr = qitr;
         ++temp_itr;
@@ -1910,13 +1919,13 @@ void MyDataSet::createNewDestinationGraph(
 
         Level& level = qitr->second;
         for(Level::iterator litr = level.begin();
-        litr != level.end();
-        ++litr)
+            litr != level.end();
+            ++litr)
         {
             Row& row = litr->second;
             for(Row::iterator ritr = row.begin();
-            ritr != row.end();
-            ++ritr)
+                ritr != row.end();
+                ++ritr)
             {
                 CompositeDestination* cd = ritr->second;
 
@@ -2084,8 +2093,8 @@ void MyDataSet::createNewDestinationGraph(
 
                         {
                             for(CompositeDestination::TileList::iterator titr = cd->_tiles.begin();
-                            titr != cd->_tiles.end();
-                            ++titr)
+                                titr != cd->_tiles.end();
+                                ++titr)
                             {
                                 MyDestinationTile* tile = dynamic_cast<MyDestinationTile*>(titr->get());
                                 TexturedSource* texsource = dynamic_cast<TexturedSource*>(source);
@@ -2248,10 +2257,10 @@ class MyReadFromOperation : public BuildOperation
 public:
 
     MyReadFromOperation(ThreadPool* threadPool, BuildLog* buildLog, DestinationTile* tile, MyDataSet* dataSet,TexturedSource *src):
-            BuildOperation(threadPool, buildLog, "ReadFromOperation", false),
-            _tile(tile),
-            _dataSet(dataSet),
-            _src(src){}
+        BuildOperation(threadPool, buildLog, "ReadFromOperation", false),
+        _tile(tile),
+        _dataSet(dataSet),
+        _src(src){}
 
     virtual void build()
     {
@@ -2274,19 +2283,19 @@ void MyDataSet::_readRow(Row& row)
     if (_readThreadPool.valid())
     {
         for(Row::iterator citr=row.begin();
-        citr!=row.end();
-        ++citr)
+            citr!=row.end();
+            ++citr)
         {
             CompositeDestination* cd = citr->second;
             //if(!cd)
             //     continue;
             for(CompositeDestination::TileList::iterator titr=cd->_tiles.begin();
-            titr!=cd->_tiles.end();
-            ++titr)
+                titr!=cd->_tiles.end();
+                ++titr)
             {
                 for(DestinationTile::Sources::iterator itr = (*titr)->_sources.begin();
-                itr != (*titr)->_sources.end();
-                ++itr)
+                    itr != (*titr)->_sources.end();
+                    ++itr)
                 {
                     TexturedSource *source=dynamic_cast<TexturedSource*>((*itr).get());
                     _readThreadPool->run(new MyReadFromOperation(_readThreadPool.get(), getBuildLog(), titr->get(), this,source));
@@ -2302,13 +2311,13 @@ void MyDataSet::_readRow(Row& row)
     else
     {
         for(Row::iterator citr=row.begin();
-        citr!=row.end();
-        ++citr)
+            citr!=row.end();
+            ++citr)
         {
             CompositeDestination* cd = citr->second;
             for(CompositeDestination::TileList::iterator titr=cd->_tiles.begin();
-            titr!=cd->_tiles.end();
-            ++titr)
+                titr!=cd->_tiles.end();
+                ++titr)
             {
                 DestinationTile* tile = titr->get();
                 log(osg::NOTICE, "   reading tile level=%u X=%u Y=%u",tile->_level,tile->_tileX,tile->_tileY);
@@ -2317,8 +2326,8 @@ void MyDataSet::_readRow(Row& row)
 
                 //tile->readFrom(sourceGraph);
                 for(DestinationTile::Sources::iterator itr = tile->_sources.begin();
-                itr != tile->_sources.end();
-                ++itr)
+                    itr != tile->_sources.end();
+                    ++itr)
                 {
                     MyDestinationTile *myt=dynamic_cast<MyDestinationTile*>(tile);
                     TexturedSource *source=dynamic_cast<TexturedSource*>((*itr).get());
@@ -2361,23 +2370,23 @@ void ClippedCopy::AnalyzePrimSet(const osg::PrimitiveSet& prset, const osg::Vec3
         switch (prset.getMode())
         {
         case osg::PrimitiveSet::TRIANGLES: // get vertices of triangle
+        {
+            // std::cout << "Triangles "<< nprim << " is index "<<prset.index(ic) << std::endl;
+            for(unsigned int i2=0; i2<prset.getNumIndices()-2; i2+=3)
             {
-                // std::cout << "Triangles "<< nprim << " is index "<<prset.index(ic) << std::endl;
-                for(unsigned int i2=0; i2<prset.getNumIndices()-2; i2+=3)
-                {
-                    std::vector<bool> outside(3,false);
-                    for(int k=0; k <3; k++){
-                        outside[k]=(vertRemap[prset.index(i2+k)]>= 0);
-                    }
+                std::vector<bool> outside(3,false);
+                for(int k=0; k <3; k++){
+                    outside[k]=(vertRemap[prset.index(i2+k)]>= 0);
+                }
 
-                    if(outside[0] && outside[1] && outside[2]){
-                        for(int k=0; k <3; k++){
-                            _triangles->push_back(vertRemap[prset.index(i2+k)]);
-                        }
+                if(outside[0] && outside[1] && outside[2]){
+                    for(int k=0; k <3; k++){
+                        _triangles->push_back(vertRemap[prset.index(i2+k)]);
                     }
                 }
             }
-            break;
+        }
+        break;
 
         default:
             break;
@@ -2616,15 +2625,15 @@ int MyDataSet::_run()
 osg::Node* MyCompositeDestination::createSubTileScene()
 {
     if (_type==GROUP ||
-        _children.empty() ||
-        _tiles.empty()) return 0;
+            _children.empty() ||
+            _tiles.empty()) return 0;
 
     // handle chilren
     typedef std::vector<osg::Node*>  NodeList;
     NodeList nodeList;
     for(ChildList::iterator citr=_children.begin();
-    citr!=_children.end();
-    ++citr)
+        citr!=_children.end();
+        ++citr)
     {
         CompositeDestination *c=*citr;
         MyCompositeDestination *child=dynamic_cast<MyCompositeDestination*>(c);
@@ -2640,8 +2649,8 @@ osg::Node* MyCompositeDestination::createSubTileScene()
     {
         osg::Group* group = new osg::Group;
         for(NodeList::iterator itr=nodeList.begin();
-        itr!=nodeList.end();
-        ++itr)
+            itr!=nodeList.end();
+            ++itr)
         {
             group->addChild(*itr);
         }
@@ -2657,10 +2666,10 @@ class WriteOperation : public BuildOperation
 public:
 
     WriteOperation(ThreadPool* threadPool, MyDataSet* dataset,MyCompositeDestination* cd, const std::string& filename):
-            BuildOperation(threadPool, dataset->getBuildLog(), "WriteOperation", false),
-            _dataset(dataset),
-            _cd(cd),
-            _filename(filename) {}
+        BuildOperation(threadPool, dataset->getBuildLog(), "WriteOperation", false),
+        _dataset(dataset),
+        _cd(cd),
+        _filename(filename) {}
 
     virtual void build()
     {
@@ -2704,8 +2713,8 @@ void MyDataSet::_writeRow(Row& row)
     }*/
 
     for(Row::iterator citr=row.begin();
-    citr!=row.end();
-    ++citr)
+        citr!=row.end();
+        ++citr)
     {
         MyCompositeDestination* cd = dynamic_cast<MyCompositeDestination*>(citr->second);
         //    if(!cd)
@@ -2776,16 +2785,16 @@ void MyDataSet::_writeRow(Row& row)
                 }
                 else*/ if (_decorateWithCoordinateSystemNode)
                 {
-                           node = decorateWithCoordinateSystemNode(node.get());
-                       }
+                    node = decorateWithCoordinateSystemNode(node.get());
+                }
 
-                       if (!_comment.empty())
-                       {
-                           node->addDescription(_comment);
-                       }
+                if (!_comment.empty())
+                {
+                    node->addDescription(_comment);
+                }
 
-                       log(osg::NOTICE, "       getDirectory()= %s",getDirectory().c_str());
-                   }
+                log(osg::NOTICE, "       getDirectory()= %s",getDirectory().c_str());
+            }
             else
             {
 #ifndef NEW_NAMING
@@ -2832,7 +2841,7 @@ osg::Matrix vpb::MyDataSet::getImageSection(const osg::Vec2 minT, const osg::Vec
     int yRange=(yMax-y);
     // cout << "FFFF" <<minT<<" "<<maxT<<endl;
     // printf("X:%d -- %d Y:%d -- %d ",x,xMax,y,yMax);
-    osg::BoundingBox areaBB(x,y,0,xMax,yMax,1);
+    osg::BoundingBoxd areaBB(x,y,0,xMax,yMax,1);
 
     //Need bias of 1.0 or will round down
     double maxSide=std::max(osg::Image::computeNearestPowerOfTwo(xRange,1.0),osg::Image::computeNearestPowerOfTwo(yRange,1.0));
@@ -2907,7 +2916,7 @@ osg::Matrix vpb::MyDataSet::getImageSection(const osg::Vec2 minT, const osg::Vec
 
                 }
 
-                osg::BoundingBox imgBB=areaBB.intersect(mosaic_cells[i].bbox);
+                osg::BoundingBoxd imgBB=areaBB.intersect(mosaic_cells[i].bbox);
                 int tileStartX= (int)(imgBB.xMin()-mosaic_cells[i].bbox.xMin());
                 int tileStartY= (int)(imgBB.yMin()-mosaic_cells[i].bbox.yMin());
                 int tileEndX=(int)(imgBB.xMax()-mosaic_cells[i].bbox.xMin());
@@ -2966,7 +2975,7 @@ downsampledYoff,
                 //                                                  tileRangeX,
                 //                                                tileRangeY).shrink(downsampleFactor,downsampleFactor);
                 //printf(" Size [%d %d]\n",used_img->Xsize(),used_img->Ysize());
-              /*  osgImage.insertplace(used_img->extract_area(downsampledtileStartX,
+                /*  osgImage.insertplace(used_img->extract_area(downsampledtileStartX,
                                                             downsampledtileStartY,
                                                             downsampledtileRangeX,
                                                             downsampledtileRangeY).shrink(ratio,ratio),*/
@@ -2974,14 +2983,14 @@ downsampledYoff,
 
                     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(*mosaic_cells[i].mutex);
 
-                osgImage.insertplace(mosaic_cells[i].img->extract_area(tileStartX,
-                                                                                      tileStartY,
-                                                                                      tileRangeX,
-                                                                                      tileRangeY).shrink(downsampleFactor,downsampleFactor),
-                                     downsampledXoff,downsampledYoff );
-            }
+                    osgImage.insertplace(mosaic_cells[i].img->extract_area(tileStartX,
+                                                                           tileStartY,
+                                                                           tileRangeX,
+                                                                           tileRangeY).shrink(downsampleFactor,downsampleFactor),
+                                         downsampledXoff,downsampledYoff );
+                }
                 if(downsampleFactor != 1 || mosaic_cells[i].levels_ds[closestDownsample] != 1){
-                 //   delete used_img;
+                    //   delete used_img;
                 }
 
             }
@@ -2990,6 +2999,223 @@ downsampledYoff,
         //exit(-1);
     }
     ratio=osg::Vec4(x,y,subSize.x(),subSize.y());
+    //osg::Vec2 f(xRange-subSize.x(),yRange-subSize.y());
+    //std::cout << f<<std::endl;
+    return toTex;
+}
+
+
+osg::Matrix vpb::MyDataSet::getImageSectionAtlas(const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<TightFitAtlasBuilder> &atlas,osg::Vec4 &ratio,int level){
+
+    double downsampleFactor=pow(2.0,level);
+    //  printf("Downsample Factor %f\n",downsampleFactor);
+    double downsampleRatio=1.0/downsampleFactor;
+    // std::cout<< minT << " " << maxT<<std::endl;
+    // printf("%f %f\n",downsampleRatio,downsampleRatio);
+    int x=/*0;*/(int)std::max((int)floor(minT.x()),0);
+    int y=/*0;*/(int)std::max((int)floor(minT.y()),0);
+    int xMax=/*origX;*/(int)std::min((int)ceil(maxT.x()),origX);
+    int yMax=/*origY;*/(int)std::min((int)ceil(maxT.y()),origY);
+
+    // xMax=origX;   yMax=origY; x=0;y=0;
+
+
+    int xRange=(xMax-x);
+    int yRange=(yMax-y);
+    // cout << "FFFF" <<minT<<" "<<maxT<<endl;
+   // printf("X:%d -- %d Y:%d -- %d ",x,xMax,y,yMax);
+    osg::BoundingBoxd areaBB(x,y,0,xMax,yMax,1);
+    //osg::Vec2 subSize=osg::Vec2(xRange,yRange);
+    //Need bias of 1.0 or will round down
+    /* double maxSide=std::max(osg::Image::computeNearestPowerOfTwo(xRange,1.0),osg::Image::computeNearestPowerOfTwo(yRange,1.0));
+    osg::Vec2 subSize=osg::Vec2(maxSide,maxSide);
+    if(downsampleRatio*maxSide < 1.0){
+        printf("Clipping %f %f to",downsampleRatio,downsampleFactor);
+        downsampleRatio=1.0/maxSide;
+        downsampleFactor=maxSide;
+        printf("%f %f\n",downsampleRatio,downsampleFactor);
+
+    }*/
+    texsize[0]=origX;
+    texsize[1]=origY;
+    texsize[2]=origX;
+    texsize[3]=origY;
+    // osg::Vec2 downsampleSize(subSize.x(),subSize.y());
+    // downsampleSize.x()*=downsampleRatio;
+    //  downsampleSize.y()*=downsampleRatio;
+    // printf("Range %d %d\n",xRange,yRange);
+    // printf("%f %f %f %f\n",subSize.x(),subSize.y(),downsampleSize.x(),downsampleSize.y());
+
+    {
+
+        /*  unsigned char *tmpI=new unsigned char[totalX*totalY*3];     vips::VImage tmpT(tmpI,totalX,totalY,3,vips::VImage::FMTUCHAR);
+
+        for(int i=0; i < mosaic_cells.size(); i++){
+            if(mosaic_cells[i].mutex && mosaic_cells[i].img){
+                OpenThreads::ScopedLock<OpenThreads::Mutex> lock(*mosaic_cells[i].mutex);
+                tmpT.insertplace(*mosaic_cells[i].img,(int)mosaic_cells[i].bbox.xMin(),(int)mosaic_cells[i].bbox.yMin());
+            }
+        }
+        tmpT.write("dang.v");*/
+        // exit(-1);
+        //   vips::VImage osgImage(image->data(),downsampleSize.x(),downsampleSize.y(),3,vips::VImage::FMTUCHAR);
+        //  bzero(image->data(),downsampleSize.x()*downsampleSize.y()*3);
+        bool checkFit=false;
+        int mosaics_added=0;
+        int maxMosaics=0;
+        for(int i=0; i < (int)mosaic_cells.size(); i++){
+            // cout << "AREA " <<areaBB._min << " " << areaBB._max<<"\n";
+            // cout << "MOSIAC " <<i << " "<<mosaic_cells[i].bbox._min << " " << mosaic_cells[i].bbox._max<<"\n";
+
+            if(areaBB.intersects(mosaic_cells[i].bbox)){
+                if(!mosaic_cells[i].mutex || !mosaic_cells[i].img){
+                    fprintf(stderr,"Fail to get mutex or img\n");
+                    exit(-1);
+                }
+                vips::VImage *used_img=NULL;
+                int ratio=1;
+
+                int closestDownsample;
+                for(closestDownsample=0; closestDownsample< (int)mosaic_cells[i].levels_ds.size()-1; closestDownsample++){
+                    if(mosaic_cells[i].levels_ds[closestDownsample] >= downsampleFactor)
+                        break;
+                }
+                if(downsampleFactor == 1){
+                    used_img=mosaic_cells[i].img;
+                    ratio=1;
+
+                }else{
+
+
+                    ratio=downsampleFactor/mosaic_cells[i].levels_ds[closestDownsample];
+                    if(mosaic_cells[i].levels_ds[closestDownsample] == 1)
+                        used_img=mosaic_cells[i].img;
+                    else
+                        used_img=new vips::VImage(mosaic_cells[i].name_ds[closestDownsample].c_str(),"r");
+
+
+                }
+
+                osg::BoundingBoxd imgBB=areaBB.intersect(mosaic_cells[i].bbox);
+                int tileStartX= (int)(imgBB.xMin()-mosaic_cells[i].bbox.xMin());
+                int tileStartY= (int)(imgBB.yMin()-mosaic_cells[i].bbox.yMin());
+                int tileEndX=(int)(imgBB.xMax()-mosaic_cells[i].bbox.xMin());
+                int tileEndY= (int)(imgBB.yMax()-mosaic_cells[i].bbox.yMin());
+                int tileRangeX=tileEndX-tileStartX;
+                int tileRangeY=tileEndY-tileStartY;
+                int outOffsetX=(int)(imgBB.xMin()-areaBB.xMin());
+                int outOffsetY=(int)(imgBB.yMin()-areaBB.yMin());
+                //downsampledXoff=0;
+                //downsampledYoff=0;
+                int downsampledXoff=outOffsetX/downsampleFactor;
+                int downsampledYoff=outOffsetY/downsampleFactor;
+                int downsampledtileStartX=(int)floor(tileStartX/downsampleFactor);
+                int downsampledtileStartY=(int)floor(tileStartY/downsampleFactor);
+
+
+                int downsampledtileRangeX=(int)floor(tileRangeX/downsampleFactor);
+                int downsampledtileRangeY=(int)floor(tileRangeY/downsampleFactor);
+                if(!checkFit){
+                    maxMosaics=atlas->getMaxNumImagesPerAtlas(downsampledtileRangeX,downsampledtileRangeY);
+                    checkFit=true;
+                }
+
+                /*  int fullTileSize=mosaic_cells[i].bbox.xMax()-mosaic_cells[i].bbox.xMin();
+                while(tmpCntX<outOffsetX){
+                    tmpCntX+=fullTileSize;
+                    downsampledXoff++;
+                }
+                double remX=fmod((double)outOffsetX,downsampleFactor);
+                double remY=fmod((double)outOffsetY,downsampleFactor);
+
+
+
+                printf("Getting %d %d %d %d ---\n Moasic [%d] %d %d %d %d \n From %d %d %d %d [ %d %d] \n Out offset %d %d [%f %f] [%f %f] %f [%d %d] ",x,y,xMax,yMax,i,(int)mosaic_cells[i].bbox.xMin(),
+                       (int)mosaic_cells[i].bbox.yMin(),
+                       (int)mosaic_cells[i].bbox.xMax(),
+                       (int)mosaic_cells[i].bbox.yMax(),
+                       tileStartX,
+                       tileStartY,
+                       tileEndX,
+                       tileEndY,
+                       tileRangeX,
+                       tileRangeY,
+                       outOffsetX,
+                       outOffsetY,
+                       (outOffsetX*downsampleRatio),
+                       (outOffsetY*downsampleRatio),
+                       tileRangeX*downsampleRatio,
+                       tileRangeY*downsampleRatio,
+downsampledXoff,
+downsampledYoff,
+                       downsampleSize.x()
+                       );
+*/
+                // if(mosaic_cells[i].img->Bands() == 3)
+                if(tileRangeX < ratio || tileRangeY < ratio)
+                    continue;
+                //  vips::VImage tmpI=mosaic_cells[i].img->extract_area(tileStartX,
+                //                                                    tileStartY,
+                //                                                  tileRangeX,
+                //                                                tileRangeY).shrink(downsampleFactor,downsampleFactor);
+                //printf(" Size [%d %d]\n",used_img->Xsize(),used_img->Ysize());
+                /*  osgImage.insertplace(used_img->extract_area(downsampledtileStartX,
+                                                            downsampledtileStartY,
+                                                            downsampledtileRangeX,
+                                                            downsampledtileRangeY).shrink(ratio,ratio),*/
+                {
+
+                    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(*mosaic_cells[i].mutex);
+                    osg::ref_ptr<osg::Image> image = new osg::Image;
+                    image->allocateImage(downsampledtileRangeX,downsampledtileRangeY, 1, GL_RGB,GL_UNSIGNED_BYTE);
+                    vips::VImage osgImage(image->data(),image->s(),image->t(),3,vips::VImage::FMTUCHAR);
+                    mosaic_cells[i].img->extract_area(tileStartX,
+                                                      tileStartY,
+                                                      tileRangeX,
+                                                      tileRangeY).shrink(downsampleFactor,downsampleFactor).write(osgImage);
+                    atlas->atlasSourceMatrix[i]=image;
+                    typedef osg::Matrix::value_type Float;
+                    Float tileOrigSizeX=mosaic_cells[i].bbox.xMax()-mosaic_cells[i].bbox.xMin();
+                    Float tileOrigSizeY=mosaic_cells[i].bbox.yMax()-mosaic_cells[i].bbox.yMin();
+
+                    double xscale=Float(origX)/Float(tileRangeX);
+                    double yscale=Float(origY)/Float(tileRangeY);
+                   // printf("%f %f\n",xscale*(-tileRangeX/origX),yscale*(-tileRangeY/origY));
+
+                    atlas->offsetMats[i]=osg::Matrix::scale(xscale,yscale, 1.0)*
+                            osg::Matrix::translate(xscale*(-imgBB.xMin()/origX),yscale*(-imgBB.yMin()/origY),0.0);
+                    //osg::Matrix::translate(xscale*(-mosaic_cells[i].bbox.xMin()/origX),yscale*(-mosaic_cells[i].bbox.yMin()/origY),0.0);
+                   // printf("%d \n",i);
+                   // cout <<   atlas->offsetMats[i]<<endl;
+                   // cout <<imgBB._min<<" "<<imgBB._max<<endl;
+                    printf("\r %04d/%04d  maxMosaics: %04d ",i,(int)mosaic_cells.size(),maxMosaics);
+                    fflush(stdout);
+                    atlas->addSource(image);
+                    mosaics_added++;
+
+                }
+                if(checkFit && mosaics_added > maxMosaics){
+                    fprintf(stderr,"Gonna fail probably more mosaics then will fit in atlas\n");
+                }
+                if(downsampleFactor != 1 || mosaic_cells[i].levels_ds[closestDownsample] != 1){
+                    //   delete used_img;
+                }
+
+            }
+        }
+        printf("\n");
+
+        // osgImage.write("tmp.v");
+        //exit(-1);
+        //osg::setNotifyLevel(osg::INFO);
+        atlas->buildAtlas();
+        if( atlas->getNumAtlases() > 1){
+            fprintf(stderr,"Atlas fail!!! Downsample didn't allow for one atlas WIP! SEE MATT\nHopefully this will one day be replaced with working code :-)\n%d atlas\n",atlas->getNumAtlases());
+            exit(-1);
+        }
+        //   exit(-1);
+    }
+    ratio=osg::Vec4(x,y,origX,origY);//subSize.x(),subSize.y());
     //osg::Vec2 f(xRange-subSize.x(),yRange-subSize.y());
     //std::cout << f<<std::endl;
     return toTex;
@@ -3005,7 +3231,6 @@ osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &viewProj,cons
     //std::cout << "Pre shift " << v << std::endl;
     v.x() /= size.x();;
     v.y() /= size.y();
-
 
     v.x() -= (ratio.x()/size.x());
     v.y() -= (ratio.y()/size.y());
@@ -3108,6 +3333,8 @@ osg::Vec2 calcCoordReprojTrans(const osg::Vec3 &vert,const osg::Matrix &trans,co
     v.x() -= (ratio.x()/size.x());
     v.y() -= (ratio.y()/size.y());
     //std::cout << "Post shift " << v << std::endl;
+    //printf("(%f %f) %f\n",ratio.x(),size.x(),(ratio.x()/size.x()));
+    //printf("(%f %f) %f\n",ratio.y(),size.y(),(ratio.y()/size.()));
 
 
     //  std::cout << "PP shift " << v << std::endl;
@@ -3120,6 +3347,24 @@ osg::Vec2 calcCoordReprojTrans(const osg::Vec3 &vert,const osg::Matrix &trans,co
     //tc.y()*=ratio.y();
     tc.x()/=(ratio.z());
     tc.y()/=(ratio.w());
+
+
+    return tc;
+
+}
+
+osg::Vec2 calcCoordReprojSimple(const osg::Vec3 &vert,const osg::Matrix &trans,const osg::Matrix &viewProj,const osg::Vec2 &size){
+    osg::Vec4 v(vert.x(),vert.y(),vert.z(),1.0);
+    v=v*trans;
+    v=v*viewProj;
+    v.x() /= v.w();
+    v.y() /= v.w();
+
+    v.x() /= size.x();;
+    v.y() /= size.y();
+
+
+    osg::Vec2 tc(v.x(),v.y());
 
 
     return tc;
@@ -3143,15 +3388,16 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     if(!_useReImage)
         return group;
     osg::ref_ptr<osg::Image> image;
-
-
+    osg::ref_ptr<TightFitAtlasBuilder> atlas =new TightFitAtlasBuilder(dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells.size() );
+    atlas->setMargin(4);
+    atlas->setMaximumAtlasSize(8192,8192);
     osg::Matrix toScreen;
     osg::Vec2Array *texCoord=new osg::Vec2Array();
     osg::Geometry *newGeom = new osg::Geometry;
     // osg::Group *group= findTopMostNodeOfType<osg::Group>(model);
     osg::Vec3Array *newVerts= new osg::Vec3Array;
     osg::Vec4Array *newColors= new osg::Vec4Array;
-
+    std::vector<int> mosaic_ids;
     osg::DrawElementsUInt* newPrimitiveSet = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
     osg::Geode *newGeode=new osg::Geode;
     osg::Vec2 minT(DBL_MAX,DBL_MAX),maxT(-DBL_MAX,-DBL_MAX);
@@ -3161,6 +3407,11 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,origY,0));
 
     osg::Matrix toTex=dynamic_cast<MyDataSet*>(_dataSet)->viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*origX,0.5*origY,0.5f))*bottomLeftToTopLeft;
+    int leveloffset=(_numLevels-_level-1);
+    leveloffset=std::min(leveloffset,5);
+    leveloffset=std::max(leveloffset,0);
+
+
 
     for(int i=0; i< (int)group->getNumChildren(); i++){
 
@@ -3187,6 +3438,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
             osg::Vec4 proj=rotpt*toTex;
             proj.x() /= proj.w();
             proj.y() /= proj.w();
+            //  cout << proj.x() << " "<< proj.y()<<endl;
             //  std::cout << pt << " rot " <<pt*dynamic_cast<MyDataSet*>(_dataSet)->rotMat<<" proj "<< proj << "\n";
 
             for(int k=0; k <2; k++){
@@ -3196,6 +3448,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
                     maxT[k]=proj[k];
             }
             newVerts->push_back(verts->at(j));
+
             float height=verts->at(j)[2];
             osg::Vec4 zrange=dynamic_cast<MyDataSet*>(_dataSet)->_zrange;
             float range=zrange[1]-zrange[0];
@@ -3205,6 +3458,9 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
             double ao=1.0;
             if(colors)
                 ao=colors->at(j)[0];
+            if(ao == 0.0)
+                ao=1.0;
+
             newColors->push_back(rainbowColorMap(val)*ao);
 
         }
@@ -3215,6 +3471,115 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         }
 
     }
+    std::set<int> seenids;
+    mosaic_ids.resize(newVerts->size(),-1);
+    SpatialIndex::ISpatialIndex* tree;
+    SpatialIndex::IStorageManager* memstore;
+    SpatialIndex::IStorageManager* manager;
+
+    //double utilization;
+    int capacity;
+
+    //utilization=0.7;
+    capacity=4;
+
+    memstore = StorageManager::createNewMemoryStorageManager();
+    // Create a new storage manager with the provided base name and a 4K page size.
+    id_type indexIdentifier;
+
+    manager = StorageManager::createNewRandomEvictionsBuffer(*memstore, 10, false);
+    tree = RTree::createNewRTree(*manager, 0.7, capacity,capacity,2, SpatialIndex::RTree::RV_RSTAR, indexIdentifier);
+    double plow[2], phigh[2];
+    for(int i=0; i<(int)dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells.size(); i++){
+        plow[0]= dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[i].bbox.xMin();
+        plow[1]= dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[i].bbox.yMin();
+
+        phigh[0]=dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[i].bbox.xMax();
+        phigh[1]=dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[i].bbox.yMax();
+
+        Region r = Region(plow, phigh, 2);
+        id_type id=i;
+        tree->insertData(0, 0, r,id);
+    }
+
+    for(int j=0; j<(int)newPrimitiveSet->getNumIndices()-2; j+=3){
+        unsigned int idx[3];
+        for(int k=0; k < 3; k++){
+            const osg::Vec3 &v=newVerts->at(newPrimitiveSet->at(j+k));
+            osg::Vec4 pt(v[0],v[1],v[2],1.0);
+            osg::Vec4 rotpt=pt*dynamic_cast<MyDataSet*>(_dataSet)->rotMat;
+
+            osg::Vec4 proj=rotpt*toTex;
+            proj.x() /= proj.w();
+            proj.y() /= proj.w();
+            double plow[2], phigh[2];
+            plow[0]=proj.x();
+            plow[1]=proj.y();
+            phigh[0]=proj.x()+1;
+            phigh[1]=proj.y()+1;
+            Region r = Region(plow, phigh, 2);
+            ValidVisitor vis;
+            int mosaic_id=-1;
+            //  if(dynamic_cast<MyDataSet*>(_dataSet)->cell_coordinate_map.count(p)){
+            tree->intersectsWithQuery(r, vis);
+            mosaic_id=vis.getResult();
+            idx[k]=mosaic_id;
+        }
+        if(idx[0] != idx[1] || idx[1] != idx[2]){
+            if(idx[0] == idx[1])
+                idx[2] = idx[1];
+            else if(idx[1] == idx[2])
+                idx[0]=idx[1];
+            else if(idx[0] == idx[2])
+                idx[1]=idx[0];
+            else {
+                //printf("All atlas id disagree %d %d %d\n",idx[0],idx[1],idx[2]);
+            }
+        }
+        mosaic_ids[j]=(idx[2]);
+        mosaic_ids[j+1]=idx[2];
+        mosaic_ids[j+2]=idx[2];
+        if(idx[2] >= 0)
+            seenids.insert(idx[2]);
+    }
+    bool sparseMode=false;
+    double ratioFill=0;
+
+    set<int>::iterator it;
+    do{
+        double downsampleFactor=pow(2.0,leveloffset);
+        double downsampleRatio=1.0/downsampleFactor;
+        double atlasArea=atlas->getMaximumAtlasHeight()*atlas->getMaximumAtlasWidth();
+        double virtArea=(maxT.x()-minT.x())*(maxT.y()-minT.y())*downsampleRatio*downsampleRatio;
+        double totalArea=0;
+        for(it=seenids.begin(); it!=seenids.end(); it++){
+            if(*it>=0 && *it < (int) dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells.size()){
+                double xsize=dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.xMax()-dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.xMin();
+                double ysize=dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.yMax()-dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.yMin();
+                totalArea+=xsize*ysize*downsampleRatio*downsampleRatio;
+                if(downsampleFactor > xsize){
+                    fprintf(stderr,"Failed to downsample images to fit in one atlas %f %f \n",downsampleFactor,xsize);
+                    exit(-1);
+                }
+            }
+        }
+        //printf("%f %f\n",atlasArea ,totalArea);
+        if(atlasArea >= totalArea){
+            if(totalArea>0){
+                ratioFill=totalArea/virtArea;
+                if(ratioFill < dynamic_cast<MyDataSet*>(_dataSet)->sparseRatio)
+                    sparseMode=true;
+            }
+            break;
+        }
+        leveloffset++;
+    }while(leveloffset < 10000);
+    if(leveloffset == 10000){
+        fprintf(stderr,"Failed to downsample images to fit in one atlas %f %f \n",downsampleFactor,xsize);
+        exit(-1);
+    }
+    printf("Using mode SPARSE: %d %f %f\n",sparseMode,ratioFill,dynamic_cast<MyDataSet*>(_dataSet)->sparseRatio);
+
     osg::Vec4 texSizes;
     osg::Vec4 ratio(0.0,0.0,0,0);
 
@@ -3222,16 +3587,83 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         //std::cout << minV << " "<<maxV<<std::endl;
         //int start_pow=9;
         //tex_size=1024;//log2 = 10
-        int leveloffset=(_numLevels-_level-1);
-        leveloffset=std::min(leveloffset,5);
-        leveloffset=std::max(leveloffset,0);
-        toScreen=dynamic_cast<MyDataSet*>(_dataSet)->getImageSection(minT,maxT,origX,origY,texSizes, toTex,image,ratio,leveloffset);
+        if(sparseMode){
+            toScreen=dynamic_cast<MyDataSet*>(_dataSet)->getImageSectionAtlas(minT,maxT,origX,origY,texSizes, toTex,atlas,ratio,leveloffset);
+            unsigned int atlasidx=0;
+            if(atlas->getNumAtlases() <= 0){
+                fprintf(stderr,"No atlas failed to generated image section\n");
+                image=NULL;
+            }else
+                image = atlas->getImageAtlas(atlasidx);
+        }
+        else{
+            toScreen=dynamic_cast<MyDataSet*>(_dataSet)->getImageSection(minT,maxT,origX,origY,texSizes, toTex,image,ratio,leveloffset);
+        }
+
+        /*cout <<"CREAM "<<image->s()<<" "<< image->t()<<endl;
+        for(int i=0; i< atlas->getNumSources(); i++){
+            cout << "i: "<<i<<" "<<atlas->getTextureMatrix(i)<<endl;
+        }*/
     }
 
     for(int j=0; j< (int)newVerts->size(); j++){
+        //  osg::Matrix m =dynamic_cast<MyDataSet*>(_dataSet)->viewProj;
+        //    osg::Matrix tmp=dynamic_cast<MyDataSet*>(_dataSet)->viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*origX,0.5*origY,0.5f));
 
-        texCoord->push_back(calcCoordReprojTrans(newVerts->at(j),dynamic_cast<MyDataSet*>(_dataSet)->rotMat,toScreen,osg::Vec2(texSizes[2],texSizes[3]),ratio));
-        //  std::cout <<texCoord->back() << std::endl;
+        //  osg::Vec2 tc2=calcCoordReprojTrans(newVerts->at(j),dynamic_cast<MyDataSet*>(_dataSet)->rotMat,toTex,osg::Vec2(texSizes[2],texSizes[3]),ratio);
+        // cout << tc << " "<<tc2<<endl;
+        // osg::Vec2 tc2=calcCoordReprojSimple(newVerts->at(j),dynamic_cast<MyDataSet*>(_dataSet)->rotMat,tmp);
+        //cout << tc << " " << tc2<<endl;
+        //osg::Vec2 tc=calcCoordReprojSimple(newVerts->at(j),dynamic_cast<MyDataSet*>(_dataSet)->rotMat,m);
+        //tc.x()=1.0-tc.x();
+
+        //tc.y()=1.0-tc.y();
+        //cout << ratio<<endl;
+        if(sparseMode){
+            osg::Vec2 tc=calcCoordReprojSimple(newVerts->at(j),dynamic_cast<MyDataSet*>(_dataSet)->rotMat,toTex,osg::Vec2(texSizes[2],texSizes[3]));
+
+            unsigned int mosaic_id=mosaic_ids[j];
+            if(mosaic_id >= 0 && mosaic_id< atlas->atlasSourceMatrix.size()){
+                if(atlas->atlasSourceMatrix[mosaic_id] != NULL){
+                    //     printf("%d\n", atlas->atlasMatrix[mosaic_id]);
+
+                    // cout<< "orig: "<< tc<<endl;
+                    // cout <<"offset "<<atlas->offsetMats[mosaic_id]<<endl;
+                    const osg::Matrix &matrix2 =atlas->getTextureMatrix(atlas->atlasSourceMatrix[mosaic_id]);
+
+                    const osg::Matrix &matrix =atlas->offsetMats[mosaic_id];//atlas->atlasMatrix[mosaic_id]);
+                    osg::Vec2 tc2;
+                    tc2.set(tc[0]*matrix(0,0) + tc[1]*matrix(1,0) + matrix(3,0),
+                            tc[0]*matrix(0,1) + tc[1]*matrix(1,1) + matrix(3,1));
+
+                    //  cout << "shift: "<<tc2<<endl;
+
+                    tc.set(tc2[0]*matrix2(0,0) + tc2[1]*matrix2(1,0) + matrix2(3,0),
+                           tc2[0]*matrix2(0,1) + tc2[1]*matrix2(1,1) + matrix2(3,1));
+                    texCoord->push_back(tc);
+                    //   cout << "Final:"<<tc<<endl;
+                }else{
+                    printf("Failed atlas matrix map %d 0x%lx %f %f\n",mosaic_id,(long unsigned int)atlas->atlasSourceMatrix[mosaic_id],tc.x(),tc.y() );
+                    printf("Num of map %d\n",(int)atlas->atlasSourceMatrix.size());
+                    for(int i=0; i< (int)atlas->atlasSourceMatrix.size(); i++){
+                        printf("0x%lx\n",(long unsigned int)atlas->atlasSourceMatrix[i]);
+                    }
+                    //    std::map< MyDataSet::range<std::pair<double,double > > ,int>::iterator itr;
+                    //   for(itr=dynamic_cast<MyDataSet*>(_dataSet)->cell_coordinate_map.begin(); itr!=dynamic_cast<MyDataSet*>(_dataSet)->cell_coordinate_map.end(); itr++)
+                    //     cout << "["<<itr->first.min().first<< "," << itr->first.min().second<<" - "<< itr->first.max().first<< "," << itr->first.max().second<<"] : " << itr->second<<"\n";
+                    texCoord->push_back(osg::Vec2(-1,-1));
+
+                }
+            }else{
+                printf("Failed mosaic_id %d\n",mosaic_id);
+                texCoord->push_back(osg::Vec2(-1,-1));
+
+            }
+
+        }else{
+            osg::Vec2 tc=calcCoordReprojTrans(newVerts->at(j),dynamic_cast<MyDataSet*>(_dataSet)->rotMat,toTex,osg::Vec2(texSizes[2],texSizes[3]),ratio);
+            texCoord->push_back(tc);
+        }//  std::cout <<texCoord->back() << std::endl;
 
     }
     for(int j=0; j< (int)newPrimitiveSet->getNumIndices(); j++){
@@ -3268,7 +3700,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
 
     osg::Texture::InternalFormatMode internalFormatMode = osg::Texture::USE_IMAGE_DATA_FORMAT;
     if(!dynamic_cast<MyDataSet*>(_dataSet)->_no_hw_context)
-       internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
+        internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
     /*  switch(getImageOptions(layerNum)->getTextureType())
     {
     case(BuildOptions::RGB_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
@@ -3362,15 +3794,15 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     //osg::Vec3 v(302.3,334.3,0);
     //  std::cout << v*toScreen << " " << toScreen<<std::endl;
     // osgDB::Registry::instance()->writeImage( *image,"ass.png",NULL);
-    const osg::EllipsoidModel* et = _dataSet->getEllipsoidModel();
+    /*const osg::EllipsoidModel* et = _dataSet->getEllipsoidModel();
     bool mapLatLongsToXYZ = _dataSet->mapLatLongsToXYZ();
-    bool useLocalToTileTransform = _dataSet->getUseLocalTileTransform();
+    bool useLocalToTileTransform = _dataSet->getUseLocalTileTransform();*/
     osg::Matrixd                                _localToWorld;
     osg::Matrixd                                _worldToLocal;
 
     _localToWorld.makeIdentity();
     _worldToLocal.makeIdentity();
-    osg::Vec3 skirtVector(0.0f,0.0f,0.0f);
+    /* osg::Vec3 skirtVector(0.0f,0.0f,0.0f);
 
 
     osg::Vec3 center_position(0.0f,0.0f,0.0f);
@@ -3387,6 +3819,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     createPlacerMatrix(dynamic_cast<MyDataSet*>(_dataSet)->_TargetSRS,22.988098333,36.517776667,0,_localToWorld);
     //osg::Matrix::translate(midPointLatLong);
     //
+    */
     osg::MatrixTransform* mt = new osg::MatrixTransform;
     mt->setMatrix(_localToWorld);
     mt->addChild(newGeode);

@@ -226,6 +226,7 @@ SpatialReference.cpp
 MemUtils.cpp
 CheckThreadPool.cpp
 		stereo_cells.cpp
+TightFit.cpp
 GLImaging.cpp
                 )
 ADD_DEFINITIONS( "-g")

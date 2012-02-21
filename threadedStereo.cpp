@@ -2285,7 +2285,7 @@ int main( int argc, char *argv[ ] )
                 printf("Forcing no hw compression due to lack of graphics card context\n");
             }
         }
-        doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot,wkt_coord_system,string(wkt),no_hw_context);
+        doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot,wkt_coord_system,string(wkt),sparseRatio,no_hw_context);
     }
 
     char zipstr[1024];

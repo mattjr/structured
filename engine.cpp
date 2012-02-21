@@ -1759,7 +1759,7 @@ int main( int argc, char *argv[ ] )
         if(!mgc)
             mgc = new MyGraphicsContext();
         if(!novpb)
-            doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot,wkt_coord_system,string(szProj4));
+            doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot,wkt_coord_system,string(szProj4),0.2);
 
         char zipstr[1024];
         sprintf(zipstr,"7z a -r -sfx7z.sfx mesharchive.7z.exe real.ive real_root_L0_X0_Y0/ -m0=lzma2 -mmt%d -mx9",num_threads);

@@ -49,7 +49,10 @@
 // GDAL includes
 #include "SpatialReference"
 #include <gdal_priv.h>
+#include "TightFit.h"
 #include <ogr_spatialref.h>
+#include "SpatialIndex.h"
+
 namespace vpb
 {
 
@@ -80,6 +83,7 @@ class MyDataSet;
             fprintf(stderr,"Can't get tex size\n");
 
     }
+
 
         osg::StateSet *generateStateAndArray2DRemap( osg::Vec4Array *v,  const TexBlendCoord &texCoordsArray,int texSizeIdx);
         std::vector<osg::ref_ptr<osg::Image> >getRemappedImages(idmap_t allIds,int sizeIdx);
@@ -199,7 +203,8 @@ class MyDataSet :  public DataSet
         bool _useVBO;
         osg::Matrix viewProj;
         osg::Matrix rotMat;
-
+        osg::Matrix getImageSectionAtlas(const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,
+                                                         osg::ref_ptr<TightFitAtlasBuilder> &atlas,osg::Vec4 &ratio,int level);
       //  vips::VImage *in;
         osg::Matrix getImageSection(const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<osg::Image> &image,osg::Vec4 &ratio,int level);
         void loadShaderSourcePrelude(osg::Shader* obj, const std::string& fileName );
@@ -225,6 +230,7 @@ class MyDataSet :  public DataSet
          OpenThreads::Mutex _fileMutex;
 public:
          std::string _basePath;
+         double sparseRatio;
          bool _useTextureArray;
          bool _useReImage;
          bool _useVirtualTex;
@@ -234,7 +240,7 @@ public:
          bool _useDebugShader;
           class mosaic_cell{
           public:
-             osg::BoundingBox bbox;
+             osg::BoundingBoxd bbox;
              std::string name;
              vips::VImage *img;
              std::vector<vips::VImage *> img_ds;
@@ -242,10 +248,75 @@ public:
              std::vector<int> levels_ds;
              std::vector<std::string> name_ds;
          };
-         std::vector<mosaic_cell> mosaic_cells;
+          class rangeTC
+          {
+          public:
+
+              rangeTC( osg::Vec2 const & center ) : min_( center ), max_( center ) {}
+              rangeTC( osg::Vec2 const & min, osg::Vec2 const & max )
+                  : min_( min ), max_( max ) {}
+              osg::Vec2 min() const { return min_; }
+              osg::Vec2 max() const { return max_; }
+          private:
+              osg::Vec2 min_;
+              osg::Vec2 max_;
+          };
+
+          // Detection of outside of range to the left (smaller values):
+          //
+          // a range lhs is left (smaller) of another range if both lhs.min() and lhs.max()
+          // are smaller than rhs.min().
+
+          struct left_of_range : public std::binary_function< rangeTC, rangeTC, bool >
+          {
+              bool operator()( rangeTC const & lhs, rangeTC const & rhs ) const
+              {
+                  return lhs.min().x() < rhs.min().x()
+                      && lhs.max().x() <= rhs.min().x() && lhs.min().y() < rhs.min().y()
+                          && lhs.max().y() <= rhs.min().y();
+              }
+          };
+         typedef std::map< rangeTC , int, left_of_range > texcoord_range_map;
+        texcoord_range_map  cell_coordinate_map;
+        std::vector<mosaic_cell> mosaic_cells;
 
 };
+class ValidVisitor : public SpatialIndex::IVisitor
+{
+private:
+    SpatialIndex::id_type m_result;
 
+
+public:
+    ValidVisitor(): m_result(-999) {}
+
+    ~ValidVisitor() {}
+
+    void visitNode(const SpatialIndex::INode& n)
+    {
+
+    }
+
+    void visitData(const SpatialIndex::IData& d)
+    {
+        m_result =d.getIdentifier();
+
+    }
+
+    void visitData(std::vector<const SpatialIndex::IData*>& v)
+    {
+        // std::cout << v[0]->getIdentifier() << " " << v[1]->getIdentifier() << std::endl;
+
+    }
+
+    SpatialIndex::id_type &getResult(void){
+        return m_result;
+    }
+
+
+
+
+};
 }
 class  GeometryCollector : public osgUtil::BaseOptimizerVisitor
 {

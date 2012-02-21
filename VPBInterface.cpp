@@ -79,7 +79,7 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
     return true;
 }
 #endif
-void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datalist_lod,Bounds bounds,CameraCalib &calib,texcache_t cachedDirs,bool useTextureArray,bool useReimage,bool useVirtualTex,const osg::BoundingBox &bbox,string dst_wkt_coord_system,string src_proj4_coord_system,bool no_hw_context){
+void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datalist_lod,Bounds bounds,CameraCalib &calib,texcache_t cachedDirs,bool useTextureArray,bool useReimage,bool useVirtualTex,const osg::BoundingBox &bbox,string dst_wkt_coord_system,string src_proj4_coord_system,double sparseRatio,bool no_hw_context){
     //vector<osg::KdTree*> trees;
     vpb::GeospatialExtents geo(bounds.bbox.xMin(), bounds.bbox.yMin(), bounds.bbox.xMax(),bounds.bbox.yMax(),false);
     int numlod=datalist_lod.size()-1;
@@ -93,6 +93,7 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
     m->setNumWriteThreadsToCoresRatio(1.5);
     m->setDestinationCoordinateSystem(dst_wkt_coord_system);
     m->setSourceCoordinateSystemProj4(src_proj4_coord_system);
+    m->sparseRatio=sparseRatio;
     // m->setCompressionMethod(vpb::BuildOptions::NVTT);
     //m->setCompressionMethod(vpb::BuildOptions::GL_DRIVER);
     //vpb::ImageOptions *imageOptions = new vpb::ImageOptions();

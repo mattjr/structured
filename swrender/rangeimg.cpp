@@ -133,14 +133,16 @@ struct VertexShaderBlending {
         //   vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, fixed16_t(1));
         osg::Vec3 pt(v.x,v.y,v.z);
         double zrange= (view*pt).length();
-        osg::Vec3 tmpv= viewproj * pt;
+       /* osg::Vec3 tmpv= viewproj * pt;
         tmpv.x()/=tmpv.z();
-        tmpv.y()/=tmpv.z();
+        tmpv.y()/=tmpv.z();*/
        // cout <<"tmp1 " <<tmpv<<endl;
 
         osg::Vec3 tmpv2=  reprojectPt(view,pt,_calib);
+       // cout <<tmpv2<<endl;
       //cout <<"tmp2 " <<tmpv2<<endl;
         osg::Vec3 tvertex=  scaledevice*tmpv2;
+       // cout << tvertex<<endl;
         //   cout << "V:" << tvertex<<endl;
         //cout <<"V:"<<v.x<<" "<<v.y<<" "<<v.z<<endl;
         //cout << "T:"<<fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " "<<        fixedpoint::fix2float<16>(tvertex.z.intValue)<<endl;
@@ -160,6 +162,7 @@ struct VertexShaderBlending {
             d = X(1) - (d-start)/(end-start);
         }
 */
+
         out.x =fixed16_t(tvertex.x()).intValue;//tvertex.x.intValue;
         out.y = fixed16_t(tvertex.y()).intValue;//tvertex.y.intValue;
         out.z = fixed16_t(1.0).intValue;//fixedpoint::float2fix<16>(tvertex.z());//tvertex.z.intValue;
@@ -168,6 +171,7 @@ struct VertexShaderBlending {
         // this mean it has to be converted to fixed point and premultiplied with the width, height of the
         // texture minus 1. Doing this in the vertex shader saves us from doing this in the fragment shader
         // which makes things faster.
+      //  printf("Zragne %f\n",zrange);
         out.varyings[0] = fixed16_t(zrange).intValue;
 
     }
@@ -210,13 +214,15 @@ struct FragmentShaderBlendingMain : public SpanDrawer32BitColorAndDepth<Fragment
         //printf("Ge\n");
 
         float r=fixedpoint::fix2float<16>(fd.varyings[0]);
+        if(r < 0.0)
+            return;
         unsigned char ri=(int)clamp((float)round((r/5.0)*255.0),(float)0.0,(float)255.0);
         // r=-1;
         int tmp=color;
         float tmpr=-1;
         memcpy((void*)&tmpr,&tmp,sizeof(float));
         if(tmpr > r || tmpr == -1.0){
-            //  printf("%f\n",r);
+         //   printf("%f\n",r);
             memcpy((void*)&tmp,&r,sizeof(float));
             color=tmp;
             depth = 0 | 0 << 8 | (ri) << 16 | 255 << 24;
@@ -275,6 +281,8 @@ static void PFMWrite( float *pFloatImage, const char *pFilename, int width, int 
     for( i = height-1; i >= 0; i-- )
     {
         float *pRow = &pFloatImage[ width * i];
+//        for(int j=0; j< width; j++)
+  //          printf("%f\n",pRow[j]);
         fwrite( pRow, width * sizeof( float ), 1, fp );
     }
     fclose( fp );
@@ -471,6 +479,8 @@ int main(int ac, char *av[]) {
         for( map<int,imgData >::iterator itr=imageList.begin(); itr!=imageList.end(); itr++){
           //  printf("\r%04d/%04d",(int)++cnt,imageList.size());
            // fflush(stdout);
+          //  if(itr->second.filename != "PR_20090613_001426_259_LC16.png")
+            //    continue;
             mat4x viewA;
             osg::Matrix view;
 
@@ -516,6 +526,20 @@ int main(int ac, char *av[]) {
                 const osg::Vec3 &v1=dstGeom.vertices->at(dstGeom.faces->at(i));
                 const osg::Vec3 &v2=dstGeom.vertices->at(dstGeom.faces->at(i+1));
                 const osg::Vec3 &v3=dstGeom.vertices->at(dstGeom.faces->at(i+2));
+                osg::Vec3 v1p=  reprojectPt(view,v1,stereo_calib.camera_calibs[0]);
+                double margin=0.2;
+                if(v1p.x() < 0.0-stereo_calib.camera_calibs[0].width*margin || v1p.x() > stereo_calib.camera_calibs[0].width*(1.0+margin) || v1p.y() < 0.0-stereo_calib.camera_calibs[0].height*margin || v1p.y() > stereo_calib.camera_calibs[0].height*(1.0+margin) )
+                    continue;
+
+                osg::Vec3 v2p=  reprojectPt(view,v2,stereo_calib.camera_calibs[0]);
+
+                if(v2p.x() < 0.0-stereo_calib.camera_calibs[0].width*margin || v2p.x() > stereo_calib.camera_calibs[0].width*(1.0+margin) || v2p.y() < 0.0-stereo_calib.camera_calibs[0].height*margin || v2p.y() > stereo_calib.camera_calibs[0].height*(1.0+margin) )
+                    continue;
+
+                osg::Vec3 v3p=  reprojectPt(view,v3,stereo_calib.camera_calibs[0]);
+
+                if(v3p.x() < 0.0-stereo_calib.camera_calibs[0].width*margin || v3p.x() > stereo_calib.camera_calibs[0].width*(1.0+margin) || v3p.y() < 0.0-stereo_calib.camera_calibs[0].height*margin || v3p.y() > stereo_calib.camera_calibs[0].height*(1.0+margin) )
+                    continue;
 
 
                 //cout <<"cam:"<<v1<<" "<<bbox._min<<" "<<bbox.contains(v1)<<endl;
@@ -555,7 +579,9 @@ int main(int ac, char *av[]) {
                 tmp_vertices[2].y=v3.y();
                 tmp_vertices[2].z=v3.z();
 
-
+               //  float area = 0.5*((v1 - v2)^(v3 - v2)).length();
+            //     printf("%f\n",area);
+               // if((v2[0]- -16.7324009)<0.0001 && (v2[1] - -0.0329999998 ) < 0.001 && (v2[2]- 26.6951008) < 0.001)
                 g.draw_triangles(3, indices);
             }
             char tmp[1024];

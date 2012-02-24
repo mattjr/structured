@@ -257,7 +257,7 @@ void readFile(string fname,map<int,imgData> &imageList){
         imgData cam;
         double low[3], high[3];
         string tmp;
-        double time;
+        //double time;
         if(m_fin >> cam.id >>cam.filename >> low[0] >> low[1] >> low[2] >> high[0] >> high[1] >> high[2]
            >> cam.m(0,0) >>cam.m(0,1)>>cam.m(0,2) >>cam.m(0,3)
            >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
@@ -294,17 +294,17 @@ int main(int ac, char *av[]) {
     //osg::ref_ptr<osg::Node> model;//= osgDB::readNodeFile(av[1]);
     osg::ArgumentParser arguments(&ac,av);
     int sizeX,sizeY; sizeX=sizeY=1024;
-    int num_threads=    num_threads=OpenThreads::GetNumberOfProcessors();
+    //int num_threads=    num_threads=OpenThreads::GetNumberOfProcessors();
 
-    arguments.read("-t",num_threads);
+   // arguments.read("-t",num_threads);
   //  printf("Using %d threads\n",num_threads);
     arguments.read("--size",sizeX,sizeY);
 
-    unsigned int _tileRows;
-    unsigned int _tileColumns;
-    int row;
-    int col;
-    char tmp[1024];
+    //unsigned int _tileRows;
+    //unsigned int _tileColumns;
+    //int row;
+    //int col;
+    //char tmp[1024];
     /* if(!arguments.read("--image",row,col,_tileRows,_tileColumns)){
         fprintf(stderr,"Fail to get image params\n");
         return -1;
@@ -367,7 +367,7 @@ int main(int ac, char *av[]) {
                           0,            0,              1,             0,
                           0,            0,              0,             1};
 
-    double intrinsic[16];
+    //double intrinsic[16];
 
 
     osg::Matrix proj(cparam2);
@@ -419,13 +419,13 @@ int main(int ac, char *av[]) {
         model->accept(cbbv);
         osg::BoundingBox totalbb = cbbv.getBoundingBox();*/
 
-        osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
+        /*osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
         double xrange=totalbb.xMax()-totalbb.xMin();
         double yrange=totalbb.yMax()-totalbb.yMin();
         double largerSide=std::max(xrange,yrange);
         osg::Matrixd matrix;
         matrix.makeTranslate( eye );
-
+*/
         /*        osg::Matrixd view=osg::Matrix::inverse(matrix);
         //cout << view << endl;
 
@@ -463,7 +463,7 @@ int main(int ac, char *av[]) {
         g.vertex_attrib_pointer(0, sizeof(Vertex), tmp_vertices);
 
 
-        int last_count=0;
+        //int last_count=0;
         int cnt=0;
         //int origSize=verts->size();
 
@@ -479,8 +479,8 @@ int main(int ac, char *av[]) {
         for( map<int,imgData >::iterator itr=imageList.begin(); itr!=imageList.end(); itr++){
           //  printf("\r%04d/%04d",(int)++cnt,imageList.size());
            // fflush(stdout);
-          //  if(itr->second.filename != "PR_20090613_001426_259_LC16.png")
-            //    continue;
+            //if(itr->second.filename != "PR_20090613_001426_259_LC16.png")
+              //  continue;
             mat4x viewA;
             osg::Matrix view;
 

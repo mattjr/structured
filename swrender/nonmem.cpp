@@ -219,6 +219,8 @@ int main(int ac, char *av[]) {
     outputImage=NULL;
     rangeImage=NULL;
     arguments.read("--size",sizeX,sizeY);
+    int jpegQuality=95;
+    arguments.read("--jpeg-quality",jpegQuality);
     bool useDisk=arguments.read("--outofcore");
     string imageName,depthName;
     unsigned int _tileRows;
@@ -583,7 +585,7 @@ int main(int ac, char *av[]) {
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
         im_close(outputImage);
 
-        if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY)){
+        if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,"ppm",jpegQuality)){
            /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
                 perror( "Error deleting file" );
             else

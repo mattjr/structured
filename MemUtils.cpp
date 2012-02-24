@@ -71,7 +71,7 @@ void process_mem_usage(double& vm_usage, double& resident_set)
     vm_usage     = vsize / 1024.0;
     resident_set = rss * page_size_kb;
 }
-bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int width,int height,string ext){
+bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int width,int height,string ext,int jpegQuality){
 
     osg::Matrix modWindow =( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*width,0.5*height,0.5f));
     osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,height,0));
@@ -99,8 +99,10 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     std::cout << tlGlobal << " " << blGlobal <<" " <<trGlobal<< " " << brGlobal <<"\n";
     worldfile.close();
     char gdal_param[4096];
-   // sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
-    sprintf(gdal_param," -of GTiff -co \"compress=JPEG\" -co \"TILED=YES\" -co \"PHOTOMETRIC=YCBCR\"  -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
+    if(jpegQuality <0)
+        sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
+    else
+        sprintf(gdal_param," -of GTiff -co \"compress=JPEG\" -co \"TILED=YES\" -co \"PHOTOMETRIC=YCBCR\" -co \"JPEG_QUALITY=%d\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",jpegQuality,tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
     char tmp[8192];
     sprintf(tmp,"%s-add_geo.sh",name.c_str());
     FILE *fp=fopen(tmp,"w");

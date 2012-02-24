@@ -64,6 +64,7 @@ static bool exportForStaticRender=true;
 static bool useTextureArray=true;
 static double longOrigin,latOrigin;
 static int _tileRows;
+static int jpegQuality=95;
 static int _tileColumns;
 static int targetFaces=40000;
 static bool storeTexMesh=false;
@@ -280,6 +281,7 @@ static bool parse_args( int argc, char *argv[ ] )
     useAtlas=argp.read("--atlas");
     novpb=argp.read("--novpb");
     storeTexMesh=argp.read("--storetex");
+    argp.read("--jpeg-quality",jpegQuality);
 
     if(argp.read("--debug-shader")){
         use_debug_shader=true;
@@ -355,6 +357,9 @@ static bool parse_args( int argc, char *argv[ ] )
                                   150000);
     recon_config_file->get_value( "MM_PER_PIXEL", mmperpixel,
                                   4);
+    recon_config_file->get_value( "JPEG_QUALITY", jpegQuality,
+                                  95);
+
     if(recon_config_file->get_value( "REIMAGE_RES",reimageSize.x(),-1)){
         reimageSize.y()=reimageSize.x();
     }
@@ -1998,7 +2003,7 @@ int main( int argc, char *argv[ ] )
                 fprintf(texcmds_fp," --atlas");
         }
         else{
-            fprintf(texcmds_fp,";%s/nonmem  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
+            fprintf(texcmds_fp,";%s/nonmem  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d",
                     basepath.c_str(),
                     cells[i].row,cells[i].col,
                     vpblod,
@@ -2008,7 +2013,7 @@ int main( int argc, char *argv[ ] )
                     rx,ry,rz,
                     ajustedGLImageSizeX,ajustedGLImageSizeY,
                     cells[i].row,cells[i].col,_tileRows,_tileColumns,
-                    latOrigin , longOrigin);
+                    latOrigin , longOrigin,jpegQuality);
             if(blending)
                 fprintf(texcmds_fp," --blend");
 
@@ -2031,9 +2036,14 @@ int main( int argc, char *argv[ ] )
         int num_samples=6;
         for(int p=0; p<num_samples; p++)
             sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
-        fprintf(texcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
-        fprintf(vartexcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+        if(jpegQuality<0){
+            fprintf(texcmds_fp,";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+            fprintf(vartexcmds_fp,";gdaladdo -r average mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
 
+        }else{
+            fprintf(texcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+            fprintf(vartexcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+        }
         tmp_ds[0]='\0';
         num_samples=0;
         for(int p=0; p<num_samples; p++)

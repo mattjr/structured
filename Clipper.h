@@ -146,7 +146,7 @@ public:
     IntersectKdTreeBbox intersector;
 };
 KdTreeBbox *setupKdTree(osg::ref_ptr<osg::Node> model);
-
+KdTreeBbox *createKdTreeForUnbuilt(osg::ref_ptr<osg::Node> model);
 bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &mode);
 
 

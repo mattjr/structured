@@ -299,7 +299,22 @@ int main(int ac, char *av[]) {
    // arguments.read("-t",num_threads);
   //  printf("Using %d threads\n",num_threads);
     arguments.read("--size",sizeX,sizeY);
+    string bboxfile;
+    if(!arguments.read("--bbox",bboxfile)){
+        fprintf(stderr,"need bbox file passed\n");
+        exit(-1);
+    }
+    string calibfile;
+    arguments.read("--calib",calibfile);
+    float rx, ry, rz;
+    osg::Matrix inverseM=osg::Matrix::identity();
 
+    if(arguments.read("--invrot",rx,ry,rz)){
+        inverseM =osg::Matrix::rotate(
+                osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+    }
     //unsigned int _tileRows;
     //unsigned int _tileColumns;
     //int row;
@@ -339,17 +354,33 @@ int main(int ac, char *av[]) {
     //model= vertexData.readPlyFile(av[1]);
 
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
-    osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(av[1]);
-    if(!model.valid()){
+    osg::Node * model=NULL;// = osgDB::readNodeFiles(arguments);
+    ply::VertexData vertexData;
+  //  osg::BoundingBox bb(minV,maxV);
+  //  osg::notify(osg::NOTICE) << bb._min << " " << bb._max << endl;
+    for(int pos=1;pos<arguments.argc();++pos)
+    {
+        if (!arguments.isOption(pos))
+        {
+            // not an option so assume string is a filename.
+            string fname= arguments[pos];
+            cout <<"Loading:"<< fname <<endl;
+            model= vertexData.readPlyFile(fname.c_str(),false);
+
+
+        }
+    }
+
+
+    if(!model){
         fprintf(stderr,"Failed to load mesh-diced/totalrot.ive can't split bailing!\n");
         exit(-1);
     }
-    osg::ref_ptr<KdTreeBbox> kdbb=setupKdTree(model);
+    osg::ref_ptr<KdTreeBbox> kdbb=createKdTreeForUnbuilt(model);
 
-    readFile(av[2],imageList);
+    readFile(bboxfile,imageList);
    // bool blending = arguments.read("--blend");
-    string calibfile;
-    arguments.read("-calib",calibfile);
+
     StereoCalib stereo_calib(calibfile);
     mat4x projA;
     const CameraCalib &calib = stereo_calib.camera_calibs[0];
@@ -381,7 +412,7 @@ int main(int ac, char *av[]) {
     cout <<proj<<endl;
 
 
-    if(model.valid()){
+    if(model != NULL){
      /*   osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
         if(!geode)
             geode=model->asGroup()->getChild(0)->asGeode();
@@ -395,15 +426,7 @@ int main(int ac, char *av[]) {
             exit(-1);
 
         }*/
-        float rx, ry, rz;
-        osg::Matrix inverseM=osg::Matrix::identity();
 
-        if(arguments.read("--invrot",rx,ry,rz)){
-            inverseM =osg::Matrix::rotate(
-                    osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
-                    osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
-                    osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
-        }
         osg::Matrix rotM=osg::Matrix::inverse(inverseM);
 
 

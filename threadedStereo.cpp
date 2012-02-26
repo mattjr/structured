@@ -37,6 +37,7 @@ using namespace std;
 static bool useOrthoTex=true;
 bool reimage=true;
 static double start_time = 0.0;
+static bool no_rangeimg=true;
 static bool apply_aug=false;
 static double stop_time = numeric_limits<double>::max();
 static int vpblod_override=0;
@@ -276,6 +277,8 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--poses",contents_file_name );
     apply_aug =argp.read("--apply_aug");
     argp.read("--gpu",gpunum);
+    if(argp.read("--range"))
+        no_rangeimg=false;
 
     cmvs=argp.read("--mvs");
     useAtlas=argp.read("--atlas");
@@ -1042,90 +1045,90 @@ int main( int argc, char *argv[ ] )
             isSparse=true;
             printf("Using sparse mode\n");
         }
-    printf("Split into %d cells for VRIP\n",(int)vrip_cells.size());
-    char conf_name[2048];
+        printf("Split into %d cells for VRIP\n",(int)vrip_cells.size());
+        char conf_name[2048];
 
-    for(int i=0; i <(int)vrip_cells.size(); i++){
-
-
-        if(vrip_cells[i].poses.size() == 0)
-            continue;
-
-        sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
-        sprintf(conf_name,"mesh-diced/bbox-clipped-diced-%08d.ply.txt",i);
-
-        vrip_seg_fp=fopen(vrip_seg_fname,"w");
-        bboxfp = fopen(conf_name,"w");
-        if(!vrip_seg_fp || !bboxfp){
-            printf("Unable to open %s\n",vrip_seg_fname);
-        }
-
-        char redirstr[2048];
-
-        sprintf(redirstr," ");
-
-        fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
-        fprintf(diced_lod_fp,"clipped-diced-%08d-lod0.ply\n",i);
-        fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
-        fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,vrip_ramp,i,i,redirstr);
-
-        fprintf(vripcmds_fp,"$BASEDIR/treeBBClip ../mesh-agg/seg-%08d.ply --bbox %f %f %f %f %f %f -dup --outfile ../mesh-diced/tmp-clipped-diced-%08d.ply;",
-                i,
-                vrip_cells[i].bounds.bbox.xMin(),
-                vrip_cells[i].bounds.bbox.yMin(),
-                -FLT_MAX,
-                vrip_cells[i].bounds.bbox.xMax(),
-                vrip_cells[i].bounds.bbox.yMax(),
-                FLT_MAX,
-                i);
-
-        fprintf(vripcmds_fp,"cd ..\n");
+        for(int i=0; i <(int)vrip_cells.size(); i++){
 
 
-        for(unsigned int j=0; j <vrip_cells[i].poses.size(); j++){
-            const Stereo_Pose_Data *pose=vrip_cells[i].poses[j];
-            if(!pose->valid)
+            if(vrip_cells[i].poses.size() == 0)
                 continue;
-            //Vrip List
-            fprintf(vrip_seg_fp,"%s %f 1\n",pose->mesh_name.c_str(),vrip_res);
-            //Gen Tex File bbox
-            fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
-            save_bbox_frame(pose->bbox,bboxfp);
-            osg::Matrix texmat=osgTranspose(pose->mat);
-            texmat=osg::Matrix::inverse(texmat);
-            for(int k=0; k < 4; k++)
-                for(int n=0; n < 4; n++)
-                    fprintf(bboxfp," %lf",texmat(k,n));
-            fprintf(bboxfp,"\n");
+
+            sprintf(vrip_seg_fname,"mesh-agg/vripseg-%08d.txt",i);
+            sprintf(conf_name,"mesh-diced/bbox-clipped-diced-%08d.ply.txt",i);
+
+            vrip_seg_fp=fopen(vrip_seg_fname,"w");
+            bboxfp = fopen(conf_name,"w");
+            if(!vrip_seg_fp || !bboxfp){
+                printf("Unable to open %s\n",vrip_seg_fname);
+            }
+
+            char redirstr[2048];
+
+            sprintf(redirstr," ");
+
+            fprintf(diced_fp,"clipped-diced-%08d.ply\n",i);
+            fprintf(diced_lod_fp,"clipped-diced-%08d-lod0.ply\n",i);
+            fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"mesh-agg/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),cwd);
+            fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri ../%s ../%s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri ../mesh-agg/seg-%08d.ply %s ;",i,vrip_seg_fname,vrip_seg_fname,vrip_res,vrip_ramp,i,i,redirstr);
+
+            fprintf(vripcmds_fp,"$BASEDIR/treeBBClip ../mesh-agg/seg-%08d.ply --bbox %f %f %f %f %f %f -dup --outfile ../mesh-diced/tmp-clipped-diced-%08d.ply;",
+                    i,
+                    vrip_cells[i].bounds.bbox.xMin(),
+                    vrip_cells[i].bounds.bbox.yMin(),
+                    -FLT_MAX,
+                    vrip_cells[i].bounds.bbox.xMax(),
+                    vrip_cells[i].bounds.bbox.yMax(),
+                    FLT_MAX,
+                    i);
+
+            fprintf(vripcmds_fp,"cd ..\n");
+
+
+            for(unsigned int j=0; j <vrip_cells[i].poses.size(); j++){
+                const Stereo_Pose_Data *pose=vrip_cells[i].poses[j];
+                if(!pose->valid)
+                    continue;
+                //Vrip List
+                fprintf(vrip_seg_fp,"%s %f 1\n",pose->mesh_name.c_str(),vrip_res);
+                //Gen Tex File bbox
+                fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
+                save_bbox_frame(pose->bbox,bboxfp);
+                osg::Matrix texmat=osgTranspose(pose->mat);
+                texmat=osg::Matrix::inverse(texmat);
+                for(int k=0; k < 4; k++)
+                    for(int n=0; n < 4; n++)
+                        fprintf(bboxfp," %lf",texmat(k,n));
+                fprintf(bboxfp,"\n");
+            }
+
+
+            fclose(vrip_seg_fp);
+            fclose(bboxfp);
+        }
+        fclose(vripcmds_fp);
+        fclose(diced_fp);
+        fclose(diced_lod_fp);
+        if(cmvs){
+            FILE *cfp= fopen("runmvs.sh","w");
+            fprintf(cfp,"#!/bin/bash\n");
+            fprintf(cfp,"bash %s/../auv2mv/runauv2mv.sh %s %d %d %f\n",basepath.c_str(), base_dir.c_str(),max_frame_count,num_threads,0.15);
+
+            fprintf(cfp,"%s/vcgapps/bin/triangulate  pmvs/models/option-*.ply\n",basepath.c_str());
+
+            fprintf(cfp,"cp out.ply mesh-diced/vis-total.ply\n");
+            fchmod(fileno(cfp),0777);
+            fclose(cfp);
+            sysres=system("./runmvs.sh");
         }
 
 
-        fclose(vrip_seg_fp);
-        fclose(bboxfp);
-    }
-    fclose(vripcmds_fp);
-    fclose(diced_fp);
-    fclose(diced_lod_fp);
-    if(cmvs){
-        FILE *cfp= fopen("runmvs.sh","w");
-        fprintf(cfp,"#!/bin/bash\n");
-        fprintf(cfp,"bash %s/../auv2mv/runauv2mv.sh %s %d %d %f\n",basepath.c_str(), base_dir.c_str(),max_frame_count,num_threads,0.15);
-
-        fprintf(cfp,"%s/vcgapps/bin/triangulate  pmvs/models/option-*.ply\n",basepath.c_str());
-
-        fprintf(cfp,"cp out.ply mesh-diced/vis-total.ply\n");
-        fchmod(fileno(cfp),0777);
-        fclose(cfp);
-        sysres=system("./runmvs.sh");
-    }
 
 
-
-
-    if(fpp)
-        fclose(fpp);
-    if(fpp2)
-        fclose(fpp2);
+        if(fpp)
+            fclose(fpp);
+        if(fpp2)
+            fclose(fpp2);
 
         {
 
@@ -1244,11 +1247,11 @@ int main( int argc, char *argv[ ] )
 
     }else{
 
-    totalbb_unrot.expandBy(bounds.bbox._min);
-    totalbb_unrot.expandBy(bounds.bbox._max);
-    totalbb.expandBy(osg::Vec3(totalbb_unrot._min[1],totalbb_unrot._min[0],-totalbb_unrot._min[2]));
-    totalbb.expandBy(osg::Vec3(totalbb_unrot._max[1],totalbb_unrot._max[0],-totalbb_unrot._max[2]));
-}
+        totalbb_unrot.expandBy(bounds.bbox._min);
+        totalbb_unrot.expandBy(bounds.bbox._max);
+        totalbb.expandBy(osg::Vec3(totalbb_unrot._min[1],totalbb_unrot._min[0],-totalbb_unrot._min[2]));
+        totalbb.expandBy(osg::Vec3(totalbb_unrot._max[1],totalbb_unrot._max[0],-totalbb_unrot._max[2]));
+    }
     cout << totalbb_unrot._min<< " " << totalbb_unrot._max<<endl;
     cout << totalbb._min<< " " << totalbb._max<<endl;
     /* osg::BoundingBox tmp=totalbb;
@@ -1954,7 +1957,7 @@ int main( int argc, char *argv[ ] )
     FILE *reFP=fopen("rebbox.txt","w");
     FILE *FP3=fopen("createmosaic.sh","w");
     FILE *FP4=fopen("createmosaicvar.sh","w");
-    FILE *FP5=fopen("createrangeimg.sh","w");
+   // FILE *FP5=fopen("createrangeimg.sh","w");
 
     if(!FP2 || ! FP3){
         fprintf(stderr,"Can't open mosaic scripts\n");
@@ -2075,14 +2078,68 @@ int main( int argc, char *argv[ ] )
 
     fprintf(FP4,"\n#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16 32\n");
     fchmod(fileno(FP4),0777);
-    fprintf(FP5,"#!/bin/bash\n%s/rangeimg  mesh-diced/vis-total.ply mesh-diced/totalbbox.txt --size %d %d -calib %s\n",
+    /*fprintf(FP5,"#!/bin/bash\n%s/rangeimg  mesh-diced/vis-total.ply mesh-diced/totalbbox.txt --size %d %d -calib %s\n",
             basepath.c_str(),
             calib.camera_calibs[0].width,
             calib.camera_calibs[0].height,
             stereo_calib_file_name.c_str()
-            );
+            );*/
     fclose(FP4);
-    fclose(FP5);
+   // fclose(FP5);
+    if(!externalMode){
+        double margin=vrip_res*10;
+        string rangeimgcmds_fn="mesh-diced/rangeimgcmds";
+        string rangecmd="rangeimg.py";
+        FILE *rangeimgcmds_fp=fopen(rangeimgcmds_fn.c_str(),"w");
+        std::set<string> usedName;
+        for(int i=0; i <(int)vrip_cells.size(); i++){
+            if(vrip_cells[i].poses.size() == 0)
+                continue;
+            char tmpp[1024];
+            sprintf(tmpp,"mesh-diced/clipped-diced-%08d-range.txt",i);
+            FILE *rfp=fopen(tmpp,"w");
+            string mesh_list;
+            fprintf(rangeimgcmds_fp,"%s/rangeimg ",basepath.c_str());
+            osg::BoundingBox expanded(vrip_cells[i].bounds.bbox._min[0]-margin,vrip_cells[i].bounds.bbox._min[1]-margin,vrip_cells[i].bounds.bbox._min[2]-margin,
+                                       vrip_cells[i].bounds.bbox._max[0]+margin,vrip_cells[i].bounds.bbox._max[1]+margin,vrip_cells[i].bounds.bbox._max[2]+margin);
+            for(int j=0; j< (int) vrip_cells.size(); j++){
+                if(expanded.intersects(vrip_cells[j].bounds.bbox)){
+                    char tmpt[1024];
+                    sprintf(tmpt,"mesh-diced/vis-clipped-diced-%08d-lod%d.ply ",j,vpblod);
+                    mesh_list+=tmpt;
+                }
+
+            }
+            fprintf(rangeimgcmds_fp,"%s --bbox mesh-diced/clipped-diced-%08d-range.txt --size %d %d --calib %s\n",
+                    mesh_list.c_str(),
+                    i,
+                    calib.camera_calibs[0].width,
+                    calib.camera_calibs[0].height,
+                    stereo_calib_file_name.c_str()
+                    );
+            int ct=0;
+            for(int k=0; k<(int)vrip_cells[i].poses.size(); k++){
+                if(usedName.count(vrip_cells[i].poses[k]->left_name) >0 )
+                    continue;
+                const Stereo_Pose_Data *name=vrip_cells[i].poses[k];
+                usedName.insert(name->left_name);
+                fprintf(rfp,"%d %s ",
+                        ct++,name->left_name.c_str());
+                save_bbox_frame(name->bbox,rfp);
+                osg::Matrix texmat=osgTranspose(name->mat);
+                texmat=osg::Matrix::inverse(texmat);
+                for(int k=0; k < 4; k++)
+                    for(int n=0; n < 4; n++)
+                        fprintf(rfp," %lf",texmat(k,n));
+                fprintf(rfp,"\n");
+            }
+            fclose(rfp);
+        }
+        fclose(rangeimgcmds_fp);
+        shellcm.write_generic(rangecmd,rangeimgcmds_fn,"Range",NULL,NULL,num_threads);
+        if(!no_rangeimg)
+            sysres=system("python rangeimg.py");
+    }
     std::ostringstream p1;
 
     vector<std::string> precmd;

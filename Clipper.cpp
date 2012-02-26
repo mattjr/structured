@@ -511,6 +511,42 @@ KdTreeBbox *setupKdTree(osg::ref_ptr<osg::Node> model){
     return NULL;
 }
 
+KdTreeBbox *createKdTreeForUnbuilt(osg::ref_ptr<osg::Node> model){
+    if(model.valid()){
+        osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
+        if(!geode)
+            geode=model->asGroup()->getChild(0)->asGeode();
+        if(geode && geode->getNumDrawables()){
+             osg::ref_ptr<osg::KdTreeBuilder> kdTreeBuilder = osgDB::Registry::instance()->getKdTreeBuilder()->clone();
+             geode->accept(*kdTreeBuilder);
+             osg::Drawable *drawable = geode->getDrawable(0);
+             osg::KdTree *kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
+             if(kdTree){
+                 osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+                 geom_elems_src *srcGeom=new geom_elems_src ;
+                 srcGeom->colors=(osg::Vec4Array*)geom->getColorArray();
+                 //    srcGeom.texcoords;
+                 srcGeom->texid=NULL;
+                 KdTreeBbox *kdtreeBbox=new KdTreeBbox(*kdTree,*srcGeom);
+                 return kdtreeBbox;
+             }else{
+                fprintf(stderr,"Can't be converted to kdtree\n");
+                return false;
+            }
+
+        }else{
+            osg::notify(osg::ALWAYS) << "Model can't be converted to geode\n";
+            return false;
+        }
+
+    }else{
+        osg::notify(osg::ALWAYS)  << "Model can't be loaded\n";
+        return false;
+    }
+
+    return NULL;
+}
+
 bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &mode){
     if(!kdtreeBBox){
         fprintf(stderr,"Failed to load kdtree\n");

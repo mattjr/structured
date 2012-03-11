@@ -2216,7 +2216,7 @@ int main( int argc, char *argv[ ] )
     }
     fprintf(uploadFP,"#!/bin/bash\n");
     fprintf(uploadFP,"EXPECTED_ARGS=2\nE_BADARGS=65\n");
-    fprintf(uploadFP,"if [ $# -ne $EXPECTED_ARGS ]\nthen\n\techo \"Usage: `basename $0` {arg}\"\nexit $E_BADARGS\nfi\n");
+    fprintf(uploadFP,"if [ $# -ne $EXPECTED_ARGS ]\nthen\n\techo \"Usage: `basename $0` {basename} {descriptive name quoted}\"\nexit $E_BADARGS\nfi\n");
     fprintf(uploadFP,"mkdir $1\n");
     fprintf(uploadFP,"mv vttex $1/$1.vtex\n");
     fprintf(uploadFP,"mv vttex.octree $1/$1.octree\n");

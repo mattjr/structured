@@ -56,13 +56,15 @@ if (im.size[0] != im.size[1]) or (im.size[0] not in [i * tileSize for i in [32, 
 
 size = im.size[0]
 times = 0
-os.mkdir(os.path.splitext(f)[0])
+if not os.path.exists(os.path.splitext(f)[0]):
+    os.mkdir(os.path.splitext(f)[0])
 
 while size >= tileSize:	# TODO: step one do resizing using image magick, step two use image magick for everything
 	if (times != 0):	im = im.resize((size, size), Image.ANTIALIAS) # TODO: this downscaling algorithm is not good enough
 
 	baseDir = os.path.splitext(f)[0] + "/tiles_b" + str(border) + "_level"  + str(times)
-	os.mkdir(baseDir)
+        if not os.path.exists(baseDir):
+            os.mkdir(baseDir)
 	len = size / tileSize
 
 	for x in range(len):

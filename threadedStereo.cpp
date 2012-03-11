@@ -1944,10 +1944,12 @@ int main( int argc, char *argv[ ] )
     string vartexcmds_fn="mesh-diced/vartexcmds";
 
     string imgbase=(compositeMission? "/":"/img/");
-    //int VTtileSize=256;
+    int VTtileSize=256;
     int tileBorder=1;
     int ajustedGLImageSizeX=(int)reimageSize.x();//-((reimageSize.x()/VTtileSize)*2*tileBorder);
     int ajustedGLImageSizeY=(int)reimageSize.y();//-((reimageSize.y()/VTtileSize)*2*tileBorder);
+
+
     FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
     FILE *vartexcmds_fp=fopen(vartexcmds_fn.c_str(),"w");
     int totalX=ajustedGLImageSizeX*_tileRows;
@@ -2169,17 +2171,62 @@ int main( int argc, char *argv[ ] )
     varpostcmdv.push_back(pvar.str());
 
     postcmdv.push_back(p.str());
-#define SINGLE_MESH_TEX 1
-#if SINGLE_MESH_TEX
+
+
+    FILE *ipadViewerFP=fopen("createtabletdata.sh","w");
+    if(!ipadViewerFP){
+        fprintf(stderr,"Can't open create createtabletdata\n");
+        exit(-1);
+    }
+    int smallPOTX=osg::Image::computeNearestPowerOfTwo(totalX,0.0);
+    int smallPOTY=osg::Image::computeNearestPowerOfTwo(totalY,0.0);
+
+    int totalXborder=(int)smallPOTX-((smallPOTX/VTtileSize)*2*tileBorder);
+    int totalYborder=(int)smallPOTY-((smallPOTX/VTtileSize)*2*tileBorder);
+
+    int maxFaceSizeIpad=0xffff-1;
+    fprintf(ipadViewerFP,"#!/bin/bash\n");
+    fprintf(ipadViewerFP,"(cd %s;%s/vcgapps/bin/tridecimator mesh-diced/total-lod%d.ply mesh-diced/ipad.ply %d -Oy -P -V;",
+            cwd,
+            basepath.c_str(),
+            vpblod,maxFaceSizeIpad);
+
     std::ostringstream p2;
-    p2 << basepath << "/singleImageTex " << "mesh-diced/vis-total.ply --outfile mesh-diced/totaltex.ply "<< "--size " << totalX << " "<<totalY;
-    if(exportForStaticRender)
-        p2      <<" --extra totaltex.obj";
+    p2 << basepath << "/singleImageTex " << "mesh-diced/ipad.ply --outfile mesh-diced/ipadtex.ply "<< "--size " << totalXborder << " "<<totalYborder;
+    p2      <<" --extra octree.obj";
+    fprintf(ipadViewerFP,"%s;",p2.str().c_str());
 
-    postcmdv.push_back(p2.str());
+       fprintf(ipadViewerFP,"%s/generateOctreeFromObj.py -o=vttex.octree octree.obj)&\n",basepath.c_str());
+    fprintf(ipadViewerFP,"(gdalwarp -overwrite -ts %d %d mosaic/mosaic.vrt vttex.tif; ",totalXborder,totalYborder);
+    std::ostringstream p4;
 
+    p4 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" vttex.tif ) &\n";
 
-#endif
+    //postcmdv.push_back(p2.str());
+
+    fprintf(ipadViewerFP,"%s",p4.str().c_str());
+    fchmod(fileno(ipadViewerFP),0777);
+
+    fclose(ipadViewerFP);
+    FILE *uploadFP=fopen("uploadmesh.sh","w");
+
+    if(!uploadFP){
+        fprintf(stderr,"Can't open create uploadmesh");
+        exit(-1);
+    }
+    fprintf(uploadFP,"#!/bin/bash\n");
+    fprintf(uploadFP,"EXPECTED_ARGS=2\nE_BADARGS=65\n");
+    fprintf(uploadFP,"if [ $# -ne $EXPECTED_ARGS ]\nthen\n\techo \"Usage: `basename $0` {arg}\"\nexit $E_BADARGS\nfi\n");
+    fprintf(uploadFP,"mkdir $1\n");
+    fprintf(uploadFP,"mv vttex $1/$1.vtex\n");
+    fprintf(uploadFP,"mv vttex.octree $1/$1.octree\n");
+    fprintf(uploadFP,"tar cf $1.tar $1\n");
+    fprintf(uploadFP,"scp $1.tar mattjr@aguacate:benthos/\n");
+    fprintf(uploadFP,"ssh mattjr@aguacate \"echo '$2;$1.tar;' >> benthos/list.txt\"\n");
+    fchmod(fileno(uploadFP),0777);
+
+    fclose(uploadFP);
+
 
     //int sizeX=reimageSize.x()*_tileRows;
     //int adjustedSize=tileSize-(2*tileBorder);
@@ -2230,7 +2277,7 @@ int main( int argc, char *argv[ ] )
         app="texturedDecimator";
     std::vector<std::vector<string> > datalist_lod;
     vector<string> mergeandcleanCmdsSimp;
-
+#define SINGLE_MESH_TEX 1
 #ifdef SINGLE_MESH_TEX
 
 

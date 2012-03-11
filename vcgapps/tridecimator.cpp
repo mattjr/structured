@@ -152,6 +152,7 @@ if(argc<4) Usage();
   bool FlipFlag=false;
   float TargetError=numeric_limits<float>::max();
   bool CleaningFlag =false;
+  bool UseVertStop=false;
      // parse command line.
 	  for(int i=4; i < argc;)
     {
@@ -177,6 +178,7 @@ if(argc<4) Usage();
 				case 'e' :	TargetError = float(atof(argv[i]+2));			printf("Setting TargetError to %g\n",atof(argv[i]+2)); break;		
 				case 'P' :	CleaningFlag=true;  printf("Cleaning mesh before simplification\n"); break;	
                                 case 'F' : FlipFlag=true; break;
+                                case 'V': UseVertStop=true;break;
 				default  :  printf("Unknown option '%s'\n", argv[i]);
           exit(0);
       }
@@ -212,12 +214,21 @@ if(FinalSize ==0 )
   int t2=clock();	
   printf("Initial Heap Size %i\n",DeciSession.h.size());
 
-	DeciSession.SetTargetSimplices(FinalSize);
-	DeciSession.SetTimeBudget(0.5f);
+  DeciSession.SetTimeBudget(0.5f);
   if(TargetError< numeric_limits<float>::max() ) DeciSession.SetTargetMetric(TargetError);
 
-  while(DeciSession.DoOptimization() && mesh.fn>FinalSize && DeciSession.currMetric < TargetError)
-    printf("Current Mesh size %7i heap sz %9i err %9g \r",mesh.fn,DeciSession.h.size(),DeciSession.currMetric);
+  if(UseVertStop){
+      DeciSession.SetTargetVertices(FinalSize);
+      printf("Using Vertex Stop\n");
+      while(DeciSession.DoOptimization() && mesh.vn>FinalSize && DeciSession.currMetric < TargetError)
+        printf("Current Mesh size %7i heap sz %9i err %9g \r",mesh.fn,DeciSession.h.size(),DeciSession.currMetric);
+  }
+  else{
+      DeciSession.SetTargetSimplices(FinalSize);
+      while(DeciSession.DoOptimization() && mesh.fn>FinalSize && DeciSession.currMetric < TargetError)
+        printf("Current Mesh size %7i heap sz %9i err %9g \r",mesh.fn,DeciSession.h.size(),DeciSession.currMetric);
+}
+
   int t3=clock();	
   printf("mesh  %d %d Error %g \n",mesh.vn,mesh.fn,DeciSession.currMetric);
   printf("\nCompleted in (%i+%i) msec\n",t2-t1,t3-t2);

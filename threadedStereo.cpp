@@ -2200,7 +2200,7 @@ int main( int argc, char *argv[ ] )
     fprintf(ipadViewerFP,"(gdalwarp -overwrite -ts %d %d mosaic/mosaic.vrt vttex.tif; ",totalXborder,totalYborder);
     std::ostringstream p4;
 
-    p4 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" vttex.tif ) &\n";
+    p4 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" vttex.tif ) &\nwait\necho 'Done'\n";
 
     //postcmdv.push_back(p2.str());
 

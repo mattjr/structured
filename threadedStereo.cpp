@@ -805,6 +805,8 @@ int main( int argc, char *argv[ ] )
         }
         fprintf(fpp1,"%f %f\n",latOrigin,longOrigin);
         fclose(fpp1);
+        bool firstPose=false;
+
         vector<Stereo_Pose>::const_iterator cii;
         cii=pose_data.poses.begin();
         while( cii != pose_data.poses.end() && (!have_max_frame_count || stereo_pair_count < max_frame_count) ){
@@ -816,6 +818,16 @@ int main( int argc, char *argv[ ] )
             cii++;
             if(cii->pose_time < start_time || cii->altitude > max_alt_cutoff){
                 continue;
+            }
+            if(!firstPose){
+                fpp1=fopen("mesh-diced/firstpt.txt","w");
+                if(!fpp1 ){
+                    fprintf(stderr,"Cannot open mesh/firstpt.txt\n");
+                    exit(-1);
+                }
+                fprintf(fpp1,"%f %f\n",cii->latitude,cii->longitude);
+                fclose(fpp1);
+                firstPose=true;
             }
             if(cii->pose_time >= stop_time)
                 break;
@@ -2215,14 +2227,16 @@ int main( int argc, char *argv[ ] )
         exit(-1);
     }
     fprintf(uploadFP,"#!/bin/bash\n");
-    fprintf(uploadFP,"EXPECTED_ARGS=2\nE_BADARGS=65\n");
-    fprintf(uploadFP,"if [ $# -ne $EXPECTED_ARGS ]\nthen\n\techo \"Usage: `basename $0` {basename} {descriptive name quoted}\"\nexit $E_BADARGS\nfi\n");
+    fprintf(uploadFP,"EXPECTED_ARGS=1\nE_BADARGS=65\n");
+    fprintf(uploadFP,"if [ $# -ne $EXPECTED_ARGS ]\nthen\n\techo \"Usage: `basename $0` {basename}\"\nexit $E_BADARGS\nfi\n");
     fprintf(uploadFP,"mkdir $1\n");
+    fprintf(uploadFP,"bash %s/getmeta.sh $1> $1/$1.xml\n",basepath.c_str());
     fprintf(uploadFP,"mv vttex $1/$1.vtex\n");
     fprintf(uploadFP,"mv vttex.octree $1/$1.octree\n");
-    fprintf(uploadFP,"tar cf $1.tar $1\n");
+    fprintf(uploadFP,"tar cvf $1.tar $1\n");
     fprintf(uploadFP,"scp $1.tar mattjr@aguacate:benthos/\n");
-    fprintf(uploadFP,"ssh mattjr@aguacate \"echo '$2;$1.tar;' >> benthos/list.txt\"\n");
+    fprintf(uploadFP,"scp %s/updatemodelxml.sh mattjr@aguacate:benthos/\n",basepath.c_str());
+    fprintf(uploadFP,"ssh mattjr@aguacate \"cd benthos;bash updatemodelxml.sh\"\n");
     fchmod(fileno(uploadFP),0777);
 
     fclose(uploadFP);

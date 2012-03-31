@@ -2222,9 +2222,7 @@ int main( int argc, char *argv[ ] )
     fchmod(fileno(ipadViewerFP),0777);
 
     fclose(ipadViewerFP);
-    if(runIpad){
-            sysres=system("bash createtabletdata.sh");
-    }
+
     FILE *uploadFP=fopen("uploadmesh.sh","w");
 
     if(!uploadFP){
@@ -2408,7 +2406,9 @@ int main( int argc, char *argv[ ] )
              "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",latOrigin,longOrigin,1.0,0.0,0.0);
 
 
-
+    if(runIpad){
+            sysres=system("bash createtabletdata.sh");
+    }
 
     if(!novpb) {
         if(!mgc){

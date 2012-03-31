@@ -35,6 +35,7 @@ void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned in
 string wkt_coord_system;
 using namespace std;
 static bool useOrthoTex=true;
+static bool runIpad=false;
 bool reimage=true;
 static double start_time = 0.0;
 static bool no_rangeimg=true;
@@ -279,6 +280,7 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--gpu",gpunum);
     if(argp.read("--range"))
         no_rangeimg=false;
+    runIpad=argp.read("--ipad");
 
     cmvs=argp.read("--mvs");
     useAtlas=argp.read("--atlas");
@@ -2220,6 +2222,9 @@ int main( int argc, char *argv[ ] )
     fchmod(fileno(ipadViewerFP),0777);
 
     fclose(ipadViewerFP);
+    if(runIpad){
+            sysres=system("bash createtabletdata.sh");
+    }
     FILE *uploadFP=fopen("uploadmesh.sh","w");
 
     if(!uploadFP){

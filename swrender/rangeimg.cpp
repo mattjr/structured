@@ -66,7 +66,7 @@ using namespace std;
 #include <fstream>
 #include <string>
 #include "calibFile.h"
-
+static bool globalRange=false;
 struct InputVertex {
     vec3x vertex;
 };
@@ -172,7 +172,10 @@ struct VertexShaderBlending {
         // texture minus 1. Doing this in the vertex shader saves us from doing this in the fragment shader
         // which makes things faster.
       //  printf("Zragne %f\n",zrange);
-        out.varyings[0] = fixed16_t(zrange).intValue;
+        if(globalRange)
+            out.varyings[0] = fixed16_t(pt.z()).intValue;
+        else
+            out.varyings[0] = fixed16_t(zrange).intValue;
 
     }
 
@@ -299,6 +302,9 @@ int main(int ac, char *av[]) {
    // arguments.read("-t",num_threads);
   //  printf("Using %d threads\n",num_threads);
     arguments.read("--size",sizeX,sizeY);
+    globalRange=arguments.read("--global");
+    if(globalRange)
+        printf("giving world Z\n");
     string bboxfile;
     if(!arguments.read("--bbox",bboxfile)){
         fprintf(stderr,"need bbox file passed\n");
@@ -347,7 +353,7 @@ int main(int ac, char *av[]) {
     rangeImage=cvCreateImage(cvSize(sizeX,sizeY),IPL_DEPTH_8U,4);
     cvZero(rangeImage);
     cvSet(outputImage,cvScalar(-1.0));
-    string ddir="depthimg/";
+    string ddir= globalRange ? "globaldepth" :"depthimg/";
     if(!osgDB::fileExists(ddir))
         osgDB::makeDirectory(ddir);
     map<int,imgData> imageList;
@@ -612,7 +618,8 @@ int main(int ac, char *av[]) {
             PFMWrite((float*)outputImage->imageData,tmp,outputImage->width,outputImage->height);
             cvSet(outputImage,cvScalar(-1.0));
             sprintf(tmp,"%s/%s.png",ddir.c_str(),itr->second.filename.c_str());
-            cvSaveImage(tmp,rangeImage);
+            if(!globalRange)
+                cvSaveImage(tmp,rangeImage);
             cvZero(rangeImage);
             formatBar("Img",startTick,++cnt,imageList.size());
 

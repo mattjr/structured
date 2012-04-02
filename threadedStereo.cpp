@@ -2104,9 +2104,11 @@ int main( int argc, char *argv[ ] )
    // fclose(FP5);
     if(!externalMode){
         double margin=vrip_res*10;
-        string rangeimgcmds_fn="mesh-diced/rangeimgcmds";
-        string rangecmd="rangeimg.py";
-        FILE *rangeimgcmds_fp=fopen(rangeimgcmds_fn.c_str(),"w");
+        string rangeimgcmds_fn[]={"mesh-diced/rangeimgcmds","mesh-diced/globalimgcmds"};
+        string rangecmd[]={"rangeimg.py","globaldepth.py"};
+        FILE *rangeimgcmds_fp[2];
+        for(int t=0; t< 2; t++)
+            rangeimgcmds_fp[t]  =fopen(rangeimgcmds_fn[t].c_str(),"w");
         std::set<string> usedName;
         for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
@@ -2115,24 +2117,28 @@ int main( int argc, char *argv[ ] )
             sprintf(tmpp,"mesh-diced/clipped-diced-%08d-range.txt",i);
             FILE *rfp=fopen(tmpp,"w");
             string mesh_list;
-            fprintf(rangeimgcmds_fp,"%s/rangeimg ",basepath.c_str());
-            osg::BoundingBox expanded(vrip_cells[i].bounds.bbox._min[0]-margin,vrip_cells[i].bounds.bbox._min[1]-margin,vrip_cells[i].bounds.bbox._min[2]-margin,
-                                       vrip_cells[i].bounds.bbox._max[0]+margin,vrip_cells[i].bounds.bbox._max[1]+margin,vrip_cells[i].bounds.bbox._max[2]+margin);
-            for(int j=0; j< (int) vrip_cells.size(); j++){
-                if(expanded.intersects(vrip_cells[j].bounds.bbox)){
-                    char tmpt[1024];
-                    sprintf(tmpt,"mesh-diced/vis-clipped-diced-%08d-lod%d.ply ",j,vpblod);
-                    mesh_list+=tmpt;
-                }
+            for(int t=0; t<2; t++){
+                fprintf(rangeimgcmds_fp[t],"%s/rangeimg ",basepath.c_str());
+                osg::BoundingBox expanded(vrip_cells[i].bounds.bbox._min[0]-margin,vrip_cells[i].bounds.bbox._min[1]-margin,vrip_cells[i].bounds.bbox._min[2]-margin,
+                                          vrip_cells[i].bounds.bbox._max[0]+margin,vrip_cells[i].bounds.bbox._max[1]+margin,vrip_cells[i].bounds.bbox._max[2]+margin);
+                for(int j=0; j< (int) vrip_cells.size(); j++){
+                    if(expanded.intersects(vrip_cells[j].bounds.bbox)){
+                        char tmpt[1024];
+                        sprintf(tmpt,"mesh-diced/vis-clipped-diced-%08d-lod%d.ply ",j,vpblod);
+                        mesh_list+=tmpt;
+                    }
 
+                }
+                const char *globalstr= (t==1) ? "--global" : "";
+                fprintf(rangeimgcmds_fp[t],"%s --bbox mesh-diced/clipped-diced-%08d-range.txt --size %d %d --calib %s %s\n",
+                        mesh_list.c_str(),
+                        i,
+                        calib.camera_calibs[0].width,
+                        calib.camera_calibs[0].height,
+                        stereo_calib_file_name.c_str(),
+                        globalstr
+                        );
             }
-            fprintf(rangeimgcmds_fp,"%s --bbox mesh-diced/clipped-diced-%08d-range.txt --size %d %d --calib %s\n",
-                    mesh_list.c_str(),
-                    i,
-                    calib.camera_calibs[0].width,
-                    calib.camera_calibs[0].height,
-                    stereo_calib_file_name.c_str()
-                    );
             int ct=0;
             for(int k=0; k<(int)vrip_cells[i].poses.size(); k++){
                 if(usedName.count(vrip_cells[i].poses[k]->left_name) >0 )
@@ -2151,10 +2157,14 @@ int main( int argc, char *argv[ ] )
             }
             fclose(rfp);
         }
-        fclose(rangeimgcmds_fp);
-        shellcm.write_generic(rangecmd,rangeimgcmds_fn,"Range",NULL,NULL,num_threads);
+        const char *namestr[2]={"Range","Global Range"};
+        for(int t=0; t< 2; t++){
+            fclose(rangeimgcmds_fp[t]);
+            shellcm.write_generic(rangecmd[t],rangeimgcmds_fn[t],namestr[t],NULL,NULL,num_threads);
+        }
         if(!no_rangeimg)
             sysres=system("python rangeimg.py");
+
     }
     std::ostringstream p1;
 

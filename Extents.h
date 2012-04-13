@@ -245,7 +245,7 @@ public:
              vips::VImage *img;
              std::vector<vips::VImage *> img_ds;
              OpenThreads::Mutex *mutex;
-             std::vector<int> levels_ds;
+             int levels;
              std::vector<std::string> name_ds;
          };
           class rangeTC
@@ -279,6 +279,28 @@ public:
          typedef std::map< rangeTC , int, left_of_range > texcoord_range_map;
         texcoord_range_map  cell_coordinate_map;
         std::vector<mosaic_cell> mosaic_cells;
+        typedef struct _struct_cell{
+            int row;
+            int col;
+            osg::BoundingBox bbox;
+            std::string name;
+        }struct_cell;
+       std::vector<struct_cell>  struct_cells;
+       SpatialIndex::ISpatialIndex* struct_tree;
+       SpatialIndex::IStorageManager* struct_memstore;
+       SpatialIndex::IStorageManager* struct_manager;
+          typedef struct _LevelStatus{
+           unsigned int completed;
+           OpenThreads::Mutex *counterMutex;
+           unsigned int total;
+           osg::Timer_t startTick;
+           osg::Timer_t lastTick;
+
+       }LevelStatus;
+       OpenThreads::Mutex printMutex;
+
+       typedef std::map<unsigned int,LevelStatus> LevelStatusCounter;
+LevelStatusCounter _levelCounters;
 
 };
 class ValidVisitor : public SpatialIndex::IVisitor

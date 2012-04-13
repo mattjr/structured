@@ -253,6 +253,7 @@ ADD_EXECUTABLE(genOverlappingPoses genOverlappingPoses.cpp)
 #ADD_EXECUTABLE(temp temp.cpp)
 TARGET_LINK_LIBRARIES( genOverlappingPoses ts )
 
+
 LINK_LIBRARIES(osgTerrain  osgFX osg  spindex vips vipsCC)
 TARGET_LINK_LIBRARIES( threadedStereo ts  vips vipsCC vpb spindex)
 TARGET_LINK_LIBRARIES( engine ts  vips vipsCC vpb spindex)

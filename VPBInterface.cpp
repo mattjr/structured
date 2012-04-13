@@ -159,7 +159,7 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
             m->addSource(sourceModel);
         }
     }
-    m->createNewDestinationGraph(geo,256,128,numlod);
+    m->createNewDestinationGraph(geo,256,128,numlod-1);
     m->_run();
     //    for(int i=0; i<trees.size(); i++)
     //    delete trees[i];

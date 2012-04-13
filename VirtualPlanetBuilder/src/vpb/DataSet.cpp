@@ -1653,7 +1653,7 @@ void DataSet::_writeNodeFileAndImages(osg::Node& node,const std::string& filenam
 {
     if (getDisableWrites()) return;
 
-    log(osg::NOTICE,"_writeNodeFile(%s)",filename.c_str());
+    log(osg::INFO,"_writeNodeFile(%s)",filename.c_str());
 
     // write out any image data that is an external file
     WriteImageFilesVisitor wifv(this, osgDB::getFilePath(filename));
@@ -1780,7 +1780,7 @@ void DataSet::_writeRow(Row& row)
                     node->addDescription(_comment);
                 }
 
-                log(osg::NOTICE, "       getDirectory()= %s",getDirectory().c_str());
+                log(osg::INFO, "       getDirectory()= %s",getDirectory().c_str());
             }
             else
             {
@@ -1788,12 +1788,12 @@ void DataSet::_writeRow(Row& row)
                 filename = _taskOutputDirectory + _tileBasename + _tileExtension;    
 #endif
 
-                log(osg::NOTICE, "       _taskOutputDirectory= %s",_taskOutputDirectory.c_str());
+                log(osg::INFO, "       _taskOutputDirectory= %s",_taskOutputDirectory.c_str());
             }
 
             if (node.valid())
             {
-                log(osg::NOTICE, "   writeNodeFile = %u X=%u Y=%u filename=%s",cd->_level,cd->_tileX,cd->_tileY,filename.c_str());
+                log(osg::INFO, "   writeNodeFile = %u X=%u Y=%u filename=%s",cd->_level,cd->_tileX,cd->_tileY,filename.c_str());
 
                 _writeNodeFileAndImages(*node,filename);
             }

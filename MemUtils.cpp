@@ -61,9 +61,9 @@ void process_mem_usage(double& vm_usage, double& resident_set)
     long rss;
 
     stat_stream >> pid >> comm >> state >> ppid >> pgrp >> session >> tty_nr
-            >> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt
-            >> utime >> stime >> cutime >> cstime >> priority >> nice
-            >> O >> itrealvalue >> starttime >> vsize >> rss; // don't care about the rest
+                >> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt
+                >> utime >> stime >> cutime >> cstime >> priority >> nice
+                >> O >> itrealvalue >> starttime >> vsize >> rss; // don't care about the rest
 
     stat_stream.close();
 
@@ -102,7 +102,7 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     if(jpegQuality <0)
         sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
     else
-        sprintf(gdal_param," -of GTiff -co \"compress=JPEG\" -co \"TILED=YES\" -co \"PHOTOMETRIC=YCBCR\" -co \"JPEG_QUALITY=%d\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",jpegQuality,tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
+        sprintf(gdal_param," -of GTiff -b 1 -b 2 -b 3 -mask 4 -co \"compress=JPEG\" -co \"TILED=YES\" --config GDAL_TIFF_INTERNAL_MASK YES -co \"PHOTOMETRIC=YCBCR\" -co \"JPEG_QUALITY=%d\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",jpegQuality,tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
     char tmp[8192];
     sprintf(tmp,"%s-add_geo.sh",name.c_str());
     FILE *fp=fopen(tmp,"w");
@@ -119,8 +119,36 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     fclose (fp);
     //gdalwarp  -t_srs '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs' geo_tif2.tif utm.tif
     //  int res= system(("add_geo-"+name+".sh").c_str());
-    sprintf(tmp,"gdal_translate %s %s-tmp.%s %s",gdal_param,osgDB::getNameLessExtension(name).c_str(),ext.c_str(),
+    sprintf(tmp,"gdal_merge.py -separate  %s-tmp.%s %s-tmp-mask.pgm -o %s.tif; gdal_translate %s %s.tif  %s",
+            osgDB::getNameLessExtension(name).c_str(),ext.c_str(),
+            osgDB::getNameLessExtension(name).c_str(),
+            osgDB::getNameLessExtension(name).c_str(),
+            gdal_param,
+            osgDB::getNameLessExtension(name).c_str(),
             ("mosaic/"+osgDB::getSimpleFileName(name)).c_str());
+    int res= system(tmp);
+    // printf("%s\n",tmp);
+    if(res != 0){
+        printf("Failed on run %s\n",tmp);
+        return false;
+    }
+    return true;
+}
+
+
+bool genPyramid(std::string name,int pyramidHeight,string ext){
+    char tmp[8192];
+    tmp[0]='\0';
+    char tmp2[1024];
+    for(int i=1; i < pyramidHeight+1; i++){
+        if(i==1)
+            sprintf(tmp2,"%s-tmp.%s",osgDB::getNameLessExtension(name).c_str(),ext.c_str());
+        else
+            sprintf(tmp2,"%s-%d.%s",(string("mesh-diced/")+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i-1,ext.c_str());
+
+        sprintf(tmp,"%s vips im_shrink %s %s-%d.%s 2 2;",tmp,tmp2,
+                (string("mesh-diced/")+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i,ext.c_str());
+    }
     int res= system(tmp);
     // printf("%s\n",tmp);
     if(res != 0){

@@ -236,6 +236,10 @@ int main( int argc, char **argv )
     }else
         inverseM=osg::Matrix::identity();
 
+
+    if(vertexData._vertices->size() ==0)
+        return 0;
+
     if(osgDB::getFileExtension(outfilename) == "ply"){
 
         // osgUtil::SmoothingVisitor sv;

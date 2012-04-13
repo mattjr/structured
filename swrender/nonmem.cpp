@@ -579,6 +579,21 @@ int main(int ac, char *av[]) {
             exit(-1);
         }
         im_close(tmpI);
+        int levels=(int)ceil(log( max( sizeX, sizeY ))/log(2.0) );
+        if(!genPyramid(osgDB::getNameLessExtension(imageName)+".tif",levels,"ppm")){
+            fprintf(stderr,"FAil to gen pyramid\n");
+            exit(-1);
+        }
+
+        IMAGE *tmpI2=im_open("tmp2","p");
+        im_extract_bands(outputImage,tmpI2,3,1);
+        if( im_vips2ppm(tmpI2,(osgDB::getNameLessExtension(imageName)+"-tmp-mask.pgm").c_str())){
+            fprintf(stderr,"Failed to write\n");
+            cerr << im_error_buffer()<<endl;
+            im_close(tmpI2);
+            exit(-1);
+        }
+        im_close(tmpI2);
         elapsed=osg::Timer::instance()->delta_s(start,osg::Timer::instance()->tick());
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
         process_mem_usage(vm, rss);

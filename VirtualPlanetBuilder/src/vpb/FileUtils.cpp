@@ -76,7 +76,7 @@ int vpb::mkpath(const char *path, int mode)
 {
     if (path==0) return 0;
     
-    vpb::log(osg::NOTICE,"mkpath(%s)",path);
+    vpb::log(osg::INFO,"mkpath(%s)",path);
 
     // first create a list of paths that needs to be checked/created.
     std::string fullpath(path);
@@ -123,7 +123,7 @@ int vpb::mkpath(const char *path, int mode)
             // need to create directory.
             result = vpb::mkdir(path.c_str(), mode);
             if (result) log(osg::NOTICE,"Error could not create directory %s",path.c_str());
-            else log(osg::NOTICE,"   created directory %s",path.c_str());
+            else log(osg::INFO,"   created directory %s",path.c_str());
             
             if (result) return result;
         }
@@ -135,14 +135,14 @@ int vpb::mkpath(const char *path, int mode)
 
 bool vpb::hasWritePermission(const std::string& filename)
 {
-    log(osg::NOTICE,"vpb::access(%s, W_OK)=%i",filename.c_str(), vpb::access(filename.c_str(), W_OK));
+    log(osg::INFO,"vpb::access(%s, W_OK)=%i",filename.c_str(), vpb::access(filename.c_str(), W_OK));
 
     if (vpb::access(filename.c_str(), W_OK)==0) return true;
 
     std::string path = osgDB::getFilePath(filename);
     if (path.empty()) path = ".";
     
-    log(osg::NOTICE,"vpb::access(%s, W_OK)=%i",path.c_str(), vpb::access(path.c_str(), W_OK));
+    log(osg::INFO,"vpb::access(%s, W_OK)=%i",path.c_str(), vpb::access(path.c_str(), W_OK));
 
     return (vpb::access(path.c_str(), W_OK)==0);
 }

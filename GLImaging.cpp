@@ -5,6 +5,7 @@
 #include "CPUDetect.h"
 #include <sys/stat.h>
 #include "MemUtils.h"
+#include <assert.h>
 void optImage(osg::ref_ptr<osg::Image> &image){
     //int pitch=image->getRowSizeInBytes();
     unsigned char *dataBGRA=new unsigned char[image->s()*image->t()*4];
@@ -627,9 +628,7 @@ void addCallbackToViewer(osgViewer::ViewerBase& viewer, WindowCaptureCallback* c
     }
 }
 
-
-void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned int totalCount){
-    osg::Timer_t tick = osg::Timer::instance()->tick();
+std::string formatBarString(string name,osg::Timer_t startTick,osg::Timer_t tick,unsigned int count,unsigned int totalCount){
     double currentTime = osg::Timer::instance()->delta_s(startTick, tick);
     struct winsize w;
     ioctl(0, TIOCGWINSZ, &w);
@@ -670,10 +669,33 @@ void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned in
     bar << "| "<<time.str();
     // if(count==totalCount)
     //   bar<<"\n";
-    printf("\r%s",bar.str().c_str());
-    fflush(stdout);
+    return bar.str();
 }
 
+void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned int totalCount){
+    osg::Timer_t tick = osg::Timer::instance()->tick();
+
+    string str=formatBarString(name,startTick,tick,count,totalCount);
+    printf("\r%s",str.c_str());
+    fflush(stdout);
+}
+#define ASCII_ESC 27
+
+void formatBarMultiLevel(vector<std::string> &name,std::vector<osg::Timer_t> &startTick,std::vector<osg::Timer_t> &endTick,std::vector<unsigned int> &count,std::vector<unsigned int> &totalCount){
+    assert(name.size() == startTick.size() && count.size() == totalCount.size() && endTick.size() == startTick.size());
+    bool isDone=true;
+    for(int i=0; i < (int)name.size(); i++){
+        string str=formatBarString(name[i],startTick[i],endTick[i],count[i],totalCount[i]);
+        if(count[i] != totalCount[i])
+            isDone=false;
+        printf("%s\n",str.c_str());
+    }
+    if(!isDone){
+        printf( "%c[%dA",ASCII_ESC,(int)name.size());
+        fflush(stdout);
+    }
+   //
+}
 /*
 void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMatrix,int width,int height){
 

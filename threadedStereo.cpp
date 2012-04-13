@@ -36,6 +36,7 @@ string wkt_coord_system;
 using namespace std;
 static bool useOrthoTex=true;
 static bool runIpad=false;
+bool silent=false;
 bool reimage=true;
 static double start_time = 0.0;
 static bool no_rangeimg=true;
@@ -44,6 +45,7 @@ static double stop_time = numeric_limits<double>::max();
 static int vpblod_override=0;
 static bool compositeMission=false;
 static bool writeout_meshvar=true;
+static double smallCCPer=0.2;
 //
 // Command-line arguments
 //
@@ -56,6 +58,7 @@ static string background_mb;
 static string contents_file_name;
 static string dir_name;
 int targetScreenFaces;
+int targetBaseLODRes;
 static bool novpb=false;
 static bool use_cached=true;
 static bool further_clean=false;
@@ -272,6 +275,7 @@ static bool parse_args( int argc, char *argv[ ] )
         externalMode=true;
         printf("Using EXTERNAL Mode for outside computation of structure\n");
     }
+     silent=argp.read("--silent");
 
     argp.read("--split-area",desired_area);
     argp.read("--stereo-calib",stereo_calib_file_name);
@@ -344,7 +348,7 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("VRIP_IMG_PER_CELL",vrip_img_per_cell,1000);
     recon_config_file->get_value("FEAT_MIN_DIST",min_feat_dist,3.0);
     recon_config_file->get_value("FEAT_QUALITY_LEVEL",feat_quality_level,0.0001);
-
+    recon_config_file->get_value("CC_CLEAN_PERCENT",smallCCPer,0.2);
     recon_config_file->get_value("MAX_FEAT_COUNT",max_feature_count,5000);
     recon_config_file->get_value("VRIP_RAMP",vrip_ramp,500.0);
     recon_config_file->get_value("EDGE_THRESH",edgethresh,0.5);
@@ -360,6 +364,9 @@ static bool parse_args( int argc, char *argv[ ] )
                                   "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AXIS[\"Lat\",NORTH],AXIS[\"Long\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]");
     recon_config_file->get_value( "TARGET_SCREEN_FACES", targetScreenFaces,
                                   150000);
+    recon_config_file->get_value( "TARGET_BASE_LOD_DIVRES", targetBaseLODRes,
+                                  1024);
+
     recon_config_file->get_value( "MM_PER_PIXEL", mmperpixel,
                                   4);
     recon_config_file->get_value( "JPEG_QUALITY", jpegQuality,
@@ -974,11 +981,13 @@ int main( int argc, char *argv[ ] )
 #pragma omp atomic
                 progCount++;
 
-                formatBar("Stereo",startTick,progCount,totalTodoCount);
+               if(!silent)
+                   formatBar("Stereo",startTick,progCount,totalTodoCount);
 
             }
         }
-        formatBar("Stereo",startTick,totalTodoCount,totalTodoCount);
+        if(!silent)
+            formatBar("Stereo",startTick,totalTodoCount,totalTodoCount);
 
 
         if(!run_stereo){
@@ -989,13 +998,15 @@ int main( int argc, char *argv[ ] )
                     tasks[i].valid=true;
                 else
                     tasks[i].valid=false;
-                formatBar("Stereo-FCK",startTick,progCount,totalTodoCount);
+                if(!silent)
+                    formatBar("Stereo-FCK",startTick,progCount,totalTodoCount);
                 progCount++;
             }
-            formatBar("Stereo-FCK",startTick,totalTodoCount,totalTodoCount);
+            if(!silent)
+                formatBar("Stereo-FCK",startTick,totalTodoCount,totalTodoCount);
 
         }
-
+        printf("\n");
         FILE *totalfp=fopen("mesh-diced/totalbbox.txt","w");
 
 
@@ -1266,8 +1277,8 @@ int main( int argc, char *argv[ ] )
         totalbb.expandBy(osg::Vec3(totalbb_unrot._min[1],totalbb_unrot._min[0],-totalbb_unrot._min[2]));
         totalbb.expandBy(osg::Vec3(totalbb_unrot._max[1],totalbb_unrot._max[0],-totalbb_unrot._max[2]));
     }
-    cout << totalbb_unrot._min<< " " << totalbb_unrot._max<<endl;
-    cout << totalbb._min<< " " << totalbb._max<<endl;
+   // cout << totalbb_unrot._min<< " " << totalbb_unrot._max<<endl;
+    //cout << totalbb._min<< " " << totalbb._max<<endl;
     /* osg::BoundingBox tmp=totalbb;
         tmp._min[2]= tmp._min[1];
         tmp._max[2]= tmp._max[1];
@@ -1352,10 +1363,13 @@ int main( int argc, char *argv[ ] )
     printf("Texture Cells %dx%d\n",_tileRows,_tileColumns);
     printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
     int vpblod=1;
+   // int tmpImg=adjustedSize;
     int faceTmp=numberFacesAll;
     do{
         faceTmp /= pow(4.0,vpblod++);
-    }while(faceTmp > targetFaces);
+        //tmpImg /= pow(2.0,vpblod);
+       // printf("%d %d\n",faceTmp,adjustedSize/(int)pow(2.0,vpblod));
+    }while(faceTmp > targetFaces || (adjustedSize/(int)pow(2.0,vpblod))>targetBaseLODRes );
     std::cout << "Target LOD height is : " << vpblod <<std::endl;
 
     osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
@@ -1512,7 +1526,7 @@ int main( int argc, char *argv[ ] )
                     FLT_MAX,
                     cells[i].row,cells[i].col);
             sprintf(shr_tmp,"%s  %s/vcgapps/bin/mergeMesh mesh-diced/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply -flip -cleansize %f -thresh %f -out mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ply ;",shr_tmp,
-                    basepath.c_str(),cells[i].row,cells[i].col,0.05,0.9*vrip_res,cells[i].row,cells[i].col);
+                    basepath.c_str(),cells[i].row,cells[i].col,smallCCPer,0.9*vrip_res,cells[i].row,cells[i].col);
 
             fprintf(splitcmds_fp,"%s;",shr_tmp);
             fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup -F --outfile mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
@@ -1593,8 +1607,8 @@ int main( int argc, char *argv[ ] )
                     tmp_bbox.yMax(),
                     FLT_MAX,
                     i);
-            sprintf(shr_tmp,"%s    %s/vcgapps/bin/mergeMesh mesh-diced/un-clipped-diced-%08d.ply -thresh %f -out mesh-diced/un2-clipped-diced-%08d-lod%d.ply ;",shr_tmp,
-                    basepath.c_str(),i,0.9*vrip_res,i,vpblod);
+            sprintf(shr_tmp,"%s    %s/vcgapps/bin/mergeMesh mesh-diced/un-clipped-diced-%08d.ply -thresh %f -cleansize %f -out mesh-diced/un2-clipped-diced-%08d-lod%d.ply ;",shr_tmp,
+                    basepath.c_str(),i,0.9*vrip_res,smallCCPer,i,vpblod);
             sprintf(shr_tmp,"%s setenv DISPLAY :0.0; %s/vcgapps/bin/sw-shadevis -n64 -f mesh-diced/un2-clipped-diced-%08d-lod%d.ply ;",shr_tmp,basepath.c_str(),i,vpblod);
             //sprintf(shr_tmp,"%s setenv DISPLAY:0.0; cp mesh-diced/un2-clipped-diced-%08d-lod%d.ply mesh-diced/vis-un2-clipped-diced-%08d-lod%d.ply;",shr_tmp,i,vpblod,i,vpblod);
 
@@ -2064,12 +2078,14 @@ int main( int argc, char *argv[ ] )
             fprintf(vartexcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
         }
         tmp_ds[0]='\0';
-        num_samples=0;
-        for(int p=0; p<num_samples; p++)
-            sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
-        fprintf(FP2,"%d %d %d %d mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %d 1%s\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),
+      //  num_samples=0;
+        int levels=(int)ceil(log( max( ajustedGLImageSizeX, ajustedGLImageSizeY ))/log(2.0) );
+
+      //  for(int p=0; p<num_samples; p++)
+      //      sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
+        fprintf(FP2,"%d %d %d %d mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d.ppm %d\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),
                 (totalX-ajustedGLImageSizeX*(cells[i].row)),ajustedGLImageSizeY*cells[i].col,ajustedGLImageSizeY*(cells[i].col+1),cells[i].row,cells[i].col,_tileRows,_tileColumns,
-                cells[i].row,cells[i].col,_tileRows,_tileColumns,num_samples+1,tmp_ds);
+                cells[i].row,cells[i].col,_tileRows,_tileColumns,levels);
         fprintf(FP3,"image_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
         fprintf(FP4,"var_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
 

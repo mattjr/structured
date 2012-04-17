@@ -151,6 +151,49 @@ public:
 
 
 };
+
+
+class CollectVisitor : public SpatialIndex::IVisitor
+{
+private:
+    uint32_t m_indexIO;
+    uint32_t m_leafIO;
+    std::vector<SpatialIndex::id_type> m_vector;
+    uint32_t nResults;
+
+
+public:
+    CollectVisitor(): nResults(0) {}
+
+    ~CollectVisitor() {}
+
+    void visitNode(const SpatialIndex::INode& n)
+    {
+        if (n.isLeaf()) m_leafIO++;
+        else m_indexIO++;
+    }
+
+    void visitData(const SpatialIndex::IData& d)
+    {
+        nResults += 1;
+
+        m_vector.push_back(d.getIdentifier());
+
+    }
+
+    void visitData(std::vector<const SpatialIndex::IData*>& v)
+    {
+        // std::cout << v[0]->getIdentifier() << " " << v[1]->getIdentifier() << std::endl;
+    }
+
+
+
+
+    uint32_t GetResultCount() const { return nResults; }
+    std::vector<SpatialIndex::id_type>& GetResults()  { return m_vector; }
+
+
+};
 class MyDataStream : public SpatialIndex::IDataStream
 {
 public:

@@ -28,11 +28,13 @@
 #include "VPBInterface.hpp"
 #include <osgDB/WriteFile>
 #include <osgDB/ReadFile>
+#include "vertexData.h"
+#include "MemUtils.h"
 static bool hw_image=false;
 static bool blending=true;
 static bool externalMode=false;
 void formatBar(string name,osg::Timer_t startTick,unsigned int count,unsigned int totalCount);
-string wkt_coord_system;
+string dst_proj4_coord_system;
 using namespace std;
 static bool useOrthoTex=true;
 static bool runIpad=false;
@@ -360,8 +362,8 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("IMAGE_SPLIT_ROW",_tileRows,-1);
     recon_config_file->get_value( "SRC_TEX_SIZE", lodTexSize[0],
                                   512);
-    recon_config_file->get_value( "WKT_DEST_COORD",wkt_coord_system,
-                                  "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AXIS[\"Lat\",NORTH],AXIS[\"Long\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]");
+    recon_config_file->get_value( "PROJ4_DEST_COORD",dst_proj4_coord_system,
+                                  "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
     recon_config_file->get_value( "TARGET_SCREEN_FACES", targetScreenFaces,
                                   150000);
     recon_config_file->get_value( "TARGET_BASE_LOD_DIVRES", targetBaseLODRes,
@@ -1985,6 +1987,7 @@ int main( int argc, char *argv[ ] )
 
     FILE *FP2=fopen("image_areas.txt","w");
     FILE *reFP=fopen("rebbox.txt","w");
+
     FILE *FP3=fopen("createmosaic.sh","w");
     FILE *FP4=fopen("createmosaicvar.sh","w");
    // FILE *FP5=fopen("createrangeimg.sh","w");
@@ -2004,7 +2007,7 @@ int main( int argc, char *argv[ ] )
     for(int i=0; i <(int)cells.size(); i++){
         char tmpfn[1024];
         sprintf(tmpfn,"mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply", cells[i].row,cells[i].col,vpblod);
-        if(cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn)){
+        if(cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
             fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
             continue;
@@ -2117,6 +2120,19 @@ int main( int argc, char *argv[ ] )
             stereo_calib_file_name.c_str()
             );*/
     fclose(FP4);
+    FILE *dBFP=fopen("diced-bounds.txt","w");
+    fprintf(dBFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d total\n",totalbb_unrot.xMin(),totalbb_unrot.xMax(),totalbb_unrot.yMin(),totalbb_unrot.yMax(),totalbb_unrot.zMin(),
+            totalbb_unrot.zMax(),(int)vrip_cells.size());
+    for(int i=0; i <(int)vrip_cells.size(); i++){
+        if(vrip_cells[i].poses.size() == 0)
+            continue;
+        char tmpt[1024];
+        sprintf(tmpt,"mesh-diced/vis-clipped-diced-%08d-lod%d.ply ",i,vpblod);
+        fprintf(dBFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %s\n",vrip_cells[i].bounds.bbox.xMin(),vrip_cells[i].bounds.bbox.xMax(),vrip_cells[i].bounds.bbox.yMin(),vrip_cells[i].bounds.bbox.yMax(),vrip_cells[i].bounds.bbox.zMin(),
+                vrip_cells[i].bounds.bbox.zMax(),i,tmpt);
+    }
+    fclose(dBFP);
+
    // fclose(FP5);
     if(!externalMode){
         double margin=vrip_res*10;
@@ -2424,14 +2440,14 @@ int main( int argc, char *argv[ ] )
     if(!no_simp)
         sysres=system("python simp.py");
 
-    char szProj4[4096];
-    char wkt[4096];
-    sprintf(wkt,"PROJCS[\"unnamed\",GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AUTHORITY[\"EPSG\",\"4326\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",%.12f],PARAMETER[\"central_meridian\",%.12f],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"Meter\",1]]",
-            latOrigin,longOrigin);
-    sprintf( szProj4,
-             "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",latOrigin,longOrigin,1.0,0.0,0.0);
+  //  char szProj4[4096];
+  //  char wkt[4096];
+   // sprintf(wkt,"PROJCS[\"unnamed\",GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AUTHORITY[\"EPSG\",\"4326\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",%.12f],PARAMETER[\"central_meridian\",%.12f],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"Meter\",1]]",
+     //       latOrigin,longOrigin);
+    //sprintf( szProj4,
+      //       "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",latOrigin,longOrigin,1.0,0.0,0.0);
 
-
+    string src_proj4=getProj4StringForAUVFrame(latOrigin,longOrigin);
     if(runIpad){
             sysres=system("bash createtabletdata.sh");
     }
@@ -2444,7 +2460,7 @@ int main( int argc, char *argv[ ] )
                 printf("Forcing no hw compression due to lack of graphics card context\n");
             }
         }
-        doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot,wkt_coord_system,string(wkt),sparseRatio,no_hw_context);
+        doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot,src_proj4,dst_proj4_coord_system,sparseRatio,no_hw_context);
     }
 
     char zipstr[1024];

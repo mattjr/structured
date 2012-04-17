@@ -216,6 +216,7 @@ class MyDataSet :  public DataSet
         void setDestinationCoordinateSystem(const std::string& wellKnownText);
         bool reprojectPoint(const osg::Vec3d &src,osg::Vec3d &dst);
         SpatialReference *_SrcSRS,*_TargetSRS;
+        osg::Node* decorateWithCoordinateSystemNode(MyCompositeDestination *cd,osg::Node* subgraph);
 
     protected:
         virtual ~MyDataSet() {for(int i=0;i < (int)mosaic_cells.size(); i++)
@@ -280,10 +281,10 @@ public:
         texcoord_range_map  cell_coordinate_map;
         std::vector<mosaic_cell> mosaic_cells;
         typedef struct _struct_cell{
-            int row;
-            int col;
+            int index;
             osg::BoundingBox bbox;
             std::string name;
+            std::vector<TexturedSource*> sources;
         }struct_cell;
        std::vector<struct_cell>  struct_cells;
        SpatialIndex::ISpatialIndex* struct_tree;

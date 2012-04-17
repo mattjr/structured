@@ -203,18 +203,23 @@ MyCompositeDestination::createPlacerMatrix(  const SpatialReference* srs, double
 }
 
 
-void MyDataSet::setDestinationCoordinateSystem(const std::string& wellKnownText)
+void MyDataSet::setDestinationCoordinateSystem(const std::string& proj4_dst)
 {
-    _TargetSRS =  SpatialReference::create(wellKnownText);
-
-    _destinationCoordinateSystemString = wellKnownText;
-    setDestinationCoordinateSystemNode(new osg::CoordinateSystemNode("WKT",wellKnownText));
+    _TargetSRS =  SpatialReference::create(proj4_dst);
+    if(!_TargetSRS){
+        cerr <<"Failed to load proj4 string dst coordinate "<<proj4_dst<<endl;
+        exit(-1);
+    }
+    _destinationCoordinateSystemString = proj4_dst;
+    setDestinationCoordinateSystemNode(new osg::CoordinateSystemNode("WKT",_TargetSRS->getWKT()));
 }
 void MyDataSet::setSourceCoordinateSystemProj4(const std::string proj4_src){
 
     _SrcSRS =  SpatialReference::create(proj4_src);
-
-    //    cout << pszWKT << " "<<proj4_src<<endl;
+    if(!_SrcSRS){
+        cerr <<"Failed to load proj4 string src coordinate "<<proj4_src<<endl;
+        exit(-1);
+    }
 }
 bool MyDataSet::reprojectPoint(const osg::Vec3d &src,osg::Vec3d &dst){
     //if(!poCT){
@@ -305,67 +310,6 @@ void MyDataSet::init()
 
 
     if(_useReImage){
-        int _tileColumns,_tileRows;
-        FILE *fp=fopen("rebbox.txt","r");
-        if(!fp){
-            fprintf(stderr,"Can't open rebbox\n");
-            exit(-1);
-        }
-        int cnt=0;
-        while(!feof(fp)){
-            char fname[1024];
-            float minx,maxx,miny,maxy,minz,maxz;
-            int row,col;
-            int res=fscanf(fp,"%f %f %f %f %f %f %d %d %s\n",&minx,&maxx,&miny,&maxy,&minz,&maxz,&col,&row,fname);
-            if(res != 9){
-                fprintf(stderr,"Bad parse\n");
-                exit(-1);
-            }
-            if(cnt==0){
-                osg::BoundingBox totalbb=osg::BoundingBox(miny,minx,minz,maxy,maxx,maxz);
-                _tileColumns=col;
-                _tileRows=row;
-
-            }else{
-                struct_cell cell;
-                cell.bbox=osg::BoundingBox(miny,minx,minz,maxy,maxx,maxz);
-                cell.col=col;
-                cell.row=row;
-                if(std::string(fname) != "null"){
-                    cell.name=std::string(fname);
-                    struct_cells.push_back(cell);
-                }
-
-            }
-            cnt++;
-
-        }
-
-
-        double utilization;
-        int capacity;
-
-        utilization=0.7;
-        capacity=4;
-
-        struct_memstore = StorageManager::createNewMemoryStorageManager();
-        // Create a new storage manager with the provided base name and a 4K page size.
-        id_type indexIdentifier;
-
-        struct_manager = StorageManager::createNewRandomEvictionsBuffer(*struct_memstore, 10, false);
-        struct_tree = RTree::createNewRTree(*struct_manager, 0.7, capacity,capacity,2, SpatialIndex::RTree::RV_RSTAR, indexIdentifier);
-        double plow[2], phigh[2];
-        for(int i=0; i<struct_cells.size(); i++){
-            plow[0]= struct_cells[i].bbox.xMin();
-            plow[1]= struct_cells[i].bbox.yMin();
-
-            phigh[0]=struct_cells[i].bbox.xMax();
-            phigh[1]=struct_cells[i].bbox.yMax();
-
-            Region r = Region(plow, phigh, 2);
-            id_type id=i;
-            struct_tree->insertData(0, 0, r,id);
-        }
 
 
         ifstream inf( "image_areas.txt" );
@@ -375,7 +319,7 @@ void MyDataSet::init()
             fprintf(stderr,"Can't open image_areas.txt\n");
             exit(-1);
         }
-        cnt=0;
+        int cnt=0;
         while(!inf.eof()){
             char fname[1024];
             char fname_tif[1024];
@@ -918,7 +862,7 @@ void MyDestinationTile::unrefData()
     _stateset = 0;
 }
 
-void compressJP2(osg::State *state,osg::Texture2D* texture2D, osg::Texture::InternalFormatMode internalFormatMode){
+/*void compressJP2(osg::State *state,osg::Texture2D* texture2D, osg::Texture::InternalFormatMode internalFormatMode){
     osg::ref_ptr<osg::Image> image = texture2D->getImage();
     if (image.valid() &&
             (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) ){//&&
@@ -937,7 +881,7 @@ void compressJP2(osg::State *state,osg::Texture2D* texture2D, osg::Texture::Inte
         image->setImage(width,height,1,GL_RGB, GL_RGB, GL_UNSIGNED_BYTE,NULL,osg::Image::NO_DELETE);
         image->setWriteHint(osg::Image::EXTERNAL_FILE);
     }
-}
+}*/
 
 void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &geoms,osg::Vec4Array *v,const osg::Vec4Array &colors,const osg::Vec3Array &normals, const osg::PrimitiveSet& prset,
                                                        const TexBlendCoord  &texCoordsArray,
@@ -1580,10 +1524,10 @@ osg::Node* MyDestinationTile::createScene()
 
             if(!_mydataSet->_useVirtualTex){
 
-                int numtex=_atlasGen->_totalImageList.size();
-                double memsize;
+                //int numtex=_atlasGen->_totalImageList.size();
+//double memsize;
 
-                /*for( tex_size=16; tex_size <= 2048; tex_size*=2){
+                /*   for( tex_size=16; tex_size <= 2048; tex_size*=2){
                 memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
                 if(memsize >1.0)
                     break;
@@ -1597,7 +1541,7 @@ osg::Node* MyDestinationTile::createScene()
                 //tex_size=pow(2,start_pow-leveloffset);
                 tex_size=tex_size/pow(2.0,leveloffset);
                 tex_size=max(tex_size,8);
-                memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
+                //memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
 
                 //  int texSizeIdx=levelToTextureLevel[_level];
                 _atlasGen->loadTextureFiles(tex_size);
@@ -1708,18 +1652,18 @@ osg::Node* MyDestinationTile::createScene()
                             osg::Vec3Array *normals=static_cast< osg::Vec3Array*>(geom->getNormalArray());
 
                             osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
-                            int s=primitiveSets[0]->getNumIndices();
+                            //int s=primitiveSets[0]->getNumIndices();
                             osg::PrimitiveSet &primset=*(primitiveSets.begin()->get());
-                            int s2=verts->size();
-                            int s3=texCoords[0]->size();
+                            //int s2=verts->size();
+                            //int s3=texCoords[0]->size();
                             TexBlendCoord newTexCoord;
                             osg::Vec4Array *newIds=new osg::Vec4Array;
                             fillPrimTexCoordFromVert(primset,texCoords,v,newTexCoord,newIds);
 
                             // toVert(geode,newTexCoord,newIds,texCoords,v);
-                            s=primitiveSets[0]->getNumIndices();
-                            s2=v->size();
-                            s3=texCoords[0]->size();
+                            //s=primitiveSets[0]->getNumIndices();
+                          //  s2=v->size();
+                           // s3=texCoords[0]->size();
                             generateStateAndSplitDrawables(geoms,v,*colors,*normals,primset,texCoords,*verts,tex_size);
                             geode->removeDrawables(0);
                             for(int i=0; i < (int)geoms.size(); i++){
@@ -1815,12 +1759,27 @@ MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int c
 
     phigh[0]=extents.xMax();
     phigh[1]=extents.yMax();
-
+    osg::BoundingBox ext_bbox(extents.xMin(),extents.yMin(),-FLT_MAX,extents.xMax(),extents.yMax(),FLT_MAX);
     Region r = Region(plow, phigh, 2);
-    CountVisitor vis;
+    CollectVisitor vis;
     //  if(dynamic_cast<MyDataSet*>(_dataSet)->cell_coordinate_map.count(p)){
     struct_tree->intersectsWithQuery(r, vis);
     if(vis.GetResultCount() ==0)
+        return NULL;
+    bool notfound=true;
+    for(unsigned int r=0; r < vis.GetResults().size() && notfound; r++){
+        std::vector<TexturedSource*> &sources= struct_cells.at((vis.GetResults()[r])).sources;
+        for(int k=0; k < (int)sources.size(); k++){
+            if(sources[k]->_kdTree){
+                osg::ref_ptr<KdTreeChecker> checker=new KdTreeChecker(*sources[k]->_kdTree);
+                if(checker->check(ext_bbox)){
+                    notfound=false;
+                    break;
+                }
+            }
+        }
+    }
+    if(notfound)
         return NULL;
     MyCompositeDestination* destinationGraph = new MyCompositeDestination(_destinationCoordinateSystem.get(),extents,_useReImage,_useVBO,_useDisplayLists,_file,_fileMutex);
 
@@ -1891,7 +1850,74 @@ void MyDataSet::createNewDestinationGraph(
     unsigned int maxTerrainSize,
     unsigned int maxNumLevels)
 {
+    FILE *fp=fopen("diced-bounds.txt","r");
+    if(!fp){
+        fprintf(stderr,"Can't open rebbox\n");
+        exit(-1);
+    }
+    int cnt=0;
+    //int numIdx=0;
+    while(!feof(fp)){
+        char fname[1024];
+        float minx,maxx,miny,maxy,minz,maxz;
+        int index;
+        int res=fscanf(fp,"%f %f %f %f %f %f %d %s\n",&minx,&maxx,&miny,&maxy,&minz,&maxz,&index,fname);
+        if(res != 8){
+            fprintf(stderr,"Bad parse\n");
+            exit(-1);
+        }
+        if(cnt==0){
+            //osg::BoundingBox totalbb=osg::BoundingBox(miny,minx,minz,maxy,maxx,maxz);
+            //numIdx=index;
 
+        }else{
+            struct_cell cell;
+            cell.bbox=osg::BoundingBox(minx,miny,minz,maxx,maxy,maxz);
+            cell.index=index;
+            if(std::string(fname) != "null"){
+                cell.name=std::string(fname);
+                // now insert the sources into the destination graph
+                for(CompositeSource::source_iterator itr(_sourceGraph.get());itr.valid();++itr)
+                {
+                    Source* source = (*itr).get();
+                    TexturedSource* texsource = dynamic_cast<TexturedSource*>(source);
+                    GeospatialExtents tmpBB(cell.bbox.xMin(),cell.bbox.yMin(),cell.bbox.xMax(),cell.bbox.yMax(),false);
+                    if(texsource->getSourceData()->_extents.intersects(tmpBB) && texsource->getMinLevel() ==0)
+                        cell.sources.push_back(texsource);
+                }
+                struct_cells.push_back(cell);
+            }
+
+        }
+        cnt++;
+
+    }
+
+
+    //double utilization;
+    int capacity;
+
+   // utilization=0.7;
+    capacity=4;
+
+    struct_memstore = StorageManager::createNewMemoryStorageManager();
+    // Create a new storage manager with the provided base name and a 4K page size.
+    id_type indexIdentifier;
+
+    struct_manager = StorageManager::createNewRandomEvictionsBuffer(*struct_memstore, 10, false);
+    struct_tree = RTree::createNewRTree(*struct_manager, 0.7, capacity,capacity,2, SpatialIndex::RTree::RV_RSTAR, indexIdentifier);
+    double plow[2], phigh[2];
+    for(int i=0; i<(int)struct_cells.size(); i++){
+        plow[0]= struct_cells[i].bbox.xMin();
+        plow[1]= struct_cells[i].bbox.yMin();
+
+        phigh[0]=struct_cells[i].bbox.xMax();
+        phigh[1]=struct_cells[i].bbox.yMax();
+
+        Region r = Region(plow, phigh, 2);
+        id_type id=i;
+        struct_tree->insertData(0, 0, r,id);
+    }
 
     //int highestLevelFound = 0;
     _destinationExtents=extents;
@@ -2840,7 +2866,41 @@ public:
     osg::ref_ptr<MyCompositeDestination>  _cd;
     std::string                         _filename;
 };
+osg::Node* MyDataSet::decorateWithCoordinateSystemNode(MyCompositeDestination *cd,osg::Node* subgraph)
+{
+    // don't decorate if no coord system is set.
+    if (!_destinationCoordinateSystem || _destinationCoordinateSystem->getCoordinateSystem().empty())
+        return subgraph;
 
+    osg::CoordinateSystemNode* csn = new osg::CoordinateSystemNode(
+            _destinationCoordinateSystem->getFormat(),
+            _destinationCoordinateSystem->getCoordinateSystem());
+
+    // set the ellipsoid model if geocentric coords are used.
+    if (getConvertFromGeographicToGeocentric()) csn->setEllipsoidModel(getEllipsoidModel());
+    osg::Matrixd                                localToWorld;
+
+    localToWorld.makeIdentity();
+    double o_x,o_y,o_z;
+   // printf("%f %f\n",_zrange[0],_zrange[1]);
+    _SrcSRS->transform(0,0,_zrange[0],_TargetSRS,o_y,o_x,o_z);
+    cd->createPlacerMatrix(_TargetSRS,o_x,o_y,o_z,localToWorld);
+    float rx=0,ry=180.0,rz=-90;
+
+    osg::Matrix rotM =osg::Matrix::rotate(
+                osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+
+    osg::MatrixTransform* mt = new osg::MatrixTransform;
+    mt->setMatrix(rotM*localToWorld);
+    mt->addChild(subgraph);
+
+    // add the a subgraph.
+    csn->addChild(mt);
+
+    return csn;
+}
 void MyDataSet::_writeRow(Row& row)
 {
     log(osg::INFO, "_writeRow %u",row.size());
@@ -2934,7 +2994,7 @@ void MyDataSet::_writeRow(Row& row)
                 }
                 else*/ if (_decorateWithCoordinateSystemNode)
                 {
-                    node = decorateWithCoordinateSystemNode(node.get());
+                    node = decorateWithCoordinateSystemNode(cd,node.get());
                 }
 
                 if (!_comment.empty())
@@ -3011,7 +3071,7 @@ osg::Matrix vpb::MyDataSet::getImageSection(const osg::Vec2 minT, const osg::Vec
     osg::Vec2 downsampleSize(subSize.x(),subSize.y());
     downsampleSize.x()*=downsampleRatio;
     downsampleSize.y()*=downsampleRatio;
-
+   // printf("%f %f\n",downsampleSize.x(),downsampleSize.y());
     // printf("Range %d %d\n",xRange,yRange);
     // printf("%f %f %f %f\n",subSize.x(),subSize.y(),downsampleSize.x(),downsampleSize.y());
     image = new osg::Image;
@@ -3170,7 +3230,7 @@ osg::Matrix vpb::MyDataSet::getImageSectionAtlas(const osg::Vec2 minT, const osg
     int downsampledImageIndex=level-1;
 
     //  printf("Downsample Factor %f\n",downsampleFactor);
-    double downsampleRatio=1.0/downsampleFactor;
+    //double downsampleRatio=1.0/downsampleFactor;
     // std::cout<< minT << " " << maxT<<std::endl;
     // printf("%f %f\n",downsampleRatio,downsampleRatio);
     int x=/*0;*/(int)std::max((int)floor(minT.x()),0);
@@ -3181,8 +3241,8 @@ osg::Matrix vpb::MyDataSet::getImageSectionAtlas(const osg::Vec2 minT, const osg
     // xMax=origX;   yMax=origY; x=0;y=0;
 
 
-    int xRange=(xMax-x);
-    int yRange=(yMax-y);
+    //int xRange=(xMax-x);
+   // int yRange=(yMax-y);
     // cout << "FFFF" <<minT<<" "<<maxT<<endl;
     // printf("X:%d -- %d Y:%d -- %d ",x,xMax,y,yMax);
     osg::BoundingBoxd areaBB(x,y,0,xMax,yMax,1);
@@ -3264,12 +3324,12 @@ used_img=mosaic_cells[i].img_ds[downsampledImageIndex];
                 int tileEndY= (int)(imgBB.yMax()-mosaic_cells[i].bbox.yMin());
                 int tileRangeX=tileEndX-tileStartX;
                 int tileRangeY=tileEndY-tileStartY;
-                int outOffsetX=(int)(imgBB.xMin()-areaBB.xMin());
-                int outOffsetY=(int)(imgBB.yMin()-areaBB.yMin());
+                //int outOffsetX=(int)(imgBB.xMin()-areaBB.xMin());
+                //int outOffsetY=(int)(imgBB.yMin()-areaBB.yMin());
                 //downsampledXoff=0;
                 //downsampledYoff=0;
-                int downsampledXoff=outOffsetX/downsampleFactor;
-                int downsampledYoff=outOffsetY/downsampleFactor;
+                //int downsampledXoff=outOffsetX/downsampleFactor;
+                //int downsampledYoff=outOffsetY/downsampleFactor;
                 int downsampledtileStartX=(int)floor(tileStartX/downsampleFactor);
                 int downsampledtileStartY=(int)floor(tileStartY/downsampleFactor);
 
@@ -3339,8 +3399,8 @@ downsampledYoff,
                                                       downsampledtileRangeY)/*.shrink(downsampleFactor,downsampleFactor)*/.write(osgImage);
                     atlas->atlasSourceMatrix[i]=image;
                     typedef osg::Matrix::value_type Float;
-                    Float tileOrigSizeX=mosaic_cells[i].bbox.xMax()-mosaic_cells[i].bbox.xMin();
-                    Float tileOrigSizeY=mosaic_cells[i].bbox.yMax()-mosaic_cells[i].bbox.yMin();
+                    //Float tileOrigSizeX=mosaic_cells[i].bbox.xMax()-mosaic_cells[i].bbox.xMin();
+                 //   Float tileOrigSizeY=mosaic_cells[i].bbox.yMax()-mosaic_cells[i].bbox.yMin();
 
                     double xscale=Float(origX)/Float(tileRangeX);
                     double yscale=Float(origY)/Float(tileRangeY);
@@ -3373,6 +3433,8 @@ downsampledYoff,
         //exit(-1);
         //osg::setNotifyLevel(osg::INFO);
         atlas->buildAtlas();
+     //   printf("%d %d\n",atlas->getAtlasByNumber(0)->t(),atlas->getAtlasByNumber(0)->s());
+
         if( atlas->getNumAtlases() > 1){
             fprintf(stderr,"Atlas fail!!! Downsample didn't allow for one atlas WIP! SEE MATT\nHopefully this will one day be replaced with working code :-)\n%d atlas\n",atlas->getNumAtlases());
             exit(-1);
@@ -3574,8 +3636,8 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     int leveloffset=(_numLevels-_level-1);
     leveloffset=std::min(leveloffset,5);
     leveloffset=std::max(leveloffset,0);
-    double downsampleFactor=pow(2.0,leveloffset);
-    double downsampleRatio=1.0/downsampleFactor;
+    //double downsampleFactor=pow(2.0,leveloffset);
+    //double downsampleRatio=1.0/downsampleFactor;
 
 
     for(int i=0; i< (int)group->getNumChildren(); i++){
@@ -3647,10 +3709,10 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         SpatialIndex::IStorageManager* memstore;
         SpatialIndex::IStorageManager* manager;
 
-        double utilization;
+        //double utilization;
         int capacity;
 
-        utilization=0.7;
+       // utilization=0.7;
         capacity=4;
 
         memstore = StorageManager::createNewMemoryStorageManager();
@@ -3660,7 +3722,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         manager = StorageManager::createNewRandomEvictionsBuffer(*memstore, 10, false);
         tree = RTree::createNewRTree(*manager, 0.7, capacity,capacity,2, SpatialIndex::RTree::RV_RSTAR, indexIdentifier);
         double plow[2], phigh[2];
-        for(int i=0; i<dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells.size(); i++){
+        for(int i=0; i<(int)dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells.size(); i++){
             plow[0]= dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[i].bbox.xMin();
             plow[1]= dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[i].bbox.yMin();
 
@@ -3722,7 +3784,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
             double virtArea=(maxT.x()-minT.x())*(maxT.y()-minT.y())*downsampleRatio*downsampleRatio;
             double totalArea=0;
             for(it=seenids.begin(); it!=seenids.end(); it++){
-                if(*it>=0 && *it <  dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells.size()){
+                if(*it>=0 && *it <  (int)dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells.size()){
                     double xsize=dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.xMax()-dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.xMin();
                     double ysize=dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.yMax()-dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells[*it].bbox.yMin();
                     totalArea+=xsize*ysize*downsampleRatio*downsampleRatio;
@@ -3849,7 +3911,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     newGeom->setUseVertexBufferObjects(_useVBO);
 
     newGeode->addDrawable(newGeom);
-    char tmp[128];
+    //char tmp[128];
     // if(image->s() != image->t()){
     //  sprintf(tmp,"%d-%d-%d.png",image->s(),image->t(),rand());
     // osgDB::writeImageFile(*image.get(),tmp);
@@ -3955,47 +4017,12 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         stateset->setTextureAttribute(0, te);
     }
     stateset->setDataVariance(osg::Object::STATIC);
-    //   osgUtil::ShaderGenVisitor sgv;
-    // newGeode->accept(sgv);
 
-    // osg::Vec3 v(1972.38,3932.55,0);
-    //osg::Vec3 v(302.3,334.3,0);
-    //  std::cout << v*toScreen << " " << toScreen<<std::endl;
-    // osgDB::Registry::instance()->writeImage( *image,"ass.png",NULL);
-    /*const osg::EllipsoidModel* et = _dataSet->getEllipsoidModel();
-    bool mapLatLongsToXYZ = _dataSet->mapLatLongsToXYZ();
-    bool useLocalToTileTransform = _dataSet->getUseLocalTileTransform();*/
-    osg::Matrixd                                _localToWorld;
-    osg::Matrixd                                _worldToLocal;
-
-    _localToWorld.makeIdentity();
-    _worldToLocal.makeIdentity();
-    /* osg::Vec3 skirtVector(0.0f,0.0f,0.0f);
-
-
-    osg::Vec3 center_position(0.0f,0.0f,0.0f);
-    osg::Vec3 center_normal(0.0f,0.0f,1.0f);
-    osg::Vec3 transformed_center_normal(0.0f,0.0f,1.0f);
-    double globe_radius = et ? et->getRadiusPolar() : 1.0;
-
-    bool useClusterCullingCallback = mapLatLongsToXYZ;
-    double midLat,midLong,midZ;
-    osg::Vec3d midPointLatLong;
-    dynamic_cast<MyDataSet*>(_dataSet)->reprojectPoint(bbox.center(),midPointLatLong);
-    //   cout << "Lat Long Height" << midPointLatLong<<endl;
-    //et->computeLocalToWorldTransformFromLatLongHeight(osg::DegreesToRadians(midPointLatLong[0]),osg::DegreesToRadians(midPointLatLong[1]),midPointLatLong[2],_localToWorld);
-    createPlacerMatrix(dynamic_cast<MyDataSet*>(_dataSet)->_TargetSRS,22.988098333,36.517776667,0,_localToWorld);
-    //osg::Matrix::translate(midPointLatLong);
-    //
-    */
-    osg::MatrixTransform* mt = new osg::MatrixTransform;
-    mt->setMatrix(_localToWorld);
-    mt->addChild(newGeode);
-    // osg::Group *newGroup=new osg::Group;
-    //newGroup->addChild(newGeode);
+    osg::Group *newGroup=new osg::Group;
+    newGroup->addChild(newGeode);
     osgUtil::SmoothingVisitor sv;
-    mt->accept(sv);
+    newGroup->accept(sv);
 
-    return mt->asGroup();
+    return newGroup;
 
 }

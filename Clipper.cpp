@@ -573,3 +573,48 @@ bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox b
 
     return false;
 }
+
+bool CheckKdTreeBbox::check(const osg::KdTree::KdNode& node,const osg::BoundingBox clipbox) const
+{
+    if (node.first<0)
+    {
+        // treat as a leaf
+
+        //OSG_NOTICE<<"KdTree::intersect("<<&leaf<<")"<<std::endl;
+        int istart = -node.first-1;
+        int iend = istart + node.second;
+        for(int i=istart; i<iend; ++i)
+        {
+            const KdTree::Triangle& tri = _triangles[i];
+
+
+            osg::Vec3 v0 = (*_vertices)[tri.p0];
+            osg::Vec3 v1 = (*_vertices)[tri.p1];
+            osg::Vec3 v2 = (*_vertices)[tri.p2];
+
+
+            //printf("%f\n",id0[0]);
+            int contains=0;
+            contains+=clipbox.contains(v0);
+            contains+=clipbox.contains(v1);
+            contains+=clipbox.contains(v2);
+            //No inside
+            if(contains > 0)
+                return true;
+        }
+        return false;
+    }
+    else
+    {
+        return (node.first>0 && clipbox.intersects(_kdNodes[node.first].bb) && check(_kdNodes[node.first], clipbox)) ||
+                ((node.second>0) && clipbox.intersects(_kdNodes[node.second].bb) &&check(_kdNodes[node.second], clipbox));
+    }
+}
+bool  KdTreeChecker::check(const osg::BoundingBox bbox)
+
+{
+
+
+    return checker.check(getNode(0),bbox);
+
+}

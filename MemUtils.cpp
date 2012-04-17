@@ -71,6 +71,14 @@ void process_mem_usage(double& vm_usage, double& resident_set)
     vm_usage     = vsize / 1024.0;
     resident_set = rss * page_size_kb;
 }
+string getProj4StringForAUVFrame(double lat_origin,double lon_origin){
+
+    char szProj4[4096];
+    sprintf( szProj4,
+             "+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs",lat_origin,lon_origin,1.0,0.0,0.0);
+    return string(szProj4);
+}
+
 bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int width,int height,string ext,int jpegQuality){
 
     osg::Matrix modWindow =( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*width,0.5*height,0.5f));
@@ -81,10 +89,8 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     osg::Vec3 bl(0,height,0);
     osg::Vec3 tr(width,0,0);
     osg::Vec3 br(width,height,0);
-    char szProj4[4096];
-    sprintf( szProj4,
-             "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",geoOrigin.x(),geoOrigin.y(),1.0,0.0,0.0);
 
+    string proj4=getProj4StringForAUVFrame(geoOrigin.x(),geoOrigin.y());
     osg::Vec3 tlGlobal=tl*screenToWorld;
     osg::Vec3 blGlobal=bl*screenToWorld;
     osg::Vec3 trGlobal=tr*screenToWorld;
@@ -100,9 +106,9 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     worldfile.close();
     char gdal_param[4096];
     if(jpegQuality <0)
-        sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
+        sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs \"%s\"",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),proj4.c_str());
     else
-        sprintf(gdal_param," -of GTiff -b 1 -b 2 -b 3 -mask 4 -co \"compress=JPEG\" -co \"TILED=YES\" --config GDAL_TIFF_INTERNAL_MASK YES -co \"PHOTOMETRIC=YCBCR\" -co \"JPEG_QUALITY=%d\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",jpegQuality,tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),szProj4);
+        sprintf(gdal_param," -of GTiff -b 1 -b 2 -b 3 -mask 4 -co \"compress=JPEG\" -co \"TILED=YES\" --config GDAL_TIFF_INTERNAL_MASK YES -co \"PHOTOMETRIC=YCBCR\" -co \"JPEG_QUALITY=%d\" -a_ullr %.12f %.12f %.12f %.12f -a_srs \"%s\"",jpegQuality,tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),proj4.c_str());
     char tmp[8192];
     sprintf(tmp,"%s-add_geo.sh",name.c_str());
     FILE *fp=fopen(tmp,"w");

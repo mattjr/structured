@@ -135,11 +135,11 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
     {
         { "vertex_indices", PLY_INT, PLY_INT, offsetof( _Face, vertices ), 
           1, PLY_UCHAR, PLY_UCHAR, offsetof( _Face, nVertices ) },
-{ "texcoord", PLY_FLOAT, PLY_FLOAT, offsetof( _Face, texcoord ),
-  1, PLY_UCHAR, PLY_UCHAR, offsetof( _Face, nTex ) },
-{ "texnumber", PLY_INT, PLY_INT, offsetof( _Face, id ), 0, 0, 0, 0 },
-{ "color", PLY_FLOAT, PLY_FLOAT, offsetof( _Face, ids ),
-  1, PLY_UCHAR, PLY_UCHAR, offsetof( _Face, nIds ) }
+        { "texcoord", PLY_FLOAT, PLY_FLOAT, offsetof( _Face, texcoord ),
+          1, PLY_UCHAR, PLY_UCHAR, offsetof( _Face, nTex ) },
+        { "texnumber", PLY_INT, PLY_INT, offsetof( _Face, id ), 0, 0, 0, 0 },
+        { "color", PLY_FLOAT, PLY_FLOAT, offsetof( _Face, ids ),
+          1, PLY_UCHAR, PLY_UCHAR, offsetof( _Face, nIds ) }
 
     };
     
@@ -268,7 +268,7 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
                     //cout << (int)face.nIds << " "<<osg::Vec4(face.ids[k+0],face.ids[k+1],face.ids[k+2],face.ids[k+3]) << endl;
                 }
                 if(_texIds->at(_texIds->size()-1) != _texIds->at(_texIds->size()-2) || _texIds->at(_texIds->size()-1) != _texIds->at(_texIds->size()-3)
-                    || _texIds->at(_texIds->size()-2) != _texIds->at(_texIds->size()-3)){
+                        || _texIds->at(_texIds->size()-2) != _texIds->at(_texIds->size()-3)){
                     cerr<< _texIds->at(_texIds->size()-1) << " " <<_texIds->at(_texIds->size()-2) << " "<<_texIds->at(_texIds->size()-3)<<endl;
                     fprintf(stderr,"All the texIDs not aligned\n");
                     //exit(-1);
@@ -320,13 +320,13 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
     catch( exception& e )
     {
         MESHERROR << "Unable to read PLY file, an exception occured:  " 
-                << e.what() << endl;
+                  << e.what() << endl;
     }
 
     if( !file )
     {
         MESHERROR << "Unable to open PLY file " << filename 
-                << " for reading." << endl;
+                  << " for reading." << endl;
         return NULL;
     }
 
@@ -339,7 +339,7 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
     
 #ifndef NDEBUG
     MESHINFO << filename << ": " << nPlyElems << " elements, file type = " 
-            << fileType << ", version = " << version << endl;
+             << fileType << ", version = " << version << endl;
 #endif
 
     for( int i = 0; i < nComments; i++ )
@@ -363,17 +363,17 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
         catch( exception& e )
         {
             MESHERROR << "Unable to get PLY file description, an exception occured:  " 
-                    << e.what() << endl;
+                      << e.what() << endl;
         }
         MESHASSERT( props != 0 );
         
 #ifndef NDEBUG
         MESHINFO << "element " << i << ": name = " << elemNames[i] << ", "
-                << nProps << " properties, " << nElems << " elements" << endl;
+                 << nProps << " properties, " << nElems << " elements" << endl;
         for( int j = 0; j < nProps; ++j )
         {
             MESHINFO << "element " << i << ", property " << j << ": "
-                    << "name = " << props[j]->name << endl;
+                     << "name = " << props[j]->name << endl;
         }
 #endif
         
@@ -417,7 +417,7 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
             catch( exception& e )
             {
                 MESHERROR << "Unable to read vertex in PLY file, an exception occured:  " 
-                        << e.what() << endl;
+                          << e.what() << endl;
                 // stop for loop by setting the loop variable to break condition
                 // this way resources still get released even on error cases
                 i = nPlyElems;
@@ -449,7 +449,7 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
             catch( exception& e )
             {
                 MESHERROR << "Unable to read PLY file, an exception occured:  "
-                        << e.what() << endl;
+                          << e.what() << endl;
                 // stop for loop by setting the loop variable to break condition
                 // this way resources still get released even on error cases
                 i = nPlyElems;
@@ -598,3 +598,100 @@ void VertexData::_calculateNormals( const bool vertexNormals )
 #endif
 }
 
+bool checkIsEmptyPly(const char *filename){
+    int     nPlyElems;
+    char**  elemNames;
+    int     fileType;
+    float   version;
+
+    int     nComments;
+    char**  comments;
+
+    PlyFile* file = NULL;
+
+    // Try to open ply file as for reading
+    try{
+        file  = ply_open_for_reading( const_cast< char* >( filename ),
+                                      &nPlyElems, &elemNames,
+                                      &fileType, &version );
+    }
+    // Catch the if any exception thrown
+    catch( exception& e )
+    {
+        MESHERROR << "Unable to read PLY file, an exception occured:  "
+                  << e.what() << endl;
+    }
+
+    if( !file )
+    {
+        MESHERROR << "Unable to open PLY file " << filename
+                  << " for reading." << endl;
+        return NULL;
+    }
+
+    MESHASSERT( elemNames != 0 );
+
+
+    nComments = file->num_comments;
+    comments = file->comments;
+
+
+#ifndef NDEBUG
+    MESHINFO << filename << ": " << nPlyElems << " elements, file type = "
+             << fileType << ", version = " << version << endl;
+#endif
+
+
+    for( int i = 0; i < nPlyElems; ++i )
+    {
+        int nElems;
+        int nProps;
+
+        PlyProperty** props = NULL;
+        try{
+            props = ply_get_element_description( file, elemNames[i],
+                                                 &nElems, &nProps );
+        }
+        catch( exception& e )
+        {
+            MESHERROR << "Unable to get PLY file description, an exception occured:  "
+                      << e.what() << endl;
+        }
+        MESHASSERT( props != 0 );
+
+#ifndef NDEBUG
+        MESHINFO << "element " << i << ": name = " << elemNames[i] << ", "
+                 << nProps << " properties, " << nElems << " elements" << endl;
+        for( int j = 0; j < nProps; ++j )
+        {
+            MESHINFO << "element " << i << ", property " << j << ": "
+                     << "name = " << props[j]->name << endl;
+        }
+#endif
+
+        // if the string is vertex means vertex data is started
+        if( equal_strings( elemNames[i], "vertex" ) )
+        {
+
+
+            if(nElems > 0)
+                return false;
+            else
+                return true;
+        }
+
+        // free the memory that was allocated by ply_get_element_description
+        for( int j = 0; j < nProps; ++j )
+            free( props[j] );
+        free( props );
+    }
+
+    ply_close( file );
+
+    // free the memory that was allocated by ply_open_for_reading
+    for( int i = 0; i < nPlyElems; ++i )
+        free( elemNames[i] );
+    free( elemNames );
+
+    return true;
+}

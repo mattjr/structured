@@ -88,4 +88,6 @@ namespace ply
 }
 
 
+bool checkIsEmptyPly(const char *filename);
+
 #endif // MESH_VERTEXDATA_H

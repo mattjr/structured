@@ -148,6 +148,62 @@ public:
 KdTreeBbox *setupKdTree(osg::ref_ptr<osg::Node> model);
 KdTreeBbox *createKdTreeForUnbuilt(osg::ref_ptr<osg::Node> model);
 bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &mode);
+struct CheckKdTreeBbox
+{
+    CheckKdTreeBbox(    const osg::ref_ptr<osg::Vec3Array>  vertices,
+                        const osg::KdTree::KdNodeList& nodes,
+                        const osg::KdTree::TriangleList& triangles
+                        ):
+        _vertices(vertices),
+        _kdNodes(nodes),
+        _triangles(triangles)
 
 
+    {
+
+
+
+    }
+
+
+
+    bool check(const osg::KdTree::KdNode& node,const osg::BoundingBox clipbox) const;
+
+    //bool intersectAndClip(osg::Vec3& s, osg::Vec3& e, const osg::BoundingBox& bb) const;
+    const osg::Vec3Array *               _vertices;
+
+    const osg::KdTree::KdNodeList&           _kdNodes;
+    const osg::KdTree::TriangleList&         _triangles;
+
+
+
+
+
+protected:
+
+    CheckKdTreeBbox& operator = (const CheckKdTreeBbox&) { return *this; }
+};
+class KdTreeChecker : public osg::KdTree {
+
+
+public:
+    KdTreeChecker(const KdTree& rhs) : KdTree(rhs), checker(_vertices,
+            _kdNodes,
+            _triangles) {
+
+
+        if (_kdNodes.empty())
+        {
+            osg::notify(osg::NOTICE)<<"Warning: _kdTree is empty"<<std::endl;
+            return;
+        }
+
+
+
+
+    }
+    bool check(const osg::BoundingBox bbox);
+
+    CheckKdTreeBbox checker;
+};
 #endif

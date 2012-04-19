@@ -1279,6 +1279,8 @@ int main( int argc, char *argv[ ] )
         totalbb.expandBy(osg::Vec3(totalbb_unrot._min[1],totalbb_unrot._min[0],-totalbb_unrot._min[2]));
         totalbb.expandBy(osg::Vec3(totalbb_unrot._max[1],totalbb_unrot._max[0],-totalbb_unrot._max[2]));
     }
+
+
    // cout << totalbb_unrot._min<< " " << totalbb_unrot._max<<endl;
     //cout << totalbb._min<< " " << totalbb._max<<endl;
     /* osg::BoundingBox tmp=totalbb;
@@ -1548,9 +1550,9 @@ int main( int argc, char *argv[ ] )
                     save_bbox_frame(pose->bbox,bboxfp);
                     osg::Matrix texmat=osgTranspose(pose->mat);
                     texmat=osg::Matrix::inverse(texmat);
-                    for(int k=0; k < 4; k++)
+                    for(int f=0; f < 4; f++)
                         for(int n=0; n < 4; n++)
-                            fprintf(bboxfp," %lf",texmat(k,n));
+                            fprintf(bboxfp," %lf",texmat(f,n));
                     fprintf(bboxfp,"\n");
                 }
 
@@ -1565,7 +1567,7 @@ int main( int argc, char *argv[ ] )
         }
 
 
-        sprintf(tmp100, " > mesh-diced/vis-total.ply");
+        sprintf(tmp100, " > mesh-diced/vis-total.ply; %s/vertCheck mesh-diced/vis-total.ply  --normcolor --outfile mesh-diced/vis-total.ply > /dev/null",basepath.c_str());
         /*  sprintf(tmp100,"%s; %s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/vis-total.ive -dup --outfile mesh-diced/vis-total.ply ",
                     tmp100,basepath.c_str(),
                     -FLT_MAX,-FLT_MAX,-FLT_MAX,
@@ -2341,6 +2343,20 @@ int main( int argc, char *argv[ ] )
 
 
     {
+        FILE *tp=fopen("mesh-diced/bbox-total.ply.txt","w");
+        for(int i=0; i< (int)tasks.size(); i++){
+            const Stereo_Pose_Data *pose=(&tasks[i]);
+            if(pose && pose->valid){
+                fprintf(tp, "%d %s " ,pose->id,pose->file_name.size() ==0 ? pose->left_name.c_str(): pose->file_name.c_str());
+                save_bbox_frame(pose->bbox,tp);
+                for(int k=0; k < 4; k++)
+                    for(int n=0; n < 4; n++)
+                        fprintf(tp," %lf",pose->mat(k,n));
+                fprintf(tp,"\n");
+            }
+
+        }
+        fclose(tp);
         char tmp[1024];
         if(useVirtTex)
             fprintf(simpcmds_fp,"cd %s/mesh-diced;cp totaltex.ply total-lod%d.ply;",cwd,vpblod);
@@ -2464,7 +2480,7 @@ int main( int argc, char *argv[ ] )
     }
 
     char zipstr[1024];
-    sprintf(zipstr,"7z a -r -sfx7z.sfx mesharchive.7z.exe real.ive real_root_L0_X0_Y0/ -m0=lzma2 -mmt%d -mx9",num_threads);
+    sprintf(zipstr,"7z a -r -sfx7z.sfx mesharchive.7z.exe mesh/ -m0=lzma2 -mmt%d -mx9",num_threads);
     FILE *zfp=fopen("zip.sh","w");
     fprintf(zfp,"#!/bin/bash\n%s\n",zipstr);
     fclose(zfp);

@@ -1,6 +1,7 @@
 #include "TexturedSource.h"
 using namespace SpatialIndex;
-TexturedSource::TexturedSource(Type type, const std::string& filename,const std::string &bbox_file): Source(type,filename)
+using namespace std;
+TexturedSource::TexturedSource(Type type, const std::string& filename,const std::string &bbox_file,bool use_tex): Source(type,filename)
 {
     std::string mf=filename;
     _bbox_file=bbox_file;
@@ -32,6 +33,8 @@ TexturedSource::TexturedSource(Type type, const std::string& filename,const std:
     }else {
            osg::notify(osg::INFO) << "The stucture seems O.K." << std::endl;
     }
+
+    if(use_tex){
     ids=new osg::Vec4Array;
 
 
@@ -42,8 +45,7 @@ TexturedSource::TexturedSource(Type type, const std::string& filename,const std:
 
     tex[2]=new osg::Vec3Array;
     tex[3]=new osg::Vec3Array;
-
-
+    }
 }
 TexturedSource::TexturedSource(Type type, const std::string& filename): Source(type,filename)
 {
@@ -61,4 +63,5 @@ TexturedSource::~TexturedSource(){
 void TexturedSource::intersectsWithQuery(const SpatialIndex::IShape& query, SpatialIndex::IVisitor& v){
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_treeMutex);
     tree->intersectsWithQuery(query,v);
+
 }

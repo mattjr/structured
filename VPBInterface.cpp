@@ -4,6 +4,7 @@
 #include "TexturingQuery.h"
 #include <osg/Vec4>
 #include "vertexData.h"
+#include <osg/ComputeBoundsVisitor>
 using namespace std;
 #if 1
 bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,TexBlendCoord &newTexCoord,osg::Vec4Array *newIds){
@@ -105,7 +106,7 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
     else
         m->setRadiusToMaxVisibleDistanceRatio(7);
 
-    m->setDestinationName("real.ive");
+    m->setDestinationName("mesh/real.ive");
 
     m->setLogFileName("tmp.log");
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
@@ -118,12 +119,12 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
 
             std::string bbox_file;
             TexturedSource *sourceModel;
-            if(!useVirtualTex && !useReimage){
+          //  if(!useVirtualTex && !useReimage){
                 bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-                sourceModel =new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
-            }else{
-                sourceModel=new TexturedSource(vpb::Source::MODEL,mf);
-            }
+                sourceModel =new TexturedSource(vpb::Source::MODEL,mf,bbox_file,!useVirtualTex && !useReimage);
+           // }else{
+           //     sourceModel=new TexturedSource(vpb::Source::MODEL,mf);
+           // }
             sourceModel->setMaxLevel(lod);
             sourceModel->setMinLevel(lod);
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
@@ -134,6 +135,20 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
                 toVert(model,vertexData._texCoord,vertexData._texIds,sourceModel->tex,sourceModel->ids);
             }else
                 model = osgDB::readNodeFile(sourceModel->getFileName());
+
+            if(lod == 0){
+                osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+                model->accept(cbbv);
+                osg::BoundingBox totalbb = cbbv.getBoundingBox();
+                FILE *zrangefp=fopen("mesh/zrange.txt","w");
+                if(!zrangefp ){
+                    fprintf(stderr,"Cannot open mesh/zrange.txt\n");
+                    exit(-1);
+                }
+                fprintf(zrangefp,"%f %f\n",totalbb.zMin(),totalbb.zMax());
+                fclose(zrangefp);
+
+            }
             //std::cerr << "aaa " << sourceModel->tex->at(0)->size() << " " << sourceModel->ids->size() <<endl;
             osg::ref_ptr<osg::KdTreeBuilder>  _kdTreeBuilder = osgDB::Registry::instance()->getKdTreeBuilder()->clone();
             model->accept(*_kdTreeBuilder);

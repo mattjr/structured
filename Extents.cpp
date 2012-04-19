@@ -2691,7 +2691,7 @@ int MyDataSet::_run()
         osgDB::FileType type = osgDB::fileType(getDirectory());
         if (type==osgDB::DIRECTORY)
         {
-            log(osg::NOTICE,"   Base Directory already created");
+            log(osg::INFO,"   Base Directory already created");
         }
         else if (type==osgDB::REGULAR_FILE)
         {
@@ -3622,7 +3622,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     osg::Geometry *newGeom = new osg::Geometry;
     // osg::Group *group= findTopMostNodeOfType<osg::Group>(model);
     osg::Vec3Array *newVerts= new osg::Vec3Array;
-    osg::Vec4Array *newColors= new osg::Vec4Array;
+    osg::Vec2Array *auxDataArray= new osg::Vec2Array;
     std::vector<int> mosaic_ids;
     osg::DrawElementsUInt* newPrimitiveSet = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
     osg::Geode *newGeode=new osg::Geode;
@@ -3676,19 +3676,31 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
             }
             newVerts->push_back(verts->at(j));
 
-            float height=verts->at(j)[2];
-            osg::Vec4 zrange=dynamic_cast<MyDataSet*>(_dataSet)->_zrange;
-            float range=zrange[1]-zrange[0];
+            //float height=verts->at(j)[2];
+           // osg::Vec4 zrange=dynamic_cast<MyDataSet*>(_dataSet)->_zrange;
+            //float range=zrange[1]-zrange[0];
             //printf("%f %f\n",zrange[0],height);
-            float val =(height-zrange[0])/range;
+            //float val =(height-zrange[0])/range;
             //printf("val %f\n",val);
             double ao=1.0;
             if(colors)
                 ao=colors->at(j)[0];
             if(ao == 0.0)
                 ao=1.0;
+/*
+            double plow[2],phigh[2];
+            plow[0]=verts->at(j)[0];
+            plow[1]=verts->at(j)[1];
 
-            newColors->push_back(rainbowColorMap(val)*ao);
+            phigh[0]=phigh[0];
+            phigh[1]=phigh[1];
+
+           // Region r = Region(plow, phigh, 2);
+           // CollectVisitor vis;
+           //dynamic_cast<MyDataSet*>( _dataSet)->struct_tree->intersectsWithQuery(r, vis);
+            */
+
+            auxDataArray->push_back(osg::Vec2(ao,0.0));
 
         }
         for(int j=0; j< (int)primitiveSet->getNumIndices(); j++){
@@ -3736,7 +3748,43 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
 
         for(int j=0; j<(int)newPrimitiveSet->getNumIndices()-2; j+=3){
             unsigned int idx[3];
+
+            id_type index=-1;
+            double pt_c[3];
+            const osg::Vec3 &v=newVerts->at(newPrimitiveSet->at(j+0));
+
+            pt_c[0]=v[0];
+            pt_c[1]=v[1];
+            pt_c[2]=v[2];
+            Point p = Point(pt_c, 3);
+            bool notfound=true;
+
+            for(CompositeDestination::TileList::iterator titr = _tiles.begin();
+                titr != _tiles.end() && notfound;
+                ++titr)
+            {
+                MyDestinationTile* tile = dynamic_cast<MyDestinationTile*>(titr->get());
+                for(DestinationTile::Sources::iterator itr = tile->_sources.begin();
+                    itr != tile->_sources.end() && notfound;
+                    ++itr)
+                {
+                    TexturedSource *source=dynamic_cast<TexturedSource*>((*itr).get());
+                    if(!source || !source->tree || source->_cameras.size() == 0)
+                        continue;
+
+
+                    ObjVisitor pt_vis(p,8);
+                    source->intersectsWithQuery(p,pt_vis);
+                    if(pt_vis.GetResultCount()){
+                        notfound=false;
+                        index=pt_vis.GetResults()[0];
+                        break;
+                    }
+
+                }
+            }
             for(int k=0; k < 3; k++){
+                auxDataArray->at(newPrimitiveSet->at(j+k))[1]=index;
                 const osg::Vec3 &v=newVerts->at(newPrimitiveSet->at(j+k));
                 osg::Vec4 pt(v[0],v[1],v[2],1.0);
                 osg::Vec4 rotpt=pt*dynamic_cast<MyDataSet*>(_dataSet)->rotMat;
@@ -3903,7 +3951,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
 
     newGeom->setTexCoordArray(0,texCoord);
     newGeom->setVertexArray(newVerts);
-    newGeom->setColorArray(newColors);
+    newGeom->setTexCoordArray(1,auxDataArray);
     newGeom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
 
     newGeom->addPrimitiveSet(newPrimitiveSet);

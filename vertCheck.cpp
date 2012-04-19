@@ -2,8 +2,72 @@
 #include <osg/NodeVisitor>
 #include <osgDB/WriteFile>
 #include <osgDB/FileNameUtils>
-#include "PLYWriterNodeVisitor.h"
 #include <osgUtil/Optimizer>
+#include <osg/io_utils>
+#include <osg/MatrixTransform>
+void write_header(std::ostream& _fout,int total_face_count,bool color){
+    _fout <<"ply\n";
+    _fout <<"format binary_little_endian 1.0\n";
+    //_fout <<"comment PLY exporter written by Paul Adams\n";
+    _fout <<"element vertex "<<total_face_count <<std::endl;
+    _fout <<"property float x\n";
+    _fout <<"property float y\n";
+    _fout <<"property float z\n";
+    if(color){
+        _fout <<"property uchar red\n";
+        _fout <<"property uchar green\n";
+        _fout <<"property uchar blue\n";
+    }
+    _fout <<"element face " <<total_face_count/3<<std::endl;
+    _fout <<"property list uchar int vertex_indices\n";
+
+    _fout <<"end_header\n";
+}
+void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,bool flip,osg::Matrix m){
+    int cnt=0;
+    for(int i=0; i< (int)tri->size()-2; i+=3){
+        for(int j=0; j<3; j++){
+            osg::Vec3 v=verts->at(tri->at(i+j))*m;
+            float vf[3];
+            vf[0]=v[0];
+            vf[1]=v[1];
+            vf[2]=v[2];
+            _fout.write((char *)vf,3*sizeof(float));
+            if(colors && i+j <(int)colors->size() ){
+                unsigned char col[3];
+                osg::Vec4 c=colors->at(i+j);
+               // cout <<c<<endl;
+                col[0]=c[0]*255.0;
+                col[1]=c[1]*255.0;
+                col[2]=c[2]*255.0;
+                _fout.write((char *)col,3*sizeof(unsigned char));
+
+            }
+        }
+    }
+    int iout[3];
+    unsigned char c=3;
+    for(int i=0; i<(int) tri->size()-2; i+=3){
+        _fout.write((char *)&c,sizeof(char));
+
+        if(flip){
+            iout[0]=i;
+            iout[1]=i+1;
+            iout[2]=i+2;
+        }else{
+            iout[0]=i+2;
+            iout[1]=i+1;
+            iout[2]=i+0;
+
+        }
+        _fout.write((char*)iout,sizeof(int)*3);
+        cnt++;
+
+    }
+    printf("%d\n",cnt);
+
+
+}
 unsigned int countGeometryVertices( osg::Geometry* geom )
 {
     if (!geom->getVertexArray())
@@ -78,6 +142,10 @@ int main( int argc, char **argv )
     }
     osg::Matrix rotM=osg::Matrix::inverse(inverseM);
     osg::ref_ptr<osg::Node> model = osgDB::readNodeFiles(arguments);
+    if(!model.valid()){
+        fprintf(stderr,"Failed to load model\n");
+        exit(-1);
+    }
     if(rot){
         osg::ref_ptr<osg::MatrixTransform>xform = new osg::MatrixTransform;
         xform->setDataVariance( osg::Object::STATIC );
@@ -92,18 +160,66 @@ int main( int argc, char **argv )
         fprintf(stderr,"Need outfile name\n");
         return -1;
     }
+    bool foundcolors=false;
+  osg::Vec4Array*colors;
+osg::DrawElementsUInt *tri; osg::Vec3Array *verts;
+            osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
+            if(!geode)
+                geode=model->asGroup()->getChild(0)->asGeode();
+            if(geode && geode->getNumDrawables()){
+
+
+                osg::Drawable *drawable = geode->getDrawable(0);
+                osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+                colors=  (osg::Vec4Array*)geom->getColorArray();
+           verts=static_cast< osg::Vec3Array*>(geom->getVertexArray());
+
+                tri= (osg::DrawElementsUInt*)geom->getPrimitiveSet(0);
+               if(arguments.read("--normcolor") ){
+                if(colors){
+                    foundcolors=true;
+
+                    osg::Vec3 minC(1.0,1.0,1.0),maxC(0.0,0.0,0.0);
+                    for(int i=0; i < (int)colors->size(); i++){
+                        for(int j=0; j<3; j++){
+                            if(colors->at(i)[j] < minC[j] && colors->at(i)[j] > 0.0)
+                                minC[j] =colors->at(i)[j] ;
+
+                            if(colors->at(i)[j] > maxC[j] && colors->at(i)[j] < 1.0)
+                                maxC[j]= colors->at(i)[j] ;
+                        }
+                    }
+                    osg::Vec3 range;
+                    for(int j=0; j<3; j++){
+                        range[j]=maxC[j]-minC[j];
+                    }
+                    std::cout << "Min "<<minC <<" MaxC " << maxC << " range "<<range<<std::endl;
+                    for(int i=0; i < (int)colors->size(); i++){
+                        for(int j=0; j<3; j++){
+                            colors->at(i)[j]=(colors->at(i)[j]- minC[j])/range[j];
+                        }
+
+                    }
+
+                }
+            }
+
+    }
     VertexCounter vc( 100 );
     model->accept( vc );
     if(vc.getTotal()>0){
         if(osgDB::getFileExtension(outfilename) == "ply"){
 
-            std::ofstream f(argv[2]);
-            PLYWriterNodeVisitor nv(f);
-            model->accept(nv);
+            std::ofstream f(outfilename.c_str());
+            write_header(f,tri->size(),foundcolors);
+            write_all(f,tri,verts,colors,true,inverseM);
+            //PLYWriterNodeVisitor nv(f);
+            //root->accept(nv);
+            f.close();;
         }else{
 
 
-            osgDB::writeNodeFile(*model,argv[2]);
+            osgDB::writeNodeFile(*model,outfilename.c_str());
         }
     }
 }

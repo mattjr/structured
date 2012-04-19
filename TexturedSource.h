@@ -14,7 +14,7 @@ class TexturedSource : public vpb::Source
 {
     friend class TexturingQuery;
 public:
-    TexturedSource(Type type, const std::string& filename,const std::string &bbox_file);
+    TexturedSource(Type type, const std::string& filename,const std::string &bbox_file,bool use_tex=true);
     TexturedSource(Type type, const std::string& filename);
     ~TexturedSource();
 
@@ -201,9 +201,10 @@ public:
     {
         m_fin.open(inputFile.c_str());
 
-        if (! m_fin)
+        if (! m_fin){
+            fprintf(stderr,"Can't open %s\n",inputFile.c_str());
             throw Tools::IllegalArgumentException("Input file not found.");
-
+        }
         readNextEntry();
     }
 
@@ -264,6 +265,7 @@ public:
             //std::cout << m<<std::endl;
 
             cam.bb = osg::BoundingBox(low[0],low[1],low[2],high[0],high[1],high[2]);
+//            std::cout << cam.bb._min<<" "<< cam.bb._max<<std::endl;
             m_camVec[cam.id]=cam;
             /*if (op != INSERT)
                                 throw Tools::IllegalArgumentException(

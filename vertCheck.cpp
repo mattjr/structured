@@ -5,6 +5,7 @@
 #include <osgUtil/Optimizer>
 #include <osg/io_utils>
 #include <osg/MatrixTransform>
+#include <iostream>
 void write_header(std::ostream& _fout,int total_face_count,bool color){
     _fout <<"ply\n";
     _fout <<"format binary_little_endian 1.0\n";

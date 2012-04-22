@@ -67,7 +67,7 @@ static bool further_clean=false;
 static bool pause_after_each_frame = false;
 static double image_scale = 1.0;
 static int max_feature_count;
-static bool exportForStaticRender=true;
+//static bool exportForStaticRender=true;
 static bool useTextureArray=true;
 static double longOrigin,latOrigin;
 static int _tileRows;
@@ -624,7 +624,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
 
     //int index;
 
-    // index = pose.pose_id;
+    name.id= pose.pose_id;
     name.time = pose.pose_time;
     name.pose[POSE_INDEX_X] = pose.pose_est[POSE_INDEX_X];
     name.pose[POSE_INDEX_Y] = pose.pose_est[POSE_INDEX_Y];
@@ -771,7 +771,11 @@ int main( int argc, char *argv[ ] )
     StereoCalib calib(stereo_calib_file_name);
 
 
-
+    FILE *fpp_ic=fopen("mesh/img_num.txt","w");
+    if(!fpp_ic ){
+        fprintf(stderr,"Cannot open mesh/img_num.txt\n");
+        exit(-1);
+    }
     fpp=fopen("mesh/campath.txt","w");
     if(!fpp ){
         fprintf(stderr,"Cannot open mesh/campath.txt\n");
@@ -843,7 +847,7 @@ int main( int argc, char *argv[ ] )
             if(cii->pose_time >= stop_time)
                 break;
 
-            name.id= stereo_pair_count++;
+            stereo_pair_count++;
             name.valid=false;
             tasks.push_back(name);
             if(name.alt > max_alt){
@@ -1021,6 +1025,8 @@ int main( int argc, char *argv[ ] )
             if(isfinite(area))
                 totalValidArea+=area;
 
+        fprintf(fpp_ic,"%d %f %s\n",
+                name.id,name.time,osgDB::getNameLessExtension(name.left_name).c_str());
             fprintf(fpp,"%d %f %s %s ",
                     ct++,name.time,name.left_name.c_str(),name.right_name.c_str());
             fprintf(totalfp,"%d %s ",
@@ -1057,6 +1063,8 @@ int main( int argc, char *argv[ ] )
             //    }
         }
         fclose(totalfp);
+        if(fpp_ic)
+            fclose(fpp_ic);
     }
     Bounds bounds( tasks );
 

@@ -1375,15 +1375,23 @@ int main( int argc, char *argv[ ] )
     printf("Texture Cells %dx%d\n",_tileRows,_tileColumns);
     printf("Tile Size Pixels %dx%d\n",(int)reimageSize.x(),(int)reimageSize.y());
     int vpblod=1;
-   // int tmpImg=adjustedSize;
-    int faceTmp=numberFacesAll;
-    do{
-        faceTmp /= pow(4.0,vpblod++);
-        //tmpImg /= pow(2.0,vpblod);
-       // printf("%d %d\n",faceTmp,adjustedSize/(int)pow(2.0,vpblod));
-    }while(faceTmp > targetFaces || (adjustedSize/(int)pow(2.0,vpblod))>targetBaseLODRes );
-    std::cout << "Target LOD height is : " << vpblod <<std::endl;
+    // int tmpImg=adjustedSize;
+    if(!useVirtTex){
+        int faceTmp=numberFacesAll;
+        do{
+            faceTmp /= pow(4.0,vpblod++);
+            //tmpImg /= pow(2.0,vpblod);
+            // printf("%d %d\n",faceTmp,adjustedSize/(int)pow(2.0,vpblod));
+        }while(faceTmp > targetFaces || (adjustedSize/(int)pow(2.0,vpblod))>targetBaseLODRes );
+        std::cout << "Target LOD height is : " << vpblod <<std::endl;
+    }else{
+        int faceTmp=numberFacesAll;
+        do{
+            faceTmp /= pow(4.0,vpblod++);
 
+        }while(faceTmp > targetFaces  );
+        std::cout << "Target LOD height is : " << vpblod <<std::endl;
+    }
     osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
     double xrange=totalbb.xMax()-totalbb.xMin();
     double yrange=totalbb.yMax()-totalbb.yMin();
@@ -2366,9 +2374,9 @@ int main( int argc, char *argv[ ] )
         }
         fclose(tp);
         char tmp[1024];
-        if(useVirtTex)
-            fprintf(simpcmds_fp,"cd %s/mesh-diced;cp totaltex.ply total-lod%d.ply;",cwd,vpblod);
-        else
+        //if(useVirtTex)
+         //   fprintf(simpcmds_fp,"cd %s/mesh-diced;cp totaltex.ply total-lod%d.ply;",cwd,vpblod);
+       // else
             fprintf(simpcmds_fp,"cd %s/mesh-diced;cp vis-total.ply total-lod%d.ply;",cwd,vpblod);
 
         sprintf(tmp,"mesh-diced/total-lod%d.ply",vpblod);//std::min(lod,2)

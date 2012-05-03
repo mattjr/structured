@@ -52,7 +52,7 @@
 #include "TightFit.h"
 #include <ogr_spatialref.h>
 #include "SpatialIndex.h"
-
+#include "BuildAtlas.h"
 namespace vpb
 {
 
@@ -154,8 +154,8 @@ class MyDataSet;
 
     class MyCompositeDestination : public CompositeDestination{
     public:
-        MyCompositeDestination(osg::CoordinateSystemNode* cs, const GeospatialExtents& extents,bool useReImage,bool useVBO,bool useDisplayLists,std::ofstream &file,OpenThreads::Mutex &fileMutex):
-                CompositeDestination(cs, extents),_useReImage(useReImage),_useVBO(useVBO),_useDisplayLists(useDisplayLists),_file(file),_fileMutex(fileMutex){}
+        MyCompositeDestination(osg::CoordinateSystemNode* cs, const GeospatialExtents& extents,bool useReImage,bool useVBO,bool useDisplayLists, bool useVirtualTex,std::ofstream &file,OpenThreads::Mutex &fileMutex):
+                CompositeDestination(cs, extents),_useReImage(useReImage),_useVBO(useVBO),_useDisplayLists(useDisplayLists),_useVirtualTex(useVirtualTex),_file(file),_fileMutex(fileMutex){}
         osg::Node* createPagedLODScene();
         osg::Node* createSubTileScene();
         void unrefSubTileData();
@@ -163,6 +163,7 @@ class MyDataSet;
         bool _useReImage;
         bool _useVBO;
         bool _useDisplayLists;
+        bool _useVirtualTex;
         osg::Group *convertModel(osg::Group *group);
         std::ofstream &_file;
         OpenThreads::Mutex &_fileMutex;
@@ -177,6 +178,7 @@ class MyDataSet;
 int _numLevels;
     };
 
+    SpatialIndex::id_type getImageIndexForPoint(const SpatialIndex::Point &p,CompositeDestination::TileList &_tiles);
 
 class MyDataSet :  public DataSet
 {
@@ -195,6 +197,7 @@ class MyDataSet :  public DataSet
         void _buildDestination(bool writeToDisk);
         void _equalizeRow(Row& row);
         int _run();
+        void createVTAtlas();
         void processTile(MyDestinationTile *tile,TexturedSource *src);
         texcache_t _cachedDirs;
         bool _useDisplayLists;
@@ -203,6 +206,7 @@ class MyDataSet :  public DataSet
         bool _useVBO;
         osg::Matrix viewProj;
         osg::Matrix rotMat;
+        VipsAtlasBuilder*  _atlas;
         osg::Matrix getImageSectionAtlas(const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,
                                                          osg::ref_ptr<TightFitAtlasBuilder> &atlas,osg::Vec4 &ratio,int level);
       //  vips::VImage *in;
@@ -239,16 +243,7 @@ public:
          int totalX,totalY;
          OpenThreads::Mutex _imageMutex;
          bool _useDebugShader;
-          class mosaic_cell{
-          public:
-             osg::BoundingBoxd bbox;
-             std::string name;
-             vips::VImage *img;
-             std::vector<vips::VImage *> img_ds;
-             OpenThreads::Mutex *mutex;
-             int levels;
-             std::vector<std::string> name_ds;
-         };
+
           class rangeTC
           {
           public:

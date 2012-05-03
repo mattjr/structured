@@ -226,6 +226,7 @@ SpatialReference.cpp
 MemUtils.cpp
 CheckThreadPool.cpp
 		stereo_cells.cpp
+BuildAtlas.cpp
 TightFit.cpp
 GLImaging.cpp
                 )

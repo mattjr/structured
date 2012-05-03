@@ -130,7 +130,7 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
             ply::VertexData vertexData;
             osg::Node* model;
-            if(!m->_useReImage){
+            if(!m->_useReImage && !m->_useVirtualTex){
                 model= vertexData.readPlyFile(sourceModel->getFileName().c_str());
                 toVert(model,vertexData._texCoord,vertexData._texIds,sourceModel->tex,sourceModel->ids);
             }else

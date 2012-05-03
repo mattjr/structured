@@ -5,6 +5,7 @@
 #include <osg/State>
 #include <osg/Referenced>
 #include <vips/vips>
+#include <stdio.h>
 class TightFitAtlasBuilder : public osgUtil::Optimizer::TextureAtlasBuilder , public osg::Referenced
 {
 public:
@@ -31,10 +32,64 @@ public:
             return 0;
         return (int)floor((_maximumAtlasWidth*_maximumAtlasHeight)/area);
     }
-    std::vector<osg::Image *> atlasSourceMatrix;
+    std::vector<void *> atlasSourceMatrix;
     std::vector<osg::Matrix> offsetMats;
 };
 
+
+class VipsAtlasBuilder : public TightFitAtlasBuilder
+{
+public:
+
+    VipsAtlasBuilder(int mosaic_cell_num,int VTtileSize,int VToverlap);
+    int _VTtileSize,_VToverlap;
+    osg::Matrix getTextureMatrix(vips::VImage *);
+    int getAtlasHeight(){return _maximumAtlasHeight;}
+    int getAtlasWidth(){return _maximumAtlasWidth;}
+
+    void addSource(vips::VImage *img);
+    void buildAtlas(void);
+    void completeRow(unsigned int indexAtlas);
+class VAtlas;
+     class VSource : public Source{
+     public:
+         VSource( vips::VImage * image): Source((const osg::Image*)NULL),
+             _image(image) ,_atlas(NULL){width=_image->Xsize(); height=_image->Ysize();}
+      vips::VImage *_image;
+      VAtlas *_atlas;
+      int width,height;
+      bool suitableForAtlas(int maximumAtlasWidth, int maximumAtlasHeight);
+
+
+     };
+     typedef std::vector< osg::ref_ptr<VSource> > VSourceList;
+     VSource* getSource(const vips::VImage *image);
+
+     class VAtlas: public Atlas{
+     public:
+         VAtlas(int width, int height, int margin):Atlas(width,height,0),_image(NULL){if(margin>0){fprintf(stderr,"Cannot have margin in this implmentation being reset to 0 margin!\n");}}
+
+         vips::VImage *_image;
+         VSourceList _sourceList;
+         bool addSource(VSource* source);
+         FitsIn doesSourceFit(VSource* source);
+
+         void copySources(void);
+
+
+     };
+     VSourceList _sourceList;
+     typedef std::vector< osg::ref_ptr<VAtlas> > VAtlasList;
+     VAtlasList _atlasList;
+
+     struct CompareSrc
+     {
+         bool operator()(osg::ref_ptr<VSource> src1, osg::ref_ptr<VSource> src2) const
+         {
+             return src1->_image->Xsize() > src2->_image->Ysize();
+         }
+     };
+};
 
 
 

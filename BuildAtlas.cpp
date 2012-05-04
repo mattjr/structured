@@ -383,48 +383,69 @@ void vpb::MyDataSet::createVTAtlas(){
     VipsAtlasBuilder::VAtlas *vatlas=_atlas->_atlasList.front();
 
 
-    vatlas->_image->write("vtex.ppm");
+  //  vatlas->_image->write("vtex.ppm");
     int sizeLevel=vatlas->_image->Xsize();
     char dirname[1024];
-    bool outputImages=false;
+    bool outputImages=true;
     if(outputImages){
-        for(int level=0; sizeLevel>tileSize; level++,sizeLevel/=2 ){
-            printf("Doing Level %d\n",level);
+        int adjustedTileSize=tileSize-(border *2);
+        for(int level=0; sizeLevel>=adjustedTileSize; level++,sizeLevel/=2 ){
+            printf("Doing Level %d %d\n",level,sizeLevel);
             sprintf(dirname,"mesh/vtex/tiles_b%d_level%d",border,level);
             int numXtiles=(sizeLevel/tileSize);
             int numYtiles=(sizeLevel/tileSize);
             osgDB::makeDirectory(dirname);
-            for(int x=0; x<numXtiles; x++){
-                for(int y=0; y <numYtiles;y++){
+            for(int x=0; x<=numXtiles; x++){
+                for(int y=0; y <=numYtiles;y++){
                     vips::VImage part ;
                     double downsampleFactor=pow(2.0,level);
-                    if (x != 0 && y !=0 && x !=numXtiles-1 && y != numYtiles-1 ){
+
+                    if (x != 0 && y !=0 && x !=numXtiles && y != numYtiles ){
 
 
                         if(level == 0)
-                            part=  vatlas->_image->extract_area(x * tileSize - border, y * tileSize - border, tileSize,tileSize);
+                            part=  vatlas->_image->extract_area(x * adjustedTileSize - border, y * adjustedTileSize - border, tileSize,tileSize);
                         else
-                            part=  vatlas->_image->extract_area(x * tileSize - border, y * tileSize - border, tileSize,tileSize).shrink(downsampleFactor,downsampleFactor);
+                            part=  vatlas->_image->shrink(downsampleFactor,downsampleFactor).extract_area(x * adjustedTileSize - border, y * adjustedTileSize - border, tileSize,tileSize);
 
 
                     }else{
-                        int offx = x * tileSize - (x == 0 ? 0 : border);
-                        int offy = y * tileSize - (y == 0 ? 0 : border);
+                        int offx=(x * adjustedTileSize - border);
+                        int offy=(y * adjustedTileSize - border);
+                        int w= ( x * adjustedTileSize + adjustedTileSize + border)-offx;
+                        int h=( y * adjustedTileSize + adjustedTileSize + border)-offy;
 
-                        int w = tileSize + ((x ==  numXtiles) *-border) + ((x ==  0) *-border);
-                        int h = tileSize + ((y ==  numXtiles) *-border) + ((y ==  0) *-border);
-                        vips::VImage tmp=  vatlas->_image->extract_area(x , y , w,h);
-                        part.initdesc(tileSize,tileSize,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
+                        int sizeX=vatlas->_image->Xsize()/downsampleFactor;
+                        int sizeY=vatlas->_image->Ysize()/downsampleFactor;
 
-                        part.insertplace(tmp,(x == 0 ? 0 : border),(y == 0 ? 0 : border));
-                        /*     if (x == 0)
-                                                    part.paste(part.crop((border, 0, border*2, tileSize + border*2)), (0, 0, border, tileSize + border*2))
-                                            if (y == 0)
-                                                    part.paste(part.crop((0, border, tileSize + border*2, border*2)), (0, 0, tileSize + border*2, border))
-                                            if (x == len-1)
-                                                    part.paste(part.crop((tileSize, 0, tileSize + border, tileSize + border*2)), (tileSize + border, 0, tileSize + border*2, tileSize + border*2))
-                                            if (y == len-1)
-                                                    part.paste(part.crop((0, tileSize, tileSize + border*2, tileSize + border)), (0, tileSize + border, tileSize + border*2, tileSize + border*2))*/
+                        if(w + offx >= sizeX)
+                            w=sizeX-offx-1;
+                        if(h + offy >= sizeY)
+                            h=sizeY-offy-1;
+                        int x1=0,y1=0;
+
+                        if(offx < 0){
+                            x1=-offx;
+                            offx=0;
+                        }
+                        if(offy <0){
+                            y1=-offy;
+                            offy=0;
+                        }
+                      //  printf("Extracing %d,%d -- %d -- %d width %d height %d\n",offx,offy,offx+w,offy+h,sizeX,sizeY);
+                         vips::VImage tmpI;
+                        if(level == 0)
+                            tmpI =  vatlas->_image->extract_area(offx , offy , w,h);
+                        else
+                            tmpI =  vatlas->_image->shrink(downsampleFactor,downsampleFactor).extract_area(offx , offy , w,h);
+                        vips::VImage blackI= vips::VImage::black(tileSize,tileSize,3);
+
+                        part =blackI.insert_noexpand(tmpI,x1,y1);
+                        if (x == 0)		part.insertplace(part.extract_area(border, 0, border, adjustedTileSize + border*2), 0, 0);
+                        if (y == 0)		part.insertplace(part.extract_area(0, border, adjustedTileSize + border*2, border), 0, 0);
+                       if (x == numXtiles)	part.insertplace(part.extract_area(adjustedTileSize, 0, border, adjustedTileSize + border*2), adjustedTileSize + border, 0);
+                       if (y == numYtiles)	part.insertplace(part.extract_area(0, adjustedTileSize, adjustedTileSize + border*2, border), 0, adjustedTileSize + border);
+
                     }
                     char tmp[1024];
                     sprintf(tmp,"%s/tile_%d_%d_%d.jpg",dirname,level,x,y);

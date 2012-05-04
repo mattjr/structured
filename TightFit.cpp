@@ -291,7 +291,8 @@ void VipsAtlasBuilder::VAtlas::copySources()
                           pixelFormat, dataType,
                           packing);
 */
-    _image->initdesc(_maximumAtlasWidth,_maximumAtlasHeight,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
+    _image = new vips::VImage(vips::VImage::black(_maximumAtlasWidth,_maximumAtlasHeight,3));//initdesc(_maximumAtlasWidth,_maximumAtlasHeight,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
+
     printf("Creating atlas image of %dx%d\n",_maximumAtlasWidth,_maximumAtlasHeight);
     OSG_INFO<<"Atlas::copySources() "<<std::endl;
     _height=_maximumAtlasHeight;

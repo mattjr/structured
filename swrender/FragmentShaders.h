@@ -8,6 +8,7 @@
 #include "renderer/util.h"
 #include "render_utils.h"
 #include <osg/Vec4>
+#include <iostream>
 // this is the fragment shader
 extern Rect gRect;
 extern REGION *regOutput;
@@ -167,6 +168,51 @@ struct FragmentShaderBlendingDistPass : public swr::SpanDrawer32BitColorAndDepth
 
 };
 
+
+// this is the fragment shader
+struct FragmentShaderCollectTC : public swr::SpanDrawer32BitColorAndDepthSetDouble<FragmentShaderCollectTC> {
+    // varying_count = 3 tells the rasterizer that it only needs to interpolate
+    // three varying values (the r, g and b in this context).
+    static const unsigned varying_count = 3;
+
+    // we don't need to interpolate z in this example
+    static const bool interpolate_z = false;
+    // per triangle callback. This could for instance be used to select the
+    // mipmap level of detail. We don't need it but it still needs to be defined
+    // for everything to work.
+    static void begin_triangle(
+        const swr::IRasterizer::Vertex& v1,
+        const swr::IRasterizer::Vertex& v2,
+        const swr::IRasterizer::Vertex& v3,
+        int area2)
+    {}
+
+    // the fragment shader is called for each pixel and has read/write access to
+    // the destination color and depth buffers.
+    static void single_fragment(const swr::IRasterizer::FragmentData &fd, int ix,int iy,unsigned int &color, unsigned int &depth)
+    {
+      tc.push_back(osg::Vec2(ix,iy));
+
+    }
+
+    // this is called by the span drawing function to get the location of the color buffer
+    static void* color_pointer(int x, int y)
+    {
+
+        return 0;
+
+
+    }
+
+    // this is called by the span drawing function to get the location of the depth buffer
+    static void* depth_pointer(int x, int y)
+    {
+        return 0;
+    }
+    static std::vector<osg::Vec2> tc;
+
+};
+
 // this is the fragment shader
 struct FragmentShaderBlendingMain : public swr::SpanDrawer32BitColorAndDepthSetDouble<FragmentShaderBlendingMain> {
     // varying_count = 3 tells the rasterizer that it only needs to interpolate
@@ -185,10 +231,16 @@ struct FragmentShaderBlendingMain : public swr::SpanDrawer32BitColorAndDepthSetD
         const swr::IRasterizer::Vertex& v1,
         const swr::IRasterizer::Vertex& v2,
         const swr::IRasterizer::Vertex& v3,
-        int area2)
-    //   {printf("T1 %f %f\nT2 %f %f\nT3 %f %f\n",fix2float<16>(v1.x),fix2float<16>(v1.y),fix2float<16>(v2.x),fix2float<16>(v2.y),fix2float<16>(v3.x)
-    //  ,fix2float<16>(v3.y));}
-    {}
+        int area2){}
+      // {printf("T1 %f %f\nT2 %f %f\nT3 %f %f\n",fix2float<16>(v1.x),fix2float<16>(v1.y),fix2float<16>(v2.x),fix2float<16>(v2.y),fix2float<16>(v3.x)
+     // ,fix2float<16>(v3.y));}
+    /*{printf("T1 %f %f\nT2 %f %f\nT3 %f %f\n",(fix2float<16>(v1.x)+1.0)*(0.5*256),
+            (fix2float<16>(v1.y)+1.0)*(0.5*256),
+            (fix2float<16>(v2.x)+1.0)*(0.5*256),
+            (fix2float<16>(v2.y)+1.0)*(0.5*256),
+            (fix2float<16>(v3.x)+1.0)*(0.5*256)
+          ,(fix2float<16>(v3.y)+1.0)*(0.5*256));}*/
+    //{}
 
     // the fragment shader is called for each pixel and has read/write access to
     // the destination color and depth buffers.
@@ -196,6 +248,9 @@ struct FragmentShaderBlendingMain : public swr::SpanDrawer32BitColorAndDepthSetD
     static void single_fragment(const swr::IRasterizer::FragmentData &fd, int ix,int iy,unsigned int &color, unsigned int &depth)
 
     {
+      //  std::cout << ix << " " << iy<<std::endl;
+       // std::cout << ix/(double)256 << " " << iy/(double)256<<std::endl;
+
         if(doublecountmap.count(std::make_pair<int,int>(ix,iy)) && doublecountmap[std::make_pair<int,int>(ix,iy)] != triIdx)
             return;
         float Cb[]={0.710000,0.650000,0.070000};

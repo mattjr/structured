@@ -7,6 +7,7 @@
 #include "democommon.h"
 #include "renderer/util.h"
 #include "render_utils.h"
+#include <iostream>
 // this is the vertex shader which is executed for each individual vertex that
 // needs to ne processed.
 struct VertexShader {
@@ -34,7 +35,7 @@ struct VertexShader {
         vec4x tvertex = modelviewprojection_matrix * vec4x(v.x,v.y,v.z, fixed16_t(1));
 
         //        const mat4x &m = modelview_matrix;
-      //  std::cout << fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " "<<        fixedpoint::fix2float<16>(tvertex.z.intValue)<<endl;
+      //  std::cout << fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " "<<        fixedpoint::fix2float<16>(tvertex.z.intValue)<<std::endl;
 
         out.x = tvertex.x.intValue;
         out.y = tvertex.y.intValue;
@@ -82,6 +83,8 @@ struct VertexShaderBlending {
 
         //const mat4x &m = modelview_matrix;
         //cout << fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " "<<        fixedpoint::fix2float<16>(tvertex.z.intValue)<<endl;
+      //  std::cout << v.x << " " <<v.y << " "<<v.z <<std::endl;
+       // std::cout << fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " "<<        fixedpoint::fix2float<16>(tvertex.z.intValue)<<std::endl;
 
         out.x = tvertex.x.intValue;
         out.y = tvertex.y.intValue;

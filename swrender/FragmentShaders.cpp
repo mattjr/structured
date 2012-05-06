@@ -12,7 +12,7 @@ int FragmentShaderBlendingMain::idx;
 bool FragmentShaderVarMain::writeOut;
 FILE *FragmentShaderVarMain::f_arr[3];
 IplImage *FragmentShaderVarMain::outputImage;
-
+ std::vector<osg::Vec2> FragmentShaderCollectTC:: tc;
 Rect gRect;
 REGION *regOutput;
 REGION *regRange;

@@ -104,6 +104,7 @@ namespace vcg {
                 fwrite(&(img[i]),sizeof(float),1,fp);
             }
             fclose( fp );
+            return true;
         }
 
 };

@@ -53,7 +53,7 @@
 bool checkInBounds(osg::Vec3 tc);
 using namespace SpatialIndex;
 // Helper that collects all the unique Geometry objects in a subgraph.
-
+#include "MemUtils.h"
 using namespace vpb;
 using vpb::log;
 using namespace std;
@@ -3173,23 +3173,7 @@ osg::Vec2 calcCoordReprojTrans(const osg::Vec3 &vert,const osg::Matrix &trans,co
 
 }
 
-osg::Vec2 calcCoordReprojSimple(const osg::Vec3 &vert,const osg::Matrix &trans,const osg::Matrix &viewProj,const osg::Vec2 &size){
-    osg::Vec4 v(vert.x(),vert.y(),vert.z(),1.0);
-    v=v*trans;
-    v=v*viewProj;
-    v.x() /= v.w();
-    v.y() /= v.w();
 
-    v.x() /= size.x();;
-    v.y() /= size.y();
-
-
-    osg::Vec2 tc(v.x(),v.y());
-
-
-    return tc;
-
-}
 osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     if(!group)
         return NULL;

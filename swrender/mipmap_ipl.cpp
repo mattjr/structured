@@ -105,7 +105,7 @@ Float MIPMap::lanczosSinc(Float t, Float tau) const{
 void * __restrict allocAligned(size_t size) {
 #if defined(WIN32)
         return _aligned_malloc(size, L1_CACHE_LINE_SIZE);
-#elif defined(__OSX__)
+#elif defined(__APPLE__)
         /* OSX malloc already returns 16-byte aligned data suitable
            for AltiVec and SSE computations */
         return malloc(size);

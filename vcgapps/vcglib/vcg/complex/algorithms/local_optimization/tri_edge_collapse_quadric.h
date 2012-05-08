@@ -207,7 +207,7 @@ public:
 
 
 		inline bool IsFeasible(){
-      bool res = ( !Params().PreserveTopology || LinkConditions(this->pos) );
+      bool res = ( !Params().PreserveTopology || this->LinkConditions(this->pos) );
       if(!res) ++( TriEdgeCollapse< TriMeshType,MYTYPE>::FailStat::LinkConditionEdge() );
       return res;
     }
@@ -219,7 +219,7 @@ public:
 		//this->pos.V(1)->Qd()+=this->pos.V(0)->Qd();
     QH::Qd(this->pos.V(1))+=QH::Qd(this->pos.V(0));
 		//int FaceDel=
-		DoCollapse(m, this->pos, newPos); // v0 is deleted and v1 take the new position
+        this->DoCollapse(m, this->pos, newPos); // v0 is deleted and v1 take the new position
 		//m.fn-=FaceDel;
 		//--m.vn;
   }

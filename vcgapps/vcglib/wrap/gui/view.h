@@ -146,7 +146,7 @@ template <class T> void View<T>::GetView() {
 	Invert(inverse);
 }
 
-template <class T> void View<T>::SetView(const float *_proj = NULL,
+/*template <class T> void View<T>::SetView(const float *_proj = NULL,
                                          const float *_modelview = NULL,
                                          const int *_viewport = NULL) {
   for(int i = 0; i < 4; i++) {
@@ -160,7 +160,7 @@ template <class T> void View<T>::SetView(const float *_proj = NULL,
   inverse = matrix;
   Invert(inverse);
 }
-
+*/
 template <class T> Point3<T> View<T>::ViewPoint() const {
   Matrix44<T> mi=model;
   Invert(mi);

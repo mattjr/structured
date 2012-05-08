@@ -1,4 +1,4 @@
-#include <CGAL/basic.h> // include basic.h before testing #defines
+/*#include <CGAL/basic.h> // include basic.h before testing #defines
 
 #include <CGAL/Cartesian.h>
 #include <CGAL/Polyhedron_3.h>
@@ -10,7 +10,7 @@
 
 #include <CGAL/Square_border_parameterizer_3.h>
 #include <CGAL/Parameterization_mesh_patch_3.h>
-
+*/
 //#include <CGAL/Eigen_solver_traits.h>
 
 #include <iostream>
@@ -19,8 +19,9 @@
 
 #include <osgDB/FileUtils>
 
-#include <CGAL/Polyhedron_incremental_builder_3.h>
+//#include <CGAL/Polyhedron_incremental_builder_3.h>
 using namespace std;
+#if 0
 template <class HDS>
 class LoaderOSG : public CGAL::Modifier_base<HDS> {
 
@@ -395,3 +396,6 @@ osg::Vec3Array* CGALreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg:
     return arr;
 }
 
+#endif
+osg::Vec3Array* CGALreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::DrawElementsUInt> triangles)
+{return NULL;}

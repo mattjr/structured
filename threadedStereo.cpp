@@ -2089,7 +2089,7 @@ int main( int argc, char *argv[ ] )
         tmp_ds[0]='\0';
         int num_samples=6;
         for(int p=0; p<num_samples; p++)
-            sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
+            sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2.0,p+1));
         if(jpegQuality<0){
             fprintf(texcmds_fp,";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
             fprintf(vartexcmds_fp,";gdaladdo -r average mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);

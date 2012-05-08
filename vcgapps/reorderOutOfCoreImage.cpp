@@ -429,7 +429,7 @@ int main(int ac, char *av[]) {
     cout << "Size " << dupfreeVerts->size()<< " "<<dupfreeTri->size()<<endl;
     if(model.valid()){
         osg::Timer_t t=osg::Timer::instance()->tick();
-        osg::Vec3Array *newVerts=OGFreparam(dupfreeVerts,dupfreeTri);
+        osg::Vec3Array *newVerts;//=OGFreparam(dupfreeVerts,dupfreeTri);
         double s_d=osg::Timer::instance()->delta_s(t,osg::Timer::instance()->tick());
         printf("To reparam %f\n",s_d);
         if(!newVerts){

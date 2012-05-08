@@ -163,7 +163,7 @@ public:
   inline void Execute(TriMeshType &m)
   {	
     CoordType MidPoint=(pos.V(0)->P()+pos.V(1)->P())/2.0;
-    DoCollapse(m, pos, MidPoint);
+    vcg::tri::EdgeCollapse<TriMeshType>::DoCollapse(m, pos, MidPoint);
   }
   
   static bool IsSymmetric() { return true;}
@@ -235,7 +235,7 @@ public:
   ModifierType IsOfType(){ return TriEdgeCollapseOp;}
 
   inline bool IsFeasible(){
-		return LinkConditions(pos);
+        return this->LinkConditions(pos);
 	}
 
   inline bool IsUpToDate(){

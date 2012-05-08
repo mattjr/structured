@@ -668,7 +668,7 @@ class TriEdgeCollapseQuadricTex: public vcg::tri::TriEdgeCollapse< TriMeshType, 
 												constraint has been imposed during the re-computation of the other minimal */
 
 		
-	 DoCollapse(m, this->pos, newPos ); // v0 is deleted and v1 take the new position	 
+     this->DoCollapse(m, this->pos, newPos ); // v0 is deleted and v1 take the new position
 
 	vcg::TexCoord2f newtcoord;
 	Quadric5<double> newq;

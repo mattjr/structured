@@ -237,6 +237,7 @@ void FFDetach(FaceType & f, const int e)
 		@param f2 Pointer to the face
 		@param z2 The edge of the face f2 
 */
+#if 0
 template <class FaceType>
 void Attach(FaceType * &f, int z1, FaceType *&f2, int z2)
 {
@@ -261,7 +262,7 @@ void Attach(FaceType * &f, int z1, FaceType *&f2, int z2)
 	TEPB.f->FFi(TEPB.z) = z1prec;
 }
 
-
+#endif
 template <class FaceType>
 void AssertAdj(FaceType & f)
 {

@@ -185,7 +185,7 @@ protected:
 			Box3<ScalarType> b;
 			s->GetBBox(b);
 			vcg::Box3i bb;
-			BoxToIBox(b,bb);
+            this->BoxToIBox(b,bb);
 			//then insert all the cell of bb
 			for (int i=bb.min.X();i<=bb.max.X();i++)
 				for (int j=bb.min.Y();j<=bb.max.Y();j++)

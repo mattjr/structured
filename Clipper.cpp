@@ -297,9 +297,11 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
             osg::Vec3 v0 = (*_vertices)[tri.p0];
             osg::Vec3 v1 = (*_vertices)[tri.p1];
             osg::Vec3 v2 = (*_vertices)[tri.p2];
-            osg::Vec3 t0[numTC],t1[numTC],t2[numTC];
+	    std::vector<osg::Vec3> t0(numTC);
+	    std::vector<osg::Vec3> t1(numTC);
+	    std::vector<osg::Vec3> t2(numTC);
 
-            if(_texcoords.size() && _texcoords[0]){
+	    if(_texcoords.size() && _texcoords[0]){
                 for(int f=0; f< (int)_texcoords.size(); f++){
                     t0[f] = (*_texcoords[f])[tri.p0];
                     t1[f] = (*_texcoords[f])[tri.p1];

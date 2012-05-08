@@ -1,0 +1,26 @@
+
+IF(WIN32)
+  ADD_DEFINITIONS(-DIMAGE_EXPORTS)
+ENDIF(WIN32)
+
+AUX_SOURCE_DIRECTORY(algos SOURCES)
+
+AUX_SOURCE_DIRECTORY(common SOURCES)
+
+AUX_SOURCE_DIRECTORY(io SOURCES)
+
+AUX_SOURCE_DIRECTORY(types SOURCES)
+
+AUX_SOURCE_DIRECTORY(video SOURCES)
+
+IF(WIN32)
+	GatherProjectFiles(image src/packages/OGF/image HeaderFiles)
+	ADD_LIBRARY(image ${SOURCES} ${HeaderFiles})
+ELSE(WIN32)
+	ADD_LIBRARY(image ${SOURCES})
+ENDIF(WIN32)
+
+ADD_DEPENDENCIES(image basic jpeg math png  z)
+
+TARGET_LINK_LIBRARIES(image basic jpeg math png  z)
+

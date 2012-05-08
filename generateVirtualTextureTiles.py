@@ -51,7 +51,7 @@ if crop:	im = im.crop(((im.size[0] - crop) / 2, (im.size[1] - crop) / 2, ((im.si
 if resize:	im = im.resize((resize, resize), Image.ANTIALIAS)
 
 if (im.size[0] != im.size[1]) or (im.size[0] not in [i * tileSize for i in [32, 64, 128, 256, 512, 1024]]):
-	print_exit("Error: input image must be in: " + ', '.join([str(i * tileSize) + "^2" for i in [32, 64, 128, 256, 512, 1024]]))
+	print("Error: input image must be in: " + ', '.join([str(i * tileSize) + "^2" for i in [32, 64, 128, 256, 512, 1024]]))
 
 
 size = im.size[0]
@@ -66,12 +66,13 @@ while size >= tileSize:	# TODO: step one do resizing using image magick, step tw
         if not os.path.exists(baseDir):
             os.mkdir(baseDir)
 	len = size / tileSize
-
+	print("Size :" + str(size) +", level " +str(times)+" "+str(tileSize)) 
 	for x in range(len):
 		for y in range(len):
 			if (not border):
 				part = im.crop((x * tileSize , y * tileSize , x * tileSize + tileSize , y * tileSize + tileSize))
 			else:
+				print(str(x * tileSize - border) + ","  +str(y * tileSize - border)+","+str( x * tileSize + tileSize + border)+","+ str(y * tileSize + tileSize + border))
 				part = im.crop((x * tileSize - border, y * tileSize - border, x * tileSize + tileSize + border, y * tileSize + tileSize + border))
 				if (x == 0):		part.paste(part.crop((border, 0, border*2, tileSize + border*2)), (0, 0, border, tileSize + border*2))
 				if (y == 0):		part.paste(part.crop((0, border, tileSize + border*2, border*2)), (0, 0, tileSize + border*2, border))

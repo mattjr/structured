@@ -307,11 +307,9 @@ int main(int ac, char *av[]) {
     osg::ref_ptr<osg::Node> model;//= osgDB::readNodeFile(av[1]);
     ply::VertexData vertexData;
     osg::ArgumentParser arguments(&ac,av);
-    int sizeX,sizeY; sizeX=sizeY=1024;
     outputImage=NULL;
     rangeImage=NULL;
-    arguments.read("--size",sizeX,sizeY);
-    osg::Vec2 texSize(sizeX,sizeY);
+
     int jpegQuality=95;
     arguments.read("--jpeg-quality",jpegQuality);
     bool useDisk=arguments.read("--outofcore");
@@ -354,70 +352,6 @@ int main(int ac, char *av[]) {
     bool blending = arguments.read("--blend");
     if(blending)
         printf("Blending Enabled\n");
-    outputImage=im_open("tmp","p");
-    if(im_black(outputImage,sizeX,sizeY,4)){
-        fprintf(stderr,"Can't create color image\n");
-        return -1;
-    }
-    gRect.width=128;
-    gRect.height=1;
-
-    if(useDisk){
-        IMAGE *diskFile=im_open(imageName.c_str(),"w");
-        im_copy(outputImage,diskFile);
-        im_close(outputImage);
-        outputImage=diskFile;
-    }
-
-    if(blending){
-        rangeImage=im_open("tmp_range","p");
-        if(im_white(rangeImage,sizeX,sizeY,4)){
-            fprintf(stderr,"Can't create range image\n");
-            return -1;
-        }
-        if(useDisk){
-
-            IMAGE *diskFileRange=im_open(depthName.c_str(),"w");
-            im_copy(rangeImage,diskFileRange);
-            im_close(rangeImage);
-            rangeImage=diskFileRange;
-        }
-    }
-
-
-
-
-
-    double vm, rss;
-    process_mem_usage(vm, rss);
-    cout << "1st VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
-
-    if(  im_rwcheck(outputImage) ){
-        fprintf(stderr,"can't open\n");
-        return -1;
-    }
-
-    regOutput = im_region_create(outputImage);
-    if(regOutput == NULL){
-        fprintf(stderr,"Can't init color image region\n");
-        exit(-1);
-    }
-
-    if(blending){
-        if(  im_rwcheck(rangeImage) ){
-            fprintf(stderr,"can't open\n");
-            return -1;
-        }
-
-
-        regRange  = im_region_create(rangeImage);
-        if(regRange == NULL){
-            fprintf(stderr,"Can't init range image region\n");
-            exit(-1);
-        }
-    }
-    process_mem_usage(vm, rss);
-    cout << "snd VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
 
     map<int,imgData> imageList;
     model= vertexData.readPlyFile(av[1]);
@@ -429,7 +363,96 @@ int main(int ac, char *av[]) {
     cout << "Size " << dupfreeVerts->size()<< " "<<dupfreeTri->size()<<endl;
     if(model.valid()){
         osg::Timer_t t=osg::Timer::instance()->tick();
-        osg::Vec3Array *newVerts;//=OGFreparam(dupfreeVerts,dupfreeTri);
+        osg::Vec3Array *newVerts=OGFreparam(dupfreeVerts,dupfreeTri);
+        if(newVerts->size() != vertexData._vertices->size()){
+            fprintf(stderr,"Failed to get same number of verts %d %d!!!!\n",newVerts->size(), vertexData._vertices->size());
+            exit(-1);
+        }
+
+        std::vector<osg::Vec3Array *>   texCoord;
+        texCoord.push_back(vertexData._texCoord[0]);
+        texCoord.push_back(vertexData._texCoord[1]);
+        texCoord.push_back(vertexData._texCoord[2]);
+        texCoord.push_back(vertexData._texCoord[3]);
+        osg::DrawElementsUInt *tri=vertexData._triangles.get();
+      /*  for (int i = 0 ; i < (int)tri->size()-2 ; i+=3) {
+            for(int j=0;j<3;j++)
+            for(int k=0;k<3;k++)
+
+             assert(vertexData._vertices->at(tri->at(i+j))[k] == newVerts->at(tri->at(i+j))[k]);
+
+        }*/
+        int sizeImage=  calcOptimalImageSize(osg::Vec2(1360,1024),newVerts,tri,texCoord);
+
+        int sizeX,sizeY; sizeX=sizeY=sizeImage;
+
+        arguments.read("--size",sizeX,sizeY);
+        osg::Vec2 texSize(sizeX,sizeY);
+        outputImage=im_open("tmp","p");
+        if(im_black(outputImage,sizeX,sizeY,4)){
+            fprintf(stderr,"Can't create color image\n");
+            return -1;
+        }
+        gRect.width=128;
+        gRect.height=1;
+
+        if(useDisk){
+            IMAGE *diskFile=im_open(imageName.c_str(),"w");
+            im_copy(outputImage,diskFile);
+            im_close(outputImage);
+            outputImage=diskFile;
+        }
+
+        if(blending){
+            rangeImage=im_open("tmp_range","p");
+            if(im_white(rangeImage,sizeX,sizeY,4)){
+                fprintf(stderr,"Can't create range image\n");
+                return -1;
+            }
+            if(useDisk){
+
+                IMAGE *diskFileRange=im_open(depthName.c_str(),"w");
+                im_copy(rangeImage,diskFileRange);
+                im_close(rangeImage);
+                rangeImage=diskFileRange;
+            }
+        }
+
+
+
+
+
+        double vm, rss;
+        process_mem_usage(vm, rss);
+        cout << "1st VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
+
+        if(  im_rwcheck(outputImage) ){
+            fprintf(stderr,"can't open\n");
+            return -1;
+        }
+
+        regOutput = im_region_create(outputImage);
+        if(regOutput == NULL){
+            fprintf(stderr,"Can't init color image region\n");
+            exit(-1);
+        }
+
+        if(blending){
+            if(  im_rwcheck(rangeImage) ){
+                fprintf(stderr,"can't open\n");
+                return -1;
+            }
+
+
+            regRange  = im_region_create(rangeImage);
+            if(regRange == NULL){
+                fprintf(stderr,"Can't init range image region\n");
+                exit(-1);
+            }
+        }
+        process_mem_usage(vm, rss);
+        cout << "snd VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
+
         double s_d=osg::Timer::instance()->delta_s(t,osg::Timer::instance()->tick());
         printf("To reparam %f\n",s_d);
         if(!newVerts){
@@ -737,7 +760,6 @@ int main(int ac, char *av[]) {
         fflush(stdout);
         double elapsed=osg::Timer::instance()->delta_s(start,osg::Timer::instance()->tick());
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
-        double vm, rss;
         process_mem_usage(vm, rss);
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
         im_region_free(regOutput);
@@ -975,11 +997,18 @@ bool removeDups(std::string basename,osg::Vec3Array *verts,osg::DrawElementsUInt
             tri::Clean<CMeshO>::FlipMesh(m);
 
         }*/
+        double CCPerc=0.05;
         tri::UpdateNormals<AMesh>::PerVertexNormalized(m);
         tri::UpdateBounding<AMesh>::Box(m);
         tri::UpdateColor<AMesh>::VertexConstant(m,Color4b::White);
         int dup= tri::Clean<AMesh>::RemoveDuplicateVertex(m);
-        int unref= tri::Clean<AMesh>::RemoveUnreferencedVertex(m);
+        tri::UpdateTopology<CMeshO>::FaceFace(m);
+        tri::UpdateFlags<CMeshO>::FaceBorderFromFF(m);
+        int unref= tri::Clean<AMesh>::RemoveNonManifoldVertex(m);
+        unref= tri::Clean<AMesh>::RemoveUnreferencedVertex(m);
+        float minCC= CCPerc*m.bbox.Diag();
+        printf("Cleaning Min CC %.1f m\n",minCC);
+        std::pair<int,int> delInfo= tri::Clean<AMesh>::RemoveSmallConnectedComponentsDiameter(m,minCC);
 
         printf("fff %d %d\n",m.fn,m.vn);
         vcg::SimpleTempData<AMesh::VertContainer,int> indices(m.vert);
@@ -994,10 +1023,13 @@ bool removeDups(std::string basename,osg::Vec3Array *verts,osg::DrawElementsUInt
     printf("fff %d %d\n",verts->size(),j);
 
     for(AMesh::FaceIterator fi=m.face.begin();fi!=m.face.end();++fi){
-
+        if(fi->IsD()){
+            for(int k=0;k<3;++k)
+                triangles->push_back(-1);
+        }else{
         for(int k=0;k<3;++k)
             triangles->push_back(indices[(*fi).cV(k)]);
-
+        }
     }
     //tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),false);
     //     exit(0);

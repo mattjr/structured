@@ -1,0 +1,105 @@
+<head>
+<title>Robust Predicates on 80486 and Pentium CPUs</title>
+</head>
+<body>
+
+<h2>Robust Predicates on 80486 and Pentium CPUs</h2>
+<hr>
+Here's some advice I've received on how to configure Intel CPUs to correctly
+execute my code for
+<a href="http://www.cs.cmu.edu/~quake/robust.html">arbitrary floating-point precision arithmetic
+and robust geometric predicates.</a>
+The problem with these CPUs in their default state is that they use
+extended precision internal floating-point registers, which defeat
+Dekker's standard technique for computing the roundoff error of a
+floating-point operation.  These processors can be configured to
+round internally stored floating-point values to
+single or double precision,
+but the commands for doing so are compiler-dependent.<p>
+
+If you wish to use my arithmetic / predicates code on a PC, you will want
+to find out what these commands are for your compiler and operating system,
+and execute them once at the beginning of your program.  If you wish to use
+Triangle on a PC, and want to ensure that Triangle's geometric predicates
+are robust, you will want to edit the file "triangle.c" to insert the
+commands at the beginning of the procedure <tt>exactinit()</tt>.<p>
+
+Please note that I don't have access to a PC, I haven't tried any of
+these modifications myself, and I don't guarantee they'll work.
+If you have any corrections to the following information, or know how
+to configure Intel (or other) FPUs
+under other compilers or operating systems, please send me email
+at jrs@cs.cmu.edu.<p>
+
+For Microsoft or Turbo C, add this line near the beginning of your program
+(or "triangle.c"), next to the other <tt>#include</tt> statements.
+
+<pre>
+#include &lt;float.h&gt;
+</pre>
+
+The following statement configures the FPU.  In Triangle, insert it
+as the first statement of the procedure <tt>exactinit()</tt>.
+
+<pre>
+#ifdef SINGLE
+_control87(_PC_24, MCW_PC);     /* set FPU control word for single precision */
+#else /* not SINGLE */
+_control87(_PC_53, MCW_PC);     /* set FPU control word for double precision */
+#endif /* not SINGLE */
+</pre>
+
+For gcc running under Linux, the statements are as follows.
+
+<pre>
+#include &lt;i386/fpu_control.h&gt;
+
+#ifdef SINGLE
+__setfpucw(4210);               /* set FPU control word for single precision */
+#else /* not SINGLE */
+__setfpucw(4722);               /* set FPU control word for double precision */
+#endif /* not SINGLE */
+</pre>
+
+Alternatively, the following might also work with gcc, even if you're not
+using Linux.  (The definition of <tt>set_ctrlword()</tt> must occur before
+the definition of <tt>exactinit()</tt>.)
+
+<pre>
+void set_ctrlword(v)
+int v;
+{
+  asm("fldcw %0" :: "m" (v));
+}
+
+#ifdef SINGLE
+set_ctrlword(4210);             /* set FPU control word for single precision */
+#else /* not SINGLE */
+set_ctrlword(4722);             /* set FPU control word for double precision */
+#endif /* not SINGLE */
+</pre>
+
+<!--
+Flags to force storage of intermediate results:
+
+Microsoft C:
+
+  -Op flag
+
+gcc:
+
+  -ffloat-store
+
+
+24: 0x1072, 4210
+53: 0x1272, 4722
+64: 0x1372, 4978
+-->
+
+<hr>
+<a href="http://www.cs.cmu.edu/~quake/robust.html">Return to Robust Predicates home page.</a><br>
+<a href="http://www.cs.cmu.edu/~quake/triangle.html">Return to Triangle home page.</a>
+<hr>
+<address>
+jrs@cs.cmu.edu
+</address>

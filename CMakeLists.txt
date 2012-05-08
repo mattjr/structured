@@ -123,16 +123,19 @@ cmake_policy(SET CMP0005 OLD)
 add_definitions("-DHAVE_FCNTL_H=1 -DHAVE_UNISTD_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_PTHREAD_H=1 -DHAVE_SYS_RESOURCE_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_STDINT_H=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_BZERO=1 -DHAVE_MEMSET=1 -DHAVE_MEMCPY=1 -DHAVE_BCOPY=1")
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${OPENCV_INCLUDE_DIRS}
+
 		     ${OPENGL_INCLUDE_DIR}
                      ${VIPS_INCLUDE_DIRS}
                     spatialindex-src-1.6.1/src spatialindex-src-1.6.1/include
                      "/opt/local/include"
 "VirtualPlanetBuilder/include"
+ ${OpenCV_INCLUDE_DIR}
                      ${GDAL_INCLUDE_DIR}
 		     ${OSG_INCLUDE_DIR}
                    ${GLIB2_INCLUDE_DIRS}  )
 
 LINK_DIRECTORIES( ${OPENCV_LIBRARY_DIRS}
+${OpenCV_DIRS}
                   ${UF_LIBRARY_DIRS}
 		          ${PROJECT_SOURCE_DIR}
 ${GLIB2_LIBRARY_DIRS}

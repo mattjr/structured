@@ -13,14 +13,333 @@
 */
 //#include <CGAL/Eigen_solver_traits.h>
 
+
+#include <OGF/cells/types/cells_library.h>
+#include <OGF/cells/map/map.h>
+#include <OGF/cells/map/map_attributes.h>
+#include <OGF/cells/map/map_builder.h>
+
+#include <OGF/cells/map/map_editor.h>
+#include <OGF/cells/map/geometry.h>
+#include <OGF/cells/map_algos/atlas_generator.h>
+#include <OGF/cells/map_algos/pm_manager.h>
+/*#include <OGF/image/types/image.h>
+#include <OGF/image/types/image_library.h>
+#include <OGF/image/algos/rasterizer.h>
+#include <OGF/image/algos/morpho_math.h>*/
+#include <OGF/basic/os/file_system.h>
+
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <algorithm>
+#include <functional>
+#include <numeric>
 
 #include <osgDB/FileUtils>
-
-//#include <CGAL/Polyhedron_incremental_builder_3.h>
+#include <osg/io_utils>
 using namespace std;
+//#include <CGAL/Polyhedron_incremental_builder_3.h>
+int calcOptimalImageSize(const osg::Vec2 imageSize,osg::Vec3Array *verts,osg::DrawElementsUInt* triangles,std::vector<osg::Vec3Array *>   &texCoord){
+    if(!verts || !triangles || texCoord.size()==0)
+    return -1;
+std::vector<double> pixelSides;
+    for (int i = 0 ; i < (int)triangles->size()-2 ; i+=3) {
+        int idx=i/3;
+        int in0=triangles->at(i+0);
+        int in1=triangles->at(i+1);
+        int in2=triangles->at(i+2);
+        if(in0 <0 || in1< 0 || in2<0||in0>=verts->size()|| in1>=verts->size()|| in2>=verts->size())
+            continue;
+        const osg::Vec3 &v1=verts->at(in0);
+            const osg::Vec3 &v2=verts->at(in1);
+            const osg::Vec3 &v3=verts->at(in2);
+            double tex_area=((v2-v1)^(v3-v2)).length()/2.0;
+            double max_orig_tex_area=0.0;
+            for(int c=0; c <4; c++){
+             //   printf("Bla %f %f\n",texCoord[c]->at(idx).x(),texCoord[c]->at(idx).y());
+              osg::Vec3 tc1=  osg::Vec3(texCoord[c]->at(in0).x()*imageSize.x(),texCoord[c]->at(in0).y()*imageSize.y(),0);
+              osg::Vec3 tc2=   osg::Vec3(texCoord[c]->at(in1).x()*imageSize.x(),texCoord[c]->at(in1).y()*imageSize.y(),0);
+              osg::Vec3 tc3=   osg::Vec3(texCoord[c]->at(in2).x()*imageSize.x(),texCoord[c]->at(in2).y()*imageSize.y(),0);
+//              cout <<tc1 <<" " <<tc2<< " "<<tc3<<endl;
+              if(tc1.x() < 0 || tc1.y() < 0 ||tc2.x() < 0 || tc2.y() < 0||tc3.x() < 0 || tc3.y() < 0)
+                  continue;
+             double orig_tex_area=((tc2-tc1)^(tc3-tc2)).length()/2.0;
+             if(orig_tex_area>max_orig_tex_area)
+                 max_orig_tex_area=orig_tex_area;
+            }
+            if(max_orig_tex_area ==0.0)
+                continue;
+           // printf("%f %f\n",max_orig_tex_area,8192*tex_area);
+            double sidePixels=sqrt(max_orig_tex_area/tex_area);
+            pixelSides.push_back(sidePixels);
+    }
+    double sum = std::accumulate( pixelSides.begin(), pixelSides.begin()+pixelSides.size(), 0 ) ;
+
+    double avgEl =sum/pixelSides.size();
+   double maxEl= *( std::max_element( pixelSides.begin(), pixelSides.end() ) );
+   int potSize=osg::Image::computeNearestPowerOfTwo((int)avgEl);
+    printf("Max %f Avg %f POT %d\n",maxEl,avgEl,potSize);
+return potSize;
+}
+
+namespace OGF {
+class AtlasValidator: public ParamValidator{
+public:
+    void begin_rasterizer(Map* map) {
+        ::memset(graph_mem_, 0, graph_size_ * graph_size_) ;
+
+        Box2d box = Geom::map_bbox2d(map) ;
+
+        user_x_min_  = box.x_min() ;
+        user_y_min_  = box.y_min() ;
+        user_width_  = box.width() ;
+        user_height_ = box.height() ;
+        user_size_ = ogf_max(user_width_, user_height_) ;
+    }
+
+    void compute_fill_and_overlap_ratio(Map* map) {
+        begin_rasterizer(map) ;
+        FOR_EACH_FACET(Map,map,f) {
+            Map::Halfedge* cur = f-> halfedge() ;
+            Map::Halfedge* h0 = cur ;
+            cur = cur-> next() ;
+            Map::Halfedge* h1 = cur ;
+            cur = cur-> next() ;
+            Map::Halfedge* h2 = cur ;
+            do {
+                rasterize_triangle(
+                            h0->tex_coord(),
+                            h1->tex_coord(),
+                            h2->tex_coord()
+                            ) ;
+                h1 = cur ;
+                cur = cur-> next() ;
+                h2 = cur ;
+            } while (h2 != h0) ;
+        }
+        end_rasterizer() ;
+    }
+
+};
+
+    void generate_atlas(Map* the_map) {
+        AtlasGenerator the_generator(the_map) ;
+        the_generator.set_unglue_hardedges(false) ;
+        the_generator.set_auto_cut(true) ;
+        the_generator.set_auto_cut_cylinders(true) ;
+        the_generator.set_parameterizer("ABF++") ;
+        the_generator.set_max_overlap_ratio(0.0001) ;
+        the_generator.set_max_scaling(120.0) ;
+        the_generator.set_min_fill_ratio(0.25) ;
+        the_generator.set_pack(true) ;
+        the_generator.set_splitter("VSASmooth") ;
+        the_generator.apply() ;
+    }
+
+    void decimate_surface(Map* map, double factor = 0.25) {
+
+           bool is_triangulated = true ;
+           FOR_EACH_FACET(Map, map, it) {
+               if(!it->is_triangle()) {
+                   is_triangulated = false ;
+                   break ;
+               }
+           }
+
+           if(!is_triangulated) {
+               std::cerr << "Triangulating surface (this is required by multires algos)"
+                         << std::endl ;
+               MapEditor editor(map) ;
+               editor.split_surface(split_triangulate) ;
+           }
+
+           // Needs to be normalized, else PM manager does
+           // not operate properly.
+           MapNormalizer normalizer(map) ;
+           normalizer.apply() ;
+           PMManager pm_manager(map);
+           pm_manager.init();
+           pm_manager.set_progress(nil) ;
+           normalizer.unapply() ;
+           pm_manager.set_level(int((1.0 - factor) * pm_manager.size())) ;
+       }
+    // Dump parameterized mesh to an eps file
+    static bool write_file_eps(Map& map,
+                               const char *pFilename,
+                               double scale = 500.0)
+    {
+
+        std::ofstream out(pFilename);
+        if(!out)
+            return false;
+       // CGAL::set_ascii_mode(out);
+
+        // compute bounding box
+        double xmin,xmax,ymin,ymax;
+        xmin = ymin = xmax = ymax = 0;
+        FOR_EACH_HALFEDGE(Map,&map,pHalfedge)
+        {
+
+            double x1 = scale * pHalfedge->prev()->tex_coord().x();
+            double y1 = scale * pHalfedge->prev()->tex_coord().y();
+            double x2 = scale * pHalfedge->tex_coord().x();
+            double y2 = scale * pHalfedge->tex_coord().y();
+            xmin = (std::min)(xmin,x1);
+            xmin = (std::min)(xmin,x2);
+            xmax = (std::max)(xmax,x1);
+            xmax = (std::max)(xmax,x2);
+            ymax = (std::max)(ymax,y1);
+            ymax = (std::max)(ymax,y2);
+            ymin = (std::min)(ymin,y1);
+            ymin = (std::min)(ymin,y2);
+        }
+
+        out << "%!PS-Adobe-2.0 EPSF-2.0" << std::endl;
+        out << "%%BoundingBox: " << int(xmin+0.5) << " "
+                                    << int(ymin+0.5) << " "
+                                    << int(xmax+0.5) << " "
+                                    << int(ymax+0.5) << std::endl;
+        out << "%%HiResBoundingBox: " << xmin << " "
+                                        << ymin << " "
+                                        << xmax << " "
+                                        << ymax << std::endl;
+        out << "%%EndComments" << std::endl;
+        out << "gsave" << std::endl;
+        out << "0.1 setlinewidth" << std::endl;
+
+        // color macros
+        out << std::endl;
+        out << "% RGB color command - r g b C" << std::endl;
+        out << "/C { setrgbcolor } bind def" << std::endl;
+        out << "/white { 1 1 1 C } bind def" << std::endl;
+        out << "/black { 0 0 0 C } bind def" << std::endl;
+
+        // edge macro -> E
+        out << std::endl;
+        out << "% Black stroke - x1 y1 x2 y2 E" << std::endl;
+        out << "/E {moveto lineto stroke} bind def" << std::endl;
+        out << "black" << std::endl << std::endl;
+
+        // for each halfedge
+        FOR_EACH_HALFEDGE(Map,&map,pHalfedge)
+        {
+            double x1 = scale * pHalfedge->prev()->tex_coord().x();
+            double y1 = scale * pHalfedge->prev()->tex_coord().y();
+            double x2 = scale * pHalfedge->tex_coord().x();
+            double y2 = scale * pHalfedge->tex_coord().y();
+            out << x1 << " " << y1 << " " << x2 << " " << y2 << " E" << std::endl;
+        }
+
+        /* Emit EPS trailer. */
+        out << "grestore" << std::endl;
+        out << std::endl;
+        out << "showpage" << std::endl;
+
+        return true;
+    }
+
+
+
+using namespace std;
+
+class LoaderOSG2OGF  {
+
+
+
+private:
+    osg::Vec3Array* _verts;
+    osg::DrawElementsUInt *_triangles;
+public:
+
+   /// Constructor
+   /// @param f name of a .ply file that stores the model
+    LoaderOSG2OGF (OGF::Map *map,osg::Vec3Array* verts,osg::DrawElementsUInt *triangles) : B(map),_verts(verts),_triangles(triangles) {
+        facet_map.resize(_triangles->size(),NULL);
+   }
+
+   /// Loads the PLY model and build the CGAL Halfedge Data Structure
+   /// @param hds - halfedge data structure.
+   bool build ()  {
+
+
+
+      B.begin_surface();
+      for (int i = 0 ; i < (int)_verts->size() ; i++) {
+          B.add_vertex (Point3d (_verts->at(i)[0],_verts->at(i)[1],_verts->at(i)[2]) );
+      }
+
+      for (int i = 0 ; i < (int)_triangles->size()-2 ; i+=3) {
+         B.begin_facet();
+         for (int j = 0; j <3; j++) {
+             B.add_vertex_to_facet (_triangles->at(i+j));
+         }
+         B.end_facet();
+         for(int j=0;j<3;j++)
+         facet_map[i+j]=B.current_facet();
+
+      }
+      B.end_surface ();
+      cout <<"Loading model ... done " << endl;
+   //   cout << "B.error()" <<_verts->size() << " "<<_triangles->size() << endl;
+      if(B.map()){
+          return true;
+      }
+      return false;
+   }
+   MapBuilder B;
+   std::vector<Map::Facet*> facet_map;
+
+};
+
+};
+osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::DrawElementsUInt> triangles){
+    OGF::Map the_map ;
+      std::cerr << "==== Step 1/5 == Loading map: " << std::endl ;
+      OGF::LoaderOSG2OGF map_builder(&the_map,verts,triangles);
+
+      if(!map_builder.build()) {
+          std::cerr << "Could not open proces model" << std::endl ;
+          exit(-1) ;
+      }
+      std::cerr << "nb facets: " << the_map.size_of_facets() << " nb vertices:" << the_map.size_of_vertices() << std::endl ;
+      std::cerr << std::endl ;
+      the_map.compute_normals() ;
+      std::cerr << "==== Step 2/5 == Generating texture atlas" << std::endl ;
+         OGF::generate_atlas(&the_map) ;
+         OGF::AtlasValidator val;
+         val.compute_fill_and_overlap_ratio(&the_map);
+         std::cerr << "Created atlas with fill ratio of " << val.fill_ratio()<< std::endl ;
+
+     //    OGF::write_file_eps(the_map,"test.eps");
+       //  exit(0);
+         osg::Vec3Array *arr=new osg::Vec3Array;
+         arr->resize(triangles->size());
+        for (int i = 0 ; i < (int)triangles->size()-2 ; i+=3) {
+            if(!map_builder.facet_map[i]){
+                fprintf(stderr,"Warning no face coorepsonds to this triangle");
+                exit(-1);
+            }
+             OGF::Map::Facet* it=map_builder.facet_map[i];
+             OGF::Map::Halfedge* h = it->halfedge() ;
+             int lEdge=1;
+             do {
+                 OGF::Map::Vertex *vert=h->vertex();
+                 double u =  h->tex_coord().x();
+                 double v =  h->tex_coord().y();
+
+                 arr->at(i+lEdge)=osg::Vec3(osg::Vec3(u,v,0));
+                 lEdge=(lEdge+1)%3;
+                 h = h->next() ;
+
+             } while (h != it->halfedge());
+         }
+         //cout <<"Final Coords"<<bbox._min<< " "<<bbox._max<<endl;
+         return arr;
+}
+
+using namespace std;
+
 #if 0
 template <class HDS>
 class LoaderOSG : public CGAL::Modifier_base<HDS> {
@@ -136,6 +455,7 @@ static Seam cut_mesh(Parameterization_polyhedron_adaptor& mesh_adaptor)
 
     return seam;
 }
+
 
 // Dump parameterized mesh to an eps file
 static bool write_file_eps(const Parameterization_polyhedron_adaptor& mesh_adaptor,
@@ -397,5 +717,3 @@ osg::Vec3Array* CGALreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg:
 }
 
 #endif
-osg::Vec3Array* CGALreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::DrawElementsUInt> triangles)
-{return NULL;}

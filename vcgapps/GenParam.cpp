@@ -23,10 +23,10 @@
 #include <OGF/cells/map/geometry.h>
 #include <OGF/cells/map_algos/atlas_generator.h>
 #include <OGF/cells/map_algos/pm_manager.h>
-/*#include <OGF/image/types/image.h>
+#include <OGF/image/types/image.h>
 #include <OGF/image/types/image_library.h>
 #include <OGF/image/algos/rasterizer.h>
-#include <OGF/image/algos/morpho_math.h>*/
+#include <OGF/image/algos/morpho_math.h>
 #include <OGF/basic/os/file_system.h>
 
 #include <iostream>
@@ -35,6 +35,8 @@
 #include <algorithm>
 #include <functional>
 #include <numeric>
+#include <vips/vips>
+#include <vips/vips.h>
 
 #include <osgDB/FileUtils>
 #include <osg/io_utils>
@@ -292,7 +294,9 @@ public:
 
 };
 
-};
+}
+
+
 osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::DrawElementsUInt> triangles){
     OGF::Map the_map ;
       std::cerr << "==== Step 1/5 == Loading map: " << std::endl ;
@@ -315,6 +319,8 @@ osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::
        //  exit(0);
          osg::Vec3Array *arr=new osg::Vec3Array;
          arr->resize(triangles->size());
+         osg::BoundingBox bbox;
+
         for (int i = 0 ; i < (int)triangles->size()-2 ; i+=3) {
             if(!map_builder.facet_map[i]){
                 fprintf(stderr,"Warning no face coorepsonds to this triangle");
@@ -327,17 +333,29 @@ osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::
                  OGF::Map::Vertex *vert=h->vertex();
                  double u =  h->tex_coord().x();
                  double v =  h->tex_coord().y();
-
+                 bbox.expandBy(osg::Vec3(u,v,0));
                  arr->at(i+lEdge)=osg::Vec3(osg::Vec3(u,v,0));
                  lEdge=(lEdge+1)%3;
                  h = h->next() ;
 
              } while (h != it->halfedge());
          }
-         //cout <<"Final Coords"<<bbox._min<< " "<<bbox._max<<endl;
+         cout <<"Final Coords"<<bbox._min<< " "<<bbox._max<<endl;
          return arr;
 }
+void dilateEdge(IMAGE *tmpI){
+    OGF::Image* img = new OGF::Image(OGF::Image::RGB,tmpI->Xsize,tmpI->Ysize);
+    OGF::Memory::byte* mem_img = img->base_mem_byte_ptr();
+    vips::VImage tmpImage(mem_img,tmpI->Xsize,tmpI->Ysize,3,vips::VImage::FMTUCHAR);
+    vips::VImage v(tmpI);
+    v.write(tmpImage);
+    OGF::MorphoMath morpho(img) ;
+    for(int i=0; i<3; i++) {
+        morpho.dilate(1) ;
+    }
+    im_copy(tmpImage.image(),tmpI);
 
+}
 using namespace std;
 
 #if 0

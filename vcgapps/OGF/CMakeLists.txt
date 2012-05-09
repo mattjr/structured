@@ -1,6 +1,6 @@
 
 INCLUDE_DIRECTORIES(..)
-SUBDIRS(basic cells   math parameterizer   )
+SUBDIRS(basic cells   math parameterizer image  )
 
 
 

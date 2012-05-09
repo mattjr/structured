@@ -182,6 +182,7 @@ static int white_gen( REGION *reg, void *seq, void *a, void *b )
 }
 osg::Vec3Array * doMeshReorder(std::string basename);
 
+
 /**
  * im_black:
  * @out: output #IMAGE
@@ -526,10 +527,10 @@ int main(int ac, char *av[]) {
         }
         _file.close();
 
-        osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
-        double xrange=totalbb.xMax()-totalbb.xMin();
-        double yrange=totalbb.yMax()-totalbb.yMin();
-        double largerSide=std::max(xrange,yrange);
+        osg::Vec3d eye(0.5,0.5,0);//totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
+        double xrange=1.0;//totalbb.xMax()-totalbb.xMin();
+        double yrange=1.0;//totalbb.yMax()-totalbb.yMin();
+        double largerSide=1.0;
         osg::Matrixd matrix;
         matrix.makeTranslate( eye );
        view=osg::Matrix::inverse(matrix);
@@ -649,7 +650,10 @@ int main(int ac, char *av[]) {
                                osg::Vec2 tc=osg::Vec2(((FragmentShaderCollectTC::tc[l].x())/(double)(outputImage->Xsize)),
                                                       1.0-((FragmentShaderCollectTC::tc[l].y())/(double)(outputImage->Ysize)));
                         //       cout << FragmentShaderCollectTC::tc[l]<<endl;
-                            newTCArr->at(itr->second[t].idx[l])=tc;
+                              osg::Vec2  tc2=osg::Vec2(newVerts->at(itr->second[t].idx[l])[0],
+                                                      newVerts->at(itr->second[t].idx[l])[1]);
+                          //    cout <<tc << " "<<tc2<<endl;
+                            newTCArr->at(itr->second[t].idx[l])=tc2;  //tc;
                             //cout << newTCArr->at(itr->second[t].idx[l]) << tc1<<endl;
                             }
                           //  cout <<endl;
@@ -676,6 +680,8 @@ int main(int ac, char *av[]) {
 
         osg::StateSet* stateset = geom->getOrCreateStateSet();
         stateset->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+        stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+
         osgDB::writeNodeFile(*geode,"test.ive");
         }
         if(!blending){
@@ -782,12 +788,25 @@ int main(int ac, char *av[]) {
 //(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str()
         IMAGE *tmpI=im_open("tmp","p");
         im_extract_bands(outputImage,tmpI,0,3);
+        dilateEdge(tmpI);
+
         if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str())){
             fprintf(stderr,"Failed to write\n");
             cerr << im_error_buffer()<<endl;
             im_close(tmpI);
             exit(-1);
         }
+      /*  vips::VImage maskI(tmpI);
+        vips::VImage dilatedI(tmpI);
+        const int size=4;
+        std::vector<int> coeff(size*size,255);
+        vips::VIMask mask(size,size,1,0,coeff);
+        vips::VIMask mask(size,size,1,0,coeff);
+
+        dilatedI.dilate(mask2).write("test.png");
+
+        maskI.more(1.0).invert().andimage(dilatedI.dilate(mask)).write("wa.ppm");
+        (maskI.more(1.0).invert().andimage(dilatedI.dilate(mask))).add(maskI).write("total.png");*/
         im_close(tmpI);
         int levels=(int)ceil(log( max( sizeX, sizeY ))/log(2.0) );
         if(!genPyramid(osgDB::getNameLessExtension(imageName)+".tif",levels,"ppm")){
@@ -808,6 +827,7 @@ int main(int ac, char *av[]) {
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
         process_mem_usage(vm, rss);
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
+
         im_close(outputImage);
 
         if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,"ppm",jpegQuality)){

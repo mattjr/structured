@@ -31,7 +31,7 @@ ENDIF(APPLE)
 TARGET_LINK_LIBRARIES(shadevis  ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIB})
 TARGET_LINK_LIBRARIES(sw-shadevis  ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIB} swrender)
 
-TARGET_LINK_LIBRARIES(reorder  ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIB} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff z  m  )
+TARGET_LINK_LIBRARIES(reorder  ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIB} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )
 
 INSTALL_TARGETS( /bin texturedDecimator tridecimator)
 INSTALL_TARGETS( /bin shadevis )

@@ -40,7 +40,7 @@
 #include <OGF/basic/modules/module.h>
 
 #include <OGF/image/types/image.h>
-#include <OGF/image/types/image_library.h>
+/*#include <OGF/image/types/image_library.h>
 #include <OGF/image/io/image_serializer_xpm.h>
 #include <OGF/image/io/image_serializer_ppm.h>
 #include <OGF/image/io/image_serializer_rgb.h>
@@ -48,11 +48,12 @@
 #include <OGF/image/io/image_serializer_png.h>
 #include <OGF/image/io/image_serializer_bmp.h>
 #include <OGF/image/io/image_serializer_jpeg.h>
-
+*/
+#if 0
 namespace OGF {
     
 /****************************************************************/
-    
+
     void image_libinit::initialize() {
         Logger::out("Init") << "Initializing library \'" 
                             << "image" << "\'" << std::endl ; 
@@ -144,3 +145,4 @@ extern "C" void IMAGE_API OGF_image_terminate() {
 }
 
 
+#endif

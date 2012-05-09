@@ -294,7 +294,7 @@ void VipsAtlasBuilder::VAtlas::copySources()
     _image = new vips::VImage(vips::VImage::black(_maximumAtlasWidth,_maximumAtlasHeight,3));//initdesc(_maximumAtlasWidth,_maximumAtlasHeight,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
 
     printf("Creating atlas image of %dx%d\n",_maximumAtlasWidth,_maximumAtlasHeight);
-    OSG_INFO<<"Atlas::copySources() "<<std::endl;
+    osg::notify(osg::INFO)<<"Atlas::copySources() "<<std::endl;
     _height=_maximumAtlasHeight;
     _width=_maximumAtlasWidth;
     for(VSourceList::iterator itr = _sourceList.begin();
@@ -306,8 +306,8 @@ void VipsAtlasBuilder::VAtlas::copySources()
 
         if (atlas == this)
         {
-            OSG_NOTICE<<"Copying image"<<" to "<<source->_x<<" ,"<<source->_y<<std::endl;
-            OSG_NOTICE<<"        image size "<<source->_image->Ysize()<<","<<source->_image->Xsize()<<std::endl;
+            osg::notify(osg::NOTICE)<<"Copying image"<<" to "<<source->_x<<" ,"<<source->_y<<std::endl;
+            osg::notify(osg::NOTICE)<<"        image size "<<source->_image->Ysize()<<","<<source->_image->Xsize()<<std::endl;
 
             vips::VImage * sourceImage = source->_image;
             vips::VImage* atlasImage = atlas->_image;
@@ -484,7 +484,7 @@ bool VipsAtlasBuilder::VAtlas::addSource(VSource* source)
         // yes it fits, so add the source to the atlas's list of sources it contains
         _sourceList.push_back(source);
 
-        OSG_INFO<<"current row insertion, source "<<source->_image->filename()<<" "<<_x<<","<<_y<<" fits in row of atlas "<<this<<std::endl;
+        osg::notify(osg::INFO)<<"current row insertion, source "<<source->_image->filename()<<" "<<_x<<","<<_y<<" fits in row of atlas "<<this<<std::endl;
 
         // set up the source so it knows where it is in the atlas
         source->_x = _x + _margin;
@@ -512,7 +512,7 @@ bool VipsAtlasBuilder::VAtlas::addSource(VSource* source)
         // yes it fits, so add the source to the atlas' list of sources it contains
         _sourceList.push_back(source);
 
-        OSG_INFO<<"next row insertion, source "<<source->_image->filename()<<" "<<_x<<","<<_y<<" fits in row of atlas "<<this<<std::endl;
+        osg::notify(osg::INFO)<<"next row insertion, source "<<source->_image->filename()<<" "<<_x<<","<<_y<<" fits in row of atlas "<<this<<std::endl;
 
         // set up the source so it knows where it is in the atlas
         source->_x = _x + _margin;
@@ -526,12 +526,12 @@ bool VipsAtlasBuilder::VAtlas::addSource(VSource* source)
 
         _height = _y + sourceImage->Ysize() + 2*_margin;
 
-        OSG_INFO<<"source "<<source->_image->filename()<<" "<<_x<<","<<_y<<" fits in row of atlas "<<this<<std::endl;
+         osg::notify(osg::INFO)<<"source "<<source->_image->filename()<<" "<<_x<<","<<_y<<" fits in row of atlas "<<this<<std::endl;
 
         return true;
     }
 
-    OSG_INFO<<"source "<<source->_image->filename()<<" does not fit in atlas "<<this<<std::endl;
+    osg::notify(osg::INFO)<<"source "<<source->_image->filename()<<" does not fit in atlas "<<this<<std::endl;
 
     // shouldn't get here, unless doesSourceFit isn't working...
     return false;
@@ -542,7 +542,7 @@ VipsAtlasBuilder::VAtlas::FitsIn VipsAtlasBuilder::VAtlas::doesSourceFit(VSource
      vips::VImage *sourceImage = source->_image;
     if (!sourceImage) {
         return DOES_NOT_FIT_IN_ANY_ROW;
-OSG_NOTICE<<"Null Image."<<std::endl;
+     osg::notify(osg::NOTICE)<<"Null Image."<<std::endl;
     }
     // does pixel format match?
    /* if (_image.valid())
@@ -554,20 +554,20 @@ OSG_NOTICE<<"Null Image."<<std::endl;
 
 
     if (sourceImage->Xsize() + 2*_margin > _maximumAtlasWidth)
-    {  OSG_NOTICE<<"// image too big for Atlas width."<<std::endl;
+    {   osg::notify(osg::NOTICE)<<"// image too big for Atlas width."<<std::endl;
         // image too big for Atlas
         return DOES_NOT_FIT_IN_ANY_ROW;
     }
 
     if (sourceImage->Ysize() + 2*_margin > _maximumAtlasHeight)
-    {           OSG_NOTICE<<"// image too big for Atlas."<<std::endl;
+    {            osg::notify(osg::NOTICE)<<"// image too big for Atlas."<<std::endl;
 
         // image too big for Atlas
         return DOES_NOT_FIT_IN_ANY_ROW;
     }
 
     if ((_y + sourceImage->Ysize() + 2*_margin) > _maximumAtlasHeight)
-    {        OSG_NOTICE<<"image doesn't have up space in height axis."<<std::endl;
+    {         osg::notify(osg::NOTICE)<<"image doesn't have up space in height axis."<<std::endl;
 
         // image doesn't have up space in height axis.
         return DOES_NOT_FIT_IN_ANY_ROW;
@@ -577,7 +577,7 @@ OSG_NOTICE<<"Null Image."<<std::endl;
     if ((_x + sourceImage->Xsize() + 2*_margin) <= _maximumAtlasWidth)
     {
         // yes it fits :-)
-        OSG_NOTICE<<"Fits in current row"<<std::endl;
+         osg::notify(osg::NOTICE)<<"Fits in current row"<<std::endl;
         return FITS_IN_CURRENT_ROW;
     }
 
@@ -585,7 +585,7 @@ OSG_NOTICE<<"Null Image."<<std::endl;
     if ((_height + sourceImage->Ysize() + 2*_margin) <= _maximumAtlasHeight)
     {
         // yes it fits :-)
-        OSG_NOTICE<<"Fits in next row"<<std::endl;
+         osg::notify(osg::NOTICE)<<"Fits in next row"<<std::endl;
         return IN_NEXT_ROW;
     }
 

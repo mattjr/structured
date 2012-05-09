@@ -60,14 +60,13 @@ class VAtlas;
       int width,height;
       bool suitableForAtlas(int maximumAtlasWidth, int maximumAtlasHeight);
 
-
      };
      typedef std::vector< osg::ref_ptr<VSource> > VSourceList;
      VSource* getSource(const vips::VImage *image);
 
      class VAtlas: public Atlas{
      public:
-         VAtlas(int width, int height, int margin):Atlas(width,height,0),_image(NULL){if(margin>0){fprintf(stderr,"Cannot have margin in this implmentation being reset to 0 margin!\n");}}
+         VAtlas(int width, int height, int margin):Atlas(width,height,0),_image(NULL),_indexFirstOfRow(0){if(margin>0){fprintf(stderr,"Cannot have margin in this implmentation being reset to 0 margin!\n");}}
 
          vips::VImage *_image;
          VSourceList _sourceList;
@@ -82,6 +81,7 @@ class VAtlas;
 
          void copySources(void);
 
+         int _indexFirstOfRow;
 
      };
      VSourceList _sourceList;

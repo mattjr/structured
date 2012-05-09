@@ -96,7 +96,7 @@ int taucs_maximize_stacksize()
 /*   should not normally be called by the user (call _avail_)       */
 /********************************************************************/
 
-#ifdef OSTYPE_linux
+#if defined (OSTYPE_linux) && !defined(__APPLE__)
 #define TAUCS_SYSTEM_MEMORY_SIZE_DEFINED
 
 double taucs_system_memory_size()
@@ -125,7 +125,7 @@ double taucs_system_memory_size()
 }
 #endif
 
-#ifdef OSTYPE_darwin
+#ifdef __APPLE__
 #define TAUCS_SYSTEM_MEMORY_SIZE_DEFINED
 
 /* This is a BSD4.4 interface, so it should work on other BSD systems */

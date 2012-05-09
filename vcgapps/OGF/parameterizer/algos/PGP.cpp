@@ -113,7 +113,7 @@ namespace OGF {
                     c[0] * (( c[1] * x[1] + c[2] * x[2] - x[0])^2)
                 ) ;
                 norm_eqn_ = non_linear_solver_->declare_stencil(
-                    c[0] * (((x[0]^2) + (x[1]^2) - 1.0)^2)
+                    c[0] * (((x[0]^2) + (x[1]^2) - Node_ptr(1.0))^2)
                 ) ;
                 val_eqn_ = non_linear_solver_->declare_stencil(
                     c[0] * ((x[0] - c[1])^2)

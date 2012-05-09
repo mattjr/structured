@@ -4,8 +4,11 @@
  * and Robert Leland at Sandia National Laboratories            *				
  ****************************************************************/
 
-
+#ifdef __APPLE__
+#include <stdlib.h>
+#else
 #include <malloc.h>
+#endif
 #include "orthog.h"
 #include "../structs.h"
 #include "utils_rqi.h"

@@ -116,15 +116,15 @@ void VipsAtlasBuilder::buildAtlas()
                     (*aitr)->_image->Bands() == (*sitr)->_image->Bands()))*/
                 {
 //                    osg::notify(osg::NOTICE)<<"checking source "<<source->_image->filename()<<" to see it it'll fit in atlas "<<aitr->get()<<std::endl;
-                    FitsIn fitsIn = (*aitr)->doesSourceFit(source);
-                    if (fitsIn == osgUtil::Optimizer::TextureAtlasBuilder::Atlas::FITS_IN_CURRENT_ROW)
+                    VAtlas::FitsIn fitsIn = (*aitr)->doesSourceFit(source);
+                    if (fitsIn == VAtlas::FITS_IN_CURRENT_ROW)
                     {
                                          osg::notify(osg::NOTICE)<<"fist current row "<<source->_image->filename()<<" to see it it'll fit in atlas "<<aitr->get()<<std::endl;
 
                         addedSourceToAtlas = true;
                         (*aitr)->addSource(source); // Add in the currentRow.
                     }
-                    else if(fitsIn == osgUtil::Optimizer::TextureAtlasBuilder::Atlas::IN_NEXT_ROW)
+                    else if(fitsIn == VAtlas::IN_NEXT_ROW)
                     {                                         osg::notify(osg::NOTICE)<<"fist next row "<<source->_image->filename()<<" to see it it'll fit in atlas "<<aitr->get()<<std::endl;
 
                         completeRow(aitr - _atlasList.begin()); //Fill Empty spaces.
@@ -536,7 +536,7 @@ bool VipsAtlasBuilder::VAtlas::addSource(VSource* source)
     // shouldn't get here, unless doesSourceFit isn't working...
     return false;
 }
-FitsIn VipsAtlasBuilder::VAtlas::doesSourceFit(VSource* source)
+VipsAtlasBuilder::VAtlas::FitsIn VipsAtlasBuilder::VAtlas::doesSourceFit(VSource* source)
 {
     // does the source have a valid image?
      vips::VImage *sourceImage = source->_image;

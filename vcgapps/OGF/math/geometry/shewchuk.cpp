@@ -136,7 +136,7 @@
 #include <float.h>
 #endif
 
-#ifdef LINUX
+#if defined( LINUX) && !defined(__APPLE__)
 #include <fpu_control.h>
 #endif 
 
@@ -676,7 +676,7 @@ REAL exactinit()
      _control87(_PC_53, _MCW_PC); /* Set FPU control word for double precision. */
 #endif /* not SINGLE */
 #endif /* CPU86 */
-#ifdef LINUX
+#if defined( LINUX) && !defined(__APPLE__)
 #ifdef SINGLE
      /*  cword = 4223; */
      cword = 4210;                 /* set FPU control word for single precision */

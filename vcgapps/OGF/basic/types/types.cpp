@@ -63,7 +63,7 @@ namespace OGF {
 #ifdef WIN32
             return (_isnan(x) != 0) || (_finite(x) == 0) ;
 #else
-            return isnan(x) || !finite(x);
+            return std::isnan(x) || !finite(x);
 #endif
         }
     
@@ -71,7 +71,7 @@ namespace OGF {
 #ifdef WIN32
             return (_isnan(x) != 0) || (_finite(x) == 0) ;
 #else
-            return isnan(x) || !finite(x);
+            return std::isnan(x) || !finite(x);
 #endif
         }    
 

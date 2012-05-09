@@ -205,7 +205,7 @@ namespace OGF {
 
 
         void enable_FPE() {
-#ifdef WIN32
+#if  defined(WIN32) || defined(__APPLE__)
 	    Logger::warn("Process") << "FPE control not implemented under Windows" << std::endl ;
 #else
             int excepts= 0
@@ -221,7 +221,7 @@ namespace OGF {
         }
 
         void disable_FPE() {
-#ifdef WIN32
+#if defined(WIN32) || defined(__APPLE__)
 	    Logger::warn("Process") << "FPE control not implemented under Windows" << std::endl ;
 #else
             feenableexcept(0);

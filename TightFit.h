@@ -72,7 +72,13 @@ class VAtlas;
          vips::VImage *_image;
          VSourceList _sourceList;
          bool addSource(VSource* source);
-         FitsIn doesSourceFit(VSource* source);
+       enum FitsIn
+       {
+	 DOES_NOT_FIT_IN_ANY_ROW,
+	 FITS_IN_CURRENT_ROW,
+	 IN_NEXT_ROW
+       };	 
+       FitsIn doesSourceFit(VSource* source);
 
          void copySources(void);
 

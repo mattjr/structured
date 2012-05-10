@@ -746,7 +746,7 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
 }*/
 
 int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns,unsigned int width,unsigned int height,int row,int col,
-                const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,bool depth,const osg::Matrixd& viewProjRead,const osg::Vec2 &latlong, std::string ext)
+              bool untex,bool depth,const osg::Matrixd& viewProjRead,const osg::Vec2 &latlong, std::string ext)
 {
     //int pid=getpid();
     if(node == NULL)
@@ -878,8 +878,8 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
 
             sem.acquire();
             viewer.setSceneData( node );
-            viewer.getCamera()->setProjectionMatrix(proj*offsetMatrix);
-            viewer.getCamera()->setViewMatrix(view);
+            viewer.getCamera()->setProjectionMatrix(viewProjRead*offsetMatrix);
+            viewer.getCamera()->setViewMatrix(osg::Matrix::identity());
             viewer.frame();
             viewer.advance();
             viewer.updateTraversal();

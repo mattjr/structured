@@ -451,7 +451,7 @@ int main(int ac, char *av[]) {
         // it is necessary to set the viewport
         g.viewport(0, 0, outputImage->Xsize, outputImage->Ysize);
         // set the cull mode (CW is already the default mode)
-        g.cull_mode(GeometryProcessor::CULL_CW);
+        g.cull_mode(GeometryProcessor::CULL_NONE);
 
         // it is also necessary to set the clipping rectangle
         r.clip_rect(0, 0, outputImage->Xsize, outputImage->Ysize);

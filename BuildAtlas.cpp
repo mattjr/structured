@@ -573,7 +573,7 @@ void generateImageFromExtents(const std::vector<mosaic_cell> &mosaic_cells,
     int downsampledImageIndex=level-1;
     //  printf("Downsample Factor %f\n",downsampleFactor);
     double downsampleRatio=1.0/downsampleFactor;
-    // std::cout<< minT << " " << maxT<<std::endl;
+    //std::cout<< minT << " " << maxT<<std::endl;
     // printf("%f %f\n",downsampleRatio,downsampleRatio);
     int x=(int)std::max((int)floor(minT.x()),0);
     int y=(int)std::max((int)floor(minT.y()),0);
@@ -654,6 +654,8 @@ void generateImageFromExtents(const std::vector<mosaic_cell> &mosaic_cells,
 
                     //used_img=mosaic_cells[i].img_ds[downsampledImageIndex];
                     //else
+                    //printf("%d %d \n",downsampledImageIndex,i);
+                   // printf("%s\n",mosaic_cells[i].name_ds[downsampledImageIndex].c_str());
                     used_img=new vips::VImage(mosaic_cells[i].name_ds[downsampledImageIndex].c_str(),"r");
                     if(!used_img)
                         continue;

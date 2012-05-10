@@ -33,7 +33,7 @@ int main( int argc, char **argv )
     arguments.read("--size",size.x(),size.y());
     std::string mf=argv[1];
     osg::Matrixd viewProj,rotMat;
-    readMatrixToScreen("view.mat",viewProj);
+    readMatrixToScreen("viewproj.mat",viewProj);
     readMatrix("rot.mat",rotMat);
 
 

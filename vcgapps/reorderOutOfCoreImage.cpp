@@ -510,10 +510,10 @@ int main(int ac, char *av[]) {
 
         osg::Matrixd view=osg::Matrix::inverse(matrix);
 */
-        osg::Matrixd view,proj;
-        mat4x viewA,projA;
+       // osg::Matrixd view,proj;
+       // mat4x viewA,projA;
 
-        std::fstream _file("view.mat",std::ios::binary|std::ios::in);
+     /*   std::fstream _file("view.mat",std::ios::binary|std::ios::in);
         for(int i=0; i<4; i++)
             for(int j=0; j<4; j++){
             _file.read(reinterpret_cast<char*>(&(view(i,j))),sizeof(double));
@@ -526,7 +526,9 @@ int main(int ac, char *av[]) {
 
         }
         _file.close();
+*/
 
+         osg::Matrixd view,proj;
         osg::Vec3d eye(0.5,0.5,0);//totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
         double xrange=1.0;//totalbb.xMax()-totalbb.xMin();
         double yrange=1.0;//totalbb.yMax()-totalbb.yMin();

@@ -363,7 +363,7 @@ protected:
     GeometryList _geometryList;
 };
 
-bool readMatrixToScreen(std::string fname,osg::Matrix &viewProj);
+bool readMatrixToScreen(std::string fname,osg::Matrixd &viewProj);
 bool readMatrix(std::string fname,osg::Matrix &viewProj);
 class MyGraphicsContext : public osg::Referenced {
 public:

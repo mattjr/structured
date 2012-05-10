@@ -85,6 +85,8 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,height,0));
     osg::Matrix worldtoScreen=/*viewMatrix * projMatrix*/ viewproj * modWindow*bottomLeftToTopLeft;
     osg::Matrix screenToWorld=osg::Matrix::inverse(worldtoScreen);
+    osg::Matrix screenToWorldmitch=osg::Matrix::inverse(viewproj); // added by mitch
+
     osg::Vec3 tl(0,0,0);
     osg::Vec3 bl(0,height,0);
     osg::Vec3 tr(width,0,0);
@@ -95,6 +97,16 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     osg::Vec3 blGlobal=bl*screenToWorld;
     osg::Vec3 trGlobal=tr*screenToWorld;
     osg::Vec3 brGlobal=br*screenToWorld;
+    
+    // Added by Mitch
+    osg::Vec4 tlmitch(-1.0,1.0,0,1.0);
+    osg::Vec4 brmitch(1.0,-1.0,0,1.0);
+    osg::Vec4 tlGlobalmitch=tlmitch*screenToWorldmitch;
+    osg::Vec4 brGlobalmitch=brmitch*screenToWorldmitch;
+    
+    cout << "tl: " << tlGlobalmitch.x() << " " << tlGlobalmitch.y() << endl;
+    cout << "br:" << brGlobalmitch.x() << " " << brGlobalmitch.y() << endl;
+    
     osg::Vec3 diff=(brGlobal-tlGlobal);
     osg::Vec2 scalePix( diff.x()/width, diff.y()/height);
     cout << "brGlobal " << brGlobal<< " tlGlobal " << tlGlobal << endl;
@@ -105,10 +117,23 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     std::cout << tlGlobal << " " << blGlobal <<" " <<trGlobal<< " " << brGlobal <<"\n";
     worldfile.close();
     char gdal_param[4096];
-    if(jpegQuality <0)
-        sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs \"%s\"",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),proj4.c_str());
+
+    /*sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),proj4.c_str());
+    
+    // added by mitch
+    sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobalmitch.y(),tlGlobalmitch.x(),brGlobalmitch.y(),brGlobalmitch.x(),szProj4);
+    */
+if(jpegQuality <0)
+        sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs \"%s\"",
+              tlGlobalmitch.y(),tlGlobalmitch.x(),brGlobalmitch.y(),brGlobalmitch.x(),
+                // tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),
+                proj4.c_str());
     else
-        sprintf(gdal_param," -of GTiff -b 1 -b 2 -b 3 -mask 4 -co \"compress=JPEG\" -co \"TILED=YES\" --config GDAL_TIFF_INTERNAL_MASK YES -co \"PHOTOMETRIC=YCBCR\" -co \"JPEG_QUALITY=%d\" -a_ullr %.12f %.12f %.12f %.12f -a_srs \"%s\"",jpegQuality,tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),proj4.c_str());
+        sprintf(gdal_param," -of GTiff -b 1 -b 2 -b 3 -mask 4 -co \"compress=JPEG\" -co \"TILED=YES\" --config GDAL_TIFF_INTERNAL_MASK YES -co \"PHOTOMETRIC=YCBCR\" -co \"JPEG_QUALITY=%d\" -a_ullr %.12f %.12f %.12f %.12f -a_srs \"%s\"",jpegQuality,
+              //  tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),
+                tlGlobalmitch.y(),tlGlobalmitch.x(),brGlobalmitch.y(),brGlobalmitch.x(),
+
+                proj4.c_str());
     char tmp[8192];
     sprintf(tmp,"%s-add_geo.sh",name.c_str());
     FILE *fp=fopen(tmp,"w");

@@ -227,8 +227,8 @@ int main( int argc, char **argv )
                     osg::Matrixd view,proj;
 
 
-                    std::stringstream os2;
-                    os2<< "view.mat";
+               /*     std::stringstream os2;
+                    os2<< "viewproj.mat";
 
                     std::fstream _file(os2.str().c_str(),std::ios::binary|std::ios::in);
                     for(int i=0; i<4; i++)
@@ -237,9 +237,9 @@ int main( int argc, char **argv )
                     for(int i=0; i<4; i++)
                         for(int j=0; j<4; j++)
                             _file.read(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
-                    _file.close();
+                    _file.close();*/
 
-                    imageNodeGL(xform.get(),numRows,numCols,width,height,row,col,view,proj,untex,depth,viewProjRead,osg::Vec2(lat,lon),"png");
+                    imageNodeGL(xform.get(),numRows,numCols,width,height,row,col,untex,depth,viewProjRead,osg::Vec2(lat,lon),"png");
 
                 }
                 if(!imageNode){

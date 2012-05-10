@@ -57,21 +57,17 @@ using namespace SpatialIndex;
 using namespace vpb;
 using vpb::log;
 using namespace std;
-bool readMatrixToScreen(std::string fname,osg::Matrix &viewProj){
+bool readMatrixToScreen(std::string fname,osg::Matrixd &viewProj){
     std::fstream file(fname.c_str(), std::ios::binary|std::ios::in);
     if(!file.good()){
         fprintf(stderr,"Can't open %s\n",fname.c_str());
         return false;
     }
-    osg::Matrixd view,proj;
 
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++)
-            file.read(reinterpret_cast<char*>(&(view(i,j))), sizeof(double));
-    for(int i=0; i<4; i++)
-        for(int j=0; j<4; j++)
-            file.read(reinterpret_cast<char*>(&(proj(i,j))), sizeof(double));
-    viewProj=osg::Matrix( view * proj);
+            file.read(reinterpret_cast<char*>(&(viewProj(i,j))), sizeof(double));
+
     return true;
 }
 
@@ -306,7 +302,7 @@ void MyDataSet::init()
 
     _file.open("/tmp/scope.txt");
     readMatrix("rot.mat",rotMat);
-    readMatrixToScreen("view.mat",viewProj);
+    readMatrixToScreen("viewproj.mat",viewProj);
 
 
     if(_useReImage || _useVirtualTex){
@@ -357,11 +353,13 @@ void MyDataSet::init()
                                 add=false;
                                 break;
                             }
-                            vips::VImage *img=new vips::VImage(tmp_l);
+                          /*  vips::VImage *img=new vips::VImage(tmp_l);
                             if(!img){
                                 std::cerr << "Can't open downsampled "<<tmp_l<<  " on reimaging run\n";
                             }
-                            cell.img_ds[i]=img;
+                            cell.img_ds[i]=img;*/
+                            cell.img_ds[i]=NULL;
+
                             cell.name_ds[i]=string(tmp_l);
                         }
                         cell.mutex=new OpenThreads::Mutex;
@@ -3260,7 +3258,12 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
             osg::Vec4 proj=rotpt*toTex;
             proj.x() /= proj.w();
             proj.y() /= proj.w();
-            //  cout << proj.x() << " "<< proj.y()<<endl;
+          //  cout <<"View proj " <<dynamic_cast<MyDataSet*>(_dataSet)->viewProj<<endl;
+
+          //  cout <<"Pt " <<pt<<endl;
+         //   cout <<toTex<<endl;
+           // cout <<rotpt<<endl;
+          //    cout << proj.x() << " "<< proj.y()<<endl;
             //  std::cout << pt << " rot " <<pt*dynamic_cast<MyDataSet*>(_dataSet)->rotMat<<" proj "<< proj << "\n";
 
             for(int k=0; k <2; k++){
@@ -3286,6 +3289,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         }
 
     }
+//    cout <<"sadasd "<<bbox._min<<" "<<bbox._max<<endl;
   //  if(_useVirtualTex)
     //    texCoord->resize(auxDataArray->size());
     bool noTexturing=true;
@@ -3334,7 +3338,15 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
                 int mosaic_id=-1;
                 //  if(dynamic_cast<MyDataSet*>(_dataSet)->cell_coordinate_map.count(p)){
                 tree->intersectsWithQuery(r, vis);
-                mosaic_id=vis.getResult();
+                int res=vis.getResult();
+               // cout << proj2<<endl;
+
+                if(res < 0 ){
+                    cout << proj2<<endl;
+                    fprintf(stderr,"No resulting mosaic FAIL!!!");
+                    continue;
+                }
+                mosaic_id=res;
                 idx[k]=mosaic_id;
             }
             if(idx[0] != idx[1] || idx[1] != idx[2]){

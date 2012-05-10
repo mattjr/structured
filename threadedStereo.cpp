@@ -1244,7 +1244,8 @@ int main( int argc, char *argv[ ] )
 
     osg::BoundingSphere bs;
     osg::Matrix rotM;
-    float rx=0,ry=180.0,rz=-90;
+   // float rx=0,ry=180.0,rz=-90;
+    float rx=0,ry=0.0,rz=0;
 
     rotM =osg::Matrix::rotate(
                 osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
@@ -1284,8 +1285,8 @@ int main( int argc, char *argv[ ] )
 
         totalbb_unrot.expandBy(bounds.bbox._min);
         totalbb_unrot.expandBy(bounds.bbox._max);
-        totalbb.expandBy(osg::Vec3(totalbb_unrot._min[1],totalbb_unrot._min[0],-totalbb_unrot._min[2]));
-        totalbb.expandBy(osg::Vec3(totalbb_unrot._max[1],totalbb_unrot._max[0],-totalbb_unrot._max[2]));
+        totalbb.expandBy(osg::Vec3(totalbb_unrot._min[0],totalbb_unrot._min[1],-totalbb_unrot._min[2]));
+        totalbb.expandBy(osg::Vec3(totalbb_unrot._max[0],totalbb_unrot._max[1],-totalbb_unrot._max[2]));
     }
 
 
@@ -1396,15 +1397,15 @@ int main( int argc, char *argv[ ] )
     double xrange=totalbb.xMax()-totalbb.xMin();
     double yrange=totalbb.yMax()-totalbb.yMin();
     double largerSide=std::max(xrange,yrange);
-    osg::Matrixd matrix;
+ /*   osg::Matrixd matrix;
     matrix.makeTranslate( eye );
     osg::Matrixd view=osg::Matrix::inverse(matrix);
-    osg::Matrixd proj= osg::Matrixd::ortho2D(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
+    osg::Matrixd proj= osg::Matrixd::ortho2D(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));*/
     /* proj= osg::Matrixd::ortho2D(-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
  printf("%f %f %f %f AAAA\n",-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
  printf("%f %f %f %f AAAA\n",-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
 */
-
+/*
     std::stringstream os2;
     os2<< "view.mat";
 
@@ -1415,6 +1416,47 @@ int main( int argc, char *argv[ ] )
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++)
             _file.write(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
+    _file.close();
+
+    */
+    double chunkSize=(totalbb.xMax()-totalbb.xMin())/(double)_tileRows;
+
+    double widthEnd=totalbb.xMin()+((_tileRows)*chunkSize);
+    double widthStart=totalbb.xMin()+((0)*chunkSize);
+    double heightEnd=totalbb.yMin()+((_tileColumns)*chunkSize);
+    double heightStart=totalbb.yMin()+((0)*chunkSize);
+    osg::Matrix viewproj;
+    viewproj(0,0)=0;
+    viewproj(0,1)=2/largerSide;
+    viewproj(0,2)=0;
+    viewproj(0,3)= (-(heightEnd+heightStart)/(heightEnd-heightStart));
+
+
+    viewproj(1,0)=2/largerSide;
+    viewproj(1,1)=0;
+    viewproj(1,2)=0;
+    viewproj(1,3)= (-(widthEnd+widthStart)/(widthEnd-widthStart));
+
+
+    viewproj(2,0)=0;
+    viewproj(2,1)=0;
+    viewproj(2,2)=2;
+    viewproj(2,3)=-1;
+
+    viewproj(3,0)=0;
+    viewproj(3,1)=0;
+    viewproj(3,2)=0;
+    viewproj(3,3)= 1;
+    cout <<viewproj<<endl;
+
+    std::stringstream os2;
+    os2<< "viewproj.mat";
+
+    std::fstream _file(os2.str().c_str(),std::ios::binary|std::ios::out);
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            //Write Transpose
+            _file.write(reinterpret_cast<char*>(&(viewproj(j ,i))),sizeof(double));
     _file.close();
 
 
@@ -1439,19 +1481,58 @@ int main( int argc, char *argv[ ] )
                 fflush(stdout);
                 osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
                 double left,right,bottom,top,znear,zfar;
-                osg::Matrix m=(view*proj*offsetMatrix);
-                m.getOrtho(left,right,bottom,top,znear,zfar);
+                osg::Matrix m;//=(view*proj*offsetMatrix);
+                //m.getOrtho(left,right,bottom,top,znear,zfar);
+                double chunkSize=(totalbb.xMax()-totalbb.xMin())/(double)_tileRows;
+                double widthEnd=totalbb.xMin()+((row+1)*chunkSize);
+                double widthStart=totalbb.xMin()+((row)*chunkSize);
+                double heightEnd=totalbb.yMin()+((col+1)*chunkSize);
+                double heightStart=totalbb.yMin()+((col)*chunkSize);
+                m(0,0)=0;
+                m(0,1)=2/chunkSize;
+                m(0,2)=0;
+                m(0,3)= (-(heightEnd+heightStart)/(heightEnd-heightStart));
+
+
+                m(1,0)=2/chunkSize;
+                m(1,1)=0;
+                m(1,2)=0;
+                m(1,3)= (-(widthEnd+widthStart)/(widthEnd-widthStart));
+
+
+                m(2,0)=0;
+                m(2,1)=0;
+                m(2,2)=2;
+                m(2,3)=-1;
+
+                m(3,0)=0;
+                m(3,1)=0;
+                m(3,2)=0;
+                m(3,3)= 1;
+                cout <<m<<endl;
+    left=widthStart;
+    right=widthEnd;
+    top=heightEnd;
+    bottom=heightStart;
                 double margin=vrip_res*10;
-                osg::BoundingBox thisCellBbox(left,bottom,bs.center()[2]-bs.radius(),right,top,bs.center()[2]+bs.radius());
+                osg::BoundingBox thisCellBbox;
+                thisCellBbox.expandBy(osg::Vec3(left,bottom,bs.center()[2]-bs.radius()));
+                        thisCellBbox.expandBy(osg::Vec3(right,top,bs.center()[2]+bs.radius()));
                 osg::BoundingBox thisCellBboxMargin(left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
 
+              //  printf("ANNNN %f %f %f %f %f %f\n",left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
                 osg::BoundingBox bboxMarginUnRot;
                 bboxMarginUnRot.expandBy(thisCellBboxMargin._min*osg::Matrix::inverse(rotM));
                 bboxMarginUnRot.expandBy(thisCellBboxMargin._max*osg::Matrix::inverse(rotM));
                 //  std::cout<< thisCellBbox._max-thisCellBbox._min <<"\n";
                 //  std::cout<< "A"<<thisCellBboxMargin._min << " "<< thisCellBboxMargin._max<<"\n\n";
                 bool hitcell=false;
+              //  cout << thisCellBbox._min<<endl;
+              //  cout << thisCellBbox._max<<endl;
                 for(int k=0; k< (int)vrip_cells.size(); k++){
+                  //  cout << "FFF "<<vrip_cells[k].bounds.bbox._min << " "<<vrip_cells[k].bounds.bbox._max<<endl;
+                  //  cout << "GLOBAL "<<totalbb._min << " "<<totalbb._max<<endl;
+
                     if(bboxMarginUnRot.intersects(vrip_cells[k].bounds.bbox)){
                         hitcell=true;
                         break;
@@ -1478,8 +1559,10 @@ int main( int argc, char *argv[ ] )
                 validF++;
                 std::fstream _file(tmp4,std::ios::binary|std::ios::out);
                 for(int k=0; k<4; k++)
-                    for(int l=0; l<4; l++)
-                        _file.write(reinterpret_cast<char*>(&(cell.m(k,l))),sizeof(double));
+                    for(int l=0; l<4; l++){
+                        //Transpose matrix
+                        _file.write(reinterpret_cast<char*>(&(cell.m(l,k))),sizeof(double));
+                    }
                 _file.close();
                 // double timeForReadPixels = osg::Timer::instance()->delta_s(st, osg::Timer::instance()->tick());
                 //printf("Time %f\n",timeForReadPixels);
@@ -1493,12 +1576,15 @@ int main( int argc, char *argv[ ] )
                     osg::BoundingBox imgBox;
                     imgBox.expandBy(m1);
                     imgBox.expandBy(m2);
-                    //  cout << m1 << " "<< m2 << " bounds \n";
-                    //        cout <<thisCellBbox._min << " "<< thisCellBbox._max<<" bbox\n";
+                   //  cout << m1 << " "<< m2 << " bounds \n";
+                           // cout <<thisCellBbox._min << " "<< thisCellBbox._max<<" bbox\n";
                     if(thisCellBbox.intersects(imgBox)){
+                        //printf("ast\n");
                         cell.images.push_back(i);
                     }
                     if(thisCellBboxMargin.intersects(imgBox)){
+                        //printf("!!!ast\n");
+
                         cell.imagesMargin.push_back(i);
                     }
                 }
@@ -2107,6 +2193,9 @@ int main( int argc, char *argv[ ] )
         fprintf(FP2,"%d %d %d %d mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d.ppm %d\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),
                 (totalX-ajustedGLImageSizeX*(cells[i].row)),ajustedGLImageSizeY*cells[i].col,ajustedGLImageSizeY*(cells[i].col+1),cells[i].row,cells[i].col,_tileRows,_tileColumns,
                 cells[i].row,cells[i].col,_tileRows,_tileColumns,levels);
+
+
+
         fprintf(FP3,"image_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
         fprintf(FP4,"var_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
 

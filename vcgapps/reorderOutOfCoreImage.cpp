@@ -170,13 +170,13 @@ static IMAGE *rangeImage;
 /* Generate function --- just black out the region.*/
 static int white_gen( REGION *reg, void *seq, void *a, void *b )
 {
-  PEL *q = (PEL *) IM_REGION_ADDR( reg, reg->valid.left, reg->valid.top );
-  int wd = IM_REGION_SIZEOF_LINE( reg );
-  int ls = IM_REGION_LSKIP( reg );
-  int y;
+    PEL *q = (PEL *) IM_REGION_ADDR( reg, reg->valid.left, reg->valid.top );
+    int wd = IM_REGION_SIZEOF_LINE( reg );
+    int ls = IM_REGION_LSKIP( reg );
+    int y;
 
-  for( y = 0; y < reg->valid.height; y++, q += ls )
-    memset( (char *) q, 255, wd );
+    for( y = 0; y < reg->valid.height; y++, q += ls )
+        memset( (char *) q, 255, wd );
 
     return( 0 );
 }
@@ -197,7 +197,7 @@ osg::Vec3Array * doMeshReorder(std::string basename);
  * Returns: 0 on success, -1 on error
  */
 int
-        im_white( IMAGE *out, int x, int y, int bands )
+im_white( IMAGE *out, int x, int y, int bands )
 {
     if( x <= 0 || y <= 0 || bands <= 0 ) {
         im_error( "im_white", "%s", "bad parameter"  );
@@ -225,6 +225,85 @@ int
 
 
 
+void write_header(std::ostream& _fout,int total_face_count,bool color){
+    _fout <<"ply\n";
+    _fout <<"format binary_little_endian 1.0\n";
+    //_fout <<"comment PLY exporter written by Paul Adams\n";
+    _fout <<"element vertex "<<total_face_count <<std::endl;
+    _fout <<"property float x\n";
+    _fout <<"property float y\n";
+    _fout <<"property float z\n";
+    if(color){
+        _fout <<"property uchar red\n";
+        _fout <<"property uchar green\n";
+        _fout <<"property uchar blue\n";
+    }
+    _fout <<"element face " <<total_face_count/3<<std::endl;
+    _fout <<"property list uchar int vertex_indices\n";
+    _fout <<"property list uchar float texcoord\n";
+    _fout <<"property int texnumber\n";
+    _fout <<"end_header\n";
+}
+void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,const std::vector<int> &imageId,osg::Vec2Array *tcarr,bool flip){
+    int cnt=0;
+    for(int i=0; i< (int)tri->size()-2; i+=3){
+        for(int j=0; j<3; j++){
+            osg::Vec3 v=verts->at(tri->at(i+j));
+            float vf[3];
+            vf[0]=v[0];
+            vf[1]=v[1];
+            vf[2]=v[2];
+            _fout.write((char *)vf,3*sizeof(float));
+            if(colors && i+j <(int)colors->size() ){
+                unsigned char col[3];
+                osg::Vec4 c=colors->at(i+j);
+                // cout <<c<<endl;
+                col[0]=c[0]*255.0;
+                col[1]=c[1]*255.0;
+                col[2]=c[2]*255.0;
+                _fout.write((char *)col,3*sizeof(unsigned char));
+
+            }
+        }
+    }
+    int iout[3];
+    unsigned char c3=3;
+    unsigned char ctex=3*2;
+    float fout[2];
+    for(int i=0; i<(int) tri->size()-2; i+=3){
+        _fout.write((char *)&c3,sizeof(char));
+
+        if(flip){
+            iout[0]=i;
+            iout[1]=i+1;
+            iout[2]=i+2;
+        }else{
+            iout[0]=i+2;
+            iout[1]=i+1;
+            iout[2]=i+0;
+
+        }
+        _fout.write((char*)iout,sizeof(int)*3);
+
+
+        _fout.write((char *)&ctex,sizeof(char));
+        for(int j=0; j<3; j++){
+            osg::Vec2 tc=tcarr->at(tri->at(i+j));
+            fout[(j*2)+0]=tc.x();
+            fout[(j*2)+1]=tc.y();
+
+        }
+        _fout.write((char*)fout,sizeof(float)*ctex);
+        iout[0]=imageId.at(i/3);
+        _fout.write((char*)iout,sizeof(int));
+
+        cnt++;
+
+    }
+    printf("%d\n",cnt);
+
+
+}
 
 
 
@@ -242,10 +321,10 @@ void readFile(string fname,map<int,imgData> &imageList){
         imgData cam;
         double low[3], high[3];
         if(m_fin >> cam.id >> cam.filename >> low[0] >> low[1] >> low[2] >> high[0] >> high[1] >> high[2]
-           >> cam.m(0,0) >>cam.m(0,1)>>cam.m(0,2) >>cam.m(0,3)
-           >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
-           >> cam.m(2,0) >>cam.m(2,1)>>cam.m(2,2) >>cam.m(2,3)
-           >> cam.m(3,0) >>cam.m(3,1)>>cam.m(3,2) >>cam.m(3,3)){
+                >> cam.m(0,0) >>cam.m(0,1)>>cam.m(0,2) >>cam.m(0,3)
+                >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
+                >> cam.m(2,0) >>cam.m(2,1)>>cam.m(2,2) >>cam.m(2,3)
+                >> cam.m(3,0) >>cam.m(3,1)>>cam.m(3,2) >>cam.m(3,3)){
             cam.bbox.expandBy(low[0],low[1],low[2]);
             cam.bbox.expandBy(high[0],high[1],high[2]);
             imageList[cam.id]=cam;
@@ -330,7 +409,7 @@ int main(int ac, char *av[]) {
         return -1;
     }
     mat4x  viewProjReadA ;
-            osg::Matrixd viewProjRead;
+    osg::Matrixd viewProjRead;
     std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
     if(!_file.good()){
         fprintf(stderr,"Can't load %s\n",matfile.c_str());
@@ -338,9 +417,9 @@ int main(int ac, char *av[]) {
     }
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++){
-        _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
-        viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
-    }
+            _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
+            viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
+        }
     sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d",row,col,_tileRows,_tileColumns);
 
     imageName=string(tmp)+".v";
@@ -376,7 +455,7 @@ int main(int ac, char *av[]) {
         texCoord.push_back(vertexData._texCoord[2]);
         texCoord.push_back(vertexData._texCoord[3]);
         osg::DrawElementsUInt *tri=vertexData._triangles.get();
-      /*  for (int i = 0 ; i < (int)tri->size()-2 ; i+=3) {
+        /*  for (int i = 0 ; i < (int)tri->size()-2 ; i+=3) {
             for(int j=0;j<3;j++)
             for(int k=0;k<3;k++)
 
@@ -460,7 +539,7 @@ int main(int ac, char *av[]) {
             fprintf(stderr,"Can't reorder bailing\n");
             exit(-1);
         }
-//doMeshReorder(av[1]);
+        //doMeshReorder(av[1]);
 
         osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
         if(!geode)
@@ -486,9 +565,9 @@ int main(int ac, char *av[]) {
 
         if(arguments.read("--invrot",rx,ry,rz)){
             inverseM =osg::Matrix::rotate(
-                    osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
-                    osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
-                    osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+                        osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                        osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                        osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
         }
         osg::Matrix rotM=osg::Matrix::inverse(inverseM);
 
@@ -510,10 +589,10 @@ int main(int ac, char *av[]) {
 
         osg::Matrixd view=osg::Matrix::inverse(matrix);
 */
-       // osg::Matrixd view,proj;
-       // mat4x viewA,projA;
+        // osg::Matrixd view,proj;
+        // mat4x viewA,projA;
 
-     /*   std::fstream _file("view.mat",std::ios::binary|std::ios::in);
+        /*   std::fstream _file("view.mat",std::ios::binary|std::ios::in);
         for(int i=0; i<4; i++)
             for(int j=0; j<4; j++){
             _file.read(reinterpret_cast<char*>(&(view(i,j))),sizeof(double));
@@ -528,39 +607,39 @@ int main(int ac, char *av[]) {
         _file.close();
 */
 
-         osg::Matrixd view,proj;
+        osg::Matrixd view,proj;
         osg::Vec3d eye(0.5,0.5,0);//totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
         double xrange=1.0;//totalbb.xMax()-totalbb.xMin();
         double yrange=1.0;//totalbb.yMax()-totalbb.yMin();
         double largerSide=1.0;
         osg::Matrixd matrix;
         matrix.makeTranslate( eye );
-       view=osg::Matrix::inverse(matrix);
-      proj= osg::Matrixd::ortho2D(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
-      osg::Matrix viewproj=view*proj;
-      osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,sizeY,0));
+        view=osg::Matrix::inverse(matrix);
+        proj= osg::Matrixd::ortho2D(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
+        osg::Matrix viewproj=view*proj;
+        osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,sizeY,0));
 
-      osg::Matrix toTex=viewproj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*sizeX,0.5*sizeY,0.5f))*bottomLeftToTopLeft;
+        osg::Matrix toTex=viewproj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*sizeX,0.5*sizeY,0.5f))*bottomLeftToTopLeft;
 
-     // cout <<viewProjRead<<endl;
-      osg::Vec2Array *newTCArr=new osg::Vec2Array;
-      for(int i=0; i <(int)verts->size(); i++){
-          osg::Vec2 tc=calcCoordReprojSimple(verts->at(i),rotM,toTex,texSize);
-     //     cout << "v: " << verts->at(i)<< " :" << tc<<endl;
+        // cout <<viewProjRead<<endl;
+        osg::Vec2Array *newTCArr=new osg::Vec2Array;
+        for(int i=0; i <(int)verts->size(); i++){
+            osg::Vec2 tc=calcCoordReprojSimple(verts->at(i),rotM,toTex,texSize);
+            //     cout << "v: " << verts->at(i)<< " :" << tc<<endl;
 
-          newTCArr->push_back(osg::Vec2(1.0-tc[1],1.0-tc[0]));
-      }
-      geom->setTexCoordArray(0,newTCArr);
-      // set up the texture state.
+            newTCArr->push_back(osg::Vec2(1.0-tc[1],1.0-tc[0]));
+        }
+        geom->setTexCoordArray(0,newTCArr);
+        // set up the texture state.
 
-      for(int i=0; i<4; i++)
-          for(int j=0; j<4; j++){
-          viewProjReadA.elem[j][i]=fixed16_t(viewproj(i,j));
-      }
-    //  cout << viewproj<<endl;
+        for(int i=0; i<4; i++)
+            for(int j=0; j<4; j++){
+                viewProjReadA.elem[j][i]=fixed16_t(viewproj(i,j));
+            }
+        //  cout << viewproj<<endl;
         //        printf("AAAA %d %d %d %d\n",row,col,_tileRows,_tileColumns);
 
-     /*   osg::Matrix offsetMatrix=osg::Matrix::scale((double)_tileColumns,(double) _tileRows, 1.0)*osg::Matrix::translate((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0);
+        /*   osg::Matrix offsetMatrix=osg::Matrix::scale((double)_tileColumns,(double) _tileRows, 1.0)*osg::Matrix::translate((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0);
 
 
         mat4x offsetMatrixA=translation_matrix<fixed16_t>((double)_tileColumns-1-2*col, (double)_tileRows-1-2*row, 0.0)*scaling_matrix<fixed16_t>((double)_tileColumns,(double) _tileRows, 1.0);
@@ -590,7 +669,7 @@ int main(int ac, char *av[]) {
         cout <<viewprojmat<< endl;
 
         cout <<viewProjRead<< endl;*/
-/*
+        /*
         for(int i=0; i<4; i++){
             for(int j=0; j<4; j++){
                 cout << fix2float<16>(viewA2.elem[i][j].intValue) << " ";
@@ -649,19 +728,19 @@ int main(int ac, char *av[]) {
                         osg::Vec2 &tc3=newTCArr->at(itr->second[t].idx[2]);
                         if(FragmentShaderCollectTC::tc.size() ==3){
                             for(int l=0; l<3; l++){
-                               osg::Vec2 tc=osg::Vec2(((FragmentShaderCollectTC::tc[l].x())/(double)(outputImage->Xsize)),
-                                                      1.0-((FragmentShaderCollectTC::tc[l].y())/(double)(outputImage->Ysize)));
-                        //       cout << FragmentShaderCollectTC::tc[l]<<endl;
-                              osg::Vec2  tc2=osg::Vec2(newVerts->at(itr->second[t].idx[l])[0],
-                                                      newVerts->at(itr->second[t].idx[l])[1]);
-                          //    cout <<tc << " "<<tc2<<endl;
-                            newTCArr->at(itr->second[t].idx[l])=tc2;  //tc;
-                            //cout << newTCArr->at(itr->second[t].idx[l]) << tc1<<endl;
+                                osg::Vec2 tc=osg::Vec2(((FragmentShaderCollectTC::tc[l].x())/(double)(outputImage->Xsize)),
+                                                       1.0-((FragmentShaderCollectTC::tc[l].y())/(double)(outputImage->Ysize)));
+                                //       cout << FragmentShaderCollectTC::tc[l]<<endl;
+                                osg::Vec2  tc2=osg::Vec2(newVerts->at(itr->second[t].idx[l])[0],
+                                                         newVerts->at(itr->second[t].idx[l])[1]);
+                                //    cout <<tc << " "<<tc2<<endl;
+                                newTCArr->at(itr->second[t].idx[l])=tc2;  //tc;
+                                //cout << newTCArr->at(itr->second[t].idx[l]) << tc1<<endl;
                             }
-                          //  cout <<endl;
-                          //  cout <<   FragmentShaderCollectTC::tc[0] << " "<<(int)round(tc1[0]*(outputImage->Xsize-1))-1 << " "<< (int)round(tc1[1]*outputImage->Xsize)-1<<endl;
-                           // cout <<   FragmentShaderCollectTC::tc[1] << " "<< (int)round(tc2[0]*(outputImage->Xsize-1))-1 << " "<< (int)round(tc2[1]*outputImage->Xsize)-1<<endl;
-                           // cout <<   FragmentShaderCollectTC::tc[2] <<  " "<<(int)round(tc3[0]*(outputImage->Xsize-1))-1 << " "<< (int)round(tc3[1]*outputImage->Xsize)-1<<endl;
+                            //  cout <<endl;
+                            //  cout <<   FragmentShaderCollectTC::tc[0] << " "<<(int)round(tc1[0]*(outputImage->Xsize-1))-1 << " "<< (int)round(tc1[1]*outputImage->Xsize)-1<<endl;
+                            // cout <<   FragmentShaderCollectTC::tc[1] << " "<< (int)round(tc2[0]*(outputImage->Xsize-1))-1 << " "<< (int)round(tc2[1]*outputImage->Xsize)-1<<endl;
+                            // cout <<   FragmentShaderCollectTC::tc[2] <<  " "<<(int)round(tc3[0]*(outputImage->Xsize-1))-1 << " "<< (int)round(tc3[1]*outputImage->Xsize)-1<<endl;
 
                         }
                     }
@@ -672,6 +751,7 @@ int main(int ac, char *av[]) {
 
 
         }
+        /*
         if(1){
           osg::Texture2D* texture = new osg::Texture2D;
           osg::Image *img=new osg::Image;
@@ -685,6 +765,21 @@ int main(int ac, char *av[]) {
         stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
 
         osgDB::writeNodeFile(*geode,"test.ive");
+        }*/
+        {
+            std::vector<int>imageId;
+
+            for(int i=0; i< (int)tri->size()-2; i+=3){
+                imageId.push_back((int)vertexData._texIds->at(i)[0]);
+            }
+
+            char tmp[1024];
+            sprintf(tmp,"mesh-diced/remap-%s",osgDB::getSimpleFileName(av[1]).c_str());
+            std::ofstream f(tmp);
+            bool color = vertexData._colors.valid() ? (vertexData._colors->size() >0) : false;
+
+            write_header(f,vertexData._triangles->size(),color);
+            write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,imageId,newTCArr,false);
         }
         if(!blending){
             g.vertex_shader<VertexShader>();
@@ -787,7 +882,7 @@ int main(int ac, char *av[]) {
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
 
         start=osg::Timer::instance()->tick();
-//(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str()
+        //(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str()
         IMAGE *tmpI=im_open("tmp","p");
         im_extract_bands(outputImage,tmpI,0,3);
         dilateEdge(tmpI);
@@ -798,7 +893,7 @@ int main(int ac, char *av[]) {
             im_close(tmpI);
             exit(-1);
         }
-      /*  vips::VImage maskI(tmpI);
+        /*  vips::VImage maskI(tmpI);
         vips::VImage dilatedI(tmpI);
         const int size=4;
         std::vector<int> coeff(size*size,255);
@@ -833,7 +928,7 @@ int main(int ac, char *av[]) {
         im_close(outputImage);
 
         if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,"ppm",jpegQuality)){
-           /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
+            /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
                 perror( "Error deleting file" );
             else
                 puts( "File successfully deleted" );*/
@@ -980,7 +1075,7 @@ osg::Vec3Array * doMeshReorder(std::string basename)
     p.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
     p.mask |= vcg::tri::io::Mask::IOM_WEDGCOLOR;
 
-   //tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),true,p);
+    //tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),true,p);
     osg::Vec3Array *varr=new osg::Vec3Array;
     for(CMeshO::VertexIterator vi=m.vert.begin();vi!=m.vert.end();++vi)
         varr->push_back(osg::Vec3((*vi).P()[0],(*vi).P()[1],(*vi).P()[2]));
@@ -1014,32 +1109,32 @@ bool removeDups(std::string basename,osg::Vec3Array *verts,osg::DrawElementsUInt
         //return 1;
     }
 
-      /*  if(SwapFlag){
+    /*  if(SwapFlag){
             printf("Flipping normal\n");
             tri::Clean<CMeshO>::FlipMesh(m);
 
         }*/
-        double CCPerc=0.05;
-        tri::UpdateNormals<AMesh>::PerVertexNormalized(m);
-        tri::UpdateBounding<AMesh>::Box(m);
-        tri::UpdateColor<AMesh>::VertexConstant(m,Color4b::White);
-        int dup= tri::Clean<AMesh>::RemoveDuplicateVertex(m);
-        tri::UpdateTopology<CMeshO>::FaceFace(m);
-        tri::UpdateFlags<CMeshO>::FaceBorderFromFF(m);
-        int unref= tri::Clean<AMesh>::RemoveNonManifoldVertex(m);
-        unref= tri::Clean<AMesh>::RemoveUnreferencedVertex(m);
-        float minCC= CCPerc*m.bbox.Diag();
-        printf("Cleaning Min CC %.1f m\n",minCC);
-        std::pair<int,int> delInfo= tri::Clean<AMesh>::RemoveSmallConnectedComponentsDiameter(m,minCC);
+    double CCPerc=0.05;
+    tri::UpdateNormals<AMesh>::PerVertexNormalized(m);
+    tri::UpdateBounding<AMesh>::Box(m);
+    tri::UpdateColor<AMesh>::VertexConstant(m,Color4b::White);
+    int dup= tri::Clean<AMesh>::RemoveDuplicateVertex(m);
+    tri::UpdateTopology<CMeshO>::FaceFace(m);
+    tri::UpdateFlags<CMeshO>::FaceBorderFromFF(m);
+    int unref= tri::Clean<AMesh>::RemoveNonManifoldVertex(m);
+    unref= tri::Clean<AMesh>::RemoveUnreferencedVertex(m);
+    float minCC= CCPerc*m.bbox.Diag();
+    printf("Cleaning Min CC %.1f m\n",minCC);
+    std::pair<int,int> delInfo= tri::Clean<AMesh>::RemoveSmallConnectedComponentsDiameter(m,minCC);
 
-        printf("fff %d %d\n",m.fn,m.vn);
-        vcg::SimpleTempData<AMesh::VertContainer,int> indices(m.vert);
+    printf("fff %d %d\n",m.fn,m.vn);
+    vcg::SimpleTempData<AMesh::VertContainer,int> indices(m.vert);
 
     int j=0;
     for(AMesh::VertexIterator vi=m.vert.begin();vi!=m.vert.end();++vi){
         if(!vi->IsD()){
-        verts->push_back(osg::Vec3((*vi).P()[0],(*vi).P()[1],(*vi).P()[2]));
-        indices[vi] = j++;
+            verts->push_back(osg::Vec3((*vi).P()[0],(*vi).P()[1],(*vi).P()[2]));
+            indices[vi] = j++;
         }
     }
     printf("fff %d %d\n",verts->size(),j);
@@ -1049,15 +1144,15 @@ bool removeDups(std::string basename,osg::Vec3Array *verts,osg::DrawElementsUInt
             for(int k=0;k<3;++k)
                 triangles->push_back(-1);
         }else{
-        for(int k=0;k<3;++k)
-            triangles->push_back(indices[(*fi).cV(k)]);
+            for(int k=0;k<3;++k)
+                triangles->push_back(indices[(*fi).cV(k)]);
         }
     }
     //tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),false);
     //     exit(0);
 
     // glutMainLoop();
-return true;
+    return true;
 }
 typedef Triangle2<CMeshO::FaceType::TexCoordType::ScalarType> Tri2;
 /////// FUNCTIONS NEEDED BY "BASIC PARAMETRIZATION" FILTER
@@ -1070,10 +1165,10 @@ inline int getLongestEdge(const CMeshO::FaceType & f)
     double  maxd20 = SquaredDistance(p2,p0);
     if(maxd01 > maxd12)
         if(maxd01 > maxd20)     res = 0;
-    else                    res = 2;
+        else                    res = 2;
     else
         if(maxd12 > maxd20)     res = 1;
-    else                    res = 2;
+        else                    res = 2;
     return res;
 }
 
@@ -1254,12 +1349,12 @@ bool reorderVertsForTex(void){
                     lEdge = (lEdge+1)%3;
                     tmp = t.P(1) + origin;
                     m.face[fidx].V(1)->P() = Point3f(tmp.X(), tmp.Y(),0);
-                   // m.face[fidx].V(lEdge).N() = 0;
+                    // m.face[fidx].V(lEdge).N() = 0;
                     lEdge = (lEdge+1)%3;
                     tmp = t.P(2) + origin;
                     m.face[fidx].V(2)->P() =Point3f(tmp.X(), tmp.Y(),0);
-                   // m.face[fidx].WT(lEdge).N() = 0;
-                  /*  cout << (t.P(0) +origin)[0]<< ","<<(t.P(0) +origin)[1]<< endl;
+                    // m.face[fidx].WT(lEdge).N() = 0;
+                    /*  cout << (t.P(0) +origin)[0]<< ","<<(t.P(0) +origin)[1]<< endl;
                     cout << (t.P(1) +origin)[0]<< ","<<(t.P(1) +origin)[1]<< endl;
                     cout << (t.P(2) +origin)[0]<< ","<<(t.P(2) +origin)[1]<< endl;
 cout << endl;*/
@@ -1271,7 +1366,7 @@ cout << endl;*/
         assert(face == faceNo);
         assert(it == buckets[buckSize-1].end());
         printf( "Biggest triangle's catheti are %.2f px long", (cache[0].P(0)-cache[0].P(2)).Norm() * textDim);
-       printf( "Smallest triangle's catheti are %.2f px long", (cache[cache.size()-1].P(0)-cache[cache.size()-1].P(2)).Norm() * textDim);
+        printf( "Smallest triangle's catheti are %.2f px long", (cache[cache.size()-1].P(0)-cache[cache.size()-1].P(2)).Norm() * textDim);
 
     }
     else //BASIC
@@ -1331,7 +1426,7 @@ cout << endl;*/
                         m.face[face].WT((++lEdge)%3) = CFaceO::TexCoordType(tr.U(), bl.V());
                         m.face[face].WT(lEdge%3).N() = 0;
                     }
-                  //  cb(face*100/faceNo, "Generating parametrization...");
+                    //  cb(face*100/faceNo, "Generating parametrization...");
                     odd=!odd; ++j;
                 }
             }

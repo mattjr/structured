@@ -52,6 +52,7 @@ static double smallCCPer=0.2;
 // Command-line arguments
 //
 static bool untex=true;
+static bool reparamTex=true;
 using namespace std;
 static double sparseRatio=0.2;
 static bool isSparse=false;
@@ -2083,6 +2084,11 @@ int main( int argc, char *argv[ ] )
     int ajustedGLImageSizeX=(int)reimageSize.x();//-((reimageSize.x()/VTtileSize)*2*tileBorder);
     int ajustedGLImageSizeY=(int)reimageSize.y();//-((reimageSize.y()/VTtileSize)*2*tileBorder);
 
+    string tcmd =basepath+string("/vrip/bin/plymerge ");
+    char tmp100[8096];
+    char tmpfn2[8096];
+
+    std::vector<string> cfiles;
 
     FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
     FILE *vartexcmds_fp=fopen(vartexcmds_fn.c_str(),"w");
@@ -2130,6 +2136,9 @@ int main( int argc, char *argv[ ] )
                 cells[i].row,cells[i].col,
                 vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
                 rx,ry,rz);
+        sprintf(tmpfn2,"mesh-diced/remap-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply", cells[i].row,cells[i].col,vpblod);
+        cfiles.push_back(tmpfn2);
+
         if(hw_image){
             fprintf(texcmds_fp," --tex_cache %s %d  --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat -lat %.28f -lon %.28f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,
                     cells[i].row,cells[i].col,
@@ -2143,17 +2152,23 @@ int main( int argc, char *argv[ ] )
                 fprintf(texcmds_fp," --atlas");
         }
         else{
-            fprintf(texcmds_fp,";%s/nonmem  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d",
+            string teximgcmd;
+          ostringstream sizestr;
+            teximgcmd = reparamTex? "vcgapps/bin/reorder": "nonmem";
+            if (!reparamTex)
+                sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+
+            fprintf(texcmds_fp,";%s/%s  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d %s",
                     basepath.c_str(),
+                    teximgcmd.c_str(),
                     cells[i].row,cells[i].col,
                     vpblod,
                     cells[i].row,cells[i].col,
                     (base_dir+imgbase).c_str(),
                     cells[i].row,cells[i].col,
                     rx,ry,rz,
-                    ajustedGLImageSizeX,ajustedGLImageSizeY,
                     cells[i].row,cells[i].col,_tileRows,_tileColumns,
-                    latOrigin , longOrigin,jpegQuality);
+                    latOrigin , longOrigin,jpegQuality,sizestr.str().c_str());
             if(blending)
                 fprintf(texcmds_fp," --blend");
 
@@ -2209,6 +2224,14 @@ int main( int argc, char *argv[ ] )
                             ,vpblod);*/
 
     }
+    string cwdmeshdiced=cwd;
+
+    std::string extraCheckCmd;
+    sprintf(tmp100, " > mesh-diced/tex-total.ply");
+            //%s/vertCheck mesh-diced/tex-total.ply  --normcolor --outfile mesh-diced/tex-total.ply > /dev/null",basepath.c_str());
+
+    extraCheckCmd= reparamTex ? createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4): "";
+
     fclose(texcmds_fp);
     fclose(vartexcmds_fp);
     fclose(reFP);
@@ -2405,7 +2428,7 @@ int main( int argc, char *argv[ ] )
     p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" tex.tif ";
     postcmdv.push_back(p3.str());
 
-    shellcm.write_generic(texcmd,texcmds_fn,"Tex",&(precmd),&(postcmdv),num_threads);
+    shellcm.write_generic(texcmd,texcmds_fn,"Tex",&(precmd),&(postcmdv),num_threads,extraCheckCmd);
     shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),std::max(num_threads/2,1));
 
     if(!no_tex)

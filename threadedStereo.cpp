@@ -53,6 +53,7 @@ static double smallCCPer=0.2;
 //
 static bool untex=true;
 static bool reparamTex=true;
+static double scaleRemapTex=1.0;
 using namespace std;
 static double sparseRatio=0.2;
 static bool isSparse=false;
@@ -369,7 +370,8 @@ static bool parse_args( int argc, char *argv[ ] )
                                   150000);
     recon_config_file->get_value( "TARGET_BASE_LOD_DIVRES", targetBaseLODRes,
                                   1024);
-
+    recon_config_file->get_value( "SCALE_REMAP_TEX", scaleRemapTex,
+                                  1.0);
     recon_config_file->get_value( "MM_PER_PIXEL", mmperpixel,
                                   4);
     recon_config_file->get_value( "JPEG_QUALITY", jpegQuality,
@@ -408,6 +410,8 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("-f",dir_name);
     argp.read("--target-screen-faces",targetScreenFaces);
     argp.read( "--vpblod" ,vpblod_override);
+    argp.read( "--scale" ,scaleRemapTex);
+
     argp.read( "--sparseratio" ,sparseRatio);
 
     if(argp.read("--vt")){
@@ -1448,7 +1452,7 @@ int main( int argc, char *argv[ ] )
     viewproj(3,1)=0;
     viewproj(3,2)=0;
     viewproj(3,3)= 1;
-    cout <<viewproj<<endl;
+  //  cout <<viewproj<<endl;
 
     std::stringstream os2;
     os2<< "viewproj.mat";
@@ -1481,7 +1485,7 @@ int main( int argc, char *argv[ ] )
                 printf("\r%04d/%04d %04d/%04d",row,_tileRows,col,_tileColumns);
                 fflush(stdout);
                 osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
-                double left,right,bottom,top,znear,zfar;
+                double left,right,bottom,top;//,znear,zfar;
                 osg::Matrix m;//=(view*proj*offsetMatrix);
                 //m.getOrtho(left,right,bottom,top,znear,zfar);
                 double chunkSize=(totalbb.xMax()-totalbb.xMin())/(double)_tileRows;
@@ -1510,7 +1514,7 @@ int main( int argc, char *argv[ ] )
                 m(3,1)=0;
                 m(3,2)=0;
                 m(3,3)= 1;
-                cout <<m<<endl;
+               // cout <<m<<endl;
     left=widthStart;
     right=widthEnd;
     top=heightEnd;
@@ -1602,7 +1606,7 @@ int main( int argc, char *argv[ ] )
     if(!externalMode){
         vector<std::string> postcmdv;
         string tcmd =basepath+string("/vrip/bin/plymerge ");
-        char tmp100[8096];
+        //char tmp100[8096];
         std::vector<string> cfiles;
         // sprintf(tmp100," --invrot %f %f %f ",rx,ry,rz);
         // tcmd+=tmp100;
@@ -1636,14 +1640,17 @@ int main( int argc, char *argv[ ] )
                     basepath.c_str(),cells[i].row,cells[i].col,smallCCPer,0.9*vrip_res,cells[i].row,cells[i].col);
 
             fprintf(splitcmds_fp,"%s;",shr_tmp);
-            fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup -F --outfile mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
+            fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup -F --outfile mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ;",
                     basepath.c_str(),
                     -FLT_MAX,-FLT_MAX,-FLT_MAX,
                     FLT_MAX,FLT_MAX,FLT_MAX,
                     cells[i].row,cells[i].col,  cells[i].row,cells[i].col,vpblod);
+            fprintf(splitcmds_fp,"setenv DISPLAY :0.0; %s/vcgapps/bin/sw-shadevis -n64 -f mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
+                    basepath.c_str(),
+                     cells[i].row,cells[i].col,vpblod);
 
             char tp[1024];
-            sprintf(tp,"mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
+            sprintf(tp,"mesh-diced/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
             FILE *bboxfp=fopen(tp,"w");
 
             for(int k=0; k < (int)cells[i].imagesMargin.size(); k++){
@@ -1662,15 +1669,15 @@ int main( int argc, char *argv[ ] )
             }
             fclose(bboxfp);
         }
-        for(int i=0; i <(int)vrip_cells.size(); i++){
+      /*  for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
                 continue;
             sprintf(tmp100, "mesh-diced/vis-clipped-diced-%08d-lod%d.ply",i,vpblod);
             cfiles.push_back(tmp100);
         }
+*/
 
-
-        sprintf(tmp100, " > mesh-diced/vis-total.ply; %s/vertCheck mesh-diced/vis-total.ply  --normcolor --outfile mesh-diced/vis-total.ply > /dev/null",basepath.c_str());
+     //   sprintf(tmp100, " > mesh-diced/vis-total.ply; %s/vertCheck mesh-diced/vis-total.ply  --normcolor --outfile mesh-diced/vis-total.ply > /dev/null",basepath.c_str());
         /*  sprintf(tmp100,"%s; %s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/vis-total.ive -dup --outfile mesh-diced/vis-total.ply ",
                     tmp100,basepath.c_str(),
                     -FLT_MAX,-FLT_MAX,-FLT_MAX,
@@ -1678,7 +1685,7 @@ int main( int argc, char *argv[ ] )
         //tcmd+=tmp100;
         //postcmdv.push_back(tcmd);
 
-        for(int i=0; i <(int)vrip_cells.size(); i++){
+     /*   for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
                 continue;
             int v_count=0;
@@ -1734,15 +1741,15 @@ int main( int argc, char *argv[ ] )
             fprintf(splitcmds_fp,"%s\n",shr_tmp);
 
 
-        }
+        }*/
 
 
         fclose(splitcmds_fp);
         string splitcmd="split.py";
         string cwdmeshdiced=cwd;
-        std::string extraCheckCmd=createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
+      //  std::string extraCheckCmd=createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
 
-        shellcm.write_generic(splitcmd,splitcmds_fn,"Split",NULL,NULL,0,extraCheckCmd);
+        shellcm.write_generic(splitcmd,splitcmds_fn,"Split",NULL,NULL,0);
         if(!no_split)
             sysres=system("python split.py");
     }else{
@@ -2116,7 +2123,7 @@ int main( int argc, char *argv[ ] )
 
     for(int i=0; i <(int)cells.size(); i++){
         char tmpfn[1024];
-        sprintf(tmpfn,"mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply", cells[i].row,cells[i].col,vpblod);
+        sprintf(tmpfn,"mesh-diced/vis-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply", cells[i].row,cells[i].col,vpblod);
         if(cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
             fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
@@ -2126,7 +2133,7 @@ int main( int argc, char *argv[ ] )
                 cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
 
 
-        fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f",
+        fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s mesh-diced/vis-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --outfile mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f",
                 cwd,
                 gpunum,
                 basepath.c_str(),
@@ -2155,10 +2162,15 @@ int main( int argc, char *argv[ ] )
             string teximgcmd;
           ostringstream sizestr;
             teximgcmd = reparamTex? "vcgapps/bin/reorder": "nonmem";
+            sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
+            if(useVirtTex)
+                sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
             if (!reparamTex)
                 sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+else
+                sizestr<<"--scale "<<scaleRemapTex;
 
-            fprintf(texcmds_fp,";%s/%s  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d %s",
+            fprintf(texcmds_fp,";%s/%s  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
                     basepath.c_str(),
                     teximgcmd.c_str(),
                     cells[i].row,cells[i].col,
@@ -2168,11 +2180,11 @@ int main( int argc, char *argv[ ] )
                     cells[i].row,cells[i].col,
                     rx,ry,rz,
                     cells[i].row,cells[i].col,_tileRows,_tileColumns,
-                    latOrigin , longOrigin,jpegQuality,sizestr.str().c_str());
+                    latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
             if(blending)
                 fprintf(texcmds_fp," --blend");
 
-            fprintf(vartexcmds_fp,"%s/meshvar  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
+            fprintf(vartexcmds_fp,"%s/meshvar  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply mesh-diced/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat mesh-diced/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
                     basepath.c_str(),
                     cells[i].row,cells[i].col,
                     vpblod,
@@ -2227,8 +2239,7 @@ int main( int argc, char *argv[ ] )
     string cwdmeshdiced=cwd;
 
     std::string extraCheckCmd;
-    sprintf(tmp100, " > mesh-diced/tex-total.ply");
-            //%s/vertCheck mesh-diced/tex-total.ply  --normcolor --outfile mesh-diced/tex-total.ply > /dev/null",basepath.c_str());
+    sprintf(tmp100, " > mesh-diced/tex-total.ply ; %s/vcgapps/bin/mergeMesh mesh-diced/tex-total.ply  -multtex -color -wedge --normcolor -out mesh-diced/tex-total.ply > /dev/null",basepath.c_str());
 
     extraCheckCmd= reparamTex ? createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4): "";
 
@@ -2460,9 +2471,9 @@ int main( int argc, char *argv[ ] )
 
     FILE *simpcmds_fp=fopen(simpcmds_fn.c_str(),"w");
     string app;
-    if(useReimage)
+   /* if(useReimage)
         app="tridecimator";
-    else
+    else*/
         app="texturedDecimator";
     std::vector<std::vector<string> > datalist_lod;
     vector<string> mergeandcleanCmdsSimp;
@@ -2489,7 +2500,7 @@ int main( int argc, char *argv[ ] )
         //if(useVirtTex)
          //   fprintf(simpcmds_fp,"cd %s/mesh-diced;cp totaltex.ply total-lod%d.ply;",cwd,vpblod);
        // else
-            fprintf(simpcmds_fp,"cd %s/mesh-diced;cp vis-total.ply total-lod%d.ply;",cwd,vpblod);
+            fprintf(simpcmds_fp,"cd %s/mesh-diced;cp tex-total.ply total-lod%d.ply;",cwd,vpblod);
 
         sprintf(tmp,"mesh-diced/total-lod%d.ply",vpblod);//std::min(lod,2)
         std::vector<string> level;

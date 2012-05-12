@@ -242,9 +242,10 @@ void write_header(std::ostream& _fout,int total_face_count,bool color){
     _fout <<"property list uchar int vertex_indices\n";
     _fout <<"property list uchar float texcoord\n";
     _fout <<"property int texnumber\n";
+    _fout <<"property float quality\n";
     _fout <<"end_header\n";
 }
-void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,const std::vector<int> &imageId,osg::Vec2Array *tcarr,bool flip){
+void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,const std::vector<int> &imageId,osg::Vec2Array *tcarr,const int mosaic,bool flip){
     int cnt=0;
     for(int i=0; i< (int)tri->size()-2; i+=3){
         for(int j=0; j<3; j++){
@@ -267,9 +268,13 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
         }
     }
     int iout[3];
+    unsigned char c12=4*3;
+
     unsigned char c3=3;
     unsigned char ctex=3*2;
     float fout[2];
+    float cfout[4];
+    cfout[0]=cfout[1]=cfout[2]=cfout[3]=0;
     for(int i=0; i<(int) tri->size()-2; i+=3){
         _fout.write((char *)&c3,sizeof(char));
 
@@ -296,6 +301,9 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
         _fout.write((char*)fout,sizeof(float)*ctex);
         iout[0]=imageId.at(i/3);
         _fout.write((char*)iout,sizeof(int));
+
+        fout[0]=(float)mosaic;
+        _fout.write((char*)fout,sizeof(float));
 
         cnt++;
 
@@ -389,10 +397,19 @@ int main(int ac, char *av[]) {
     osg::ArgumentParser arguments(&ac,av);
     outputImage=NULL;
     rangeImage=NULL;
-
+double scaleTex=1.0;
     int jpegQuality=95;
     arguments.read("--jpeg-quality",jpegQuality);
     bool useDisk=arguments.read("--outofcore");
+    arguments.read("--scale",scaleTex);
+      osg::Vec2 srcsize;
+      if(!arguments.read("--srcsize",srcsize.x(),srcsize.y())){
+          fprintf(stderr,"need to have a src image size\n");
+          exit(-1);
+      }
+      osg::Vec2 vtSize(-1,-1);
+         arguments.read("--vt",vtSize.x(),vtSize.y());
+
     string imageName,depthName;
     unsigned int _tileRows;
     unsigned int _tileColumns;
@@ -403,6 +420,12 @@ int main(int ac, char *av[]) {
         fprintf(stderr,"Fail to get image params\n");
         return -1;
     }
+    int mosaic=-1;
+    if(!arguments.read("--mosaicid",mosaic)){
+        fprintf(stderr,"Fail to get mosaic id\n");
+        return -1;
+    }
+
     std::string matfile;
     if(!arguments.read("--mat",matfile)){
         fprintf(stderr,"Fail mat file\n");
@@ -462,8 +485,7 @@ int main(int ac, char *av[]) {
              assert(vertexData._vertices->at(tri->at(i+j))[k] == newVerts->at(tri->at(i+j))[k]);
 
         }*/
-        int sizeImage=  calcOptimalImageSize(osg::Vec2(1360,1024),newVerts,tri,texCoord);
-
+        int sizeImage=  calcOptimalImageSize(srcsize,newVerts,tri,texCoord,scaleTex,(int)vtSize.x(),(int)vtSize.y());
         int sizeX,sizeY; sizeX=sizeY=sizeImage;
 
         arguments.read("--size",sizeX,sizeY);
@@ -751,7 +773,7 @@ int main(int ac, char *av[]) {
 
 
         }
-        /*
+
         if(1){
           osg::Texture2D* texture = new osg::Texture2D;
           osg::Image *img=new osg::Image;
@@ -765,7 +787,7 @@ int main(int ac, char *av[]) {
         stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
 
         osgDB::writeNodeFile(*geode,"test.ive");
-        }*/
+        }
         {
             std::vector<int>imageId;
 
@@ -779,7 +801,7 @@ int main(int ac, char *av[]) {
             bool color = vertexData._colors.valid() ? (vertexData._colors->size() >0) : false;
 
             write_header(f,vertexData._triangles->size(),color);
-            write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,imageId,newTCArr,false);
+            write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,imageId,newTCArr,mosaic,false);
         }
         if(!blending){
             g.vertex_shader<VertexShader>();

@@ -112,7 +112,7 @@ class CFaceO    : public vcg::Face<  CUsedTypesO,
       vcg::face::VertexRef,            /*12b */
       vcg::face::BitFlags,             /* 4b */
       vcg::face::Normal3f,             /*12b */
-      vcg::face::QualityfOcf,          /* 0b */
+      vcg::face::Qualityf,          /* 0b */
       vcg::face::Mark,              /* 0b */
       vcg::face::FFAdj,             /* 0b */
       vcg::face::VFAdj,             /* 0b */

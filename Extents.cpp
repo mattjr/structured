@@ -1552,6 +1552,8 @@ osg::Node* MyDestinationTile::createScene()
             //printf("tile Level %d texure level size %d\n",_level,_atlasGen->getDownsampleSize(levelToTextureLevel[_level]));
             int cnt=0;
             osg::ref_ptr<osg::Vec4Array> v=new osg::Vec4Array;
+            osg::ref_ptr<osg::Vec4Array> texCoordsAux=new osg::Vec4Array;
+
             TexBlendCoord texCoords;
             if(!_mydataSet->_useVirtualTex){
                 texCoords.resize(4);
@@ -1584,13 +1586,23 @@ osg::Node* MyDestinationTile::createScene()
                                 osg::notify(osg::FATAL) << "Null Ptr texCoordIDIndexPerModel" <<endl;
                             }
 
-                        }
-                        for(int f=0; f<(int)tmp2.size(); f++){
-                            //printf("%d %d %d\n",tmp2.size(),tmp2[f]->size(),tmp->size());
 
-                            for(int i=0; i<(int)tmp2[f]->size(); i++){
-                                osg::Vec3 a=tmp2[f]->at(i);
-                                texCoords[f]->push_back(a);
+                            for(int f=0; f<(int)tmp2.size(); f++){
+                                //printf("%d %d %d\n",tmp2.size(),tmp2[f]->size(),tmp->size());
+
+                                for(int i=0; i<(int)tmp2[f]->size(); i++){
+                                    osg::Vec3 a=tmp2[f]->at(i);
+                                    texCoords[f]->push_back(a);
+                                }
+                            }
+                        }else{
+                            osg::Vec4Array *tmp=texCoordAndAuxPerModel[*itr];
+                            if(tmp && tmp->size()){
+                                for(int i=0; i<(int)tmp->size(); i++)
+                                   texCoordsAux->push_back(tmp->at(i));
+                            }else{
+                                fprintf(stderr,"Fail %d \n",tmp==NULL?-999:(int)tmp->size());
+                                exit(-1);
                             }
                         }
 
@@ -1680,7 +1692,7 @@ osg::Node* MyDestinationTile::createScene()
                     geom->setUseDisplayList(_mydataSet->_useDisplayLists);
                     geom->setUseVertexBufferObjects(_mydataSet->_useVBO);
                     geom->setStateSet(stateset);
-                    geom->setTexCoordArray(0,texCoords[0]);
+                    geom->setTexCoordArray(0,texCoordsAux);
 
                     //std::cout << "Drops : "<<texCoords[0]->size() <<"\n";
                 }
@@ -2329,13 +2341,17 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
 
 
     osg::Vec4Array *ids= _useVirtualTex ? NULL :src->ids;
+    osg::Vec4Array *texAndAux= src->texAndAux;
+
     TexBlendCoord  *texCoords=(&src->tex);
     geom_elems_src srcGeom;
     srcGeom.colors=src->colors;
     srcGeom.texcoords=*texCoords;
     srcGeom.texid=ids;
+    srcGeom.texAndAux=texAndAux;
+
     int numTex= texCoords->size();
-    geom_elems_dst dstGeom(numTex);
+    geom_elems_dst dstGeom(numTex,texAndAux != NULL);
 
     bool projectSucess=!_useReImage;//!_reimagePass;//false;//(ids!=NULL && !_reimagePass);
     if(src->_kdTree){
@@ -2348,6 +2364,8 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
             assert(dstGeom.texcoords[f].valid());
         if(dstGeom.texid)
             tile->texCoordIDIndexPerModel[root.get()]=dstGeom.texid;
+        if(dstGeom.texAndAux)
+            tile->texCoordAndAuxPerModel[root.get()]=dstGeom.texAndAux;
         tile->texCoordsPerModel[root.get()]=dstGeom.texcoords;
         //    }else
         //       root=kdtreeBbox->intersect(ext_bbox,IntersectKdTreeBbox::DUP);
@@ -3246,6 +3264,8 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
         osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
         osg::Vec3Array *verts=static_cast< osg::Vec3Array*>(geom->getVertexArray());
         osg::Vec4Array *colors=static_cast< osg::Vec4Array*>(geom->getColorArray());
+        osg::Vec4Array *texCoordsStored=static_cast< osg::Vec4Array*>(geom->getTexCoordArray(0));
+
         osg::DrawElementsUInt* primitiveSet = dynamic_cast<osg::DrawElementsUInt*>(geom->getPrimitiveSet(0));
         int offset=newVerts->size();
         if(!verts || !primitiveSet)
@@ -3279,8 +3299,9 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
             if(ao == 0.0)
                 ao=1.0;
 
-            auxDataArray->push_back(osg::Vec2(ao,0.0));
-
+            auxDataArray->push_back(osg::Vec2(ao,texCoordsStored->at(j)[2]));
+            mosaic_ids.push_back(texCoordsStored->at(j)[3]);
+            texCoord->push_back(osg::Vec2(texCoordsStored->at(j)[0],texCoordsStored->at(j)[1]));
         }
         for(int j=0; j< (int)primitiveSet->getNumIndices(); j++){
 
@@ -3298,6 +3319,7 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     osg::Vec4 texSizes(origX,origY,origX,origY);
     osg::Vec4 ratio(0.0,0.0,0,0);
  {
+   #if 0
         std::set<int> seenids;
         mosaic_ids.resize(newVerts->size(),-1);
 
@@ -3420,10 +3442,11 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
                 }
             }
         }
+#endif
         for(int j=0; j< (int)newVerts->size(); j++){
 
             if(sparseMode || _useVirtualTex){
-                osg::Vec2 tc=calcCoordReprojSimple(newVerts->at(j),dynamic_cast<MyDataSet*>(_dataSet)->rotMat,toTex,osg::Vec2(texSizes[2],texSizes[3]));
+                osg::Vec2 tc=texCoord->at(j);//calcCoordReprojSimple(newVerts->at(j),dynamic_cast<MyDataSet*>(_dataSet)->rotMat,toTex,osg::Vec2(texSizes[2],texSizes[3]));
 
                 unsigned int mosaic_id=mosaic_ids[j];
                 if(mosaic_id >= 0 && mosaic_id< tf_atlas->atlasSourceMatrix.size()){

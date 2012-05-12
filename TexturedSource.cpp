@@ -1,7 +1,7 @@
 #include "TexturedSource.h"
 using namespace SpatialIndex;
 using namespace std;
-TexturedSource::TexturedSource(Type type, const std::string& filename,const std::string &bbox_file,bool use_tex): Source(type,filename)
+TexturedSource::TexturedSource(Type type, const std::string& filename,const std::string &bbox_file,bool use_tex,bool use_texaux): Source(type,filename)
 {
     std::string mf=filename;
     _bbox_file=bbox_file;
@@ -33,6 +33,8 @@ TexturedSource::TexturedSource(Type type, const std::string& filename,const std:
     }else {
            osg::notify(osg::INFO) << "The stucture seems O.K." << std::endl;
     }
+
+    texAndAux=new osg::Vec4Array;
 
     if(use_tex){
     ids=new osg::Vec4Array;

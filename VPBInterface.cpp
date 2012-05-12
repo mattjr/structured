@@ -121,20 +121,26 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
             TexturedSource *sourceModel;
           //  if(!useVirtualTex && !useReimage){
                 bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-                sourceModel =new TexturedSource(vpb::Source::MODEL,mf,bbox_file,!useVirtualTex && !useReimage);
+                sourceModel =new TexturedSource(vpb::Source::MODEL,mf,bbox_file,!useVirtualTex && !useReimage,useVirtualTex || useReimage);
            // }else{
            //     sourceModel=new TexturedSource(vpb::Source::MODEL,mf);
            // }
             sourceModel->setMaxLevel(lod);
             sourceModel->setMinLevel(lod);
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
-            ply::VertexData vertexData;
+            ply::VertexDataMosaic vertexData;
             osg::Node* model;
-            if(!m->_useReImage && !m->_useVirtualTex){
+           // if(!m->_useReImage && !m->_useVirtualTex)
+           // {
                 model= vertexData.readPlyFile(sourceModel->getFileName().c_str());
-                toVert(model,vertexData._texCoord,vertexData._texIds,sourceModel->tex,sourceModel->ids);
-            }else
-                model = osgDB::readNodeFile(sourceModel->getFileName());
+                for(int k=0; k<(int)vertexData._texIds->size(); k++){
+                    sourceModel->texAndAux->push_back(osg::Vec4(vertexData._texCoord[0]->at(k)[0],vertexData._texCoord[0]->at(k)[1],
+                                                         vertexData._texIds->at(k)[0],vertexData._texCoord[0]->at(k)[1]));
+
+                }
+                //toVert(model,vertexData._texCoord,vertexData._texIds,sourceModel->tex,sourceModel->ids);
+            //}else
+              //  model = osgDB::readNodeFile(sourceModel->getFileName());
 
             if(lod == 0){
                 osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);

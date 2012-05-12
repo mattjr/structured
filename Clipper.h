@@ -32,7 +32,7 @@ const int maxNumTC=4;
 typedef std::vector<osg::ref_ptr<osg::Vec3Array> > TexBlendCoord;
 class geom_elems_dst{
 public:
-    geom_elems_dst(int numTex){
+    geom_elems_dst(int numTex,bool vt){
         colors=new osg::Vec4Array();
         faces = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
 
@@ -50,12 +50,18 @@ public:
         else
             texid=NULL;
         vertices= new osg::Vec3Array;
+        if(vt)
+            texAndAux=new osg::Vec4Array;
+else
+            texAndAux=NULL;
         faces = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
     }
     osg::Vec3Array *vertices;
     osg::Vec4Array *colors;
     osg::DrawElementsUInt *faces;
      osg::ref_ptr<osg::Vec4Array>  texid;
+     osg::Vec4Array *texAndAux;
+
     TexBlendCoord  texcoords;
 };
 
@@ -63,6 +69,7 @@ typedef struct _geom_elems_src{
     osg::Vec4Array *colors;
     osg::Vec4Array *texid;
     TexBlendCoord  texcoords;
+    osg::Vec4Array *texAndAux;
 }geom_elems_src;
 
 struct IntersectKdTreeBbox
@@ -75,6 +82,7 @@ struct IntersectKdTreeBbox
         _vertices(vertices),
         _colors(src.colors),
         _texid(src.texid),
+        _texAndAux(src.texAndAux),
         _texcoords(src.texcoords),
         _kdNodes(nodes),
         _triangles(triangles)
@@ -106,6 +114,8 @@ struct IntersectKdTreeBbox
     const osg::Vec3Array *               _vertices;
     const osg::Vec4Array *               _colors;
     const osg::Vec4Array *   _texid;
+    const osg::Vec4Array *   _texAndAux;
+
     const TexBlendCoord  _texcoords;
 
     const osg::KdTree::KdNodeList&           _kdNodes;

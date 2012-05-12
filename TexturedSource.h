@@ -14,7 +14,7 @@ class TexturedSource : public vpb::Source
 {
     friend class TexturingQuery;
 public:
-    TexturedSource(Type type, const std::string& filename,const std::string &bbox_file,bool use_tex=true);
+    TexturedSource(Type type, const std::string& filename,const std::string &bbox_file,bool use_tex=true,bool use_texaux=false);
     TexturedSource(Type type, const std::string& filename);
     ~TexturedSource();
 
@@ -33,6 +33,7 @@ public:
     TexturedSource::CameraVector _cameras;
     osg::Vec4Array *ids;
     osg::Vec4Array *colors;
+    osg::Vec4Array *texAndAux;
 
     TexBlendCoord  tex;
 

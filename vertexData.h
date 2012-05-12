@@ -62,6 +62,7 @@ namespace ply
         // Calculates the normals according to passed flag
         // if vertexNormals is true then computes normal per vertices
         // otherwise per triangle means per face
+    protected:
         void _calculateNormals( const bool vertexNormals = true );
         
         bool        _invertFaces;
@@ -84,6 +85,16 @@ namespace ply
         osg::ref_ptr<osg::DrawElementsUInt> _triangles;
         std::map<int,int> outbboxVert;
         bool tex;
+    };
+    class VertexDataMosaic: public VertexData{
+
+    public:
+
+        osg::Node* readPlyFile( const char* file );
+        void readTriangles( PlyFile* file, const int nFaces, bool multTex ,bool tex,bool qual);
+        void readVertices( PlyFile* file, const int nVertices,
+                                       const bool readColors );
+
     };
 }
 

@@ -263,6 +263,8 @@ void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cel
 
 
                         vips::VImage *v=new vips::VImage (*used_img) ;
+                        if(!v)
+                            continue;
                         atlas->atlasSourceMatrix[i]=v;
                         dynamic_cast<VipsAtlasBuilder*>(atlas)->addSource( v);
 

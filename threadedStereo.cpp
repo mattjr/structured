@@ -1645,7 +1645,7 @@ int main( int argc, char *argv[ ] )
                     -FLT_MAX,-FLT_MAX,-FLT_MAX,
                     FLT_MAX,FLT_MAX,FLT_MAX,
                     cells[i].row,cells[i].col,  cells[i].row,cells[i].col,vpblod);
-            fprintf(splitcmds_fp,"setenv DISPLAY :0.0; %s/vcgapps/bin/sw-shadevis -n64 -f mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
+            fprintf(splitcmds_fp,"setenv DISPLAY :0.0; %s/vcgapps/bin/sw-shadevis -n64 mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
                     basepath.c_str(),
                      cells[i].row,cells[i].col,vpblod);
 
@@ -2213,7 +2213,7 @@ else
         }
         tmp_ds[0]='\0';
       //  num_samples=0;
-        int levels=(int)ceil(log( max( ajustedGLImageSizeX, ajustedGLImageSizeY ))/log(2.0) );
+        int levels=useVirtTex ? 0:(int)ceil(log( max( ajustedGLImageSizeX, ajustedGLImageSizeY ))/log(2.0) );
 
       //  for(int p=0; p<num_samples; p++)
       //      sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));

@@ -309,6 +309,7 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
                 }
             }
             osg::Vec4 id0,id1,id2;
+            osg::Vec4 taa0,taa1,taa2;
 
             if(_texid){
                 if(_texcoords.size() > 1){
@@ -317,6 +318,14 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
                     id2 = (*_texid)[tri.p2];
                     assert(id0[0]  == id1[0] && id0[0] == id2[0]);
                 }
+            }
+
+
+            if(_texAndAux){
+                    taa0 = (*_texAndAux)[tri.p0];
+                    taa1 = (*_texAndAux)[tri.p1];
+                    taa2 = (*_texAndAux)[tri.p2];
+
             }
             //printf("%f\n",id0[0]);
             int contains=0;
@@ -391,6 +400,12 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
                 dst.colors->push_back(c0);
                 dst.colors->push_back(c1);
                 dst.colors->push_back(c2);
+            }
+
+            if(dst.texAndAux){
+                dst.texAndAux->push_back(taa0);
+                dst.texAndAux->push_back(taa1);
+                dst.texAndAux->push_back(taa2);
             }
             dst.faces->push_back(counter);
             dst.faces->push_back(counter+1);
@@ -556,7 +571,7 @@ bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox b
     }
     osg::ref_ptr<osg::Node> root;
     int numTex=kdtreeBBox->_src.texcoords.size();
-    geom_elems_dst dstGeom(numTex);
+    geom_elems_dst dstGeom(numTex,kdtreeBBox->_src.texAndAux != NULL);
     root=kdtreeBBox->intersect(bbox,dstGeom,mode);
     if(dstGeom.faces->size()){
         if(osgDB::getFileExtension(outfilename) == "ply"){

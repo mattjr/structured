@@ -115,6 +115,8 @@ class MyDataSet;
 
         typedef std::pair<unsigned int, std::string> AttributeAlias;
         std::map< osg::Node * , osg::ref_ptr<osg::Vec4Array > > texCoordIDIndexPerModel;
+        std::map< osg::Node * , osg::ref_ptr<osg::Vec4Array > > texCoordAndAuxPerModel;
+
         std::map< osg::Node * ,TexBlendCoord> texCoordsPerModel;
         void setVertexAttrib(osg::Geometry& geom, const AttributeAlias& alias, osg::Array* array, bool normalize, osg::Geometry::AttributeBinding binding);
         void remapArrayForTexturing(osg::Vec4Array *v,const TexBlendCoord &texCoordsArray,idmap_t allIds);

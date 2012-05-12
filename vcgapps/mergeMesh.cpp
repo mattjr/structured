@@ -34,15 +34,29 @@ int main(int argc ,char**argv){
     argp.read("-thresh",threshold);
     argp.read("-out",outfile);
     bool tex=argp.read("-tex");
+bool multtex=false;
+ if(argp.read("-multtex")){
+     tex=true;
+     multtex=true;
+ }
+
+
     vcg::tri::io::PlyInfo pi;
     bool flip=argp.read("-flip");
     bool color=argp.read("-color");
     float CCPerc;
     bool clean=argp.read("-cleansize",CCPerc);
-    if(tex)
+    if(tex){
         pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
+
+    }
+    if(argp.read("-wedge"))
+        pi.mask |= vcg::tri::io::Mask::IOM_FACEQUALITY;
+
+
     if(color)
         pi.mask |= vcg::tri::io::Mask::IOM_VERTCOLOR;
+
     CMeshO cm;
     int err=tri::io::ImporterPLY<CMeshO>::Open(cm,argv[1],pi);
 
@@ -83,13 +97,17 @@ int main(int argc ,char**argv){
         }
     }
 
-    bool binaryFlag =false;
+    bool binaryFlag =true;
     if(tex)
         pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
     if(color)
         pi.mask |= vcg::tri::io::Mask::IOM_VERTCOLOR;
-    int result = tri::io::ExporterPLY<CMeshO>::Save(cm,outfile.c_str(),binaryFlag,pi);
+    if(multtex){
+    cm.textures.push_back("");
+    cm.textures.push_back("");
 
+    }
+    int result = tri::io::ExporterPLY<CMeshO>::Save(cm,outfile.c_str(),binaryFlag,pi);
 
     //int result = tri::io::ExporterPLY<CMeshO>::Save(cm,outfile.c_str(),binaryFlag);
     if(result !=0) {

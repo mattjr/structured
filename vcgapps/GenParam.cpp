@@ -42,7 +42,7 @@
 #include <osg/io_utils>
 using namespace std;
 //#include <CGAL/Polyhedron_incremental_builder_3.h>
-int calcOptimalImageSize(const osg::Vec2 imageSize,osg::Vec3Array *verts,osg::DrawElementsUInt* triangles,std::vector<osg::Vec3Array *>   &texCoord){
+int calcOptimalImageSize(const osg::Vec2 imageSize,osg::Vec3Array *verts,osg::DrawElementsUInt* triangles,std::vector<osg::Vec3Array *>   &texCoord,double scaletex,int VTtileSize,int border){
     if(!verts || !triangles || texCoord.size()==0)
     return -1;
 std::vector<double> pixelSides;
@@ -80,8 +80,16 @@ std::vector<double> pixelSides;
 
     double avgEl =sum/pixelSides.size();
    double maxEl= *( std::max_element( pixelSides.begin(), pixelSides.end() ) );
-   int potSize=osg::Image::computeNearestPowerOfTwo((int)avgEl);
-    printf("Max %f Avg %f POT %d\n",maxEl,avgEl,potSize);
+   int potSize=osg::Image::computeNearestPowerOfTwo((int)avgEl*scaletex);
+
+   if(VTtileSize> 0 && border >0){
+        int adjustedpotSize=(int)potSize-((potSize/VTtileSize)*2*border);
+        printf("Max %f Avg %f POT %d Adjusted VT %d\n",maxEl,avgEl,potSize,adjustedpotSize);
+        return adjustedpotSize;
+
+   }
+       printf("Max %f Avg %f POT %d Adjusted\n",maxEl,avgEl,potSize);
+
 return potSize;
 }
 

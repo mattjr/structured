@@ -244,6 +244,44 @@ downsampledYoff,
     //std::cout << f<<std::endl;
 }
 
+
+void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cell> &mosaic_cells,
+
+                                                       VipsAtlasBuilder* atlas
+                                                       ){
+
+
+        for(int i=0; i < (int)mosaic_cells.size(); i++){
+
+                if(!mosaic_cells[i].mutex || !mosaic_cells[i].img){
+                    fprintf(stderr,"Fail to get mutex or img\n");
+                    exit(-1);
+                }
+
+                   vips::VImage* used_img=mosaic_cells[i].img;
+
+
+
+                        vips::VImage *v=new vips::VImage (*used_img) ;
+                        atlas->atlasSourceMatrix[i]=v;
+                        dynamic_cast<VipsAtlasBuilder*>(atlas)->addSource( v);
+
+                    //mosaics_added++;
+
+
+        }
+
+
+     atlas->buildAtlas();
+
+        if( atlas->getNumAtlases() > 1){
+            fprintf(stderr,"Atlas fail!!! Downsample didn't allow for one atlas WIP! SEE MATT\nHopefully this will one day be replaced with working code :-)\n%d atlas\n",atlas->getNumAtlases());
+            exit(-1);
+        }
+
+
+
+}
 void vpb::MyDataSet::createVTAtlas(){
     int tileSize=256;
     int border=1;
@@ -259,7 +297,7 @@ void vpb::MyDataSet::createVTAtlas(){
 
     osg::Matrix toTex=viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*totalX,0.5*totalY,0.5f))*bottomLeftToTopLeft;
 
-    generateAtlasAndTexCoordMappingFromExtents(mosaic_cells,minT,maxT,totalX,totalY,toTex,_atlas,ratio,0);
+    generateAtlasAndTexCoordMappingFromExtentsVips(mosaic_cells,_atlas);
 #if 0
     // ("subtile.tif");
     osg::BoundingBoxd bbox;
@@ -383,7 +421,7 @@ void vpb::MyDataSet::createVTAtlas(){
     VipsAtlasBuilder::VAtlas *vatlas=_atlas->_atlasList.front();
 
 
-  //  vatlas->_image->write("vtex.ppm");
+    //vatlas->_image->write("vtex.ppm");
     int sizeLevel=vatlas->_image->Xsize();
     char dirname[1024];
     bool outputImages=true;

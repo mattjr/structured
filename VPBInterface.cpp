@@ -133,9 +133,12 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
            // if(!m->_useReImage && !m->_useVirtualTex)
            // {
                 model= vertexData.readPlyFile(sourceModel->getFileName().c_str());
-                for(int k=0; k<(int)vertexData._texIds->size(); k++){
-                    sourceModel->texAndAux->push_back(osg::Vec4(vertexData._texCoord[0]->at(k)[0],vertexData._texCoord[0]->at(k)[1],
-                                                         vertexData._texIds->at(k)[0],vertexData._texCoord[0]->at(k)[1]));
+              //  cout <<vertexData._vertices->size() <<" "<<vertexData._triangles->size()<< " "<<vertexData._texCoord[0]->size()<<" "<<vertexData._texIds->size()<<endl;
+                sourceModel->texAndAux->resize(vertexData._vertices->size());
+                for(int k=0; k<(int)vertexData._triangles->size()-2; k+=3){
+                    for(int l=0; l <3; l++)
+                    sourceModel->texAndAux->at(vertexData._triangles->at(k+(2-l)))=osg::Vec4(vertexData._texCoord[0]->at(k+l)[0],vertexData._texCoord[0]->at(k+l)[1],
+                                                         vertexData._texIds->at(k/3)[0],vertexData._texIds->at(k/3)[1]);
 
                 }
                 //toVert(model,vertexData._texCoord,vertexData._texIds,sourceModel->tex,sourceModel->ids);

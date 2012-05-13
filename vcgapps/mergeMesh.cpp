@@ -28,7 +28,7 @@ int main(int argc ,char**argv){
         fprintf(stderr, "Usage  meshfile -outfile filename -thresh threshold \n");
         return -1;
     }
-    double threshold=0.1;
+    double threshold=-1.0;
     std::string outfile="out.ply";
 
     argp.read("-thresh",threshold);
@@ -74,8 +74,8 @@ bool multtex=false;
             exit(-1);
         }
 
-
-        int total = tri::Clean<CMeshO>::MergeCloseVertex(cm, threshold);
+        if(threshold >0)
+           int total = tri::Clean<CMeshO>::MergeCloseVertex(cm, threshold);
         if(flip){
             tri::Clean<CMeshO>::FlipMesh(cm);
         }

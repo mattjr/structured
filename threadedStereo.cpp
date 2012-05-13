@@ -2127,6 +2127,7 @@ int main( int argc, char *argv[ ] )
         if(cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
             fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
+            fprintf(FP2,"-1 -1 -1 -1 null null 0\n");
             continue;
         }
         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),

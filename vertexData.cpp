@@ -414,7 +414,7 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
     outbboxVert.clear();
     _tmp_verts.clear();
     _tmp_colors.clear();
-    printf("%s\n",filename);
+  //  printf("%s\n",filename);
     // Try to open ply file as for reading
     try{
         file  = ply_open_for_reading( const_cast< char* >( filename ),
@@ -594,7 +594,7 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
             _geom->setNormalArray(_normals.get());
             _geom->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
         }
-        printf("tri %d\n",_triangles->size());
+        //printf("tri %d\n",_triangles->size());
         
         // Add the premetive set
         if(_geom->getPrimitiveSetList().size() ==0){
@@ -813,7 +813,7 @@ osg::Node* VertexDataMosaic::readPlyFile( const char* filename )
     PlyFile* file = NULL;
     _tmp_verts.clear();
     _tmp_colors.clear();
-    printf("%s\n",filename);
+  //  printf("%s\n",filename);
     // Try to open ply file as for reading
     try{
         file  = ply_open_for_reading( const_cast< char* >( filename ),
@@ -997,7 +997,7 @@ osg::Node* VertexDataMosaic::readPlyFile( const char* filename )
             _geom->setNormalArray(_normals.get());
             _geom->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
         }
-        printf("tri %d\n",_triangles->size());
+        //printf("tri %d\n",_triangles->size());
 
         // Add the premetive set
         if(_geom->getPrimitiveSetList().size() ==0){

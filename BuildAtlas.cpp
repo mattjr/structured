@@ -70,7 +70,8 @@ void generateAtlasAndTexCoordMappingFromExtents(const std::vector<mosaic_cell> &
         for(int i=0; i < (int)mosaic_cells.size(); i++){
             // cout << "AREA " <<areaBB._min << " " << areaBB._max<<"\n";
             // cout << "MOSIAC " <<i << " "<<mosaic_cells[i].bbox._min << " " << mosaic_cells[i].bbox._max<<"\n";
-
+            if(mosaic_cells[i].name == "null")
+                continue;
             if(areaBB.intersects(mosaic_cells[i].bbox)){
                 if(!mosaic_cells[i].mutex || !mosaic_cells[i].img){
                     fprintf(stderr,"Fail to get mutex or img\n");
@@ -252,7 +253,8 @@ void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cel
 
 
         for(int i=0; i < (int)mosaic_cells.size(); i++){
-
+            if(mosaic_cells[i].name == "null")
+                continue;
                 if(!mosaic_cells[i].mutex || !mosaic_cells[i].img){
                     fprintf(stderr,"Fail to get mutex or img\n");
                     exit(-1);
@@ -424,13 +426,17 @@ void vpb::MyDataSet::createVTAtlas(){
 
 
     //vatlas->_image->write("vtex.ppm");
+    printf("--------------Atlas Size %dx%d------------------\n",vatlas->_image->Xsize(),vatlas->_image->Ysize());
     int sizeLevel=vatlas->_image->Xsize();
     char dirname[1024];
     bool outputImages=true;
+    int maxLevels=    (int)ceil(std::log((double)sizeLevel/tileSize) / std::log(2.0));
+
     if(outputImages){
         int adjustedTileSize=tileSize-(border *2);
         for(int level=0; sizeLevel>=adjustedTileSize; level++,sizeLevel/=2 ){
-            printf("Doing Level %d %d\n",level,sizeLevel);
+            printf("\rDoing VT Level %02d/%02d",level,maxLevels);
+            fflush(stdout);
             sprintf(dirname,"mesh/vtex/tiles_b%d_level%d",border,level);
             int numXtiles=(sizeLevel/tileSize);
             int numYtiles=(sizeLevel/tileSize);
@@ -493,6 +499,8 @@ void vpb::MyDataSet::createVTAtlas(){
                 }
             }
         }
+        printf("\rDoing Level %02d/%02d\n",maxLevels,maxLevels);
+
     }
 }
 
@@ -671,6 +679,8 @@ void generateImageFromExtents(const std::vector<mosaic_cell> &mosaic_cells,
             // cout << "AREA " <<areaBB._min << " " << areaBB._max<<"\n";
             // cout << "MOSIAC " <<i << " "<<mosaic_cells[i].bbox._min << " " << mosaic_cells[i].bbox._max<<"\n";
             bool loadNew=false;
+            if(mosaic_cells[i].name == "null")
+                continue;
             if(areaBB.intersects(mosaic_cells[i].bbox)){
                 if(!mosaic_cells[i].mutex || !mosaic_cells[i].img){
                     fprintf(stderr,"Fail to get mutex or img\n");

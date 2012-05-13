@@ -342,43 +342,46 @@ void MyDataSet::init()
                     cell.bbox=osg::BoundingBoxd(miny,minx/*totalX-minx-(maxx-minx)*/,-FLT_MAX,maxy,/*totalX-maxx-(maxx-minx)*/ maxx,FLT_MAX);
                     cell.name=std::string(fname);
                     cell.levels=num_levels;
-                    if(osgDB::fileExists(cell.name)){
-                        cell.img = new vips::VImage(cell.name.c_str());
-                        cell.img_ds.resize(cell.levels,NULL);
-                        cell.name_ds.resize(cell.levels);
+                    cell.img=NULL;
+                    if(cell.name != "null"){
+                        if(osgDB::fileExists(cell.name)){
+                            cell.img = new vips::VImage(cell.name.c_str());
+                            cell.img_ds.resize(cell.levels,NULL);
+                            cell.name_ds.resize(cell.levels);
 
-                        for(int i=0;i <(int)cell.levels; i++){
-                            sprintf(tmp_l,"%s-%d.ppm",osgDB::getNameLessExtension(fname_tif).c_str(),i+1);
-                            if(!osgDB::fileExists(tmp_l)){
-                                add=false;
-                                break;
-                            }
-                          /*  vips::VImage *img=new vips::VImage(tmp_l);
+                            for(int i=0;i <(int)cell.levels; i++){
+                                sprintf(tmp_l,"%s-%d.ppm",osgDB::getNameLessExtension(fname_tif).c_str(),i+1);
+                                if(!osgDB::fileExists(tmp_l)){
+                                    add=false;
+                                    break;
+                                }
+                                /*  vips::VImage *img=new vips::VImage(tmp_l);
                             if(!img){
                                 std::cerr << "Can't open downsampled "<<tmp_l<<  " on reimaging run\n";
                             }
                             cell.img_ds[i]=img;*/
-                            cell.img_ds[i]=NULL;
+                                cell.img_ds[i]=NULL;
 
-                            cell.name_ds[i]=string(tmp_l);
+                                cell.name_ds[i]=string(tmp_l);
+                            }
+                            cell.mutex=new OpenThreads::Mutex;
+
+
+                            // cout << "id: "<< id <<" \n" << plow[0] << " "<< plow[1]<< "\n"<< phigh[0]<<" "<< phigh[1]<<endl;
+                            // cell_coordinate_map[rangeTC(minp,
+                            //                                               maxp)]=mosaic_cells.size();
+                            //   if(add)
+                            //   mosaic_cells.push_back(cell);
+                            std::map< MyDataSet::rangeTC ,int>::iterator itr;
+                            for(itr=cell_coordinate_map.begin(); itr!=cell_coordinate_map.end(); itr++)
+                                cout << "["<<itr->first.min() <<" - "<< itr->first.max()<< "] : " << itr->second<<"\n";
+
+                        }else{
+                            std::cerr << "Can't open "<<cell.name<<  " on reimaging run\n";
+                            cell.img=NULL;
                         }
-                        cell.mutex=new OpenThreads::Mutex;
-
-
-                        // cout << "id: "<< id <<" \n" << plow[0] << " "<< plow[1]<< "\n"<< phigh[0]<<" "<< phigh[1]<<endl;
-                        // cell_coordinate_map[rangeTC(minp,
-                        //                                               maxp)]=mosaic_cells.size();
-                        if(add)
-                            mosaic_cells.push_back(cell);
-                        std::map< MyDataSet::rangeTC ,int>::iterator itr;
-                        for(itr=cell_coordinate_map.begin(); itr!=cell_coordinate_map.end(); itr++)
-                            cout << "["<<itr->first.min() <<" - "<< itr->first.max()<< "] : " << itr->second<<"\n";
-
                     }
-                    else{
-                        std::cerr << "Can't open "<<cell.name<<  " on reimaging run\n";
-                        cell.img=NULL;
-                    }
+                    mosaic_cells.push_back(cell);
 
 
                 }
@@ -3473,10 +3476,10 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
 
                         tc.set(tc2[0]*matrix2(0,0) + tc2[1]*matrix2(1,0) + matrix2(3,0),
                                tc2[0]*matrix2(0,1) + tc2[1]*matrix2(1,1) + matrix2(3,1));
-                        texCoord->push_back(tc);
+                        texCoord->at(j)=tc;
                         //   cout << "Final:"<<tc<<endl;
                     }else{
-                        texCoord->push_back(osg::Vec2(-1,-1));
+                       texCoord->at(j)=osg::Vec2(-1,-1);
                         printf("Failed atlas matrix map %d 0x%lx %f %f\n",mosaic_id,(long unsigned int)tf_atlas->atlasSourceMatrix[mosaic_id],tc.x(),tc.y() );
                         printf("Num of map %d\n",(int)tf_atlas->atlasSourceMatrix.size());
                         for(int i=0; i< (int)tf_atlas->atlasSourceMatrix.size(); i++){
@@ -3490,13 +3493,13 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
                     }
                 }else{
                     printf("Failed mosaic_id %d\n",mosaic_id);
-                    texCoord->push_back(osg::Vec2(-1,-1));
+                   texCoord->at(j)=osg::Vec2(-1,-1);
 
                 }
 
             }else{
                 osg::Vec2 tc=calcCoordReprojTrans(newVerts->at(j),dynamic_cast<MyDataSet*>(_dataSet)->rotMat,toTex,osg::Vec2(texSizes[2],texSizes[3]),ratio);
-                texCoord->push_back(tc);
+               texCoord->at(j)=tc;
             }//  std::cout <<texCoord->back() << std::endl;
 
         }

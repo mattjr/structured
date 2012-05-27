@@ -694,10 +694,10 @@ int main( int argc, char *argv[ ] )
 
     chmod(uname,   0777);
 
-    osgDB::makeDirectory("mesh-pos");
+    /*osgDB::makeDirectory("mesh-pos");
 
     chmod("mesh-pos",   0777);
-
+*/
     osgDB::makeDirectory(cachedmeshdir);
     chmod(cachedmeshdir,   0777);
     for(int i=0; i < (int)cachedtexdir.size(); i++){

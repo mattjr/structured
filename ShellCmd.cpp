@@ -1,5 +1,6 @@
 #include "ShellCmd.h"
 #include <sstream>
+#include "MemUtils.h"
 void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds,int thread_override,string custom){
     FILE *fp=fopen(filename.c_str(),"w");
     fprintf(fp,"#!/usr/bin/python\n");
@@ -161,25 +162,25 @@ string ShellCmd::generateMergeAndCleanCmd(vector<Cell_Data<Stereo_Pose_Data> >vr
         if(vrip_cells[i].poses.size() == 0)
             continue;
         if(lod>=0)
-            sprintf(tmp100, " mesh-diced/%s-%08d-lod%d.ply ",basename.c_str(),i,lod);
+            sprintf(tmp100, " %s/%s-%08d-lod%d.ply ",diced_dir,basename.c_str(),i,lod);
         else
-            sprintf(tmp100, " mesh-diced/%s-%08d.ply ",basename.c_str(),i);
+            sprintf(tmp100, " %s/%s-%08d.ply ",diced_dir,basename.c_str(),i);
         tcmd+=tmp100;
     }
     if(lod >=0)
-        sprintf(tmp100, " > mesh-diced/%s-unmerged-lod%d.ply ;",outname.c_str(),lod);
+        sprintf(tmp100, " > %s/%s-unmerged-lod%d.ply ;",diced_dir,outname.c_str(),lod);
     else
-        sprintf(tmp100, " > mesh-diced/%s-unmerged.ply ;",outname.c_str());
+        sprintf(tmp100, " > %s/%s-unmerged.ply ;",diced_dir,outname.c_str());
 
     tcmd+= tmp100;
     if(lod >=0)
-        sprintf(tmp100,"  %s/vcgapps/bin/mergeMesh mesh-diced/%s-unmerged-lod%d.ply -tex -thresh %f -out mesh-diced/%s-lod%d.ply;",basepath,outname.c_str(),lod,0.9*vrip_res,outname.c_str(),lod);
+        sprintf(tmp100,"  %s/vcgapps/bin/mergeMesh %s/%s-unmerged-lod%d.ply -tex -thresh %f -out %s/%s-lod%d.ply;",basepath,diced_dir,outname.c_str(),lod,0.9*vrip_res,diced_dir,outname.c_str(),lod);
     else
-        sprintf(tmp100,"  %s/vcgapps/bin/mergeMesh mesh-diced/%s-unmerged.ply -color -cleansize %f -thresh %f -out mesh-diced/%s.ply;",basepath,outname.c_str(),cleanPercentage,0.9*vrip_res,outname.c_str());
+        sprintf(tmp100,"  %s/vcgapps/bin/mergeMesh %s/%s-unmerged.ply -color -cleansize %f -thresh %f -out %s/%s.ply;",basepath,diced_dir,outname.c_str(),cleanPercentage,0.9*vrip_res,diced_dir,outname.c_str());
 
     tcmd+=tmp100;
 
-    sprintf(tmp100,"export DISPLAY=:0.0;time %s/vcgapps/bin/shadevis -n128  -f mesh-diced/%s.ply >mesh-diced/shadevislog.txt;",basepath,outname.c_str());
+    sprintf(tmp100,"export DISPLAY=:0.0;time %s/vcgapps/bin/shadevis -n128  -f %s/%s.ply >%s/shadevislog.txt;",basepath,diced_dir,outname.c_str(),diced_dir);
     tcmd+=tmp100;
 
 

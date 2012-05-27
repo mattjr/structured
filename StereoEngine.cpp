@@ -1517,9 +1517,9 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
     string imgadd= ((left_file_name.size() == osgDB::getSimpleFileName(left_file_name).size())? "/img/": "/");
     string imgdir=basedir+imgadd;
 
-    string cached_dir=basedir+"/cache-mesh-feat";
+    string cached_dir=basedir+"tmp/cache-mesh-feat";
     checkmkdir(cached_dir);
-    string outputdir="mesh-agg/";
+    string outputdir="tmp/mesh-agg/";
     checkmkdir(outputdir);
     if(cache_img){
         sprintf(cachedtexdir,"%s/cache-tex-%d",basedir.c_str(),tex_size);

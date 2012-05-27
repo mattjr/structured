@@ -398,6 +398,7 @@ int main(int ac, char *av[]) {
     outputImage=NULL;
     rangeImage=NULL;
 double scaleTex=1.0;
+bool pyramid=arguments.read("-pyr");
     int jpegQuality=95;
     arguments.read("--jpeg-quality",jpegQuality);
     bool useDisk=arguments.read("--outofcore");
@@ -443,7 +444,7 @@ double scaleTex=1.0;
             _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
             viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
         }
-    sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d",row,col,_tileRows,_tileColumns);
+    sprintf(tmp,"%s/image_r%04d_c%04d_rs%04d_cs%04d",diced_img_dir,row,col,_tileRows,_tileColumns);
 
     imageName=string(tmp)+".v";
     depthName=string(tmp)+"-tmp_dist.v";
@@ -774,7 +775,7 @@ double scaleTex=1.0;
 
         }
 
-        if(1){
+        if(0){
           osg::Texture2D* texture = new osg::Texture2D;
           osg::Image *img=new osg::Image;
           img->setWriteHint(osg::Image::EXTERNAL_FILE);
@@ -796,7 +797,7 @@ double scaleTex=1.0;
             }
 
             char tmp[1024];
-            sprintf(tmp,"mesh-diced/remap-%s",osgDB::getSimpleFileName(av[1]).c_str());
+            sprintf(tmp,"%s/remap-%s",diced_dir,osgDB::getSimpleFileName(av[1]).c_str());
             std::ofstream f(tmp);
             bool color = vertexData._colors.valid() ? (vertexData._colors->size() >0) : false;
 
@@ -928,9 +929,10 @@ double scaleTex=1.0;
         (maskI.more(1.0).invert().andimage(dilatedI.dilate(mask))).add(maskI).write("total.png");*/
         im_close(tmpI);
         int levels=(int)ceil(log( max( sizeX, sizeY ))/log(2.0) );
-        if(!genPyramid(osgDB::getNameLessExtension(imageName)+".tif",levels,"ppm")){
-            fprintf(stderr,"FAil to gen pyramid\n");
-            exit(-1);
+        if(pyramid){ if(!genPyramid(osgDB::getNameLessExtension(imageName)+".tif",levels,"ppm")){
+                fprintf(stderr,"FAil to gen pyramid\n");
+                exit(-1);
+            }
         }
 
         IMAGE *tmpI2=im_open("tmp2","p");

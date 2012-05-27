@@ -199,7 +199,7 @@ class MyDataSet :  public DataSet
         void _buildDestination(bool writeToDisk);
         void _equalizeRow(Row& row);
         int _run();
-        void createVTAtlas();
+        void createVTAtlas(bool writeAtlas);
         void processTile(MyDestinationTile *tile,TexturedSource *src);
         texcache_t _cachedDirs;
         bool _useDisplayLists;

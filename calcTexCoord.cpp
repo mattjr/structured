@@ -144,8 +144,12 @@ int main( int argc, char **argv )
         return 0;//Hash is valid
     cout <<"Computing hash\n";*/
     //Differing hash or no hash
-    int npos=mf.find("/");
-    std::string bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
+    //int npos=mf.find("/");
+    std::string bbox_file;
+    if(!arguments.read("--bbfile",bbox_file)){
+        fprintf(stderr,"Can't get bbox \n");
+        exit(-1);
+        }//std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
     printf("SS %s\n",bbox_file.c_str());
     TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);

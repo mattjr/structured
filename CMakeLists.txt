@@ -8,7 +8,7 @@
 # * TCL/TK
 # * vips
 # *glib2
-PROJECT(threadedStereo)
+PROJECT(structured)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 

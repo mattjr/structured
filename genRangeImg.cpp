@@ -112,14 +112,14 @@ int main(int argc, char** argv)
         char tmp[1024];
         char tmpbb[1024];
 
-        sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
-        sprintf(tmpbb,"mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",cells[i].row,cells[i].col);
+        sprintf(tmp,"%s/image_r%04d_c%04d_rs%04d_cs%04d-tmp.%s",diced_img_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
+        sprintf(tmpbb,"%s/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",diced_img_dir,cells[i].row,cells[i].col);
        // std::ifstream fin(tmpbb);
         //TexturedSource::ProjectionCamera cam;
      //   if(fin.good())
        //  readNextEntry(fin,cam);
-        fprintf(fpp,"%s/rangeimg mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d.ply mesh-diced/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt \n",basepath.c_str(),
-                cells[i].row,cells[i].col,cells[i].row,cells[i].col);
+        fprintf(fpp,"%s/rangeimg %s/tmp-tex-clipped-diced-r_%04d_c_%04d.ply %s/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt \n",basepath.c_str(),
+                diced_dir,cells[i].row,cells[i].col,diced_img_dir,cells[i].row,cells[i].col);
     }
     fclose(fpp);
 

@@ -73,7 +73,7 @@ void VipsAtlasBuilder::buildAtlas()
 
     totalSide=osg::Image::computeNearestPowerOfTwo(ajustedGLImageSize,1.0);
     //printf("POT %ld\n",totalSide);
-
+    totalSide=std:: max(totalSide,(long int)2*_VTtileSize);
     totalSide=(int)totalSide-((totalSide/_VTtileSize)*2*_VToverlap);
 
     _maximumAtlasWidth=totalSide;

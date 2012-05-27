@@ -90,7 +90,9 @@ class CVertexO  : public vcg::Vertex< CUsedTypesO,
   >{
   public:
     typedef int  MarkType ;
-
+    vcg::math::Quadric<double> &Qd() {return q;}
+  private:
+    vcg::math::Quadric<double> q;
 };
 
 

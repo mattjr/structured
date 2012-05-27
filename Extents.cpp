@@ -390,8 +390,6 @@ void MyDataSet::init()
             }
         }
     }
-    if(_useVirtualTex)
-        createVTAtlas();
 }
 class CollectClusterCullingCallbacks : public osg::NodeVisitor
 {
@@ -873,7 +871,7 @@ void MyDestinationTile::unrefData()
         char cwd[2048];
         char *dirres;
         dirres=getcwd(cwd,2048);
-        std::string fname=string(cwd)+"/mesh-diced/"+getUUID()+".jpg";
+        std::string fname=string(cwd)+"/tmp/mesh-diced/"+getUUID()+".jpg";
         osg::ref_ptr<osgDB::ReaderWriter::Options> op = new osgDB::ReaderWriter::Options();
         op->setOptionString("JPEG_QUALITY 20");
 

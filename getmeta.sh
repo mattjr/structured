@@ -20,6 +20,8 @@ lonfmt='\t\t<geo:long>%s</geo:long>\n'
 linkfmt='\t\t<link>%s/%s.tar</link>\n'
 reportfmt='\t\t<report>%s</report>\n'
 filenamefmt='\t\t<filename>%s.tar</filename>\n'
+sizefmt='\t\t<size>%d</size>\n'
+nummeshesfmt='\t\t<octrees>%d</octrees>\n'
 folderfmt='\t\t<folder>%s</folder>\n'
 footer='\t</item>\n</channel>\n</rss>\n'
 
@@ -33,7 +35,9 @@ printf "$lonfmt" "$LON"
 printf "$filenamefmt" "$basename"
 printf "$linkfmt" "$URLBASE"  "$basename"
 printf "$folderfmt" "$folder"
+printf "$sizefmt" `du -b $basename.tar | cut -f 1`
+printf "$nummeshesfmt" $2
 printf "$reportfmt" "$reportbase"
 printf "$footer"
-} 
+}
 #> $basefile.xml

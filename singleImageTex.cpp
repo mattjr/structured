@@ -9,7 +9,70 @@
 #include "Extents.h"
 #include "PLYWriterNodeVisitor.h"
 using namespace std;
+/*int write_all(std::string basename,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec3Array *norms,osg::Vec3Array *tex){
+    +    int num_models=0;
+    +    int  facesLeft=tri->size();
+    +    int triStart=0;
+    +    int triEnd=0;
+    +    int maxVerts= (0xffff-1);
+    +    while(triEnd<facesLeft){
+    +        printf("Tri end %d %d\n",triEnd,facesLeft);
+    +        char tmp[1024];
+    +        sprintf(tmp,"%s-%04d.obj",basename.c_str(),num_models);
+    +        std::ofstream _fout(tmp);
+    +        std::set<int> seenVert;
+    +        std::vector<int> backmap;
+    +        std::map<int,int> frontmap;
 
+    +      //  std::vector<int> seenVert;
+    +
+    +        int vertIdx=0;
+    +        triEnd=triStart;
+    +        for(int i=triStart; i< (int)tri->size()-2 && seenVert.size() < (maxVerts-2); i+=3,triEnd+=3){
+    +            for(int j=0; j<3; j++){
+    +                if(seenVert.count(tri->at(i+j)) == 0){
+    +                    seenVert.insert(tri->at(i+j));
+    +                    frontmap.insert(std::make_pair<int,int>(tri->at(i+j),backmap.size()));
+    +
+    +                    backmap.push_back(tri->at(i+j));
+    +
+    +               }
+    +            }
+    +        }
+    +    //    printf("seenVert %d\n",(int)seenVert.size());
+    +
+    +        std::vector<int>::iterator itr;
+    +        for(itr= backmap.begin(); itr!=backmap.end(); itr++){
+    +            osg::Vec3 v=verts->at(*itr);
+    +            _fout<< "v "<<v<<endl;
+    +        }
+    +
+    +        for(itr= backmap.begin(); itr!=backmap.end(); itr++){
+    +            osg::Vec3 vn=norms->at(*itr);
+    +            _fout<< "vn "<<vn<<endl;
+    +        }
+    +        for(itr= backmap.begin(); itr!=backmap.end(); itr++){
+    +            osg::Vec2 vt(tex->at(*itr)[0],tex->at(*itr)[1]);
+    +            _fout<< "vt "<<vt<<endl;
+    +        }
+    +            for(int i=triStart; i< triEnd-2; i+=3){
+    +                _fout << "f ";
+    +                for(int j=0; j<3; j++){
+    +                    int id=frontmap[tri->at(i+j)]+1;
+    +                    _fout<<id<<"/"<<id<<"/"<<id<<" ";
+    +                }
+    +                _fout<<endl;
+    +
+    +            }
+
+    +        triStart=triEnd;
+    +        num_models++;
+    +       // printf("Tri end %d %d\n",triEnd,facesLeft);
+    +
+    +    }
+    +    return num_models;
+    +}
+*/
 int main( int argc, char **argv )
 {
     // use an ArgumentParser object to manage the program arguments.

@@ -63,7 +63,7 @@ using namespace std;
 #include <fstream>
 #include <string>
 
-
+extern const char *diced_img_dir;
 struct InputVertex {
     vec3x vertex;
 };
@@ -403,7 +403,7 @@ int main(int ac, char *av[]) {
         viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
     }
 
-    sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d",row,col,_tileRows,_tileColumns);
+    sprintf(tmp,"%s/image_r%04d_c%04d_rs%04d_cs%04d",diced_img_dir,row,col,_tileRows,_tileColumns);
     outputImage=cvCreateImage(cvSize(sizeX,sizeY),IPL_DEPTH_8U,4);
     rangeImage=cvCreateImage(cvSize(sizeX,sizeY),IPL_DEPTH_8U,4);
     cvZero(rangeImage);

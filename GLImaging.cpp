@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include "MemUtils.h"
 #include <assert.h>
+extern const char *diced_dir;
 void optImage(osg::ref_ptr<osg::Image> &image){
     //int pitch=image->getRowSizeInBytes();
     unsigned char *dataBGRA=new unsigned char[image->s()*image->t()*4];
@@ -930,11 +931,11 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
     sem.release();
     char tmp[1024];
 
-    sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm",row,col,_tileRows,_tileColumns);//,ext.c_str());
+    sprintf(tmp,"%s/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm",diced_dir,row,col,_tileRows,_tileColumns);//,ext.c_str());
     if(tmpImg1.valid()){
         optImageRGBA2RGB(tmpImg1);
         osgDB::writeImageFile(*tmpImg1,tmp);
-        sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d.ppm",row,col,_tileRows,_tileColumns);//,ext.c_str());
+        sprintf(tmp,"%s/image_r%04d_c%04d_rs%04d_cs%04d.ppm",diced_dir,row,col,_tileRows,_tileColumns);//,ext.c_str());
 
         if(applyGeoTags(osgDB::getNameLessExtension(tmp)+".tif",latlong,viewProjRead,tmpImg1->s(),tmpImg1->t(),"ppm")){
             /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )

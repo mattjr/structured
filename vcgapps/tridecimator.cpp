@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 using namespace std;
 
 // stuff to define the mesh
@@ -18,11 +18,13 @@ using namespace std;
 // io
 #include <wrap/io_trimesh/import.h>
 #include <wrap/io_trimesh/export_ply.h>
+#include <wrap/io_trimesh/export_obj.h>
 
 // *include the algorithms for updating: */
 #include <vcg/complex/algorithms/update/topology.h>	/* topology */
 #include <vcg/complex/algorithms/update/bounding.h>	/* bounding box */
 #include <vcg/complex/algorithms/update/normal.h>		/* normal */
+#include<vcg/complex/append.h>
 
 // local optimization
 #include <vcg/complex/algorithms/local_optimization.h>
@@ -30,7 +32,7 @@ using namespace std;
 
 using namespace vcg;
 using namespace tri;
-
+#include "meshmodel.h"
 /**********************************************************
 Mesh Classes for Quadric Edge collapse based simplification
 
@@ -47,7 +49,7 @@ to recover the quadric.
 
 ******************************************************/
 // The class prototypes.
-class MyVertex;
+/*class MyVertex;
 class MyEdge;    
 class MyFace;
 
@@ -95,7 +97,15 @@ class MyTriEdgeCollapse: public vcg::tri::TriEdgeCollapseQuadric< MyMesh, MyTriE
             typedef  MyMesh::VertexType::EdgeType EdgeType;
             inline MyTriEdgeCollapse(  const EdgeType &p, int i) :TECQ(p,i){}
 };
+*/
 
+class MyTriEdgeCollapse: public vcg::tri::TriEdgeCollapseQuadric< CMeshO, MyTriEdgeCollapse, QInfoStandard<CVertexO>  > {
+                                                public:
+                                                typedef  vcg::tri::TriEdgeCollapseQuadric< CMeshO,  MyTriEdgeCollapse, QInfoStandard<CVertexO>  > TECQ;
+            typedef  CVertexO::VertexType::EdgeType EdgeType;
+            inline MyTriEdgeCollapse(  const EdgeType &p, int i) :TECQ(p,i){}
+};
+#define MyMesh CMeshO
 void Usage()
 {
   	printf(
@@ -153,6 +163,9 @@ if(argc<4) Usage();
   float TargetError=numeric_limits<float>::max();
   bool CleaningFlag =false;
   bool UseVertStop=false;
+  int splitting=0;
+  char basename[1024];
+  strcpy(basename,"ipad");
      // parse command line.
 	  for(int i=4; i < argc;)
     {
@@ -179,6 +192,9 @@ if(argc<4) Usage();
 				case 'P' :	CleaningFlag=true;  printf("Cleaning mesh before simplification\n"); break;	
                                 case 'F' : FlipFlag=true; break;
                                 case 'V': UseVertStop=true;break;
+                                case 's' :	splitting = atoi(argv[i]+2);  printf("Splitting output at %d\n",atoi(argv[i]+2)); break;
+                                case 'u' :	strcpy(basename ,argv[i]+2);  printf("Splitting output fn %s\n",basename); break;
+
 				default  :  printf("Unknown option '%s'\n", argv[i]);
           exit(0);
       }
@@ -234,7 +250,86 @@ if(FinalSize ==0 )
   printf("\nCompleted in (%i+%i) msec\n",t2-t1,t3-t2);
   vcg::tri::io::PlyInfo pi;
   pi.mask |= vcg::tri::io::Mask::IOM_VERTCOLOR;
+  pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
+  pi.mask |= vcg::tri::io::Mask::IOM_FACEQUALITY;
+
   vcg::tri::io::ExporterPLY<MyMesh>::Save(mesh,argv[2],true,pi);
-	return 0;
+  if(splitting >0){
+      char fname[1024];
+      int mesh_count=0;
+      int vertexLeft=mesh.vn;
+      while(vertexLeft>0){
+          CMeshO destMesh;
+
+          int selectedV=0;
+          CMeshO::VertexIterator vi;
+          CMeshO::FaceIterator   fi;
+          for(vi=mesh.vert.begin();vi!=mesh.vert.end() && selectedV<splitting;++vi){
+              if(!(*vi).IsD() && !(*vi).IsS() ){
+                  (*vi).SetS();
+                  selectedV++;
+              }
+          }
+
+
+
+          // select all points involved
+        //  tri::UpdateSelection<CMeshO>::ClearVertex(mesh);
+          tri::UpdateSelection<CMeshO>::FaceFromVertexLoose(mesh);
+           tri::UpdateSelection<CMeshO>::ClearVertex(mesh);
+           tri::UpdateSelection<CMeshO>::VertexFromFaceLoose(mesh);
+
+          tri::Append<CMeshO,CMeshO>::Mesh(destMesh, mesh, true);
+
+          int numFacesSel = tri::UpdateSelection<CMeshO>::CountFace(mesh);
+          int numVertSel  = tri::UpdateSelection<CMeshO>::CountVertex(mesh);
+
+          printf("Moving %d\n",numFacesSel);
+          tri::UpdateSelection<CMeshO>::ClearVertex(mesh);
+          tri::UpdateSelection<CMeshO>::VertexFromFaceStrict(mesh);
+          for(fi=mesh.face.begin();fi!=mesh.face.end();++fi)
+              if(!(*fi).IsD() && (*fi).IsS() )
+                  tri::Allocator<CMeshO>::DeleteFace(mesh,*fi);
+          for(vi=mesh.vert.begin();vi!=mesh.vert.end();++vi)
+              if(!(*vi).IsD() && (*vi).IsS() )
+                  tri::Allocator<CMeshO>::DeleteVertex(mesh,*vi);
+          vcg::tri::Allocator<CMeshO>::CompactFaceVector(mesh);
+
+          tri::UpdateSelection<CMeshO>::ClearVertex(mesh);
+          tri::UpdateSelection<CMeshO>::ClearFace(mesh);
+
+          sprintf(fname,"%s-%04d.obj",basename,mesh_count++);
+          int mask = pi.mask;
+          destMesh.textures.resize(0);
+          //mask &= ~vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
+          mask &= vcg::tri::io::Mask::IOM_VERTNORMAL;
+
+          vcg::tri::UpdateFlags<CMeshO>::VertexClear(destMesh,CMeshO::VertexType::SELECTED);
+          vcg::tri::UpdateFlags<CMeshO>::FaceClear(destMesh,CMeshO::FaceType::SELECTED);
+          tri::UpdateBounding<CMeshO>::Box(destMesh);						// updates bounding box
+                               for(fi=destMesh.face.begin();fi!=destMesh.face.end();++fi)	// face normals
+                                       face::ComputeNormalizedNormal(*fi);
+                               tri::UpdateNormals<CMeshO>::PerVertex(destMesh);				// vertex normals
+          vcg::tri::io::ExporterOBJ<CMeshO>::Save(destMesh,fname, mask);
+          printf("Writing %s verts: %d faces : %d %s\n",fname,destMesh.vn,destMesh.fn,fname);
+          vertexLeft=0;
+          for(vi=mesh.vert.begin();vi!=mesh.vert.end();++vi){
+              if(!(*vi).IsD())
+                  vertexLeft++;
+          }
+          printf("Vert left %d\n",vertexLeft);
+          //  currentMesh->clearDataMask(MeshModel::MM_FACEFACETOPO | MeshModel::MM_FACEFLAGBORDER);
+          vcg::tri::UpdateFlags<CMeshO>::VertexClear(mesh,CMeshO::VertexType::SELECTED);
+                vcg::tri::UpdateFlags<CMeshO>::FaceClear(mesh,CMeshO::FaceType::SELECTED);
+       //   vcg::tri::UpdateFlags<CMeshO>::FaceClear(destMesh,CMeshO::FaceType::SELECTED);
+          //Log("Moved %i faces and %i vertices to layer %i", numFacesSel, numVertSel, md.meshList.size());
+      }
+      sprintf(fname,"%s.txt");
+
+      FILE *fp=fopen(fname,"w");
+      fprintf(fp,"%d\n",mesh_count-1);
+      fclose(fp);
+  }
+  return 0;
 
 }

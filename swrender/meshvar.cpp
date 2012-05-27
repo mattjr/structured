@@ -67,6 +67,7 @@ static bool writeOut=false;
 #include <iostream>
 #include <fstream>
 #include <string>
+extern const char *diced_img_dir;
 
 
 struct InputVertex {
@@ -123,7 +124,7 @@ int main(int ac, char *av[]) {
     }
 
 
-    sprintf(tmp,"mesh-diced/var_r%04d_c%04d_rs%04d_cs%04d",row,col,_tileRows,_tileColumns);
+    sprintf(tmp,"%s/var_r%04d_c%04d_rs%04d_cs%04d",diced_img_dir,row,col,_tileRows,_tileColumns);
 
     string imageName=string(tmp)+".v";
     std::string matfile;

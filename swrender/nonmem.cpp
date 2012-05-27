@@ -249,7 +249,7 @@ int main(int ac, char *av[]) {
         _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
         viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
     }
-    sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d",row,col,_tileRows,_tileColumns);
+    sprintf(tmp,"%s/image_r%04d_c%04d_rs%04d_cs%04d",diced_img_dir,row,col,_tileRows,_tileColumns);
 
     imageName=string(tmp)+".v";
     depthName=string(tmp)+"-tmp_dist.v";

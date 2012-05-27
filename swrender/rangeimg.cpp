@@ -379,7 +379,7 @@ int main(int ac, char *av[]) {
 
 
     if(!model){
-        fprintf(stderr,"Failed to load mesh-diced/totalrot.ive can't split bailing!\n");
+        fprintf(stderr,"Failed to load %s/totalrot.ive can't split bailing!\n",diced_dir);
         exit(-1);
     }
     osg::ref_ptr<KdTreeBbox> kdbb=createKdTreeForUnbuilt(model);

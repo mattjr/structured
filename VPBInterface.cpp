@@ -80,13 +80,15 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
     return true;
 }
 #endif
-void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datalist_lod,Bounds bounds,CameraCalib &calib,texcache_t cachedDirs,bool useTextureArray,bool useReimage,bool useVirtualTex,const osg::BoundingBox &bbox,string src_proj4_coord_system,string dst_proj4_coord_system,double sparseRatio,bool no_hw_context){
+void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datalist_lod,Bounds bounds,CameraCalib &calib,texcache_t cachedDirs,bool useTextureArray,bool useReimage,bool useVirtualTex,const osg::BoundingBox &bbox,string src_proj4_coord_system,string dst_proj4_coord_system,double sparseRatio,bool no_hw_context,bool no_atlas){
     //vector<osg::KdTree*> trees;
     vpb::GeospatialExtents geo(bounds.bbox.xMin(), bounds.bbox.yMin(), bounds.bbox.xMax(),bounds.bbox.yMax(),false);
-    int numlod=datalist_lod.size()-1;
+    int numlod=datalist_lod.size();
     if(useVirtualTex)
         useReimage=false;
     osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,basePath,useTextureArray,useReimage,useVirtualTex);
+    if(useVirtualTex)
+        m->createVTAtlas(!no_atlas);
     m->_cachedDirs=cachedDirs;
     m->_no_hw_context=no_hw_context;
     m->_zrange=osg::Vec4(bbox.zMin(),bbox.zMax(),bbox.zMin(),bbox.zMax());
@@ -120,7 +122,8 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
             std::string bbox_file;
             TexturedSource *sourceModel;
           //  if(!useVirtualTex && !useReimage){
-                bbox_file=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
+            bbox_file=osgDB::getFilePath(mf)+"/bbox-"+osgDB::getSimpleFileName(mf).substr(0,osgDB::getSimpleFileName(mf).size()-9)+".ply.txt";
+
                 sourceModel =new TexturedSource(vpb::Source::MODEL,mf,bbox_file,!useVirtualTex && !useReimage,useVirtualTex || useReimage);
            // }else{
            //     sourceModel=new TexturedSource(vpb::Source::MODEL,mf);
@@ -183,7 +186,7 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
             m->addSource(sourceModel);
         }
     }
-    m->createNewDestinationGraph(geo,256,128,numlod-1);
+    m->createNewDestinationGraph(geo,256,128,numlod);
     m->_run();
     //    for(int i=0; i<trees.size(); i++)
     //    delete trees[i];

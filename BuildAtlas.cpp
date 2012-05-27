@@ -286,7 +286,7 @@ void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cel
 
 
 }
-void vpb::MyDataSet::createVTAtlas(){
+void vpb::MyDataSet::createVTAtlas(bool writeAtlas){
     int tileSize=256;
     int border=1;
     _atlas =new VipsAtlasBuilder(mosaic_cells.size(),tileSize,border );
@@ -432,7 +432,7 @@ void vpb::MyDataSet::createVTAtlas(){
     bool outputImages=true;
     int maxLevels=    (int)ceil(std::log((double)sizeLevel/tileSize) / std::log(2.0));
 
-    if(outputImages){
+    if(writeAtlas){
         int adjustedTileSize=tileSize-(border *2);
         for(int level=0; sizeLevel>=adjustedTileSize; level++,sizeLevel/=2 ){
             printf("\rDoing VT Level %02d/%02d",level,maxLevels);

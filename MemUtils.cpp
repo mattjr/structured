@@ -1,9 +1,16 @@
 #include "MemUtils.h"
 #include <osgDB/FileNameUtils>
+extern const char *diced_dir;
 using namespace std;
 #define KILOBYTE_FACTOR 1024.0
 #define MEGABYTE_FACTOR ( 1024.0 * 1024.0 )
 #define GIGABYTE_FACTOR ( 1024.0 * 1024.0 * 1024.0 )
+
+//const char *uname="mesh";
+const char *diced_dir="tmp/mesh-diced/";
+const char *diced_img_dir="tmp/mesh-img/";
+
+const char *mosdir="mosaic";
 std::string get_size_string(double kb){
     int buflen=8192;
     char buf[buflen];
@@ -175,10 +182,10 @@ bool genPyramid(std::string name,int pyramidHeight,string ext){
         if(i==1)
             sprintf(tmp2,"%s-tmp.%s",osgDB::getNameLessExtension(name).c_str(),ext.c_str());
         else
-            sprintf(tmp2,"%s-%d.%s",(string("mesh-diced/")+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i-1,ext.c_str());
+            sprintf(tmp2,"%s-%d.%s",(string(diced_img_dir)+"/"+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i-1,ext.c_str());
 
         sprintf(tmp,"%s vips im_shrink %s %s-%d.%s 2 2;",tmp,tmp2,
-                (string("mesh-diced/")+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i,ext.c_str());
+                (string(diced_img_dir)+"/"+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i,ext.c_str());
     }
     int res= system(tmp);
     // printf("%s\n",tmp);

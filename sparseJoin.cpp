@@ -345,7 +345,7 @@ int main(int argc, char** argv)
 
         char tmp[1024];
 
-        sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d-tmp.%s",cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
+        sprintf(tmp,"%s/image_r%04d_c%04d_rs%04d_cs%04d-tmp.%s",diced_img_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns,ext.c_str());
         if(osgDB::fileExists(tmp)){
             IMAGE *tmpI=im_open(tmp,"r");
             if(!tmpI){

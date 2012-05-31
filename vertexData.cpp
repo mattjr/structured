@@ -115,6 +115,17 @@ void VertexData::readVertices( PlyFile* file, const int nVertices,
     }
 }
 
+bool comapreVert (const osg::Vec3 &lhs,const osg::Vec3 &rhs) {
+    if(lhs.x()!=rhs.x())
+        return (lhs.x()<rhs.x());
+    else{
+        if(lhs.y()!=rhs.y())
+            return (lhs.y()<rhs.y());
+        else
+            return (lhs.z()<rhs.z());
+
+    }
+}
 
 /*  Read the index data from the open file.  */
 void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,bool tex )
@@ -200,9 +211,32 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
                 face.vertices[1]= outbboxVert[face.vertices[1]];
                 face.vertices[ind3]= outbboxVert[face.vertices[ind3]];
             }*/
-            if(!_bbox->contains(_tmp_verts[face.vertices[ind1]]) && !_bbox->contains(_tmp_verts[face.vertices[1]]) && !_bbox->contains(_tmp_verts[face.vertices[ind3]])){
-                add=false;
+            int inside=0;
+            bool tri[3];
+            const osg::Vec3 &v1=_tmp_verts[face.vertices[ind1]];
+            const osg::Vec3 &v2=_tmp_verts[face.vertices[1]];
+            const osg::Vec3 &v3=_tmp_verts[face.vertices[ind3]];
+            vector<osg::Vec3> triV;
+            triV.push_back(v1);
+            triV.push_back(v2);
+            triV.push_back(v3);
+            std::sort(triV.begin(),triV.end(),comapreVert);
+            tri[0] =_bbox->contains(triV[0]);
+            tri[1] =_bbox->contains(triV[1]);
+            tri[2] =_bbox->contains(triV[2]);
+            inside= tri[0]+tri[1]+tri[2];
+            if(inside <3 ){
+                //Check left right
+                if(!_gap){
+                    if(inside == 0)
+                        add=false;
+                }else{
+                    if( !tri[2] ){
+                       //check which side its on
+                        add=false;
+                    }
 
+                }
             }
         }
         if(add){
@@ -399,7 +433,7 @@ int start=_triangles->size();
     }
 }
 /*  Open a PLY file and read vertex, color and index data. and returns the node  */
-osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColors,osg::BoundingBox *bbox )
+osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColors,osg::BoundingBox *bbox ,bool gap)
 {
     int     nPlyElems;
     char**  elemNames;
@@ -408,12 +442,15 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
     bool    result = false;
     int     nComments;
     char**  comments;
-
-    PlyFile* file = NULL;
+    _gap=gap;
+     PlyFile* file = NULL;
     _bbox=bbox;
     outbboxVert.clear();
     _tmp_verts.clear();
     _tmp_colors.clear();
+    if(gap){
+        printf("Using GaP border\n");
+    }
   //  printf("%s\n",filename);
     // Try to open ply file as for reading
     try{

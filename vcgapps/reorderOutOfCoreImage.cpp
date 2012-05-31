@@ -272,7 +272,7 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
 
     unsigned char c3=3;
     unsigned char ctex=3*2;
-    float fout[2];
+    float fout[6];
     float cfout[4];
     cfout[0]=cfout[1]=cfout[2]=cfout[3]=0;
     for(int i=0; i<(int) tri->size()-2; i+=3){

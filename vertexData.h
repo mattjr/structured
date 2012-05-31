@@ -43,7 +43,7 @@ namespace ply
         VertexData();
         
         // Reads ply file and convert in to osg::Node and returns the same
-        osg::Node* readPlyFile( const char* file, const bool ignoreColors = false,osg::BoundingBox *bbox=NULL );
+        osg::Node* readPlyFile( const char* file, const bool ignoreColors = false,osg::BoundingBox *bbox=NULL,bool gap=false );
         
         // to set the flag for using inverted face
         void useInvertedFaces() { _invertFaces = true; }
@@ -85,6 +85,7 @@ namespace ply
         osg::ref_ptr<osg::DrawElementsUInt> _triangles;
         std::map<int,int> outbboxVert;
         bool tex;
+        bool _gap;
     };
     class VertexDataMosaic: public VertexData{
 

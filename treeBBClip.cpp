@@ -89,7 +89,7 @@ int main( int argc, char **argv )
     string outfilename="out.ply";
     arguments.read("--outfile",outfilename);
     bool flip=arguments.read("-F");
-    IntersectKdTreeBbox::OverlapMode mode;
+    IntersectKdTreeBbox::OverlapMode mode=IntersectKdTreeBbox::DUP;
     if(arguments.read("-gap"))
         mode=IntersectKdTreeBbox::GAP;
     else if(arguments.read("-dup"))
@@ -148,7 +148,7 @@ int main( int argc, char **argv )
             // not an option so assume string is a filename.
             string fname= arguments[pos];
             cout <<"Loading:"<< fname <<endl;
-            root= vertexData.readPlyFile(fname.c_str(),false,&bb);
+            root= vertexData.readPlyFile(fname.c_str(),false,&bb,mode==IntersectKdTreeBbox::GAP);
 
 
         }

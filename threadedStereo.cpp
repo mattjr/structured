@@ -1663,7 +1663,7 @@ const char *uname="mesh";
             fprintf(splitcmds_fp,"setenv DISPLAY :0.0; %s/vcgapps/bin/sw-shadevis -n64 %s/tmp1-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ;",
                     basepath.c_str(),diced_dir,
                      cells[i].row,cells[i].col,vpblod);
-            fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/tmp1-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply -dup -F --outfile %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
+            fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/tmp1-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply -gap -F --outfile %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
                     basepath.c_str(),
                     cells[i].bboxUnRot.xMin(),
                     cells[i].bboxUnRot.yMin(),

@@ -667,61 +667,33 @@ bool  KdTreeChecker::check(const osg::BoundingBox bbox)
 
 }
 void IntersectKdTreeBboxFaces::finish(osg::DrawElementsUInt *dst_tri,osg::Vec3Array *verts,osg::Vec2Array *texCoord, osg::Vec2Array* auxData){
-    std::map<unsigned int,unsigned int> idx;
-    std::vector<unsigned int> back_map(dst_tri->getNumIndices());
-    std::set<unsigned int> seenVert;
-           std::vector<unsigned int> backmap;
-        std::map<unsigned int,unsigned int> frontmap;
+
+    std::vector<int> newIdx(_vertices->size(),-1);
     int cnt=0;
      for(int i=0; i< (int)dst_tri->getNumIndices(); i++){
-    if(seenVert.count(dst_tri->at(i)) == 0){
-                           seenVert.insert(dst_tri->at(i));
-                           frontmap.insert(std::make_pair<int,int>(dst_tri->at(i),backmap.size()));
+         int vId=dst_tri->at(i);
+        if(newIdx[vId] == -1){
+              newIdx[vId]=cnt++;
+        }
+        dst_tri->at(i)=newIdx[vId];
+     }
+    verts->resize(cnt);
 
-                           backmap.push_back(dst_tri->at(i));
+    texCoord->resize(cnt);
+    auxData->resize(cnt);
 
-    }
+     for(int i=0; i < newIdx.size(); i++){
+         if(newIdx[i]>=0){
+             verts->at(newIdx[i])=_vertices->at(i);
+             if(_texCoord0 )
+                 texCoord->at(newIdx[i])=_texCoord0->at(i);
+             if(_auxData )
+                 auxData->at(newIdx[i])=_auxData->at(i);
+         }
+
      }
 
-     std::vector<unsigned int>::iterator itr;
-             for(itr= backmap.begin(); itr!=backmap.end(); itr++){
-                 verts->push_back(_vertices->at(*itr));
-                 if(_texCoord0 )
-                     texCoord->push_back(_texCoord0->at(*itr));
-                 if(_auxData )
-                     auxData->push_back(_auxData->at(*itr));
-
-             }
-
-             for(int i=0; i<(int) dst_tri->getNumIndices(); i++){
-                   dst_tri->at(i)=frontmap[dst_tri->at(i)];
-               }
-   /* for(int i=0; i< (int)dst_tri->getNumIndices(); i++){
-        int remapped_idx;
-        if(idx.count(dst_tri->at(i)) == 0){
-            idx[dst_tri->at(i)]=cnt++;
-            remapped_idx=cnt-1;
-        }else{
-            remapped_idx= idx[dst_tri->at(i)];
-        }
-        dst_tri->at(i)=remapped_idx;
-    }
-
-    for(std::map<unsigned int,unsigned int>::iterator it=idx.begin(); it!=idx.end(); ++it){
-          verts->push_back(_vertices->at(it->first));
-          if(_texCoord0 && _texCoord0->size() < it->first)
-              texCoord->push_back(_texCoord0->at(it->first));
-          if(_auxData && _auxData->size() < it->first)
-              auxData->push_back(_auxData->at(it->first));
-
-    }*/
-  /*  for(int i=0; i<(int) dst_tri->getNumIndices(); i++){
-        dst_tri->at(i)=back_map[i];
-    }*/
-            // cout <<"Nuz " <<auxData->size()<< " "<<texCoord->size()<<endl;
-
 }
-
 
 void IntersectKdTreeBboxFaces::intersectFaceOnly(const osg::KdTree::KdNode& node,  osg::DrawElementsUInt *dst_tri,const osg::BoundingBox clipbox,const OverlapMode &mode)
 {

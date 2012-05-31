@@ -56,6 +56,10 @@ inline bool CompareVertex(const CMeshO & m, const CMeshO::VertexType & vA, const
     return (vA.cT() == vB.cT());
 }
 void writeOSG(string fname,CMeshO &m){
+    cout << "Pre expand "<< m.fn<< " verts: "<<m.vn<<endl;
+      tri::AttributeSeam::SplitVertex(m, ExtractVertex, CompareVertex);
+      cout << "Post expand "<< m.fn<< " verts: "<<m.vn<<endl;
+
     osg::ref_ptr<osg::Vec3Array> verts=new osg::Vec3Array;
     osg::ref_ptr<osg::Vec2Array> texcoords=new osg::Vec2Array;
     osg::ref_ptr<osg::Vec2Array> auxData=new osg::Vec2Array;
@@ -411,6 +415,8 @@ int main(int argc ,char**argv){
 #endif
   //  mesh.textures.resize(2);
     //Needed to force the ply to output tex id
+    std::pair<int,int> delInfo= tri::Clean<CMeshO>::RemoveSmallConnectedComponentsSize(mesh,25);
+
     vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,argv[2],true,pi);
    /* std::string hash=getHash(argv[2]);
 
@@ -435,7 +441,7 @@ int main(int argc ,char**argv){
     writeCached(out_texcoord_file,hash,ids,texCoords);
     vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,"assy2.ply",true,pi);
 
-*/        tri::AttributeSeam::SplitVertex(mesh, ExtractVertex, CompareVertex);
+*/
 
     writeOSG((osgDB::getNameLessExtension(argv[2])+".ive").c_str(),mesh);
     if(splitting>0)

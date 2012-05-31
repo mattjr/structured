@@ -2415,13 +2415,13 @@ else
     //int adjustedSize=tileSize-(2*tileBorder);
     // int intDiv=sizeX/tileSize;
     //int embedSize=(intDiv* adjustedSize);
-    std::ostringstream p3;
+   /* std::ostringstream p3;
     // p3 << "vips " << " im_extract_area " << "out.tif "<< " tex.tif " << " 0 0 " <<  embedSize << " "<<embedSize<< ";";
     if(!useVirtTex)
         p3<<"#";
     p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" tex.tif ";
     postcmdv.push_back(p3.str());
-
+*/
     shellcm.write_generic(texcmd,texcmds_fn,"Tex",&(precmd),&(postcmdv),num_threads,extraCheckCmd);
     shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),std::max(num_threads/2,1));
 

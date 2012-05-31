@@ -88,7 +88,9 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
         useReimage=false;
     osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,basePath,useTextureArray,useReimage,useVirtualTex);
     if(useVirtualTex)
-        m->createVTAtlas(!no_atlas);
+        m->_atlas=createVTAtlas( m->viewProj, m->totalX, m->totalY,
+                                 m->mosaic_cells,
+                               false);
     m->_cachedDirs=cachedDirs;
     m->_no_hw_context=no_hw_context;
     m->_zrange=osg::Vec4(bbox.zMin(),bbox.zMax(),bbox.zMin(),bbox.zMax());
@@ -131,8 +133,10 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
             sourceModel->setMaxLevel(lod);
             sourceModel->setMinLevel(lod);
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
+            sourceModel->ids=NULL;
+            osg::Node* model;/*
             ply::VertexDataMosaic vertexData;
-            osg::Node* model;
+
            // if(!m->_useReImage && !m->_useVirtualTex)
            // {
                 model= vertexData.readPlyFile(sourceModel->getFileName().c_str());
@@ -145,9 +149,10 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
 
                 }
                 //toVert(model,vertexData._texCoord,vertexData._texIds,sourceModel->tex,sourceModel->ids);
-            //}else
-              //  model = osgDB::readNodeFile(sourceModel->getFileName());
+            //}else*/
 
+            model = osgDB::readNodeFile(sourceModel->getFileName());
+          //  cout << model << " "<< sourceModel->getFileName()<<endl;
             if(lod == 0){
                 osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
                 model->accept(cbbv);
@@ -169,6 +174,7 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
                 vpb::SourceData* data = new vpb::SourceData(sourceModel);
                 data->_model = model;
                 data->_extents.expandBy(model->getBound());
+             //   cout << model->getBound()._radius << " "<< model->getBound().center()<<endl;
                 sourceModel->setSourceData(data);
                 osg::Geode *geode= dynamic_cast<osg::Geode*>(model);
                 if(geode && geode->getNumDrawables()){

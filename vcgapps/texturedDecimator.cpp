@@ -18,16 +18,20 @@ using namespace std;
 // io
 #include <wrap/io_trimesh/import.h>
 #include <wrap/io_trimesh/export_ply.h>
+#include <wrap/io_trimesh/export_obj.h>
 
 // *include the algorithms for updating: */
 #include <vcg/complex/algorithms/update/topology.h>	/* topology */
 #include <vcg/complex/algorithms/update/bounding.h>	/* bounding box */
 #include <vcg/complex/algorithms/update/normal.h>		/* normal */
+#include<vcg/complex/append.h>
+#include <vcg/complex/algorithms/attribute_seam.h>
 
 // local optimization
 #include <vcg/complex/algorithms/local_optimization.h>
 #include <vcg/complex/algorithms/local_optimization/tri_edge_collapse_quadric.h>
 #include <osg/Vec2>
+#include <osgDB/WriteFile>
 #include "TexturingQuery.h"
 using namespace vcg;
 using namespace tri;
@@ -37,7 +41,161 @@ using namespace tri;
 
 void QuadricTexSimplification(CMeshO &m,int  TargetFaceNum, bool Selected, CallBackPos *cb);
 
+inline void ExtractVertex(const CMeshO & srcMesh, const CMeshO::FaceType & f, int whichWedge, const CMeshO & dstMesh, CMeshO::VertexType & v)
+{
+    (void)srcMesh;
+    (void)dstMesh;
+    // This is done to preserve every single perVertex property
+    // perVextex Texture Coordinate is instead obtained from perWedge one.
+    v.ImportData(*f.cV(whichWedge));
+    v.T() = f.cWT(whichWedge);
+}
+inline bool CompareVertex(const CMeshO & m, const CMeshO::VertexType & vA, const CMeshO::VertexType & vB)
+{
+    (void)m;
+    return (vA.cT() == vB.cT());
+}
+void writeOSG(string fname,CMeshO &m){
+    osg::ref_ptr<osg::Vec3Array> verts=new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec2Array> texcoords=new osg::Vec2Array;
+    osg::ref_ptr<osg::Vec2Array> auxData=new osg::Vec2Array;
 
+    osg::ref_ptr<osg::DrawElementsUInt> tri=new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
+     CMeshO::VertexPointer  vp;
+     CMeshO::VertexIterator vi;
+     CMeshO::FacePointer fp;
+    CMeshO::FaceIterator fi;
+
+    SimpleTempData<CMeshO::VertContainer,int> indices(m.vert);
+    int j;
+    for(j=0,vi=m.vert.begin();vi!=m.vert.end();++vi){
+            vp=&(*vi);
+            indices[vi] = j++;
+            verts->push_back(osg::Vec3(vp->P()[0],vp->P()[1],vp->P()[2]));
+            if( HasPerVertexTexCoord(m) )
+            {
+               texcoords->push_back(osg::Vec2(vp->T().u(),vp->T().v()));
+            }
+            osg::Vec2 aux(-1,-1);
+            if( HasPerVertexQuality(m)  )
+            {
+                aux.y()=vp->Q();
+            }
+            if( HasPerVertexColor(m)  )
+            {
+                aux.x()=vp->C()[0]/255.0;
+            }
+            auxData->push_back(aux);
+
+
+    }
+    for(j=0,fi=m.face.begin();fi!=m.face.end();++fi)
+            {
+
+
+                    fp=&(*fi);
+                    if( ! fp->IsD() )
+                    {
+                        for(int k=0; k<3; k++)
+                            tri->push_back(indices[fp->cV(k)]);
+                    }
+            }
+    osg::ref_ptr<osg::Geode> geode=new osg::Geode;
+    osg::ref_ptr<osg::Geometry> geo=new osg::Geometry;
+    geo->setVertexArray(verts);
+    geo->setTexCoordArray(0,texcoords);
+    geo->setTexCoordArray(1,auxData);
+
+    geo->addPrimitiveSet(tri);
+    geode->addDrawable(geo);
+    osgDB::writeNodeFile(*geode,fname);
+}
+void splitMeshOuput(CMeshO &m,const char *basename, int splitting){
+    tri::AttributeSeam::SplitVertex(m, ExtractVertex, CompareVertex);
+
+    char fname[1024];
+    int mesh_count=0;
+    int vertexLeft=m.vn;
+    while(vertexLeft>0){
+        CMeshO destMesh;
+
+        int selectedV=0;
+        CMeshO::VertexIterator vi;
+        CMeshO::FaceIterator   fi;
+        for(vi=m.vert.begin();vi!=m.vert.end() && selectedV<splitting;++vi){
+            if(!(*vi).IsD() && !(*vi).IsS() ){
+                (*vi).SetS();
+                selectedV++;
+            }
+        }
+
+
+
+        // select all points involved
+      //  tri::UpdateSelection<CMeshO>::ClearVertex(mesh);
+        tri::UpdateSelection<CMeshO>::FaceFromVertexStrict(m);
+        // tri::UpdateSelection<CMeshO>::ClearVertex(mesh);
+     //    tri::UpdateSelection<CMeshO>::VertexFromFaceLoose(mesh);
+
+        tri::Append<CMeshO,CMeshO>::Mesh(destMesh, m, true);
+
+        int numFacesSel = tri::UpdateSelection<CMeshO>::CountFace(m);
+        int numVertSel  = tri::UpdateSelection<CMeshO>::CountVertex(m);
+
+        printf("Moving faces %d verts %d\n",numFacesSel,numVertSel);
+        tri::UpdateSelection<CMeshO>::ClearVertex(m);
+        tri::UpdateSelection<CMeshO>::VertexFromFaceStrict(m);
+        for(fi=m.face.begin();fi!=m.face.end();++fi)
+            if(!(*fi).IsD() && (*fi).IsS() )
+                tri::Allocator<CMeshO>::DeleteFace(m,*fi);
+        for(vi=m.vert.begin();vi!=m.vert.end();++vi)
+            if(!(*vi).IsD() && (*vi).IsS() )
+                tri::Allocator<CMeshO>::DeleteVertex(m,*vi);
+        vcg::tri::Allocator<CMeshO>::CompactFaceVector(m);
+
+        tri::UpdateSelection<CMeshO>::ClearVertex(m);
+        tri::UpdateSelection<CMeshO>::ClearFace(m);
+
+        sprintf(fname,"%s-%04d.obj",basename,mesh_count++);
+        vcg::tri::io::PlyInfo pi;
+        pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
+        pi.mask |= vcg::tri::io::Mask::IOM_VERTCOLOR;
+        pi.mask |= vcg::tri::io::Mask::IOM_FACEQUALITY;
+        int mask = pi.mask;
+        destMesh.textures.resize(0);
+        mask &= ~vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
+        mask |= vcg::tri::io::Mask::IOM_VERTNORMAL;
+        mask |= vcg::tri::io::Mask::IOM_VERTTEXCOORD;
+
+        vcg::tri::UpdateFlags<CMeshO>::VertexClear(destMesh,CMeshO::VertexType::SELECTED);
+        vcg::tri::UpdateFlags<CMeshO>::FaceClear(destMesh,CMeshO::FaceType::SELECTED);
+        tri::UpdateBounding<CMeshO>::Box(destMesh);						// updates bounding box
+                             for(fi=destMesh.face.begin();fi!=destMesh.face.end();++fi)	// face normals
+                                     face::ComputeNormalizedNormal(*fi);
+                             tri::UpdateNormals<CMeshO>::PerVertex(destMesh);				// vertex normals
+  printf("Writing %s verts: %d faces : %d %s\n",fname,destMesh.vn,destMesh.fn,fname);
+
+
+        vcg::tri::io::ExporterOBJ<CMeshO>::Save(destMesh,fname, mask);
+        printf("Writing %s verts: %d faces : %d %s\n",fname,destMesh.vn,destMesh.fn,fname);
+        vertexLeft=0;
+        for(vi=m.vert.begin();vi!=m.vert.end();++vi){
+            if(!(*vi).IsD())
+                vertexLeft++;
+        }
+        printf("Vert left %d\n",vertexLeft);
+        //  currentMesh->clearDataMask(MeshModel::MM_FACEFACETOPO | MeshModel::MM_FACEFLAGBORDER);
+        vcg::tri::UpdateFlags<CMeshO>::VertexClear(m,CMeshO::VertexType::SELECTED);
+              vcg::tri::UpdateFlags<CMeshO>::FaceClear(m,CMeshO::FaceType::SELECTED);
+     //   vcg::tri::UpdateFlags<CMeshO>::FaceClear(destMesh,CMeshO::FaceType::SELECTED);
+        //Log("Moved %i faces and %i vertices to layer %i", numFacesSel, numVertSel, md.meshList.size());
+    }
+    sprintf(fname,"%s.txt");
+
+    FILE *fp=fopen(fname,"w");
+    fprintf(fp,"%d\n",mesh_count-1);
+    fclose(fp);
+}
 void Usage()
 {
     printf(
@@ -78,34 +236,28 @@ int main(int argc ,char**argv){
    // std::string in_texcoord_file=argv[3];
    // std::string out_texcoord_file=argv[4];
     int FinalSize=atoi(argv[3]);
-    osg::Vec2Array *texCoords=new osg::Vec2Array;
-    osg::Vec4Array *ids=new osg::Vec4Array;
 
-    /*if(!loadCached(in_texcoord_file,ids,texCoords)){
-        std::cerr << "Can't load tex file\n";
-        return -1;
-    }
-    string mf=argv[1];
-    TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,argv[1],"bbox-"+mf.substr(0,mf.size()-9)+".ply.txt");
-    idmap_t allIds;
-   idbackmap_t  backMap;
-    calcAllIdsBack(ids,allIds,backMap);
-*/
     //int t0=clock();
-    int err=vcg::tri::io::Importer<CMeshO>::Open(mesh,argv[1]);
+    int err=vcg::tri::io::ImporterPLY<CMeshO>::Open(mesh,argv[1]);
+    if(FinalSize ==0 )
+        FinalSize=mesh.fn;
     if(err)
     {
         printf("Unable to open mesh %s : '%s'\n",argv[1],vcg::tri::io::Importer<CMeshO>::ErrorMsg(err));
         exit(-1);
     }
-    printf("mesh loaded %d %d \n",mesh.vn,mesh.fn);
+    printf("mesh loaded %s %d %d \n",argv[1],mesh.vn,mesh.fn);
  //   int FinalSize=FinalSizePer*mesh.fn;
     TriEdgeCollapseQuadricTexParameter &qparams = MyTriEdgeCollapseQTex::Params() ;
     MyTriEdgeCollapseQTex::SetDefaultParams();
     qparams.QualityThr  =.5;
     qparams.QualityCheck=true;
+    qparams.ExtraTCoordWeight=1.0;
     float TargetError=numeric_limits<float>::max();
     bool CleaningFlag =false;
+    bool UseVertStop=false;
+    int splitting=0;
+    char basename[1024];
     // parse command line.
     for(int i=4; i < argc;)
     {
@@ -130,6 +282,10 @@ int main(int argc ,char**argv){
 				case 'b' :	qparams.BoundaryWeight  = atof(argv[i]+2);			printf("Setting Boundary Weight to %f\n",atof(argv[i]+2)); break;		
 				case 'e' :	TargetError = float(atof(argv[i]+2));			printf("Setting TargetError to %g\n",atof(argv[i]+2)); break;		
 				case 'P' :	CleaningFlag=true;  printf("Cleaning mesh before simplification\n"); break;	
+                                case 'V': UseVertStop=true;break;
+                                case 's' :	splitting = atoi(argv[i]+2);  printf("Splitting output at %d\n",atoi(argv[i]+2)); break;
+                                case 'u' :	strcpy(basename ,argv[i]+2);  printf("Splitting output fn %s\n",basename); break;
+
 
 				default  :  printf("Unknown option '%s'\n", argv[i]);
                                 exit(0);
@@ -207,9 +363,9 @@ int main(int argc ,char**argv){
     tri::UpdateBounding<CMeshO>::Box(mesh);
     tri::UpdateTopology<CMeshO>::VertexFace(mesh);
     tri::UpdateFlags<CMeshO>::FaceBorderFromNone(mesh);
-
-    QuadricTexSimplification(mesh,FinalSize,false,NULL);
 #if 0
+    QuadricTexSimplification(mesh,FinalSize,false,NULL);
+#else
     assert(tri::HasPerVertexMark(mesh));
 
     vcg::tri::UpdateBounding<CMeshO>::Box(mesh);
@@ -230,14 +386,27 @@ int main(int argc ,char**argv){
     int t2=clock();
     printf("Initial Heap Size %i\n",DeciSession.h.size());
 
-    DeciSession.SetTargetSimplices(FinalSize);
+   // DeciSession.SetTargetSimplices(FinalSize);
     DeciSession.SetTimeBudget(0.5f);
     if(TargetError< numeric_limits<float>::max() ) DeciSession.SetTargetMetric(TargetError);
 
-    while(DeciSession.DoOptimization() && mesh.fn>FinalSize && DeciSession.currMetric < TargetError)
-        printf("Current Mesh size %7i heap sz %9i err %9g \r",mesh.fn,DeciSession.h.size(),DeciSession.currMetric);
+    if(UseVertStop){
+        DeciSession.SetTargetVertices(FinalSize);
+        printf("Using Vertex Stop\n");
+        while(DeciSession.DoOptimization() && mesh.vn>FinalSize && DeciSession.currMetric < TargetError)
+          printf("Current Mesh size %7i heap sz %9i err %9g \r",mesh.vn,DeciSession.h.size(),DeciSession.currMetric);
+    }
+    else{
+        DeciSession.SetTargetSimplices(FinalSize);
+        while(DeciSession.DoOptimization() && mesh.fn>FinalSize && DeciSession.currMetric < TargetError)
+          printf("Current Mesh size %7i heap sz %9i err %9g \r",mesh.fn,DeciSession.h.size(),DeciSession.currMetric);
+  }
+
+
+//    while(DeciSession.DoOptimization() && mesh.fn>FinalSize && DeciSession.currMetric < TargetError)
+//        printf("Current Mesh size %7i heap sz %9i err %9g \r",mesh.fn,DeciSession.h.size(),DeciSession.currMetric);
     int t3=clock();
-    printf("mesh  %d %d Error %g \n",mesh.vn,mesh.fn,DeciSession.currMetric);
+    printf("mesh  vn: %d fn: %d Error %g \n",mesh.vn,mesh.fn,DeciSession.currMetric);
     printf("\nCompleted in (%i+%i) msec\n",t2-t1,t3-t2);
 #endif
   //  mesh.textures.resize(2);
@@ -265,7 +434,12 @@ int main(int argc ,char**argv){
     }
     writeCached(out_texcoord_file,hash,ids,texCoords);
     vcg::tri::io::ExporterPLY<CMeshO>::Save(mesh,"assy2.ply",true,pi);
-*/
+
+*/        tri::AttributeSeam::SplitVertex(mesh, ExtractVertex, CompareVertex);
+
+    writeOSG((osgDB::getNameLessExtension(argv[2])+".ive").c_str(),mesh);
+    if(splitting>0)
+        splitMeshOuput(mesh,basename,splitting);
     return 0;
 
 }

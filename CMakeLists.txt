@@ -252,6 +252,9 @@ ADD_EXECUTABLE(singleImageTex singleImageTex.cpp)
 ADD_EXECUTABLE(createSem createSem.cpp)
 ADD_EXECUTABLE(vertCheck vertCheck.cpp)
 ADD_EXECUTABLE(sparseJoin sparseJoin.cpp)
+ADD_EXECUTABLE(vipsVTAtlas vipsVTAtlas.cpp)
+ADD_EXECUTABLE(atlasmesh atlasmesh.cpp)
+
 ADD_EXECUTABLE(genOverlappingPoses genOverlappingPoses.cpp)
 
 #ADD_EXECUTABLE(temp temp.cpp)
@@ -262,6 +265,8 @@ LINK_LIBRARIES(osgTerrain  osgFX osg  spindex vips vipsCC)
 TARGET_LINK_LIBRARIES( threadedStereo ts  vips vipsCC vpb spindex)
 TARGET_LINK_LIBRARIES( engine ts  vips vipsCC vpb spindex)
 TARGET_LINK_LIBRARIES( osgdem vpb  )
+TARGET_LINK_LIBRARIES( vipsVTAtlas ts  vips vipsCC spindex)
+TARGET_LINK_LIBRARIES( atlasmesh ts  vips vipsCC spindex)
 
 TARGET_LINK_LIBRARIES( testImageModel ts  )
 TARGET_LINK_LIBRARIES( deepzoomVIPS  vips vipsCC)

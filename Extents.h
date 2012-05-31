@@ -199,7 +199,7 @@ class MyDataSet :  public DataSet
         void _buildDestination(bool writeToDisk);
         void _equalizeRow(Row& row);
         int _run();
-        void createVTAtlas(bool writeAtlas);
+        //void createVTAtlas(bool writeAtlas);
         void processTile(MyDestinationTile *tile,TexturedSource *src);
         texcache_t _cachedDirs;
         bool _useDisplayLists;
@@ -275,7 +275,7 @@ public:
               }
           };
          typedef std::map< rangeTC , int, left_of_range > texcoord_range_map;
-        texcoord_range_map  cell_coordinate_map;
+        //texcoord_range_map  cell_coordinate_map;
         std::vector<mosaic_cell> mosaic_cells;
         typedef struct _struct_cell{
             int index;

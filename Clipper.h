@@ -72,6 +72,58 @@ typedef struct _geom_elems_src{
     osg::Vec4Array *texAndAux;
 }geom_elems_src;
 
+
+struct IntersectKdTreeBboxFaces
+{
+    IntersectKdTreeBboxFaces(osg::ref_ptr<osg::Geometry> geo,
+                        const osg::KdTree::KdNodeList& nodes,
+                        const osg::KdTree::TriangleList& triangles
+                             )   :   _geo(geo),  _kdNodes(nodes),
+    _triangles(triangles)
+
+    {
+        _vertices= (osg::Vec3Array*)_geo->getVertexArray();
+        _texCoord0= (osg::Vec2Array*)_geo->getTexCoordArray(0);
+        _auxData= (osg::Vec2Array*)_geo->getTexCoordArray(1);
+
+
+
+    }
+
+
+    enum OverlapMode{
+        GAP,
+        DUP,
+        CUT,
+        DUMP
+
+    };
+
+    void intersectFaceOnly(const osg::KdTree::KdNode& node,  osg::DrawElementsUInt *dst_tri,const osg::BoundingBox clipbox,const OverlapMode &mode) ;
+    void finish(osg::DrawElementsUInt *dst_tri,osg::Vec3Array *verts,osg::Vec2Array *texCoord, osg::Vec2Array* auxData);
+
+    //bool intersectAndClip(osg::Vec3& s, osg::Vec3& e, const osg::BoundingBox& bb) const;
+    const osg::Geometry *               _geo;
+
+    const osg::Vec3Array *               _vertices;
+    const osg::Vec2Array *               _texCoord0;
+    const osg::Vec2Array *               _auxData;
+
+
+
+    const osg::KdTree::KdNodeList&           _kdNodes;
+    const osg::KdTree::TriangleList&         _triangles;
+
+
+
+
+
+protected:
+
+    IntersectKdTreeBboxFaces& operator = (const IntersectKdTreeBboxFaces&) { return *this; }
+};
+
+
 struct IntersectKdTreeBbox
 {
     IntersectKdTreeBbox(const geom_elems_src src,
@@ -154,6 +206,33 @@ public:
 
     const geom_elems_src _src;
     IntersectKdTreeBbox intersector;
+};
+
+
+
+class KdTreeBboxFaces : public osg::KdTree {
+
+
+public:
+    KdTreeBboxFaces(const KdTree& rhs,osg::ref_ptr<osg::Geometry> geo) : KdTree(rhs), intersector(geo,
+            _kdNodes,
+            _triangles) {
+
+
+        if (_kdNodes.empty())
+        {
+            osg::notify(osg::NOTICE)<<"Warning: _kdTree is empty"<<std::endl;
+            return;
+        }
+
+
+
+
+    }
+    osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,
+                                      const IntersectKdTreeBboxFaces::OverlapMode &overlapmode);
+
+    IntersectKdTreeBboxFaces intersector;
 };
 KdTreeBbox *setupKdTree(osg::ref_ptr<osg::Node> model);
 KdTreeBbox *createKdTreeForUnbuilt(osg::ref_ptr<osg::Node> model);

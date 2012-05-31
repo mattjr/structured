@@ -9,7 +9,7 @@
 #include <osg/Vec2>
 #include <set>
 #include "SpatialIndex.h"
-
+#include "TightFit.h"
 class mosaic_cell{
 public:
    osg::BoundingBoxd bbox;
@@ -20,7 +20,9 @@ public:
    int levels;
    std::vector<std::string> name_ds;
 };
-
+bool readMatrixToScreen(std::string fname,osg::Matrixd &viewProj);
+bool readMatrix(std::string fname,osg::Matrix &viewProj);
+void loadMosaicCells(std::string fname,int &totalX,int &totalY,std::vector<mosaic_cell> &mosaic_cells);
 class TightFitAtlasBuilder;
 void  generateAtlasAndTexCoordMappingFromExtents(const std::vector<mosaic_cell> &mosaic_cells,
                                              const osg::Vec2 minT,
@@ -29,7 +31,9 @@ void  generateAtlasAndTexCoordMappingFromExtents(const std::vector<mosaic_cell> 
                                                  TightFitAtlasBuilder* atlas,
                                      osg::Vec4 &ratio,
                                      int level);
-
+VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int totalY,
+                                const std::vector<mosaic_cell> &mosaic_cells,
+                                bool writeAtlas,double scaleFactor=1.0,std::string basedir="mesh",std::string imgOutput="");
 void generateImageFromExtents(const std::vector<mosaic_cell> &mosaic_cells,
                                              const osg::Vec2 minT,
                                      const osg::Vec2 maxT,int origX,int origY,

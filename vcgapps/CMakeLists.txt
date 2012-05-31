@@ -17,6 +17,8 @@ IF( NOT GLUT_FOUND )
 ENDIF( NOT GLUT_FOUND )
 ADD_EXECUTABLE( tridecimator  tridecimator.cpp  ${SRCS} )
 ADD_EXECUTABLE( mergeMesh mergeMesh.cpp ${SRCS} )
+ADD_EXECUTABLE( cleanTexMesh cleanTexMesh.cpp ${SRCS} )
+
 ADD_EXECUTABLE( texturedDecimator  texturedDecimator.cpp ${SRCS} )
 TARGET_LINK_LIBRARIES(texturedDecimator ts)
 ADD_EXECUTABLE( shadevis shadevis.cpp vcglib/wrap/ply/plylib.cpp vcglib/wrap/gui/trackball.cpp vcglib/wrap/gui/trackmode.cpp  ../swrender/render_utils.cpp  )

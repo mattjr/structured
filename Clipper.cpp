@@ -497,6 +497,37 @@ osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,  geom
     new_geom->setColorArray(dst.colors);
     return newGeode;
 }
+
+
+
+osg::ref_ptr<osg::Node> KdTreeBboxFaces::intersect(const osg::BoundingBox bbox,
+                                              const IntersectKdTreeBboxFaces::OverlapMode &overlapmode)
+
+{
+    //cout << "CRA"<<getNode(0).bb._min << "  "<< getNode(0).bb._max<<endl;
+   /* if(getNode(0).bb < 0){
+        fprintf(stderr,"Null tree\n");
+        return NULL;
+    }*/
+    osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
+    osg::Geometry *new_geom=new osg::Geometry;
+    newGeode->addDrawable(new_geom);
+    osg::DrawElementsUInt *dst_tri= new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
+    osg::Vec3Array *verts= new osg::Vec3Array;
+
+    osg::Vec2Array *texCoord= new osg::Vec2Array;
+    osg::Vec2Array *auxData= new osg::Vec2Array;
+
+    intersector.intersectFaceOnly(getNode(0),dst_tri,bbox,overlapmode);
+    intersector.finish(dst_tri,verts,texCoord,auxData);
+    //printf("Size of output %d %d\n",dst.vertices->size(),_vertices->size());
+    new_geom->addPrimitiveSet(dst_tri);
+    new_geom->setVertexArray(verts);
+    new_geom->setTexCoordArray(0,texCoord);
+    new_geom->setTexCoordArray(1,auxData);
+
+    return newGeode;
+}
 KdTreeBbox *setupKdTree(osg::ref_ptr<osg::Node> model){
     if(model.valid()){
         osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
@@ -634,4 +665,119 @@ bool  KdTreeChecker::check(const osg::BoundingBox bbox)
 
     return checker.check(getNode(0),bbox);
 
+}
+void IntersectKdTreeBboxFaces::finish(osg::DrawElementsUInt *dst_tri,osg::Vec3Array *verts,osg::Vec2Array *texCoord, osg::Vec2Array* auxData){
+    std::map<unsigned int,unsigned int> idx;
+    std::vector<unsigned int> back_map(dst_tri->getNumIndices());
+    std::set<unsigned int> seenVert;
+           std::vector<unsigned int> backmap;
+        std::map<unsigned int,unsigned int> frontmap;
+    int cnt=0;
+     for(int i=0; i< (int)dst_tri->getNumIndices(); i++){
+    if(seenVert.count(dst_tri->at(i)) == 0){
+                           seenVert.insert(dst_tri->at(i));
+                           frontmap.insert(std::make_pair<int,int>(dst_tri->at(i),backmap.size()));
+
+                           backmap.push_back(dst_tri->at(i));
+
+    }
+     }
+
+     std::vector<unsigned int>::iterator itr;
+             for(itr= backmap.begin(); itr!=backmap.end(); itr++){
+                 verts->push_back(_vertices->at(*itr));
+                 if(_texCoord0 )
+                     texCoord->push_back(_texCoord0->at(*itr));
+                 if(_auxData )
+                     auxData->push_back(_auxData->at(*itr));
+
+             }
+
+             for(int i=0; i<(int) dst_tri->getNumIndices(); i++){
+                   dst_tri->at(i)=frontmap[dst_tri->at(i)];
+               }
+   /* for(int i=0; i< (int)dst_tri->getNumIndices(); i++){
+        int remapped_idx;
+        if(idx.count(dst_tri->at(i)) == 0){
+            idx[dst_tri->at(i)]=cnt++;
+            remapped_idx=cnt-1;
+        }else{
+            remapped_idx= idx[dst_tri->at(i)];
+        }
+        dst_tri->at(i)=remapped_idx;
+    }
+
+    for(std::map<unsigned int,unsigned int>::iterator it=idx.begin(); it!=idx.end(); ++it){
+          verts->push_back(_vertices->at(it->first));
+          if(_texCoord0 && _texCoord0->size() < it->first)
+              texCoord->push_back(_texCoord0->at(it->first));
+          if(_auxData && _auxData->size() < it->first)
+              auxData->push_back(_auxData->at(it->first));
+
+    }*/
+  /*  for(int i=0; i<(int) dst_tri->getNumIndices(); i++){
+        dst_tri->at(i)=back_map[i];
+    }*/
+            // cout <<"Nuz " <<auxData->size()<< " "<<texCoord->size()<<endl;
+
+}
+
+
+void IntersectKdTreeBboxFaces::intersectFaceOnly(const osg::KdTree::KdNode& node,  osg::DrawElementsUInt *dst_tri,const osg::BoundingBox clipbox,const OverlapMode &mode)
+{
+    if (node.first<0)
+    {
+        // treat as a leaf
+
+        //OSG_NOTICE<<"KdTree::intersect("<<&leaf<<")"<<std::endl;
+        int istart = -node.first-1;
+        int iend = istart + node.second;
+
+        for(int i=istart; i<iend; ++i)
+        {
+            const KdTree::Triangle& tri = _triangles[i];
+
+
+            const osg::Vec3 &v0 = (*_vertices)[tri.p0];
+            const osg::Vec3 &v1 = (*_vertices)[tri.p1];
+            const osg::Vec3 &v2 = (*_vertices)[tri.p2];
+
+
+
+            int contains=0;
+            contains+=clipbox.contains(v0);
+            contains+=clipbox.contains(v1);
+            contains+=clipbox.contains(v2);
+            //No inside
+            if(contains == 0)
+                continue;
+            else if(contains <3){
+                //Some inside
+                if(mode==GAP)
+                    continue;
+            }
+
+            dst_tri->push_back(tri.p0);
+            dst_tri->push_back(tri.p1);
+            dst_tri->push_back(tri.p2);
+
+        }
+    }
+    else
+    {
+        if (node.first>0)
+        {
+            if(clipbox.intersects(_kdNodes[node.first].bb))
+            {
+                intersectFaceOnly(_kdNodes[node.first],dst_tri, clipbox,mode);
+            }
+        }
+        if (node.second>0)
+        {
+            if(clipbox.intersects(_kdNodes[node.second].bb))
+            {
+                intersectFaceOnly(_kdNodes[node.second],dst_tri, clipbox,mode);
+            }
+        }
+    }
 }

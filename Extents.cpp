@@ -57,33 +57,7 @@ using namespace SpatialIndex;
 using namespace vpb;
 using vpb::log;
 using namespace std;
-bool readMatrixToScreen(std::string fname,osg::Matrixd &viewProj){
-    std::fstream file(fname.c_str(), std::ios::binary|std::ios::in);
-    if(!file.good()){
-        fprintf(stderr,"Can't open %s\n",fname.c_str());
-        return false;
-    }
 
-    for(int i=0; i<4; i++)
-        for(int j=0; j<4; j++)
-            file.read(reinterpret_cast<char*>(&(viewProj(i,j))), sizeof(double));
-
-    return true;
-}
-
-bool readMatrix(std::string fname,osg::Matrix &viewProj){
-    std::fstream file(fname.c_str(), std::ios::binary|std::ios::in);
-    if(!file.good()){
-        fprintf(stderr,"Can't open %s\n",fname.c_str());
-        return false;
-    }
-
-    for(int i=0; i<4; i++)
-        for(int j=0; j<4; j++)
-            file.read(reinterpret_cast<char*>(&(viewProj(i,j))), sizeof(double));
-
-    return true;
-}
 MyDataSet::MyDataSet(const CameraCalib &calib,string basePath,bool useTextureArray,bool useReImage,bool useVirtualTex): _calib(calib),_basePath(basePath),_useTextureArray(useTextureArray),_useReImage(useReImage),_useVirtualTex(useVirtualTex)
 {
 
@@ -306,89 +280,8 @@ void MyDataSet::init()
 
 
     if(_useReImage || _useVirtualTex){
-
-
-        ifstream inf( "image_areas.txt" );
-
-
-        if(!inf.good()){
-            fprintf(stderr,"Can't open image_areas.txt\n");
-            exit(-1);
-        }
-        int cnt=0;
-        while(!inf.eof()){
-            char fname[1024];
-            char fname_tif[1024];
-            int minx,maxx,miny,maxy;
-            std::vector<int> levels;
-            char tmp_l[8192];
-            int num_levels;
-            bool add=true;
-            if( inf>> minx >>maxx >>miny>>maxy>>fname>>fname_tif >>num_levels){
-
-
-                /*   for(int i=0;i< num_levels; i++){
-                    int tmp_level;
-                    inf>>tmp_level;
-                    levels.push_back(tmp_level);
-                }
-*/
-                if(cnt ==0){
-                    totalX=maxx;
-                    totalY=maxy;
-
-                }else{
-                    mosaic_cell cell;
-                    cell.bbox=osg::BoundingBoxd(miny,minx/*totalX-minx-(maxx-minx)*/,-FLT_MAX,maxy,/*totalX-maxx-(maxx-minx)*/ maxx,FLT_MAX);
-                    cell.name=std::string(fname);
-                    cell.levels=num_levels;
-                    cell.img=NULL;
-                    if(cell.name != "null"){
-                        if(osgDB::fileExists(cell.name)){
-                            cell.img = new vips::VImage(cell.name.c_str());
-                            cell.img_ds.resize(cell.levels,NULL);
-                            cell.name_ds.resize(cell.levels);
-
-                            for(int i=0;i <(int)cell.levels; i++){
-                                sprintf(tmp_l,"%s-%d.ppm",osgDB::getNameLessExtension(fname_tif).c_str(),i+1);
-                                if(!osgDB::fileExists(tmp_l)){
-                                    add=false;
-                                    break;
-                                }
-                                /*  vips::VImage *img=new vips::VImage(tmp_l);
-                            if(!img){
-                                std::cerr << "Can't open downsampled "<<tmp_l<<  " on reimaging run\n";
-                            }
-                            cell.img_ds[i]=img;*/
-                                cell.img_ds[i]=NULL;
-
-                                cell.name_ds[i]=string(tmp_l);
-                            }
-                            cell.mutex=new OpenThreads::Mutex;
-
-
-                            // cout << "id: "<< id <<" \n" << plow[0] << " "<< plow[1]<< "\n"<< phigh[0]<<" "<< phigh[1]<<endl;
-                            // cell_coordinate_map[rangeTC(minp,
-                            //                                               maxp)]=mosaic_cells.size();
-                            //   if(add)
-                            //   mosaic_cells.push_back(cell);
-                            std::map< MyDataSet::rangeTC ,int>::iterator itr;
-                            for(itr=cell_coordinate_map.begin(); itr!=cell_coordinate_map.end(); itr++)
-                                cout << "["<<itr->first.min() <<" - "<< itr->first.max()<< "] : " << itr->second<<"\n";
-
-                        }else{
-                            std::cerr << "Can't open "<<cell.name<<  " on reimaging run\n";
-                            cell.img=NULL;
-                        }
-                    }
-                    mosaic_cells.push_back(cell);
-
-
-                }
-                cnt++;
-
-            }
-        }
+         string fname= "image_areas.txt";
+         loadMosaicCells(fname,totalX,totalY,mosaic_cells);
     }
 }
 class CollectClusterCullingCallbacks : public osg::NodeVisitor
@@ -1693,7 +1586,7 @@ osg::Node* MyDestinationTile::createScene()
                     geom->setUseDisplayList(_mydataSet->_useDisplayLists);
                     geom->setUseVertexBufferObjects(_mydataSet->_useVBO);
                     geom->setStateSet(stateset);
-                    geom->setTexCoordArray(0,texCoordsAux);
+                   // geom->setTexCoordArray(0,texCoordsAux);
 
                     //std::cout << "Drops : "<<texCoords[0]->size() <<"\n";
                 }
@@ -2352,9 +2245,19 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     srcGeom.texAndAux=texAndAux;
 
     int numTex= texCoords->size();
+    bool projectSucess=!_useReImage;//!_reimagePass;//false;//(ids!=NULL && !_reimagePass);
+
+    if(_useVirtualTex){
+        osg::ref_ptr<KdTreeBboxFaces> kdtreeBbox=new KdTreeBboxFaces(*src->_kdTree,src->getSourceData()->_model->asGeode()->getDrawable(0)->asGeometry());
+        root=kdtreeBbox->intersect(ext_bbox,IntersectKdTreeBboxFaces::DUP);
+
+
+
+
+
+    }else{
     geom_elems_dst dstGeom(numTex,texAndAux != NULL);
 
-    bool projectSucess=!_useReImage;//!_reimagePass;//false;//(ids!=NULL && !_reimagePass);
     if(src->_kdTree){
         osg::ref_ptr<KdTreeBbox> kdtreeBbox=new KdTreeBbox(*src->_kdTree,srcGeom);
         //  if(projectSucess){
@@ -2374,7 +2277,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
         osg::notify(osg::ALWAYS)<<"No kdtree\n";
         assert(0);
     }
-    if(!_useVirtualTex){
+
         TexturingQuery *tq=new TexturingQuery(src,_calib,*(tile->_atlasGen),_useTextureArray);
         tq->_tile=tile;
         std::string mf=src->getFileName();
@@ -2398,6 +2301,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
         delete tq;
 
     }
+
     {
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_modelMutex);
 
@@ -3206,8 +3110,13 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     writeCameraMatrix(group);
     return group;
 */
-    if(!_useReImage && !_useVirtualTex)
-        return group;
+   // if(!_useReImage && !_useVirtualTex)
+    //cout <<"Chuch " << ((osg::Vec2Array*)group->getChild(0)->asGeode()->getDrawable(0)->asGeometry()->getTexCoordArray(0))->size()<<endl;
+
+    return group;
+
+
+
     osg::ref_ptr<osg::Image> image;
     osg::ref_ptr<TightFitAtlasBuilder> tf_atlas;
     const std::vector<mosaic_cell> &mosaic_cells=dynamic_cast<MyDataSet*>(_dataSet)->mosaic_cells;

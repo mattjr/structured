@@ -7,15 +7,15 @@ for i in `ls ../*.tar`
 do
     tmp=`basename $i .tar`
     echo $tmp
-    tar xf $i $tmp/$tmp.xml
-    if [ -e $tmp/$tmp.xml ]
+    tar xf $i $tmp/m.xml
+    if [ -e $tmp/m.xml ]
     then
 
 	if (($COUNTER == 0 ))
 	then
-            cp $tmp/$tmp.xml models.xml
+            cp $tmp/m.xml models.xml
 	else
-	    sed -n "/item/,/\item/p" $tmp/$tmp.xml > item.xml
+	    sed -n "/item/,/\item/p" $tmp/m.xml > item.xml
 	    LASTLINE=$((`sed -n '/\item/=' models.xml | tail -n 1` +1 ))
 	    LASTLINEPLUSONE=$(($LASTLINE+1))
         echo "sed -i -e '$LASTLINEPLUSONE{x;G};$LASTLINE{h;ritem.xml' -e 'd}' models.xml" > tmpcmd

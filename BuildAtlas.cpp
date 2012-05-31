@@ -5,6 +5,34 @@
 using namespace std;
 using namespace SpatialIndex;
 using namespace vpb;
+
+bool readMatrixToScreen(std::string fname,osg::Matrixd &viewProj){
+    std::fstream file(fname.c_str(), std::ios::binary|std::ios::in);
+    if(!file.good()){
+        fprintf(stderr,"Can't open %s\n",fname.c_str());
+        return false;
+    }
+
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            file.read(reinterpret_cast<char*>(&(viewProj(i,j))), sizeof(double));
+
+    return true;
+}
+
+bool readMatrix(std::string fname,osg::Matrix &viewProj){
+    std::fstream file(fname.c_str(), std::ios::binary|std::ios::in);
+    if(!file.good()){
+        fprintf(stderr,"Can't open %s\n",fname.c_str());
+        return false;
+    }
+
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            file.read(reinterpret_cast<char*>(&(viewProj(i,j))), sizeof(double));
+
+    return true;
+}
 void generateAtlasAndTexCoordMappingFromExtents(const std::vector<mosaic_cell> &mosaic_cells,
                                                        const osg::Vec2 minT,
                                                        const osg::Vec2 maxT,int origX,int origY,
@@ -286,10 +314,98 @@ void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cel
 
 
 }
-void vpb::MyDataSet::createVTAtlas(bool writeAtlas){
+
+void loadMosaicCells(std::string fname,int &totalX,int &totalY,std::vector<mosaic_cell> &mosaic_cells){
+    ifstream inf( fname.c_str() );
+
+
+    if(!inf.good()){
+        fprintf(stderr,"Can't open image_areas.txt\n");
+        exit(-1);
+    }
+    int cnt=0;
+    while(!inf.eof()){
+        char fname[1024];
+        char fname_tif[1024];
+        int minx,maxx,miny,maxy;
+        std::vector<int> levels;
+        char tmp_l[8192];
+        int num_levels;
+        //bool add=true;
+        if( inf>> minx >>maxx >>miny>>maxy>>fname>>fname_tif >>num_levels){
+
+
+            /*   for(int i=0;i< num_levels; i++){
+                int tmp_level;
+                inf>>tmp_level;
+                levels.push_back(tmp_level);
+            }
+*/
+            if(cnt ==0){
+                totalX=maxx;
+                totalY=maxy;
+
+            }else{
+                mosaic_cell cell;
+                cell.bbox=osg::BoundingBoxd(miny,minx/*totalX-minx-(maxx-minx)*/,-FLT_MAX,maxy,/*totalX-maxx-(maxx-minx)*/ maxx,FLT_MAX);
+                cell.name=std::string(fname);
+                cell.levels=num_levels;
+                cell.img=NULL;
+                if(cell.name != "null"){
+                    if(osgDB::fileExists(cell.name)){
+                        cell.img = new vips::VImage(cell.name.c_str());
+                        cell.img_ds.resize(cell.levels,NULL);
+                        cell.name_ds.resize(cell.levels);
+
+                        for(int i=0;i <(int)cell.levels; i++){
+                            sprintf(tmp_l,"%s-%d.ppm",osgDB::getNameLessExtension(fname_tif).c_str(),i+1);
+                            if(!osgDB::fileExists(tmp_l)){
+                               // add=false;
+                                break;
+                            }
+                            /*  vips::VImage *img=new vips::VImage(tmp_l);
+                        if(!img){
+                            std::cerr << "Can't open downsampled "<<tmp_l<<  " on reimaging run\n";
+                        }
+                        cell.img_ds[i]=img;*/
+                            cell.img_ds[i]=NULL;
+
+                            cell.name_ds[i]=string(tmp_l);
+                        }
+                        cell.mutex=new OpenThreads::Mutex;
+
+
+                        // cout << "id: "<< id <<" \n" << plow[0] << " "<< plow[1]<< "\n"<< phigh[0]<<" "<< phigh[1]<<endl;
+                        // cell_coordinate_map[rangeTC(minp,
+                        //                                               maxp)]=mosaic_cells.size();
+                        //   if(add)
+                        //   mosaic_cells.push_back(cell);
+                        /*std::map< MyDataSet::rangeTC ,int>::iterator itr;
+                        for(itr=cell_coordinate_map.begin(); itr!=cell_coordinate_map.end(); itr++)
+                            cout << "["<<itr->first.min() <<" - "<< itr->first.max()<< "] : " << itr->second<<"\n";*/
+
+                    }else{
+                        std::cerr << "Can't open "<<cell.name<<  " on reimaging run\n";
+                        cell.img=NULL;
+                    }
+                }
+                mosaic_cells.push_back(cell);
+
+
+            }
+            cnt++;
+
+
+        }
+    }
+}
+
+VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int totalY,
+                                const std::vector<mosaic_cell> &mosaic_cells,
+                                bool writeAtlas,double scaleFactor,string basedir,string imgOutput){
     int tileSize=256;
     int border=1;
-    _atlas =new VipsAtlasBuilder(mosaic_cells.size(),tileSize,border );
+    VipsAtlasBuilder* _atlas =new VipsAtlasBuilder(mosaic_cells.size(),tileSize,border );
     _atlas->setMargin(0);
     int maxSize=pow(2.0,17);
     _atlas->setMaximumAtlasSize(maxSize,maxSize);
@@ -420,16 +536,18 @@ void vpb::MyDataSet::createVTAtlas(bool writeAtlas){
 
 #endif
 
-
+    if(!_atlas || !_atlas->_atlasList.size() || !_atlas->_atlasList.front() ){
+        fprintf(stderr,"Can't create atlas bailing\n");
+        return NULL;
+    }
 
     VipsAtlasBuilder::VAtlas *vatlas=_atlas->_atlasList.front();
-
-
-    //vatlas->_image->write("vtex.ppm");
-    printf("--------------Atlas Size %dx%d------------------\n",vatlas->_image->Xsize(),vatlas->_image->Ysize());
-    int sizeLevel=vatlas->_image->Xsize();
+    double downsampleFactorMult=1.0/scaleFactor;
+    printf("--------------Atlas Size %dx%d------------------\n",(int)(vatlas->_image->Xsize()*scaleFactor),(int)(vatlas->_image->Ysize()*scaleFactor));
+    if(imgOutput.size())
+        vatlas->_image->shrink(downsampleFactorMult,downsampleFactorMult).write(imgOutput.c_str());
+    int sizeLevel=vatlas->_image->Xsize()*scaleFactor;
     char dirname[1024];
-    bool outputImages=true;
     int maxLevels=    (int)ceil(std::log((double)sizeLevel/tileSize) / std::log(2.0));
 
     if(writeAtlas){
@@ -437,14 +555,14 @@ void vpb::MyDataSet::createVTAtlas(bool writeAtlas){
         for(int level=0; sizeLevel>=adjustedTileSize; level++,sizeLevel/=2 ){
             printf("\rDoing VT Level %02d/%02d",level,maxLevels);
             fflush(stdout);
-            sprintf(dirname,"mesh/vtex/tiles_b%d_level%d",border,level);
+            sprintf(dirname,"%s/vtex/tiles_b%d_level%d",basedir.c_str(),border,level);
             int numXtiles=(sizeLevel/tileSize);
             int numYtiles=(sizeLevel/tileSize);
             osgDB::makeDirectory(dirname);
             for(int x=0; x<=numXtiles; x++){
                 for(int y=0; y <=numYtiles;y++){
                     vips::VImage part ;
-                    double downsampleFactor=pow(2.0,level);
+                    double downsampleFactor=pow(2.0,level)*downsampleFactorMult;
 
                     if (x != 0 && y !=0 && x !=numXtiles && y != numYtiles ){
 
@@ -502,6 +620,7 @@ void vpb::MyDataSet::createVTAtlas(bool writeAtlas){
         printf("\rDoing Level %02d/%02d\n",maxLevels,maxLevels);
 
     }
+    return _atlas;
 }
 
 

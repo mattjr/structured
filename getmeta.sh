@@ -3,8 +3,8 @@ meshTitle=`zenity --entry --title="Title" --text="Enter a title for the mesh:"`
 meshDescription=`zenity --entry --title="Description" --text="Enter a description of the mesh:"`
 folder=`zenity --entry --title="Folder" --text="Enter a folder name:"`
 
-LAT=`cut -f1 -d" " mesh-diced/firstpt.txt`
-LON=`cut -f2 -d" " mesh-diced/firstpt.txt`
+LAT=`cut -f1 -d" " ../tmp/mesh-diced/firstpt.txt`
+LON=`cut -f2 -d" " ../tmp/mesh-diced/firstpt.txt`
 basename=$1
 reportbase="https://df.arcs.org.au/ARCS/projects/IMOS/public/AUV/WA201004/all_reports/r20100428_065237_geebank_17_29m_out_report.pdf"
 URLBASE="http://www-personal.acfr.usyd.edu.au/mattjr/benthos"

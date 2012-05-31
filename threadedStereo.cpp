@@ -412,10 +412,11 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read( "--scale" ,scaleRemapTex);
 
     argp.read( "--sparseratio" ,sparseRatio);
-
-    if(argp.read("--vt")){
-        useReimage=false;
-        useVirtTex=true;
+    useReimage=false;
+    useVirtTex=true;
+    if(argp.read("--novt")){
+        useReimage=true;
+        useVirtTex=false;
     }
     argp.read("--mm-per-pixel",mmperpixel);
 
@@ -1653,16 +1654,27 @@ const char *uname="mesh";
                     basepath.c_str(),diced_dir,cells[i].row,cells[i].col,smallCCPer,0.9*vrip_res,diced_dir,cells[i].row,cells[i].col);
 
             fprintf(splitcmds_fp,"%s;",shr_tmp);
-            fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup -F --outfile %s/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ;",
+            fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup -F --outfile %s/tmp1-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ;",
                     basepath.c_str(),
                     -FLT_MAX,-FLT_MAX,-FLT_MAX,
                     FLT_MAX,FLT_MAX,FLT_MAX,
                     diced_dir,
                     cells[i].row,cells[i].col,  diced_dir,cells[i].row,cells[i].col,vpblod);
-            fprintf(splitcmds_fp,"setenv DISPLAY :0.0; %s/vcgapps/bin/sw-shadevis -n64 %s/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
+            fprintf(splitcmds_fp,"setenv DISPLAY :0.0; %s/vcgapps/bin/sw-shadevis -n64 %s/tmp1-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ;",
                     basepath.c_str(),diced_dir,
                      cells[i].row,cells[i].col,vpblod);
-
+            fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/tmp1-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply -dup -F --outfile %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
+                    basepath.c_str(),
+                    cells[i].bboxUnRot.xMin(),
+                    cells[i].bboxUnRot.yMin(),
+                    -FLT_MAX,
+                    cells[i].bboxUnRot.xMax(),
+                    cells[i].bboxUnRot.yMax(),
+                    FLT_MAX,
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    vpblod,
+                     diced_dir,cells[i].row,cells[i].col,vpblod);
             char tp[1024];
             sprintf(tp,"%s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",diced_dir,cells[i].row,cells[i].col);
             FILE *bboxfp=fopen(tp,"w");
@@ -2105,7 +2117,7 @@ const char *uname="mesh";
     int ajustedGLImageSizeX=(int)reimageSize.x();//-((reimageSize.x()/VTtileSize)*2*tileBorder);
     int ajustedGLImageSizeY=(int)reimageSize.y();//-((reimageSize.y()/VTtileSize)*2*tileBorder);
 
-    string tcmd =basepath+string("/vrip/bin/plymerge ");
+    string tcmd =basepath+string("/atlasmesh -mat viewproj.mat -cells image_areas.txt ");
     char tmp100[8096];
     char tmpfn2[8096];
 
@@ -2114,7 +2126,7 @@ const char *uname="mesh";
     FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
     FILE *vartexcmds_fp=fopen(vartexcmds_fn.c_str(),"w");
     int totalX=ajustedGLImageSizeX*_tileRows;
-    int totalY=ajustedGLImageSizeY*_tileColumns;
+    //int totalY=ajustedGLImageSizeY*_tileColumns;
 
     FILE *FP2=fopen("image_areas.txt","w");
     FILE *reFP=fopen("rebbox.txt","w");
@@ -2264,7 +2276,7 @@ else
     string cwdmeshdiced=cwd;
 
     std::string extraCheckCmd;
-    sprintf(tmp100, " > %s/tex-total.ply ; %s/vcgapps/bin/mergeMesh %s/tex-total.ply  -multtex -color -wedge --normcolor -out %s/tex-total.ply > /dev/null",diced_dir,basepath.c_str(),diced_dir,diced_dir);
+    sprintf(tmp100, " -outfile %s/tex-total.obj ; %s/vcgapps/bin/cleanTexMesh %s/tex-total.obj -F --normcolor -thresh %f  -out %s/tex-total.ply > /dev/null",diced_dir,basepath.c_str(),diced_dir,0.9*vrip_res,diced_dir);
 
     extraCheckCmd= reparamTex ? createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4): "";
 
@@ -2396,67 +2408,7 @@ else
     postcmdv.push_back(p.str());
 
 
-    FILE *ipadViewerFP=fopen("createtabletdata.sh","w");
-    if(!ipadViewerFP){
-        fprintf(stderr,"Can't open create createtabletdata\n");
-        exit(-1);
-    }
-   // int smallPOTX=osg::Image::computeNearestPowerOfTwo(totalX,0.0);
-   // int smallPOTY=osg::Image::computeNearestPowerOfTwo(totalY,0.0);
 
-    //int totalXborder=(int)smallPOTX-((smallPOTX/VTtileSize)*2*tileBorder);
-   // int totalYborder=(int)smallPOTY-((smallPOTX/VTtileSize)*2*tileBorder);
-    int numOctrees=3;
-
-    int maxFaceSizeIpad=((0xffff-1)-10)*(numOctrees-0.5);
-    fprintf(ipadViewerFP,"#!/bin/bash\n");
-    fprintf(ipadViewerFP,"mkdir ipad\n");
-    fprintf(ipadViewerFP,"cd %s;%s/vcgapps/bin/tridecimator %s/total-lod%d.ply %s/ipad.ply %d -Oy -P -V -uipad/octree -s%d;",
-            cwd,
-            basepath.c_str(),
-            diced_dir,
-            vpblod,diced_dir,maxFaceSizeIpad,(0xffff-1));
-
-    std::ostringstream p2;
-  //  p2 << basepath << "/singleImageTex " << diced_dir<<"/ipad.ply --outfile "<<diced_dir<<"/ipadtex.ply "<< "--size " << totalXborder << " "<<totalYborder;
-   // p2      <<" --extra ipad/octree";
-    fprintf(ipadViewerFP,"cd ipad;");
-    for(int k=0; k<numOctrees; k++)
-       fprintf(ipadViewerFP,"%s/generateOctreeFromObj.py -o=vtex-%04d.octree octree-%04d.obj;",basepath.c_str(),k,k);
-       fprintf(ipadViewerFP,"\n");
- //fprintf(ipadViewerFP,"(gdalwarp -overwrite -ts %d %d mosaic/mosaic.vrt vttex.tif; ",totalXborder,totalYborder);
-   /* std::ostringstream p4;
-
-    p4 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" vttex.tif ) &\nwait\necho 'Done'\n";
-
-    //postcmdv.push_back(p2.str());
-
-    fprintf(ipadViewerFP,"%s",p4.str().c_str());*/
-    fchmod(fileno(ipadViewerFP),0777);
-
-    fclose(ipadViewerFP);
-
-    FILE *uploadFP=fopen("uploadmesh.sh","w");
-
-    if(!uploadFP){
-        fprintf(stderr,"Can't open create uploadmesh");
-        exit(-1);
-    }
-    fprintf(uploadFP,"#!/bin/bash\n");
-    fprintf(uploadFP,"EXPECTED_ARGS=1\nE_BADARGS=65\n");
-    fprintf(uploadFP,"if [ $# -ne $EXPECTED_ARGS ]\nthen\n\techo \"Usage: `basename $0` {basename}\"\nexit $E_BADARGS\nfi\n");
-    fprintf(uploadFP,"mkdir $1\n");
-    fprintf(uploadFP,"bash %s/getmeta.sh $1 %d> $1/$1.xml\n",basepath.c_str(),numOctrees);
-    fprintf(uploadFP,"mv vtex $1/vtex\n");
-    for(int k=0; k<numOctrees; k++)
-        fprintf(uploadFP,"mv vttex-%04d.octree $1/m-%04d.octree\n",k,k);
-    fprintf(uploadFP,"tar cvf $1.tar $1\n");
-    fprintf(uploadFP,"scp $1.tar mattjr@aguacate:benthos/\n");
-    fprintf(uploadFP,"scp %s/updatemodelxml.sh mattjr@aguacate:benthos/\n",basepath.c_str());
-    fprintf(uploadFP,"ssh mattjr@aguacate \"cd benthos;bash updatemodelxml.sh\"\n");
-    fchmod(fileno(uploadFP),0777);
-
-    fclose(uploadFP);
 
 
     //int sizeX=reimageSize.x()*_tileRows;
@@ -2478,12 +2430,18 @@ else
 
     if(var_tex)
         sysres=system("python vartex.py");
-    if(useVirtTex){
-        string vttexcmds_fn=string(diced_dir)+"/vttexcmds";
-        string vttex="vttex.py";
+    //if(useVirtTex)
+    {
+      //  string vttexcmds_fn=string(diced_dir)+"/vttexcmds";
+        string vttex="vttex.sh";
 
-        FILE *vttexcmds_fp=fopen(vttexcmds_fn.c_str(),"w");
-        for(int i=0; i <(int)vrip_cells.size(); i++){
+       FILE *vttexcmds_fp=fopen(vttex.c_str(),"w");
+       fchmod(fileno(vttexcmds_fp),0777);
+
+       fprintf(vttexcmds_fp,"#!/bin/bash\n");
+       fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt");
+
+     /*   for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
                 continue;
             fprintf(vttexcmds_fp,"%s/singleImageTex %s/clipped-diced-%08d.ply --outfile %s/clipped-diced-%08d-lod%d.ply\n",
@@ -2492,11 +2450,80 @@ else
                     i,diced_dir,i,vpblod);
         }
         fclose(vttexcmds_fp);
-        shellcm.write_generic(vttex,vttexcmds_fn,"VT Tex",NULL,NULL,num_threads);
-        if(!no_vttex)
-            sysres=system("python vttex.py");
+        shellcm.write_generic(vttex,vttexcmds_fn,"VT Tex",NULL,NULL,num_threads);*/
+        fclose(vttexcmds_fp);
+        if(useVirtTex && !no_vttex)
+            sysres=system("bash vttex.sh");
 
     }
+
+    FILE *ipadViewerFP=fopen("createtabletdata.sh","w");
+    if(!ipadViewerFP){
+        fprintf(stderr,"Can't open create createtabletdata\n");
+        exit(-1);
+    }
+   // int smallPOTX=osg::Image::computeNearestPowerOfTwo(totalX,0.0);
+   // int smallPOTY=osg::Image::computeNearestPowerOfTwo(totalY,0.0);
+
+    //int totalXborder=(int)smallPOTX-((smallPOTX/VTtileSize)*2*tileBorder);
+   // int totalYborder=(int)smallPOTY-((smallPOTX/VTtileSize)*2*tileBorder);
+    int numOctrees=3;
+
+    int maxFaceSizeIpad=((0xffff-1)-10)*(numOctrees-0.5);
+    double scaleFactor=0.25;
+    fprintf(ipadViewerFP,"#!/bin/bash\n");
+    fprintf(ipadViewerFP,"mkdir ipad\n");
+    fprintf(ipadViewerFP,"cd %s;%s/vcgapps/bin/texturedDecimator %s/tex-total.ply %s/ipad.ply %d -Oy -V -uipad/octree -s%d;",
+            cwd,
+            basepath.c_str(),
+            diced_dir,
+            diced_dir,maxFaceSizeIpad,(0xffff-1));
+
+    std::ostringstream p2;
+  //  p2 << basepath << "/singleImageTex " << diced_dir<<"/ipad.ply --outfile "<<diced_dir<<"/ipadtex.ply "<< "--size " << totalXborder << " "<<totalYborder;
+   // p2      <<" --extra ipad/octree";
+    fprintf(ipadViewerFP,"cd ipad;");
+    for(int k=0; k<numOctrees; k++)
+       fprintf(ipadViewerFP,"%s/generateOctreeFromObj.py -o=vtex-%04d.octree octree-%04d.obj;",basepath.c_str(),k,k);
+       fprintf(ipadViewerFP,"\n");
+       fprintf(ipadViewerFP,"cd ..;%s/vipsVTAtlas -mat %s -cells %s -scale %f -dir %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt",scaleFactor,"ipad");
+
+ //fprintf(ipadViewerFP,"(gdalwarp -overwrite -ts %d %d mosaic/mosaic.vrt vttex.tif; ",totalXborder,totalYborder);
+   /* std::ostringstream p4;
+
+    p4 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" vttex.tif ) &\nwait\necho 'Done'\n";
+
+    //postcmdv.push_back(p2.str());
+
+    fprintf(ipadViewerFP,"%s",p4.str().c_str());*/
+    fchmod(fileno(ipadViewerFP),0777);
+
+    fclose(ipadViewerFP);
+
+    FILE *uploadFP=fopen("uploadmesh.sh","w");
+
+    if(!uploadFP){
+        fprintf(stderr,"Can't open create uploadmesh");
+        exit(-1);
+    }
+    fprintf(uploadFP,"#!/bin/bash\n");
+    fprintf(uploadFP,"EXPECTED_ARGS=1\nE_BADARGS=65\n");
+    fprintf(uploadFP,"if [ $# -ne $EXPECTED_ARGS ]\nthen\n\techo \"Usage: `basename $0` {basename}\"\nexit $E_BADARGS\nfi\n");
+    fprintf(uploadFP,"cd ipad\n");
+    fprintf(uploadFP,"mkdir $1\n");
+    fprintf(uploadFP,"ln -sf $PWD/vtex $PWD/$1/\n");
+    for(int k=0; k<numOctrees; k++)
+        fprintf(uploadFP,"ln -sf $PWD/vtex-%04d.octree $PWD/$1/m-%04d.octree\n",k,k);
+    fprintf(uploadFP,"rm -f $1/m.xml\n");
+    fprintf(uploadFP,"tar cvfh $1.tar $1\n");
+    fprintf(uploadFP,"bash %s/getmeta.sh $1 %d > $1/m.xml\n",basepath.c_str(),numOctrees);
+    fprintf(uploadFP,"tar rvf $1.tar $1/m.xml\n");
+    fprintf(uploadFP,"scp $1.tar mattjr@aguacate:benthos/\n");
+    fprintf(uploadFP,"scp %s/updatemodelxml.sh mattjr@aguacate:benthos/\n",basepath.c_str());
+    fprintf(uploadFP,"ssh mattjr@aguacate \"cd benthos;bash updatemodelxml.sh\"\n");
+    fchmod(fileno(uploadFP),0777);
+
+    fclose(uploadFP);
 
 
     string simpcmds_fn=string(diced_dir)+"/simpcmds";
@@ -2506,8 +2533,8 @@ else
    /* if(useReimage)
         app="tridecimator";
     else*/
-        //app="texturedDecimator";
-         app="tridecimator";
+        app="texturedDecimator";
+     //    app="tridecimator";
     std::vector<std::vector<string> > datalist_lod;
     vector<string> mergeandcleanCmdsSimp;
 #define SINGLE_MESH_TEX 1
@@ -2533,19 +2560,28 @@ else
         //if(useVirtTex)
          //   fprintf(simpcmds_fp,"cd %s/%s;cp totaltex.ply total-lod%d.ply;",cwd,diced_dir,vpblod);
        // else
-            fprintf(simpcmds_fp,"cd %s/%s;cp tex-total.ply total-lod%d.ply;",cwd,diced_dir,vpblod);
+         //   fprintf(simpcmds_fp,"cd %s/%s;cp tex-total.ply total-lod%d.ply;",cwd,diced_dir,vpblod);
+
+
 
         sprintf(tmp,"%s/total-lod%d.ply",diced_dir,vpblod);//std::min(lod,2)
         std::vector<string> level;
+        string clean_str= 0 ? "-P" : "";
         string boundry_preserve = isSparse ? "" : "-By";
+        fprintf(simpcmds_fp,"cd %s/%s;%s/vcgapps/bin/%s tex-total.ply total-lod%d.ply %d %s -Oy %s;",
+                cwd,
+                diced_dir,
+                basepath.c_str(),
+                app.c_str(),
+                vpblod,0,clean_str.c_str(),boundry_preserve.c_str());
         for(int j=vpblod-1; j >= 0; j--){
 
-            fprintf(simpcmds_fp,"cd %s/%s;%s/vcgapps/bin/%s total-lod%d.ply total-lod%d.ply %d -P -Oy %s;",
+            fprintf(simpcmds_fp,"cd %s/%s;%s/vcgapps/bin/%s total-lod%d.ply total-lod%d.ply %d %s -Oy %s;",
                     cwd,
                     diced_dir,
                     basepath.c_str(),
                     app.c_str(),
-                    j+1,j, sizeStepTotal[j],boundry_preserve.c_str());
+                    j+1,j, sizeStepTotal[j],clean_str.c_str(),boundry_preserve.c_str());
 
         }
         for(int lod=0; lod < vpblod; ){
@@ -2554,7 +2590,7 @@ else
             //for(int lod=0; lod <= vpblod; lod ++){
 
             char tmp[1024];
-            sprintf(tmp,"%s/total-lod%d.ply",diced_dir,lod);//std::min(lod,2)
+            sprintf(tmp,"%s/total-lod%d.ive",diced_dir,lod);//std::min(lod,2)
             level.push_back(tmp);
             lod ++;
 

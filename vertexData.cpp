@@ -344,7 +344,7 @@ void VertexDataMosaic::readTriangles( PlyFile* file, const int nFaces,bool multT
     if(!_triangles.valid())
         _triangles = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
 
-
+int start=_triangles->size();
     // read in the faces, asserting that they are only triangles
     int ind1 = _invertFaces ? 2 : 0;
     int ind3 = _invertFaces ? 0 : 2;
@@ -363,9 +363,9 @@ void VertexDataMosaic::readTriangles( PlyFile* file, const int nFaces,bool multT
 
        {
             // Add the face indices in the premitive set
-            _triangles->push_back( face.vertices[ind1]);
-            _triangles->push_back( face.vertices[1]);
-            _triangles->push_back( face.vertices[ind3] );
+            _triangles->push_back(start+ face.vertices[ind1]);
+            _triangles->push_back( start+face.vertices[1]);
+            _triangles->push_back( start+face.vertices[ind3] );
 
             if(tex){
 

@@ -83,7 +83,7 @@ class CVertexO  : public vcg::Vertex< CUsedTypesO,
   vcg::vertex::Color4b,           /*  4b */
   vcg::vertex::VFAdj,          /*  0b */
   vcg::vertex::Mark,           /*  0b */
-  vcg::vertex::TexCoordfOcf,      /*  0b */
+  vcg::vertex::TexCoord2f,      /*  0b */
   vcg::vertex::CurvaturefOcf,     /*  0b */
   vcg::vertex::CurvatureDirfOcf,  /*  0b */
   vcg::vertex::RadiusfOcf         /*  0b */

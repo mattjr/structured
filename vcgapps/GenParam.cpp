@@ -57,6 +57,8 @@ std::vector<double> pixelSides;
             const osg::Vec3 &v2=verts->at(in1);
             const osg::Vec3 &v3=verts->at(in2);
             double tex_area=((v2-v1)^(v3-v2)).length()/2.0;
+           // cout << tex_area <<endl;
+           // cout << v1 << " " << v2 << " "<<v3<<endl;
             double max_orig_tex_area=0.0;
             for(int c=0; c <4; c++){
              //   printf("Bla %f %f\n",texCoord[c]->at(idx).x(),texCoord[c]->at(idx).y());
@@ -67,6 +69,7 @@ std::vector<double> pixelSides;
               if(tc1.x() < 0 || tc1.y() < 0 ||tc2.x() < 0 || tc2.y() < 0||tc3.x() < 0 || tc3.y() < 0)
                   continue;
              double orig_tex_area=((tc2-tc1)^(tc3-tc2)).length()/2.0;
+            // cout <<orig_tex_area<<endl;
              if(orig_tex_area>max_orig_tex_area)
                  max_orig_tex_area=orig_tex_area;
             }
@@ -74,7 +77,9 @@ std::vector<double> pixelSides;
                 continue;
            // printf("%f %f\n",max_orig_tex_area,8192*tex_area);
             double sidePixels=sqrt(max_orig_tex_area/tex_area);
-            pixelSides.push_back(sidePixels);
+            //cout <<sidePixels<<endl;
+            if(isfinite(sidePixels) && sidePixels >0 && sidePixels < pow(2,17))
+                pixelSides.push_back(sidePixels);
     }
     double sum = std::accumulate( pixelSides.begin(), pixelSides.begin()+pixelSides.size(), 0 ) ;
 

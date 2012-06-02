@@ -52,6 +52,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Clipper.h"
 #include <opencv/cv.h>
 #include "../GLImaging.h"
+#include "ProgressBar.h"
 #include <opencv/highgui.h>
 #include "mipmap.h"
 #include "../MemUtils.h"

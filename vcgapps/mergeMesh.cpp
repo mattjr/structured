@@ -28,7 +28,7 @@ int main(int argc ,char**argv){
         fprintf(stderr, "Usage  meshfile -outfile filename -thresh threshold \n");
         return -1;
     }
-    double threshold=-1.0;
+    double threshold= -1.0;
     std::string outfile="out.ply";
 
     argp.read("-thresh",threshold);
@@ -83,16 +83,22 @@ bool multtex=false;
             tri::UpdateBounding<CMeshO>::Box(cm);
             //  cm.face.EnableFFAdjacency();
             //  cm.face.EnableMark();
-            tri::UpdateTopology<CMeshO>::FaceFace(cm);
-            tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
 
-            float minCC= CCPerc*cm.bbox.Diag();
-            printf("Cleaning Min CC %f\n",minCC);
-            std::pair<int,int> delInfo= tri::Clean<CMeshO>::RemoveSmallConnectedComponentsDiameter(cm,minCC);
-            printf("Removed %d/%d\n",delInfo.second,delInfo.first);
+
+
+            int dup2= tri::Clean<CMeshO>::RemoveDuplicateFace(cm);
+
             int dup= tri::Clean<CMeshO>::RemoveDuplicateVertex(cm);
             int unref= tri::Clean<CMeshO>::RemoveUnreferencedVertex(cm);
             int deg= vcg::tri::Clean<CMeshO>::RemoveDegenerateFace(cm);
+            float minCC= CCPerc*cm.bbox.Diag();
+            printf("Cleaning Min CC %f\n",minCC);
+            tri::UpdateTopology<CMeshO>::FaceFace(cm);
+            tri::UpdateTopology<CMeshO>::FaceFace(cm);
+            tri::UpdateFlags<CMeshO>::FaceBorderFromFF(cm);
+
+            std::pair<int,int> delInfo= tri::Clean<CMeshO>::RemoveSmallConnectedComponentsDiameter(cm,minCC);
+            printf("Removed %d/%d\n",delInfo.second,delInfo.first);
 
         }
     }

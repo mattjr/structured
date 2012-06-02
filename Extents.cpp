@@ -50,6 +50,7 @@
 #include "VPBInterface.hpp"
 #include "GLImaging.h"
 #include "CheckThreadPool.h"
+#include "ProgressBar.h"
 bool checkInBounds(osg::Vec3 tc);
 using namespace SpatialIndex;
 // Helper that collects all the unique Geometry objects in a subgraph.

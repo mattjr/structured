@@ -1,4 +1,4 @@
-# 
+#
 # poisson
 
 PROJECT(tridecimator)
@@ -8,7 +8,7 @@ PROJECT(tridecimator)
 INCLUDE_DIRECTORIES(vcglib .. .)
 SET( SRCS vcglib/wrap/ply/plylib.cpp  quadric_tex_simp.cpp   )
 
-SUBDIRS(OGF numeric_stuff)
+SUBDIRS(OGF numeric_stuff plymc)
 
 
 FIND_PACKAGE( GLUT )

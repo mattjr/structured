@@ -42,7 +42,7 @@
 
 #include <OGF/cells/types/cells_library.h>
 #include <OGF/cells/map/map_editor.h>
-
+#include <OGF/cells/io/map_serializer_obj.h>
 /*#include <OGF/cells/io/map_serializer_obj.h>
 #include <OGF/cells/io/map_serializer_off.h>
 #include <OGF/cells/io/map_serializer_geom.h>
@@ -92,8 +92,8 @@ namespace OGF {
 
         CellsLibrary::initialize() ;
 
-       /* ogf_declare_map_serializer<MapSerializer_obj>("obj") ;
-        ogf_declare_map_serializer<MapSerializer_eobj>("eobj") ;
+        ogf_declare_map_serializer<MapSerializer_obj>("obj") ;
+       /*ogf_declare_map_serializer<MapSerializer_eobj>("eobj") ;
         ogf_declare_map_serializer<MapSerializer_off>("off") ;
         ogf_declare_map_serializer<MapSerializer_geom>("geom") ;
         ogf_declare_map_serializer<MapSerializer_Inventor>("iv") ;

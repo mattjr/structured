@@ -153,6 +153,10 @@ int main( int argc, char **argv )
 
         }
     }
+    if(!vertexData._vertices.valid() || vertexData._vertices->size() == 0){
+        fprintf(stderr,"No valid data in bbox returning %d\n",vertexData._vertices.valid() ?  vertexData._vertices->size() : -1 );
+        return 0;
+    }
     /*
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
     osg::ref_ptr<osg::Node> model = osgDB::readNodeFiles(arguments);

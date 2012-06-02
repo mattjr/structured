@@ -581,7 +581,7 @@ int main(int argc, char** argv)
 
         return 1;
     }
-
+bool cleanFlag=false;
     srand(time(0));
     int i=1;
     while(i<argc 	&& (argv[i][0]=='-'))
@@ -603,6 +603,8 @@ int main(int argc, char** argv)
 	case 'n'  : SampleNum = atoi(argv[i]+2); break;
         case 'f'  : SwapFlag=true; break;
 	case 'c'  : ClosedFlag=true; break;
+
+        case 'P'  : cleanFlag=true; break;
         case 'w'  : WindowRes= atoi(argv[i]+2); 
             printf("Set WindowRes to %i\n",WindowRes ); break;
         case 's'  : Vis.SplitNum= atoi(argv[i]+2); 
@@ -632,6 +634,20 @@ int main(int argc, char** argv)
         printf("No faces empty mesh \n");
         //return 1;
     }else{
+        if(cleanFlag){
+            tri::UpdateBounding<CMeshO>::Box(m);
+
+            tri::UpdateTopology<CMeshO>::FaceFace(m);
+            tri::UpdateFlags<CMeshO>::FaceBorderFromFF(m);
+
+
+            int dup= tri::Clean<CMeshO>::RemoveDuplicateVertex(m);
+            int dup2= tri::Clean<CMeshO>::RemoveDuplicateFace(m);
+
+            int unref= tri::Clean<CMeshO>::RemoveUnreferencedVertex(m);
+            int deg= vcg::tri::Clean<CMeshO>::RemoveDegenerateFace(m);
+
+        }
 
         if(SwapFlag){
             printf("Flipping normal\n");

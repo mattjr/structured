@@ -87,6 +87,12 @@ double Bounds::area( void ) const
 
  }
 
+double Bounds::volume( void ) const
+{
+   return (bbox.xMax()-bbox.xMin())*(bbox.yMax()-bbox.yMin())*(bbox.zMax()-bbox.zMin());
+
+ }
+
 //----------------------------------------------------------------------------//
 //  Private Helper Functions                                                  //
 //----------------------------------------------------------------------------//

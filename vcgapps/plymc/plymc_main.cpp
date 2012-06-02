@@ -9,6 +9,7 @@
 
 #include "plymc.h"
 #include "simplemeshprovider.h"
+#include "bbox_txt_meshprovider.h"
 #define _PLYMC_VER "4.0"
 #include "../../ProgressBar.h"
 using namespace std;
@@ -109,9 +110,9 @@ int main(int argc, char *argv[])
 {
 
   Histogram<float> h;
-  tri::PlyMC<SMesh,SimpleMeshProvider<SMesh> > pmc;
-  tri::PlyMC<SMesh,SimpleMeshProvider<SMesh> >::Parameter &p = pmc.p;
-
+  tri::PlyMC<SMesh,Bbox_Txt_MeshProvider<SMesh> > pmc;
+  tri::PlyMC<SMesh,Bbox_Txt_MeshProvider<SMesh> >::Parameter &p = pmc.p;
+    pmc.MP.loadedRealBBox=false;
 
   // This line is required to be sure that the decimal separatore is ALWAYS the . and not the ,
   // see the comment at the beginning of the file
@@ -215,8 +216,8 @@ int main(int argc, char *argv[])
   string alnfile;
   while(i<argc)
   {
-    if(strcmp(strrchr(argv[i],'.'),".aln")==0)
-      pmc.MP.openALN(argv[i]);
+    if(strcmp(strrchr(argv[i],'.'),".txt")==0)
+      pmc.MP.openTXT(argv[i]);
     else
       pmc.MP.AddSingleMesh(argv[i]);
     ++i;

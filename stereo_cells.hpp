@@ -68,7 +68,7 @@ public:
 
    void set( double min_x, double max_x, double min_y, double max_y );
    double area( void ) const;
-
+   double volume( void ) const;
    osg::BoundingBox bbox;
 
 };
@@ -92,6 +92,9 @@ public:
   Bounds bounds;
    std::vector<const A*> poses;
    std::pair<int,int> idx;
+   int volIdx[3];
+   int splits[3];
+
    bool valid;
 
 };

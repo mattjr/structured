@@ -223,6 +223,12 @@ DoSlicesOccRLE()
 	       occGrid->origin[1] - occGrid->resolution, 
 	       occGrid->origin[2] - occGrid->resolution);
 
+  /*printf("1 %f %f %f\n", occGrid->origin[0] - occGrid->resolution,
+	 occGrid->origin[1] - occGrid->resolution,
+	 occGrid->origin[2] - occGrid->resolution);
+ printf("2 %f %f %f\n", occGrid->origin[0] ,
+	 occGrid->origin[1],
+         occGrid->origin[2]);*/
   printf("Done.\n\n");
 
 } /* DoSlices */

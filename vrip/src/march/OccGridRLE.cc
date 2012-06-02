@@ -565,7 +565,7 @@ OccGridRLE::read(char *filename)
     }
 
     fclose(fp);
-
+    //printf("BLLAS %f %f %f\n",origin[0],origin[1],origin[1]);
     return TRUE;
 }
 

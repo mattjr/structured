@@ -1,19 +1,5 @@
 #!/bin/bash
- 
-#           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-#                   Version 2, December 2004
-#
-#Copyright (C) 2004 Sam Hocevar
-# 14 rue de Plaisance, 75014 Paris, France
-#Everyone is permitted to copy and distribute verbatim or modified
-#copies of this license document, and changing it is allowed as long
-#as the name is changed.
-#
-#           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-#  TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
-#
-# 0. You just DO WHAT THE FUCK YOU WANT TO.
-#
+
  
 SYSDIR=$PWD
 HTTPLINK="http://www-personal.acfr.usyd.edu.au/mattjr/benthos/"
@@ -49,10 +35,11 @@ echo "<!--?xml version=\"1.0\"?-->
  
 function rss_body {
 #RSS BODY
+DESC=`cat ${3}/desc.txt`
 echo "  <item>
                 <title>${3}</title>
                 <link>${HTTPLINK}/${2}</link>
-<!--                <description>${DESC}</description> -->
+                <description>${DESC}</description>
         </item>" >> ${1}
 }
  

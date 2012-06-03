@@ -1,4 +1,7 @@
 #!/bin/bash
+for d in `find ./*/ -type d`
+do
+cd $d
 COUNTER=0
 mv models.xml models.xml.old
 mkdir dtmp
@@ -29,4 +32,5 @@ done
 mv models.xml ..
 cd ..
 rm -rf dtmp
-
+cd ..
+done

@@ -2262,7 +2262,7 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     if(src->_kdTree){
         osg::ref_ptr<KdTreeBbox> kdtreeBbox=new KdTreeBbox(*src->_kdTree,srcGeom);
         //  if(projectSucess){
-        root=kdtreeBbox->intersect(ext_bbox,dstGeom,IntersectKdTreeBbox::DUP);
+        root=kdtreeBbox->intersect(ext_bbox,dstGeom,DUP);
 
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_texCoordMutex);
         for(int f=0; f< (int)dstGeom.texcoords.size(); f++)

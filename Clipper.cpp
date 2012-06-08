@@ -450,7 +450,7 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
         }
     }
 }
-/*osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,osg::Vec4Array *colors,const IntersectKdTreeBbox::OverlapMode &overlapmode,osg::Vec3Array *&dumpPts,bool multTex) const
+/*osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,osg::Vec4Array *colors,const OverlapMode &overlapmode,osg::Vec3Array *&dumpPts,bool multTex) const
 
 {
     if (_kdNodes.empty())
@@ -479,7 +479,7 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
     return newGeode;
 }*/
 osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,  geom_elems_dst &dst,
-                                              const IntersectKdTreeBbox::OverlapMode &overlapmode)
+                                              const OverlapMode &overlapmode)
 
 {
     //cout << "CRA"<<getNode(0).bb._min << "  "<< getNode(0).bb._max<<endl;
@@ -595,7 +595,7 @@ KdTreeBbox *createKdTreeForUnbuilt(osg::ref_ptr<osg::Node> model){
     return NULL;
 }
 
-bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &mode){
+bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const OverlapMode &mode){
     if(!kdtreeBBox){
         fprintf(stderr,"Failed to load kdtree\n");
         return false;

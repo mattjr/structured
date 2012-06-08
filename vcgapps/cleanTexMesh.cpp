@@ -52,7 +52,17 @@ int main(int argc ,char**argv){
     bool binaryFlag =true;
 
     int err=vcg::tri::io::Importer<MyMesh>::Open(mesh,argv[1]);
+    for ( CMeshO::FaceIterator fi = mesh.face.begin(); fi != mesh.face.end(); ++fi)
+      if(!(*fi).IsD())
+      {  CMeshO::FaceType &f=(*fi);
+          for(int i=0; i<3; i++)
+              (*fi).WT(i).N()=0;
 
+      }
+    vcg::tri::io::PlyInfo pi2;
+
+    pi2.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
+     tri::io::ExporterPLY<CMeshO>::Save(mesh,"kni.ply",binaryFlag,pi2);
 
     osg::Vec3 minC(255,255,255),maxC(0.0,0.0,0.0);
     bool FlipFlag=argp.read("-F");

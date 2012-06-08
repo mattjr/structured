@@ -19,6 +19,13 @@ typedef std::vector<std::vector<std::vector<Cell_Data<ValType> > > >  type;
          var != (container[ii][jj]).end(); \
          ++var)
 
+#define foreach_vol2(var, container) \
+    for(unsigned int iii=0; iii < container.size(); iii++)\
+    for(unsigned int jjj=0; jjj < container[iii].size(); jjj++)\
+    for(typeof((container[iii][jjj]).begin()) var = (container[iii][jjj]).begin(); \
+         var != (container[iii][jjj]).end(); \
+         ++var)
+
 
 template <typename CellType>
 bool split_bounds(const Bounds &bounds,const std::vector<CellType> &poses ,double targetVolume,int minSplits,typename CellDataT<CellType>::type &Vol){

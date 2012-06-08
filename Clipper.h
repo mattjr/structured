@@ -26,7 +26,13 @@
 //
 // IntersectKdTree
 //
+enum OverlapMode{
+    GAP,
+    DUP,
+    CUT,
+    DUMP
 
+};
 
 const int maxNumTC=4;
 typedef std::vector<osg::ref_ptr<osg::Vec3Array> > TexBlendCoord;
@@ -152,13 +158,7 @@ struct IntersectKdTreeBbox
         delete _new_texid;
     }*/
 
-    enum OverlapMode{
-        GAP,
-        DUP,
-        CUT,
-        DUMP
 
-    };
 
     void intersect(const osg::KdTree::KdNode& node, const geom_elems_dst dst,const osg::BoundingBox clipbox,const OverlapMode &mode) const;
 
@@ -202,7 +202,7 @@ public:
 
     }
     osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,  geom_elems_dst &dst,
-                                      const IntersectKdTreeBbox::OverlapMode &overlapmode);
+                                      const OverlapMode &overlapmode);
 
     const geom_elems_src _src;
     IntersectKdTreeBbox intersector;
@@ -236,7 +236,7 @@ public:
 };
 KdTreeBbox *setupKdTree(osg::ref_ptr<osg::Node> model);
 KdTreeBbox *createKdTreeForUnbuilt(osg::ref_ptr<osg::Node> model);
-bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &mode);
+bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const OverlapMode &mode);
 struct CheckKdTreeBbox
 {
     CheckKdTreeBbox(    const osg::ref_ptr<osg::Vec3Array>  vertices,
@@ -295,4 +295,5 @@ public:
 
     CheckKdTreeBbox checker;
 };
+
 #endif

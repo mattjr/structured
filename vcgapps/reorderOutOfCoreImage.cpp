@@ -113,7 +113,7 @@ Added GPL comments
 // io
 #include <wrap/io_trimesh/import.h>
 #include <wrap/io_trimesh/export_ply.h>
-
+#include <wrap/io_trimesh/export_obj.h>
 // *include the algorithms for updating: */
 #include <vcg/complex/algorithms/update/topology.h>	/* topology */
 #include <vcg/complex/algorithms/update/bounding.h>	/* bounding box */
@@ -804,6 +804,7 @@ bool pyramid=arguments.read("-pyr");
             write_header(f,vertexData._triangles->size(),color);
             write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,imageId,newTCArr,mosaic,false);
         }
+      //  return 0;
         if(!blending){
             g.vertex_shader<VertexShader>();
             r.fragment_shader<FragmentShader>();
@@ -1141,17 +1142,73 @@ bool removeDups(std::string basename,osg::Vec3Array *verts,osg::DrawElementsUInt
     double CCPerc=0.05;
     tri::UpdateNormals<AMesh>::PerVertexNormalized(m);
     tri::UpdateBounding<AMesh>::Box(m);
-    tri::UpdateColor<AMesh>::VertexConstant(m,Color4b::White);
+  //  tri::UpdateColor<AMesh>::VertexConstant(m,Color4b::White);
     int dup= tri::Clean<AMesh>::RemoveDuplicateVertex(m);
+
+
+    /*
     tri::UpdateTopology<CMeshO>::FaceFace(m);
     tri::UpdateFlags<CMeshO>::FaceBorderFromFF(m);
+    cout <<" NONmanifold edge "<<tri::Clean<AMesh>:: CountNonManifoldEdgeFF(m)<<endl;
+    cout <<" Nonmanifold vertex "<<tri::Clean<AMesh>:: CountNonManifoldVertexFF(m,true)<<endl;
+    tri::UpdateSelection<CMeshO>::FaceFromVertexLoose(m);
+    CMeshO::FaceIterator   fi;
+    CMeshO::VertexIterator vi;
+
+    for(fi=m.face.begin();fi!=m.face.end();++fi)
+        if(!(*fi).IsD() && (*fi).IsS() )
+            tri::Allocator<CMeshO>::DeleteFace(m,*fi);
+
+    for(AMesh::VertexIterator vi=m.vert.begin();vi!=m.vert.end();++vi){
+        if(vi->IsS()){
+            tri::Allocator<CMeshO>::DeleteVertex(m,*vi);
+
+        }
+    }
+    tri::UpdateTopology<CMeshO>::FaceFace(m);
+    tri::UpdateFlags<CMeshO>::FaceBorderFromFF(m);
+    cout <<" NONmanifold edge "<<tri::Clean<AMesh>:: CountNonManifoldEdgeFF(m)<<endl;
+    cout <<" Nonmanifold vertex "<<tri::Clean<AMesh>:: CountNonManifoldVertexFF(m,true)<<endl;*/
+
+
+
+ /*
+ int unref2= tri::Clean<AMesh>::RemoveNonManifoldFace(m);
     int unref= tri::Clean<AMesh>::RemoveNonManifoldVertex(m);
+    int dup2= tri::Clean<AMesh>::RemoveDegenerateFace(m);
+    tri::UpdateTopology<CMeshO>::FaceFace(m);
+
+    cout <<" important "<<tri::Clean<AMesh>:: CountNonManifoldEdgeFF(m) <<" "<<tri::Clean<AMesh>:: CountNonManifoldVertexFF(m,true)<< endl;
+    tri::UpdateSelection<CMeshO>::FaceFromVertexLoose(m);
+
+    for(fi=m.face.begin();fi!=m.face.end();++fi)
+        if(!(*fi).IsD() && (*fi).IsS() )
+            tri::Allocator<CMeshO>::DeleteFace(m,*fi);
+
+
+
+    tri::UpdateSelection<CMeshO>::ClearVertex(m);
+
+    printf("Removed Non man %d %d\n",unref2,unref);
     unref= tri::Clean<AMesh>::RemoveUnreferencedVertex(m);
+    tri::UpdateTopology<CMeshO>::FaceFace(m);
+
+    cout <<" final "<<tri::Clean<AMesh>:: CountNonManifoldEdgeFF(m) <<" "<<tri::Clean<AMesh>:: CountNonManifoldVertexFF(m,true)<< endl;
+
     float minCC= CCPerc*m.bbox.Diag();
     printf("Cleaning Min CC %.1f m\n",minCC);
     std::pair<int,int> delInfo= tri::Clean<AMesh>::RemoveSmallConnectedComponentsDiameter(m,minCC);
 
-    printf("fff %d %d\n",m.fn,m.vn);
+    printf("fff %d %d\n",m.fn,m.vn);*/
+    /*double CCPerc=0.2;
+
+    float minCC= CCPerc*m.bbox.Diag();
+    printf("Cleaning Min CC %.1f m\n",minCC);
+    std::pair<int,int> delInfo= tri::Clean<AMesh>::RemoveSmallConnectedComponentsDiameter(m,minCC);*/
+  /*  float minCC= CCPerc*m.bbox.Diag();
+    printf("Cleaning Min CC %.1f m\n",minCC);
+    std::pair<int,int> delInfo= tri::Clean<AMesh>::RemoveSmallConnectedComponentsDiameter(m,minCC);
+    cout <<delInfo.first<<"/"<<delInfo.second<<endl;*/
     vcg::SimpleTempData<AMesh::VertContainer,int> indices(m.vert);
 
     int j=0;
@@ -1172,6 +1229,12 @@ bool removeDups(std::string basename,osg::Vec3Array *verts,osg::DrawElementsUInt
                 triangles->push_back(indices[(*fi).cV(k)]);
         }
     }
+
+
+   // vcg::tri::io::PlyInfo pi;
+
+  //  vcg::tri::io::ExporterOBJ<AMesh>::Save(m,"nodup.obj",pi.mask);
+
     //tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),false);
     //     exit(0);
 

@@ -18,6 +18,7 @@
 #include <osg/BoundingBox>
 #include <vector>
 #include <osg/Geometry>
+#include "Clipper.h"
 ///////////////////////////////////////////////////////////////////////////////
 //!
 //! \class VertexData
@@ -43,7 +44,7 @@ namespace ply
         VertexData();
         
         // Reads ply file and convert in to osg::Node and returns the same
-        osg::Node* readPlyFile( const char* file, const bool ignoreColors = false,osg::BoundingBox *bbox=NULL,bool gap=false );
+        osg::Node* readPlyFile( const char* file, const bool ignoreColors = false,osg::BoundingBox *bbox=NULL,OverlapMode mode=DUP );
         
         // to set the flag for using inverted face
         void useInvertedFaces() { _invertFaces = true; }
@@ -85,7 +86,7 @@ namespace ply
         osg::ref_ptr<osg::DrawElementsUInt> _triangles;
         std::map<int,int> outbboxVert;
         bool tex;
-        bool _gap;
+        OverlapMode _mode;
     };
     class VertexDataMosaic: public VertexData{
 

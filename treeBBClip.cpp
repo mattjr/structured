@@ -89,15 +89,15 @@ int main( int argc, char **argv )
     string outfilename="out.ply";
     arguments.read("--outfile",outfilename);
     bool flip=arguments.read("-F");
-    IntersectKdTreeBbox::OverlapMode mode=IntersectKdTreeBbox::DUP;
+    OverlapMode mode=DUP;
     if(arguments.read("-gap"))
-        mode=IntersectKdTreeBbox::GAP;
+        mode=GAP;
     else if(arguments.read("-dup"))
-        mode=IntersectKdTreeBbox::DUP;
+        mode=DUP;
     else if(arguments.read("-cut"))
-        mode=IntersectKdTreeBbox::CUT;
-    else if(arguments.read("-dump",outdump)){
-        mode=IntersectKdTreeBbox::DUMP;
+        mode=CUT;
+    else if(arguments.read("-dump")){
+        mode=DUMP;
 
     }else{
         cerr << "Must be -gap or  -dup  or -cut or  -dump\n";
@@ -148,7 +148,7 @@ int main( int argc, char **argv )
             // not an option so assume string is a filename.
             string fname= arguments[pos];
             cout <<"Loading:"<< fname <<endl;
-            root= vertexData.readPlyFile(fname.c_str(),false,&bb,mode==IntersectKdTreeBbox::GAP);
+            root= vertexData.readPlyFile(fname.c_str(),false,&bb,mode);
 
 
         }
@@ -209,7 +209,7 @@ int main( int argc, char **argv )
     }
     */
 
-    /*if( mode==IntersectKdTreeBbox::DUMP){
+    /*if( mode==DUMP){
         // create triangulator and set the points as the area
         if(!dumpPts || !dumpPts->size()){
             osg::notify(osg::ALWAYS)  << "Dump pts don't exist\n";

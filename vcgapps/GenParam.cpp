@@ -24,10 +24,12 @@
 #include <OGF/cells/map_algos/atlas_generator.h>
 #include <OGF/cells/map_algos/pm_manager.h>
 #include <OGF/image/types/image.h>
+#include <OGF/cells/map_algos/variational_map_splitter.h>
 #include <OGF/image/types/image_library.h>
 #include <OGF/image/algos/rasterizer.h>
 #include <OGF/image/algos/morpho_math.h>
 #include <OGF/basic/os/file_system.h>
+#include <OGF/cells/io/map_serializer_obj.h>
 
 #include <iostream>
 #include <fstream>
@@ -81,6 +83,8 @@ std::vector<double> pixelSides;
             if(isfinite(sidePixels) && sidePixels >0 && sidePixels < pow(2,17))
                 pixelSides.push_back(sidePixels);
     }
+    if(pixelSides.size() ==0)
+        return 32;
     double sum = std::accumulate( pixelSides.begin(), pixelSides.begin()+pixelSides.size(), 0 ) ;
 
     double avgEl =sum/pixelSides.size();
@@ -144,10 +148,13 @@ public:
         the_generator.set_auto_cut(true) ;
         the_generator.set_auto_cut_cylinders(true) ;
         the_generator.set_parameterizer("ABF++") ;
-        the_generator.set_max_overlap_ratio(0.0001) ;
+//        the_generator.set_max_overlap_ratio(0.0001) ;
+        the_generator.set_max_overlap_ratio(0.2) ;
         the_generator.set_max_scaling(120.0) ;
         the_generator.set_min_fill_ratio(0.25) ;
         the_generator.set_pack(true) ;
+//        OGF::SmoothVariationalMapComponentSplitter *vasmooth =new SmoothVariationalMapComponentSplitter;
+  //      vasmooth->set_max_components(3);
         the_generator.set_splitter("VSASmooth") ;
         the_generator.apply() ;
     }
@@ -285,6 +292,8 @@ public:
       }
 
       for (int i = 0 ; i < (int)_triangles->size()-2 ; i+=3) {
+          //if(_triangles->at(i+0) <0 ||_triangles->at(i+1) <0||_triangles->at(i+2) <0)
+             // continue;
          B.begin_facet();
          for (int j = 0; j <3; j++) {
              B.add_vertex_to_facet (_triangles->at(i+j));
@@ -322,13 +331,16 @@ osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::
       std::cerr << "nb facets: " << the_map.size_of_facets() << " nb vertices:" << the_map.size_of_vertices() << std::endl ;
       std::cerr << std::endl ;
       the_map.compute_normals() ;
+      /*OGF::MapSerializer_obj mso;
+      ofstream f("temp.obj");
+      mso.serialize_write(&the_map,f);*/
       std::cerr << "==== Step 2/5 == Generating texture atlas" << std::endl ;
          OGF::generate_atlas(&the_map) ;
          OGF::AtlasValidator val;
          val.compute_fill_and_overlap_ratio(&the_map);
          std::cerr << "Created atlas with fill ratio of " << val.fill_ratio()<< std::endl ;
 
-     //    OGF::write_file_eps(the_map,"test.eps");
+         OGF::write_file_eps(the_map,"test.eps");
        //  exit(0);
          osg::Vec3Array *arr=new osg::Vec3Array;
          arr->resize(triangles->size());

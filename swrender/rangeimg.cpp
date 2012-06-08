@@ -546,7 +546,7 @@ int main(int ac, char *av[]) {
             /* cout << bbox._min <<endl;
             cout << bbox._max <<endl;*/
             geom_elems_dst dstGeom(0,false);
-            osg::ref_ptr<osg::Node> root=kdbb->intersect(bbox,dstGeom,IntersectKdTreeBbox::DUP);
+            osg::ref_ptr<osg::Node> root=kdbb->intersect(bbox,dstGeom,DUP);
 
 
             for(int i=0; i<(int)dstGeom.faces->size()-2; i+=3){

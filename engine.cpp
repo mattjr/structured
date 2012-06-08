@@ -1380,7 +1380,7 @@ int main( int argc, char *argv[ ] )
                         for(int i=0; i <(int)cells.size(); i++){
                             sprintf(tmpname,"mesh-diced/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",
                                     cells[i].row,cells[i].col,vpblod);
-                            cut_model(kdbb,tmpname,cells[i].bboxMargin,IntersectKdTreeBbox::DUP);
+                            cut_model(kdbb,tmpname,cells[i].bboxMargin,DUP);
                             formatBar("Split",startTick,progCount,totalTodoCount);
                             //#pragma omp atomic
                             progCount++;
@@ -1426,7 +1426,7 @@ int main( int argc, char *argv[ ] )
                             osg::BoundingBox box=vrip_cells[i].bounds.bbox;
                             sprintf(tmpname,"mesh-diced/clipped-diced-%08d-lod%d.ply",
                                     i,vpblod);
-                            vrip_cells[i].valid=cut_model(kdbb,tmpname,box,IntersectKdTreeBbox::DUP);
+                            vrip_cells[i].valid=cut_model(kdbb,tmpname,box,DUP);
                             formatBar("Split",startTick,progCount,totalTodoCount);
                             //#pragma omp atomic
                             progCount++;

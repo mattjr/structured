@@ -5,7 +5,7 @@ proc usage args {
     puts " "
     puts "    Options:"
     puts "        -remove_slivers (default)"
-    puts "        -no_remove_slivers"
+    puts "        "
     puts "        -fill_holes"
     puts "        -filter_holes"
     puts "        -crunch"

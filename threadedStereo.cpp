@@ -30,6 +30,7 @@
 #include <osgDB/ReadFile>
 #include "vertexData.h"
 #include "MemUtils.h"
+#include "SplitBounds.h"
 static bool hw_image=false;
 static bool blending=true;
 static bool externalMode=false;
@@ -140,20 +141,6 @@ const char *aggdir="tmp/mesh-agg";
 MyGraphicsContext *mgc=NULL;
 #define diced_fopen(x,y) fopen((string(diced_dir)+string(x)).c_str(),y)
 
-typedef struct _picture_cell{
-    int row;
-    int col;
-    osg::BoundingBox bbox;
-    osg::BoundingBox bboxMargin;
-
-    osg::BoundingBox bboxUnRot;
-    osg::BoundingBox bboxMarginUnRot;
-    osg::Matrixd m;
-    std::string name;
-    std::vector<int> images;
-    std::vector<int> imagesMargin;
-
-}picture_cell;
 
 
 vector<Stereo_Pose_Data> load_tex_pose_file( const string &file_name )
@@ -577,14 +564,7 @@ void save_bbox_frame (const osg::BoundingBox &bb, FILE * fptr){
 
 }
 
-osg::Matrix  osgTranspose( const osg::Matrix& src )
-{
-    osg::Matrix dest;
-    for( int i = 0; i < 4; i++ )
-        for( int j = 0; j < 4; j++ )
-            dest(i,j) = src(j,i);
-    return dest;
-}
+
 void fill_osg_matrix(double *cam_pose,osg::Matrix &trans){
 
 
@@ -929,19 +909,19 @@ const char *uname="mesh";
 
     }
 
-    FILE *vrip_seg_fp;
+    /*FILE *vrip_seg_fp;
     char vrip_seg_fname[2048];
     FILE *bboxfp;
     string vripcmd_fn=aggdir+string("/vripcmds");
-    FILE *vripcmds_fp=fopen(vripcmd_fn.c_str(),"w");
+    FILE *vripcmds_fp=fopen(vripcmd_fn.c_str(),"w");*/
     FILE *diced_fp=diced_fopen("diced.txt","w");
     FILE *diced_lod_fp=diced_fopen("dicedld.txt","w");
 
-    if(!vripcmds_fp){
+    /*if(!vripcmds_fp){
         printf("Can't open vripcmds\n");
         exit(-1);
     }
-
+*/
 
     if(!diced_fp){
         printf("Can't open diced/diced.txt");
@@ -1079,9 +1059,12 @@ const char *uname="mesh";
     Bounds bounds( tasks );
 
     int numberFacesAll=0;
+#if 0
 
     std::vector<Cell_Data<Stereo_Pose_Data> > vrip_cells;
     vrip_cells=calc_cells<Stereo_Pose_Data> (tasks,vrip_img_per_cell);
+    //for(int i=0; i< (int)vrip_cells.size(); i++)
+     //   vrip_cells[i].bounds.bbox._min<< " "<<   vrip_cells[i].bounds.bbox._max<<endl;
     if(!externalMode){
         double fillRatio=(totalValidArea/bounds.area());
         printf("Valid Area %.2f Total Area %.2f\n",totalValidArea,bounds.area());
@@ -1117,7 +1100,7 @@ const char *uname="mesh";
             fprintf(vripcmds_fp,"set BASEDIR=\"%s\"; set OUTDIR=\"%s/\";set VRIP_HOME=\"$BASEDIR/vrip\";setenv VRIP_DIR \"$VRIP_HOME/src/vrip/\";set path = ($path $VRIP_HOME/bin);cd %s/$OUTDIR;",basepath.c_str(),aggdir,cwd);
             fprintf(vripcmds_fp,"$BASEDIR/vrip/bin/vripnew auto-%08d.vri %s %s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d.vri seg-%08d.ply %s ;",i,osgDB::getSimpleFileName(vrip_seg_fname).c_str(),osgDB::getSimpleFileName(vrip_seg_fname).c_str(),vrip_res,vrip_ramp,i,i,redirstr);
 
-            fprintf(vripcmds_fp,"$BASEDIR/treeBBClip seg-%08d.ply --bbox %f %f %f %f %f %f -dup --outfile %s/%s/tmp-clipped-diced-%08d.ply;",
+            fprintf(vripcmds_fp,"$BASEDIR/treeBBClip seg-%08d.ply --bbox %f %f %f %f %f %f -gap --outfile %s/%s/tmp-clipped-diced-%08d.ply;",
                     i,
                     vrip_cells[i].bounds.bbox.xMin(),
                     vrip_cells[i].bounds.bbox.yMin(),
@@ -1188,7 +1171,7 @@ const char *uname="mesh";
 
 
             vector<string> mergeandcleanCmds;
-            // mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"tmp-clipped-diced","total",vrip_res));
+            mergeandcleanCmds.push_back(shellcm.generateMergeAndCleanCmd(vrip_cells,"tmp-clipped-diced","total",vrip_res));
             //mergeandcleanCmds.push_back("cd mesh-diced;");
             /* string tcmd2;
                 char tmp100[8096];
@@ -1223,11 +1206,11 @@ const char *uname="mesh";
 
             string vripcmd="runvrip.py";
             shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip",NULL,&mergeandcleanCmds);
-            if(!no_vrip && !cmvs)
-                sysres=system("python runvrip.py");
+           // if(!no_vrip && !cmvs)
+             //   sysres=system("python runvrip.py");
             char tmpfn[8192];
             //std::vector<Cell_Data<Stereo_Pose_Data> > stereo_poses_tmp;
-            for(int i=0; i <(int)vrip_cells.size(); i++){
+          /*  for(int i=0; i <(int)vrip_cells.size(); i++){
                 if(vrip_cells[i].poses.size() == 0)
                     continue;
                 sprintf(tmpfn,"%s/tmp-clipped-diced-%08d.ply",diced_dir,i);
@@ -1246,9 +1229,49 @@ const char *uname="mesh";
                 //stereo_poses_tmp.push_back(vrip_cells[i]);
 
 
-            }
+            }*/
         }
     }
+#endif
+    typename CellDataT<Stereo_Pose_Data>::type vol;
+    int minSplits=-1;
+    double targetVolume=10.0;
+    split_bounds<Stereo_Pose_Data>(bounds,tasks , targetVolume,minSplits,vol);
+    {
+        WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,tasks);
+        foreach_vol(cur,vol){
+          //  cout <<cur->bounds.bbox._min<<" "<<cur->bounds.bbox._max<<endl;
+        //    cout <<"Poses " <<cur->poses.size()<<endl;
+            wbtp.write_cmd(*cur);
+        }
+        string plymccmd="plymc.py";
+        shellcm.write_generic(plymccmd,wbtp.getCmdFileName(),"PlyMC",NULL,NULL);
+        wbtp.close();
+    }
+    if(!no_vrip)
+        sysres=system("python plymc.py");
+    char tmpfn[8096];
+
+    foreach_vol(cur,vol){
+        sprintf(tmpfn,"%s/clean_%d%d%d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+        osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpfn);
+        osg::Drawable *drawable = NULL;
+        if(model.valid())
+            drawable = model->asGeode()->getDrawable(0);
+        if(!drawable){
+            fprintf(stderr,"Failed to load model %s PLYMC failed on one chunk\nThere may be holes in it!!!!!!\nAlso check if this is part of ascent or decent where lots of Z variation occurs.\n",tmpfn);
+            //sleep(1);
+            continue;
+            exit(-1);
+        }
+        osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+        numberFacesAll+=geom->getPrimitiveSet(0)->getNumPrimitives();
+        //stereo_poses_tmp.push_back(vrip_cells[i]);
+
+
+    }
+
+
 
     //vrip_cells.swap(stereo_poses_tmp);
     osg::BoundingBox totalbb;
@@ -1542,6 +1565,15 @@ const char *uname="mesh";
                 bool hitcell=false;
               //  cout << thisCellBbox._min<<endl;
               //  cout << thisCellBbox._max<<endl;
+                foreach_vol(cur,vol){
+                    if(cur->poses.size() == 0)
+                        continue;
+                    if(bboxMarginUnRot.intersects(cur->bounds.bbox)){
+                        hitcell=true;
+                        break;
+                    }
+                }
+                        /*
                 for(int k=0; k< (int)vrip_cells.size(); k++){
                   //  cout << "FFF "<<vrip_cells[k].bounds.bbox._min << " "<<vrip_cells[k].bounds.bbox._max<<endl;
                   //  cout << "GLOBAL "<<totalbb._min << " "<<totalbb._max<<endl;
@@ -1550,7 +1582,7 @@ const char *uname="mesh";
                         hitcell=true;
                         break;
                     }
-                }
+                }*/
                 if(!hitcell)
                     continue;
                 //osg::Timer_t st= osg::Timer::instance()->tick();
@@ -1617,6 +1649,21 @@ const char *uname="mesh";
     }
 
     if(!externalMode){
+
+
+        {
+            WriteSplitTP wstp(vrip_res,string(diced_dir)+"/splitcmds",basepath,tasks,vol);
+            for(int i=0; i<(int)cells.size(); i++){
+
+                wstp.write_cmd(cells[i]);
+            }
+            wstp.close();
+            string splitcmd="split.py";
+            shellcm.write_generic(splitcmd,wstp.getCmdFileName(),"Split",NULL,NULL);
+        }
+
+
+#if 0
         vector<std::string> postcmdv;
         string tcmd =basepath+string("/vrip/bin/plymerge ");
         //char tmp100[8096];
@@ -1630,46 +1677,50 @@ const char *uname="mesh";
         for(int i=0; i <(int)cells.size(); i++){
             int v_count=0;
             //cout << cells[i].bboxMarginUnRot._max << " " <<cells[i].bboxMargin._max <<endl;
-            sprintf(shr_tmp,"cd %s;%s/treeBBClip ",           cwd,
-                    basepath.c_str());
+            sprintf(shr_tmp,"cd %s;%s/treeBBClip %s/total.ply",           cwd,
+                    basepath.c_str(),diced_dir);
             for(int j=0; j <(int)vrip_cells.size(); j++){
                 if(vrip_cells[j].poses.size() == 0 || !cells[i].bboxMarginUnRot.intersects(vrip_cells[j].bounds.bbox))
                     continue;
-                sprintf(shr_tmp,"%s %s/tmp-clipped-diced-%08d.ply",shr_tmp,diced_dir,j);
+              //  sprintf(shr_tmp,"%s %s/tmp-clipped-diced-%08d.ply",shr_tmp,diced_dir,j);
                 v_count++;
             }
             if(v_count== 0)
                 continue;
-            sprintf(shr_tmp,"%s --invrot %f %f %f --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dup --outfile %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply;",
+            sprintf(shr_tmp,"%s --invrot %f %f %f --bbox %.16f %.16f %.16f %.16f %.16f %.16f -gap -F --outfile %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply;",
                     shr_tmp,rx,ry,rz,
-                    cells[i].bboxMarginUnRot.xMin(),
-                    cells[i].bboxMarginUnRot.yMin(),
+                    cells[i].bboxUnRot.xMin(),
+                    cells[i].bboxUnRot.yMin(),
                     -FLT_MAX,
-                    cells[i].bboxMarginUnRot.xMax(),
-                    cells[i].bboxMarginUnRot.yMax(),
+                    cells[i].bboxUnRot.xMax(),
+                    cells[i].bboxUnRot.yMax(),
                     FLT_MAX,
                     diced_dir,
-                    cells[i].row,cells[i].col);
-            sprintf(shr_tmp,"%s  %s/vcgapps/bin/mergeMesh %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply -flip -cleansize %f -thresh %f -out %s/tmp-tex-clipped-diced-r_%04d_c_%04d.ply ;",shr_tmp,
-                    basepath.c_str(),diced_dir,cells[i].row,cells[i].col,smallCCPer,0.9*vrip_res,diced_dir,cells[i].row,cells[i].col);
+                    cells[i].row,cells[i].col,vpblod);
+          /*  sprintf(shr_tmp,"%s  %s/vcgapps/bin/mergeMesh %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply -flip -cleansize %f -P -thresh %f -out %s/tmp-tex-clipped-diced-r_%04d_c_%04d.ply ;",shr_tmp,
+                    basepath.c_str(),diced_dir,cells[i].row,cells[i].col,smallCCPer,0.9*vrip_res,diced_dir,cells[i].row,cells[i].col);*/
 
-            fprintf(splitcmds_fp,"%s;",shr_tmp);
-            fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup -F --outfile %s/tmp1-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ;",
-                    basepath.c_str(),
-                    -FLT_MAX,-FLT_MAX,-FLT_MAX,
-                    FLT_MAX,FLT_MAX,FLT_MAX,
-                    diced_dir,
-                    cells[i].row,cells[i].col,  diced_dir,cells[i].row,cells[i].col,vpblod);
-            fprintf(splitcmds_fp,"setenv DISPLAY :0.0; %s/vcgapps/bin/sw-shadevis -n64 %s/tmp1-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ;",
-                    basepath.c_str(),diced_dir,
-                     cells[i].row,cells[i].col,vpblod);
-            fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/tmp1-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply -gap -F --outfile %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
+            fprintf(splitcmds_fp,"%s;",shr_tmp);/*
+            fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/tmp-tex-clipped-diced-r_%04d_c_%04d.ply -gap -F --outfile %s/tmp1-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ;",
                     basepath.c_str(),
                     cells[i].bboxUnRot.xMin(),
                     cells[i].bboxUnRot.yMin(),
                     -FLT_MAX,
                     cells[i].bboxUnRot.xMax(),
                     cells[i].bboxUnRot.yMax(),
+                    FLT_MAX,
+                    diced_dir,
+                    cells[i].row,cells[i].col,  diced_dir,cells[i].row,cells[i].col,vpblod);*/
+            fprintf(splitcmds_fp,"setenv DISPLAY :0.0; %s/vcgapps/bin/sw-shadevis -P -n64 %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ;",
+                    basepath.c_str(),diced_dir,
+                     cells[i].row,cells[i].col,vpblod);
+            fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/vis-un-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply -dup -F --outfile %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
+                    basepath.c_str(),
+                   -FLT_MAX,
+                    -FLT_MAX,
+                    -FLT_MAX,
+                    FLT_MAX,
+                    FLT_MAX,
                     FLT_MAX,
                     diced_dir,
                     cells[i].row,cells[i].col,
@@ -1776,12 +1827,13 @@ const char *uname="mesh";
       //  std::string extraCheckCmd=createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
 
         shellcm.write_generic(splitcmd,splitcmds_fn,"Split",NULL,NULL,0);
+#endif
         if(!no_split)
             sysres=system("python split.py");
     }else{
         //printf("Split for Tex %d\n",(int)cells.size());
         osg::Timer_t startTick= osg::Timer::instance()->tick();
-        int totalTodoCount=cells.size()+vrip_cells.size();
+        int totalTodoCount=cells.size();//+vrip_cells.size();
         int progCount=0;
         char tmpname[1024];
         if(!no_split){
@@ -1817,7 +1869,7 @@ const char *uname="mesh";
                         for(int i=0; i <(int)cells.size(); i++){
                             sprintf(tmpname,"%s/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply",
                                     diced_dir,cells[i].row,cells[i].col,vpblod);
-                            cut_model(kdbb,tmpname,cells[i].bboxMargin,IntersectKdTreeBbox::DUP);
+                            cut_model(kdbb,tmpname,cells[i].bboxMargin,DUP);
                             formatBar("Split",startTick,progCount,totalTodoCount);
                             //#pragma omp atomic
                             progCount++;
@@ -1855,15 +1907,15 @@ const char *uname="mesh";
                     //#pragma omp parallel num_threads(num_threads)
                     {
                         //#pragma omp for
-                        for(int i=0; i <(int)vrip_cells.size(); i++){
-                            if(vrip_cells[i].poses.size() == 0){
-                                vrip_cells[i].valid=false;
+                        foreach_vol(cur,vol){
+                            if(cur->poses.size() == 0){
+                                cur->valid=false;
                                 continue;
                             }
-                            osg::BoundingBox box=vrip_cells[i].bounds.bbox;
-                            sprintf(tmpname,"%s/clipped-diced-%08d-lod%d.ply",diced_dir,
-                                    i,vpblod);
-                            vrip_cells[i].valid=cut_model(kdbb,tmpname,box,IntersectKdTreeBbox::DUP);
+                            osg::BoundingBox box=cur->bounds.bbox;
+                            sprintf(tmpname,"%s/clean_%d%d%d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+
+                            cur->valid=cut_model(kdbb,tmpname,box,DUP);
                             formatBar("Split",startTick,progCount,totalTodoCount);
                             //#pragma omp atomic
                             progCount++;
@@ -1981,7 +2033,7 @@ const char *uname="mesh";
                     for(int i=0; i <(int)cells.size(); i++){
                         sprintf(tmpname,"mesh-diced/1tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",
                                 cells[i].row,cells[i].col,vpblod);
-                        cut_model(kdbb,tmpname,cells[i].bboxMargin,IntersectKdTreeBbox::DUP);
+                        cut_model(kdbb,tmpname,cells[i].bboxMargin,DUP);
                         formatBar("Split",startTick,progCount,totalTodoCount);
                         //#pragma omp atomic
                         progCount++;
@@ -2029,7 +2081,7 @@ const char *uname="mesh";
                         osg::BoundingBox box=vrip_cells[i].bounds.bbox;
                         sprintf(tmpname,"mesh-diced/clipped-diced-%08d-lod%d.ply",
                                 i,vpblod);
-                        vrip_cells[i].valid=cut_model(kdbb,tmpname,box,IntersectKdTreeBbox::DUP);
+                        vrip_cells[i].valid=cut_model(kdbb,tmpname,box,DUP);
                         formatBar("Split",startTick,progCount,totalTodoCount);
                         //#pragma omp atomic
                         progCount++;
@@ -2149,7 +2201,7 @@ const char *uname="mesh";
 
     for(int i=0; i <(int)cells.size(); i++){
         char tmpfn[1024];
-        sprintf(tmpfn,"%s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply", diced_dir,cells[i].row,cells[i].col,vpblod);
+        sprintf(tmpfn,"%s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply", diced_dir,cells[i].row,cells[i].col);
         if(cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
             fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
@@ -2160,14 +2212,13 @@ const char *uname="mesh";
                 cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
 
 
-        fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f",
+        fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f",
                 cwd,
                 gpunum,
                 basepath.c_str(),
                 base_dir.c_str(),
                 diced_dir,
                 cells[i].row,cells[i].col,
-                vpblod,
                 diced_dir,cells[i].row,cells[i].col,
                 diced_dir,
                 cells[i].row,cells[i].col,
@@ -2298,7 +2349,9 @@ else
             stereo_calib_file_name.c_str()
             );*/
     fclose(FP4);
-    FILE *dBFP=fopen("diced-bounds.txt","w");
+
+    /*FILE *dBFP=fopen("diced-bounds.txt","w");
+
     fprintf(dBFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d total\n",totalbb_unrot.xMin(),totalbb_unrot.xMax(),totalbb_unrot.yMin(),totalbb_unrot.yMax(),totalbb_unrot.zMin(),
             totalbb_unrot.zMax(),(int)vrip_cells.size());
     for(int i=0; i <(int)vrip_cells.size(); i++){
@@ -2311,6 +2364,24 @@ else
     }
     fclose(dBFP);
 
+    */
+    FILE *dBFP=fopen("diced-bounds.txt","w");
+    int totalVolCells=0;
+    foreach_vol(cur,vol){
+        totalVolCells++;
+    }
+    fprintf(dBFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d total\n",totalbb_unrot.xMin(),totalbb_unrot.xMax(),totalbb_unrot.yMin(),totalbb_unrot.yMax(),totalbb_unrot.zMin(),
+            totalbb_unrot.zMax(),totalVolCells);
+    int cnt=0;
+    foreach_vol(cur,vol){
+        if(cur->poses.size() == 0)
+            continue;
+        char tmpt[1024];
+        sprintf(tmpt,"%s/clean_%d%d%d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+        fprintf(dBFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %s\n",cur->bounds.bbox.xMin(),cur->bounds.bbox.xMax(),cur->bounds.bbox.yMin(),cur->bounds.bbox.yMax(),cur->bounds.bbox.zMin(),
+                cur->bounds.bbox.zMax(),cnt++,tmpt);
+    }
+    fclose(dBFP);
    // fclose(FP5);
     if(!externalMode){
         double margin=vrip_res*10;
@@ -2320,30 +2391,31 @@ else
         for(int t=0; t< 2; t++)
             rangeimgcmds_fp[t]  =fopen(rangeimgcmds_fn[t].c_str(),"w");
         std::set<string> usedName;
-        for(int i=0; i <(int)vrip_cells.size(); i++){
-            if(vrip_cells[i].poses.size() == 0)
+        foreach_vol(cur,vol){
+            if(cur->poses.size() == 0)
                 continue;
+
             char tmpp[1024];
-            sprintf(tmpp,"%s/clipped-diced-%08d-range.txt",diced_dir,i);
+            sprintf(tmpp,"%s/range-clean_%d%d%d.txt",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
             FILE *rfp=fopen(tmpp,"w");
             string mesh_list;
             for(int t=0; t<2; t++){
                 fprintf(rangeimgcmds_fp[t],"%s/rangeimg ",basepath.c_str());
-                osg::BoundingBox expanded(vrip_cells[i].bounds.bbox._min[0]-margin,vrip_cells[i].bounds.bbox._min[1]-margin,vrip_cells[i].bounds.bbox._min[2]-margin,
-                                          vrip_cells[i].bounds.bbox._max[0]+margin,vrip_cells[i].bounds.bbox._max[1]+margin,vrip_cells[i].bounds.bbox._max[2]+margin);
-                for(int j=0; j< (int) vrip_cells.size(); j++){
-                    if(expanded.intersects(vrip_cells[j].bounds.bbox)){
+                osg::BoundingBox expanded(cur->bounds.bbox._min[0]-margin,cur->bounds.bbox._min[1]-margin,cur->bounds.bbox._min[2]-margin,
+                                          cur->bounds.bbox._max[0]+margin,cur->bounds.bbox._max[1]+margin,cur->bounds.bbox._max[2]+margin);
+                foreach_vol(cur2,vol){
+                    if(expanded.intersects(cur2->bounds.bbox)){
                         char tmpt[1024];
-                        sprintf(tmpt,"%s/vis-clipped-diced-%08d-lod%d.ply ",diced_dir,j,vpblod);
+                        sprintf(tmpt,"%s/clean_%d%d%d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
                         mesh_list+=tmpt;
                     }
 
                 }
                 const char *globalstr= (t==1) ? "--global" : "";
-                fprintf(rangeimgcmds_fp[t],"%s --bbox %s/clipped-diced-%08d-range.txt --size %d %d --calib %s %s\n",
+                fprintf(rangeimgcmds_fp[t],"%s --bbox %s/range-clean_%d%d%d.txt --size %d %d --calib %s %s\n",
                         mesh_list.c_str(),
-                        diced_dir,
-                        i,
+                        aggdir,
+                        cur->volIdx[0],cur->volIdx[1],cur->volIdx[2],
                         calib.camera_calibs[0].width,
                         calib.camera_calibs[0].height,
                         stereo_calib_file_name.c_str(),
@@ -2351,10 +2423,10 @@ else
                         );
             }
             int ct=0;
-            for(int k=0; k<(int)vrip_cells[i].poses.size(); k++){
-                if(usedName.count(vrip_cells[i].poses[k]->left_name) >0 )
+            for(int k=0; k<(int)cur->poses.size(); k++){
+                if(usedName.count(cur->poses[k]->left_name) >0 )
                     continue;
-                const Stereo_Pose_Data *name=vrip_cells[i].poses[k];
+                const Stereo_Pose_Data *name=cur->poses[k];
                 usedName.insert(name->left_name);
                 fprintf(rfp,"%d %s ",
                         ct++,name->left_name.c_str());
@@ -2514,13 +2586,17 @@ else
     fprintf(uploadFP,"ln -sf $PWD/vtex $PWD/$1/\n");
     for(int k=0; k<numOctrees; k++)
         fprintf(uploadFP,"ln -sf $PWD/vtex-%04d.octree $PWD/$1/m-%04d.octree\n",k,k);
+    fprintf(uploadFP,"ln -sf $PWD/octree.txt $PWD/$1/cnt\n");
     fprintf(uploadFP,"rm -f $1/m.xml\n");
     fprintf(uploadFP,"tar cvfh $1.tar $1\n");
-    fprintf(uploadFP,"bash %s/getmeta.sh $1 %d > $1/m.xml\n",basepath.c_str(),numOctrees);
+    fprintf(uploadFP,"bash %s/getmeta.sh $1 $2> $1/m.xml\n",basepath.c_str());
     fprintf(uploadFP,"tar rvf $1.tar $1/m.xml\n");
-    fprintf(uploadFP,"scp $1.tar mattjr@aguacate:benthos/\n");
+    fprintf(uploadFP,"scp $1.tar mattjr@aguacate:benthos/$2\n");
     fprintf(uploadFP,"scp %s/updatemodelxml.sh mattjr@aguacate:benthos/\n",basepath.c_str());
+    fprintf(uploadFP,"scp %s/create_main_feed.sh mattjr@aguacate:benthos/\n",basepath.c_str());
     fprintf(uploadFP,"ssh mattjr@aguacate \"cd benthos;bash updatemodelxml.sh\"\n");
+    fprintf(uploadFP,"ssh mattjr@aguacate \"cd benthos;bash create_main_feed.sh\"\n");
+
     fchmod(fileno(uploadFP),0777);
 
     fclose(uploadFP);

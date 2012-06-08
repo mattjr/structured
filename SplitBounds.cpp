@@ -83,7 +83,7 @@ bool WriteSplitTP::write_cmd(const picture_cell &cell){
     if(v_count== 0)
         return false;
 
-    sprintf(shr_tmp,"%s --bbox %.16f %.16f %.16f %.16f %.16f %.16f -gap -F --outfile %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply;",
+    sprintf(shr_tmp,"%s --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dump -F --outfile %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply;",
             shr_tmp,
             cell.bbox.xMin(),
             cell.bbox.yMin(),

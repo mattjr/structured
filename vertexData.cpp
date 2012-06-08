@@ -225,15 +225,21 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
             tri[1] =_bbox->contains(triV[1]);
             tri[2] =_bbox->contains(triV[2]);
             inside= tri[0]+tri[1]+tri[2];
-            if(inside <3 ){
+            if(inside ==0)
+                add=false;
+            else if(inside <3 ){
+
                 //Check left right
-                if(!_gap){
-                    if(inside == 0)
-                        add=false;
-                }else{
+                if(_mode ==DUP){
+                  //Ok
+                    add=true;
+                }else  if(_mode ==GAP || _mode==DUMP){
                     if( !tri[2] ){
                        //check which side its on
-                        add=false;
+                        if(_mode==GAP)
+                            add=false;
+                        else
+                            add=true;
                     }
 
                 }
@@ -433,7 +439,7 @@ int start=_triangles->size();
     }
 }
 /*  Open a PLY file and read vertex, color and index data. and returns the node  */
-osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColors,osg::BoundingBox *bbox ,bool gap)
+osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColors,osg::BoundingBox *bbox ,OverlapMode mode)
 {
     int     nPlyElems;
     char**  elemNames;
@@ -442,13 +448,13 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
     bool    result = false;
     int     nComments;
     char**  comments;
-    _gap=gap;
+    _mode=mode;
      PlyFile* file = NULL;
     _bbox=bbox;
     outbboxVert.clear();
     _tmp_verts.clear();
     _tmp_colors.clear();
-    if(gap){
+    if(_mode ==GAP){
         printf("Using GaP border\n");
     }
   //  printf("%s\n",filename);

@@ -28,6 +28,11 @@ do
 	fi
 	let COUNTER=COUNTER+1 
     fi
+    tar xf $i $tmp/m.jpg
+    if [ -e $tmp/m.jpg ]
+    then
+	mv $tmp/m.jpg ../${tmp}.jpg
+    fi
 done
 mv models.xml ..
 cd ..

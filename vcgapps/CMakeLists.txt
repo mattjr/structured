@@ -18,6 +18,7 @@ ENDIF( NOT GLUT_FOUND )
 ADD_EXECUTABLE( tridecimator  tridecimator.cpp  ${SRCS} )
 ADD_EXECUTABLE( mergeMesh mergeMesh.cpp ${SRCS} )
 ADD_EXECUTABLE( cleanTexMesh cleanTexMesh.cpp ${SRCS} )
+ADD_EXECUTABLE( setupDebugMesh setupDebugMesh.cpp ${SRCS} )
 
 ADD_EXECUTABLE( texturedDecimator  texturedDecimator.cpp ${SRCS} )
 TARGET_LINK_LIBRARIES(texturedDecimator ts)

@@ -98,7 +98,7 @@ class MCTriEdgeCollapse: public tri::TriEdgeCollapse< MCTriMesh, MYTYPE> {
 //        assert(	(p0[0]==p1[0]) ||
 //                        (p0[1]==p1[1]) ||
 //                        (p0[2]==p1[2]) );
-      DoCollapse(m, this->pos, MidPoint);
+      vcg::tri::EdgeCollapse<MCTriMesh>::DoCollapse(m, this->pos, MidPoint);
 	}
 						
 						

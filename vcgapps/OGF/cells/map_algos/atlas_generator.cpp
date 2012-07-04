@@ -188,9 +188,15 @@ namespace OGF {
             if(is_valid && auto_cut_) {
                 ParamValidator validator ;
                 validator.set_max_overlap_ratio(max_overlap_ratio_) ;
-                validator.set_max_scaling(max_scaling_) ;
+                if(iter >1 )
+                validator.set_max_scaling(max_scaling_*10000.0) ;
+                else
+                    validator.set_max_scaling(max_scaling_) ;
+
                 validator.set_min_fill_ratio(min_fill_ratio_) ;
-                is_valid = validator.component_is_valid(cur) ;
+                is_valid = cur->size_of_facets() < 1000 ? true :validator.component_is_valid(cur) ;
+
+                //is_valid = validator.component_is_valid(cur) ;
                 thin_component = validator.fill_ratio() < min_fill_ratio_ ;
             }
             if(is_valid) {

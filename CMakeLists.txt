@@ -110,7 +110,14 @@ IF (OPENMP_FOUND)
     MESSAGE(STATUS "flags are now: " ${CMAKE_CXX_FLAGS})
 ENDIF(OPENMP_FOUND)
 
+FIND_PROGRAM(GDAL_PYTHON_TOOLS
+             NAMES gdal_merge.py
+             PATHS ENV PATH)
 
+
+IF(NOT GDAL_PYTHON_TOOLS)
+  MESSAGE(FATAL_ERROR "Unable to find python bidning for GDAL: gdal_merge.py Try installing python-gdal")
+ENDIF(NOT GDAL_PYTHON_TOOLS)
 
 
 

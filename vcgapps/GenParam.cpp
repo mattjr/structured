@@ -28,6 +28,7 @@
 #include <OGF/image/types/image_library.h>
 #include <OGF/image/algos/rasterizer.h>
 #include <OGF/image/algos/morpho_math.h>
+#include <OGF/image/io/image_serializer_ppm.h>
 #include <OGF/basic/os/file_system.h>
 #include <OGF/cells/io/map_serializer_obj.h>
 
@@ -370,17 +371,22 @@ osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::
          cout <<"Final Coords"<<bbox._min<< " "<<bbox._max<<endl;
          return arr;
 }
-void dilateEdge(IMAGE *tmpI){
+void dilateEdge(IMAGE *tmpI,const char *outfile){
     OGF::Image* img = new OGF::Image(OGF::Image::RGB,tmpI->Xsize,tmpI->Ysize);
     OGF::Memory::byte* mem_img = img->base_mem_byte_ptr();
     vips::VImage tmpImage(mem_img,tmpI->Xsize,tmpI->Ysize,3,vips::VImage::FMTUCHAR);
     vips::VImage v(tmpI);
     v.write(tmpImage);
     OGF::MorphoMath morpho(img) ;
-    for(int i=0; i<3; i++) {
+    OGF::ImageSerializer_ppm *p = new OGF::ImageSerializer_ppm;
+    std::ofstream outf(outfile);
+    int number = std::max(2,(int)round(7*(tmpI->Xsize/(double)8192)));
+    printf("Dilating %d times\n",number);
+    for(int i=0; i<number; i++) {
         morpho.dilate(1) ;
     }
-    im_copy(tmpImage.image(),tmpI);
+    p->serialize_write(outf,img);
+    delete p;
 
 }
 using namespace std;

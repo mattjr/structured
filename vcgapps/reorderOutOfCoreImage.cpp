@@ -915,14 +915,14 @@ bool pyramid=arguments.read("-pyr");
         //(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str()
         IMAGE *tmpI=im_open("tmp","p");
         im_extract_bands(outputImage,tmpI,0,3);
-        dilateEdge(tmpI);
+        dilateEdge(tmpI,(osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str());
 
-        if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str())){
+       /* if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str())){
             fprintf(stderr,"Failed to write\n");
             cerr << im_error_buffer()<<endl;
             im_close(tmpI);
             exit(-1);
-        }
+        }*/
         /*  vips::VImage maskI(tmpI);
         vips::VImage dilatedI(tmpI);
         const int size=4;

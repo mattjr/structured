@@ -782,12 +782,18 @@ bool pyramid=arguments.read("-pyr");
           img->setFileName(osgDB::getNameLessExtension(imageName)+"-tmp.ppm");
           texture->setDataVariance(osg::Object::DYNAMIC); // protect from being optimized away as static state.
           texture->setImage(img);
-
-        osg::StateSet* stateset = geom->getOrCreateStateSet();
+          osg::Geode *tmpGeode=new osg::Geode;
+          osg::Geometry *tmpgeom=new osg::Geometry;
+          tmpGeode->addDrawable(tmpgeom);
+          tmpgeom->addPrimitiveSet(vertexData._triangles);
+          tmpgeom->setVertexArray(vertexData._vertices);
+          tmpgeom->setTexCoordArray(0,newTCArr);
+        osg::StateSet* stateset = tmpgeom->getOrCreateStateSet();
         stateset->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
         stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
 
-        osgDB::writeNodeFile(*geode,"test.ive");
+        osgDB::writeNodeFile(*tmpGeode,"hawk.ive");
+        printf("%d %d %d\n",vertexData._triangles->size(),vertexData._vertices->size(),newTCArr->size());
         }
         {
             std::vector<int>imageId;
@@ -802,7 +808,7 @@ bool pyramid=arguments.read("-pyr");
             bool color = vertexData._colors.valid() ? (vertexData._colors->size() >0) : false;
 
             write_header(f,vertexData._triangles->size(),color);
-            write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,imageId,newTCArr,mosaic,false);
+            write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,imageId,newTCArr,mosaic,true);
         }
       //  return 0;
         if(!blending){

@@ -105,7 +105,7 @@ static string base_dir;
 static bool no_depth=false;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 static int num_threads=1;
-static FILE *fpp,*fpp2;
+static FILE *fpp;
 static bool useVirtTex=false;
 static bool useReimage=true;
 
@@ -1233,19 +1233,35 @@ const char *uname="mesh";
         }
     }
 #endif
-    typename CellDataT<Stereo_Pose_Data>::type vol;
+     CellDataT<Stereo_Pose_Data>::type vol;
     int minSplits=-1;
     double targetVolume=10.0;
     split_bounds<Stereo_Pose_Data>(bounds,tasks , targetVolume,minSplits,vol);
     {
         WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,tasks);
+        int splits[3]={0,0,0};
         foreach_vol(cur,vol){
           //  cout <<cur->bounds.bbox._min<<" "<<cur->bounds.bbox._max<<endl;
         //    cout <<"Poses " <<cur->poses.size()<<endl;
             wbtp.write_cmd(*cur);
+            splits[0]=cur->splits[0];
+            splits[1]=cur->splits[1];
+            splits[2]=cur->splits[2];
+
         }
         string plymccmd="plymc.py";
-        shellcm.write_generic(plymccmd,wbtp.getCmdFileName(),"PlyMC",NULL,NULL);
+        std::vector<string> precmd;
+        char tmpcmd[1024];
+        sprintf(tmpcmd,"%s/vcgapps/bin/plymc -M -V%f -S %d %d %d -o%s/vol %s",basepath.c_str(),
+                vrip_res,
+                     
+                           splits[0],
+                          splits[1],
+                           splits[2],
+                           aggdir,
+                           wbtp.bboxfn.c_str());
+    precmd.push_back(string(tmpcmd));
+        shellcm.write_generic(plymccmd,wbtp.getCmdFileName(),"PlyMC",&precmd,NULL);
         wbtp.close();
     }
     if(!no_vrip)
@@ -2327,7 +2343,7 @@ else
     string cwdmeshdiced=cwd;
 
     std::string extraCheckCmd;
-    sprintf(tmp100, " -outfile %s/tex-total.obj ; %s/vcgapps/bin/cleanTexMesh %s/tex-total.obj -F --normcolor -thresh %f  -out %s/tex-total.ply > /dev/null",diced_dir,basepath.c_str(),diced_dir,0.9*vrip_res,diced_dir);
+    sprintf(tmp100, " -outfile %s/tex-total.obj ; %s/vcgapps/bin/cleanTexMesh %s/tex-total.obj --normcolor -out %s/tex-total.ply",diced_dir,basepath.c_str(),diced_dir,diced_dir);
 
     extraCheckCmd= reparamTex ? createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4): "";
 
@@ -2642,7 +2658,7 @@ else
 
         sprintf(tmp,"%s/total-lod%d.ply",diced_dir,vpblod);//std::min(lod,2)
         std::vector<string> level;
-        string clean_str= 0 ? "-P" : "";
+        string clean_str= 1 ? "-P" : "";
         string boundry_preserve = isSparse ? "" : "-By";
         fprintf(simpcmds_fp,"cd %s/%s;%s/vcgapps/bin/%s tex-total.ply total-lod%d.ply %d %s -Oy %s;",
                 cwd,

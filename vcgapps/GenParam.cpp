@@ -80,7 +80,7 @@ std::vector<double> pixelSides;
            // printf("%f %f\n",max_orig_tex_area,8192*tex_area);
             double sidePixels=sqrt(max_orig_tex_area/tex_area);
             //cout <<sidePixels<<endl;
-            if(isfinite(sidePixels) && sidePixels >0 && sidePixels < pow(2,17))
+            if(isfinite(sidePixels) && sidePixels >0 && sidePixels < pow(2.0f,17))
                 pixelSides.push_back(sidePixels);
     }
     if(pixelSides.size() ==0)
@@ -153,9 +153,11 @@ public:
         the_generator.set_max_scaling(120.0) ;
         the_generator.set_min_fill_ratio(0.25) ;
         the_generator.set_pack(true) ;
-//        OGF::SmoothVariationalMapComponentSplitter *vasmooth =new SmoothVariationalMapComponentSplitter;
-  //      vasmooth->set_max_components(3);
-        the_generator.set_splitter("VSASmooth") ;
+        OGF::SmoothVariationalMapComponentSplitter *vasmooth =new SmoothVariationalMapComponentSplitter;
+        vasmooth->set_max_components(3);
+        //vasmooth->set_error_decrease_factor(0.1);;
+              the_generator.set_splitter(vasmooth) ;
+  //      the_generator.set_splitter("VSASmooth") ;
         the_generator.apply() ;
     }
 
@@ -340,8 +342,8 @@ osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::
          val.compute_fill_and_overlap_ratio(&the_map);
          std::cerr << "Created atlas with fill ratio of " << val.fill_ratio()<< std::endl ;
 
-         OGF::write_file_eps(the_map,"test.eps");
-       //  exit(0);
+       //  OGF::write_file_eps(the_map,"test.eps");
+         //exit(0);
          osg::Vec3Array *arr=new osg::Vec3Array;
          arr->resize(triangles->size());
          osg::BoundingBox bbox;

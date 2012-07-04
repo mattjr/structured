@@ -7,7 +7,7 @@
  *
  */
 
-#include "plymc.h"
+#include "uni_plymc.h"
 #include "simplemeshprovider.h"
 #include "bbox_txt_meshprovider.h"
 #define _PLYMC_VER "4.0"

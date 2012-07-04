@@ -121,9 +121,9 @@ protected:
 
 class WriteSplitTP : public WriteTP{
     public:
-    WriteSplitTP(double res,std::string fname,std::string basepath,const std::vector<Stereo_Pose_Data> &tasks,const typename CellDataT<Stereo_Pose_Data>::type &Vol);
+    WriteSplitTP(double res,std::string fname,std::string basepath,const std::vector<Stereo_Pose_Data> &tasks,const  CellDataT<Stereo_Pose_Data>::type &Vol);
     bool write_cmd(const picture_cell &cell);
-    const typename CellDataT<Stereo_Pose_Data>::type &_vol;
+    const  CellDataT<Stereo_Pose_Data>::type &_vol;
     const std::vector<Stereo_Pose_Data> &_tasks;
     std::string getCmdFileName(){return cmdfn;}
     void close(){ if(cmdfp) fclose(cmdfp);}

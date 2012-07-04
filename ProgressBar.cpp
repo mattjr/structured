@@ -14,6 +14,8 @@ std::string formatBarString(string name,osg::Timer_t startTick,osg::Timer_t tick
     struct winsize w;
     ioctl(0, TIOCGWINSZ, &w);
     int term_width=w.ws_col;
+    if(w.ws_col > 2800)
+        term_width=2;
     std::stringstream tmp;
     tmp<<totalCount;
     int countlength=tmp.str().size();

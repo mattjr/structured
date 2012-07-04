@@ -35,8 +35,10 @@ WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,const st
 }
 bool WriteBoundTP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
  double smallCCPer=0.2;
-    fprintf(cmdfp,"%s/vcgapps/bin/plymc -M -V%f -s %d %d %d %d %d %d -o%s/vol %s;%s/vcgapps/bin/mergeMesh %s/vol_%d%d%d.ply  -cleansize %f -P -out %s/clean_%d%d%d.ply\n",_basepath.c_str(),
-            _res,
+   // fprintf(cmdfp,"%s/vcgapps/bin/plymc -M -V%f -s %d %d %d %d %d %d -o%s/vol %s;%s/vcgapps/bin/mergeMesh %s/vol_%d%d%d.ply  -cleansize %f -P -out %s/clean_%d%d%d.ply\n",_basepath.c_str(),
+ fprintf(cmdfp,"%s/vcgapps/bin/mergeMesh %s/vol_%d%d%d.ply  -cleansize %f -P -out %s/clean_%d%d%d.ply\n",
+
+ /*_res,
             cell.splits[0],
             cell.splits[1],
             cell.splits[2],
@@ -44,7 +46,7 @@ bool WriteBoundTP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
             cell.volIdx[1],
             cell.volIdx[2],
             aggdir,
-            bboxfn.c_str(),
+            bboxfn.c_str(),*/
             _basepath.c_str(),
             aggdir,
             cell.volIdx[0],
@@ -60,7 +62,7 @@ bool WriteBoundTP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
 }
 
 
-WriteSplitTP::WriteSplitTP(double res,string fname,std::string basepath,const std::vector<Stereo_Pose_Data> &tasks,const typename CellDataT<Stereo_Pose_Data>::type &Vol):WriteTP(res,fname,basepath),_vol(Vol),_tasks(tasks){
+WriteSplitTP::WriteSplitTP(double res,string fname,std::string basepath,const std::vector<Stereo_Pose_Data> &tasks,const  CellDataT<Stereo_Pose_Data>::type &Vol):WriteTP(res,fname,basepath),_vol(Vol),_tasks(tasks){
     cmdfp =fopen(fname.c_str(),"w");
     if(!cmdfp){
         fprintf(stderr,"Can't create cmd file");

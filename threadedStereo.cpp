@@ -95,6 +95,7 @@ static double max_alt_cutoff=20.0;
 //static bool use_ncc = false;
 static double vrip_ramp;
 static int num_skip=0;
+static         bool useRepram=true;
 
 static int gpunum=0;
 static string stereo_calib_file_name;
@@ -2240,7 +2241,7 @@ const char *uname="mesh";
         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                 cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
 
-
+        string remap_mesh_ext=useRepram ? "remap-" : "";
         fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f ",
                 cwd,
                 gpunum,
@@ -2253,7 +2254,7 @@ const char *uname="mesh";
                 cells[i].row,cells[i].col,
                 vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
                 rx,ry,rz,tex_margin);
-        sprintf(tmpfn2,"%s/remap-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply", diced_dir,cells[i].row,cells[i].col,vpblod);
+        sprintf(tmpfn2,"%s/%stex-clipped-diced-r_%04d_c_%04d-lod%d.ply", diced_dir,remap_mesh_ext.c_str(),cells[i].row,cells[i].col,vpblod);
         cfiles.push_back(tmpfn2);
 
         if(hw_image){
@@ -2331,12 +2332,12 @@ else
         tmp_ds[0]='\0';
       //  num_samples=0;
         int levels=useVirtTex ? 0:(int)ceil(log( max( ajustedGLImageSizeX, ajustedGLImageSizeY ))/log(2.0) );
-
+        string remap_ext= useRepram ? "remap" : "tmp";
       //  for(int p=0; p<num_samples; p++)
       //      sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
-        fprintf(FP2,"%d %d %d %d %s/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm %s/image_r%04d_c%04d_rs%04d_cs%04d.ppm %d\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),
+        fprintf(FP2,"%d %d %d %d %s/image_r%04d_c%04d_rs%04d_cs%04d-%s.ppm %s/image_r%04d_c%04d_rs%04d_cs%04d.ppm %d\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),
                 (totalX-ajustedGLImageSizeX*(cells[i].row)),ajustedGLImageSizeY*cells[i].col,ajustedGLImageSizeY*(cells[i].col+1),diced_img_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns,
-                diced_img_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns,levels);
+                remap_ext.c_str(),diced_img_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns,levels);
 
 
 

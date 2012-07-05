@@ -14,10 +14,10 @@ FILE *FragmentShaderVarMain::f_arr[3];
 IplImage *FragmentShaderVarMain::outputImage;
  std::vector<osg::Vec2> FragmentShaderCollectTC:: tc;
 Rect gRect;
-REGION *regOutput;
-REGION *regRange;
-
-
+REGION * FragmentShaderBlendingDistPass::regRange;
+REGION * FragmentShaderBlendingMain::regOutput;
+REGION * FragmentShaderBlendingMain::regRange;
+REGION * FragmentShader::regOutput;
 int doubleTouchCount=0;
 
 dcm_t doublecountmap;

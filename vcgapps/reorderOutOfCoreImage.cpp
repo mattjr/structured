@@ -164,10 +164,12 @@ bool USE_BGR=false;
 struct InputVertex {
     vec3x vertex;
 };
+static REGION *regRange[2];
+static REGION *regOutput[2];
 
-static IMAGE *outputImage;
-static IMAGE *rangeImage;
-static IMAGE *outputImage2;
+
+static IMAGE *outputImage[2];
+static IMAGE *rangeImage[2];
 /* Generate function --- just black out the region.*/
 static int white_gen( REGION *reg, void *seq, void *a, void *b )
 {
@@ -198,7 +200,7 @@ osg::Vec3Array * doMeshReorder(std::string basename);
  * Returns: 0 on success, -1 on error
  */
 int
-im_white( IMAGE *out, int x, int y, int bands )
+        im_white( IMAGE *out, int x, int y, int bands )
 {
     if( x <= 0 || y <= 0 || bands <= 0 ) {
         im_error( "im_white", "%s", "bad parameter"  );
@@ -330,10 +332,10 @@ void readFile(string fname,map<int,imgData> &imageList){
         imgData cam;
         double low[3], high[3];
         if(m_fin >> cam.id >> cam.filename >> low[0] >> low[1] >> low[2] >> high[0] >> high[1] >> high[2]
-                >> cam.m(0,0) >>cam.m(0,1)>>cam.m(0,2) >>cam.m(0,3)
-                >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
-                >> cam.m(2,0) >>cam.m(2,1)>>cam.m(2,2) >>cam.m(2,3)
-                >> cam.m(3,0) >>cam.m(3,1)>>cam.m(3,2) >>cam.m(3,3)){
+           >> cam.m(0,0) >>cam.m(0,1)>>cam.m(0,2) >>cam.m(0,3)
+           >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
+           >> cam.m(2,0) >>cam.m(2,1)>>cam.m(2,2) >>cam.m(2,3)
+           >> cam.m(3,0) >>cam.m(3,1)>>cam.m(3,2) >>cam.m(3,3)){
             cam.bbox.expandBy(low[0],low[1],low[2]);
             cam.bbox.expandBy(high[0],high[1],high[2]);
             imageList[cam.id]=cam;
@@ -401,21 +403,23 @@ int main(int ac, char *av[]) {
     osg::ref_ptr<osg::Node> model;//= osgDB::readNodeFile(av[1]);
     ply::VertexData vertexData;
     osg::ArgumentParser arguments(&ac,av);
-    outputImage=NULL;
-    rangeImage=NULL;
-double scaleTex=1.0;
-bool pyramid=arguments.read("-pyr");
+    for(int i=0; i<2; i++){
+        outputImage[i]=NULL;
+        rangeImage[i]=NULL;
+    }
+    double scaleTex=1.0;
+    bool pyramid=arguments.read("-pyr");
     int jpegQuality=95;
     arguments.read("--jpeg-quality",jpegQuality);
     bool useDisk=arguments.read("--outofcore");
     arguments.read("--scale",scaleTex);
-      osg::Vec2 srcsize;
-      if(!arguments.read("--srcsize",srcsize.x(),srcsize.y())){
-          fprintf(stderr,"need to have a src image size\n");
-          exit(-1);
-      }
-      osg::Vec2 vtSize(-1,-1);
-         arguments.read("--vt",vtSize.x(),vtSize.y());
+    osg::Vec2 srcsize;
+    if(!arguments.read("--srcsize",srcsize.x(),srcsize.y())){
+        fprintf(stderr,"need to have a src image size\n");
+        exit(-1);
+    }
+    osg::Vec2 vtSize(-1,-1);
+    arguments.read("--vt",vtSize.x(),vtSize.y());
 
     string imageName,depthName;
     unsigned int _tileRows;
@@ -439,6 +443,8 @@ bool pyramid=arguments.read("-pyr");
         return -1;
     }
     mat4x  viewProjReadA ;
+    mat4x  viewProjRemapped ;
+
     osg::Matrixd viewProjRead;
     std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
     if(!_file.good()){
@@ -447,9 +453,10 @@ bool pyramid=arguments.read("-pyr");
     }
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++){
-            _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
-            viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
-        }
+        _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
+        viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
+    }
+    mat4x *viewProjMats[2]={&viewProjRemapped,&viewProjReadA};
     sprintf(tmp,"%s/image_r%04d_c%04d_rs%04d_cs%04d",diced_img_dir,row,col,_tileRows,_tileColumns);
 
     imageName=string(tmp)+".v";
@@ -497,34 +504,42 @@ bool pyramid=arguments.read("-pyr");
 
         arguments.read("--size",sizeX,sizeY);
         osg::Vec2 texSize(sizeX,sizeY);
-        outputImage=im_open("tmp","p");
-        if(im_black(outputImage,sizeX,sizeY,4)){
-            fprintf(stderr,"Can't create color image\n");
-            return -1;
+        for(int i=0; i<2; i++){
+            char tmp12[1024];
+            sprintf(tmp12,"tmp%d",i);
+            outputImage[i]=im_open(tmp12,"p");
+            if(im_black(outputImage[i],sizeX,sizeY,4)){
+                fprintf(stderr,"Can't create color image\n");
+                return -1;
+            }
         }
         gRect.width=128;
         gRect.height=1;
 
-        if(useDisk){
+        /*  if(useDisk){
             IMAGE *diskFile=im_open(imageName.c_str(),"w");
             im_copy(outputImage,diskFile);
             im_close(outputImage);
             outputImage=diskFile;
         }
-
+*/
         if(blending){
-            rangeImage=im_open("tmp_range","p");
-            if(im_white(rangeImage,sizeX,sizeY,4)){
-                fprintf(stderr,"Can't create range image\n");
-                return -1;
-            }
+            for(int i=0; i<2; i++){
+                char tmp12[1024];
+                sprintf(tmp12,"tmp_range%d",i);
+                rangeImage[i]=im_open(tmp12,"p");
+                if(im_white(rangeImage[i],sizeX,sizeY,4)){
+                    fprintf(stderr,"Can't create range image\n");
+                    return -1;
+                }
+            }/*
             if(useDisk){
 
                 IMAGE *diskFileRange=im_open(depthName.c_str(),"w");
                 im_copy(rangeImage,diskFileRange);
                 im_close(rangeImage);
                 rangeImage=diskFileRange;
-            }
+            }*/
         }
 
 
@@ -534,29 +549,31 @@ bool pyramid=arguments.read("-pyr");
         double vm, rss;
         process_mem_usage(vm, rss);
         cout << "1st VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
+        for(int i=0; i<2; i++){
 
-        if(  im_rwcheck(outputImage) ){
-            fprintf(stderr,"can't open\n");
-            return -1;
-        }
-
-        regOutput = im_region_create(outputImage);
-        if(regOutput == NULL){
-            fprintf(stderr,"Can't init color image region\n");
-            exit(-1);
-        }
-
-        if(blending){
-            if(  im_rwcheck(rangeImage) ){
+            if(  im_rwcheck(outputImage[i]) ){
                 fprintf(stderr,"can't open\n");
                 return -1;
             }
 
-
-            regRange  = im_region_create(rangeImage);
-            if(regRange == NULL){
-                fprintf(stderr,"Can't init range image region\n");
+            regOutput[i] = im_region_create(outputImage[i]);
+            if(regOutput[i] == NULL){
+                fprintf(stderr,"Can't init color image region\n");
                 exit(-1);
+            }
+
+            if(blending){
+                if(  im_rwcheck(rangeImage[i]) ){
+                    fprintf(stderr,"can't open\n");
+                    return -1;
+                }
+
+
+                regRange[i]  = im_region_create(rangeImage[i]);
+                if(regRange[i] == NULL){
+                    fprintf(stderr,"Can't init range image region\n");
+                    exit(-1);
+                }
             }
         }
         process_mem_usage(vm, rss);
@@ -594,9 +611,9 @@ bool pyramid=arguments.read("-pyr");
 
         if(arguments.read("--invrot",rx,ry,rz)){
             inverseM =osg::Matrix::rotate(
-                        osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
-                        osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
-                        osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+                    osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                    osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                    osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
         }
         osg::Matrix rotM=osg::Matrix::inverse(inverseM);
 
@@ -663,8 +680,8 @@ bool pyramid=arguments.read("-pyr");
 
         for(int i=0; i<4; i++)
             for(int j=0; j<4; j++){
-                viewProjReadA.elem[j][i]=fixed16_t(viewproj(i,j));
-            }
+            viewProjRemapped.elem[j][i]=fixed16_t(viewproj(i,j));
+        }
         //  cout << viewproj<<endl;
         //        printf("AAAA %d %d %d %d\n",row,col,_tileRows,_tileColumns);
 
@@ -706,59 +723,60 @@ bool pyramid=arguments.read("-pyr");
             cout <<endl;
         }
         cout <<endl;*/
-        if(!blending)
-            VertexShader::modelviewprojection_matrix=viewProjReadA;
-        else{
-            VertexShaderBlendingDistPass::modelviewprojection_matrix=viewProjReadA;
-            VertexShaderBlending::modelviewprojection_matrix=viewProjReadA;
-        }
 
         start = osg::Timer::instance()->tick();
 
 
 
-        // the indices we need for rendering
         unsigned indices[] = {0, 1, 2};
+        GeometryProcessor* g[2]={NULL,NULL};
+        RasterizerSubdivAffine* r[2]={NULL,NULL};
 
-        // create a rasterizer class that will be used to rasterize primitives
-        RasterizerSubdivAffine r;
-        // create a geometry processor class used to feed vertex data.
-        GeometryProcessor g(&r);
-        // it is necessary to set the viewport
-        g.viewport(0, 0, outputImage->Xsize, outputImage->Ysize);
-        // set the cull mode (CW is already the default mode)
-        g.cull_mode(GeometryProcessor::CULL_NONE);
+        for(int i=0; i<2; i++){
 
-        // it is also necessary to set the clipping rectangle
-        r.clip_rect(0, 0, outputImage->Xsize, outputImage->Ysize);
+            // create a rasterizer class that will be used to rasterize primitives
+            RasterizerSubdivAffine *rtmp =new RasterizerSubdivAffine;
+            // create a geometry processor class used to feed vertex data.
+            GeometryProcessor *g_i= new GeometryProcessor(rtmp);
+            // it is necessary to set the viewport
+            g_i->viewport(0, 0, outputImage[i]->Xsize, outputImage[i]->Ysize);
+            // set the cull mode (CW is already the default mode)
+            g_i->cull_mode(GeometryProcessor::CULL_NONE);
 
-        // set the vertex and fragment shaders
+            // it is also necessary to set the clipping rectangle
+            rtmp->clip_rect(0, 0, outputImage[i]->Xsize, outputImage[i]->Ysize);
+
+            // set the vertex and fragment shaders
 
 
-        // specify where out data lies in memory
-        g.vertex_attrib_pointer(0, sizeof(Vertex), tmp_vertices);
-
+            // specify where out data lies in memory
+            g_i->vertex_attrib_pointer(0, sizeof(Vertex), tmp_vertices);
+            g[i]=g_i;
+            r[i]=rtmp;
+        }
         if(!vertexData._texCoord.size()){
             fprintf(stderr,"No tex coords\n");
             exit(-1);
         }
         if(1){
-            g.vertex_shader<VertexShaderBlending>();
-            r.fragment_shader<FragmentShaderCollectTC>();
+            g[0]->vertex_shader<VertexShaderBlending>();
+            r[0]->fragment_shader<FragmentShaderCollectTC>();
+            VertexShaderBlending::modelviewprojection_matrix=(*viewProjMats[0]);
+
 
 
             for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
                 for(int t=0; t< (int)itr->second.size(); t++){
                     if(process_tri(itr->second[t],verts,vertexData._texCoord,blending)){
                         FragmentShaderCollectTC::tc.clear();
-                        g.draw_points(3, indices);
+                        g[0]->draw_points(3, indices);
                         osg::Vec2 &tc1=newTCArr->at(itr->second[t].idx[0]);
                         osg::Vec2 &tc2=newTCArr->at(itr->second[t].idx[1]);
                         osg::Vec2 &tc3=newTCArr->at(itr->second[t].idx[2]);
                         if(FragmentShaderCollectTC::tc.size() ==3){
                             for(int l=0; l<3; l++){
-                                osg::Vec2 tc=osg::Vec2(((FragmentShaderCollectTC::tc[l].x())/(double)(outputImage->Xsize)),
-                                                       1.0-((FragmentShaderCollectTC::tc[l].y())/(double)(outputImage->Ysize)));
+                                osg::Vec2 tc=osg::Vec2(((FragmentShaderCollectTC::tc[l].x())/(double)(outputImage[0]->Xsize)),
+                                                       1.0-((FragmentShaderCollectTC::tc[l].y())/(double)(outputImage[0]->Ysize)));
                                 //       cout << FragmentShaderCollectTC::tc[l]<<endl;
                                 osg::Vec2  tc2=osg::Vec2(newVerts->at(itr->second[t].idx[l])[0],
                                                          newVerts->at(itr->second[t].idx[l])[1]);
@@ -777,29 +795,29 @@ bool pyramid=arguments.read("-pyr");
             }
 
 
-
-
         }
 
-        if(0){
-          osg::Texture2D* texture = new osg::Texture2D;
-          osg::Image *img=new osg::Image;
-          img->setWriteHint(osg::Image::EXTERNAL_FILE);
-          img->setFileName(osgDB::getNameLessExtension(imageName)+"-tmp.ppm");
-          texture->setDataVariance(osg::Object::DYNAMIC); // protect from being optimized away as static state.
-          texture->setImage(img);
-          osg::Geode *tmpGeode=new osg::Geode;
-          osg::Geometry *tmpgeom=new osg::Geometry;
-          tmpGeode->addDrawable(tmpgeom);
-          tmpgeom->addPrimitiveSet(vertexData._triangles);
-          tmpgeom->setVertexArray(vertexData._vertices);
-          tmpgeom->setTexCoordArray(0,newTCArr);
-        osg::StateSet* stateset = tmpgeom->getOrCreateStateSet();
-        stateset->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
-        stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
 
-        osgDB::writeNodeFile(*tmpGeode,"hawk.ive");
-        printf("%d %d %d\n",vertexData._triangles->size(),vertexData._vertices->size(),newTCArr->size());
+
+        if(0){
+            osg::Texture2D* texture = new osg::Texture2D;
+            osg::Image *img=new osg::Image;
+            img->setWriteHint(osg::Image::EXTERNAL_FILE);
+            img->setFileName(osgDB::getNameLessExtension(imageName)+"-tmp.ppm");
+            texture->setDataVariance(osg::Object::DYNAMIC); // protect from being optimized away as static state.
+            texture->setImage(img);
+            osg::Geode *tmpGeode=new osg::Geode;
+            osg::Geometry *tmpgeom=new osg::Geometry;
+            tmpGeode->addDrawable(tmpgeom);
+            tmpgeom->addPrimitiveSet(vertexData._triangles);
+            tmpgeom->setVertexArray(vertexData._vertices);
+            tmpgeom->setTexCoordArray(0,newTCArr);
+            osg::StateSet* stateset = tmpgeom->getOrCreateStateSet();
+            stateset->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+            stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+
+            osgDB::writeNodeFile(*tmpGeode,"hawk.ive");
+            printf("%d %d %d\n",vertexData._triangles->size(),vertexData._vertices->size(),newTCArr->size());
         }
         {
             std::vector<int>imageId;
@@ -816,15 +834,10 @@ bool pyramid=arguments.read("-pyr");
             write_header(f,vertexData._triangles->size(),color);
             write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,imageId,newTCArr,mosaic,true);
         }
-      //  return 0;
-        if(!blending){
-            g.vertex_shader<VertexShader>();
-            r.fragment_shader<FragmentShader>();
-        }
-        else{
-            g.vertex_shader<VertexShaderBlending>();
-            r.fragment_shader<FragmentShaderBlendingDistPass>();
-            TextureMipMap *sizeI=NULL;
+
+        TextureMipMap *sizeI=NULL;
+
+        if(blending){
             map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin();
             while((!sizeI || sizeI->surface==NULL) && itr!=vertexData._img2tri.end()){
                 string tmp=string(string(av[3])+string("/")+imageList[itr->first].filename);
@@ -832,23 +845,54 @@ bool pyramid=arguments.read("-pyr");
                 sizeI=new TextureMipMap(tmp);
                 itr++;
             }
-            VertexShaderBlending::texture =sizeI;
-            FragmentShaderBlendingDistPass::texture =sizeI;
+        }
+        //  return 0;
+        for(int i=0; i<2; i++){
+            if(!blending){
+                g[i]->vertex_shader<VertexShader>();
+                r[i]->fragment_shader<FragmentShader>();
+            }
+            else{
+                g[i]->vertex_shader<VertexShaderBlending>();
+                r[i]->fragment_shader<FragmentShaderBlendingDistPass>();
+                VertexShaderBlending::texture =sizeI;
+                FragmentShaderBlendingDistPass::texture =sizeI;
+            }
+        }
+
+
+
+        for(int i=0;i <2; i++){
+
+            FragmentShaderBlendingDistPass::regRange =regRange[i];
+            if(!blending)
+                VertexShader::modelviewprojection_matrix=(*viewProjMats[i]);
+            else{
+                VertexShaderBlendingDistPass::modelviewprojection_matrix=(*viewProjMats[i]);
+                VertexShaderBlending::modelviewprojection_matrix=(*viewProjMats[i]);
+            }
+        
 
             for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
                 for(int t=0; t< (int)itr->second.size(); t++){
-                    if(process_tri(itr->second[t],verts,vertexData._texCoord,blending)){
-                        g.draw_triangles(3, indices);
+                    osg::Vec3Array *use_vert= (i==0) ? verts : vertexData._vertices.get() ;
+
+                    if(process_tri(itr->second[t],use_vert,vertexData._texCoord,blending)){
+                        g[i]->draw_triangles(3, indices);
                     }
                 }
             }
+
+
             printf("Double touch count %d\n",doubleTouchCount);
 
-            g.vertex_shader<VertexShaderBlending>();
-            r.fragment_shader<FragmentShaderBlendingMain>();
-            if(sizeI){
-                delete sizeI;
-            }
+            g[i]->vertex_shader<VertexShaderBlending>();
+            r[i]->fragment_shader<FragmentShaderBlendingMain>();
+
+        }
+
+        if(sizeI){
+            delete sizeI;
         }
         unsigned int total_tri_count=0,count=0;
         for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++)
@@ -874,17 +918,30 @@ bool pyramid=arguments.read("-pyr");
                     continue;
 
             }
-            for(int t=0; t< (int)itr->second.size(); t++){
-                if(count % 300 == 0){
-                    printf("\r %02d%%: %d/%d",(int)(100.0*(count/(float)total_tri_count)),count,total_tri_count);
-                    fflush(stdout);
+            for(int i=0;i <2; i++){
+                if(!blending)
+                    VertexShader::modelviewprojection_matrix=(*viewProjMats[i]);
+                else{
+                    VertexShaderBlendingDistPass::modelviewprojection_matrix=(*viewProjMats[i]);
+                    VertexShaderBlending::modelviewprojection_matrix=(*viewProjMats[i]);
                 }
-                count++;
+                FragmentShaderBlendingMain::regOutput=regOutput[i];
+                FragmentShaderBlendingMain::regRange=regRange[i];
 
-                if(!blending && itr->second[t].pos !=0 )
-                    continue;
-                if(process_tri(itr->second[t],verts,vertexData._texCoord,blending))
-                    g.draw_triangles(3, indices);
+                for(int t=0; t< (int)itr->second.size(); t++){
+                    if(i==1){
+                        if(count % 300 == 0){
+                            printf("\r %02d%%: %d/%d",(int)(100.0*(count/(float)total_tri_count)),count,total_tri_count);
+                            fflush(stdout);
+                        }
+                        count++;
+                    }
+                    if(!blending && itr->second[t].pos !=0 )
+                        continue;
+                    osg::Vec3Array *use_vert= (i==0) ? verts : vertexData._vertices.get() ;
+                    if(process_tri(itr->second[t],use_vert,vertexData._texCoord,blending))
+                        g[i]->draw_triangles(3, indices);
+                }
             }
             if(!blending){
                 delete texture;
@@ -901,17 +958,19 @@ bool pyramid=arguments.read("-pyr");
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
         process_mem_usage(vm, rss);
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
-        im_region_free(regOutput);
+        for(int i=0; i<2; i++){
+            im_region_free(regOutput[i]);
 
-        if(blending){
-            im_region_free(regRange);
-            im_close(rangeImage);
+            if(blending){
+                im_region_free(regRange[i]);
+                im_close(rangeImage[i]);
 
-            if(useDisk){
+                /*       if(useDisk){
                 if( remove( depthName.c_str() ) != 0 )
                     perror( "Error deleting file" );
                 else
                     puts( "File successfully deleted" );
+            }*/
             }
         }
         process_mem_usage(vm, rss);
@@ -920,15 +979,19 @@ bool pyramid=arguments.read("-pyr");
         start=osg::Timer::instance()->tick();
         //(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str()
         IMAGE *tmpI=im_open("tmp","p");
-        im_extract_bands(outputImage,tmpI,0,3);
-        dilateEdge(tmpI,(osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str());
+        im_extract_bands(outputImage[0],tmpI,0,3);
+        dilateEdge(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str());
+        im_close(tmpI);
 
-       /* if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str())){
+        tmpI=im_open("tmp","p");
+        im_extract_bands(outputImage[1],tmpI,0,3);
+
+        if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str())){
             fprintf(stderr,"Failed to write\n");
             cerr << im_error_buffer()<<endl;
             im_close(tmpI);
             exit(-1);
-        }*/
+        }
         /*  vips::VImage maskI(tmpI);
         vips::VImage dilatedI(tmpI);
         const int size=4;
@@ -941,15 +1004,16 @@ bool pyramid=arguments.read("-pyr");
         maskI.more(1.0).invert().andimage(dilatedI.dilate(mask)).write("wa.ppm");
         (maskI.more(1.0).invert().andimage(dilatedI.dilate(mask))).add(maskI).write("total.png");*/
         im_close(tmpI);
-        int levels=(int)ceil(log( max( sizeX, sizeY ))/log(2.0) );
+
+        /*int levels=(int)ceil(log( max( sizeX, sizeY ))/log(2.0) );
         if(pyramid){ if(!genPyramid(osgDB::getNameLessExtension(imageName)+".tif",levels,"ppm")){
                 fprintf(stderr,"FAil to gen pyramid\n");
                 exit(-1);
             }
         }
-
+*/
         IMAGE *tmpI2=im_open("tmp2","p");
-        im_extract_bands(outputImage,tmpI2,3,1);
+        im_extract_bands(outputImage[1],tmpI2,3,1);
         if( im_vips2ppm(tmpI2,(osgDB::getNameLessExtension(imageName)+"-tmp-mask.pgm").c_str())){
             fprintf(stderr,"Failed to write\n");
             cerr << im_error_buffer()<<endl;
@@ -961,8 +1025,8 @@ bool pyramid=arguments.read("-pyr");
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
         process_mem_usage(vm, rss);
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
-
-        im_close(outputImage);
+        for(int i=0; i<2; i++)
+            im_close(outputImage[i]);
 
         if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,basepath,"ppm",jpegQuality)){
             /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
@@ -980,6 +1044,7 @@ bool pyramid=arguments.read("-pyr");
         }
 
     }
+
 
     return 0;
 }
@@ -1154,7 +1219,7 @@ bool removeDups(std::string basename,osg::Vec3Array *verts,osg::DrawElementsUInt
     double CCPerc=0.05;
     tri::UpdateNormals<AMesh>::PerVertexNormalized(m);
     tri::UpdateBounding<AMesh>::Box(m);
-  //  tri::UpdateColor<AMesh>::VertexConstant(m,Color4b::White);
+    //  tri::UpdateColor<AMesh>::VertexConstant(m,Color4b::White);
     int dup= tri::Clean<AMesh>::RemoveDuplicateVertex(m);
 
 
@@ -1184,7 +1249,7 @@ bool removeDups(std::string basename,osg::Vec3Array *verts,osg::DrawElementsUInt
 
 
 
- /*
+    /*
  int unref2= tri::Clean<AMesh>::RemoveNonManifoldFace(m);
     int unref= tri::Clean<AMesh>::RemoveNonManifoldVertex(m);
     int dup2= tri::Clean<AMesh>::RemoveDegenerateFace(m);
@@ -1217,7 +1282,7 @@ bool removeDups(std::string basename,osg::Vec3Array *verts,osg::DrawElementsUInt
     float minCC= CCPerc*m.bbox.Diag();
     printf("Cleaning Min CC %.1f m\n",minCC);
     std::pair<int,int> delInfo= tri::Clean<AMesh>::RemoveSmallConnectedComponentsDiameter(m,minCC);*/
-  /*  float minCC= CCPerc*m.bbox.Diag();
+    /*  float minCC= CCPerc*m.bbox.Diag();
     printf("Cleaning Min CC %.1f m\n",minCC);
     std::pair<int,int> delInfo= tri::Clean<AMesh>::RemoveSmallConnectedComponentsDiameter(m,minCC);
     cout <<delInfo.first<<"/"<<delInfo.second<<endl;*/
@@ -1243,9 +1308,9 @@ bool removeDups(std::string basename,osg::Vec3Array *verts,osg::DrawElementsUInt
     }
 
 
-   // vcg::tri::io::PlyInfo pi;
+    // vcg::tri::io::PlyInfo pi;
 
-  //  vcg::tri::io::ExporterOBJ<AMesh>::Save(m,"nodup.obj",pi.mask);
+    //  vcg::tri::io::ExporterOBJ<AMesh>::Save(m,"nodup.obj",pi.mask);
 
     //tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),false);
     //     exit(0);
@@ -1264,10 +1329,10 @@ inline int getLongestEdge(const CMeshO::FaceType & f)
     double  maxd20 = SquaredDistance(p2,p0);
     if(maxd01 > maxd12)
         if(maxd01 > maxd20)     res = 0;
-        else                    res = 2;
+    else                    res = 2;
     else
         if(maxd12 > maxd20)     res = 1;
-        else                    res = 2;
+    else                    res = 2;
     return res;
 }
 
@@ -1355,10 +1420,10 @@ bool reorderVertsForTex(void){
         for (uint i=0; i<areas.size(); ++i)
             if (areas[i]>=0)
             {
-                int slot = (int)ceil(log2(maxArea/areas[i]) + DBL_EPSILON) - 1;
-                assert(slot < buckSize && slot >= 0);
-                buckets[slot].push_back(i);
-            }
+            int slot = (int)ceil(log2(maxArea/areas[i]) + DBL_EPSILON) - 1;
+            assert(slot < buckSize && slot >= 0);
+            buckets[slot].push_back(i);
+        }
 
         // Determines correct dimension and accordingly max halfening levels
         int dim = 0;
@@ -1379,7 +1444,7 @@ bool reorderVertsForTex(void){
 
             // this check triangles dimension limit too
             if (newenough && 1.0/tmp < (sqrt2Fact/M_SQRT2 + oneFact)*border +
-                    (oneFact != sqrt2Fact ? oneFact*M_SQRT2*2.0/textDim : oneFact*2.0/textDim)) break;
+                (oneFact != sqrt2Fact ? oneFact*M_SQRT2*2.0/textDim : oneFact*2.0/textDim)) break;
 
             enough = newenough;
             rest -= buckets[halfeningLevels].size();

@@ -11,8 +11,7 @@
 #include <iostream>
 // this is the fragment shader
 extern Rect gRect;
-extern REGION *regOutput;
-extern REGION *regRange;
+
 typedef std::map<std::pair<int,int>,int > dcm_t;
 
 extern  dcm_t doublecountmap;
@@ -71,6 +70,7 @@ struct FragmentShader : public swr::SpanDrawer32BitColorAndDepth<FragmentShader>
     }
 
     static Texture *texture;
+    static REGION *regOutput;
 
 
 
@@ -165,6 +165,7 @@ struct FragmentShaderBlendingDistPass : public swr::SpanDrawer32BitColorAndDepth
     }
     static TextureMipMap *texture;
     static int triIdx;
+    static REGION *regRange;
 
 };
 
@@ -364,6 +365,8 @@ struct FragmentShaderBlendingMain : public swr::SpanDrawer32BitColorAndDepthSetD
 
     static TextureMipMap *texture;
     static int triIdx;
+    static REGION *regOutput;
+    static REGION *regRange;
 
 };
 

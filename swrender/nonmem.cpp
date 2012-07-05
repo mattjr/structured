@@ -69,6 +69,9 @@ using namespace std;
 #include <osgDB/FileUtils>
 #include <vips/vips.h>
 static osg::Vec3 debugV;
+static REGION *regRange;
+static REGION *regOutput;
+
 bool USE_BGR=false;
 struct InputVertex {
     vec3x vertex;
@@ -426,6 +429,7 @@ int main(int ac, char *av[]) {
         cout <<viewprojmat<< endl;
 
         cout <<viewProjRead<< endl;*/
+        
 /*
         for(int i=0; i<4; i++){
             for(int j=0; j<4; j++){
@@ -489,6 +493,7 @@ int main(int ac, char *av[]) {
             }
             VertexShaderBlending::texture =sizeI;
             FragmentShaderBlendingDistPass::texture =sizeI;
+            FragmentShaderBlendingDistPass::regRange=regRange;
 
             for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
                 for(int t=0; t< (int)itr->second.size(); t++){
@@ -524,6 +529,9 @@ int main(int ac, char *av[]) {
                 textureMipMap = new TextureMipMap(tmp,itr->first);
                 FragmentShaderBlendingMain::texture = textureMipMap;
                 VertexShaderBlending::texture =textureMipMap;
+                FragmentShaderBlendingMain::regOutput=regOutput;
+                FragmentShaderBlendingMain::regRange=regRange;
+
                 if(!textureMipMap->surface)
                     continue;
 

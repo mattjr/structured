@@ -190,7 +190,7 @@ int
     ins->subs = vec;
     ins->out = out;
     ins->count=rects.size();
-    printf("%d\n",rects.size());
+    printf("%d\n",(int)rects.size());
     ins->rsubs=new Rect*[rects.size()];
     for(int i=0; i<  rects.size(); i++){
         ins->rsubs[i]=  &(rects[i]);
@@ -226,6 +226,11 @@ int
 
 int main(int argc, char** argv)
 {
+    string path=string(argv[0]);
+    unsigned int loc=path.rfind("/");
+
+    string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
+    basepath= osgDB::getRealPath (basepath);
     // use an ArgumentParser object to manage the program arguments.
     osg::ArgumentParser arguments(&argc,argv);
 
@@ -394,6 +399,6 @@ int main(int argc, char** argv)
 
     double totalTime = osg::Timer::instance()->delta_s(startTick, osg::Timer::instance()->tick());
     printf("Total Time %s\n",format_elapsed(totalTime).c_str());
-    applyGeoTags("subtile.tif",osg::Vec2(lat,lon),view*proj,Xsize,Ysize);
+    applyGeoTags("subtile.tif",osg::Vec2(lat,lon),view*proj,Xsize,Ysize,basepath);
 
 }

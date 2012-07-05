@@ -447,7 +447,7 @@ for(int i=0; i<vVV.size(); i++){
 
 		for(int i=0;i<p.RefillNum;++i)
 		{
-		  VV.Refill(3,6);
+                  //VV.Refill(3,6);
 		  if(p.VerboseLevel>1) VV.SlicedPPM(filename.c_str(),SFormat("_%02imsr",i),p.SliceNum	);
 		  //if(VerboseLevel>1) VV.SlicedPPMQ(filename,SFormat("_%02ips",i++),SliceNum	);
 		}
@@ -459,7 +459,7 @@ for(int i=0; i<vVV.size(); i++){
 		  printf("%2i/%2i: ",i,p.SmoothNum);
 		  SM.CopySmooth(VV,1,p.QualitySmoothAbs);
 		  VV=SM;
-		  VV.Refill(3,6);
+                //  VV.Refill(3,6);
 		  if(p.VerboseLevel>1) VV.SlicedPPM(filename.c_str(),SFormat("_%02ims",i),p.SliceNum	);
 		}
 

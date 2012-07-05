@@ -31,7 +31,7 @@ class TexturingQuery
 public:
     TexturingQuery(TexturedSource *source,const CameraCalib &calib,TexPyrAtlas &atlasGen,bool useTextureArray);
     ~TexturingQuery();
-    bool projectModel(osg::Geode *);
+    bool projectModel(osg::Geode *,float margin=0.0);
 
     struct sort_pred {
         bool operator()(const CamProjAndDist &left, const CamProjAndDist &right) {
@@ -55,7 +55,7 @@ protected:
 
     std::string baseName;
     bool projectAllTrianglesOutCore(osg::Vec4Array* camIdxArr,TexBlendCoord &texCoordsArray,
-                                             const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);
+                                             const osg::PrimitiveSet& prset, const osg::Vec3Array &verts,float margin);
 
     bool projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord  &texCoordsArray,
                                              const osg::PrimitiveSet& prset, const osg::Vec3Array &verts);

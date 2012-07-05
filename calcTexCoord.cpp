@@ -50,6 +50,11 @@ int main( int argc, char **argv )
     osg::Vec4 zrange;
     arguments.read("--zrange",zrange[0],zrange[1]);
     bool useAtlas=arguments.read("--atlas");
+    float tex_margin=0.0;
+
+    if(    arguments.read("--tex-margin",tex_margin)){
+        printf("Tex Margin %f\n",tex_margin);
+    }
 
     int row,col,numRows,numCols,width,height;
     bool imageNode=arguments.read("--imageNode",row,col,numRows,numCols,width,height);
@@ -204,7 +209,7 @@ int main( int argc, char **argv )
         TexturingQuery *tq=new TexturingQuery(sourceModel,calib.camera_calibs[0],*tile->_atlasGen,true);
 
         tq->_tile=tile;
-        bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(model));
+        bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(model),tex_margin);
         if(projectSucess){
             //  writeCached(outfilename,sha2hash,tile->texCoordIDIndexPerModel.begin()->second,tile->texCoordsPerModel.begin()->second);
             //osg::Geometry *geom = dynamic_cast< osg::Geometry*>( geode->getDrawable(0));

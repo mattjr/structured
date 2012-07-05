@@ -34,6 +34,8 @@ class TaskData{
     std::string dir;
     osg::Matrixd mat;
     osg::BoundingBox bbox;
+    osg::BoundingBox bbox_margin;
+
     bool valid;
 };
 

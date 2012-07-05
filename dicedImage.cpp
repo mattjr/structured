@@ -3,6 +3,12 @@
 #include "ProgressBar.h"
 int main(int argc, char** argv)
 {
+
+    string path=string(argv[0]);
+    unsigned int loc=path.rfind("/");
+
+    string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
+    basepath= osgDB::getRealPath (basepath);
     // use an ArgumentParser object to manage the program arguments.
     osg::ArgumentParser arguments(&argc,argv);
 
@@ -299,6 +305,6 @@ int main(int argc, char** argv)
     printf("Done\n");
     fclose(logfp);
 
-    applyGeoTags("subtile.tif",osg::Vec2(lat,lon),view*proj,raw.Xsize(),raw.Ysize());
+    applyGeoTags("subtile.tif",osg::Vec2(lat,lon),view*proj,raw.Xsize(),raw.Ysize(),basepath);
 
 }

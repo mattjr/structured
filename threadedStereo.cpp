@@ -108,8 +108,8 @@ static int num_threads=1;
 static FILE *fpp;
 static bool useVirtTex=false;
 static bool useReimage=true;
-
-
+static float tex_margin=0.01;
+static float bbox_margin=0.2;
 static bool no_vrip=false;
 static double vrip_res;
 static string basepath;
@@ -270,6 +270,9 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--split-area",desired_area);
     argp.read("--stereo-calib",stereo_calib_file_name);
     argp.read("--poses",contents_file_name );
+
+
+
     apply_aug =argp.read("--apply_aug");
     argp.read("--gpu",gpunum);
     if(argp.read("--range"))
@@ -332,6 +335,9 @@ static bool parse_args( int argc, char *argv[ ] )
         cerr << "ERROR - " << error << endl;
         exit( 1 );
     }
+    recon_config_file->get_value( "TEX_CLAMP_MARGIN", tex_margin,0.01);
+    recon_config_file->get_value( "BBOX_MARGIN_PERCENTAGE", bbox_margin,0.2);
+
 
     recon_config_file->get_value( "SD_SCALE", dense_scale,0.5);
     recon_config_file->get_value("TEX_IMG_PER_CELL",tex_img_per_cell,80);
@@ -397,7 +403,8 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--target-screen-faces",targetScreenFaces);
     argp.read( "--vpblod" ,vpblod_override);
     argp.read( "--scale" ,scaleRemapTex);
-
+    argp.read("--tex-margin",tex_margin);
+    argp.read("--bbox-margin",bbox_margin);
     argp.read( "--sparseratio" ,sparseRatio);
     useReimage=false;
     useVirtTex=true;
@@ -1007,22 +1014,26 @@ const char *uname="mesh";
 
 
         int ct=0;
+        printf("Bbox margin is %f\n",bbox_margin);
         for(vector<Stereo_Pose_Data>::iterator itr=tasks.begin(); itr != tasks.end(); itr++){
-            const Stereo_Pose_Data &name=(*itr);
+            Stereo_Pose_Data &name=(*itr);
 
             double area= ((name.bbox.xMax()-name.bbox.xMin())*
                           (name.bbox.yMax()-name.bbox.yMin()));
-            if(isfinite(area))
+            if(isfinite(area)){
                 totalValidArea+=area;
-
+                float margin=(name.bbox.radius() * bbox_margin);
+                name.bbox_margin.expandBy(name.bbox._min-osg::Vec3(margin,margin,margin));
+                name.bbox_margin.expandBy(name.bbox._max+osg::Vec3(margin,margin,margin));
+             }
         fprintf(fpp_ic,"%d %f %s\n",
                 name.id,name.time,osgDB::getNameLessExtension(name.left_name).c_str());
             fprintf(fpp,"%d %f %s %s ",
                     ct++,name.time,name.left_name.c_str(),name.right_name.c_str());
             fprintf(totalfp,"%d %s ",
                     ct,name.left_name.c_str());
-            save_bbox_frame(name.bbox,fpp);
-            save_bbox_frame(name.bbox,totalfp);
+            save_bbox_frame(name.bbox_margin,fpp);
+            save_bbox_frame(name.bbox_margin,totalfp);
 
 
             if(ct==1){
@@ -1252,8 +1263,10 @@ const char *uname="mesh";
         string plymccmd="plymc.py";
         std::vector<string> precmd;
         char tmpcmd[1024];
-        sprintf(tmpcmd,"%s/vcgapps/bin/plymc -M -V%f -S %d %d %d -o%s/vol %s",basepath.c_str(),
+        const char *opts=" ";//-w0  -L0 -q50 -R0";
+        sprintf(tmpcmd,"%s/vcgapps/bin/plymc -M -V%f %s -S %d %d %d -o%s/vol %s",basepath.c_str(),
                 vrip_res,
+                opts,
                      
                            splits[0],
                           splits[1],
@@ -1631,8 +1644,8 @@ const char *uname="mesh";
                     if(!tasks[i].valid || !tasks[i].bbox.valid())
                         continue;
 
-                    osg::Vec3 m1=osg::Vec3(tasks[i].bbox.xMin(),tasks[i].bbox.yMin(),tasks[i].bbox.zMin())*rotM;
-                    osg::Vec3 m2=osg::Vec3(tasks[i].bbox.xMax(),tasks[i].bbox.yMax(),tasks[i].bbox.zMax())*rotM;
+                    osg::Vec3 m1=osg::Vec3(tasks[i].bbox_margin.xMin(),tasks[i].bbox_margin.yMin(),tasks[i].bbox_margin.zMin())*rotM;
+                    osg::Vec3 m2=osg::Vec3(tasks[i].bbox_margin.xMax(),tasks[i].bbox_margin.yMax(),tasks[i].bbox_margin.zMax())*rotM;
 
                     osg::BoundingBox imgBox;
                     imgBox.expandBy(m1);
@@ -2207,8 +2220,8 @@ const char *uname="mesh";
         fprintf(stderr,"Can't open mosaic scripts\n");
         exit(-1);
     }
-    fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  -addalpha -hidenodata mosaic.vrt ");
-    fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  -addalpha -hidenodata mosaicvar.vrt ");
+    fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaic.vrt ");
+    fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaicvar.vrt ");
 
     fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
             totalbb.zMax(),_tileColumns,_tileRows);
@@ -2228,7 +2241,7 @@ const char *uname="mesh";
                 cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
 
 
-        fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f",
+        fprintf(texcmds_fp,"cd %s;setenv DISPLAY :0.%d;%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f ",
                 cwd,
                 gpunum,
                 basepath.c_str(),
@@ -2239,7 +2252,7 @@ const char *uname="mesh";
                 diced_dir,
                 cells[i].row,cells[i].col,
                 vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
-                rx,ry,rz);
+                rx,ry,rz,tex_margin);
         sprintf(tmpfn2,"%s/remap-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply", diced_dir,cells[i].row,cells[i].col,vpblod);
         cfiles.push_back(tmpfn2);
 

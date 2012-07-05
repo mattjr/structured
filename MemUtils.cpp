@@ -86,7 +86,7 @@ string getProj4StringForAUVFrame(double lat_origin,double lon_origin){
     return string(szProj4);
 }
 
-bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int width,int height,string ext,int jpegQuality){
+bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int width,int height,string basepath,string ext,int jpegQuality){
 
     osg::Matrix modWindow =( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*width,0.5*height,0.5f));
     osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,height,0));
@@ -130,7 +130,7 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
     // added by mitch
     sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs %s",tlGlobalmitch.y(),tlGlobalmitch.x(),brGlobalmitch.y(),brGlobalmitch.x(),szProj4);
     */
-if(jpegQuality <0)
+/*if(jpegQuality <0)
         sprintf(gdal_param," -of GTiff -co \"compress=packbits\" -co \"TILED=YES\" -a_ullr %.12f %.12f %.12f %.12f -a_srs \"%s\"",
               tlGlobalmitch.y(),tlGlobalmitch.x(),brGlobalmitch.y(),brGlobalmitch.x(),
                 // tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),
@@ -140,7 +140,12 @@ if(jpegQuality <0)
               //  tlGlobal.x(),tlGlobal.y(),brGlobal.x(),brGlobal.y(),
                 tlGlobalmitch.y(),tlGlobalmitch.x(),brGlobalmitch.y(),brGlobalmitch.x(),
 
-                proj4.c_str());
+                proj4.c_str());*/
+
+    sprintf(gdal_param," -a_ullr %.12f %.12f %.12f %.12f -a_srs \"%s\" ",
+            tlGlobalmitch.y(),tlGlobalmitch.x(),brGlobalmitch.y(),brGlobalmitch.x(),
+            proj4.c_str());
+
     char tmp[8192];
     sprintf(tmp,"%s-add_geo.sh",name.c_str());
     FILE *fp=fopen(tmp,"w");
@@ -157,13 +162,19 @@ if(jpegQuality <0)
     fclose (fp);
     //gdalwarp  -t_srs '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs' geo_tif2.tif utm.tif
     //  int res= system(("add_geo-"+name+".sh").c_str());
-    sprintf(tmp,"gdal_merge.py -separate  %s-tmp.%s %s-tmp-mask.pgm -o %s.tif; gdal_translate %s %s.tif  %s",
+  /*  sprintf(tmp,"gdal_merge.py -separate  %s-tmp.%s %s-tmp-mask.pgm -o %s.tif; gdal_translate %s %s.tif  %s",
             osgDB::getNameLessExtension(name).c_str(),ext.c_str(),
             osgDB::getNameLessExtension(name).c_str(),
             osgDB::getNameLessExtension(name).c_str(),
             gdal_param,
             osgDB::getNameLessExtension(name).c_str(),
-            ("mosaic/"+osgDB::getSimpleFileName(name)).c_str());
+            ("mosaic/"+osgDB::getSimpleFileName(name)).c_str());*/
+    sprintf(tmp,"%s/create_masked.py %s  %s-tmp.%s %s-tmp-mask.pgm %s",
+               basepath.c_str(),
+               gdal_param,
+               osgDB::getNameLessExtension(name).c_str(),ext.c_str(),
+               osgDB::getNameLessExtension(name).c_str(),
+               ("mosaic/"+osgDB::getSimpleFileName(name)).c_str());
     int res= system(tmp);
     // printf("%s\n",tmp);
     if(res != 0){

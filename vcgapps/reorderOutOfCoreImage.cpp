@@ -167,6 +167,7 @@ struct InputVertex {
 
 static IMAGE *outputImage;
 static IMAGE *rangeImage;
+static IMAGE *outputImage2;
 /* Generate function --- just black out the region.*/
 static int white_gen( REGION *reg, void *seq, void *a, void *b )
 {
@@ -390,7 +391,12 @@ inline bool process_tri(ply::tri_t &tri,osg::Vec3Array *verts, std::vector<osg::
     return true;
 }
 int main(int ac, char *av[]) {
+    string path=string(av[0]);
+    unsigned int loc=path.rfind("/");
 
+    string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
+    basepath= osgDB::getRealPath (basepath);
+    basepath+="/../../";
     osg::Timer_t start;
     osg::ref_ptr<osg::Node> model;//= osgDB::readNodeFile(av[1]);
     ply::VertexData vertexData;
@@ -958,7 +964,7 @@ bool pyramid=arguments.read("-pyr");
 
         im_close(outputImage);
 
-        if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,"ppm",jpegQuality)){
+        if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,basepath,"ppm",jpegQuality)){
             /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
                 perror( "Error deleting file" );
             else

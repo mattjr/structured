@@ -129,7 +129,6 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord
 
     if(numIdx < 3 || !camIdxArr)
         return false;
-
     //Reproject all verticies
     for(unsigned int i=0; i<verts.size(); i++){
         double pt[3];
@@ -230,16 +229,18 @@ bool TexturingQuery::projectAllTriangles(osg::Vec4Array* camIdxArr,TexBlendCoord
     return true;
 }
 
-
+inline float clamp(float x, float a, float b){    return x < a ? a : (x > b ? b : x);}
 
 bool TexturingQuery::projectAllTrianglesOutCore(osg::Vec4Array* camIdxArr,TexBlendCoord &texCoordsArray,
-                                                const osg::PrimitiveSet& prset, const osg::Vec3Array &verts){
+                                                const osg::PrimitiveSet& prset, const osg::Vec3Array &verts,float margin){
     int numIdx=prset.getNumIndices();
     osg::Timer_t before_computeMax = osg::Timer::instance()->tick();
     double vm, rss;
     process_mem_usage(vm, rss);
     cout << "Pre Project All Triangles VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
     int valid=0;
+    int boundsInvalid=0;
+    int imgInv=0;
 
     if(numIdx < 3 || !camIdxArr)
         return false;
@@ -276,7 +277,8 @@ bool TexturingQuery::projectAllTrianglesOutCore(osg::Vec4Array* camIdxArr,TexBle
                     if(_source->_cameras.count(vis.GetResults()[r]))
                         tri_cam_ids[k].insert(vis.GetResults()[r]);
                 }
-            }
+            }else
+                imgInv++;
         }
         avgV.x()/=3.0;
         avgV.y()/=3.0;
@@ -307,9 +309,19 @@ bool TexturingQuery::projectAllTrianglesOutCore(osg::Vec4Array* camIdxArr,TexBle
             for(int f=0; f <(int)orderedProj.size() && f<maxNumTC; f++){
                 if(texCoordsArray[f]) {
                     osg::Vec2 tc=convertToUV(reprojectPt(_source->_cameras[orderedProj[f].id].m,verts[tri_v[k]]));
+                    if(margin > 0.0){
+                       if((tc.x() > 1.0 && tc.x() < 1.0+margin) || (tc.x() < 0.0 && tc.x() > 0.0-margin )){
+                           tc.x()=clamp(tc.x(),0.0000000000000001,0.999999);
+                       }
+                       if((tc.y() > 1.0 && tc.y() < 1.0+margin) || (tc.y() < 0.0 && tc.y() > 0.0-margin )){
+                           tc.y()=clamp(tc.y(),0.0000000000000001,0.999999);
+                       }
+                    }
                     osg::Vec3 tmp(tc[0],tc[1],-1);
-                    if(!checkInBounds(tmp))
+                    if(!checkInBounds(tmp)){
+                        boundsInvalid++;
                         texCoordsArray[f]->at(prset.index(i+k))=osg::Vec3(-1,-1,-1);
+                    }
                     else{
                         if(f==0)
                             valid++;
@@ -328,8 +340,9 @@ bool TexturingQuery::projectAllTrianglesOutCore(osg::Vec4Array* camIdxArr,TexBle
             }
         }*/
     }
-    printf("Valid Count: %d/%d\n",valid,(int)texCoordsArray[0]->size());
-
+    printf("Valid Count: %d/%d %.2f%%\n",valid,(int)texCoordsArray[0]->size(),100.0*(valid/(float)texCoordsArray[0]->size()));
+    int totalinv=(int)texCoordsArray[0]->size()-(int)valid;
+    printf("Invalid Count: %d bounds %d id %d\n",totalinv,boundsInvalid,imgInv);
     map<SpatialIndex::id_type,int> allIds=calcAllIds(camIdxArr);
 
     addImagesToAtlasGen(allIds,NULL);
@@ -540,7 +553,7 @@ void addDups(osg::Geode *geode){
     texCoords=NULL;
     return false;
 }*/
-bool TexturingQuery::projectModel(osg::Geode *geode){
+bool TexturingQuery::projectModel(osg::Geode *geode,float margin){
 
     //No cached
     if(!geode){
@@ -586,7 +599,7 @@ bool TexturingQuery::projectModel(osg::Geode *geode){
             case(osg::PrimitiveSet::TRIANGLES):
                 //remapSharedVert(*(*itr), *verts,tif.indices_double_counted);
                 if(1)
-                    projectValid=projectAllTrianglesOutCore(v,texCoords,*(*itr), *verts);
+                    projectValid=projectAllTrianglesOutCore(v,texCoords,*(*itr), *verts,margin);
                 else
                     projectValid= projectAllTriangles(v,texCoords,*(*itr), *verts);
 

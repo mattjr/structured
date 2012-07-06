@@ -32,6 +32,7 @@ find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
 #INCLUDE( ${PROJECT_SOURCE_DIR}/VirtualPlanetBuilder/CMakeModules/FindGDAL.cmake )
 find_package(GDAL REQUIRED)
 include ("${CMAKE_SOURCE_DIR}/OptimizeForArchitecture.cmake")
+include ("${CMAKE_SOURCE_DIR}/FindPythonModule.cmake")
 
 #--------------------------------#
 # Enforce an out-of-source build #
@@ -109,15 +110,24 @@ IF (OPENMP_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     MESSAGE(STATUS "flags are now: " ${CMAKE_CXX_FLAGS})
 ENDIF(OPENMP_FOUND)
+include(FindPythonInterp)
+find_python_module(gdal REQUIRED)
+find_python_module(osr REQUIRED)
+find_python_module(ogr REQUIRED)
 
-FIND_PROGRAM(GDAL_PYTHON_TOOLS
-             NAMES gdal_merge.py
-             PATHS ENV PATH)
+IF(NOT PY_GDAL)
+ MESSAGE(FATAL_ERROR "Unable to find python bidning for GDAL: Try installing python-gdal")
+ENDIF(NOT PY_GDAL)
 
 
-IF(NOT GDAL_PYTHON_TOOLS)
-  MESSAGE(FATAL_ERROR "Unable to find python bidning for GDAL: gdal_merge.py Try installing python-gdal")
-ENDIF(NOT GDAL_PYTHON_TOOLS)
+IF(NOT PY_OSR)
+ MESSAGE(FATAL_ERROR "Unable to find python bidning for OSR: Try installing python-gdal")
+ENDIF(NOT PY_OSR)
+
+
+IF(NOT PY_OGR)
+ MESSAGE(FATAL_ERROR "Unable to find python bidning for OGR: Try installing python-gdal")
+ENDIF(NOT PY_OGR)
 
 
 

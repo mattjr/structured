@@ -86,10 +86,21 @@ std::vector<double> pixelSides;
     }
     if(pixelSides.size() ==0)
         return 32;
-    double sum = std::accumulate( pixelSides.begin(), pixelSides.begin()+pixelSides.size(), 0 ) ;
+    double avgEl=0.0;
+    for(int i=0;i < pixelSides.size(); i++){
+       avgEl+= (pixelSides[i]/pixelSides.size());
+    }
+   // long double sum = std::accumulate( pixelSides.begin(), pixelSides.begin()+pixelSides.size(), 0 ) ;
 
-    double avgEl =sum/pixelSides.size();
+//   double avgEl =sum/pixelSides.size();
    double maxEl= *( std::max_element( pixelSides.begin(), pixelSides.end() ) );
+   if(avgEl<0){
+       for(int i=0;i < pixelSides.size(); i++)
+           printf("%f ",pixelSides[i]);
+                   printf("\n");
+       avgEl=maxEl/2.0;
+   }
+    avgEl=std::min(8192.0,avgEl);
    int potSize=osg::Image::computeNearestPowerOfTwo((int)avgEl*scaletex);
 
    if(VTtileSize> 0 && border >0){

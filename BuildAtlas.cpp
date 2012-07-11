@@ -102,7 +102,7 @@ void generateAtlasAndTexCoordMappingFromExtents(const std::vector<mosaic_cell> &
                 continue;
             if(areaBB.intersects(mosaic_cells[i].bbox)){
                 if(!mosaic_cells[i].mutex || !mosaic_cells[i].img){
-                    fprintf(stderr,"Fail to get mutex or img\n");
+                    fprintf(stderr,"Fail to get mutex or img %s\n",mosaic_cells[i].name.c_str());
                     exit(-1);
                 }
                 vips::VImage *used_img=NULL;
@@ -284,8 +284,9 @@ void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cel
             if(mosaic_cells[i].name == "null")
                 continue;
                 if(!mosaic_cells[i].mutex || !mosaic_cells[i].img){
-                    fprintf(stderr,"Fail to get mutex or img\n");
-                    exit(-1);
+                    fprintf(stderr,"Fail to get mutex or img %s\n",mosaic_cells[i].name.c_str());
+                   // exit(-1);
+                    continue;
                 }
 
                    vips::VImage* used_img=mosaic_cells[i].img;
@@ -802,7 +803,7 @@ void generateImageFromExtents(const std::vector<mosaic_cell> &mosaic_cells,
                 continue;
             if(areaBB.intersects(mosaic_cells[i].bbox)){
                 if(!mosaic_cells[i].mutex || !mosaic_cells[i].img){
-                    fprintf(stderr,"Fail to get mutex or img\n");
+                    fprintf(stderr,"Fail to get mutex or img %s\n",mosaic_cells[i].name.c_str());
                     exit(-1);
                 }
                 vips::VImage *used_img=NULL;

@@ -1262,10 +1262,10 @@ const char *uname="mesh";
 
         }
         string plymccmd="plymc.py";
-        std::vector<string> precmd;
+        std::vector<string> postcmd;
         char tmpcmd[1024];
         const char *opts=" ";//-w0  -L0 -q50 -R0";
-        sprintf(tmpcmd,"%s/vcgapps/bin/plymc -M -V%f %s -S %d %d %d -o%s/vol %s",basepath.c_str(),
+        sprintf(tmpcmd,"%s/vcgapps/bin/plymc_outofcore -i1 -M -V%f %s -S %d %d %d -o%s/vol %s",basepath.c_str(),
                 vrip_res,
                 opts,
                      
@@ -1274,8 +1274,10 @@ const char *uname="mesh";
                            splits[2],
                            aggdir,
                            wbtp.bboxfn.c_str());
-    precmd.push_back(string(tmpcmd));
-        shellcm.write_generic(plymccmd,wbtp.getCmdFileName(),"PlyMC",&precmd,NULL);
+        // postcmd.push_back(string(tmpcmd));
+         sprintf(tmpcmd,"os.system(setupts.basepath +'/runtp.py %s %d %s')\n",
+                 (string(aggdir)+"/plymccmd2").c_str(),num_threads,"PlyMC2");
+         shellcm.write_generic(plymccmd,wbtp.getCmdFileName(),"PlyMC",NULL,&postcmd,0,string(tmpcmd));
         wbtp.close();
     }
     if(!no_vrip)
@@ -1350,8 +1352,8 @@ const char *uname="mesh";
 
         totalbb_unrot.expandBy(bounds.bbox._min);
         totalbb_unrot.expandBy(bounds.bbox._max);
-        totalbb.expandBy(osg::Vec3(totalbb_unrot._min[0],totalbb_unrot._min[1],-totalbb_unrot._min[2]));
-        totalbb.expandBy(osg::Vec3(totalbb_unrot._max[0],totalbb_unrot._max[1],-totalbb_unrot._max[2]));
+        totalbb=totalbb_unrot;//totalbb.expandBy(osg::Vec3(totalbb_unrot._min[0],totalbb_unrot._min[1],-totalbb_unrot._min[2]));
+        //totalbb.expandBy(osg::Vec3(totalbb_unrot._max[0],totalbb_unrot._max[1],-totalbb_unrot._max[2]));
     }
 
 
@@ -1593,11 +1595,12 @@ const char *uname="mesh";
                 //  std::cout<< thisCellBbox._max-thisCellBbox._min <<"\n";
                 //  std::cout<< "A"<<thisCellBboxMargin._min << " "<< thisCellBboxMargin._max<<"\n\n";
                 bool hitcell=false;
-              //  cout << thisCellBbox._min<<endl;
-              //  cout << thisCellBbox._max<<endl;
+
                 foreach_vol(cur,vol){
-                    if(cur->poses.size() == 0)
+                    if(cur->poses.size() == 0){
                         continue;
+                    }
+
                     if(bboxMarginUnRot.intersects(cur->bounds.bbox)){
                         hitcell=true;
                         break;

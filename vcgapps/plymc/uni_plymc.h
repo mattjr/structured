@@ -471,6 +471,7 @@ for(int i=0; i<vVV.size(); i++){
 		    VV.SlicedPPM("final","__",p.SliceNum);
 		    VV.SlicedPPMQ("final","__",p.SliceNum);
 		}
+                //VV.Write("test",0,0);
 		//MCMesh me;
 		//
 

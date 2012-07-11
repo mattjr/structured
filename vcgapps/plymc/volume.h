@@ -253,20 +253,12 @@ void SetSubPart(Point3i _div, Point3i _pos)
 public:
 	
 	// Sa
-	/*bool Write(string filename, const float &minv, const float &maxv )
+        bool Write(std::string filename, const float &minv, const float &maxv )
 		{
 		  FILE *fp;
-			if(div!=Point3i(1,1,1)) {
-					string subvoltag;
-					GetSubVolumeTag(subvoltag);	
-					filename+=subvoltag;
-			}
-			string datname=filename;
-			string rawname=filename;
-			datname+=".dat";
-			rawname+=".raw";
+
      
-		  fp=fopen(datname,"w");
+            /*      fp=fopen(filename.c_str(),"w");
 
 			fprintf(fp,"ObjectFileName: %s\n",rawname.c_str());
 			fprintf(fp,"TaggedFileName: ---\n");
@@ -278,30 +270,188 @@ public:
 			fprintf(fp,"ObjectModel:    RGBA\n");
 			fprintf(fp,"GridType:       EQUIDISTANT\n");
 
-			fclose(fp);
-      fp=fopen(rawname,"wb");
+                        fclose(fp);*/
+      fp=fopen(filename.c_str(),"wb");
 		 if(!fp) 
 		 {
-			 printf("Error: unable ro open output volume file '%s'\n",filename);
+                         printf("Error: unable ro open output volume file '%s'\n",filename.c_str());
 			 return false;
 		 }
+                 fwrite(&AskedCells,sizeof(_int64),1,fp);
+                 float bbtmp[6];
+                 for(int i=0;i<3; i++)
+                     bbtmp[i]=bbox.min[i];
+                 for(int i=0;i<3; i++)
+                     bbtmp[i+3]=bbox.max[i];
+                 fwrite(&bbtmp[0],sizeof(float),6,fp);
+                 int pttmp[3];
+                 for(int i=0;i<3; i++)
+                     pttmp[i]=div[i];
+                 fwrite(&pttmp[0],sizeof(int),3,fp);
+                 for(int i=0;i<3; i++)
+                     pttmp[i]=pos[i];
+                 fwrite(&pttmp[0],sizeof(int),3,fp);
+
+                 for(int i=0;i<3; i++)
+                     pttmp[i]=sz[i];
+                 fwrite(&pttmp[0],sizeof(int),3,fp);
+               /*  std::cout << filename <<" "<<AskedCells << " ";
+                 for(int i=0;i<3;i++)
+                     std::cout<<bbox.min[i] << " ";
+                 for(int i=0;i<3;i++)
+                     std::cout  << bbox.max[i] << " ";
+                 for(int i=0;i<3;i++)
+
+                    std::cout   <<div[i]<<  " " ;
+                 for(int i=0;i<3;i++)
+
+                    std::cout    << pos[i]<<std::endl;*/
+                 //void Init(_int64 cells, Box3x bb, Point3i _div=Point3i(1,1,1), Point3i _pos=Point3i(0,0,0))
 
 		 int i,j,k;
-		 for(k=SubPart.min[2];k<SubPart.max[2];++k)
-			 for(j=SubPart.min[1];j<SubPart.max[1];++j)
-				 for(i=SubPart.min[0];i<SubPart.max[0];++i)
+                 int count=0;
+                 for(k=SubPartSafe.min[2];k<SubPartSafe.max[2];++k)
+                         for(j=SubPartSafe.min[1];j<SubPartSafe.max[1];++j)
+                                 for(i=SubPartSafe.min[0];i<SubPartSafe.max[0];++i)
 					{ 
 						float fv=V(i,j,k).V();
-					  fv=(fv-minv)/(maxv-minv);
+                                                if(fv==0.0){
+                                                    count++;
+                                                    continue;
+                                                }else{
+                                                    if(count > 0){
+                                                        float tmp=-FLT_MAX;
+                                                        fwrite(&tmp,sizeof(float),1,fp);
+                                                        fwrite(&count,sizeof(int),1,fp);
+                                                        count=0;
+                                                    }
+                                                }
+                                              //   if(fv !=0)printf("%f\n",fv);
+                                          /*fv=(fv-minv)/(maxv-minv);
 						if(fv<0) fv=0;
 						else if(fv>1) fv=1;
 						fv=((fv*2.0f)-1.0f)*127;
-						char fs= (char) fv;
-						fwrite(&fs,sizeof(char),1,fp);
+                                                char fs= (char) fv;*/
+                                                fwrite(&fv,sizeof(float),1,fp);
+                                                float fn[3];
+                                                for(int t=0; t<3; t++)
+                                                    fn[t]=V(i,j,k).N()[t];
+                                                fwrite(&fn,sizeof(float),3,fp);
+                                                int cnt=V(i,j,k).Cnt();
+                                                fwrite(&cnt,sizeof(int),1,fp);
+                                                char b;
+                                                b=V(i,j,k).B();
+                                                fwrite(&b,sizeof(char),1,fp);
+                                                float   q=V(i,j,k).Q();
+                                                fwrite(&q,sizeof(float),1,fp);
+
 					}
 		fclose(fp);
+                fp=fopen((filename+".dat").c_str(),"w");
+                Dump(fp);
+                fclose(fp);
 		return true;
-		}*/
+                }
+
+
+        bool Read(std::string filename )
+                {
+                  FILE *fp;
+
+      fp=fopen(filename.c_str(),"rb");
+                 if(!fp)
+                 {
+                         printf("Error: unable ro open output volume file '%s'\n",filename.c_str());
+                         return false;
+                 }
+                 _int64 cells; Box3x bb; Point3i _div; Point3i _pos;
+                 Point3i _sz;
+                 fread(&cells,sizeof(_int64),1,fp);
+                 float bbtmp[6];
+
+                 fread(&bbtmp[0],sizeof(float),6,fp);
+                 for(int i=0;i<3; i++)
+                     bb.min[i]=bbtmp[i];
+                 for(int i=0;i<3; i++)
+                     bb.max[i]=bbtmp[i+3];
+                 int pttmp[3];
+
+                 fread(&pttmp[0],sizeof(int),3,fp);
+                 for(int i=0;i<3; i++)
+                     _div[i]=pttmp[i];
+
+                 fread(&pttmp[0],sizeof(int),3,fp);
+                 for(int i=0;i<3; i++){
+                   _pos[i]=pttmp[i];
+                 }
+
+                 fread(&pttmp[0],sizeof(int),3,fp);
+                 for(int i=0;i<3; i++){
+                   _sz[i]=pttmp[i];
+                 }
+                 //void Init(_int64 cells, Box3x bb, Point3i _div=Point3i(1,1,1), Point3i _pos=Point3i(0,0,0))
+                 /*std::cout << "Read "<<filename <<" "<<cells << " ";
+                 for(int i=0;i<3;i++)
+                     std::cout<<bb.min[i] << " ";
+                 for(int i=0;i<3;i++)
+                     std::cout  << bb.max[i] << " ";
+                 for(int i=0;i<3;i++)
+
+                    std::cout   <<_div[i]<<  " " ;
+                 for(int i=0;i<3;i++)
+
+                    std::cout    << _pos[i]<<std::endl;*/
+                 Init( cells,  bb,  _div,  _pos);
+              /*    fp=fopen((filename+".dat2").c_str(),"w");
+                  Dump(fp);
+                  fclose(fp);*/
+                 int i,j,k;
+                 int count=0;
+
+                 for(k=SubPartSafe.min[2];k<SubPartSafe.max[2];++k)
+                         for(j=SubPartSafe.min[1];j<SubPartSafe.max[1];++j)
+                                 for(i=SubPartSafe.min[0];i<SubPartSafe.max[0];++i)
+                                        {
+                                                float fv;
+                                          /*fv=(fv-minv)/(maxv-minv);
+                                                if(fv<0) fv=0;
+                                                else if(fv>1) fv=1;
+                                                fv=((fv*2.0f)-1.0f)*127;
+                                                char fs= (char) fv;*/
+                                                if(count >0){
+                                                    count--;
+                                                    continue;
+                                                }
+                                                fread(&fv,sizeof(float),1,fp);
+                                                if(fv == (-FLT_MAX)){
+                                                    fread(&count,sizeof(int),1,fp);
+                                                    count--;
+                                                    continue;
+                                                }
+                                          //      if(fv!=0)printf("%f\n",fv);
+                                               V(i,j,k).SetV(fv);
+                                               float fn[3];
+
+                                               fread(&fn,sizeof(float),3,fp);
+                                               V(i,j,k).SetN(Point3x(fn[0],fn[1],fn[2]));
+                                               int cnt;
+                                               fread(&cnt,sizeof(int),1,fp);
+
+                                               V(i,j,k).SetCnt(cnt);
+                                               char b;
+                                               fread(&b,sizeof(char),1,fp);
+
+                                               V(i,j,k).SetB(b);
+
+                                               float   q;
+                                               fread(&q,sizeof(float),1,fp);
+                                                V(i,j,k).SetQ(q);
+
+
+                                        }
+                fclose(fp);
+                return true;
+                }
 	void AbsPos(Point3i pi, Point3x &p)
 		{
 			p[0]=bbox.min[0]+pi[0]*voxel[0];
@@ -1151,7 +1301,7 @@ void SlicedPPMQ( const char * filename,const char *tag,int SliceNum)
 					else{
 						rgb[0]=rgb[1]=rgb[2]=64;
 					}
-					fwrite(rgb,3,1,fp);
+                                        fwrite(rgb,3,1,fp);
 				}
 			}
 			fclose(fp);
@@ -1211,7 +1361,7 @@ void SlicedPPM( const char * filename,const char *tag,int SliceNum=1)
 					else{
 						rgb[0]=rgb[1]=rgb[2]=64;
 					}
-					fwrite(rgb,3,1,fp);
+                                        fwrite(rgb,3,1,fp);
 				}
 			}
 			fclose(fp);

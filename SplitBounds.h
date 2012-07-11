@@ -126,7 +126,7 @@ class WriteSplitTP : public WriteTP{
     const  CellDataT<Stereo_Pose_Data>::type &_vol;
     const std::vector<Stereo_Pose_Data> &_tasks;
     std::string getCmdFileName(){return cmdfn;}
-    void close(){ if(cmdfp) fclose(cmdfp);}
+    void close(){ if(cmdfp) fclose(cmdfp); }
 
 };
 
@@ -137,7 +137,8 @@ class WriteBoundTP : private WriteTP{
     bool write_cmd(Cell_Data<Stereo_Pose_Data> cell);
     std::string bboxfn;
     std::string getCmdFileName(){return cmdfn;}
-    void close(){ if(cmdfp) fclose(cmdfp);}
+    void close(){ if(cmdfp) fclose(cmdfp); if(cmd2fp) fclose(cmd2fp);}
+    FILE*cmd2fp;
 
 
 

@@ -113,7 +113,7 @@ namespace vcg {
             IPosS=Point3i(0,0,0);  // SubVolume Start
             IPosE=Point3i(0,0,0);  // SubVolume End
             IPosB=Point3i(0,0,0);  // SubVolume to restart from in lexicographic order (useful for crashes)
-            IPos=Point3i(0,0,0);
+            //IPos=Point3i(0,0,0);
             IDiv=Point3i(1,1,1);
             VerboseLevel=0;
             SliceNum=1;
@@ -144,7 +144,7 @@ namespace vcg {
 		Point3i IPosS;  // SubVolume Start
 		Point3i IPosE;  // SubVolume End
 		Point3i IPosB;  // SubVolume to restart from in lexicographic order (useful for crashes)
-		Point3i IPos;
+                //Point3i IPos;
 		Point3i IDiv;
 		int VerboseLevel;
 		int SliceNum;
@@ -174,11 +174,11 @@ namespace vcg {
 
     MeshProvider MP;
     Parameter p;
-    Volume<Voxelf> VV;
+ //    std::vector< std::vector<std::vector<Volume<Voxelf> > > >vVV;
 
 /// PLYMC Methods
 
-bool InitMesh(SMesh &m, const char *filename, Matrix44f Tr)
+bool InitMesh(Volume<Voxelf> &VV,SMesh &m, const char *filename, Matrix44f Tr)
 {
     typename SMesh::VertexIterator vi;
     int loadmask;
@@ -240,7 +240,7 @@ bool InitMesh(SMesh &m, const char *filename, Matrix44f Tr)
 // This function add a mesh (or a point cloud to the volume)
 // the point cloud MUST have normalized vertex normals.
 
-bool AddMeshToVolumeM(SMesh &m, std::string meshname, const double w )
+bool AddMeshToVolumeM(Volume<Voxelf>  &VV,SMesh &m, std::string meshname, const double w )
 {
     typename SMesh::VertexIterator vi;
     typename SMesh::FaceIterator fi;
@@ -281,6 +281,8 @@ bool AddMeshToVolumeM(SMesh &m, std::string meshname, const double w )
                     if(quality)
                             res |= B.ScanFace((*fi).V(0)->P(),(*fi).V(1)->P(),(*fi).V(2)->P(),quality,(*fi).N());
                 }
+            //printf("herer\n");
+
           //  printf(" : %li\n",clock()-tt0);
 
     } else
@@ -329,8 +331,16 @@ bool AddMeshToVolumeM(SMesh &m, std::string meshname, const double w )
     if(p.VerboseLevel>0) VV.SlicedPPMQ(std::string("merge_").c_str(),shortname.c_str(),p.SliceNum	);
     return true;
 }
+void GetSubVolumeTag(Point3i div,Point3i pos,std::string &subtag)
+    {
+char buf[32];
+            if     (div[0]<=  10 && div[1]<=  10 && div[2]<=  10 ) sprintf(buf,"_%01d%01d%01d",pos[0],pos[1],pos[2]);
+            else if(div[0]<= 100 && div[1]<= 100 && div[2]<= 100 ) sprintf(buf,"_%02d%02d%02d",pos[0],pos[1],pos[2]);
+                                                             else  sprintf(buf,"_%03d%03d%03d",pos[0],pos[1],pos[2]);
+            subtag=buf;
+    }
 
-void Process(CallBackPosTotal *cb=0)
+void ProcessCells(CallBackPosTotal *cb=0)
 {
     unsigned long long startTick=osg::Timer::instance()->tick();
     printf("bbox scanning...\n"); fflush(stdout);
@@ -345,8 +355,7 @@ void Process(CallBackPosTotal *cb=0)
     Point3f voxdim;
     fullb.Offset(fullb.Diag() * 0.1 );
 
-    int saveMask=0;
-   if(p.MergeColor) saveMask |= tri::io::Mask::IOM_VERTCOLOR ;
+
 
     voxdim = fullb.max - fullb.min;
 
@@ -355,7 +364,7 @@ void Process(CallBackPosTotal *cb=0)
     __int64 cells;
     if(p.NCell>0) cells = (__int64)(p.NCell)*(__int64)(1000);
     else cells = (__int64)(voxdim[0]/p.VoxSize) * (__int64)(voxdim[1]/p.VoxSize) *(__int64)(voxdim[2]/p.VoxSize) ;
-
+    Box3i globalBox;
     {
         Volume<Voxelf> B; // local to this small block
 
@@ -363,28 +372,42 @@ void Process(CallBackPosTotal *cb=0)
         B.Init(cells,fullbf,p.IDiv,p.IPosS);
         B.Dump(stdout);
         if(p.WideSize>0) p.WideNum=p.WideSize/B.voxel.Norm();
-
+        globalBox=B.SubPart;
         // Now the volume has been determined; the quality threshold in absolute units can be computed
         if(p.QualitySmoothAbs==0)
             p.QualitySmoothAbs= p.QualitySmoothVox * B.voxel.Norm();
     }
 
 
+    bool res=false;
+/*vVV.resize(p.IDiv[0]);
+for(int i=0; i<vVV.size(); i++){
+    vVV[i].resize(p.IDiv[1]);
+    for(int j=0; j<vVV[i].size(); j++)
+        vVV[i][j].resize(p.IDiv[2]);
 
-    for(p.IPos[0]=p.IPosS[0];p.IPos[0]<=p.IPosE[0];++p.IPos[0])
-      for(p.IPos[1]=p.IPosS[1];p.IPos[1]<=p.IPosE[1];++p.IPos[1])
-	for(p.IPos[2]=p.IPosS[2];p.IPos[2]<=p.IPosE[2];++p.IPos[2])
-	  if((p.IPos[2]+(p.IPos[1]*p.IDiv[2])+(p.IPos[0]*p.IDiv[2]*p.IDiv[1])) >=
+}*/
+//#pragma omp parallel for
+    for(int xx=p.IPosS[0];xx<=p.IPosE[0];++xx)
+      for(int yy=p.IPosS[1];yy<=p.IPosE[1];++yy)
+        for(int zz=p.IPosS[2];zz<=p.IPosE[2];++zz)
+          if((zz+(yy*p.IDiv[2])+(xx*p.IDiv[2]*p.IDiv[1])) >=
 	     (p.IPosB[2]+(p.IPosB[1]*p.IDiv[2])+(p.IPosB[0]*p.IDiv[2]*p.IDiv[1]))) // skip until IPos >= IPosB
 	      {
-		printf("----------- SubBlock %2i %2i %2i ----------\n",p.IPos[0],p.IPos[1],p.IPos[2]);
+                printf("----------- SubBlock %2i %2i %2i ----------\n",xx,yy,zz);
 		//Volume<Voxelf> B;
-		int t0=clock();
+                Volume<Voxelf> VV;// =vVV[xx][yy][zz];
+                int t0=clock();
 
 		Box3f fullbf; fullbf.Import(fullb);
+        //VV.DeltaVoxelSafe=1;
+        Point3i IPos;
+        IPos[0]=xx;
+        IPos[1]=yy;
+        IPos[2]=zz;
 
-                VV.Init(cells,fullbf,p.IDiv,p.IPos);
-                printf("\n\n --------------- Allocated subcells. %i\n",VV.Allocated());
+                VV.Init(cells,fullbf,p.IDiv,IPos);
+		printf("\n\n --------------- Allocated subcells. %i\n",VV.Allocated());
 
 		std::string filename=p.basename;
 		if(p.IDiv!=Point3i(1,1,1))
@@ -394,7 +417,6 @@ void Process(CallBackPosTotal *cb=0)
 		  filename+=subvoltag;
 		}
 		/********** Grande loop di scansione di tutte le mesh *********/
-		bool res=false;
 		for(int i=0;i<MP.size();++i)
 		{
 		  Box3f bbb= MP.bb(i);
@@ -402,22 +424,29 @@ void Process(CallBackPosTotal *cb=0)
       cb((i+1),MP.size(),startTick,"Vol");
       /**********************/
       // if bbox of mesh #i is part of the subblock, then process it
-		  if(bbb.Collide(VV.SubBoxSafe))
+      if(bbb.Collide(VV.SubBoxSafe))
 		  {
 		    SMesh *sm;
 		    if(!MP.Find(i,sm) )
 		    {
-          res = InitMesh(*sm,MP.MeshName(i).c_str(),MP.Tr(i));
+          res = InitMesh(VV,*sm,MP.MeshName(i).c_str(),MP.Tr(i));
           if(!res)
           {
             printf("Failed Init of mesh %s",MP.MeshName(i).c_str());
-            return;
+            //break;
           }
 		    }
-		    res |= AddMeshToVolumeM(*sm, MP.MeshName(i),MP.W(i));
+                    res |= AddMeshToVolumeM(VV,*sm, MP.MeshName(i),MP.W(i));
 		  }
 		}
+           /*     for(int k=VV.SubPart.min[2];k<VV.SubPart.max[2];++k)
+                        for(int j=VV.SubPart.min[1];j<VV.SubPart.max[1];++j)
+                                for(int i=VV.SubPart.min[0];i<VV.SubPart.max[0];++i){
+                                    float fv=VV.V(i,j,k).V();
+                                    if(fv != 0)
+                                        printf("aa %f---%d %d %d\n",fv,k,j,i);
 
+                                }*/
 		//B.Normalize(1);
 		printf("End Scanning\n");
 		if(p.OffsetFlag)
@@ -433,19 +462,19 @@ void Process(CallBackPosTotal *cb=0)
 
 		for(int i=0;i<p.RefillNum;++i)
 		{
-		  VV.Refill(3,6);
+                  //VV.Refill(3,6);
 		  if(p.VerboseLevel>1) VV.SlicedPPM(filename.c_str(),SFormat("_%02imsr",i),p.SliceNum	);
 		  //if(VerboseLevel>1) VV.SlicedPPMQ(filename,SFormat("_%02ips",i++),SliceNum	);
 		}
 
-		for(int i=0;i<p.SmoothNum;++i)
+                for(int i=0;i<p.SmoothNum;++i)
 		{
 		  Volume <Voxelf> SM;
 		  SM.Init(VV);
 		  printf("%2i/%2i: ",i,p.SmoothNum);
 		  SM.CopySmooth(VV,1,p.QualitySmoothAbs);
 		  VV=SM;
-		  VV.Refill(3,6);
+                //  VV.Refill(3,6);
 		  if(p.VerboseLevel>1) VV.SlicedPPM(filename.c_str(),SFormat("_%02ims",i),p.SliceNum	);
 		}
 
@@ -457,8 +486,261 @@ void Process(CallBackPosTotal *cb=0)
 		    VV.SlicedPPM("final","__",p.SliceNum);
 		    VV.SlicedPPMQ("final","__",p.SliceNum);
 		}
+                std::string fn="test";
+                if(1){//VV.div!=Point3i(1,1,1)) {
+                                std::string subvoltag;
+                                VV.GetSubVolumeTag(subvoltag);
+                                fn+=subvoltag;
+                }
+                std::string datname=fn;
+                std::string rawname=fn;
+                rawname+=".raw";
+                VV.Write(rawname,0,0);
 		//MCMesh me;
 		//
+
+            }
+}
+Box3i getBBoxFromFile(std::string filename){
+
+              FILE *fp;
+
+  fp=fopen(filename.c_str(),"rb");
+             if(!fp)
+             {
+                     printf("Error: unable ro open output volume file '%s'\n",filename.c_str());
+                     exit(-1);
+             }
+             _int64 cells;    Box3<float> bb; Point3i div; Point3i pos;
+             Point3i sz;
+
+             fread(&cells,sizeof(_int64),1,fp);
+             float bbtmp[6];
+
+             fread(&bbtmp[0],sizeof(float),6,fp);
+             for(int i=0;i<3; i++)
+                 bb.min[i]=bbtmp[i];
+             for(int i=0;i<3; i++)
+                 bb.max[i]=bbtmp[i+3];
+             int pttmp[3];
+
+             fread(&pttmp[0],sizeof(int),3,fp);
+             for(int i=0;i<3; i++)
+                div[i]=pttmp[i];
+
+             fread(&pttmp[0],sizeof(int),3,fp);
+             for(int i=0;i<3; i++){
+               pos[i]=pttmp[i];
+             }
+
+             fread(&pttmp[0],sizeof(int),3,fp);
+             for(int i=0;i<3; i++){
+               sz[i]=pttmp[i];
+             }
+             fclose(fp);
+             Box3i SubPart,SubPartSafe;
+             // Setting the subpart under analisys
+             for(int k=0;k<3;++k)
+                     {
+                             SubPart.min[k]= pos[k]*sz[k]/div[k];
+                             SubPart.max[k]=(pos[k]+1)*sz[k]/div[k];
+                            // SubBox.min[k]= bbox.min[k]+SubPart.min[k]*voxel[k];
+                           //  SubBox.max[k]= bbox.min[k]+SubPart.max[k]*voxel[k];
+                     }
+
+             // Setting the Safe Subpart under analisys
+             SubPartSafe=SubPart;
+             for(int k=0;k<3;++k)
+                     {
+                             SubPartSafe.min[k] -= Volume<Voxelf>::BLOCKSIDE();;
+                             SubPartSafe.max[k] +=  Volume<Voxelf>::BLOCKSIDE();;
+
+                             if( SubPartSafe.min[k]< 0     ) SubPartSafe.min[k] = 0;
+                             if( SubPartSafe.max[k]> sz[k] ) SubPartSafe.max[k] = sz[k];
+                            // SubBoxSafe.min[k]= bbox.min[k]+SubPartSafe.min[k]*voxel[k];
+                            // SubBoxSafe.max[k]= bbox.min[k]+SubPartSafe.max[k]*voxel[k];
+                     }
+             return SubPartSafe;
+}
+
+void ProcessNormalize(CallBackPosTotal *cb=0)
+{
+int cnt=0;
+std::vector< std::vector<std::vector<Volume<Voxelf> > > >vVV;
+vVV.resize(p.IDiv[0]);
+for(int i=0; i<vVV.size(); i++){
+    vVV[i].resize(p.IDiv[1]);
+    for(int j=0; j<vVV[i].size(); j++)
+        vVV[i][j].resize(p.IDiv[2]);
+
+}
+
+for(int xx=p.IPosS[0];xx<=p.IPosE[0];++xx)
+  for(int yy=p.IPosS[1];yy<=p.IPosE[1];++yy)
+    for(int zz=p.IPosS[2];zz<=p.IPosE[2];++zz)
+      if((zz+(yy*p.IDiv[2])+(xx*p.IDiv[2]*p.IDiv[1])) >=
+         (p.IPosB[2]+(p.IPosB[1]*p.IDiv[2])+(p.IPosB[0]*p.IDiv[2]*p.IDiv[1]))) // skip until IPos >= IPosB
+          {
+              std::string fn="test";
+
+              if(1){//VV.div!=Point3i(1,1,1)) {
+                              std::string subvoltag;
+                              Point3i pos(xx,yy,zz);
+
+                              GetSubVolumeTag(p.IDiv,pos,subvoltag);
+                              fn+=subvoltag;
+              }
+              std::string datname=fn;
+              std::string rawname=fn;
+              rawname+=".raw";
+              Box3i ibox;
+              printf("Loading %s\n ",rawname.c_str());
+              vVV[xx][yy][zz].Read(rawname);
+          }
+printf("Done Loading\n");
+//#pragma omp parallel for
+    for(int xx=p.IPosS[0];xx<=p.IPosE[0];++xx)
+      for(int yy=p.IPosS[1];yy<=p.IPosE[1];++yy)
+        for(int zz=p.IPosS[2];zz<=p.IPosE[2];++zz)
+          if((zz+(yy*p.IDiv[2])+(xx*p.IDiv[2]*p.IDiv[1])) >=
+             (p.IPosB[2]+(p.IPosB[1]*p.IDiv[2])+(p.IPosB[0]*p.IDiv[2]*p.IDiv[1]))) // skip until IPos >= IPosB
+              {
+                  std::string fn="test";
+
+        Volume<Voxelf> &VV=   vVV[xx][yy][zz];
+        if(1){//VV.div!=Point3i(1,1,1)) {
+                        std::string subvoltag;
+                        Point3i pos(xx,yy,zz);
+
+                        GetSubVolumeTag(p.IDiv,pos,subvoltag);
+                        fn+=subvoltag;
+        }
+        std::string datname=fn;
+        std::string rawname=fn;
+        rawname+=".raw";
+        Box3i ibox;
+   //     VV.Read(rawname);
+        bool madeChange=false;
+
+        for(int xxx=p.IPosS[0];xxx<=p.IPosE[0];++xxx)
+            for(int yyy=p.IPosS[1];yyy<=p.IPosE[1];++yyy){
+            if(xxx==xx && yyy==yy)
+                continue;
+            std::string fn_comapre="test";
+
+            if(1){//VV.div!=Point3i(1,1,1)) {
+                            std::string subvoltag_compare;
+                            Point3i pos(xxx,yyy,zz);
+
+
+                            GetSubVolumeTag(p.IDiv,pos,subvoltag_compare);
+                            fn_comapre+=subvoltag_compare;
+                            fn_comapre+=".raw";
+
+            }
+            Volume<Voxelf> &VV_compare=vVV[xxx][yyy][zz];;
+             Box3i SubPartSafeCompare=VV_compare.SubPartSafe;
+//            Box3i SubPartSafeCompare=getBBoxFromFile(fn_comapre);
+            if(!SubPartSafeCompare.Collide(VV.SubPartSafe))
+                continue;
+           // VV_compare.Read(fn_comapre);
+
+            ibox.min[0] = std::max(SubPartSafeCompare.min[0],VV.SubPartSafe.min[0]);
+            ibox.min[1] = std::max(SubPartSafeCompare.min[1],VV.SubPartSafe.min[1]);
+            ibox.min[2] = std::max(SubPartSafeCompare.min[2],VV.SubPartSafe.min[2]);
+
+            ibox.max[0] = std::min(SubPartSafeCompare.max[0],VV.SubPartSafe.max[0]);
+            ibox.max[1] = std::min(SubPartSafeCompare.max[1],VV.SubPartSafe.max[1]);
+            ibox.max[2] = std::min(SubPartSafeCompare.max[2],VV.SubPartSafe.max[2]);
+           // ibox=globalBox;
+
+          /*  printf("%d %d %d -- %d %d %d\n",ibox.min[0],ibox.min[1],ibox.min[2],
+                   ibox.max[0],ibox.max[1],ibox.max[2]);
+            printf("A %d %d %d -- %d %d %d\n",SubPartSafe.min[0],SubPartSafe.min[1],SubPartSafe.min[2],
+                   SubPartSafe.max[0],SubPartSafe.max[1],SubPartSafe.max[2]);
+            printf("B %d %d %d -- %d %d %d\n",VV.SubPartSafe.min[0],VV.SubPartSafe.min[1],VV.SubPartSafe.min[2],
+                   VV.SubPartSafe.max[0],VV.SubPartSafe.max[1],VV.SubPartSafe.max[2]);*/
+            for(int xxxx=ibox.min[0];xxxx<=ibox.max[0];++xxxx)
+              for(int yyyy=ibox.min[1];yyyy<=ibox.max[1];++yyyy)
+                  for(int zzzz=ibox.min[2];zzzz<=ibox.max[2];++zzzz){
+              //  printf("%d %d %d\n",xxxx,yyyy,zzzz);
+                      if(VV.Val(xxxx,yyyy,zzzz) == 0.0)
+                          continue;
+               if(VV_compare.Val(xxxx,yyyy,zzzz)!=VV.Val(xxxx,yyyy,zzzz)){
+#pragma omp critical
+                   {
+                           // printf("%f %f\n",VV_compare.Val(xxxx,yyyy,zzzz),VV.Val(xxxx,yyyy,zzzz));
+                        if(VV_compare.Val(xxxx,yyyy,zzzz) == 1000.000)
+                            ;//VV_compare.V(xxxx,yyyy,zzzz).Set(VV.V(xxxx,yyyy,zzzz));
+                        else if(VV.Val(xxxx,yyyy,zzzz) == 1000.000)
+                            VV.V(xxxx,yyyy,zzzz).Set(VV_compare.V(xxxx,yyyy,zzzz));
+                        else{
+                            VV_compare.V(xxxx,yyyy,zzzz).Blend(VV.V(xxxx,yyyy,zzzz),0.5);
+                          VV.V(xxxx,yyyy,zzzz).Set(  VV_compare.V(xxxx,yyyy,zzzz));
+
+                        }
+
+                       madeChange=true;
+               }
+                }
+              //  vVV[xxx][yyy][zz].V(xxxx,yyyy,zzzz).Set(VV.V(xxxx,yyyy,zzzz));
+            //    VV.V(xxxx,yyyy,zzzz).SetB(false);
+
+
+            }
+
+        }
+  /*      std::string filename="final";
+        if(p.IDiv!=Point3i(1,1,1))
+        {
+          std::string subvoltag;
+          VV.GetSubVolumeTag(subvoltag);
+          filename+=subvoltag;
+        }
+        VV.SlicedPPM(filename.c_str(),"__",1);
+        VV.SlicedPPMQ(filename.c_str(),"__",1);
+
+        VV.Dump(stdout);*/
+        if(madeChange)
+            VV.Write(rawname,0,0);
+                printf("----------- Equalizing corner SubBlock %2i %2i %2i ----------\n",xx,yy,zz);
+                //Volume<Voxelf> B;
+
+            }
+//#pragma omp parallel for
+}
+void ProcessMC(CallBackPosTotal *cb=0)
+{
+    int TotAdd=0,TotMC=0,TotSav=0;
+
+    for(int xx=p.IPosS[0];xx<=p.IPosE[0];++xx)
+      for(int yy=p.IPosS[1];yy<=p.IPosE[1];++yy)
+        for(int zz=p.IPosS[2];zz<=p.IPosE[2];++zz)
+          if((zz+(yy*p.IDiv[2])+(xx*p.IDiv[2]*p.IDiv[1])) >=
+             (p.IPosB[2]+(p.IPosB[1]*p.IDiv[2])+(p.IPosB[0]*p.IDiv[2]*p.IDiv[1]))) // skip until IPos >= IPosB
+              {
+        //Volume<Voxelf> &VV =vVV[xx][yy][zz];
+                  Volume<Voxelf> VV;
+                  std::string fn="test";
+                  if(1){//VV.div!=Point3i(1,1,1)) {
+                                  std::string subvoltag;
+                                  Point3i pos(xx,yy,zz);
+
+                                  GetSubVolumeTag(p.IDiv,pos,subvoltag);
+                                  fn+=subvoltag;
+                  }
+                  std::string datname=fn;
+                  std::string rawname=fn;
+                  rawname+=".raw";
+                  VV.Read(rawname);
+        std::string filename=p.basename;
+        if(p.IDiv!=Point3i(1,1,1))
+        {
+          std::string subvoltag;
+          VV.GetSubVolumeTag(subvoltag);
+          filename+=subvoltag;
+        }
+        bool res=true;
 		MCMesh me;
 		if(res)
 		{
@@ -492,10 +774,13 @@ void Process(CallBackPosTotal *cb=0)
 		  }
 
 		  int t2=clock();  //--------
-		  TotMC+=t2-t1;
+//		  TotMC+=t2-t1;
 		  if(me.vn >0 || me.fn >0)
 		  {
         p.OutNameVec.push_back(filename+std::string(".ply"));
+
+        int saveMask=0;
+       if(p.MergeColor) saveMask |= tri::io::Mask::IOM_VERTCOLOR ;
         tri::io::ExporterPLY<MCMesh>::Save(me,p.OutNameVec.back().c_str(),saveMask);
         if(p.SimplificationFlag)
         {
@@ -525,7 +810,7 @@ void Process(CallBackPosTotal *cb=0)
 	      }
 	    else
 	      {
-		 printf("----------- skipping SubBlock %2i %2i %2i ----------\n",p.IPos[0],p.IPos[1],p.IPos[2]);
+                 printf("----------- skipping SubBlock %2i %2i %2i ----------\n",xx,yy,zz);
 	      }
 }
 

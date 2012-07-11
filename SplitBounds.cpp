@@ -17,6 +17,12 @@ WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,const st
         fprintf(stderr,"Can't create cmd file");
         exit(-1);
     }
+
+    cmd2fp =fopen((fname+"2").c_str(),"w");
+    if(!cmd2fp){
+        fprintf(stderr,"Can't create cmd file");
+        exit(-1);
+    }
     char tmp[1024];
     sprintf(tmp,"%s/vcglist.txt",aggdir);
     bboxfn=string(tmp);
@@ -35,29 +41,47 @@ WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,const st
 }
 bool WriteBoundTP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
  double smallCCPer=0.2;
-   // fprintf(cmdfp,"%s/vcgapps/bin/plymc -M -V%f -s %d %d %d %d %d %d -o%s/vol %s;%s/vcgapps/bin/mergeMesh %s/vol_%d%d%d.ply  -cleansize %f -P -out %s/clean_%d%d%d.ply\n",_basepath.c_str(),
- fprintf(cmdfp,"%s/vcgapps/bin/mergeMesh %s/vol_%d%d%d.ply  -cleansize %f -P -out %s/clean_%d%d%d.ply\n",
+ FILE *fps[]={cmdfp,cmd2fp};
+ for(int i=0; i<2; i++){
+ fprintf(fps[i],"%s/vcgapps/bin/plymc_outofcore -M -V%f -i%d -s %d %d %d %d %d %d -o%s/vol %s",
+         _basepath.c_str(),_res,
+                    i==0 ? 0:2,
+                    cell.splits[0],
+                    cell.splits[1],
+                    cell.splits[2],
+                    cell.volIdx[0],
+                    cell.volIdx[1],
+                    cell.volIdx[2],
+                    aggdir,
+                    bboxfn.c_str()
+        );
+ }
+     fprintf(cmdfp,"\n");
+     fprintf(cmd2fp,";%s/vcgapps/bin/mergeMesh %s/vol_%d%d%d.ply  -cleansize %f -P -out %s/clean_%d%d%d.ply\n",
 
- /*_res,
-            cell.splits[0],
-            cell.splits[1],
-            cell.splits[2],
-            cell.volIdx[0],
-            cell.volIdx[1],
-            cell.volIdx[2],
-            aggdir,
-            bboxfn.c_str(),*/
-            _basepath.c_str(),
-            aggdir,
-            cell.volIdx[0],
-            cell.volIdx[1],
-            cell.volIdx[2],
-            smallCCPer,
-            aggdir,
-            cell.volIdx[0],
-            cell.volIdx[1],
-            cell.volIdx[2]
-            );
+     /*_res,
+                cell.splits[0],
+                cell.splits[1],
+                cell.splits[2],
+                cell.volIdx[0],
+                cell.volIdx[1],
+                cell.volIdx[2],
+                aggdir,
+                bboxfn.c_str(),*/
+                _basepath.c_str(),
+                aggdir,
+                cell.volIdx[0],
+                cell.volIdx[1],
+                cell.volIdx[2],
+                smallCCPer,
+                aggdir,
+                cell.volIdx[0],
+                cell.volIdx[1],
+                cell.volIdx[2]
+                );
+
+
+
     return true;
 }
 

@@ -1,6 +1,7 @@
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
 #include <osg/io_utils>
+#include <osg/Timer>
 #include <string>
 #include "BuildAtlas.h"
 using namespace std;

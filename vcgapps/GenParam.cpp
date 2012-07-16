@@ -354,7 +354,7 @@ osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::
          val.compute_fill_and_overlap_ratio(&the_map);
          std::cerr << "Created atlas with fill ratio of " << val.fill_ratio()<< std::endl ;
 
-       //  OGF::write_file_eps(the_map,"test.eps");
+   //    OGF::write_file_eps(the_map,"test.eps");
          //exit(0);
          osg::Vec3Array *arr=new osg::Vec3Array;
          arr->resize(triangles->size());

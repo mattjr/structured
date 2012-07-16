@@ -54,7 +54,7 @@
 #include <OGF/basic/debug/logger.h>
 #include <OGF/basic/debug/progress.h>
 #include <OGF/basic/os/stopwatch.h>
-
+#include <float.h>
 #include <deque>
 
 // TODO: when validator fails with filling factor,
@@ -189,7 +189,7 @@ namespace OGF {
                 ParamValidator validator ;
                 validator.set_max_overlap_ratio(max_overlap_ratio_) ;
                 if(iter >1 )
-                validator.set_max_scaling(max_scaling_*10000.0) ;
+                validator.set_max_scaling(FLT_MAX) ;
                 else
                     validator.set_max_scaling(max_scaling_) ;
 

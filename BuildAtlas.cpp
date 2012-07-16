@@ -554,18 +554,20 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
     if(writeAtlas){
         int adjustedTileSize=tileSize-(border *2);
         for(int level=0; sizeLevel>=adjustedTileSize; level++,sizeLevel/=2 ){
-            printf("\rDoing VT Level %02d/%02d",level,maxLevels);
-            fflush(stdout);
             sprintf(dirname,"%s/vtex/tiles_b%d_level%d",basedir.c_str(),border,level);
-            int numXtiles=(sizeLevel/tileSize);
-            int numYtiles=(sizeLevel/tileSize);
+            int numXtiles=(sizeLevel/adjustedTileSize);
+            int numYtiles=(sizeLevel/adjustedTileSize);
             osgDB::makeDirectory(dirname);
-            for(int x=0; x<=numXtiles; x++){
-                for(int y=0; y <=numYtiles;y++){
+            int cnt=0;
+            for(int x=0; x<numXtiles; x++){
+                for(int y=0; y <numYtiles;y++){
+                    printf("\rDoing VT Level %02d/%02d - %dx%d - %.2f%%",level,maxLevels,numXtiles,numYtiles,100.0*(cnt++/(double)(numYtiles*numXtiles)));
+                    fflush(stdout);
+
                     vips::VImage part ;
                     double downsampleFactor=pow(2.0,level)*downsampleFactorMult;
 
-                    if (x != 0 && y !=0 && x !=numXtiles && y != numYtiles ){
+                    if (x != 0 && y !=0 && x !=(numXtiles-1) && y != (numYtiles-1) ){
 
 
                         if(level == 0)

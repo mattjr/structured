@@ -3113,7 +3113,8 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
 */
    // if(!_useReImage && !_useVirtualTex)
     //cout <<"Chuch " << ((osg::Vec2Array*)group->getChild(0)->asGeode()->getDrawable(0)->asGeometry()->getTexCoordArray(0))->size()<<endl;
-
+    osgUtil::SmoothingVisitor sv1;
+    group->accept(sv1);
     return group;
 
 

@@ -1249,6 +1249,7 @@ const char *uname="mesh";
     int minSplits=-1;
     double targetVolume=10.0;
     split_bounds<Stereo_Pose_Data>(bounds,tasks , targetVolume,minSplits,vol);
+    if(!externalMode){
     {
         WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,tasks);
         int splits[3]={0,0,0};
@@ -1300,6 +1301,8 @@ const char *uname="mesh";
         numberFacesAll+=geom->getPrimitiveSet(0)->getNumPrimitives();
         //stereo_poses_tmp.push_back(vrip_cells[i]);
 
+
+    }
 
     }
 
@@ -1900,14 +1903,14 @@ const char *uname="mesh";
                     {
                         //#pragma omp for
                         for(int i=0; i <(int)cells.size(); i++){
-                            sprintf(tmpname,"%s/tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply",
-                                    diced_dir,cells[i].row,cells[i].col,vpblod);
-                            cut_model(kdbb,tmpname,cells[i].bboxMargin,DUP);
+                            sprintf(tmpname,"%s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply",
+                                    diced_dir,cells[i].row,cells[i].col);
+                            cut_model(kdbb,tmpname,cells[i].bbox,DUMP);
                             formatBar("Split",startTick,progCount,totalTodoCount);
                             //#pragma omp atomic
                             progCount++;
                             char tp[1024];
-                            sprintf(tp,"%s/bbox-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",diced_dir,cells[i].row,cells[i].col);
+                            sprintf(tp,"%s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",diced_dir,cells[i].row,cells[i].col);
                             FILE *bboxfp=fopen(tp,"w");
 
                             for(int k=0; k < (int)cells[i].imagesMargin.size(); k++){
@@ -2236,6 +2239,8 @@ const char *uname="mesh";
         char tmpfn[1024];
         sprintf(tmpfn,"%s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply", diced_dir,cells[i].row,cells[i].col);
         if(cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
+            printf("Failed cell images %d exists %d empty %d\n",cells[i].images.size(),osgDB::fileExists(tmpfn),
+                   checkIsEmptyPly(tmpfn));
             fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
             fprintf(FP2,"-1 -1 -1 -1 null null 0\n");

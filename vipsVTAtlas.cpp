@@ -8,6 +8,7 @@ int main( int argc, char **argv )
 {
     // use an ArgumentParser object to manage the program arguments.
     osg::ArgumentParser arguments(&argc,argv);
+    osg::Timer_t before_computeMax = osg::Timer::instance()->tick();
 
     string matname;
     if(!arguments.read("-mat",matname)){
@@ -39,5 +40,9 @@ int main( int argc, char **argv )
             createVTAtlas( viewProj, totalX, totalY,
                          mosaic_cells,
                        outputPyr,scaleFactor,basedir,imgFile);
+   osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
+
+   cout << "Time for vipsAtlas = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
+
 
 }

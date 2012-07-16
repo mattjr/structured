@@ -542,6 +542,7 @@ KdTreeBbox *setupKdTree(osg::ref_ptr<osg::Node> model){
                 srcGeom->colors=(osg::Vec4Array*)geom->getColorArray();
                 //    srcGeom.texcoords;
                 srcGeom->texid=NULL;
+                srcGeom->texAndAux=NULL;
                 KdTreeBbox *kdtreeBbox=new KdTreeBbox(*kdTree,*srcGeom);
                 return kdtreeBbox;
             }

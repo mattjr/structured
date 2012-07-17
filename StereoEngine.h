@@ -68,7 +68,7 @@ public:
     CvSize imageSize;
     std::vector<std::string> imageNames[2];
 public:
-    StereoEngine(const StereoCalib &calib,double edgethresh,double max_triangulation_len,int max_feature_count,
+    StereoEngine(const StereoCalib &calib,double edgethresh,double epipolar_dist,double max_triangulation_len,int max_feature_count,
                  double min_feat_dist,double feat_quality,int tex_size,OpenThreads::Mutex &mutex);
     virtual ~StereoEngine();
     void captureCalibrationImages(int number);
@@ -92,6 +92,7 @@ public:
     int max_feature_count;
     double min_feat_dist;
     double feat_quality;
+    double _epipolar_dist;
     int tex_size;
     bool verbose;
     bool display_debug_images;

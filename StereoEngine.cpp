@@ -226,8 +226,8 @@ void apply_epipolar_constraints(
 
 
 
-StereoEngine::StereoEngine(const StereoCalib &calib,double edgethresh,double max_triangulation_len,int max_feature_count,double min_feat_dist,double feat_quality,int tex_size,OpenThreads::Mutex &mutex):
-        _calib(calib),edgethresh(edgethresh),max_triangulation_len(max_triangulation_len),max_feature_count(max_feature_count),min_feat_dist(min_feat_dist),feat_quality(feat_quality), tex_size(tex_size),
+StereoEngine::StereoEngine(const StereoCalib &calib,double edgethresh,double epipolar_dist,double max_triangulation_len,int max_feature_count,double min_feat_dist,double feat_quality,int tex_size,OpenThreads::Mutex &mutex):
+        _calib(calib),edgethresh(edgethresh),_epipolar_dist(epipolar_dist),max_triangulation_len(max_triangulation_len),max_feature_count(max_feature_count),min_feat_dist(min_feat_dist),feat_quality(feat_quality), tex_size(tex_size),
         verbose(false),display_debug_images(false),pause_after_each_frame(false),_osgDBMutex(mutex)
 {
 
@@ -1394,7 +1394,7 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
         //be sure the point's are saved in right matrix format 2xN 1 channel
 
     }
-    apply_epipolar_constraints(&F,2.0,undist_coords1,undist_coords2,Rstatus,_calib);
+    apply_epipolar_constraints(&F,_epipolar_dist,undist_coords1,undist_coords2,Rstatus,_calib);
 
     for ( int i=0; i < count; i++)
     {
@@ -1424,7 +1424,7 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
         //  cout << point3D->data.db[0] << " " << point3D->data.db[1] << " " << point3D->data.db[2];
         //cout << " "<<tmpL.x<< " "<< tmpL.y<< " "<< tmpR.x<< " "<<tmpR.y << endl;
         osg::Vec3 pt(point3D->data.db[0],point3D->data.db[1],point3D->data.db[2]);
-        if(pt.z() > 0.0 && pt.length2() < max_triangulation_len*max_triangulation_len)
+        if(pt.z() > 0.0 /*&& pt.length2() < max_triangulation_len*max_triangulation_len*/)
             points.push_back(pt);
         cvReleaseMat(&_pointImg1);
         cvReleaseMat(&_pointImg2);

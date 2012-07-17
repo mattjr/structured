@@ -444,8 +444,7 @@ int main(int argc ,char**argv){
 */
 
     writeOSG((osgDB::getNameLessExtension(argv[2])+".ive").c_str(),mesh);
-    if(splitting>0)
-        splitMeshOuput(mesh,basename,splitting);
+
     return 0;
 
 }

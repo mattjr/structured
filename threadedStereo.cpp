@@ -136,6 +136,7 @@ double mmperpixel=4;
 int vrip_img_per_cell;
 int tex_img_per_cell;
 static double min_feat_dist;
+static double epipolar_dist;
 static double feat_quality_level;
 const char *aggdir="tmp/mesh-agg";
 
@@ -369,6 +370,8 @@ static bool parse_args( int argc, char *argv[ ] )
                                   4);
     recon_config_file->get_value( "JPEG_QUALITY", jpegQuality,
                                   95);
+    recon_config_file->get_value( "SCF_MAX_EPIPOLAR_DIST", epipolar_dist,
+                                  4.0);
 
     if(recon_config_file->get_value( "REIMAGE_RES",reimageSize.x(),-1)){
         reimageSize.y()=reimageSize.x();
@@ -975,7 +978,7 @@ const char *uname="mesh";
         double max_triangulation_len =  max_alt > 0.0 ? max_alt*3 : edgethresh * 20;
 #pragma omp parallel num_threads(num_threads)
         if(run_stereo){
-            StereoEngine engine(calib,edgethresh,max_triangulation_len,max_feature_count,  min_feat_dist, feat_quality_level,lodTexSize[0],mutex);
+            StereoEngine engine(calib,edgethresh,epipolar_dist,max_triangulation_len,max_feature_count,  min_feat_dist, feat_quality_level,lodTexSize[0],mutex);
             cvSetNumThreads(1);
 #pragma omp for
             for(int i=0; i < (int)tasks.size(); i++){
@@ -2239,7 +2242,7 @@ const char *uname="mesh";
         char tmpfn[1024];
         sprintf(tmpfn,"%s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply", diced_dir,cells[i].row,cells[i].col);
         if(cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
-            printf("Failed cell images %d exists %d empty %d\n",cells[i].images.size(),osgDB::fileExists(tmpfn),
+            printf("Failed cell images %d exists %d empty %d\n",(int)cells[i].images.size(),osgDB::fileExists(tmpfn),
                    checkIsEmptyPly(tmpfn));
             fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
@@ -2583,11 +2586,16 @@ else
     double scaleFactor=0.25;
     fprintf(ipadViewerFP,"#!/bin/bash\n");
     fprintf(ipadViewerFP,"mkdir ipad\n");
-    fprintf(ipadViewerFP,"cd %s;%s/vcgapps/bin/texturedDecimator %s/tex-total.ply %s/ipad.ply %d -Oy -V -uipad/octree -s%d;",
+    fprintf(ipadViewerFP,"cd %s;%s/vcgapps/bin/texturedDecimator %s/tex-total.ply %s/ipad.ply %d -Oy -V -P ;",
             cwd,
             basepath.c_str(),
             diced_dir,
-            diced_dir,maxFaceSizeIpad,(0xffff-1));
+            diced_dir,maxFaceSizeIpad);
+
+    fprintf(ipadViewerFP,"%s/vcgapps/bin/splitForTablet %s/ipad.ply -uipad/octree -s%d;",
+            basepath.c_str(),
+            diced_dir,
+            (0xffff-1));
 
     std::ostringstream p2;
   //  p2 << basepath << "/singleImageTex " << diced_dir<<"/ipad.ply --outfile "<<diced_dir<<"/ipadtex.ply "<< "--size " << totalXborder << " "<<totalYborder;
@@ -2617,7 +2625,7 @@ else
         exit(-1);
     }
     fprintf(uploadFP,"#!/bin/bash\n");
-    fprintf(uploadFP,"EXPECTED_ARGS=1\nE_BADARGS=65\n");
+    fprintf(uploadFP,"EXPECTED_ARGS=2\nE_BADARGS=65\n");
     fprintf(uploadFP,"if [ $# -ne $EXPECTED_ARGS ]\nthen\n\techo \"Usage: `basename $0` {basename}\"\nexit $E_BADARGS\nfi\n");
     fprintf(uploadFP,"cd ipad\n");
     fprintf(uploadFP,"mkdir $1\n");
@@ -2625,11 +2633,13 @@ else
     for(int k=0; k<numOctrees; k++)
         fprintf(uploadFP,"ln -sf $PWD/vtex-%04d.octree $PWD/$1/m-%04d.octree\n",k,k);
     fprintf(uploadFP,"ln -sf $PWD/octree.txt $PWD/$1/cnt\n");
+    fprintf(uploadFP,"gdalwarp ../mosaic/mosaic.vrt -ts 256 256 out.tif\n");
+    fprintf(uploadFP,"convert $PWD/out.tif $1/m.jpg\n");
     fprintf(uploadFP,"rm -f $1/m.xml\n");
     fprintf(uploadFP,"tar cvfh $1.tar $1\n");
     fprintf(uploadFP,"bash %s/getmeta.sh $1 $2> $1/m.xml\n",basepath.c_str());
     fprintf(uploadFP,"tar rvf $1.tar $1/m.xml\n");
-    fprintf(uploadFP,"scp $1.tar mattjr@aguacate:benthos/$2\n");
+    fprintf(uploadFP,"scp $1.tar mattjr@aguacate:benthos/$2/\n");
     fprintf(uploadFP,"scp %s/updatemodelxml.sh mattjr@aguacate:benthos/\n",basepath.c_str());
     fprintf(uploadFP,"scp %s/create_main_feed.sh mattjr@aguacate:benthos/\n",basepath.c_str());
     fprintf(uploadFP,"ssh mattjr@aguacate \"cd benthos;bash updatemodelxml.sh\"\n");

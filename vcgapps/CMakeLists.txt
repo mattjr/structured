@@ -19,6 +19,7 @@ ADD_EXECUTABLE( tridecimator  tridecimator.cpp  ${SRCS} )
 ADD_EXECUTABLE( mergeMesh mergeMesh.cpp ${SRCS} )
 ADD_EXECUTABLE( cleanTexMesh cleanTexMesh.cpp ${SRCS} )
 ADD_EXECUTABLE( setupDebugMesh setupDebugMesh.cpp ${SRCS} )
+ADD_EXECUTABLE( splitForTablet  splitForTablet.cpp ${SRCS} )
 
 ADD_EXECUTABLE( texturedDecimator  texturedDecimator.cpp ${SRCS} )
 TARGET_LINK_LIBRARIES(texturedDecimator ts)
@@ -36,7 +37,7 @@ TARGET_LINK_LIBRARIES(sw-shadevis  ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LI
 
 TARGET_LINK_LIBRARIES(reorder  ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIB} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )
 
-INSTALL_TARGETS( /bin texturedDecimator tridecimator)
+INSTALL_TARGETS( /bin texturedDecimator tridecimator splitForTablet)
 INSTALL_TARGETS( /bin shadevis )
 SET( EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/bin )
 

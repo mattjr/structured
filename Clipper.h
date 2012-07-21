@@ -30,7 +30,8 @@ enum OverlapMode{
     GAP,
     DUP,
     CUT,
-    DUMP
+    DUMP,
+    TWOBOX,
 
 };
 
@@ -41,6 +42,7 @@ public:
     geom_elems_dst(int numTex,bool vt){
         colors=new osg::Vec4Array();
         faces = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
+        marginFace=new std::vector<bool>();
 
         texcoords.resize(numTex);
         if(numTex > 0)
@@ -67,6 +69,7 @@ else
     osg::DrawElementsUInt *faces;
      osg::ref_ptr<osg::Vec4Array>  texid;
      osg::Vec4Array *texAndAux;
+     std::vector<bool> *marginFace;
 
     TexBlendCoord  texcoords;
 };
@@ -147,7 +150,7 @@ struct IntersectKdTreeBbox
 
 
     {
-
+        usedFace.resize(_triangles.size(),false);
 
 
     }
@@ -160,7 +163,7 @@ struct IntersectKdTreeBbox
 
 
 
-    void intersect(const osg::KdTree::KdNode& node, const geom_elems_dst dst,const osg::BoundingBox clipbox,const OverlapMode &mode) const;
+    void intersect(const osg::KdTree::KdNode& node, const geom_elems_dst dst,const osg::BoundingBox clipbox,const OverlapMode &mode,const osg::BoundingBox *bbox_margin);
 
     //bool intersectAndClip(osg::Vec3& s, osg::Vec3& e, const osg::BoundingBox& bb) const;
     const osg::Vec3Array *               _vertices;
@@ -175,6 +178,7 @@ struct IntersectKdTreeBbox
     const osg::Vec3Array *_gapPts;
 
 
+    std::vector<bool> usedFace;
 
 
 
@@ -202,7 +206,7 @@ public:
 
     }
     osg::ref_ptr<osg::Node> intersect(const osg::BoundingBox bbox,  geom_elems_dst &dst,
-                                      const OverlapMode &overlapmode);
+                                      const OverlapMode &overlapmode,const osg::BoundingBox *bbox_margin=NULL);
 
     const geom_elems_src _src;
     IntersectKdTreeBbox intersector;
@@ -236,7 +240,7 @@ public:
 };
 KdTreeBbox *setupKdTree(osg::ref_ptr<osg::Node> model);
 KdTreeBbox *createKdTreeForUnbuilt(osg::ref_ptr<osg::Node> model);
-bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const OverlapMode &mode);
+bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const OverlapMode &mode,osg::BoundingBox *bbox_margin=NULL);
 struct CheckKdTreeBbox
 {
     CheckKdTreeBbox(    const osg::ref_ptr<osg::Vec3Array>  vertices,

@@ -1908,7 +1908,7 @@ const char *uname="mesh";
                         for(int i=0; i <(int)cells.size(); i++){
                             sprintf(tmpname,"%s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply",
                                     diced_dir,cells[i].row,cells[i].col);
-                            cut_model(kdbb,tmpname,cells[i].bbox,DUMP);
+                            cut_model(kdbb,tmpname,cells[i].bboxMargin,TWOBOX,&(cells[i].bbox));
                             formatBar("Split",startTick,progCount,totalTodoCount);
                             //#pragma omp atomic
                             progCount++;

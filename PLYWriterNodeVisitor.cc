@@ -86,7 +86,7 @@ private:
 class PrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
     
 public:
-    PrimitiveIndexWriter(std::ostream& fout,osg::Geometry* geo, unsigned int normalIndex, unsigned int lastVertexIndex, unsigned int  lastNormalIndex, unsigned int lastTexIndex,bool textured,osg::Vec4Array *textureID,std::vector<osg::ref_ptr<osg::Vec3Array> > *textureCoord) :
+    PrimitiveIndexWriter(std::ostream& fout,osg::Geometry* geo, unsigned int normalIndex, unsigned int lastVertexIndex, unsigned int  lastNormalIndex, unsigned int lastTexIndex,bool textured,osg::Vec4Array *textureID,std::vector<osg::ref_ptr<osg::Vec3Array> > *textureCoord,    std::vector<bool> *marginFace) :
             osg::PrimitiveIndexFunctor(), 
             _fout(fout),
             _lastVertexIndex(lastVertexIndex),
@@ -98,7 +98,8 @@ public:
             _normalIndex(normalIndex),
             _textured(textured),
             _textureID(textureID),
-            _textureCoord(textureCoord)
+            _textureCoord(textureCoord),
+             _marginFace(marginFace)
 
     {
     }
@@ -185,6 +186,16 @@ public:
                 }
             }
         }
+        if(_marginFace){
+            float qual;
+            if(!((*_marginFace)[i1] == (*_marginFace)[i2] && (*_marginFace)[i2] == (*_marginFace)[i3])){
+                printf("MArgin not the saem %d %d %d %d %d %d\n",i1,i2,i3,(*_marginFace)[i1] ,(*_marginFace)[i2] ,(*_marginFace)[i3] );
+                exit(-1);
+            }
+            qual =(*_marginFace)[i1] ? -999.0 : 1.0;
+            _fout.write((char *)&qual,sizeof(float));
+
+        }
 
         // not sure if this is correct?
         if(_geo->getNormalBinding() && _geo->getNormalBinding() == osg::Geometry::BIND_PER_PRIMITIVE) ++_normalIndex;
@@ -253,7 +264,7 @@ protected:
         if (indices==0 || count==0) return;
 
         typedef const T* IndexPointer;
-        
+
         switch(mode)
         {
         case(GL_TRIANGLES):
@@ -367,6 +378,7 @@ private:
     osg::Vec4Array *_textureID;
     std::vector<osg::ref_ptr<osg::Vec3Array> > *_textureCoord;
 
+    std::vector<bool> *_marginFace;
 
 
 };
@@ -588,7 +600,7 @@ void PLYWriterNodeVisitor::processGeometry(osg::Geometry* geo, osg::Matrix& m) {
     {
         osg::PrimitiveSet* ps = geo->getPrimitiveSet(i);
         
-        PrimitiveIndexWriter pif(_fout, geo, normalIndex, _lastVertexIndex, _lastNormalIndex, _lastTexIndex,_textured,_textureID,_textureCoord);
+        PrimitiveIndexWriter pif(_fout, geo, normalIndex, _lastVertexIndex, _lastNormalIndex, _lastTexIndex,_textured,_textureID,_textureCoord,_marginFace);
         ps->accept(pif);
         
         if(geo->getNormalArray() && geo->getNormalBinding() == osg::Geometry::BIND_PER_PRIMITIVE_SET)
@@ -675,6 +687,10 @@ void PLYWriterNodeVisitor::write_header(void){
             _fout <<"property int texnumber\n";
             _fout <<"property list uchar float color\n";
         }
+    }
+    if(_marginFace){
+        _fout <<"property float quality\n";
+
     }
     if(_comment.size())
         _fout <<"comment "<<_comment<<"\n";

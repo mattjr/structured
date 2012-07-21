@@ -365,7 +365,10 @@ void VertexDataMosaic::readTriangles( PlyFile* file, const int nFaces,bool multT
         ply_get_property( file, "face", &faceProps[3] );
     }
 
+    if(qual && !multTex){
+        ply_get_property( file, "face", &faceProps[3] );
 
+    }
     // If read colors allocate space for color array
     if( tex)
     {

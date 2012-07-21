@@ -269,7 +269,7 @@ public:
 */
 
 
-void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_elems_dst dst,const osg::BoundingBox clipbox,const OverlapMode &mode) const
+void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_elems_dst dst,const osg::BoundingBox clipbox,const OverlapMode &mode,const osg::BoundingBox *bbox_margin)
 {
     if (node.first<0)
     {
@@ -284,6 +284,7 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
         {
             //const Triangle& tri = _triangles[_primitiveIndices[i]];
             const KdTree::Triangle& tri = _triangles[i];
+
            // cout <<"   tri("<<tri.p0<<","<<tri.p1<<","<<tri.p2<<")"<<std::endl;
            // cout << (*_vertices)[tri.p0] << " ";
           //  cout <<clipbox._min<< " "<< clipbox._max<<endl;
@@ -391,8 +392,15 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
 
             }
 
+            if(mode == DUMP){
+                if(usedFace[i])
+                    continue;
+                usedFace[i]=true;
+            }
 
             int counter=dst.faces->size();
+
+
             dst.vertices->push_back(v0);
             dst.vertices->push_back(v1);
             dst.vertices->push_back(v2);
@@ -418,6 +426,17 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
                 }
             }
 
+             if(mode == TWOBOX && bbox_margin){
+                if(!(bbox_margin->contains(v0) && bbox_margin->contains(v1) &&bbox_margin->contains(v2) ) || usedFace[i])
+                    for(int t=0; t<3; t++)
+                    dst.marginFace->push_back(true);
+                else{
+                    for(int t=0; t<3; t++)
+                    dst.marginFace->push_back(false);
+                    usedFace[i]=true;
+                }
+            }
+
             if(numTC > 1 && _texid){
 
                 dst.texid->push_back(id0);
@@ -436,7 +455,7 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
             //  if (intersectAndClip(clipbox2, _kdNodes[node.first].bb))
             if(clipbox.intersects(_kdNodes[node.first].bb))
             {
-                intersect(_kdNodes[node.first],dst, clipbox,mode);
+                intersect(_kdNodes[node.first],dst, clipbox,mode,bbox_margin);
             }
         }
         if (node.second>0)
@@ -445,7 +464,7 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
             // if (intersectAndClip(clipbox2,_kdNodes[node.second].bb))
             if(clipbox.intersects(_kdNodes[node.second].bb))
             {
-                intersect(_kdNodes[node.second],dst, clipbox,mode);
+                intersect(_kdNodes[node.second],dst, clipbox,mode,bbox_margin);
             }
         }
     }
@@ -479,7 +498,7 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
     return newGeode;
 }*/
 osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,  geom_elems_dst &dst,
-                                              const OverlapMode &overlapmode)
+                                              const OverlapMode &overlapmode,const osg::BoundingBox *bbox_margin)
 
 {
     //cout << "CRA"<<getNode(0).bb._min << "  "<< getNode(0).bb._max<<endl;
@@ -490,7 +509,7 @@ osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,  geom
     osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
     osg::Geometry *new_geom=new osg::Geometry;
     newGeode->addDrawable(new_geom);
-    intersector.intersect(getNode(0),dst,bbox,overlapmode);
+    intersector.intersect(getNode(0),dst,bbox,overlapmode,bbox_margin);
     //printf("Size of output %d %d\n",dst.vertices->size(),_vertices->size());
     new_geom->addPrimitiveSet(dst.faces);
     new_geom->setVertexArray(dst.vertices);
@@ -596,7 +615,7 @@ KdTreeBbox *createKdTreeForUnbuilt(osg::ref_ptr<osg::Node> model){
     return NULL;
 }
 
-bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const OverlapMode &mode){
+bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const OverlapMode &mode,osg::BoundingBox *bbox_margin){
     if(!kdtreeBBox){
         fprintf(stderr,"Failed to load kdtree\n");
         return false;
@@ -604,13 +623,13 @@ bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox b
     osg::ref_ptr<osg::Node> root;
     int numTex=kdtreeBBox->_src.texcoords.size();
     geom_elems_dst dstGeom(numTex,kdtreeBBox->_src.texAndAux != NULL);
-    root=kdtreeBBox->intersect(bbox,dstGeom,mode);
+    root=kdtreeBBox->intersect(bbox,dstGeom,mode,bbox_margin);
     if(dstGeom.faces->size()){
         if(osgDB::getFileExtension(outfilename) == "ply"){
-            osgUtil::SmoothingVisitor sv;
-            root->accept(sv);
+          //  osgUtil::SmoothingVisitor sv;
+           // root->accept(sv);
             std::ofstream f(outfilename.c_str());
-            PLYWriterNodeVisitor nv(f);
+            PLYWriterNodeVisitor nv(f,NULL,NULL,"",(mode == TWOBOX) ? dstGeom.marginFace : NULL);
             root->accept(nv);
         }else{
             osgUtil::SmoothingVisitor sv;
@@ -622,6 +641,7 @@ bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox b
 
     return false;
 }
+
 
 bool CheckKdTreeBbox::check(const osg::KdTree::KdNode& node,const osg::BoundingBox clipbox) const
 {
@@ -683,7 +703,7 @@ void IntersectKdTreeBboxFaces::finish(osg::DrawElementsUInt *dst_tri,osg::Vec3Ar
     texCoord->resize(cnt);
     auxData->resize(cnt);
 
-     for(int i=0; i < newIdx.size(); i++){
+     for(int i=0; i < (int)newIdx.size(); i++){
          if(newIdx[i]>=0){
              verts->at(newIdx[i])=_vertices->at(i);
              if(_texCoord0 )

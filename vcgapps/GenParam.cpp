@@ -40,6 +40,7 @@
 #include <numeric>
 #include <vips/vips>
 #include <vips/vips.h>
+#include "GenParam.h"
 
 #include <osgDB/FileUtils>
 #include <osg/io_utils>
@@ -276,67 +277,15 @@ public:
     }
 
 
-
+}
 using namespace std;
 
-class LoaderOSG2OGF  {
-
-
-
-private:
-    osg::Vec3Array* _verts;
-    osg::DrawElementsUInt *_triangles;
-public:
-
-   /// Constructor
-   /// @param f name of a .ply file that stores the model
-    LoaderOSG2OGF (OGF::Map *map,osg::Vec3Array* verts,osg::DrawElementsUInt *triangles) : B(map),_verts(verts),_triangles(triangles) {
-        facet_map.resize(_triangles->size(),NULL);
-   }
-
-   /// Loads the PLY model and build the CGAL Halfedge Data Structure
-   /// @param hds - halfedge data structure.
-   bool build ()  {
-
-
-
-      B.begin_surface();
-      for (int i = 0 ; i < (int)_verts->size() ; i++) {
-          B.add_vertex (Point3d (_verts->at(i)[0],_verts->at(i)[1],_verts->at(i)[2]) );
-      }
-
-      for (int i = 0 ; i < (int)_triangles->size()-2 ; i+=3) {
-          //if(_triangles->at(i+0) <0 ||_triangles->at(i+1) <0||_triangles->at(i+2) <0)
-             // continue;
-         B.begin_facet();
-         for (int j = 0; j <3; j++) {
-             B.add_vertex_to_facet (_triangles->at(i+j));
-         }
-         B.end_facet();
-         for(int j=0;j<3;j++)
-         facet_map[i+j]=B.current_facet();
-
-      }
-      B.end_surface ();
-      cout <<"Loading model ... done " << endl;
-   //   cout << "B.error()" <<_verts->size() << " "<<_triangles->size() << endl;
-      if(B.map()){
-          return true;
-      }
-      return false;
-   }
-   MapBuilder B;
-   std::vector<Map::Facet*> facet_map;
-
-};
-
-}
 
 
 osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::DrawElementsUInt> triangles){
     OGF::Map the_map ;
       std::cerr << "==== Step 1/5 == Loading map: " << std::endl ;
-      OGF::LoaderOSG2OGF map_builder(&the_map,verts,triangles);
+      LoaderOSG2OGF map_builder(&the_map,verts,triangles);
 
       if(!map_builder.build()) {
           std::cerr << "Could not open proces model" << std::endl ;
@@ -400,6 +349,7 @@ void dilateEdge(IMAGE *tmpI,const char *outfile){
     delete p;
 
 }
+
 using namespace std;
 
 #if 0

@@ -12,6 +12,7 @@
 #include "calibFile.h"
 #include "PLYWriterNodeVisitor.h"
 #include "GLImaging.h"
+#include "vertexData.h"
 using namespace std;
 
 int main( int argc, char **argv )
@@ -158,11 +159,15 @@ int main( int argc, char **argv )
     printf("SS %s\n",bbox_file.c_str());
     TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file);
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
-    osg::Node* model = osgDB::readNodeFile(sourceModel->getFileName().c_str());
+      ply::VertexDataMosaic vertexData;
+    osg::Node* model = vertexData.readPlyFile(sourceModel->getFileName().c_str());//osgDB::readNodeFile(sourceModel->getFileName().c_str());
+
     if(!model){
         fprintf(stderr,"Can't load model %s\n",sourceModel->getFileName().c_str());
         return -1;
     }
+    osg::ref_ptr<osg::KdTreeBuilder>  _kdTreeBuilder = osgDB::Registry::instance()->getKdTreeBuilder()->clone();
+    model->accept(*_kdTreeBuilder);
     osg::ref_ptr<osg::MatrixTransform>xform = new osg::MatrixTransform;
     xform->setDataVariance( osg::Object::STATIC );
     xform->setMatrix(rotM);
@@ -217,7 +222,19 @@ int main( int argc, char **argv )
             //    geom->setTexCoordArray(f,tile->texCoordsPerModel.begin()->second[f]);
             if(!reimage){
                 std::ofstream f(outfilename.c_str());
-                PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second));
+                std::vector<bool> *marginFace=NULL;
+                if(vertexData._texIds.valid() && vertexData._texIds->size()){
+                    marginFace= new std::vector<bool>( vertexData._vertices->size(),false);
+                    if( vertexData._vertices->size() !=  vertexData._texIds->size()*3){
+                        fprintf(stderr,"%d should be 3 time %d\n", vertexData._vertices->size(),  vertexData._texIds->size());
+                        exit(-1);
+                    }
+                    for(int i=0; i< (int)vertexData._triangles->size(); i+=3)
+                        for(int j=0;j<3; j++)
+                            marginFace->at(vertexData._triangles->at(i+j))= (vertexData._texIds->at(i/3).y() == -999);
+                }
+
+                PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second),"",marginFace);
                 model->accept(nv);
             }else{
                 // map<SpatialIndex::id_type,int> allIds=calcAllIds(tile->texCoordIDIndexPerModel.begin()->second);

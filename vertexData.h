@@ -44,7 +44,7 @@ namespace ply
         VertexData();
         
         // Reads ply file and convert in to osg::Node and returns the same
-        osg::Node* readPlyFile( const char* file, const bool ignoreColors = false,osg::BoundingBox *bbox=NULL,OverlapMode mode=DUP );
+        osg::Node* readPlyFile( const char* file, const bool ignoreColors = false,osg::BoundingBox *bbox=NULL,OverlapMode mode=DUP ,bool readQual=false);
         
         // to set the flag for using inverted face
         void useInvertedFaces() { _invertFaces = true; }
@@ -67,6 +67,7 @@ namespace ply
         void _calculateNormals( const bool vertexNormals = true );
         
         bool        _invertFaces;
+        bool qual;
         osg::ref_ptr<osg::Geode>   _geode;
         osg::ref_ptr<osg::Geometry>   _geom;
     public:
@@ -87,6 +88,8 @@ namespace ply
         std::map<int,int> outbboxVert;
         bool tex;
         OverlapMode _mode;
+        osg::ref_ptr<osg::Vec2Array> _qualArray;
+
     };
     class VertexDataMosaic: public VertexData{
 

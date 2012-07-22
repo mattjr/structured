@@ -18,6 +18,10 @@ REGION * FragmentShaderBlendingDistPass::regRange;
 REGION * FragmentShaderBlendingMain::regOutput;
 REGION * FragmentShaderBlendingMain::regRange;
 REGION * FragmentShader::regOutput;
-int doubleTouchCount=0;
+dcm_t *FragmentShaderBlendingMain::doublecountmapPtr;
+dcm_t *FragmentShaderBlendingDistPass::doublecountmapPtr;
+int *FragmentShaderBlendingDistPass::doubleTouchCountPtr;
 
-dcm_t doublecountmap;
+int doubleTouchCount[2];
+
+dcm_t doublecountmap[2];

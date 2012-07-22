@@ -248,9 +248,11 @@ void write_header(std::ostream& _fout,int total_face_count,bool color){
     _fout <<"property float quality\n";
     _fout <<"end_header\n";
 }
-void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,const std::vector<int> &imageId,osg::Vec2Array *tcarr,const int mosaic,bool flip){
+void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,const std::vector<int> &imageId,osg::Vec2Array *tcarr,const int mosaic,bool flip,osg::Vec2Array *valid){
     int cnt=0;
     for(int i=0; i< (int)tri->size()-2; i+=3){
+        if(valid->at(i/3).x() == -999.0)
+            continue;
         for(int j=0; j<3; j++){
             osg::Vec3 v=verts->at(tri->at(i+j));
             float vf[3];
@@ -269,6 +271,7 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
 
             }
         }
+
     }
     int iout[3];
     unsigned char c12=4*3;
@@ -279,16 +282,18 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
     float cfout[4];
     cfout[0]=cfout[1]=cfout[2]=cfout[3]=0;
     for(int i=0; i<(int) tri->size()-2; i+=3){
+        if(valid->at(i/3).x() == -999.0)
+            continue;
         _fout.write((char *)&c3,sizeof(char));
 
         if(flip){
-            iout[0]=i;
-            iout[1]=i+1;
-            iout[2]=i+2;
+            iout[0]=cnt+0;
+            iout[1]=cnt+1;
+            iout[2]=cnt+2;
         }else{
-            iout[0]=i+2;
-            iout[1]=i+1;
-            iout[2]=i+0;
+            iout[0]=cnt+2;
+            iout[1]=cnt+1;
+            iout[2]=cnt+0;
 
         }
         _fout.write((char*)iout,sizeof(int)*3);
@@ -299,7 +304,6 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
             osg::Vec2 tc=tcarr->at(tri->at(i+j));
             fout[(j*2)+0]=tc.x();
             fout[(j*2)+1]=tc.y();
-
         }
         _fout.write((char*)fout,sizeof(float)*ctex);
         iout[0]=imageId.at(i/3);
@@ -308,10 +312,9 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
         fout[0]=(float)mosaic;
         _fout.write((char*)fout,sizeof(float));
 
-        cnt++;
+        cnt+=3;
 
     }
-    printf("%d\n",cnt);
 
 
 }
@@ -471,7 +474,7 @@ int main(int ac, char *av[]) {
         printf("Blending Enabled\n");
 
     map<int,imgData> imageList;
-    model= vertexData.readPlyFile(av[1]);
+    model= vertexData.readPlyFile(av[1],false,NULL,DUP,true);
     readFile(av[2],imageList);
     osg::Vec3Array *dupfreeVerts= new osg::Vec3Array;
     osg::DrawElementsUInt *dupfreeTri= new osg::DrawElementsUInt;
@@ -753,6 +756,7 @@ int main(int ac, char *av[]) {
             g_i->vertex_attrib_pointer(0, sizeof(Vertex), tmp_vertices);
             g[i]=g_i;
             r[i]=rtmp;
+            doubleTouchCount[i]=0;
         }
         if(!vertexData._texCoord.size()){
             fprintf(stderr,"No tex coords\n");
@@ -831,8 +835,23 @@ int main(int ac, char *av[]) {
             std::ofstream f(tmp);
             bool color = vertexData._colors.valid() ? (vertexData._colors->size() >0) : false;
 
-            write_header(f,vertexData._triangles->size(),color);
-            write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,imageId,newTCArr,mosaic,true);
+            if(vertexData._qualArray->size()*3 != vertexData._triangles->size()){
+                fprintf(stderr,"Fail size not equal %d %d\n",vertexData._qualArray->size()*3 , vertexData._triangles->size());
+                exit(-1);
+            }
+
+            int facecount=0;
+            for(int i=0; i< (int)vertexData._triangles->size()-2; i+=3){
+                if(vertexData._qualArray->at(i/3).x() == -999.0)
+                    continue;
+                facecount+=3;
+            }
+            printf("fc %d %d\n ",facecount,vertexData._triangles->size());
+            write_header(f,facecount,color);
+
+
+            write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,imageId,newTCArr,mosaic,true,vertexData._qualArray);
+            f.close();
         }
 
         TextureMipMap *sizeI=NULL;
@@ -865,6 +884,9 @@ int main(int ac, char *av[]) {
         for(int i=0;i <2; i++){
 
             FragmentShaderBlendingDistPass::regRange =regRange[i];
+            FragmentShaderBlendingDistPass::doublecountmapPtr =&(doublecountmap[i]);
+            FragmentShaderBlendingDistPass::doubleTouchCountPtr =&(doubleTouchCount[i]);
+
             if(!blending)
                 VertexShader::modelviewprojection_matrix=(*viewProjMats[i]);
             else{
@@ -884,7 +906,7 @@ int main(int ac, char *av[]) {
             }
 
 
-            printf("Double touch count %d\n",doubleTouchCount);
+            printf("Double touch count %d\n",doubleTouchCount[i]);
 
             g[i]->vertex_shader<VertexShaderBlending>();
             r[i]->fragment_shader<FragmentShaderBlendingMain>();
@@ -927,6 +949,7 @@ int main(int ac, char *av[]) {
                 }
                 FragmentShaderBlendingMain::regOutput=regOutput[i];
                 FragmentShaderBlendingMain::regRange=regRange[i];
+                FragmentShaderBlendingMain::doublecountmapPtr =&(doublecountmap[i]);
 
                 for(int t=0; t< (int)itr->second.size(); t++){
                     if(i==1){

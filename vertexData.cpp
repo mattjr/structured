@@ -49,6 +49,7 @@ VertexData::VertexData()
         _texCoord[f]=NULL;
     _texIds=NULL;
     _bbox=NULL;
+    _qualArray=NULL;
 }
 
 
@@ -140,6 +141,7 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
         int id;
         unsigned char   nIds;
         float*            ids;
+        float qual;
     } face;
 
     PlyProperty faceProps[] = 
@@ -150,7 +152,9 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
           1, PLY_UCHAR, PLY_UCHAR, offsetof( _Face, nTex ) },
         { "texnumber", PLY_INT, PLY_INT, offsetof( _Face, id ), 0, 0, 0, 0 },
         { "color", PLY_FLOAT, PLY_FLOAT, offsetof( _Face, ids ),
-          1, PLY_UCHAR, PLY_UCHAR, offsetof( _Face, nIds ) }
+          1, PLY_UCHAR, PLY_UCHAR, offsetof( _Face, nIds ) },
+        { "quality", PLY_FLOAT, PLY_FLOAT, offsetof( _Face, qual ), 0, 0, 0, 0 }
+
 
     };
     
@@ -161,6 +165,9 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
         ply_get_property( file, "face", &faceProps[2] );
         ply_get_property( file, "face", &faceProps[3] );
     }
+    if(qual)
+    ply_get_property( file, "face", &faceProps[4] );
+
 
     
     // If read colors allocate space for color array
@@ -182,6 +189,11 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
         }
     }
 
+    if(qual){
+        if(!_qualArray.valid())
+            _qualArray = new osg::Vec2Array;
+
+    }
     //triangles.clear();
     //triangles.reserve( nFaces );
     if(!_triangles.valid())
@@ -278,6 +290,9 @@ void VertexData::readTriangles( PlyFile* file, const int nFaces,bool multTex,boo
                     throw MeshException( "Error reading PLY file. Encountered a "
                                          "face which does not have 9 ids." );
                 }
+            }
+            if(qual){
+                _qualArray->push_back(osg::Vec2(face.qual,face.qual));
             }
             if(tex){
 
@@ -442,7 +457,7 @@ int start=_triangles->size();
     }
 }
 /*  Open a PLY file and read vertex, color and index data. and returns the node  */
-osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColors,osg::BoundingBox *bbox ,OverlapMode mode)
+osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColors,osg::BoundingBox *bbox ,OverlapMode mode,bool readQual)
 {
     int     nPlyElems;
     char**  elemNames;
@@ -457,6 +472,7 @@ osg::Node* VertexData::readPlyFile( const char* filename, const bool ignoreColor
     outbboxVert.clear();
     _tmp_verts.clear();
     _tmp_colors.clear();
+    qual=readQual;
     if(_mode ==GAP){
         printf("Using GaP border\n");
     }

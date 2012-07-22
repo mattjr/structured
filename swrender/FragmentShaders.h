@@ -14,8 +14,8 @@ extern Rect gRect;
 
 typedef std::map<std::pair<int,int>,int > dcm_t;
 
-extern  dcm_t doublecountmap;
-extern int doubleTouchCount;
+extern  dcm_t doublecountmap[2];
+extern int doubleTouchCount[2];
 
 struct FragmentShader : public swr::SpanDrawer32BitColorAndDepth<FragmentShader> {
     // varying_count = 3 tells the rasterizer that it only needs to interpolate
@@ -128,10 +128,10 @@ struct FragmentShaderBlendingDistPass : public swr::SpanDrawer32BitColorAndDepth
         if(valid){
             if( oldd[idx]!=255){
                 // printf("Sentinal touch two %d %d\n",idx,triIdx);
-                if(!doublecountmap.count(std::make_pair<int,int>(ix,iy))){
+                if(!doublecountmapPtr->count(std::make_pair<int,int>(ix,iy))){
                     std::set<int> a;
-                    doublecountmap[std::make_pair<int,int>(ix,iy)]=triIdx;
-                    doubleTouchCount++;
+                    (*doublecountmapPtr)[std::make_pair<int,int>(ix,iy)]=triIdx;
+                    (*doubleTouchCountPtr)++;
                 }
             }else{
                 oldd[idx]=dist;
@@ -166,6 +166,8 @@ struct FragmentShaderBlendingDistPass : public swr::SpanDrawer32BitColorAndDepth
     static TextureMipMap *texture;
     static int triIdx;
     static REGION *regRange;
+    static dcm_t *doublecountmapPtr;
+    static int *doubleTouchCountPtr;
 
 };
 
@@ -252,7 +254,7 @@ struct FragmentShaderBlendingMain : public swr::SpanDrawer32BitColorAndDepthSetD
       //  std::cout << ix << " " << iy<<std::endl;
        // std::cout << ix/(double)256 << " " << iy/(double)256<<std::endl;
 
-        if(doublecountmap.count(std::make_pair<int,int>(ix,iy)) && doublecountmap[std::make_pair<int,int>(ix,iy)] != triIdx)
+        if(doublecountmapPtr->count(std::make_pair<int,int>(ix,iy)) && (*doublecountmapPtr)[std::make_pair<int,int>(ix,iy)] != triIdx)
             return;
         float Cb[]={0.710000,0.650000,0.070000};
         //int x=fd.varyings[0] >> 16;
@@ -261,7 +263,7 @@ struct FragmentShaderBlendingMain : public swr::SpanDrawer32BitColorAndDepthSetD
         float y=fix2float<16>(fd.varyings[1]);
 
         if(x <0 || y <0|| x>(int)texture->w_minus1 || y>(int)texture->h_minus1){
-            printf("Fail \n");
+            //printf("Fail \n");
             return;
         }
         unsigned char dist_curr=reinterpret_cast<unsigned char *>(&depth)[idx];
@@ -367,6 +369,7 @@ struct FragmentShaderBlendingMain : public swr::SpanDrawer32BitColorAndDepthSetD
     static int triIdx;
     static REGION *regOutput;
     static REGION *regRange;
+    static dcm_t *doublecountmapPtr;
 
 };
 

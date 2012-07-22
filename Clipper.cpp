@@ -427,7 +427,7 @@ void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_
             }
 
              if(mode == TWOBOX && bbox_margin){
-                if(!(bbox_margin->contains(v0) && bbox_margin->contains(v1) &&bbox_margin->contains(v2) ) || usedFace[i])
+                if((!bbox_margin->contains(v0) && !bbox_margin->contains(v1) && !bbox_margin->contains(v2) ) || usedFace[i])
                     for(int t=0; t<3; t++)
                     dst.marginFace->push_back(true);
                 else{

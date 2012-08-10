@@ -20,8 +20,8 @@
 #define StereoEngine_H
 
 #include "cv.h"
-#include <cvaux.h>
-#include "cxmisc.h"
+//#include <cvaux.h>
+//#include "cxmisc.h"
 #include "highgui.h"
 #include <vector>
 #include <string>
@@ -56,7 +56,7 @@ public:
     //CvPoint2D32f *points[2];
 //    CvMat *Q, /**F,*/ *R1, *R2, *P1, *P2, *M1, *M2, *D1, *D2,
   //  *mx1, *my1, *mx2, *my2, *pair, *R, *T, *E, *disp, *vdisp, *img1r, *img2r, *realDisp;
-    CvCalibFilter m_CalibFilter;
+    //CvCalibFilter m_CalibFilter;
     CvStereoBMState *BMState;
 
     // Links (Don't Deallocate)

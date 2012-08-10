@@ -50,7 +50,7 @@
 // be uninitialized.
 
 #include <iostream>
-#include <GL/glew.h>
+//#include <GL/glew.h>
 
 //#include <OGF/surface/common/common.h>
 

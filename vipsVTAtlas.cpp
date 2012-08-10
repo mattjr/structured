@@ -3,6 +3,7 @@
 #include <osg/io_utils>
 #include <osg/Timer>
 #include <string>
+#include <vips/vips.h>
 #include "BuildAtlas.h"
 using namespace std;
 int main( int argc, char **argv )
@@ -28,6 +29,7 @@ int main( int argc, char **argv )
     }
     int totalX,totalY;
     std::vector<mosaic_cell> mosaic_cells;
+    vips_init(argv[0]);
 
     loadMosaicCells(mosaic_cells_fname,totalX,totalY,mosaic_cells);
 

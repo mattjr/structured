@@ -65,7 +65,7 @@ Revision 1.1  2004/03/31 15:27:17  ponchio
 
 #include <vcg/math/matrix44.h>
 #include <vcg/math/similarity.h>
-//#include <GL/glew.h> // please do not include it!
+#include <GL/gl.h> // please do not include it!
 
 
 namespace vcg {

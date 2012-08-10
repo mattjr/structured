@@ -504,7 +504,7 @@ int main(int ac, char *av[]) {
         }*/
         int sizeImage=  calcOptimalImageSize(srcsize,newVerts,tri,texCoord,scaleTex,(int)vtSize.x(),(int)vtSize.y());
         int sizeX,sizeY; sizeX=sizeY=sizeImage;
-
+        vips_init(av[0]);
         arguments.read("--size",sizeX,sizeY);
         osg::Vec2 texSize(sizeX,sizeY);
         for(int i=0; i<2; i++){

@@ -31,6 +31,7 @@
 #include "vertexData.h"
 #include "MemUtils.h"
 #include "SplitBounds.h"
+#include <vips/vips.h>
 static bool hw_image=false;
 static bool blending=true;
 static bool externalMode=false;
@@ -710,6 +711,7 @@ int main( int argc, char *argv[ ] )
     }
     string path=string(argv[0]);
     unsigned int loc=path.rfind("/");
+    vips_init(argv[0]);
 
     string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
     basepath= osgDB::getRealPath (basepath);

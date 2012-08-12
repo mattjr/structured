@@ -1,6 +1,7 @@
 #include "ShellCmd.h"
 #include <sstream>
 #include "MemUtils.h"
+static const char *thrpool="runtp_dist.py";
 void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds,int thread_override,string custom){
     FILE *fp=fopen(filename.c_str(),"w");
     fprintf(fp,"#!/usr/bin/python\n");
@@ -17,8 +18,8 @@ void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const
             fprintf(fp,"os.system('%s')\n",(*precmds)[i].c_str());
     }
 
-    fprintf(fp,"os.system(setupts.basepath +'/runtp.py %s %d %s')\n",
-            cmdfile.c_str(),loc_num_threads,cmdname.c_str());
+    fprintf(fp,"os.system(setupts.basepath +'/%s %s %d %s')\n",
+            thrpool,cmdfile.c_str(),loc_num_threads,cmdname.c_str());
 
     if(postcmds){
         for(int i=0; i<(int) postcmds->size(); i++)
@@ -99,7 +100,7 @@ void ShellCmd::pos_simp_cmd2(bool run){
 
 
 
-    fprintf(dicefp,"%s/runtp.py simpcmds\n",basepath);
+    fprintf(dicefp,"%s/%s simpcmds\n",thrpool,basepath);
 
 
     fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");
@@ -142,7 +143,7 @@ void ShellCmd::pos_simp_cmd(bool run){
 
 
 
-    fprintf(dicefp,"time %s/runtp.py simpcmds\n",basepath);
+    fprintf(dicefp,"time %s/%s simpcmds\n",thrpool,basepath);
 
 
     fprintf(dicefp,"cat valid.txt | xargs plybbox > range.txt\n");

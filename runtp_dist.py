@@ -10,6 +10,8 @@ import thread
 import commands
 import string
 import random
+import re
+import getpass
 def detectCPUs():
     """
     Detects the number of CPUs on a system. Cribbed from pp.
@@ -65,11 +67,16 @@ def replace_all(text, dic):
 
 
 def runcmd_threadpool(cm,runwith):
-    reps = {'mattjr':'auv'}
-    cm = replace_all(cm, reps)
     shell = 'bash'
     #runwith ='ssh auv@archipelago srun /bin/bash '
     if len(runwith) > 0:
+        match = re.search('([\w.-]+)@([\w.-]+)', runwith)
+        if match:
+            username = match.group(1)
+            curruser = getpass.getuser()
+            if curruser != username:
+                reps = {curruser:username}
+                cm = replace_all(cm, reps)
         cmd= '%s "%s -c \'%s\' "' % (runwith[:-1],shell,cm[:-1])
     else:
         cmd= '%s -c \'%s\' ' % (shell,cm[:-1])

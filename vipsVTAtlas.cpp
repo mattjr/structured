@@ -29,8 +29,10 @@ int main( int argc, char **argv )
     }
     int totalX,totalY;
     std::vector<mosaic_cell> mosaic_cells;
-    vips_init(argv[0]);
+#if VIPS_MINOR_VERSION > 24
 
+    vips_init(argv[0]);
+#endif
     loadMosaicCells(mosaic_cells_fname,totalX,totalY,mosaic_cells);
 
     osg::Matrix viewProj;

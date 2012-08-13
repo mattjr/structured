@@ -215,8 +215,10 @@ inline bool process_tri(ply::tri_t &tri,osg::Vec3Array *verts, std::vector<osg::
 int main(int ac, char *av[]) {
     string path=string(av[0]);
     unsigned int loc=path.rfind("/");
-    vips_init(av[0]);
+#if VIPS_MINOR_VERSION > 24
 
+    vips_init(av[0]);
+#endif
     string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
     basepath= osgDB::getRealPath (basepath);
     osg::Timer_t start;

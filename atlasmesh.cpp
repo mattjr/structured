@@ -5,6 +5,7 @@
 #include "BuildAtlas.h"
 #include "vertexData.h"
 #include <vips/vips.h>
+#include <vips/version.h>
 using namespace std;
 int main( int argc, char **argv )
 {
@@ -16,8 +17,9 @@ int main( int argc, char **argv )
         fprintf(stderr, "need mat\n");
         exit(-1);
     }
+#if VIPS_MINOR_VERSION > 24
     vips_init(argv[0]);
-
+#endif
     double scaleFactor=1.0;
     arguments.read("-scale",scaleFactor);
     string basedir="mesh";

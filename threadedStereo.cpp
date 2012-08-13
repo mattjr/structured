@@ -140,6 +140,7 @@ static double min_feat_dist;
 static double epipolar_dist;
 static double feat_quality_level;
 const char *aggdir="tmp/mesh-agg";
+static const char *serfile="localserver";
 
 MyGraphicsContext *mgc=NULL;
 #define diced_fopen(x,y) fopen((string(diced_dir)+string(x)).c_str(),y)
@@ -711,8 +712,10 @@ int main( int argc, char *argv[ ] )
     }
     string path=string(argv[0]);
     unsigned int loc=path.rfind("/");
-    vips_init(argv[0]);
+#if VIPS_MINOR_VERSION > 24
 
+    vips_init(argv[0]);
+#endif
     string basepath= loc == string::npos ? "./" : path.substr(0,loc+1);
     basepath= osgDB::getRealPath (basepath);
     //cout << "Binary Path " <<basepath <<endl;
@@ -1281,8 +1284,8 @@ const char *uname="mesh";
                            aggdir,
                            wbtp.bboxfn.c_str());
         // postcmd.push_back(string(tmpcmd));
-         sprintf(tmpcmd,"os.system(setupts.basepath +'/runtp.py %s %d %s')\n",
-                 (string(aggdir)+"/plymccmd2").c_str(),num_threads,"PlyMC2");
+         sprintf(tmpcmd,"os.system(setupts.basepath +'/runtp_dist.py %s %s %s')\n",
+                 (string(aggdir)+"/plymccmd2").c_str(),serfile,"PlyMC2");
          shellcm.write_generic(plymccmd,wbtp.getCmdFileName(),"PlyMC",NULL,&postcmd,0,string(tmpcmd));
         wbtp.close();
     }

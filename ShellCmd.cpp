@@ -1,7 +1,12 @@
 #include "ShellCmd.h"
 #include <sstream>
 #include "MemUtils.h"
+#include <osgDB/FileUtils>
+#include <osgDB/FileNameUtils>
+
 static const char *thrpool="runtp_dist.py";
+static const char *serfile="localserver";
+
 void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds,int thread_override,string custom){
     FILE *fp=fopen(filename.c_str(),"w");
     fprintf(fp,"#!/usr/bin/python\n");
@@ -17,9 +22,18 @@ void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const
         for(int i=0; i< (int)precmds->size(); i++)
             fprintf(fp,"os.system('%s')\n",(*precmds)[i].c_str());
     }
+    string path=osgDB::getFilePath(filename);
+    path = path.size() == 0 ? "." : path;
+    string loc_file = (path +"/"+string(serfile));
 
-    fprintf(fp,"os.system(setupts.basepath +'/%s %s %d %s')\n",
-            thrpool,cmdfile.c_str(),loc_num_threads,cmdname.c_str());
+    if(!osgDB::fileExists(loc_file)){
+        FILE *ffp=fopen(loc_file.c_str(),"w");
+        fprintf(ffp,"LOCAL %d\n",loc_num_threads);
+        fclose(ffp);
+    }
+
+    fprintf(fp,"os.system(setupts.basepath +'/%s %s %s %s')\n",
+            thrpool,cmdfile.c_str(),loc_file.c_str(),cmdname.c_str());
 
     if(postcmds){
         for(int i=0; i<(int) postcmds->size(); i++)

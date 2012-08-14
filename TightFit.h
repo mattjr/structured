@@ -79,7 +79,7 @@ class VAtlas;
        };	 
        FitsIn doesSourceFit(VSource* source);
 
-         void copySources(void);
+         void copySources(bool dryRun=false);
 
          int _indexFirstOfRow;
 

@@ -71,7 +71,8 @@ using namespace std;
 static osg::Vec3 debugV;
 static REGION *regRange;
 static REGION *regOutput;
-
+ dcm_t doublecountmapInst;
+ int dTCount;
 bool USE_BGR=false;
 struct InputVertex {
     vec3x vertex;
@@ -264,6 +265,7 @@ int main(int ac, char *av[]) {
     imageName=string(tmp)+".v";
     depthName=string(tmp)+"-tmp_dist.v";
     double lat=0,lon=0;
+    dTCount=0;
     if(!arguments.read("-lat",lat)|| !arguments.read("-lon",lon)){
         fprintf(stderr,"Can't get lat long\n");
         return -1;
@@ -497,6 +499,8 @@ int main(int ac, char *av[]) {
             VertexShaderBlending::texture =sizeI;
             FragmentShaderBlendingDistPass::texture =sizeI;
             FragmentShaderBlendingDistPass::regRange=regRange;
+            FragmentShaderBlendingDistPass::doublecountmapPtr =&(doublecountmapInst);
+            FragmentShaderBlendingDistPass::doubleTouchCountPtr =&(dTCount);
 
             for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
                 for(int t=0; t< (int)itr->second.size(); t++){
@@ -504,7 +508,7 @@ int main(int ac, char *av[]) {
                         g.draw_triangles(3, indices);
                 }
             }
-            printf("Double touch count %d\n",doubleTouchCount);
+            printf("Double touch count %d\n",dTCount);
 
             g.vertex_shader<VertexShaderBlending>();
             r.fragment_shader<FragmentShaderBlendingMain>();
@@ -534,6 +538,7 @@ int main(int ac, char *av[]) {
                 VertexShaderBlending::texture =textureMipMap;
                 FragmentShaderBlendingMain::regOutput=regOutput;
                 FragmentShaderBlendingMain::regRange=regRange;
+                FragmentShaderBlendingMain::doublecountmapPtr =&(doublecountmapInst);
 
                 if(!textureMipMap->surface)
                     continue;

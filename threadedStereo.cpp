@@ -96,7 +96,6 @@ static double max_alt_cutoff=20.0;
 //static bool use_ncc = false;
 static double vrip_ramp;
 static int num_skip=0;
-static         bool useRepram=true;
 
 static int gpunum=0;
 static string stereo_calib_file_name;
@@ -275,7 +274,8 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--stereo-calib",stereo_calib_file_name);
     argp.read("--poses",contents_file_name );
 
-
+    if(argp.read("--noremap"))
+        reparamTex=false;
 
     apply_aug =argp.read("--apply_aug");
     argp.read("--gpu",gpunum);
@@ -2259,7 +2259,7 @@ const char *uname="mesh";
         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                 cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
 
-        string remap_mesh_ext=useRepram ? "remap-" : "";
+        string remap_mesh_ext=reparamTex ? "remap-" : "";
         fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f ",
                 cwd,
                 basepath.c_str(),
@@ -2349,7 +2349,7 @@ else
         tmp_ds[0]='\0';
       //  num_samples=0;
         int levels=useVirtTex ? 0:(int)ceil(log( max( ajustedGLImageSizeX, ajustedGLImageSizeY ))/log(2.0) );
-        string remap_ext= useRepram ? "remap" : "tmp";
+        string remap_ext= reparamTex ? "remap" : "tmp";
       //  for(int p=0; p<num_samples; p++)
       //      sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
         fprintf(FP2,"%d %d %d %d %s/image_r%04d_c%04d_rs%04d_cs%04d-%s.ppm %s/image_r%04d_c%04d_rs%04d_cs%04d.ppm %d\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),

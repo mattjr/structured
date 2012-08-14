@@ -1323,7 +1323,6 @@ private:
                     
                 }
             }
-
             // tri::UpdateNormals<MeshType>::PerFace(m);
         }
         while( repeat && count );

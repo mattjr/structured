@@ -11,7 +11,7 @@ osg::Matrix  osgTranspose( const osg::Matrix& src )
     return dest;
 }
 
-WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,const std::vector<Stereo_Pose_Data> &tasks):WriteTP(res,fname,basepath){
+WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks):WriteTP(res,fname,basepath,cwd){
     cmdfp =fopen(fname.c_str(),"w");
     if(!cmdfp){
         fprintf(stderr,"Can't create cmd file");
@@ -39,13 +39,17 @@ WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,const st
     fclose(fp);
 
 }
+
 bool WriteBoundTP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
  double smallCCPer=0.2;
  FILE *fps[]={cmdfp,cmd2fp};
- for(int i=0; i<2; i++){
- fprintf(fps[i],"%s/vcgapps/bin/plymc_outofcore -M -V%f -i%d -s %d %d %d %d %d %d -o%s/vol %s",
-         _basepath.c_str(),_res,
-                    i==0 ? 0:2,
+ int runs=1;
+ const char *app=(runs ==1)? "plymc":"plymc_outofcore";
+ for(int i=0; i<runs; i++){
+     // fprintf(fps[i],"cd %s;%s/vcgapps/bin/%s -M -V%f -i%d -s %d %d %d %d %d %d -o%s/vol %s",
+
+ fprintf(fps[i],"cd %s;%s/vcgapps/bin/%s -M -V%f  -s %d %d %d %d %d %d -o%s/vol %s",
+       _cwd.c_str(),  _basepath.c_str(),app,_res,
                     cell.splits[0],
                     cell.splits[1],
                     cell.splits[2],
@@ -56,8 +60,8 @@ bool WriteBoundTP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
                     bboxfn.c_str()
         );
  }
-     fprintf(cmdfp,"\n");
-     fprintf(cmd2fp,";%s/vcgapps/bin/mergeMesh %s/vol_%d%d%d.ply  -cleansize %f -P -out %s/clean_%d%d%d.ply\n",
+    // fprintf(cmdfp,"\n");
+     fprintf(cmdfp,";%s/vcgapps/bin/mergeMesh %s/vol_%d%d%d.ply  -cleansize %f -P -out %s/clean_%d%d%d.ply\n",
 
      /*_res,
                 cell.splits[0],
@@ -86,7 +90,7 @@ bool WriteBoundTP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
 }
 
 
-WriteSplitTP::WriteSplitTP(double res,string fname,std::string basepath,const std::vector<Stereo_Pose_Data> &tasks,const  CellDataT<Stereo_Pose_Data>::type &Vol):WriteTP(res,fname,basepath),_vol(Vol),_tasks(tasks){
+WriteSplitTP::WriteSplitTP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,const  CellDataT<Stereo_Pose_Data>::type &Vol):WriteTP(res,fname,basepath,cwd),_vol(Vol),_tasks(tasks){
     cmdfp =fopen(fname.c_str(),"w");
     if(!cmdfp){
         fprintf(stderr,"Can't create cmd file");
@@ -96,7 +100,7 @@ WriteSplitTP::WriteSplitTP(double res,string fname,std::string basepath,const st
 }
 bool WriteSplitTP::write_cmd(const picture_cell &cell){
     char shr_tmp[8192];
-    sprintf(shr_tmp,"%s/treeBBClip ",
+    sprintf(shr_tmp,"cd %s;%s/treeBBClip ",_cwd.c_str(),
             _basepath.c_str());
     int v_count=0;
 

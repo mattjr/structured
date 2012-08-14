@@ -1259,7 +1259,7 @@ const char *uname="mesh";
     split_bounds<Stereo_Pose_Data>(bounds,tasks , targetVolume,minSplits,vol);
     if(!externalMode){
     {
-        WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,tasks);
+        WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks);
         int splits[3]={0,0,0};
         foreach_vol(cur,vol){
           //  cout <<cur->bounds.bbox._min<<" "<<cur->bounds.bbox._max<<endl;
@@ -1273,8 +1273,10 @@ const char *uname="mesh";
         string plymccmd="plymc.py";
         std::vector<string> postcmd;
         char tmpcmd[1024];
-        const char *opts=" ";//-w0  -L0 -q50 -R0";
-        sprintf(tmpcmd,"%s/vcgapps/bin/plymc_outofcore -i1 -M -V%f %s -S %d %d %d -o%s/vol %s",basepath.c_str(),
+       /* const char *opts=" ";//-w0  -L0 -q50 -R0";
+       // sprintf(tmpcmd,"cd %s;%s/vcgapps/bin/plymc_outofcore -i1 -M -V%f %s -S %d %d %d -o%s/vol %s",
+        sprintf(tmpcmd,"cd %s;%s/vcgapps/bin/plymc -M -V%f %s -S %d %d %d -o%s/vol %s",
+                cwd,basepath.c_str(),
                 vrip_res,
                 opts,
                      
@@ -1285,7 +1287,7 @@ const char *uname="mesh";
                            wbtp.bboxfn.c_str());
         // postcmd.push_back(string(tmpcmd));
          sprintf(tmpcmd,"os.system(setupts.basepath +'/runtp_dist.py %s %s %s')\n",
-                 (string(aggdir)+"/plymccmd2").c_str(),serfile,"PlyMC2");
+                 (string(aggdir)+"/plymccmd2").c_str(),serfile,"PlyMC2");*/
          shellcm.write_generic(plymccmd,wbtp.getCmdFileName(),"PlyMC",NULL,&postcmd,0,string(tmpcmd));
         wbtp.close();
     }
@@ -1696,7 +1698,7 @@ const char *uname="mesh";
 
 
         {
-            WriteSplitTP wstp(vrip_res,string(diced_dir)+"/splitcmds",basepath,tasks,vol);
+            WriteSplitTP wstp(vrip_res,string(diced_dir)+"/splitcmds",basepath,cwd,tasks,vol);
             for(int i=0; i<(int)cells.size(); i++){
 
                 wstp.write_cmd(cells[i]);

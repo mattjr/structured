@@ -90,7 +90,8 @@ void VipsAtlasBuilder::buildAtlas()
            ostr<<"atlas_"<<_atlasList.size()<<".rgb";
            //atlas->_image->setFileName(ostr.str());
            _atlasList.push_back(atlas);
-           atlas->copySources();
+           if(!_dryRun)
+                 atlas->copySources();
 
        }else{
 
@@ -176,7 +177,8 @@ void VipsAtlasBuilder::buildAtlas()
             ostr<<"atlas_"<<activeAtlasList.size()<<".rgb";
             //atlas->_image->setFileName(ostr.str());
             activeAtlasList.push_back(atlas);
-            atlas->copySources();
+            if(!_dryRun)
+                atlas->copySources();
         }
     }
     // keep only the active atlas'
@@ -187,7 +189,7 @@ void VipsAtlasBuilder::addSource(vips::VImage *img){
     _sourceList.push_back(new VSource(img));
     _sourceList.back()->ref();
 }
-VipsAtlasBuilder::VipsAtlasBuilder(int count,int VTtileSize,int VToverlap):TightFitAtlasBuilder(count),_VTtileSize(VTtileSize),_VToverlap(VToverlap){
+VipsAtlasBuilder::VipsAtlasBuilder(int count,int VTtileSize,int VToverlap,bool dryRun):TightFitAtlasBuilder(count),_VTtileSize(VTtileSize),_VToverlap(VToverlap),_dryRun(dryRun){
 
 }
 void VipsAtlasBuilder::completeRow(unsigned int indexAtlas)

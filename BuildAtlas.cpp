@@ -696,7 +696,7 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
                                 bool writeAtlas,double scaleFactor,string basedir,string imgOutput){
     int tileSize=256;
     int border=1;
-    VipsAtlasBuilder* _atlas =new VipsAtlasBuilder(mosaic_cells.size(),tileSize,border );
+    VipsAtlasBuilder* _atlas =new VipsAtlasBuilder(mosaic_cells.size(),tileSize,border,!writeAtlas );
     _atlas->setMargin(0);
     int maxSize=pow(2.0,17);
     _atlas->setMaximumAtlasSize(maxSize,maxSize);

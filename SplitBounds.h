@@ -107,7 +107,7 @@ typedef struct _picture_cell{
 
 class WriteTP{
 public:
-    WriteTP(double res,std::string fname,std::string basepath):_res(res),cmdfn(fname),_basepath(basepath),cmdfp(NULL){}
+    WriteTP(double res,std::string fname,std::string basepath,std::string cwd):_res(res),cmdfn(fname),_basepath(basepath),cmdfp(NULL),_cwd(cwd){}
 //    virtual bool write_cmd(Cell_Data<Stereo_Pose_Data> cell)=0;
 protected:
     double _res;
@@ -116,12 +116,13 @@ protected:
     std::string _basepath;
 
     FILE *cmdfp;
+    std::string _cwd;
 
 };
 
 class WriteSplitTP : public WriteTP{
     public:
-    WriteSplitTP(double res,std::string fname,std::string basepath,const std::vector<Stereo_Pose_Data> &tasks,const  CellDataT<Stereo_Pose_Data>::type &Vol);
+    WriteSplitTP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,const  CellDataT<Stereo_Pose_Data>::type &Vol);
     bool write_cmd(const picture_cell &cell);
     const  CellDataT<Stereo_Pose_Data>::type &_vol;
     const std::vector<Stereo_Pose_Data> &_tasks;
@@ -133,7 +134,7 @@ class WriteSplitTP : public WriteTP{
 
 class WriteBoundTP : private WriteTP{
     public:
-    WriteBoundTP(double res,std::string fname,std::string basepath,const std::vector<Stereo_Pose_Data> &tasks);
+    WriteBoundTP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks);
     bool write_cmd(Cell_Data<Stereo_Pose_Data> cell);
     std::string bboxfn;
     std::string getCmdFileName(){return cmdfn;}

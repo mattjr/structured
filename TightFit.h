@@ -41,12 +41,12 @@ class VipsAtlasBuilder : public TightFitAtlasBuilder
 {
 public:
 
-    VipsAtlasBuilder(int mosaic_cell_num,int VTtileSize,int VToverlap);
+    VipsAtlasBuilder(int mosaic_cell_num,int VTtileSize,int VToverlap,bool dryRun=false);
     int _VTtileSize,_VToverlap;
     osg::Matrix getTextureMatrix(vips::VImage *);
     int getAtlasHeight(){return _maximumAtlasHeight;}
     int getAtlasWidth(){return _maximumAtlasWidth;}
-
+    bool _dryRun;
     void addSource(vips::VImage *img);
     void buildAtlas(void);
     void completeRow(unsigned int indexAtlas);

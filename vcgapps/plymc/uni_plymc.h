@@ -602,19 +602,34 @@ int cnt=0;
 		  {
         p.OutNameVec.push_back(filename+std::string(".ply"));
         tri::io::ExporterPLY<MCMesh>::Save(me,p.OutNameVec.back().c_str(),saveMask);
+
+
         if(p.SimplificationFlag)
         {
+            MCMesh me2;
+            tri::io::ImporterPLY<MCMesh>::Open(me2,p.OutNameVec.back().c_str(),saveMask);
           /**********************/
           cb(50,50,0,"Step 3: Simplify mesh...");
           /**********************/
           p.OutNameSimpVec.push_back(filename+std::string(".d.ply"));
-          me.face.EnableVFAdjacency();
-          MCSimplify<MCMesh>(me, VV.voxel[0]/4.0);
-          tri::Allocator<MCMesh>::CompactFaceVector(me);
-          me.face.EnableFFAdjacency();
-          tri::Clean<MCMesh>::RemoveTVertexByFlip(me,20,true);
-          tri::Clean<MCMesh>::RemoveFaceFoldByFlip(me);
-          tri::io::ExporterPLY<MCMesh>::Save(me,p.OutNameSimpVec.back().c_str(),saveMask);
+          me2.face.EnableVFAdjacency();
+          me2.face.EnableFFAdjacency();
+
+          vcg::tri::UpdateTopology<MCMesh>::VertexFace(me2);
+          vcg::tri::UpdateTopology<MCMesh>::FaceFace(me2);
+
+          tri::Clean<MCMesh>::RemoveNonManifoldVertex(me2);
+          tri::Clean<MCMesh>::RemoveNonManifoldFace(me2);
+          tri::Clean<MCMesh>::RemoveTVertexByFlip(me2,20,true);
+          tri::Clean<MCMesh>::RemoveFaceFoldByFlip(me2);
+           MCSimplify<MCMesh>(me2, VV.voxel[0]/4.0);
+          tri::Allocator<MCMesh>::CompactFaceVector(me2);
+        //  me2.face.EnableFFAdjacency();
+
+
+          tri::Clean<MCMesh>::RemoveTVertexByFlip(me2,20,true);
+          tri::Clean<MCMesh>::RemoveFaceFoldByFlip(me2);
+          tri::io::ExporterPLY<MCMesh>::Save(me2,p.OutNameSimpVec.back().c_str(),saveMask);
         }
 		  }
 		  int t3=clock();  //--------

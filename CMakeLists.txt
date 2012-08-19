@@ -255,7 +255,7 @@ GLImaging.cpp
 ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} ${SPINDEX_SRC})
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
-ADD_EXECUTABLE( engine engine.cpp ShellCmd.cpp )
+#ADD_EXECUTABLE( engine engine.cpp ShellCmd.cpp )
 
 ADD_EXECUTABLE( stereo_mesh_gen stereo_mesh_gen.cpp )
 ADD_EXECUTABLE(  genRangeImg genRangeImg.cpp )
@@ -282,7 +282,7 @@ TARGET_LINK_LIBRARIES( genOverlappingPoses ts )
 
 LINK_LIBRARIES(osgTerrain  osgFX osg  spindex vips vipsCC)
 TARGET_LINK_LIBRARIES( threadedStereo ts  vips vipsCC vpb spindex)
-TARGET_LINK_LIBRARIES( engine ts  vips vipsCC vpb spindex)
+#TARGET_LINK_LIBRARIES( engine ts  vips vipsCC vpb spindex)
 TARGET_LINK_LIBRARIES( osgdem vpb  )
 TARGET_LINK_LIBRARIES( vipsVTAtlas ts  vips vipsCC spindex)
 TARGET_LINK_LIBRARIES( atlasmesh ts  vips vipsCC spindex)

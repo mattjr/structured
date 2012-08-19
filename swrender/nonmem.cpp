@@ -133,6 +133,97 @@ int
 
 
 
+void write_header(std::ostream& _fout,int total_face_count,bool color){
+    _fout <<"ply\n";
+    _fout <<"format binary_little_endian 1.0\n";
+    //_fout <<"comment PLY exporter written by Paul Adams\n";
+    _fout <<"element vertex "<<total_face_count <<std::endl;
+    _fout <<"property float x\n";
+    _fout <<"property float y\n";
+    _fout <<"property float z\n";
+    if(color){
+        _fout <<"property uchar red\n";
+        _fout <<"property uchar green\n";
+        _fout <<"property uchar blue\n";
+    }
+    _fout <<"element face " <<total_face_count/3<<std::endl;
+    _fout <<"property list uchar int vertex_indices\n";
+    _fout <<"property list uchar float texcoord\n";
+    _fout <<"property int texnumber\n";
+    _fout <<"property float quality\n";
+    _fout <<"end_header\n";
+}
+void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,const std::vector<int> &imageId,osg::Vec2Array *tcarr,const int mosaic,bool flip,osg::Vec2Array *valid){
+    int cnt=0;
+    for(int i=0; i< (int)tri->size()-2; i+=3){
+        if(valid && valid->at(i/3).x() == -999.0)
+            continue;
+        for(int j=0; j<3; j++){
+            osg::Vec3 v=verts->at(tri->at(i+j));
+            float vf[3];
+            vf[0]=v[0];
+            vf[1]=v[1];
+            vf[2]=v[2];
+            _fout.write((char *)vf,3*sizeof(float));
+            if(colors && i+j <(int)colors->size() ){
+                unsigned char col[3];
+                osg::Vec4 c=colors->at(i+j);
+                // cout <<c<<endl;
+                col[0]=c[0]*255.0;
+                col[1]=c[1]*255.0;
+                col[2]=c[2]*255.0;
+                _fout.write((char *)col,3*sizeof(unsigned char));
+
+            }
+        }
+
+    }
+    int iout[3];
+    unsigned char c12=4*3;
+
+    unsigned char c3=3;
+    unsigned char ctex=3*2;
+    float fout[6];
+    float cfout[4];
+    cfout[0]=cfout[1]=cfout[2]=cfout[3]=0;
+    for(int i=0; i<(int) tri->size()-2; i+=3){
+        if(valid && valid->at(i/3).x() == -999.0)
+            continue;
+        _fout.write((char *)&c3,sizeof(char));
+
+        if(flip){
+            iout[0]=cnt+0;
+            iout[1]=cnt+1;
+            iout[2]=cnt+2;
+        }else{
+            iout[0]=cnt+2;
+            iout[1]=cnt+1;
+            iout[2]=cnt+0;
+
+        }
+        _fout.write((char*)iout,sizeof(int)*3);
+
+
+        _fout.write((char *)&ctex,sizeof(char));
+        for(int j=0; j<3; j++){
+            osg::Vec2 tc=tcarr->at(tri->at(i+j));
+            fout[(j*2)+0]=tc.x();
+            fout[(j*2)+1]=tc.y();
+        }
+        _fout.write((char*)fout,sizeof(float)*ctex);
+        iout[0]=imageId.at(i/3);
+        _fout.write((char*)iout,sizeof(int));
+
+        fout[0]=(float)mosaic;
+        _fout.write((char*)fout,sizeof(float));
+
+        cnt+=3;
+
+    }
+
+
+}
+
 
 
 
@@ -270,6 +361,13 @@ int main(int ac, char *av[]) {
         fprintf(stderr,"Can't get lat long\n");
         return -1;
     }
+
+    int mosaic=-1;
+    if(!arguments.read("--mosaicid",mosaic)){
+        fprintf(stderr,"Fail to get mosaic id\n");
+        return -1;
+    }
+
     bool blending = arguments.read("--blend");
     if(blending)
         printf("Blending Enabled\n");
@@ -443,6 +541,58 @@ int main(int ac, char *av[]) {
             cout <<endl;
         }
         cout <<endl;*/
+        osg::Vec2Array *newTCArr=new osg::Vec2Array;
+
+        {
+        //    osg::Matrix viewproj=view*proj;
+            osg::Matrix bottomLeftToTopLeft;//= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,sizeY,0));
+
+            osg::Matrix toTex=viewProjRead*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*sizeX,0.5*sizeY,0.5f))*bottomLeftToTopLeft;
+            osg::Vec2 texSize(sizeX-1,sizeY-1);
+
+            for(int i=0; i <(int)verts->size(); i++){
+                vec4x tvertex = (scaling_matrix<fixed16_t>(0.5*texSize.x(),0.5*texSize.y(),0.5)*translation_matrix<fixed16_t>(1.0f,1.0f,1.0f)*viewProjReadA ) * vec4x(verts->at(i).x(),verts->at(i).y(),verts->at(i).z(), fixed16_t(1));
+   // cout << " "<<fixedpoint::fix2float<16>(tvertex.x.intValue) << " " <<         fixedpoint::fix2float<16>(tvertex.y.intValue) << " ";
+                osg::Vec2 tc=osg::Vec2(fixedpoint::fix2float<16>(tvertex.x.intValue)/(double)texSize.x(),
+                                       fixedpoint::fix2float<16>(tvertex.y.intValue)/(double)texSize.y());
+                                                                              //calcCoordReprojSimple(verts->at(i),rotM,toTex,texSize);
+                //     cout << "v: " << verts->at(i)<< " :" << tc<<endl;
+ //cout << " "<< tc<<endl;
+                newTCArr->push_back(osg::Vec2(tc[0],tc[1]));
+            }
+
+            std::vector<int>imageId;
+            osg::DrawElementsUInt *tri=vertexData._triangles.get();
+
+            for(int i=0; i< (int)tri->size()-2; i+=3){
+                imageId.push_back((int)vertexData._texIds->at(i)[0]);
+            }
+
+            char tmp[1024];
+            sprintf(tmp,"%s/flat-%s",diced_dir,osgDB::getSimpleFileName(av[1]).c_str());
+            std::ofstream f(tmp);
+            bool color = vertexData._colors.valid() ? (vertexData._colors->size() >0) : false;
+
+         /*   if(vertexData._qualArray->size()*3 != vertexData._triangles->size()){
+                fprintf(stderr,"Fail size not equal %d %d\n",vertexData._qualArray->size()*3 , vertexData._triangles->size());
+                exit(-1);
+            }*/
+
+            int facecount=0;
+           /* for(int i=0; i< (int)vertexData._triangles->size()-2; i+=3){
+                if(vertexData._qualArray->at(i/3).x() == -999.0)
+                    continue;
+                facecount+=3;
+            }*/
+            facecount=vertexData._triangles->size();
+            printf("fc %d %d\n ",facecount,vertexData._triangles->size());
+            write_header(f,facecount,color);
+
+
+            write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,imageId,newTCArr,mosaic,true,/*vertexData._qualArray*/NULL);
+            f.close();
+        }
+
         if(!blending)
             VertexShader::modelviewprojection_matrix=viewProjReadA;
         else{
@@ -480,6 +630,46 @@ int main(int ac, char *av[]) {
             exit(-1);
         }
 
+        if(0){
+            g.vertex_shader<VertexShaderBlending>();
+            r.fragment_shader<FragmentShaderCollectTC>();
+            VertexShaderBlending::modelviewprojection_matrix=viewProjReadA;
+
+
+
+            for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
+                for(int t=0; t< (int)itr->second.size(); t++){
+                    if(process_tri(itr->second[t],verts,vertexData._texCoord,blending)){
+                        FragmentShaderCollectTC::tc.clear();
+                        g.draw_points(3, indices);
+                        osg::Vec2 &tc1=newTCArr->at(itr->second[t].idx[0]);
+                        osg::Vec2 &tc2=newTCArr->at(itr->second[t].idx[1]);
+                        osg::Vec2 &tc3=newTCArr->at(itr->second[t].idx[2]);
+                        if(FragmentShaderCollectTC::tc.size() ==3){
+                            for(int l=0; l<3; l++){
+                                osg::Vec2 tc=osg::Vec2(((FragmentShaderCollectTC::tc[l].x())/(double)(outputImage->Xsize)),
+                                                       1.0-((FragmentShaderCollectTC::tc[l].y())/(double)(outputImage->Ysize)));
+                                if(l ==0 )
+                                    cout << "co: "<<tc <<  " " <<tc1<< " " << tc2<< " "<<tc3<<endl;
+                                //       cout << FragmentShaderCollectTC::tc[l]<<endl;
+                             //   osg::Vec2  tc2=osg::Vec2(newVerts->at(itr->second[t].idx[l])[0],
+                                             //            newVerts->at(itr->second[t].idx[l])[1]);
+                                 //  cout <<tc << " "<<tc2<<endl;
+                                newTCArr->at(itr->second[t].idx[l])=tc2;  //tc;
+                                //cout << newTCArr->at(itr->second[t].idx[l]) << tc1<<endl;
+                            }
+                            //  cout <<endl;
+                            //  cout <<   FragmentShaderCollectTC::tc[0] << " "<<(int)round(tc1[0]*(outputImage->Xsize-1))-1 << " "<< (int)round(tc1[1]*outputImage->Xsize)-1<<endl;
+                            // cout <<   FragmentShaderCollectTC::tc[1] << " "<< (int)round(tc2[0]*(outputImage->Xsize-1))-1 << " "<< (int)round(tc2[1]*outputImage->Xsize)-1<<endl;
+                            // cout <<   FragmentShaderCollectTC::tc[2] <<  " "<<(int)round(tc3[0]*(outputImage->Xsize-1))-1 << " "<< (int)round(tc3[1]*outputImage->Xsize)-1<<endl;
+
+                        }
+                    }
+                }
+            }
+
+
+        }
 
         if(!blending){
             g.vertex_shader<VertexShader>();
@@ -599,12 +789,12 @@ int main(int ac, char *av[]) {
             exit(-1);
         }
         im_close(tmpI);
-        int levels=(int)ceil(log( max( sizeX, sizeY ))/log(2.0) );
+       /* int levels=(int)ceil(log( max( sizeX, sizeY ))/log(2.0) );
         if(!genPyramid(osgDB::getNameLessExtension(imageName)+".tif",levels,"ppm")){
             fprintf(stderr,"FAil to gen pyramid\n");
             exit(-1);
         }
-
+*/
         IMAGE *tmpI2=im_open("tmp2","p");
         im_extract_bands(outputImage,tmpI2,3,1);
         if( im_vips2ppm(tmpI2,(osgDB::getNameLessExtension(imageName)+"-tmp-mask.pgm").c_str())){

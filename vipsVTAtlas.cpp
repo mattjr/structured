@@ -27,6 +27,7 @@ int main( int argc, char **argv )
         fprintf(stderr, "need mat\n");
         exit(-1);
     }
+    bool flat=arguments.read("-flatatlas");
     int totalX,totalY;
     std::vector<mosaic_cell> mosaic_cells;
 #if VIPS_MINOR_VERSION > 24
@@ -44,7 +45,7 @@ int main( int argc, char **argv )
             outputPyr=false;
             createVTAtlas( viewProj, totalX, totalY,
                          mosaic_cells,
-                       outputPyr,scaleFactor,basedir,imgFile);
+                       outputPyr,scaleFactor,basedir,imgFile,flat);
    osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
 
    cout << "Time for vipsAtlas = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;

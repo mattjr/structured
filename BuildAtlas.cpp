@@ -566,7 +566,7 @@ downsampledYoff,
 
 void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cell> &mosaic_cells,
 
-                                                       VipsAtlasBuilder* atlas
+                                                       VipsAtlasBuilder* atlas,bool flat
                                                        ){
 
 
@@ -693,7 +693,7 @@ void loadMosaicCells(std::string fname,int &totalX,int &totalY,std::vector<mosai
 
 VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int totalY,
                                 const std::vector<mosaic_cell> &mosaic_cells,
-                                bool writeAtlas,double scaleFactor,string basedir,string imgOutput){
+                                bool writeAtlas,double scaleFactor,string basedir,string imgOutput,bool flat){
     int tileSize=256;
     int border=1;
     VipsAtlasBuilder* _atlas =new VipsAtlasBuilder(mosaic_cells.size(),tileSize,border,!writeAtlas );
@@ -707,8 +707,25 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
     osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,totalY,0));
 
     osg::Matrix toTex=viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*totalX,0.5*totalY,0.5f))*bottomLeftToTopLeft;
+    vips::VImage *atlas_image;
+  //  if(!flat){
+        generateAtlasAndTexCoordMappingFromExtentsVips(mosaic_cells,_atlas,flat);
+        if(!_atlas || !_atlas->_atlasList.size() || !_atlas->_atlasList.front() ){
+            fprintf(stderr,"Can't create atlas bailing\n");
+            return NULL;
+        }
 
-    generateAtlasAndTexCoordMappingFromExtentsVips(mosaic_cells,_atlas);
+        VipsAtlasBuilder::VAtlas *vatlas=_atlas->_atlasList.front();
+        atlas_image=vatlas->_image;
+   /* }else{
+         unsigned char *tmpI=new unsigned char[totalX*totalY*3];
+          atlas_image = new vips::VImage(tmpI,totalX,totalY,3,vips::VImage::FMTUCHAR);
+            for(int i=0; i < mosaic_cells.size(); i++){
+                if(mosaic_cells[i].img){
+                    atlas_image->insertplace(*mosaic_cells[i].img,(int)mosaic_cells[i].bbox.xMin(),(int)mosaic_cells[i].bbox.yMin());
+                }
+            }
+    }*/
 #if 0
     // ("subtile.tif");
     osg::BoundingBoxd bbox;
@@ -827,17 +844,12 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
 
 #endif
 
-    if(!_atlas || !_atlas->_atlasList.size() || !_atlas->_atlasList.front() ){
-        fprintf(stderr,"Can't create atlas bailing\n");
-        return NULL;
-    }
 
-    VipsAtlasBuilder::VAtlas *vatlas=_atlas->_atlasList.front();
     double downsampleFactorMult=1.0/scaleFactor;
-    printf("--------------Atlas Size %dx%d------------------\n",(int)(vatlas->_image->Xsize()*scaleFactor),(int)(vatlas->_image->Ysize()*scaleFactor));
+    printf("--------------Atlas Size %dx%d------------------\n",(int)(atlas_image->Xsize()*scaleFactor),(int)(atlas_image->Ysize()*scaleFactor));
     if(imgOutput.size())
-        shrink_noblack(*vatlas->_image,downsampleFactorMult,downsampleFactorMult).write(imgOutput.c_str());
-    int sizeLevel=vatlas->_image->Xsize()*scaleFactor;
+        shrink_noblack(*atlas_image,downsampleFactorMult,downsampleFactorMult).write(imgOutput.c_str());
+    int sizeLevel=atlas_image->Xsize()*scaleFactor;
     char dirname[1024];
     int maxLevels=    (int)ceil(std::log((double)sizeLevel/tileSize) / std::log(2.0));
 
@@ -861,9 +873,9 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
 
 
                         if(level == 0)
-                            part=  vatlas->_image->extract_area(x * adjustedTileSize - border, y * adjustedTileSize - border, tileSize,tileSize);
+                            part=  atlas_image->extract_area(x * adjustedTileSize - border, y * adjustedTileSize - border, tileSize,tileSize);
                         else
-                            part=  shrink_noblack(*vatlas->_image,downsampleFactor,downsampleFactor).extract_area(x * adjustedTileSize - border, y * adjustedTileSize - border, tileSize,tileSize);
+                            part=  shrink_noblack(*atlas_image,downsampleFactor,downsampleFactor).extract_area(x * adjustedTileSize - border, y * adjustedTileSize - border, tileSize,tileSize);
 
 
                     }else{
@@ -872,8 +884,8 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
                         int w= ( x * adjustedTileSize + adjustedTileSize + border)-offx;
                         int h=( y * adjustedTileSize + adjustedTileSize + border)-offy;
 
-                        int sizeX=vatlas->_image->Xsize()/downsampleFactor;
-                        int sizeY=vatlas->_image->Ysize()/downsampleFactor;
+                        int sizeX=atlas_image->Xsize()/downsampleFactor;
+                        int sizeY=atlas_image->Ysize()/downsampleFactor;
 
                         if(w + offx >= sizeX)
                             w=sizeX-offx-1;
@@ -892,9 +904,9 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
                       //  printf("Extracing %d,%d -- %d -- %d width %d height %d\n",offx,offy,offx+w,offy+h,sizeX,sizeY);
                          vips::VImage tmpI;
                         if(level == 0)
-                            tmpI =  vatlas->_image->extract_area(offx , offy , w,h);
+                            tmpI =  atlas_image->extract_area(offx , offy , w,h);
                         else
-                            tmpI =  shrink_noblack(*vatlas->_image,downsampleFactor,downsampleFactor).extract_area(offx , offy , w,h);
+                            tmpI =  shrink_noblack(*atlas_image,downsampleFactor,downsampleFactor).extract_area(offx , offy , w,h);
                         vips::VImage blackI= vips::VImage::black(tileSize,tileSize,3);
 
                         part =blackI.insert_noexpand(tmpI,x1,y1);

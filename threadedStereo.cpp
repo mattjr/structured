@@ -1428,21 +1428,29 @@ const char *uname="mesh";
     printf("mm per pixel: %.1f Larger Axis %.2f m POT Image Size %dx%d\n",mmperpixel,
            largerAxis,adjustedSize,adjustedSize);
     if(_tileRows <0 || _tileColumns<0){
-        int validCount=0;
-        for(int i=0; i< (int)tasks.size(); i++)
-            if(tasks[i].valid)
-                validCount++;
-        printf("Auto computing tile and column splits %d valid images...\n",validCount);
-        int numCells=(int)max(ceil(sqrt(ceil(validCount / tex_img_per_cell))),1.0);
-        _tileRows=numCells;
-        _tileColumns=numCells;
+        if(reparamTex){
+
+            int validCount=0;
+            for(int i=0; i< (int)tasks.size(); i++)
+                 if(tasks[i].valid)
+                    validCount++;
+            printf("Auto computing tile and column splits %d valid images...\n",validCount);
+            int numCells=(int)max(ceil(sqrt(ceil(validCount / tex_img_per_cell))),1.0);
+            _tileRows=numCells;
+            _tileColumns=numCells;
+        }else{
+            int numCells=(int)max(ceil(adjustedSize/osg::Image::computeNearestPowerOfTwo(adjustedSize/sqrt(num_threads))),1.0);
+            _tileRows=numCells;
+            _tileColumns=numCells;
+        }
+
     }
 
 
     int split= std::max(std::max(_tileRows,_tileColumns),1);
     if(reimageSize.x() < 0.0)
-        reimageSize = osg::Vec2(osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0),osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0));
-
+        reimageSize = reparamTex ? osg::Vec2(osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0),osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0)) : osg::Vec2(adjustedSize / (double)split,adjustedSize / (double)split);
+cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
     if(reimageSize.x() > 8192){
         fprintf(stderr, "Can't have an imaging size %f its larger then 8192 dropping\n",reimageSize.x());
         double mult=reimageSize.x()/8192;
@@ -2212,10 +2220,20 @@ const char *uname="mesh";
     string imgbase=(compositeMission? "/":"/img/");
     int VTtileSize=256;
     int tileBorder=1;
-    int ajustedGLImageSizeX=(int)reimageSize.x();//-((reimageSize.x()/VTtileSize)*2*tileBorder);
-    int ajustedGLImageSizeY=(int)reimageSize.y();//-((reimageSize.y()/VTtileSize)*2*tileBorder);
+    int ajustedGLImageSizeX=(int)reimageSize.x() - (reparamTex ?  0 : ((reimageSize.x()/VTtileSize)*2*tileBorder));
+    int ajustedGLImageSizeY=(int)reimageSize.y() - (reparamTex ?  0 : ((reimageSize.y()/VTtileSize)*2*tileBorder));
+    char tmpsize[1024];
+    int totalX=ajustedGLImageSizeX*_tileRows;
+    int totalY=ajustedGLImageSizeY*_tileColumns;
 
-    string tcmd =basepath+string("/atlasmesh -mat viewproj.mat -cells image_areas.txt ");
+    /*if(!reparamTex){
+        sprintf(tmpsize," --noatlas --size %d %d ",totalX,totalY);
+    }else{
+        sprintf(tmpsize," ");
+
+    }*/
+
+    string tcmd =basepath+string("/atlasmesh -mat viewproj.mat -cells image_areas.txt ");// + string(tmpsize);
     char tmp100[8096];
     char tmpfn2[8096];
 
@@ -2223,8 +2241,6 @@ const char *uname="mesh";
 
     FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
     FILE *vartexcmds_fp=fopen(vartexcmds_fn.c_str(),"w");
-    int totalX=ajustedGLImageSizeX*_tileRows;
-    //int totalY=ajustedGLImageSizeY*_tileColumns;
 
     FILE *FP2=fopen("image_areas.txt","w");
     FILE *reFP=fopen("rebbox.txt","w");
@@ -2259,7 +2275,7 @@ const char *uname="mesh";
         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                 cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
 
-        string remap_mesh_ext=reparamTex ? "remap-" : "";
+        string remap_mesh_ext=reparamTex ? "remap-" : "flat-";
         fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f ",
                 cwd,
                 basepath.c_str(),
@@ -2376,8 +2392,8 @@ else
     std::string extraCheckCmd;
     sprintf(tmp100, " -outfile %s/tex-total.obj ; %s/vcgapps/bin/cleanTexMesh %s/tex-total.obj --normcolor -out %s/tex-total.ply",diced_dir,basepath.c_str(),diced_dir,diced_dir);
 
-    extraCheckCmd= reparamTex ? createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4): "";
-
+  //  extraCheckCmd= reparamTex ? createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4): "";
+  extraCheckCmd=  createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
     fclose(texcmds_fp);
     fclose(vartexcmds_fp);
     fclose(reFP);
@@ -2556,9 +2572,13 @@ else
 
        FILE *vttexcmds_fp=fopen(vttex.c_str(),"w");
        fchmod(fileno(vttexcmds_fp),0777);
-
+       char flatflag[1024];
+       if(reparamTex)
+           sprintf(flatflag," ");
+       else
+           sprintf(flatflag,"-flatatlas ");
        fprintf(vttexcmds_fp,"#!/bin/bash\n");
-       fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt");
+       fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag);
 
      /*   for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)

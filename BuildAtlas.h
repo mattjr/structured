@@ -33,7 +33,7 @@ void  generateAtlasAndTexCoordMappingFromExtents(const std::vector<mosaic_cell> 
                                      int level);
 VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int totalY,
                                 const std::vector<mosaic_cell> &mosaic_cells,
-                                bool writeAtlas,double scaleFactor=1.0,std::string basedir="mesh",std::string imgOutput="");
+                                bool writeAtlas,double scaleFactor=1.0,std::string basedir="mesh",std::string imgOutput="",bool flat=false);
 void generateImageFromExtents(const std::vector<mosaic_cell> &mosaic_cells,
                                              const osg::Vec2 minT,
                                      const osg::Vec2 maxT,int origX,int origY,
@@ -42,6 +42,10 @@ void generateImageFromExtents(const std::vector<mosaic_cell> &mosaic_cells,
                                      osg::ref_ptr<osg::Image> &image,
                                      osg::Vec4 &ratio,
                                      int level);
+void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cell> &mosaic_cells,
+
+                                                       VipsAtlasBuilder* atlas,bool flat=false
+                                                       );
 bool shouldUseSparseMode(const std::vector<mosaic_cell> &mosaic_cells,double sparseRatio, const osg::Vec2 minT,
                          const osg::Vec2 maxT, osg::ref_ptr<TightFitAtlasBuilder> &atlas,int leveloffset,        const std::set<int> &seenids);
 SpatialIndex::ISpatialIndex* createTree(const std::vector<mosaic_cell> &mosaic_cells);

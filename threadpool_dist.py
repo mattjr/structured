@@ -278,7 +278,7 @@ class ThreadPool:
             self.workers.append(WorkerThread(self._requests_queue,
                 self._results_queue,runwith,  poll_timeout=poll_timeout))
 
-    def createWorkersSLURM(self, num_workers, slurmctrl, poll_timeout=5):
+    def createWorkersSLURM(self, num_workers, slurmctrl, host="", poll_timeout=5):
         """Add num_workers worker threads to the pool.
 
         ``poll_timout`` sets the interval in seconds (int or float) for how
@@ -286,7 +286,10 @@ class ThreadPool:
         requests.
 
         """
-        runwith = 'ssh %s srun ' % slurmctrl.rstrip('\n')
+        if len(host) > 0:
+            runwith = 'ssh %s srun -w %s' % (slurmctrl.rstrip('\n'),host)
+        else:
+            runwith = 'ssh %s srun ' % slurmctrl.rstrip('\n')
 
         for i in range(num_workers):
             self.workers.append(WorkerThread(self._requests_queue,

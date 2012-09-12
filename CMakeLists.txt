@@ -1,16 +1,13 @@
 #
-# libpolyp
+#
 #
 # Dependencies:
-#  * boost
-#  * lapack
 #  * OpenCV
 #  * OpenGL
-#  * ulapack 
-#  * libplankton 
-#  * libsnapper
-#  * libpolyp
-#  * gts
+# * GLEW
+# * TCL/TK
+# * vips
+# *glib2
 PROJECT(threadedStereo)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
@@ -25,15 +22,15 @@ ENDIF(COMMAND CMAKE_POLICY)
 # Includes              #
 #-----------------------#
 
-INCLUDE( ${CMAKE_ROOT}/Modules/CheckIncludeFileCXX.cmake )
-INCLUDE( ${CMAKE_ROOT}/Modules/CheckLibraryExists.cmake )
-INCLUDE( ${CMAKE_ROOT}/Modules/FindPkgConfig.cmake )
-INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOpenMP.cmake ) 
-
-INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindUF.cmake ) 
-INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOSG.cmake )
-INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindOpenCV.cmake ) 
-INCLUDE( ${PROJECT_SOURCE_DIR}/../CMakeUtils/FindGDAL.cmake )
+find_package(PkgConfig)
+find_package(OpenMP)
+include(ExternalProject)
+FIND_PACKAGE( OpenCV REQUIRED )
+pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+set(OSG_COMPONENTS osg osgUtil osgViewer osgGA osgManipulator osgText osgDB)
+find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
+#GDAL
+INCLUDE( ${PROJECT_SOURCE_DIR}/VirtualPlanetBuilder/CMakeModules/FindGDAL.cmake )
 
 #--------------------------------#
 # Enforce an out-of-source build #
@@ -58,41 +55,6 @@ IF( NOT CMAKE_BUILD_TYPE )
  SET( CMAKE_BUILD_TYPE Release )  
 ENDIF( NOT CMAKE_BUILD_TYPE )
 
-OPTION( USE_LIBKEYPOINT
-        "Use the libkeypoint feature extraction library."
-        ON )
- 
-IF( NOT LIBADT_PREFIX )
-   SET( LIBADT_PREFIX /usr/local )
-ENDIF( NOT LIBADT_PREFIX )
-
-IF( NOT LIBPOLYP_PREFIX )
-   SET( LIBPOLYP_PREFIX /usr/local )
-ENDIF( NOT LIBPOLYP_PREFIX )
-
-IF( NOT ULAPACK_PREFIX )
-   SET( ULAPACK_PREFIX /usr/local/ )
-ENDIF( NOT ULAPACK_PREFIX )
-
-IF( NOT LIBPLANKTON_PREFIX )
-   SET( LIBPLANKTON_PREFIX /usr/local/ )
-ENDIF( NOT LIBPLANKTON_PREFIX )
-
-IF( NOT LIBSNAPPER_PREFIX )
-   SET( LIBSNAPPER_PREFIX /usr/local/ )
-ENDIF( NOT LIBSNAPPER_PREFIX )
-
-IF( NOT LIBKEYPOINT_PREFIX )
-   SET( LIBKEYPOINT_PREFIX /usr/local/ )
-ENDIF( NOT LIBKEYPOINT_PREFIX )
-
-IF( NOT LIBSEABEDCOMMON_PREFIX )
-   SET( LIBSEABEDCOMMON_PREFIX /usr/local/ )
-ENDIF( NOT LIBSEABEDCOMMON_PREFIX )
-
-IF( NOT GMT_PREFIX )
-   SET( GMT_PREFIX /usr/include/ )
-ENDIF( NOT GMT_PREFIX )
 
 #-----------------------#
 # Installation Options  #
@@ -102,18 +64,20 @@ IF( NOT CMAKE_INSTALL_PREFIX )
    SET( CMAKE_INSTALL_PREFIX "/usr/local" )
 ENDIF( NOT CMAKE_INSTALL_PREFIX )
 
+ExternalProject_Add(vrip
+  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vrip"
+  BUILD_IN_SOURCE 1 
+  BUILD_COMMAND $(MAKE)   
+  DOWNLOAD_COMMAND "" 
+  UPDATE_COMMAND "" 
+  CONFIGURE_COMMAND "" 
+  INSTALL_COMMAND "" 
+)
 
 #-----------------------#
 # Dependencies          #
 #-----------------------#
 
-
-# Boost 
-FIND_PACKAGE(Boost COMPONENTS thread)
-IF( NOT Boost_FOUND )
-   MESSAGE( FATAL_ERROR  "ERROR - Can't find boost" )
-ENDIF( NOT Boost_FOUND )     
-SET( CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR} )
 
 # OpenGL and GLU
 FIND_PACKAGE( OpenGL )
@@ -129,12 +93,7 @@ IF( NOT OSG_FOUND )
   MESSAGE( FATAL_ERROR  "ERROR - Can't find OSG" )
 ENDIF( NOT OSG_FOUND )
 
-# Gts
-pkg_check_modules( GTS "gts" )
-IF( NOT GTS_FOUND )
-   MESSAGE( FATAL_ERROR  "ERROR - Can't find Gts" )
-ENDIF( NOT GTS_FOUND )   
-
+pkg_check_modules( VIPS vips-7.24 )
 # UF
 SET( UF_LIBRARY ufGeographicConversions ufGPSParser )
 
@@ -150,144 +109,51 @@ IF (OPENMP_FOUND)
     MESSAGE(STATUS "flags are now: " ${CMAKE_CXX_FLAGS})
 ENDIF(OPENMP_FOUND)
 
-# ulapack 
-SET( ULAPACK_INCLUDE_DIR ${ULAPACK_PREFIX}/include/ulapack )
-CHECK_INCLUDE_FILE_CXX( "${ULAPACK_INCLUDE_DIR}/matrix_types.hpp" HAVE_ULAPACK )
-IF( NOT HAVE_ULAPACK )
-   MESSAGE( FATAL_ERROR  "ERROR - Can't find ulapack" )
-ENDIF( NOT HAVE_ULAPACK )   
-
-
-# libplankton 
-SET( LIBPLANKTON_INCLUDE_DIR ${LIBPLANKTON_PREFIX}/include/libplankton )
-SET( LIBPLANKTON_LIB plankton )
-CHECK_INCLUDE_FILE_CXX( "auv_matrix.hpp" HAVE_LIBPLANKTON "-I ${LIBPLANKTON_INCLUDE_DIR}" )
-IF( NOT HAVE_LIBPLANKTON )
-   MESSAGE( FATAL_ERROR  "ERROR - Can't find libplankton" )
-ENDIF( NOT HAVE_LIBPLANKTON )      
-
-
-# libkeypoint
-IF( USE_LIBKEYPOINT )
-
-   SET( LIBKEYPOINT_INCLUDE_DIR ${LIBKEYPOINT_PREFIX}/include/libkeypoint )
-   SET( LIBKEYPOINT_LIB keypoint  )
-   ADD_DEFINITIONS( "-DHAVE_LIBKEYPOINT" )
-   
-   SET( CMAKE_REQUIRED_FLAGS "-I ${OPENCV_INCLUDE_DIRS} ${OPENCV_LIBRARIES}" )
-   CHECK_INCLUDE_FILE_CXX( "keypoint.hpp" HAVE_LIBKEYPOINT "-I ${LIBKEYPOINT_INCLUDE_DIR}" )
-   IF( NOT HAVE_LIBKEYPOINT )
-#      MESSAGE( FATAL_ERROR  "ERROR - Can't find libkeypoint" )
-   ENDIF( NOT HAVE_LIBKEYPOINT )      
-ENDIF( USE_LIBKEYPOINT )
-
-# libseabedcommon
-SET( LIBSEABEDCOMMON_INCLUDE_DIR ${LIBSEABEDCOMMON_PREFIX}/include/libseabedcommon )
-SET( LIBSEABEDCOMMON_LIB seabedcommon  )
-
-
-SET( CMAKE_REQUIRED_FLAGS "-I ${OPENCV_INCLUDE_DIRS} ${OPENCV_LIBRARIES}" )
-CHECK_INCLUDE_FILE_CXX( "seabed_slam_file_io.hpp" HAVE_LIBSEABEDCOMMON "-I ${LIBSEABEDCOMMON_INCLUDE_DIR}" )
-IF( NOT HAVE_LIBSEABEDCOMMON )
-  #      MESSAGE( FATAL_ERROR  "ERROR - Can't find libseabedcommon" )
-ENDIF( NOT HAVE_LIBSEABEDCOMMON )      
 
 
 
-# gmt
-SET( GMT_INC ${GMT_PREFIX}/gmt/ )
-SET( GMT_LIBRARY gmt netcdf )
-SET( GMT_DIR /usr/lib/gmt/lib )
-
-# libsnapper 
-SET( LIBSNAPPER_INC ${LIBSNAPPER_PREFIX}/include/libcarp )
-SET( LIBSNAPPER_LIBRARY carp )
-# libsnapper
-SET( LIBCARP_INC ${LIBSNAPPER_PREFIX}/include/libsnapper )
-SET( LIBCARP_LIBRARY carp )
-# libpolyp 
-SET( LIBPOLYP_INC ${LIBPOLYP_PREFIX}/include/libpolyp )
-SET( LIBPOLYP_LIBRARY polyp )
-
-# AUV data library 
-SET( LIBADT_INCLUDE_DIR ${LIBADT_PREFIX}/include/libadt )
-SET( LIBADT_LIBRARY adt )
 
 #-----------------------#
 # Compiler setup        #
 #-----------------------#
-ADD_DEFINITIONS( ${GTS_CFLAGS} )
 ADD_DEFINITIONS( "-Wall" )
-
+cmake_policy(SET CMP0005 OLD)
+#spatial lib defs
+add_definitions("-DHAVE_FCNTL_H=1 -DHAVE_UNISTD_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_PTHREAD_H=1 -DHAVE_SYS_RESOURCE_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_STDINT_H=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_BZERO=1 -DHAVE_MEMSET=1 -DHAVE_MEMCPY=1 -DHAVE_BCOPY=1")
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${OPENCV_INCLUDE_DIRS}
 		     ${OPENGL_INCLUDE_DIR}
- 		     ${GTS_INCLUDE_DIRS}
-		     "mesh2hmap/"
-		     ${GDAL_INCLUDE_DIR}
+                     ${VIPS_INCLUDE_DIRS}
                     spatialindex-src-1.6.1/src spatialindex-src-1.6.1/include
-		     "/opt/local/include"
-                     ${ULAPACK_INCLUDE_DIR}
-		     ${LIBADT_INCLUDE_DIR}
-  		     ${LIBSNAPPER_INC}
-${LIBCARP_INC}
-		     ${LIBPOLYP_INC}
-                     ${LIBPLANKTON_INCLUDE_DIR}
-                     ${LIBKEYPOINT_INCLUDE_DIR}
-                     ${LIBSEABEDCOMMON_INCLUDE_DIR}
+                     "/opt/local/include"
+"VirtualPlanetBuilder/include"
+                     ${GDAL_INCLUDE_DIR}
 		     ${OSG_INCLUDE_DIR}
-      ${UF_INCLUDE_DIRS}
-${GMT_INC}
-"FastDXT/"
-
-		     )
+                   ${GLIB2_INCLUDE_DIRS}  )
 
 LINK_DIRECTORIES( ${OPENCV_LIBRARY_DIRS}
-                  ${GTS_LIBRARY_DIRS}
                   ${UF_LIBRARY_DIRS}
-		          ${GMT_DIR}
 		          ${PROJECT_SOURCE_DIR}
-                  /quadmerge/nn
+${GLIB2_LIBRARY_DIRS}
                 )
-
+add_definitions(${GLIB2_CFLAGS})
 LINK_LIBRARIES(
- #       /usr/local/lib64/libosgd.so
-  #              /usr/local/lib64/libosgDBd.so
-   #               /usr/local/lib64/libosgUtild.so
-#${OSG_LIBRARY_DEBUG}
-               ${OSG_LIBRARY_DEBUG}
- ${OSGDB_LIBRARY_DEBUG}
-               ${OSGUTIL_LIBRARY_DEBUG}
+               ${OSG_LIBRARY}
+ ${OSGDB_LIBRARY}
+               ${OSGUTIL_LIBRARY}
      ${OSGTERRAIN_LIBRARY_DEBUG}
-#/usr/lib//libgdal1.6.0.so.1
 ${GDAL_LIBRARY}
 osgTerrain
 osgFX
 osgViewer
-#/usr/local/lib64/libosgViewerd.so
 osgSim
-#-L/usr/local/lib/static nvtt nvcore nvmath  nvimage -fopenmp -L/usr/local/cuda/lib64 cudart cuda /home/mattjr/exp/nvidia-texture-tools-read-only/build-Debug/src/nvtt/squish/libsquish.a
+        ${OpenCV_LIBS}
                 ${OSGSHADOW_LIBRARY}
-                ${OSGVIEWER_LIBRARY_DEBUG}
                 ${OSGTEXT_LIBRARY_DEBUG}
                 ${OSGGA_LIBRARY_DEBUG}
-                ${OPENTHREADS_LIB}
-                ${LIBADT_LIBRARY}
-		${OPENCV_LIBRARIES}
-		${LIBPLANKTON_LIBRARY}	
-		${LIBSNAPPER_LIBRARY}
-		${GTS_LIBRARIES}
-${LIBCARP_LIBRARY}
-		${LAPACK_LIBRARY}
-		${Boost_LIBRARIES}
-        ${LIBKEYPOINT_LIB}
-        ${LIBSEABEDCOMMON_LIB}
-		-l3ds    		
-		${LIBPOLYP_LIBRARY}
-		${UF_LIBRARY}
-fastdxt
- 
-	)
+                ${OPENTHREADS_LIBRARY}
+         ${GLIB2_LIBRARIES}
+          ${OPENGL_LIBRARY})
 
 
 #-----------------------#
@@ -302,11 +168,6 @@ MESSAGE( "CMAKE_BUILD_TYPE = '${CMAKE_BUILD_TYPE}'" )
 MESSAGE( "" )
 MESSAGE( "CMAKE_INSTALL_PREFIX = '${CMAKE_INSTALL_PREFIX}'" )
 MESSAGE( "" )
-MESSAGE( "USE_LIBKEYPOINT = '${USE_LIBKEYPOINT}'" )
-MESSAGE( "" )
-MESSAGE( "ULAPACK_PREFIX     = '${ULAPACK_PREFIX}'" )
-MESSAGE( "LIBPLANKTON_PREFIX = '${LIBPLANKTON_PREFIX}'" )
-MESSAGE( "LIBKEYPOINT_PREFIX = '${LIBKEYPOINT_PREFIX}'" )
 
 IF( CMAKE_BUILD_TYPE STREQUAL Debug )
    MESSAGE( "CMAKE_CXX_FLAGS_DEBUG = '${CMAKE_CXX_FLAGS_DEBUG}'" )
@@ -340,18 +201,11 @@ SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 
 #SUBDIRS(src include tools )
-SUBDIRS( vcgapps FastDXT spatialindex-src-1.6.1/src texture_image retex mbosg  mesh2hmap mesh2xy grd2ply  quadmerge single_mesh_gen)
-SET( SRCS OSGExport.cpp
-MSC.cpp
-		auv_clipped_texture_atlas.cpp
-		Depth.cpp
+SUBDIRS(VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src  )
+SET( SRCS
                 Extents.cpp
-		auv_3ds.cpp
-                #Clean.cpp
-		novelty.cpp
-PosterPrinter.cpp
-imageNode.cpp
-sha2.cpp
+calibFile.cpp
+StereoEngine.cpp
 plyfile.cpp
 TexturedSource.cpp
 Clipper.cpp
@@ -361,52 +215,46 @@ vertexData.cpp
 TexPyrAtlas.cpp
 Semaphore.cpp
 TexturingQuery.cpp
+configFile.cpp
+SeaBedIO.cpp
+SpatialReference.cpp
 		stereo_cells.cpp
-		quadmerge/envelope.cpp
-		quadmerge/fileio.cpp
 GLImaging.cpp
                 )
 ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} ${SPINDEX_SRC})
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
-ADD_EXECUTABLE( genTex genTex.cpp )
+ADD_EXECUTABLE( engine engine.cpp ShellCmd.cpp )
 
-ADD_EXECUTABLE( lodgen lodgen.cpp )
+ADD_EXECUTABLE( stereo_mesh_gen stereo_mesh_gen.cpp )
+
+ADD_EXECUTABLE( osgdem  VirtualPlanetBuilder/applications/osgdem/osgdem.cpp )
+
 ADD_EXECUTABLE( treeBBClip treeBBClip.cpp  )
-ADD_EXECUTABLE( simplifier simplifier.cpp)
 ADD_EXECUTABLE( calcTexCoord calcTexCoord.cpp )
-ADD_EXECUTABLE( monoDriver monoDriver.cpp ShellCmd.cpp)
 ADD_EXECUTABLE( testImageModel testImageModel.cpp )
-ADD_EXECUTABLE( loadCamRender loadCamRender.cpp )
-ADD_EXECUTABLE( loadCamRender loadCamRender.cpp )
-#ADD_EXECUTABLE( screencap screencap.cpp )
-ADD_EXECUTABLE( remapReimaged remapReimaged.cpp )
 ADD_EXECUTABLE( dicedImage dicedImage.cpp )
 ADD_EXECUTABLE(deepzoomVIPS DeepZoom.cpp)
 ADD_EXECUTABLE(singleImageTex singleImageTex.cpp)
 ADD_EXECUTABLE(createSem createSem.cpp)
 ADD_EXECUTABLE(vertCheck vertCheck.cpp)
-
-#ADD_EXECUTABLE( bin/mergeMesh mergeMesh/mergeMesh.cpp mergeMesh/plylib.cpp)
-#ADD_EXECUTABLE( bin/texturedDecimator mergeMesh/texturedDecimator.cpp mergeMesh/plylib.cpp mergeMesh/quadric_simp.cpp mergeMesh/quadric_tex_simp.cpp)
+ADD_EXECUTABLE(temp temp.cpp)
 
 LINK_LIBRARIES(osgTerrain  osgFX osg  spindex vips vipsCC)
-TARGET_LINK_LIBRARIES( threadedStereo ts plankton hmap gmt netcdf vips vipsCC vpb)
+TARGET_LINK_LIBRARIES( threadedStereo ts  vips vipsCC vpb spindex)
+TARGET_LINK_LIBRARIES( engine ts  vips vipsCC vpb spindex)
+TARGET_LINK_LIBRARIES( osgdem vpb  )
+
 TARGET_LINK_LIBRARIES( testImageModel ts  )
-TARGET_LINK_LIBRARIES( genTex ts plankton )
-TARGET_LINK_LIBRARIES( remapReimaged ts  vips vipsCC vpb)
 TARGET_LINK_LIBRARIES( deepzoomVIPS  vips vipsCC)
+TARGET_LINK_LIBRARIES( testImageModel ts  )
 
-TARGET_LINK_LIBRARIES( monoDriver ts plankton vpb  hmap gmt netcdf)
-
-TARGET_LINK_LIBRARIES( lodgen ts )
+TARGET_LINK_LIBRARIES( stereo_mesh_gen ts  )
 
 TARGET_LINK_LIBRARIES( treeBBClip ts spindex )
 TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC)
 TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC)
 
-TARGET_LINK_LIBRARIES( loadCamRender ts spindex vpb vips vipsCC )
-#TARGET_LINK_LIBRARIES( screencap vips vipsCC)
 TARGET_LINK_LIBRARIES( dicedImage vips vipsCC ts z)
 
 #TARGET_LINK_LIBRARIES( threshold ts )

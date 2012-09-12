@@ -8,77 +8,72 @@
 
 #include <string>
 #include <vector>
-#include "auv_stereo_calib.hpp"
-using namespace libsnapper;
-#include "gts.h"
-class Stereo_Pose_Data
+#include <osg/Matrix>
+#include <osg/BoundingBox>
+
+
+class Tex_Pose_Data
 {
 public:
   unsigned int id;
+  std::string file_name;
+  std::string dir;
+  osg::Matrixd mat;
+  osg::BoundingBox bbox;
+  bool valid;
+};
+
+
+class Stereo_Pose_Data : public Tex_Pose_Data
+{
+public:
   double time;
   double pose[6];
   std::string left_name;
   std::string mesh_name;
   std::string right_name;
-  std::string dir;
   double alt;
   double radius;
   bool overlap;
-  bool valid;
-  GtsMatrix *m;
-  //For mono camera
-  Stereo_Calib *calib;
-  GtsBBox *bbox;
+
 };
 
 
-class Mono_Image_Name
-{
-public:
-  unsigned int id;
-  double time;
-  libplankton::Vector *pose;
-  std::string img_name;
-  GtsBBox *bbox;
 
-  bool valid;
-};
-
-
-class Bounds
+class Bounds  : public osg::BoundingBoxd
 {
 public:
    Bounds( );
+   Bounds( const std::vector<Tex_Pose_Data> &poses );
    Bounds( const std::vector<Stereo_Pose_Data> &poses );
-   
-   void set( double min_x, double max_x, double min_y, double max_y );
 
+   void set( double min_x, double max_x, double min_y, double max_y );
    double area( void ) const;
-    
-   double min_x;
-   double max_x;
-   double min_y;
-   double max_y;
+
+   osg::BoundingBox bbox;
+
 };
 
 
 enum{AUV_SPLIT,EVEN_SPLIT};
 
+template <class A>
 class Cell_Data
 {
 public:
 
-   Cell_Data( );
+   Cell_Data<A>( );
 
-   Cell_Data( const std::vector<const Stereo_Pose_Data*> &poses,
+   Cell_Data<A>( const std::vector<const A*> &poses,
               const Bounds                               &bounds ,
               const std::pair<int,int> &idx);
               
-   Cell_Data( const std::vector<const Stereo_Pose_Data*> &poses,
+   Cell_Data<A>( const std::vector<const A*> &poses,
               const Bounds                               &bounds );
   Bounds bounds;
-   std::vector<const Stereo_Pose_Data*> poses;
+   std::vector<const A*> poses;
    std::pair<int,int> idx;
+   bool valid;
 
 };
 
@@ -89,9 +84,11 @@ public:
 
 std::vector<Stereo_Pose_Data> load_stereo_pose_file( const std::string &file_name );
 
-std::vector<Cell_Data> calc_cells( const std::vector<Stereo_Pose_Data> &poses ,int method,double cell_scale=1.0); 
-std::vector<Cell_Data> calc_cells( const std::vector<Stereo_Pose_Data> &poses,double x1,double x2,double y1 ,double y2,double area );
-
+//template<class A>
+//std::vector<Cell_Data<A> > calc_cells( const std::vector<A> &poses ,int max_poses);
+//std::vector<Cell_Data> calc_cells( const std::vector<Tex_Pose_Data> &poses,double x1,double x2,double y1 ,double y2,double area );
+template <class A>
+        std::vector<Cell_Data<A> > calc_cells( const std::vector<A> &poses,int max_poses );
 
 #endif // !AUV_STEREO_CELLS_HPP
 

@@ -36,22 +36,21 @@
 #include <vpb/System>
 #include <vpb/FileUtils>
 #include <vpb/FilePathManager>
-#include <vpb/TextureUtils>
 #include <vpb/ShapeFilePlacer>
 #include "PosterPrinter.h"
 // GDAL includes
 #include <gdal_priv.h>
 #include <ogr_spatialref.h>
-
+#include <osg/TexEnvCombine>
 // standard library includes
 #include <sstream>
 #include <iostream>
 #include <algorithm>
 #include <vips/vips.h>
 #include "VPBInterface.hpp"
-#include "libdxt.h"
 #include "GLImaging.h"
 bool checkInBounds(osg::Vec3 tc);
+// Helper that collects all the unique Geometry objects in a subgraph.
 
 using namespace vpb;
 using vpb::log;
@@ -87,18 +86,168 @@ bool readMatrix(std::string fname,osg::Matrix &viewProj){
 
     return true;
 }
-MyDataSet::MyDataSet(const Camera_Calib &calib,string basePath,bool useTextureArray,bool useReImage,bool useVirtualTex): _calib(calib),_basePath(basePath),_useTextureArray(useTextureArray),_useReImage(useReImage),_useVirtualTex(useVirtualTex)
+MyDataSet::MyDataSet(const CameraCalib &calib,string basePath,bool useTextureArray,bool useReImage,bool useVirtualTex): _calib(calib),_basePath(basePath),_useTextureArray(useTextureArray),_useReImage(useReImage),_useVirtualTex(useVirtualTex)
 {
     in=NULL;
+    _TargetSRS=NULL;
+    _SrcSRS=NULL;
+
     init();
 }
+bool
+MyCompositeDestination::clampGeocentric( osg::CoordinateSystemNode* csn, double lat_rad, double lon_rad, osg::Vec3d& out ) const
+{
+    osg::Vec3d start, end;
+
+    csn->getEllipsoidModel()->convertLatLongHeightToXYZ( lat_rad, lon_rad, 50000, start.x(), start.y(), start.z() );
+    csn->getEllipsoidModel()->convertLatLongHeightToXYZ( lat_rad, lon_rad, -50000, end.x(), end.y(), end.z() );
+    osgUtil::LineSegmentIntersector* i = new osgUtil::LineSegmentIntersector( start, end );
+
+    osgUtil::IntersectionVisitor iv;
+    iv.setIntersector( i );
+   /* static_cast<CachingReadCallback*>(_readCallback.get())->reset();
+    iv.setReadCallback( _readCallback.get() );
+    iv.setTraversalMask( _traversalMask );
+*/
+  //  _mapNode->accept( iv );
+
+    osgUtil::LineSegmentIntersector::Intersections& results = i->getIntersections();
+    if ( !results.empty() )
+    {
+        const osgUtil::LineSegmentIntersector::Intersection& result = *results.begin();
+        out = result.matrix.valid() ?
+            result.localIntersectionPoint * (*result.matrix) :
+            result.localIntersectionPoint;
+        return true;
+    }
+    return false;
+}
+
+bool
+MyCompositeDestination::clampProjected( osg::CoordinateSystemNode* csn, double x, double y, osg::Vec3d& out ) const
+{
+    osg::Vec3d start( x, y, 50000 );
+    osg::Vec3d end(x, y, -50000);
+    osgUtil::LineSegmentIntersector* i = new osgUtil::LineSegmentIntersector( start, end );
+
+    osgUtil::IntersectionVisitor iv;
+    iv.setIntersector( i );
+    /*static_cast<CachingReadCallback*>(_readCallback.get())->reset();
+    iv.setReadCallback( _readCallback.get() );
+    iv.setTraversalMask( _traversalMask );
+*/
+  //  _mapNode->accept( iv );
+
+    osgUtil::LineSegmentIntersector::Intersections& results = i->getIntersections();
+    if ( !results.empty() )
+    {
+        const osgUtil::LineSegmentIntersector::Intersection& result = *results.begin();
+        out = result.matrix.valid() ?
+            result.localIntersectionPoint * (*result.matrix) :
+            result.localIntersectionPoint;
+        return true;
+    }
+    return false;
+}
+
+bool
+MyCompositeDestination::createPlacerMatrix(  const SpatialReference* srs, double lat_deg, double lon_deg, double height, osg::Matrixd& out_result ,bool clamp) const
+{
+    if ( !srs|| !_cs.valid() )
+    {
+       cerr << "ObjectPlacer: terrain is missing either a Map or CSN node" << srs<< " "<< _cs.valid()<< std::endl;
+        return false;
+    }
+
+    // see whether this is a geocentric model:
+    bool is_geocentric = _cs.valid() && _cs->getEllipsoidModel() != NULL;
+
+
+    // now build a matrix:
+    if ( is_geocentric )
+    {
+        double lat_rad = osg::DegreesToRadians( lat_deg );
+        double lon_rad = osg::DegreesToRadians( lon_deg );
+
+        if ( clamp )
+        {
+            osg::Vec3d c;
+            if ( clampGeocentric( _cs.get(), lat_rad, lon_rad, c ) )
+            {
+                srs->getEllipsoid()->computeLocalToWorldTransformFromXYZ( c.x(), c.y(), c.z(), out_result );
+            }
+        }
+        else
+        {
+            srs->getEllipsoid()->computeLocalToWorldTransformFromLatLongHeight( lat_rad, lon_rad, height, out_result );
+        }
+    }
+    else // projected or "flat geographic"
+    {
+        osg::Vec3d local(0, 0, height);
+
+        // first convert the input coords to the map srs:
+        srs->getGeographicSRS()->transform2D( lon_deg, lat_deg, srs, local.x(), local.y());
+
+        if ( clamp )
+        {
+            clampProjected( _cs.get(), local.x(), local.y(), local );
+            local.z() += height;
+        }
+        out_result = osg::Matrixd::translate( local );
+    }
+
+    return true;
+}
+
+
+void MyDataSet::setDestinationCoordinateSystem(const std::string& wellKnownText)
+{
+    _TargetSRS =  SpatialReference::create(wellKnownText);
+
+    _destinationCoordinateSystemString = wellKnownText;
+    setDestinationCoordinateSystemNode(new osg::CoordinateSystemNode("WKT",wellKnownText));
+}
+void MyDataSet::setSourceCoordinateSystemProj4(const std::string proj4_src){
+
+    _SrcSRS =  SpatialReference::create(proj4_src);
+
+//    cout << pszWKT << " "<<proj4_src<<endl;
+}
+bool MyDataSet::reprojectPoint(const osg::Vec3d &src,osg::Vec3d &dst){
+    //if(!poCT){
+      //  poCT = OGRCreateCoordinateTransformation( &oSourceSRS,
+        //                                          &oTargetSRS );
+        /*char    *pszWKT = NULL;
+        char    *pszWKT2 = NULL;
+          oSourceSRS.exportToWkt( &pszWKT );
+                  oTargetSRS.exportToWkt( &pszWKT2 );
+
+       // cout << pszWKT << " " << pszWKT2 <<endl;
+    }*/
+    double x,y;
+    x=src.x();
+    y=src.y();
+  /*  if( poCT == NULL || !poCT->Transform( 1, &x, &y ) ){
+        printf( "Transformation failed.\n" );
+        return false;
+    }
+*/
+    dst.x()=x;
+    dst.y()=y;
+    dst.z()=src.z();
+
+    return true;
+
+}
+
 void MyDataSet::loadShaderSourcePrelude(osg::Shader* obj, const std::string& fileName )
 {
     string filestr;
     ifstream myfile (fileName.c_str());
     char prelude[8192];
     sprintf(prelude,
-            "#version 110\n"
+            "#version 120\n"
             "#extension GL_EXT_gpu_shader4 : enable\n"
             "const float zrangeLow=%f;\n"
             "const float zrangeHi=%f;\n"
@@ -127,6 +276,7 @@ void MyDataSet::loadShaderSourcePrelude(osg::Shader* obj, const std::string& fil
         std::cout << "File \"" << fileName << "\" not found." << std::endl;
     }
 }
+
 void MyDataSet::init()
 {
     assert(!(_useReImage && _useVirtualTex));
@@ -253,7 +403,7 @@ std::vector<osg::ref_ptr<osg::Image> >MyDestinationTile::getRemappedImages(idmap
 
     osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
 
-    OSG_NOTICE << "Time for loadTex = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
+    osg::notify(osg::NOTICE) << "Time for loadTex = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
 
     return images;
 }
@@ -337,6 +487,122 @@ void MyDestinationTile::remapArrayPerAtlas(osg::Vec4Array *v,const TexBlendCoord
     }
 
 }
+class BugFixSubloadCallback : public osg::Texture2DArray::SubloadCallback
+{
+public:
+    void load(const osg::Texture2DArray& texture,osg::State& state) const;
+    void subload(const osg::Texture2DArray& texture,osg::State& state)const;
+};
+
+void subloadTex2DArray_helper(osg::Texture2DArray::Extensions* ext ,const osg::Texture2DArray& texture,osg::State& state){
+
+    for (GLsizei n=0; n < texture.getTextureDepth(); n++){
+
+        const osg::Image* image = texture.getImage(n);
+
+        GLenum target = GL_TEXTURE_2D_ARRAY_EXT;
+        if(!image->isMipmap())
+        {
+            osg::notify(osg::WARN)<<"Warning: Texture2DArray::applyTexImage2DArray_subload(..) automagic mipmap generation is currently not implemented. Check texture's min/mag filters."<<std::endl;
+        }
+        // if the required layer is exceeds the maximum allowed layer sizes
+        if (texture.getTextureDepth() > ext->maxLayerCount())
+        {
+            // we give a warning and do nothing
+            osg::notify(osg::WARN)<<"Warning: Texture2DArray::applyTexImage2DArray_subload(..) the given layer number exceeds the maximum number of supported layers."<<std::endl;
+            return;
+        }
+        glPixelStorei(GL_UNPACK_ALIGNMENT,image->getPacking());
+
+        int numMipmapLevels = image->getNumMipmapLevels();
+
+        int width  = image->s();
+        int height = image->t();
+
+        for( GLsizei k = 0 ; k < numMipmapLevels  && (width || height ) ;k++)
+        {
+
+            if (width == 0)
+                width = 1;
+            if (height == 0)
+                height = 1;
+
+            ext->glTexSubImage3D( target, k, 0, 0, n,
+                                  width, height, 1,
+                                  (GLenum)image->getPixelFormat(),
+                                  (GLenum)image->getDataType(),
+                                  image->getMipmapData(k));
+
+            width >>= 1;
+            height >>= 1;
+        }
+    }
+}
+
+void BugFixSubloadCallback::load (const osg::Texture2DArray &texture, osg::State &state) const
+{
+    // do only anything if such textures are supported
+    osg::Texture2DArray::Extensions* ext = osg::Texture2DArray::getExtensions(state.getContextID(), true);
+    if (ext && ext->isTexture2DArraySupported())
+    {
+
+        if( texture.getFilter(osg::Texture::MIN_FILTER) == osg::Texture::LINEAR || texture.getFilter(osg::Texture::MIN_FILTER) == osg::Texture::NEAREST ){
+            fprintf(stderr,"FAil don't use this hack without mipmaps\n");
+            exit(-1);
+        }
+        // create the texture in usual OpenGL way
+        ext->glTexImage3D( GL_TEXTURE_2D_ARRAY_EXT, 0, texture.getInternalFormat(),
+                           texture.getTextureWidth(), texture.getTextureHeight(), texture.getTextureDepth(),
+                           texture.getBorderWidth(), texture.getSourceFormat() ? texture.getSourceFormat() : texture.getInternalFormat(),
+                           texture.getSourceType() ? texture.getSourceType() : GL_UNSIGNED_BYTE,
+                           0);
+
+
+        // compute number of mipmap levels
+        int width =   texture.getTextureWidth();
+        int height = texture.getTextureHeight();
+        int numMipmapLevels = osg::Image::computeNumberOfMipmapLevels(width, height);
+
+        // we do not reallocate the level 0, since it was already allocated
+        width >>= 1;
+        height >>= 1;
+
+        for( GLsizei k = 1; k < numMipmapLevels  && (width || height); k++)
+        {
+            if (width == 0)
+                width = 1;
+            if (height == 0)
+                height = 1;
+            ext->glTexImage3D( GL_TEXTURE_2D_ARRAY_EXT, k, texture.getInternalFormat(),
+                               width, height,texture.getTextureDepth(),
+                               texture.getBorderWidth(), texture.getSourceFormat() ? texture.getSourceFormat() : texture.getInternalFormat(),
+                               texture.getSourceType() ? texture.getSourceType() : GL_UNSIGNED_BYTE,
+                               0);
+
+            width >>= 1;
+            height >>= 1;
+        }
+
+        subloadTex2DArray_helper(ext ,texture,state);
+
+        // inform state that this texture is the current one bound.
+        // state.haveAppliedTextureAttribute(state.getActiveTextureUnit(), texture);
+    }
+}
+
+// no subload, because while we want to subload the texture should be already valid
+void BugFixSubloadCallback::subload (const osg::Texture2DArray &texture, osg::State &state) const
+{
+    osg::Texture2DArray::Extensions* ext = osg::Texture2DArray::getExtensions(state.getContextID(), true);
+    if (ext && ext->isTexture2DArraySupported())
+    {
+
+        subloadTex2DArray_helper(ext ,texture,state);
+
+    }
+}
+
+
 
 osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *v,  const TexBlendCoord &texCoordsArray,int texSizeIdx){
     if(!v)
@@ -344,7 +610,7 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
 
     osg::StateSet *stateset= new osg::StateSet;
 
-    int tex_size=  _atlasGen->getMaximumAtlasHeight();
+    //int tex_size=  _atlasGen->getMaximumAtlasHeight();
     idmap_t allIds=_atlasGen->_allIDs;
     // idmap_t allIds=calcAllIds(v);
     //  idmap_t allIds=calcAllIds(v);
@@ -358,32 +624,48 @@ osg::StateSet *MyDestinationTile::generateStateAndArray2DRemap( osg::Vec4Array *
     }else{*/
     texture_images = _atlasGen->getImages(); //getRemappedImages(allIds,texSizeIdx);
     //}
-    unsigned int a=v->size();
-    unsigned int b=texCoordsArray[0]->size();
+    //unsigned int a=v->size();
+    //unsigned int b=texCoordsArray[0]->size();
 
-    assert(a == b);
+    //assert(a == b);
     assert(texture_images.size() > 0);
     remapArrayForTexturing(v,texCoordsArray,allIds);
 
-    OSG_ALWAYS << "\tImage Size: " <<texture_images[0]->s() <<endl;
+    osg::notify(osg::NOTICE) << "\tImage Size: " <<texture_images[0]->s() <<endl;
 
-    OSG_ALWAYS << "\tArray Size: " <<texture_images.size()<<endl;
-    OSG_ALWAYS << "\tNumber of Sources: " <<_atlasGen->getNumSources()<<endl;
-    OSG_ALWAYS << "\tNumber of Atlas: " <<_atlasGen->getNumAtlases()<<endl;
-
+    osg::notify(osg::NOTICE) << "\tArray Size: " <<texture_images.size()<<endl;
+    osg::notify(osg::NOTICE) << "\tNumber of Sources: " <<_atlasGen->getNumSources()<<endl;
+    osg::notify(osg::NOTICE) << "\tNumber of Atlas: " <<_atlasGen->getNumAtlases()<<endl;
     //  texture_images[0]->setFileName(_dataSet->getSubtileName(_level,_tileX,_tileY));
 
     osg::ref_ptr<osg::Texture2DArray> textureArray;
-    osg::ref_ptr<osg::Texture2D> texture;
+
+    osg::ref_ptr<BugFixSubloadCallback> subloadCbk = new BugFixSubloadCallback();
 
     // if(!_mydataSet->_useAtlas){
     textureArray=new osg::Texture2DArray;
+    textureArray->setSubloadCallback(subloadCbk);
     textureArray->setTextureSize(texture_images[0]->s(),texture_images[0]->t(),texture_images.size());
     for(int i=0; i < (int)texture_images.size(); i++){
-        cout << " Size " << texture_images[0]->s() << " "<<texture_images[0]->t() << "\n";
+        {
+            OpenThreads::ScopedLock<OpenThreads::Mutex> lock(dynamic_cast<MyDataSet*>(_dataSet)->_imageMutex);
+
+            osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(texture_images[i]);
+            generateMipMap(*_dataSet->getState(),*texture,true);
+
+        }
+        if(i==0)
+            textureArray->setNumMipmapLevels(texture_images[0]->getNumMipmapLevels());
+
+        cout << " Size " << texture_images[0]->s() << " "<<texture_images[0]->t() << " "<<texture_images[i]->getNumMipmapLevels() << "\n";
         assert(texture_images[i].valid() &&textureArray->getTextureWidth() == texture_images[i]->s() && textureArray->getTextureWidth() == texture_images[i]->t());
         textureArray->setImage(i,texture_images[i]);
+        /*   textureArray->setFilter(osg::Texture2DArray::MIN_FILTER,
+       osg::Texture2DArray::LINEAR_MIPMAP_LINEAR);
+        textureArray->setFilter(osg::Texture2DArray::MAG_FILTER,
+       osg::Texture2DArray::LINEAR);*/
     }
+    textureArray->allocateMipmapLevels();
     stateset->setTextureAttribute(TEXUNIT_ARRAY, textureArray.get());
 
     //}
@@ -517,37 +799,7 @@ void compressJP2(osg::State *state,osg::Texture2D* texture2D, osg::Texture::Inte
         image->setWriteHint(osg::Image::EXTERNAL_FILE);
     }
 }
-void compressFast(osg::State *state,osg::Texture2D* texture2D, osg::Texture::InternalFormatMode internalFormatMode){
 
-
-
-
-    osg::ref_ptr<osg::Image> image = texture2D->getImage();
-    if (image.valid() &&
-        (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA) ){//&&
-        //     (image->s()>=32 && image->t()>=32)){
-        //internalFormatMode=osg::Texture::USE_S3TC_DXT1_COMPRESSION;
-        byte *out;
-        byte *in;
-
-        int width=image->s();
-        int height=image->t();
-        in = (byte*)memalign(16, width*height*4);
-        memset(in, 0, width*height*4);
-        RGB2RGBA(width,height,image->data(),in);
-        out = (byte*)memalign(16, width*height*4);
-        memset(out, 0, width*height*4);
-        int nbytes =CompressDXT(in, out, width, height, FORMAT_DXT1, 4);
-
-        image->setImage(width,height,1,GL_COMPRESSED_RGB_S3TC_DXT1_EXT,GL_COMPRESSED_RGB_S3TC_DXT1_EXT,GL_UNSIGNED_BYTE,out,osg::Image::USE_MALLOC_FREE);
-        int think=image->getTotalDataSize();
-        //  printf("Size ocmpra %d %d\n",nbytes,think);
-        texture2D->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
-        memfree(in);
-
-    }
-
-}
 void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &geoms,osg::Vec4Array *v,const osg::Vec4Array &colors,const osg::Vec3Array &normals, const osg::PrimitiveSet& prset,
                                                        const TexBlendCoord  &texCoordsArray,
                                                        const osg::Vec3Array &verts,int tex_size){
@@ -555,16 +807,16 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         return;
     int numIdx=prset.getNumIndices();
     // printf("Num idx %d\n",numIdx);
-    printf("Num idx %d %d\n",numIdx,v->size());
+    //printf("Num idx %d %d\n",numIdx,v->size());
 
     idmap_t allIds=calcAllIds(v);
     // std::vector<osg::ref_ptr<osg::Image> > texture_images= _atlasGen->getImages();
     unsigned int a=v->size();
-    unsigned int b=texCoordsArray[0]->size();
+    //unsigned int b=texCoordsArray[0]->size();
     //printf("%d != %d\n",a,(int)verts.size());
     if(a != 0)
         assert(a == verts.size());
-    assert(a == b);
+    // assert(a == b);
     std::vector<osg::ref_ptr<osg::Image> > texture_images=_atlasGen->getImages();
     remapArrayPerAtlas(v,texCoordsArray,_atlasGen->_vertexToAtlas);
     int numberOfGeoms=texture_images.size();
@@ -617,9 +869,9 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         bool inlineImageFile = _dataSet->getDestinationTileExtension()==".ive" || _dataSet->getDestinationTileExtension()==".osgb" ;
         bool compressedImageSupported = inlineImageFile;
         //bool mipmapImageSupported = compressedImageSupported; // inlineImageFile;
-        int layerNum=0;
+        //int layerNum=0;
         osg::Texture::InternalFormatMode internalFormatMode = osg::Texture::USE_IMAGE_DATA_FORMAT;
-        switch(getImageOptions(layerNum)->getTextureType())
+        /*switch(getImageOptions(layerNum)->getTextureType())
         {
         case(BuildOptions::RGB_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
         case(BuildOptions::RGBA_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
@@ -630,7 +882,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         case(BuildOptions::COMPRESSED_RGBA_TEXTURE): internalFormatMode = osg::Texture::USE_S3TC_DXT3_COMPRESSION; break;
         default: break;
         }
-
+*/
         bool compressedImageRequired = (internalFormatMode != osg::Texture::USE_IMAGE_DATA_FORMAT);
         //  image->s()>=minumCompressedTextureSize && image->t()>=minumCompressedTextureSize &&
 
@@ -638,10 +890,10 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         {
             log(osg::NOTICE,"Compressed image");
 
-            bool generateMiMap = getImageOptions(layerNum)->getMipMappingMode()==DataSet::MIP_MAPPING_IMAGERY;
-            bool resizePowerOfTwo = getImageOptions(layerNum)->getPowerOfTwoImages();
-            // vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
-            compressFast(_dataSet->getState(),texture,internalFormatMode);
+            bool generateMiMap = true;//getImageOptions(layerNum)->getMipMappingMode()==DataSet::MIP_MAPPING_IMAGERY;
+            bool resizePowerOfTwo =true;// getImageOptions(layerNum)->getPowerOfTwoImages();
+            compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo);
+            // compressFast(_dataSet->getState(),texture,internalFormatMode);
             //compressJP2(_dataSet->getState(),texture,internalFormatMode);
             log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");
 
@@ -657,13 +909,15 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         osg::ref_ptr<osg::Shader> lerpV=new osg::Shader( osg::Shader::VERTEX);
         if(_mydataSet->_useBlending){
             loadShaderSource( lerpV, _mydataSet->_basePath+"/blend.vert" );
-
-            if(_mydataSet->_useAtlas){
-                _mydataSet->loadShaderSourcePrelude( lerpF,  _mydataSet->_basePath+"/blendAtlas.frag" );
-            }else{
-                _mydataSet->loadShaderSourcePrelude( lerpF,  _mydataSet->_basePath+"/blend.frag" );
+            if(_mydataSet->_useDebugShader)
+                _mydataSet->loadShaderSourcePrelude( lerpF,  _mydataSet->_basePath+"/debug.frag" );
+            else{
+                if(_mydataSet->_useAtlas){
+                    _mydataSet->loadShaderSourcePrelude( lerpF,  _mydataSet->_basePath+"/blendAtlas.frag" );
+                }else{
+                    _mydataSet->loadShaderSourcePrelude( lerpF,  _mydataSet->_basePath+"/blend.frag" );
+                }
             }
-
         }else{
             _mydataSet->loadShaderSourcePrelude( lerpF,  _mydataSet->_basePath+"/pass.frag" );
             loadShaderSource( lerpV,  _mydataSet->_basePath+"/blend.vert" );
@@ -682,9 +936,8 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         stateset->setDataVariance(osg::Object::STATIC);
     }
     numIdx=prset.getNumIndices();
-    int numIV=v->size();
     // printf("Num idx %d\n",numIdx);
-//    printf("Num idx %d %d\n",numIdx,v->size());
+    //    printf("Num idx %d %d\n",numIdx,v->size());
     assert(numIdx ==(int) v->size());
     for(int i=0; i<numIdx-2; i+=3){
         vector<osg::Vec4> cP;
@@ -703,7 +956,7 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
             }else{
                 //atlas=_atlasGen->getAtlasId(id);
                 // if(atlas < 0 || atlas >= untexidx){
-                //    OSG_ALWAYS << "Atlas mapping incorrect id: " << id << " index: " << prset.index(i+k) << endl;
+                //    osg::notify(osg::NOTICE) << "Atlas mapping incorrect id: " << id << " index: " << prset.index(i+k) << endl;
                 //   exit(-1);
                 //}
                 if(id >= numberOfGeoms)
@@ -747,12 +1000,12 @@ void MyDestinationTile::generateStateAndSplitDrawables(vector<osg::Geometry*> &g
         }
     }
 
-    printf("vertSplit[0]= %d",vertSplit[0]->size());
+    /* printf("vertSplit[0]= %d",vertSplit[0]->size());
     printf("vertSplit[0]= %d",vertSplit[1]->size());
 
     printf("primsets[0]= %d",primsets[0]->size());
     printf("primsets[1]= %d\n",primsets[1]->size());
-
+*/
     if(!vertSplit[geoms.size()-1]->size()){
         geoms.resize(geoms.size()-1);
     }
@@ -1054,7 +1307,7 @@ void MyDataSet::_buildDestination(bool writeToDisk)
 
     osgDB::Registry::instance()->setOptions(previous_options.get());
 
-   /* for(QuadMap::iterator qitr = _quadMap.begin();
+    /* for(QuadMap::iterator qitr = _quadMap.begin();
         qitr != _quadMap.end();
         ++qitr)
     {
@@ -1170,6 +1423,9 @@ osg::Node* MyDestinationTile::createScene()
     // _createdScene = createPolygonal();
     //}
 
+
+
+
     if (_models.valid())
     {
         /*  if (_dataSet->getModelPlacer())
@@ -1196,12 +1452,12 @@ osg::Node* MyDestinationTile::createScene()
             }
             //Got the size that was over target get size under target
             tex_size=max(16,tex_size/2);*/
-               // int start_pow=10;
-              //  tex_size=1024;//log2 = 10
+                // int start_pow=10;
+                //  tex_size=1024;//log2 = 10
                 int leveloffset=(_hintNumLevels-_level);
                 //printf("level offset %d level %d\n",leveloffset,_level);
                 //tex_size=pow(2,start_pow-leveloffset);
-                tex_size=tex_size/pow(2,leveloffset);
+                tex_size=tex_size/pow(2.0,leveloffset);
                 tex_size=max(tex_size,8);
                 memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
 
@@ -1233,7 +1489,7 @@ osg::Node* MyDestinationTile::createScene()
             {
                 if(_atlasGen->_totalImageList.size()> 0 ||texCoordsPerModel.size()){
                     if(texCoordsPerModel.count(*itr) == 0 ){
-                        OSG_ALWAYS << "Not correct number of texCoordsPerModel in createScene() "<< cnt << " "<<texCoordsPerModel.size() <<endl;
+                        osg::notify(osg::ALWAYS) << "Not correct number of texCoordsPerModel in createScene() "<< cnt << " "<<texCoordsPerModel.size() <<endl;
                     }else{
                         const TexBlendCoord &tmp2=texCoordsPerModel[*itr];
                         //  cout << tmp->size() << " ASS " << tmp2[0]->size() << endl;
@@ -1244,7 +1500,7 @@ osg::Node* MyDestinationTile::createScene()
                                     (*v).push_back(tmp->at(i));
 
                             }else{
-                                OSG_FATAL << "Null Ptr texCoordIDIndexPerModel" <<endl;
+                                osg::notify(osg::FATAL) << "Null Ptr texCoordIDIndexPerModel" <<endl;
                             }
 
                         }
@@ -1266,7 +1522,7 @@ osg::Node* MyDestinationTile::createScene()
             memsize=(((tex_size)*(tex_size)*numtex*4)/1024.0)/1024.0;
             //printf("   dst2: level=%u X=%u Y=%u size=%dx%d images=%d MemSize:%.2f MB\n",_level,_tileX,_tileY,tex_size,tex_size,numtex,memsize);
 */
-            OSG_INFO<< "Number of coords "<< texCoords[0]->size() << endl;
+            osg::notify(osg::INFO)<< "Number of coords "<< texCoords[0]->size() << endl;
             if(_createdScene){
                 osgUtil::Optimizer::MergeGeodesVisitor visitor;
 
@@ -1274,15 +1530,17 @@ osg::Node* MyDestinationTile::createScene()
                 osgUtil::Optimizer::MergeGeometryVisitor mgv;
                 mgv.setTargetMaximumNumberOfVertices(INT_MAX);
                 _createdScene->accept(mgv);
-                osgUtil::GeometryCollector gc(NULL, osgUtil::Optimizer::DEFAULT_OPTIMIZATIONS);
+                GeometryCollector gc(NULL, osgUtil::Optimizer::DEFAULT_OPTIMIZATIONS);
                 _createdScene->accept(gc);
-                osgUtil::GeometryCollector::GeometryList geomList = gc.getGeometryList();
+                GeometryCollector::GeometryList geomList = gc.getGeometryList();
                 if(geomList.size() > 1){
-                    OSG_ALWAYS << "Number of collected geometies " << geomList.size() << "problem "<<endl;
+                    osg::notify(osg::ALWAYS) << "Number of collected geometies " << geomList.size() << "problem "<<endl;
                     //   OSG_FATAL << "Number of collected geometies " << geomList.size() << "problem "<<endl;
                     assert(0);
 
                 }
+
+
                 if(!_mydataSet->_useVirtualTex){
                     /*osg::Geometry *geom=*geomList.begin();
                     osg::Vec4Array *colors=static_cast<const osg::Vec4Array*>(geom->getColorArray());
@@ -1301,7 +1559,7 @@ osg::Node* MyDestinationTile::createScene()
                             geom->setUseDisplayList(_mydataSet->_useDisplayLists);
                             geom->setStateSet(stateset);
                             //osg::Vec3Array *normals=static_cast<const osg::Vec3Array*>(geom->getNormalArray());
-                          //  for(int i=0; i<100; i++)
+                            //  for(int i=0; i<100; i++)
                             //    cout << normals->at(i) << "\n";
                         }else{
                             vector<osg::Geometry*> geoms;
@@ -1328,7 +1586,7 @@ osg::Node* MyDestinationTile::createScene()
                             geode->removeDrawables(0);
                             for(int i=0; i < (int)geoms.size(); i++){
                                 geode->addDrawable(geoms[i]);
-                          /*      osg::Vec3Array *normals=static_cast<const osg::Vec3Array*>(geoms[0]->getNormalArray());
+                                /*      osg::Vec3Array *normals=static_cast<const osg::Vec3Array*>(geoms[0]->getNormalArray());
                                 for(int i=0; i<100; i++)
                                     cout << normals->at(i) << "\n";*/
                             }
@@ -1342,7 +1600,6 @@ osg::Node* MyDestinationTile::createScene()
                     geom->setUseVertexBufferObjects(_mydataSet->_useVBO);
                     geom->setStateSet(stateset);
                     geom->setTexCoordArray(0,texCoords[0]);
-                    int t=texCoords[0]->size();
 
                     //std::cout << "Drops : "<<texCoords[0]->size() <<"\n";
                 }
@@ -1415,7 +1672,7 @@ MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int c
 
     }
 
-    MyCompositeDestination* destinationGraph = new MyCompositeDestination(_intermediateCoordinateSystem.get(),extents,_useReImage,_useVBO,_useDisplayLists,_file,_fileMutex);
+    MyCompositeDestination* destinationGraph = new MyCompositeDestination(_destinationCoordinateSystem.get(),extents,_useReImage,_useVBO,_useDisplayLists,_file,_fileMutex);
 
     if (currentLevel==0) _destinationGraph = destinationGraph;
 
@@ -1452,7 +1709,7 @@ MyCompositeDestination* MyDataSet::createDestinationTile(int currentLevel, int c
     tile->_tileY = currentY;
     tile->_dataSet = this;
     tile->_mydataSet=this;
-    tile->_cs = destinationGraph->_cs;
+    tile->_cs =_destinationCoordinateSystem;//();//destinationGraph->_cs;
     tile->_extents = extents;
     tile->_parent = destinationGraph;
     tile->_atlasGen->_useTextureArray = this->_useTextureArray;
@@ -1864,33 +2121,37 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
 
     osg::Vec4Array *ids= _useVirtualTex ? NULL :src->ids;
     TexBlendCoord  *texCoords=(&src->tex);
-    osg::ref_ptr<osg::Vec4Array> new_ids;
-    TexBlendCoord  new_texCoords;
+    geom_elems_src srcGeom;
+    srcGeom.colors=src->colors;
+    srcGeom.texcoords=*texCoords;
+    srcGeom.texid=ids;
+    int numTex= texCoords->size();
+    geom_elems_dst dstGeom(numTex);
+
     bool projectSucess=!_useReImage;//!_reimagePass;//false;//(ids!=NULL && !_reimagePass);
     if(src->_kdTree){
-        osg::ref_ptr<KdTreeBbox> kdtreeBbox=new KdTreeBbox(*src->_kdTree);
+        osg::ref_ptr<KdTreeBbox> kdtreeBbox=new KdTreeBbox(*src->_kdTree,srcGeom);
         //  if(projectSucess){
-        root=kdtreeBbox->intersect(ext_bbox,src->colors, ids,*texCoords,new_texCoords,new_ids,IntersectKdTreeBbox::DUP);
-        //printf("0x%x\n",(long int)root.get());
+        root=kdtreeBbox->intersect(ext_bbox,dstGeom,IntersectKdTreeBbox::DUP);
+
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(tile->_texCoordMutex);
-        for(int f=0; f< new_texCoords.size(); f++)
-            assert(new_texCoords[f].valid());
-        if(new_ids.valid())
-            tile->texCoordIDIndexPerModel[root.get()]=new_ids;
-        tile->texCoordsPerModel[root.get()]=new_texCoords;
+        for(int f=0; f< (int)dstGeom.texcoords.size(); f++)
+            assert(dstGeom.texcoords[f].valid());
+        if(dstGeom.texid)
+            tile->texCoordIDIndexPerModel[root.get()]=dstGeom.texid;
+        tile->texCoordsPerModel[root.get()]=dstGeom.texcoords;
         //    }else
         //       root=kdtreeBbox->intersect(ext_bbox,IntersectKdTreeBbox::DUP);
     }else{
-        OSG_ALWAYS<<"No kdtree\n";
+        osg::notify(osg::ALWAYS)<<"No kdtree\n";
         assert(0);
     }
     if(!_useVirtualTex){
         TexturingQuery *tq=new TexturingQuery(src,_calib,*(tile->_atlasGen),_useTextureArray);
         tq->_tile=tile;
-        bool _reimagePass=(tile->_level != tile->_hintNumLevels);
         std::string mf=src->getFileName();
-        int npos=mf.find("/");
-        std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
+        //int npos=mf.find("/");
+        //std::string bbox_name=std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
         if(!projectSucess && !_useReImage) {
             projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(root.get()));
         }
@@ -2099,47 +2360,6 @@ osg::Geode* ClippedCopy::makeCopy(osg::Geode *geode){
 }
 
 
-class MyGraphicsContext : public osg::Referenced {
-public:
-    MyGraphicsContext(BuildLog* buildLog)
-    {
-        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-        traits->readDISPLAY();
-        traits->x = 0;
-        traits->y = 0;
-        traits->width = 1;
-        traits->height = 1;
-        traits->windowDecoration = false;
-        traits->doubleBuffer = false;
-        traits->sharedContext = 0;
-        traits->pbuffer = true;
-
-        _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-
-        if (!_gc)
-        {
-            if (buildLog) buildLog->log(osg::NOTICE,"Failed to create pbuffer, failing back to normal graphics window.");
-
-            traits->pbuffer = false;
-            _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-        }
-
-        if (_gc.valid())
-
-
-        {
-            _gc->realize();
-            _gc->makeCurrent();
-
-            if (buildLog) buildLog->log(osg::NOTICE,"Realized window");
-        }
-    }
-
-    bool valid() const { return _gc.valid() && _gc->isRealized(); }
-
-private:
-    osg::ref_ptr<osg::GraphicsContext> _gc;
-};
 
 int MyDataSet::_run()
 {
@@ -2485,22 +2705,22 @@ void MyDataSet::_writeRow(Row& row)
                     node = decorateWithMultiTextureControl(node.get());
                 }
 
-                if (getGeometryType()==TERRAIN)
+                /*  if (getGeometryType()==TERRAIN)
                 {
                     node = decorateWithTerrain(node.get());
                 }
-                else if (_decorateWithCoordinateSystemNode)
+                else*/ if (_decorateWithCoordinateSystemNode)
                 {
-                    node = decorateWithCoordinateSystemNode(node.get());
-                }
+                           node = decorateWithCoordinateSystemNode(node.get());
+                       }
 
-                if (!_comment.empty())
-                {
-                    node->addDescription(_comment);
-                }
+                       if (!_comment.empty())
+                       {
+                           node->addDescription(_comment);
+                       }
 
-                log(osg::NOTICE, "       getDirectory()= %s",getDirectory().c_str());
-            }
+                       log(osg::NOTICE, "       getDirectory()= %s",getDirectory().c_str());
+                   }
             else
             {
 #ifndef NEW_NAMING
@@ -2530,5 +2750,459 @@ void MyDataSet::_writeRow(Row& row)
 #if 0
     if (_writeThreadPool.valid()) _writeThreadPool->waitForCompletion();
 #endif
+
+}
+osg::Matrix vpb::MyDataSet::getImageSection(vips::VImage &in,const osg::Vec2 minT, const osg::Vec2 maxT,int origX,int origY,osg::Vec4 &texsize,const osg::Matrix &toTex,osg::ref_ptr<osg::Image> &image,osg::Vec4 &ratio,int level){
+
+    double downsampleFactor=pow(2.0,level);
+    printf("Downsample Factor %f\n",downsampleFactor);
+    double downsampleRatio=1.0/downsampleFactor;
+    // std::cout<< minT << " " << maxT<<std::endl;
+    // printf("%f %f\n",downsampleRatio,downsampleRatio);
+    int x=(int)std::max((int)floor(minT.x()),0);
+    int y=(int)std::max((int)floor(minT.y()),0);
+    int xMax=(int)std::min((int)ceil(maxT.x()),origX);
+    int yMax=(int)std::min((int)ceil(maxT.y()),origY);
+    int xRange=(xMax-x);
+    int yRange=(yMax-y);
+    //printf("X:%d -- %d Y:%d -- %d ",x,xMax,y,yMax);
+
+    //Need bias of 1.0 or will round down
+    double maxSide=std::max(osg::Image::computeNearestPowerOfTwo(xRange,1.0),osg::Image::computeNearestPowerOfTwo(yRange,1.0));
+    osg::Vec2 subSize=osg::Vec2(maxSide,maxSide);
+    if(downsampleRatio*maxSide < 1.0){
+        printf("Clipping %f %f to",downsampleRatio,downsampleFactor);
+        downsampleRatio=1.0/maxSide;
+        downsampleFactor=maxSide;
+        printf("%f %f\n",downsampleRatio,downsampleFactor);
+
+    }
+    texsize[0]=origX;
+    texsize[1]=origY;
+    texsize[2]=subSize.x();
+    texsize[3]=subSize.y();
+    osg::Vec2 downsampleSize(subSize.x(),subSize.y());
+    downsampleSize.x()*=downsampleRatio;
+    downsampleSize.y()*=downsampleRatio;
+
+    // printf("Range %d %d\n",xRange,yRange);
+    // printf("%f %f %f %f\n",subSize.x(),subSize.y(),downsampleSize.x(),downsampleSize.y());
+    image = new osg::Image;
+    image->allocateImage(downsampleSize.x(),downsampleSize.y(), 1, GL_RGB,GL_UNSIGNED_BYTE);
+    if(image->data() == 0 ){
+        fprintf(stderr,"Failed to allocate\n");
+        exit(-1);
+    }
+    {
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_imageMutex);
+        vips::VImage osgImage(image->data(),downsampleSize.x(),downsampleSize.y(),3,vips::VImage::FMTUCHAR);
+        in.extract_area(x,y,xRange,yRange).embed(1,0,0,subSize.x(),subSize.y()).shrink(downsampleFactor,downsampleFactor).write(osgImage);
+    }
+    ratio=osg::Vec4(x,y,subSize.x(),subSize.y());
+    //osg::Vec2 f(xRange-subSize.x(),yRange-subSize.y());
+    //std::cout << f<<std::endl;
+    return toTex;
+}
+osg::Vec2 calcCoordReproj(const osg::Vec3 &vert,const osg::Matrix &viewProj,const osg::Matrix &screen,const osg::Vec2 &size,const osg::Vec4 &ratio){
+    osg::Vec4 v(vert.x(),vert.y(),vert.z(),1.0);
+    v=v*viewProj;
+    v.x() /= v.w();
+    v.y() /= v.w();
+    v.z() /= v.w();
+    v.w() /= v.w();
+    v= v*screen;
+    //std::cout << "Pre shift " << v << std::endl;
+    v.x() /= size.x();;
+    v.y() /= size.y();
+
+
+    v.x() -= (ratio.x()/size.x());
+    v.y() -= (ratio.y()/size.y());
+    //std::cout << "Post shift " << v << std::endl;
+
+
+    //  std::cout << "PP shift " << v << std::endl;
+
+
+    osg::Vec2 tc(v.x(),v.y());
+    tc.x() *= ratio.z();
+    tc.y() *=ratio.w();
+    //tc.x()*=ratio.x();
+    //tc.y()*=ratio.y();
+    tc.x()/=(ratio.z());
+    tc.y()/=(ratio.w());
+
+
+    return tc;
+
+}
+osg::Vec4 HSV_to_RGB (osg::Vec4 hsv){
+    osg::Vec4 color;
+    float f,p,q,t;
+    float h,s,v;
+    float r=0.0,g=0.0,b=0.0;
+    float i;
+    if (hsv[1] == 0.0){
+        if (hsv[2] != 0.0){
+            color[0] = hsv[2];
+        }
+    }
+    else{
+        h = hsv[0] * 360.0;
+        s = hsv[1];
+        v = hsv[2];
+        if (h == 360.0) {
+            h=0.0;
+        }
+        h /=60.0;
+        i = floor (h);
+        f = h-i;
+        p = v * (1.0 - s);
+        q = v * (1.0 - (s * f));
+        t = v * (1.0 - (s * (1.0 -f)));
+        if (i == 0.0){
+            r = v;
+            g = t;
+            b = p;
+        }
+        else if (i == 1.0){
+            r = q;
+            g = v;
+            b = p;
+        }
+        else if (i == 2.0){
+            r = p;
+            g = v;
+            b = t;
+        }
+        else if (i == 3.0) {
+            r = p;
+            g = q;
+            b = v;
+        }
+        else if (i == 4.0) {
+            r = t;
+            g = p;
+            b = v;
+        }
+        else if (i == 5.0) {
+            r = v;
+            g = p;
+            b = q;
+        }
+        color[0] = r;
+        color[1] = g;
+        color[2] = b;
+        color[3] = hsv[3];
+    }
+    return color;
+}
+
+osg::Vec4 rainbowColorMap(float hue) {
+    return HSV_to_RGB(osg::Vec4(hue, 1.0f, 1.0f,1.0));
+}
+osg::Vec2 calcCoordReprojTrans(const osg::Vec3 &vert,const osg::Matrix &trans,const osg::Matrix &viewProj,const osg::Vec2 &size,const osg::Vec4 &ratio){
+    osg::Vec4 v(vert.x(),vert.y(),vert.z(),1.0);
+    v=v*trans;
+    v=v*viewProj;
+    v.x() /= v.w();
+    v.y() /= v.w();
+    v.z() /= v.w();
+    v.w() /= v.w();
+    //std::cout << "Pre shift " << v << std::endl;
+    v.x() /= size.x();;
+    v.y() /= size.y();
+
+
+    v.x() -= (ratio.x()/size.x());
+    v.y() -= (ratio.y()/size.y());
+    //std::cout << "Post shift " << v << std::endl;
+
+
+    //  std::cout << "PP shift " << v << std::endl;
+
+
+    osg::Vec2 tc(v.x(),v.y());
+    tc.x() *= ratio.z();
+    tc.y() *=ratio.w();
+    //tc.x()*=ratio.x();
+    //tc.y()*=ratio.y();
+    tc.x()/=(ratio.z());
+    tc.y()/=(ratio.w());
+
+
+    return tc;
+
+}
+osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
+    if(!group)
+        return NULL;
+    //
+    if(group->getNumChildren() == 0)
+        return group;
+    if(!std::isfinite(group->getBound().radius()) || group->getBound().radius() < 0.0)
+        return group;
+    //double l=group->getBound().radius();
+    //printf("Brav %f\n",l);
+    /* if(_level!=_numLevels)
+        return group;
+    writeCameraMatrix(group);
+    return group;
+*/
+    if(!_useReImage)
+        return group;
+    osg::ref_ptr<osg::Image> image;
+
+
+    osg::Matrix toScreen;
+    osg::Vec2Array *texCoord=new osg::Vec2Array();
+    osg::Geometry *newGeom = new osg::Geometry;
+    // osg::Group *group= findTopMostNodeOfType<osg::Group>(model);
+    osg::Vec3Array *newVerts= new osg::Vec3Array;
+    osg::Vec4Array *newColors= new osg::Vec4Array;
+
+    osg::DrawElementsUInt* newPrimitiveSet = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES,0);
+    osg::Geode *newGeode=new osg::Geode;
+    osg::Vec2 minT(DBL_MAX,DBL_MAX),maxT(-DBL_MAX,-DBL_MAX);
+    // ("subtile.tif");
+    osg::BoundingBoxd bbox;
+    int origX=dynamic_cast<MyDataSet*>(_dataSet)->in->Xsize(),origY=dynamic_cast<MyDataSet*>(_dataSet)->in->Ysize();
+    osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,origY,0));
+
+    osg::Matrix toTex=dynamic_cast<MyDataSet*>(_dataSet)->viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*origX,0.5*origY,0.5f))*bottomLeftToTopLeft;
+
+    for(int i=0; i< (int)group->getNumChildren(); i++){
+
+        osg::Group *group2  = dynamic_cast< osg::Group*>(group->getChild(i));
+        osg::Geode *geode;
+        if(group2)
+            geode=group2->getChild(0)->asGeode();
+        else
+            geode = dynamic_cast< osg::Geode*>(group->getChild(i));
+
+        osg::Drawable *drawable=geode->getDrawable(0);
+        osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+        osg::Vec3Array *verts=static_cast<const osg::Vec3Array*>(geom->getVertexArray());
+        osg::Vec4Array *colors=static_cast<const osg::Vec4Array*>(geom->getColorArray());
+        osg::DrawElementsUInt* primitiveSet = dynamic_cast<osg::DrawElementsUInt*>(geom->getPrimitiveSet(0));
+        int offset=newVerts->size();
+        if(!verts || !primitiveSet)
+            continue;
+        for(int j=0; j< (int)verts->size(); j++){
+            osg::Vec4 pt(verts->at(j)[0],verts->at(j)[1],verts->at(j)[2],1.0);
+            bbox.expandBy(verts->at(j));
+            osg::Vec4 rotpt=pt*dynamic_cast<MyDataSet*>(_dataSet)->rotMat;
+
+            osg::Vec4 proj=rotpt*toTex;
+            proj.x() /= proj.w();
+            proj.y() /= proj.w();
+            //  std::cout << pt << " rot " <<pt*dynamic_cast<MyDataSet*>(_dataSet)->rotMat<<" proj "<< proj << "\n";
+
+            for(int k=0; k <2; k++){
+                if(proj[k]< minT[k])
+                    minT[k]=proj[k];
+                if(proj[k]> maxT[k])
+                    maxT[k]=proj[k];
+            }
+            newVerts->push_back(verts->at(j));
+            float height=verts->at(j)[2];
+            osg::Vec4 zrange=dynamic_cast<MyDataSet*>(_dataSet)->_zrange;
+            float range=zrange[1]-zrange[0];
+            //printf("%f %f\n",zrange[0],height);
+            float val =(height-zrange[0])/range;
+            //printf("val %f\n",val);
+            double ao=1.0;
+            if(colors)
+                ao=colors->at(j)[0];
+            newColors->push_back(rainbowColorMap(val)*ao);
+
+        }
+        for(int j=0; j< (int)primitiveSet->getNumIndices(); j++){
+
+            newPrimitiveSet->addElement(offset+primitiveSet->getElement(j));
+
+        }
+
+    }
+    osg::Vec4 texSizes;
+    osg::Vec4 ratio(0.0,0.0,0,0);
+
+    {
+        //std::cout << minV << " "<<maxV<<std::endl;
+        //int start_pow=9;
+        //tex_size=1024;//log2 = 10
+        int leveloffset=(_numLevels-_level-1);
+        leveloffset=std::min(leveloffset,5);
+        leveloffset=std::max(leveloffset,0);
+        toScreen=dynamic_cast<MyDataSet*>(_dataSet)->getImageSection(*(dynamic_cast<MyDataSet*>(_dataSet)->in),minT,maxT,origX,origY,texSizes, toTex,image,ratio,leveloffset);
+    }
+
+    for(int j=0; j< (int)newVerts->size(); j++){
+
+        texCoord->push_back(calcCoordReprojTrans(newVerts->at(j),dynamic_cast<MyDataSet*>(_dataSet)->rotMat,toScreen,osg::Vec2(texSizes[2],texSizes[3]),ratio));
+        //  std::cout <<texCoord->back() << std::endl;
+
+    }
+    for(int j=0; j< (int)newPrimitiveSet->getNumIndices(); j++){
+        if(newPrimitiveSet->getElement(j) < 0 || newPrimitiveSet->getElement(j) > newVerts->size() ){
+            printf("ASDADASDASDASDADS\n");
+            exit(-1);
+        }
+    }
+    //printf("%d %d\n",newPrimitiveSet->getNumIndices(),        newPrimitiveSet->getNumIndices()/3);
+
+
+    newGeom->setTexCoordArray(0,texCoord);
+    newGeom->setVertexArray(newVerts);
+    newGeom->setColorArray(newColors);
+    newGeom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+
+    newGeom->addPrimitiveSet(newPrimitiveSet);
+    newGeom->setUseDisplayList(_useDisplayLists);
+    newGeom->setUseVertexBufferObjects(_useVBO);
+
+    newGeode->addDrawable(newGeom);
+    char tmp[128];
+    // if(image->s() != image->t()){
+    sprintf(tmp,"%d-%d-%d.png",image->s(),image->t(),rand());
+    // osgDB::writeImageFile(*image.get(),tmp);
+    //}
+    osg::ref_ptr<osg::Texture2D> texture=new osg::Texture2D(image);
+    texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_BORDER);
+    texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_BORDER);
+    texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR);
+    texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
+    texture->setTextureSize(image->s(),image->t());
+    //std::cout <<  "Check it "<<texture->getTextureWidth() << " "<< texture->getTextureHeight()<<"\n";
+
+    osg::Texture::InternalFormatMode internalFormatMode = osg::Texture::USE_IMAGE_DATA_FORMAT;
+    internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
+    /*  switch(getImageOptions(layerNum)->getTextureType())
+    {
+    case(BuildOptions::RGB_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+    case(BuildOptions::RGBA_S3TC_DXT1): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+    case(BuildOptions::RGBA_S3TC_DXT3): internalFormatMode = osg::Texture::USE_S3TC_DXT3_COMPRESSION; break;
+    case(BuildOptions::RGBA_S3TC_DXT5): internalFormatMode = osg::Texture::USE_S3TC_DXT5_COMPRESSION; break;
+    case(BuildOptions::ARB_COMPRESSED): internalFormatMode = osg::Texture::USE_ARB_COMPRESSION; break;
+    case(BuildOptions::COMPRESSED_TEXTURE): internalFormatMode = osg::Texture::USE_S3TC_DXT1_COMPRESSION; break;
+    case(BuildOptions::COMPRESSED_RGBA_TEXTURE): internalFormatMode = osg::Texture::USE_S3TC_DXT3_COMPRESSION; break;
+    default: break;
+    }
+*/
+    bool compressedImageRequired = (internalFormatMode != osg::Texture::USE_IMAGE_DATA_FORMAT);
+    //  image->s()>=minumCompressedTextureSize && image->t()>=minumCompressedTextureSize &&
+
+    if (1 &&/*compressedImageSupported && */compressedImageRequired )
+    {
+        log(osg::NOTICE,"Compressed image");
+
+        //bool generateMiMap = true;//getImageOptions(layerNum)->getMipMappingMode()==DataSet::MIP_MAPPING_IMAGERY;
+        // bool resizePowerOfTwo = true;//getImageOptions(layerNum)->getPowerOfTwoImages();
+        //if(_dataSet->getCompressionMethod()==vpb::BuildOptions::GL_DRIVER){
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(dynamic_cast<MyDataSet*>(_dataSet)->_imageMutex);
+        if ( compressedImageRequired &&
+             (image->getPixelFormat()==GL_RGB || image->getPixelFormat()==GL_RGBA))
+        {
+            log(osg::NOTICE,"Compressed image");
+
+            texture->setInternalFormatMode(internalFormatMode);
+
+            // force the mip mapping off temporay if we intend the graphics hardware to do the mipmapping.
+            if (_dataSet->getMipMappingMode()==DataSet::MIP_MAPPING_HARDWARE)
+            {
+                log(osg::INFO,"   switching off MIP_MAPPING for compile");
+                texture->setFilter(osg::Texture::MIN_FILTER,osg::Texture::LINEAR);
+            }
+
+            // make sure the OSG doesn't rescale images if it doesn't need to.
+            texture->setResizeNonPowerOfTwoHint(_dataSet->getPowerOfTwoImages());
+
+
+            // get OpenGL driver to create texture from image.
+            texture->apply(*(_dataSet->getState()));
+
+            image->readImageFromCurrentTexture(0,true);
+
+            // restore the mip mapping mode.
+            if (_dataSet->getMipMappingMode()==DataSet::MIP_MAPPING_HARDWARE)
+                texture->setFilter(osg::Texture::MIN_FILTER,osg::Texture::LINEAR_MIPMAP_LINEAR);
+
+            texture->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+
+
+            texture->dirtyTextureObject();
+
+            log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");
+
+        }        //}else{
+        //  vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
+        // }
+        //  vpb::generateMipMap(*_dataSet->getState(),*texture,resizePowerOfTwo,vpb::BuildOptions::GL_DRIVER);
+
+        //   log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");
+
+    }
+
+    osg::StateSet *stateset=newGeode->getOrCreateStateSet();
+
+    stateset->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+    // stateset->setMode( GL_LIGHTING, osg::StateAttribute::PROTECTED | osg::StateAttribute::OFF );
+    osg::TexEnvCombine *te = new osg::TexEnvCombine;
+    // Modulate diffuse texture with vertex color.
+    te->setCombine_RGB(osg::TexEnvCombine::REPLACE);
+    te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
+    te->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+    te->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
+    te->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+
+    // Alpha doesn't matter.
+    te->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
+    te->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
+    te->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+
+    stateset->setTextureAttribute(0, te);
+
+    stateset->setDataVariance(osg::Object::STATIC);
+    //   osgUtil::ShaderGenVisitor sgv;
+    // newGeode->accept(sgv);
+
+    // osg::Vec3 v(1972.38,3932.55,0);
+    //osg::Vec3 v(302.3,334.3,0);
+    //  std::cout << v*toScreen << " " << toScreen<<std::endl;
+    // osgDB::Registry::instance()->writeImage( *image,"ass.png",NULL);
+    const osg::EllipsoidModel* et = _dataSet->getEllipsoidModel();
+    bool mapLatLongsToXYZ = _dataSet->mapLatLongsToXYZ();
+    bool useLocalToTileTransform = _dataSet->getUseLocalTileTransform();
+    osg::Matrixd                                _localToWorld;
+    osg::Matrixd                                _worldToLocal;
+
+    _localToWorld.makeIdentity();
+    _worldToLocal.makeIdentity();
+    osg::Vec3 skirtVector(0.0f,0.0f,0.0f);
+
+
+    osg::Vec3 center_position(0.0f,0.0f,0.0f);
+    osg::Vec3 center_normal(0.0f,0.0f,1.0f);
+    osg::Vec3 transformed_center_normal(0.0f,0.0f,1.0f);
+    double globe_radius = et ? et->getRadiusPolar() : 1.0;
+
+    bool useClusterCullingCallback = mapLatLongsToXYZ;
+    double midLat,midLong,midZ;
+    osg::Vec3d midPointLatLong;
+    dynamic_cast<MyDataSet*>(_dataSet)->reprojectPoint(bbox.center(),midPointLatLong);
+    cout << "Lat Long Height" << midPointLatLong<<endl;
+    //et->computeLocalToWorldTransformFromLatLongHeight(osg::DegreesToRadians(midPointLatLong[0]),osg::DegreesToRadians(midPointLatLong[1]),midPointLatLong[2],_localToWorld);
+    createPlacerMatrix(dynamic_cast<MyDataSet*>(_dataSet)->_TargetSRS,22.988098333,36.517776667,0,_localToWorld);
+                                     //osg::Matrix::translate(midPointLatLong);
+   //
+    osg::MatrixTransform* mt = new osg::MatrixTransform;
+    mt->setMatrix(_localToWorld);
+    mt->addChild(newGeode);
+   // osg::Group *newGroup=new osg::Group;
+    //newGroup->addChild(newGeode);
+    osgUtil::SmoothingVisitor sv;
+    mt->accept(sv);
+
+    return mt->asGroup();
 
 }

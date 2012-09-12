@@ -149,6 +149,7 @@ if(argc<4) Usage();
   TriEdgeCollapseQuadricParameter &qparams = MyTriEdgeCollapse::Params() ;
   MyTriEdgeCollapse::SetDefaultParams();
   qparams.QualityThr  =.3;
+  bool FlipFlag=false;
   float TargetError=numeric_limits<float>::max();
   bool CleaningFlag =false;
      // parse command line.
@@ -175,7 +176,7 @@ if(argc<4) Usage();
 				case 'b' :	qparams.BoundaryWeight  = atof(argv[i]+2);			printf("Setting Boundary Weight to %f\n",atof(argv[i]+2)); break;		
 				case 'e' :	TargetError = float(atof(argv[i]+2));			printf("Setting TargetError to %g\n",atof(argv[i]+2)); break;		
 				case 'P' :	CleaningFlag=true;  printf("Cleaning mesh before simplification\n"); break;	
-
+                                case 'F' : FlipFlag=true; break;
 				default  :  printf("Unknown option '%s'\n", argv[i]);
           exit(0);
       }
@@ -191,6 +192,9 @@ if(argc<4) Usage();
       printf("Removed %i duplicate vetex %i duplicate faces  and %i unreferenced vertices from mesh \n",dup,dup2,unref);
 
   }
+  if(FlipFlag)
+      tri::Clean<MyMesh>::FlipMesh(mesh);
+
   printf("mesh loaded %d %d \n",mesh.vn,mesh.fn);
 
   int FinalSize=atoi(argv[3]);

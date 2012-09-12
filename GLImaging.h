@@ -111,6 +111,12 @@ typedef __m128d __cl_double2;
 #define __CL_DOUBLE2__  1
 #endif
 #endif
+#include <osg/Version>
+#if OSG_MIN_VERSION_REQUIRED(2,9,0)
+#define GLBufferObject GLBufferObject
+#else
+#define GLBufferObject BufferObject
+#endif
 class WindowCaptureCallback : public osg::Camera::DrawCallback
 {
 public:
@@ -372,11 +378,13 @@ void RGBA2BGRA(unsigned int w, unsigned int h,
  void RGB2RGBA(unsigned int w, unsigned int h,
                  unsigned char *src, unsigned char *dst);
 int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns,unsigned int width,unsigned int height,int row,int col,
-                const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,std::string ext);
+                const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,bool depth,std::string ext);
 typedef struct _picture_cell{
     int row;
     int col;
     osg::BoundingBox bbox;
     std::string name;
 }picture_cell;
+void compress(osg::State& state, osg::Texture& texture, osg::Texture::InternalFormatMode compressedFormat, bool generateMipMap, bool resizeToPowerOfTwo);
+void generateMipMap(osg::State& state, osg::Texture& texture, bool resizeToPowerOfTwo);
 #endif // GLIMAGING_H

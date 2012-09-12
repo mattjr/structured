@@ -8,11 +8,10 @@
 #include "TexturedSource.h"
 #include "TexturingQuery.h"
 #include "Extents.h"
-#include "auv_stereo_geometry.hpp"
 #include "calcTexCoord.h"
+#include "calibFile.h"
 #include "PLYWriterNodeVisitor.h"
 #include "GLImaging.h"
-using namespace libsnapper;
 using namespace std;
 
 int main( int argc, char **argv )
@@ -23,7 +22,7 @@ int main( int argc, char **argv )
     // set up the usage document, in case we need to print out how to use this program.
     arguments.getApplicationUsage()->setDescription(arguments.getApplicationName() +" is the example which demonstrates Depth Peeling");
     arguments.getApplicationUsage()->setCommandLineUsage(arguments.getApplicationName()+" filename");
-    Stereo_Calib *calib=NULL;
+    ;
     string path=string(argv[0]);
     unsigned int loc=path.rfind("/");
 
@@ -33,20 +32,49 @@ int main( int argc, char **argv )
     string stereo_calib_file_name = "stereo.calib";
     stereo_calib_file_name= base_dir+string("/")+stereo_calib_file_name;
 
-    try {
-        calib = new Stereo_Calib( stereo_calib_file_name );
-    }
-    catch( string error ) {
-        cerr << "ERROR - " << error << endl;
-        exit( 1 );
-    }
-
+    StereoCalib calib(stereo_calib_file_name.c_str());
 
     string outfilename;
     if(!arguments.read("--outfile",outfilename)){
         fprintf(stderr,"Need outfile name\n");
         return -1;
     }
+
+        osg::ref_ptr<osg::GraphicsContext> pbuffer;
+
+        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+        traits->x = 0;
+        traits->y = 0;
+        traits->width = 1;
+        traits->height = 1;
+        traits->red = 8;
+        traits->green = 8;
+        traits->blue = 8;
+        traits->alpha = 8;
+        traits->windowDecoration = false;
+        traits->pbuffer = true;
+        traits->doubleBuffer = true;
+        traits->sharedContext = 0;
+
+        pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
+        // std::cout << "Buffer obj "<< pbuffer->getState()->getMaxBufferObjectPoolSize() << " tex "<<  pbuffer->getState()->getMaxBufferObjectPoolSize() <<std::endl;
+        if (pbuffer.valid())
+        {
+            //   osg::notify(osg::INFO)<<"Pixel buffer has been created successfully."<<std::endl;
+        }
+        else
+        {
+            osg::notify(osg::INFO)<<"Pixel buffer has not been created successfully."<<std::endl;
+        }
+        if (pbuffer.valid())
+
+
+        {
+            pbuffer->realize();
+            pbuffer->makeCurrent();
+}
+osg::State *state= new osg::State;
+
     bool reimage=false;
     std::string tex_cache_dir;
     texcache_t cache;
@@ -57,6 +85,9 @@ int main( int argc, char **argv )
     int row,col,numRows,numCols,width,height;
     bool imageNode=arguments.read("--imageNode",row,col,numRows,numCols,width,height);
     bool untex=arguments.read("--untex");
+    bool debug=arguments.read("--debug-shader");
+    bool depth=arguments.read("--depth");
+
     int size;
     if(arguments.read("--tex_cache",tex_cache_dir,size)){
         reimage=true;
@@ -120,10 +151,12 @@ int main( int argc, char **argv )
         }
         //  TexPyrAtlas atlasGen(cache);
         //atlasGen._useAtlas=true;
-        vpb::MyDataSet *dataset=new vpb::MyDataSet(calib->left_calib,basepath,false,false,false);
+        vpb::MyDataSet *dataset=new vpb::MyDataSet(calib.camera_calibs[0],basepath,false,false,false);
+        dataset->setState(state);
         dataset->_zrange=zrange;
         dataset->_useAtlas=useAtlas;
         dataset->_useBlending=true;
+        dataset->_useDebugShader=debug;
             // dataset->_useDisplayLists=(!imageNode);
    dataset->_useDisplayLists=true;
     dataset->_useVBO =true;
@@ -133,7 +166,7 @@ int main( int argc, char **argv )
         tile->_atlasGen->_useAtlas=useAtlas;
         tile->_atlasGen->_useStub=false;
 
-        TexturingQuery *tq=new TexturingQuery(sourceModel,calib->left_calib,*tile->_atlasGen,true);
+        TexturingQuery *tq=new TexturingQuery(sourceModel,calib.camera_calibs[0],*tile->_atlasGen,true);
 
         tq->_tile=tile;
         bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(model));
@@ -175,7 +208,7 @@ int main( int argc, char **argv )
                             _file.read(reinterpret_cast<char*>(&(proj(i,j))),sizeof(double));
                     _file.close();
 
-                    imageNodeGL(xform.get(),numRows,numCols,width,height,row,col,view,proj,untex,"png");
+                    imageNodeGL(xform.get(),numRows,numCols,width,height,row,col,view,proj,untex,depth,"png");
 
                 }
                 if(!imageNode){

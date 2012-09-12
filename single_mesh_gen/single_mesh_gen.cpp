@@ -20,9 +20,9 @@
 
 #include "cv.h"
 #include "highgui.h"
-#include "auv_stereo_geometry_compat.hpp"
+
 #include "auv_image_distortion.hpp"
-#include "auv_stereo_geometry.hpp"
+#include "auv_stereo_geometry_compat.hpp"
 #include "auv_stereo_dense_new.hpp"
 #include "adt_cvutils.hpp" 
 #include "auv_stereo_corner_finder.hpp"

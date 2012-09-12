@@ -7,7 +7,7 @@
 #include <osg/BoundingBox>
 #include <osg/Geometry>
 #include "Clipper.h"
-
+#include <osg/io_utils>
 class MyDataStream;
 
 class TexturedSource : public vpb::Source
@@ -30,7 +30,6 @@ public:
     void intersectsWithQuery(const SpatialIndex::IShape& query, SpatialIndex::IVisitor& v);
     osg::BoundingBox _bb;
     osg::ref_ptr<osg::KdTree> _kdTree;
-    std::string tex_cache_dir;
     TexturedSource::CameraVector _cameras;
     osg::Vec4Array *ids;
     osg::Vec4Array *colors;
@@ -211,10 +210,16 @@ public:
                 >> m(0,0) >>m(0,1)>>m(0,2) >>m(0,3)
                 >> m(1,0) >>m(1,1)>>m(1,2) >>m(1,3)
                 >> m(2,0) >>m(2,1)>>m(2,2) >>m(2,3)
-                >> m(3,0) >>m(3,1)>>m(3,2) >>m(3,3);
+                >> m(3,0) >>m(3,1)>>m(3,2) >>m(3,3);/*
+        >> m(0,0) >>m(1,0)>>m(2,0) >>m(3,0)
+        >> m(0,1) >>m(1,1)>>m(2,1) >>m(3,1)
+        >> m(0,2) >>m(1,2)>>m(2,2) >>m(3,2)
+        >> m(0,3) >>m(1,3)>>m(2,3) >>m(3,3);*/
         if (m_fin.good())
         {
-            cam.m=osg::Matrix::inverse(m);
+            cam.m=m;//osg::Matrix::inverse(m);
+            std::cout << m<<std::endl;
+
             cam.bb = osg::BoundingBox(low[0],low[1],low[2],high[0],high[1],high[2]);
             m_camVec[cam.id]=cam;
             /*if (op != INSERT)

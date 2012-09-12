@@ -39,7 +39,6 @@
 #include "auv_ransac_plane.hpp"
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
-#include "auv_clipped_texture_atlas.hpp"
 #include "adt_hist.hpp"
 #include "auv_mesh_io.hpp"
 #include "Depth.h"

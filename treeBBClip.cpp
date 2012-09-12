@@ -7,6 +7,7 @@
 #include <osgUtil/Optimizer>
 #include <osgUtil/DelaunayTriangulator>
 #include <osg/Point>
+#include <iostream>
 void addDups(osg::Geode *geode);
 using namespace std;
 int main( int argc, char **argv )
@@ -56,11 +57,11 @@ int main( int argc, char **argv )
     maxV.y() = atof(arguments[6]);
     maxV.z() = atof(arguments[7]);
     osg::BoundingBox bb(minV,maxV);
-    OSG_NOTICE << bb._min << " " << bb._max << endl;
+    osg::notify(osg::NOTICE) << bb._min << " " << bb._max << endl;
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
     osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(arguments[1]);
     osg::ref_ptr<osg::Node> root;
-    osg::Vec3Array *dumpPts=NULL;
+    // osg::Vec3Array *dumpPts=NULL;
     // do
 
     //while(result);
@@ -69,48 +70,54 @@ int main( int argc, char **argv )
         if(!geode)
             geode=model->asGroup()->getChild(0)->asGeode();
         if(geode && geode->getNumDrawables()){
+
+
             osg::Drawable *drawable = geode->getDrawable(0);
             osg::KdTree *kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
             if(kdTree){
-                KdTreeBbox *kdtreeBbox=new KdTreeBbox(*kdTree);
                 osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+                geom_elems_src srcGeom;
+                srcGeom.colors=(osg::Vec4Array*)geom->getColorArray();
+                //    srcGeom.texcoords;
+                srcGeom.texid=NULL;
+                int numTex=0;
+                geom_elems_dst dstGeom(numTex);
+                KdTreeBbox *kdtreeBbox=new KdTreeBbox(*kdTree,srcGeom);
 
-                root=kdtreeBbox->intersect(bb,(osg::Vec4Array*)geom->getColorArray(),mode,dumpPts,false);
+                root=kdtreeBbox->intersect(bb,dstGeom,mode);
             }
         }else{
-            OSG_ALWAYS << "Model can't be converted to geode\n";
+            osg::notify(osg::ALWAYS) << "Model can't be converted to geode\n";
             exit(-1);
         }
 
     }else{
-        OSG_ALWAYS << "Model can't be loaded\n";
+        osg::notify(osg::ALWAYS)  << "Model can't be loaded\n";
         exit(-1);
     }
 
-    if( mode==IntersectKdTreeBbox::DUMP){
+    /*if( mode==IntersectKdTreeBbox::DUMP){
         // create triangulator and set the points as the area
         if(!dumpPts || !dumpPts->size()){
-            OSG_ALWAYS << "Dump pts don't exist\n";
+            osg::notify(osg::ALWAYS)  << "Dump pts don't exist\n";
         }else{
-           /* osg::ref_ptr<osgUtil::DelaunayTriangulator> trig = new osgUtil::DelaunayTriangulator();
-            trig->setInputPointArray(dumpPts);
-            trig->triangulate();*/
+
             osg::Geometry* gm = new osg::Geometry;
             gm->setVertexArray(dumpPts);
             gm->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS,0,dumpPts->size()));
-         //   gm->addPrimitiveSet(trig->getTriangles());
+            //   gm->addPrimitiveSet(trig->getTriangles());
             osg::Vec4Array* colors = new osg::Vec4Array(1);
             colors->push_back(osg::Vec4(rand()/(double) RAND_MAX,rand()/(double) RAND_MAX,rand()/(double) RAND_MAX,1));
             gm->setColorArray(colors);
             gm->setColorBinding(osg::Geometry::BIND_OVERALL);
             //create geometry and add it to scene graph
-           // gm->getOrCreateStateSet()->setAttribute( new osg::Point( 3.0f ),osg::StateAttribute::ON );
+            // gm->getOrCreateStateSet()->setAttribute( new osg::Point( 3.0f ),osg::StateAttribute::ON );
 
             osg::Geode* geode = new osg::Geode();
             geode->addDrawable(gm);
             osgDB::writeNodeFile(*geode,outdump);
         }
-    }
+    }*/
     if(osgDB::getFileExtension(outfilename) == "ply"){
         osgUtil::SmoothingVisitor sv;
         root->accept(sv);

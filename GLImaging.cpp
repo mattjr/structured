@@ -3,8 +3,10 @@
 #include <osg/Texture3D>
 #include <stddef.h>
 #include "CPUDetect.h"
+#include <sys/stat.h>
+
 void optImage(osg::ref_ptr<osg::Image> &image){
-    int pitch=image->getRowSizeInBytes();
+    //int pitch=image->getRowSizeInBytes();
     unsigned char *dataBGRA=new unsigned char[image->s()*image->t()*4];
     unsigned char *dataRGBA=new unsigned char[image->s()*image->t()*4];
     RGB2RGBA(image->s(),image->t(),image->data(),dataRGBA);
@@ -358,10 +360,10 @@ void WindowCaptureCallback::ContextData::singlePBO(osg::GLBufferObject::Extensio
     {
 
         //memcpy(image->data(), src, image->getTotalSizeInBytes());
-        int pitch=image->getRowSizeInBytes();//4*_width;
+        //int pitch=image->getRowSizeInBytes();//4*_width;
         image->setPixelFormat(GL_RGBA);
-        uint32_t *p = (uint32_t *)src;
-        uint32_t *dst = (uint32_t *)image->data();
+        //uint32_t *p = (uint32_t *)src;
+        //uint32_t *dst = (uint32_t *)image->data();
         RGBA2BGRA(image->s(),image->t(),(uint32_t*)src,(uint32_t*)image->data());
 
 
@@ -689,9 +691,9 @@ void applyGeoTags(osg::Vec2 geoOrigin,osg::Matrix viewMatrix,osg::Matrix projMat
 }
 
 int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns,unsigned int width,unsigned int height,int row,int col,
-                const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,std::string ext)
+                const osg::Matrixd &view,const osg::Matrixd &proj,bool untex,bool depth,std::string ext)
 {
-    int pid=getpid();
+    //int pid=getpid();
     if(node == NULL)
         return -1;
     //Convert to a fast upload format currently seems to be GL_RGB, GL_BGRA for nvidia cards 280-580 gtx
@@ -702,7 +704,12 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
     double sizeImages=oftv->getImageSizeMB();
     printf("Size of textures %.2f MB\n",sizeImages);
     key_t semkey;
+    osg::ref_ptr<osg::Image> depthImage;
+    if(depth){
+        depthImage = new osg::Image();
+        depthImage->allocateImage(width, height, 1,GL_DEPTH_COMPONENT, GL_FLOAT );
 
+    }
 #define KEY (1492)
 
     semkey=KEY;//ftok("/tmp/glimagesem",'a');
@@ -848,6 +855,19 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
                 //gpuUsage(1,mem);
                 tmpImg2 =  dynamic_cast<osg::Image*>(wcc->getContextData(pbuffer)->_imageBuffer[wcc->getContextData(pbuffer)->_currentImageIndex]->clone(osg::CopyOp::DEEP_COPY_ALL));
             }
+            if(depth){
+                node->getOrCreateStateSet()->addUniform(new osg::Uniform("shaderOut",3));
+                viewer.getCamera()->detach(osg::Camera::DEPTH_BUFFER);
+                camera->attach(osg::Camera::DEPTH_BUFFER, depthImage.get(),0,0);
+                camera->setComputeNearFarMode(osg::Camera::DO_NOT_COMPUTE_NEAR_FAR);
+                viewer.setSceneData( node );
+
+                viewer.frame();
+                viewer.advance();
+                viewer.updateTraversal();
+                viewer.renderingTraversals();
+
+            }
 
         }
     }
@@ -868,5 +888,64 @@ int imageNodeGL(osg::Node *node,unsigned int _tileRows,unsigned int _tileColumns
         }else
             fprintf(stderr,"Failed to copy image into RAM\n");
     }
+    if(depth){
+        sprintf(tmp,"mesh-diced/image_r%04d_c%04d_rs%04d_cs%04d_depth.%s",row,col,_tileRows,_tileColumns,ext.c_str());
+        if(depthImage.valid()){
+            osgDB::writeImageFile(*depthImage,tmp);
+        }else
+            fprintf(stderr,"Failed to copy image into RAM\n");
+    }
     return 0;
+}
+void compress(osg::State& state, osg::Texture& texture, osg::Texture::InternalFormatMode compressedFormat, bool generateMipMap, bool resizeToPowerOfTwo)
+{
+
+
+    texture.setInternalFormatMode(compressedFormat);
+
+    // force the mip mapping off temporay if we intend the graphics hardware to do the mipmapping.
+    osg::Texture::FilterMode filterMin = texture.getFilter(osg::Texture::MIN_FILTER);
+    if (!generateMipMap)
+    {
+        osg::notify(osg::INFO )<<"   switching off MIP_MAPPING for compile\n";
+        texture.setFilter(osg::Texture::MIN_FILTER,osg::Texture::LINEAR);
+    }
+
+    // make sure the OSG doesn't rescale images if it doesn't need to.
+    texture.setResizeNonPowerOfTwoHint(resizeToPowerOfTwo);
+
+    // get OpenGL driver to create texture from image.
+    texture.apply(state);
+
+    texture.getImage(0)->readImageFromCurrentTexture(0,true);
+
+    // restore the mip mapping mode.
+    if (!generateMipMap)
+    {
+        texture.setFilter(osg::Texture::MIN_FILTER,filterMin);
+    }
+    texture.dirtyTextureObject();
+    texture.setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+
+
+
+}
+void generateMipMap(osg::State& state, osg::Texture& texture, bool resizeToPowerOfTwo)
+{
+
+
+
+    // make sure the OSG doesn't rescale images if it doesn't need to.
+    texture.setResizeNonPowerOfTwoHint(resizeToPowerOfTwo);
+
+    // get OpenGL driver to create texture from image.
+    texture.apply(state);
+
+    texture.getImage(0)->readImageFromCurrentTexture(0,true);
+
+    texture.setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+
+    texture.dirtyTextureObject();
+
+
 }

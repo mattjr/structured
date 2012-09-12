@@ -4,12 +4,13 @@
 #include <string>
 #include <osg/State>
 #include <osg/Referenced>
+#include "SpatialIndex.h"
+using SpatialIndex::id_type;
 typedef std::vector<std::pair<std::string,int> > texcache_t;
 
 class TexPyrAtlas : public osgUtil::Optimizer::TextureAtlasBuilder , public osg::Referenced
 {
 public:
-    typedef long id_type;
 
     TexPyrAtlas(texcache_t imgdir);
     void addSources(std::vector<std::pair<id_type ,std::string> > imageList);
@@ -95,12 +96,16 @@ protected:
 
 
         };
-typedef long id_type;
 typedef   long blend_id_t[4];
-#define POSE_INDEX_X 0
-#define POSE_INDEX_Y 1
+ enum{ POSE_INDEX_X,
+      POSE_INDEX_Y,
+      POSE_INDEX_Z,
+      POSE_INDEX_PHI,
+      POSE_INDEX_THETA,
+      POSE_INDEX_PSI,
+      NUM_POSE_STATES } ;
 typedef std::vector<std::pair<unsigned int,blend_id_t> > blend_pt_t;
-std::vector< std::set<long>  >  calc_atlases(const osg::Vec3Array *pts,
+std::vector< std::set<SpatialIndex::id_type>  >  calc_atlases(const osg::Vec3Array *pts,
                                         const osg::PrimitiveSet& prset,
                                         const osg::Vec4Array *blendIdx,
                                         std::vector<char> &atlasmap,

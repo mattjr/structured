@@ -12,7 +12,7 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
     osg::Geode *geode=dynamic_cast<osg::Geode*>(node);
     //No cached
     if(!geode){
-        OSG_ALWAYS << "Not valid geode\n";
+        osg::notify(osg::ALWAYS) << "Not valid geode\n";
         assert(0);
         return false;
     }
@@ -31,14 +31,14 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
         newIds->resize(verts->size(),osg::Vec4(-1,-1,-1,-1));
 
     }
-    for(int f=0; f< texcoord.size(); f++)
+    for(int f=0; f< (int)texcoord.size(); f++)
         newTexCoord[f]->resize(verts->size());
     if(!verts || !verts->size()){
-        OSG_INFO<< "Empty mesh continuing!" <<endl;
+        osg::notify(osg::INFO)<< "Empty mesh continuing!" <<endl;
         //continue;
         return false;
     }
-    OSG_INFO << "\tModel Size: "<< verts->size()<<endl;
+    osg::notify(osg::INFO) << "\tModel Size: "<< verts->size()<<endl;
     osg::Geometry::PrimitiveSetList& primitiveSets = geom->getPrimitiveSetList();
     osg::PrimitiveSet *prim=primitiveSets.begin()->get();
     //printf("%d %d\n",texcoord[0]->size() ,prim->getNumIndices() );
@@ -49,22 +49,24 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
     for(int i=0; i<numIdx-2; i+=3){
         for(int k=0; k <3; k++){
             int newidx=prim->index(i+k);
-              if(texcoord.size() > 1)
-                  if(idmap.count(newidx) == 0)
-                idmap[newidx]=ids->at(i+k)[0];
-            else if(idmap[newidx] != ids->at(i+k)[0]){
-                osg::Vec3 v=verts->at(newidx);
-                newidx=verts->size();
-                verts->push_back(v);
-                vertsAdded++;
-                dynamic_cast<osg::DrawElementsUInt*>(prim)->setElement(i+k,newidx);
-                for(int f=0; f< texcoord.size(); f++)
-                    newTexCoord[f]->push_back(texcoord[f]->at(i+k));
-                if(texcoord.size() > 1)
-                    newIds->push_back(ids->at(i+k));
-                continue;
+            if(texcoord.size() > 1){
+                if(idmap.count(newidx) == 0){
+                    idmap[newidx]=ids->at(i+k)[0];
+                }
+                else if(idmap[newidx] != ids->at(i+k)[0]){
+                    osg::Vec3 v=verts->at(newidx);
+                    newidx=verts->size();
+                    verts->push_back(v);
+                    vertsAdded++;
+                    dynamic_cast<osg::DrawElementsUInt*>(prim)->setElement(i+k,newidx);
+                    for(int f=0; f< (int)texcoord.size(); f++)
+                        newTexCoord[f]->push_back(texcoord[f]->at(i+k));
+                    if(texcoord.size() > 1)
+                        newIds->push_back(ids->at(i+k));
+                    continue;
+                }
             }
-            for(int f=0; f< texcoord.size(); f++)
+            for(int f=0; f< (int)texcoord.size(); f++)
                 newTexCoord[f]->at(newidx)=texcoord[f]->at(i+k);
             if(texcoord.size() > 1)
                 newIds->at(newidx)=ids->at(i+k);
@@ -77,9 +79,9 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
     return true;
 }
 #endif
-void doQuadTreeVPB(std::string basePath,std::string cacheddir,std::vector<std::vector<string> > datalist_lod,Bounds bounds,Camera_Calib &calib,texcache_t cachedDirs,bool useTextureArray,bool useReimage,bool useVirtualTex,const osg::BoundingBox &bbox){
+void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datalist_lod,Bounds bounds,CameraCalib &calib,texcache_t cachedDirs,bool useTextureArray,bool useReimage,bool useVirtualTex,const osg::BoundingBox &bbox,string dst_wkt_coord_system,string src_proj4_coord_system){
     //vector<osg::KdTree*> trees;
-    vpb::GeospatialExtents geo(bounds.min_x, bounds.min_y, bounds.max_x,bounds.max_y,false);
+    vpb::GeospatialExtents geo(bounds.bbox.xMin(), bounds.bbox.yMin(), bounds.bbox.xMax(),bounds.bbox.yMax(),false);
     int numlod=datalist_lod.size()-1;
     if(useVirtualTex)
         useReimage=false;
@@ -88,16 +90,18 @@ void doQuadTreeVPB(std::string basePath,std::string cacheddir,std::vector<std::v
     m->_zrange=osg::Vec4(bbox.zMin(),bbox.zMax(),bbox.zMin(),bbox.zMax());
     m->setNumReadThreadsToCoresRatio(1.5);
     m->setNumWriteThreadsToCoresRatio(1.5);
+    m->setDestinationCoordinateSystem(dst_wkt_coord_system);
+    m->setSourceCoordinateSystemProj4(src_proj4_coord_system);
     // m->setCompressionMethod(vpb::BuildOptions::NVTT);
-    m->setCompressionMethod(vpb::BuildOptions::GL_DRIVER);
-    vpb::ImageOptions *imageOptions = new vpb::ImageOptions();
-    imageOptions->setTextureType(vpb::ImageOptions::RGBA);
-    m->setLayerImageOptions(0,imageOptions);
-  //  m->setMaximumVisibleDistanceOfTopLevel(1e11);
+    //m->setCompressionMethod(vpb::BuildOptions::GL_DRIVER);
+    //vpb::ImageOptions *imageOptions = new vpb::ImageOptions();
+    //imageOptions->setTextureType(vpb::ImageOptions::RGBA);
+    //m->setLayerImageOptions(0,imageOptions);
+    //  m->setMaximumVisibleDistanceOfTopLevel(1e11);
     if(useVirtualTex)
         m->setRadiusToMaxVisibleDistanceRatio(7);
-else
-    m->setRadiusToMaxVisibleDistanceRatio(7);
+    else
+        m->setRadiusToMaxVisibleDistanceRatio(7);
 
     m->setDestinationName("real.ive");
 
@@ -120,7 +124,6 @@ else
             }
             sourceModel->setMaxLevel(lod);
             sourceModel->setMinLevel(lod);
-            sourceModel->tex_cache_dir=cacheddir;
             sourceModel->setCoordinateSystem(new osg::CoordinateSystemNode("WKT",""));
             ply::VertexData vertexData;
             osg::Node* model;
@@ -146,12 +149,12 @@ else
                     sourceModel->_kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
                     // trees.push_back(sourceModel->_kdTree);
                 }else{
-                    OSG_ALWAYS << "No drawbables \n";
+                    osg::notify(osg::INFO) << "No drawbables \n";
                 }
             }
 
 
-            m->addSource(sourceModel,1);
+            m->addSource(sourceModel);
         }
     }
     m->createNewDestinationGraph(geo,256,128,numlod);

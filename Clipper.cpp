@@ -25,7 +25,10 @@
 #include <stdio.h>
 #include <osg/TriangleFunctor>
 #include <osgUtil/Tessellator> // to tessellate multiple contours
-
+#include <osgDB/ReadFile>
+#include <osgDB/WriteFile>
+#include "PLYWriterNodeVisitor.h"
+#include <osgUtil/SmoothingVisitor>
 using namespace osg;
 using namespace std;
 bool ClipTriangle(osg::Vec3 (&poly)[10], unsigned int &polySize, const osg::BoundingBox &bounds)
@@ -56,64 +59,64 @@ bool ClipTriangle(osg::Vec3 (&poly)[10], unsigned int &polySize, const osg::Boun
         }
         else
             for (int side = 0; side < 2; side++) {
-            for (unsigned int edge = 0;edge < polySize; edge++) {
-                unsigned int v0 = edge;
-                unsigned int v1 = (edge+1);
-                if (v1 >= polySize)
-                    v1 = v1-polySize; // cheaper than using mod as in: (edge+1)%polySize
+                for (unsigned int edge = 0;edge < polySize; edge++) {
+                    unsigned int v0 = edge;
+                    unsigned int v1 = (edge+1);
+                    if (v1 >= polySize)
+                        v1 = v1-polySize; // cheaper than using mod as in: (edge+1)%polySize
 
-                const bool v0in
-                        = (side==0)
-                          ? poly[v0][d] >= bounds._min[d]
-                              : poly[v0][d] <= bounds._max[d];
-                const bool v1in
-                        = (side==0)
-                          ? poly[v1][d] >= bounds._min[d]
-                              : poly[v1][d] <= bounds._max[d];
+                    const bool v0in
+                            = (side==0)
+                            ? poly[v0][d] >= bounds._min[d]
+                            : poly[v0][d] <= bounds._max[d];
+                    const bool v1in
+                            = (side==0)
+                            ? poly[v1][d] >= bounds._min[d]
+                            : poly[v1][d] <= bounds._max[d];
 
-                if (v0in && v1in) {
-                    // v0 was already added in the last step, then
-                    out[outSize++] = poly[v1];
-                } else if (!v0in && !v1in) {
-                    // do nothing, both are out
-                } else {
-                    osg::Vec3 boundsside;
-                    if(side == 0)
-                        boundsside=bounds._min;
-                    else
-                        boundsside=bounds._max;
-
-                    const float f
-                            = (boundsside[d] - poly[v0][d])
-                              / (    poly[v1][d] - poly[v0][d]);
-                    osg::Vec3 newVtx=(poly[v1]-poly[v0]);
-                    newVtx[0]*=f;
-                    newVtx[1]*=f;
-                    newVtx[2]*=f;
-                    newVtx = (poly[v0] + newVtx) ;//(1-f)*poly[v0] + f*poly[v1];
-                    newVtx[d] = boundsside[d]; // make sure it's exactly _on_ the plane
-
-                    if (v0in) {
-                        // v0 was already pushed
-                        if (newVtx != poly[v0])
-                            out[outSize++] = newVtx;
-                    } else {
-                        if (newVtx != poly[v0] && newVtx != poly[v1])
-                            out[outSize++] = newVtx;
+                    if (v0in && v1in) {
+                        // v0 was already added in the last step, then
                         out[outSize++] = poly[v1];
+                    } else if (!v0in && !v1in) {
+                        // do nothing, both are out
+                    } else {
+                        osg::Vec3 boundsside;
+                        if(side == 0)
+                            boundsside=bounds._min;
+                        else
+                            boundsside=bounds._max;
+
+                        const float f
+                                = (boundsside[d] - poly[v0][d])
+                                / (    poly[v1][d] - poly[v0][d]);
+                        osg::Vec3 newVtx=(poly[v1]-poly[v0]);
+                        newVtx[0]*=f;
+                        newVtx[1]*=f;
+                        newVtx[2]*=f;
+                        newVtx = (poly[v0] + newVtx) ;//(1-f)*poly[v0] + f*poly[v1];
+                        newVtx[d] = boundsside[d]; // make sure it's exactly _on_ the plane
+
+                        if (v0in) {
+                            // v0 was already pushed
+                            if (newVtx != poly[v0])
+                                out[outSize++] = newVtx;
+                        } else {
+                            if (newVtx != poly[v0] && newVtx != poly[v1])
+                                out[outSize++] = newVtx;
+                            out[outSize++] = poly[v1];
+                        }
                     }
                 }
-            }
-            if (outSize < 3)
-                return false;
+                if (outSize < 3)
+                    return false;
 
-            for (unsigned int i=0; i < outSize; ++i){
-                poly[i] = out[i];
-            }
+                for (unsigned int i=0; i < outSize; ++i){
+                    poly[i] = out[i];
+                }
 
-            polySize = outSize;
-            outSize = 0;
-        }
+                polySize = outSize;
+                outSize = 0;
+            }
     }
     return true;
 }
@@ -137,7 +140,7 @@ public:
 
 };
 
-void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::BoundingBox clipbox,const OverlapMode &mode) const
+/*void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::BoundingBox clipbox,const OverlapMode &mode) const
 {
     if (node.first<0)
     {
@@ -263,10 +266,10 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, const osg::Bound
         }
     }
 }
+*/
 
 
-
-void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* _texid,const TexBlendCoord &_texcoords, const osg::BoundingBox clipbox,const OverlapMode &mode) const
+void IntersectKdTreeBbox::intersect(const osg::KdTree::KdNode& node, const geom_elems_dst dst,const osg::BoundingBox clipbox,const OverlapMode &mode) const
 {
     if (node.first<0)
     {
@@ -276,6 +279,7 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
         int istart = -node.first-1;
         int iend = istart + node.second;
         int numTC=_texcoords.size();
+        //printf("%d Num TC\n",numTC);
         for(int i=istart; i<iend; ++i)
         {
             //const Triangle& tri = _triangles[_primitiveIndices[i]];
@@ -289,21 +293,27 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
                 c2 = (*_colors)[tri.p2];
             }
 
-            osg::Vec3 v0 = _vertices[tri.p0];
-            osg::Vec3 v1 = _vertices[tri.p1];
-            osg::Vec3 v2 = _vertices[tri.p2];
+            osg::Vec3 v0 = (*_vertices)[tri.p0];
+            osg::Vec3 v1 = (*_vertices)[tri.p1];
+            osg::Vec3 v2 = (*_vertices)[tri.p2];
             osg::Vec3 t0[numTC],t1[numTC],t2[numTC];
-            for(int f=0; f< numTC; f++){
-                t0[f] = (*_texcoords[f])[tri.p0];
-                t1[f] = (*_texcoords[f])[tri.p1];
-                t2[f] = (*_texcoords[f])[tri.p2];
+
+            if(_texcoords.size() && _texcoords[0]){
+                for(int f=0; f< (int)_texcoords.size(); f++){
+                    t0[f] = (*_texcoords[f])[tri.p0];
+                    t1[f] = (*_texcoords[f])[tri.p1];
+                    t2[f] = (*_texcoords[f])[tri.p2];
+                }
             }
             osg::Vec4 id0,id1,id2;
-            if(numTC > 1){
-                id0 = (*_texid)[tri.p0];
-                id1 = (*_texid)[tri.p1];
-                id2 = (*_texid)[tri.p2];
-                assert(id0[0]  == id1[0] && id0[0] == id2[0]);
+
+            if(_texid){
+                if(_texcoords.size() > 1){
+                    id0 = (*_texid)[tri.p0];
+                    id1 = (*_texid)[tri.p1];
+                    id2 = (*_texid)[tri.p2];
+                    assert(id0[0]  == id1[0] && id0[0] == id2[0]);
+                }
             }
             //printf("%f\n",id0[0]);
             int contains=0;
@@ -349,15 +359,15 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
                         polyGeom->accept(tf);
 
                         // add the points geometry to the geode.
-                        int offset= _new_vertices->size();
+                        int offset= dst.vertices->size();
                         for(int p=0; p < (int) tf.v.size(); p++)
-                            _new_vertices->push_back(tf.v[p]);
+                            dst.vertices->push_back(tf.v[p]);
                         for(int p=0; p < (int) tf.idx.size(); p++)
-                            _new_triangles->push_back(tf.idx[p]+offset);
+                            dst.faces->push_back(tf.idx[p]+offset);
 
                         continue;
                     }
-                }else if(mode == DUMP){
+                }/*else if(mode == DUMP){
                     if(clipbox.contains(v0))
                         _gapPts->push_back(v0);
                     if(clipbox.contains(v1))
@@ -365,34 +375,37 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
                     if(clipbox.contains(v2))
                         _gapPts->push_back(v2);
                     continue;
-                }//else DUP INCLUDE THESE FACES IN BOTH BOXES
+                }*///else DUP INCLUDE THESE FACES IN BOTH BOXES
 
             }
 
 
-            int counter=_new_triangles->size();
-            _new_vertices->push_back(v0);
-            _new_vertices->push_back(v1);
-            _new_vertices->push_back(v2);
-            if(_new_colors){
-                _new_colors->push_back(c0);
-                _new_colors->push_back(c1);
-                _new_colors->push_back(c2);
+            int counter=dst.faces->size();
+            dst.vertices->push_back(v0);
+            dst.vertices->push_back(v1);
+            dst.vertices->push_back(v2);
+            if(dst.colors){
+                dst.colors->push_back(c0);
+                dst.colors->push_back(c1);
+                dst.colors->push_back(c2);
             }
-            _new_triangles->push_back(counter);
-            _new_triangles->push_back(counter+1);
-            _new_triangles->push_back(counter+2);
-            for(int f=0; f< numTC; f++){
-                _new_texcoords[f]->push_back(t0[f]);
-                _new_texcoords[f]->push_back(t1[f]);
-                _new_texcoords[f]->push_back(t2[f]);
+            dst.faces->push_back(counter);
+            dst.faces->push_back(counter+1);
+            dst.faces->push_back(counter+2);
+            if(_texcoords.size() && _texcoords[0]){
+                for(int f=0; f< numTC; f++){
+                    dst.texcoords[f]->push_back(t0[f]);
+                    dst.texcoords[f]->push_back(t1[f]);
+                    dst.texcoords[f]->push_back(t2[f]);
+                }
             }
-            if(numTC > 1){
 
-                _new_texid->push_back(id0);
-                _new_texid->push_back(id1);
-                _new_texid->push_back(id2);
-                assert(_new_texcoords[0]->size() ==  _new_texid->size());
+            if(numTC > 1 && _texid){
+
+                dst.texid->push_back(id0);
+                dst.texid->push_back(id1);
+                dst.texid->push_back(id2);
+                assert(dst.texcoords[0]->size() ==  dst.texid->size());
             }
 
         }
@@ -405,7 +418,7 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
             //  if (intersectAndClip(clipbox2, _kdNodes[node.first].bb))
             if(clipbox.intersects(_kdNodes[node.first].bb))
             {
-                intersect(_kdNodes[node.first],_texid,_texcoords, clipbox,mode);
+                intersect(_kdNodes[node.first],dst, clipbox,mode);
             }
         }
         if (node.second>0)
@@ -414,18 +427,18 @@ void IntersectKdTreeBbox::intersect(const KdTree::KdNode& node, osg::Vec4Array* 
             // if (intersectAndClip(clipbox2,_kdNodes[node.second].bb))
             if(clipbox.intersects(_kdNodes[node.second].bb))
             {
-                intersect(_kdNodes[node.second],_texid,_texcoords, clipbox,mode);
+                intersect(_kdNodes[node.second],dst, clipbox,mode);
             }
         }
     }
 }
-osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,osg::Vec4Array *colors,const IntersectKdTreeBbox::OverlapMode &overlapmode,osg::Vec3Array *&dumpPts,bool multTex) const
+/*osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,osg::Vec4Array *colors,const IntersectKdTreeBbox::OverlapMode &overlapmode,osg::Vec3Array *&dumpPts,bool multTex) const
 
 {
     if (_kdNodes.empty())
     {
-        OSG_NOTICE<<"Warning: _kdTree is empty"<<std::endl;
-        return false;
+        osg::notify(osg::NOTICE)<<"Warning: _kdTree is empty"<<std::endl;
+        return NULL;
     }
 
 
@@ -446,37 +459,75 @@ osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,osg::V
     dumpPts=intersector._gapPts;
 
     return newGeode;
-}
-osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,osg::Vec4Array *colors,osg::Vec4Array *ids, const TexBlendCoord &texcoord,TexBlendCoord  &new_texcoord,
-                                              osg::ref_ptr<osg::Vec4Array> &new_ids,
-                                              const IntersectKdTreeBbox::OverlapMode &overlapmode) const
+}*/
+osg::ref_ptr<osg::Node> KdTreeBbox::intersect(const osg::BoundingBox bbox,  geom_elems_dst &dst,
+                                              const IntersectKdTreeBbox::OverlapMode &overlapmode)
 
 {
 
-    if (_kdNodes.empty())
-    {
-        OSG_NOTICE<<"Warning: _kdTree is empty"<<std::endl;
-        return false;
-    }
-
-
-
-    IntersectKdTreeBbox intersector(*_vertices,
-                                    colors,
-                                    _kdNodes,
-                                    _triangles,
-                                    (ids != NULL));
     osg::ref_ptr<osg::Geode> newGeode=new osg::Geode;
     osg::Geometry *new_geom=new osg::Geometry;
     newGeode->addDrawable(new_geom);
-    intersector.intersect(getNode(0),ids,texcoord, bbox,overlapmode);
-    new_geom->addPrimitiveSet(intersector._new_triangles);
-    new_geom->setVertexArray(intersector._new_vertices);
-    new_geom->setColorArray(intersector._new_colors);
-
-    new_texcoord=intersector._new_texcoords;
-    new_ids=intersector._new_texid;
-    //        if(intersector._new_vertices->size())
+    intersector.intersect(getNode(0),dst,bbox,overlapmode);
+    new_geom->addPrimitiveSet(dst.faces);
+    new_geom->setVertexArray(dst.vertices);
+    new_geom->setColorArray(dst.colors);
     return newGeode;
-    //      return NULL;
+}
+KdTreeBbox *setupKdTree(osg::ref_ptr<osg::Node> model){
+    if(model.valid()){
+        osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
+        if(!geode)
+            geode=model->asGroup()->getChild(0)->asGeode();
+        if(geode && geode->getNumDrawables()){
+            osg::Drawable *drawable = geode->getDrawable(0);
+            osg::KdTree *kdTree = dynamic_cast<osg::KdTree*>(drawable->getShape());
+            if(kdTree){
+                osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+                geom_elems_src *srcGeom=new geom_elems_src ;
+                srcGeom->colors=(osg::Vec4Array*)geom->getColorArray();
+                //    srcGeom.texcoords;
+                srcGeom->texid=NULL;
+                KdTreeBbox *kdtreeBbox=new KdTreeBbox(*kdTree,*srcGeom);
+                return kdtreeBbox;
+            }
+
+        }else{
+            osg::notify(osg::ALWAYS) << "Model can't be converted to geode\n";
+            return false;
+        }
+
+    }else{
+        osg::notify(osg::ALWAYS)  << "Model can't be loaded\n";
+        return false;
+    }
+
+    return NULL;
+}
+
+bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const IntersectKdTreeBbox::OverlapMode &mode){
+    if(!kdtreeBBox){
+        fprintf(stderr,"Failed to load kdtree\n");
+        return false;
+    }
+    osg::ref_ptr<osg::Node> root;
+    int numTex=kdtreeBBox->_src.texcoords.size();
+    geom_elems_dst dstGeom(numTex);
+    root=kdtreeBBox->intersect(bbox,dstGeom,mode);
+    if(dstGeom.faces->size()){
+        if(osgDB::getFileExtension(outfilename) == "ply"){
+            osgUtil::SmoothingVisitor sv;
+            root->accept(sv);
+            std::ofstream f(outfilename.c_str());
+            PLYWriterNodeVisitor nv(f);
+            root->accept(nv);
+        }else{
+            osgUtil::SmoothingVisitor sv;
+            root->accept(sv);
+            osgDB::writeNodeFile(*root,outfilename);
+        }
+        return true;
+    }
+
+    return false;
 }

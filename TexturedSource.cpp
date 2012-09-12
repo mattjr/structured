@@ -28,9 +28,9 @@ TexturedSource::TexturedSource(Type type, const std::string& filename,const std:
 
     bool ret = tree->isIndexValid();
     if (ret == false){
-        OSG_FATAL << "ERROR: Structure is invalid!" << std::endl;
+        osg::notify(osg::FATAL) << "ERROR: Structure is invalid!" << std::endl;
     }else {
-        OSG_INFO << "The stucture seems O.K." << std::endl;
+           osg::notify(osg::INFO) << "The stucture seems O.K." << std::endl;
     }
     ids=new osg::Vec4Array;
 

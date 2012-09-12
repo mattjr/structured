@@ -7,9 +7,7 @@
 #include "TexturedSource.h"
 #include "TexturingQuery.h"
 #include "Extents.h"
-#include "auv_stereo_geometry.hpp"
 #include "PLYWriterNodeVisitor.h"
-using namespace libsnapper;
 using namespace std;
 
 int main( int argc, char **argv )
@@ -37,10 +35,10 @@ int main( int argc, char **argv )
         vips::VImage in("subtile.ppm");
         size.x()=in.Xsize();
         size.y()=in.Ysize();
-        if(debug) {
+       /* if(debug) {
             double downsampleRatio=1.0;
             in.affine(downsampleRatio,0,0,downsampleRatio,0,0,0,0,size.x()*downsampleRatio,downsampleRatio*size.y()).write("tmp.jpg");
-        }
+        }*/
     }
     std::string mf=argv[1];
     osg::Matrixd viewProj,rotMat;
@@ -64,12 +62,12 @@ int main( int argc, char **argv )
         mgv.setTargetMaximumNumberOfVertices(INT_MAX);
         model->accept(mgv);
 
-        osgUtil::GeometryCollector gc(NULL, osgUtil::Optimizer::DEFAULT_OPTIMIZATIONS);
+        GeometryCollector gc(NULL, osgUtil::Optimizer::DEFAULT_OPTIMIZATIONS);
         model->accept(gc);
-        osgUtil::GeometryCollector::GeometryList geomList = gc.getGeometryList();
+        GeometryCollector::GeometryList geomList = gc.getGeometryList();
 
         if(geomList.size() != 1){
-            OSG_ALWAYS << "Number of collected geometies " << geomList.size() << "problem "<<endl;
+             osg::notify(osg::ALWAYS)  << "Number of collected geometies " << geomList.size() << "problem "<<endl;
             //   OSG_FATAL << "Number of collected geometies " << geomList.size() << "problem "<<endl;
             assert(0);
 

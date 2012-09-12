@@ -1,0 +1,322 @@
+Group {
+  name "earth_L4_X5_Y5_subtile.ive"
+  nodeMask 0xffffffff
+  cullingActive TRUE
+  num_children 4
+  PagedLOD {
+    nodeMask 0xffffffff
+    cullingActive TRUE
+    Center 2.65347e+06 -4.93039e+06 2.97454e+06
+    Radius -1
+    RangeMode DISTANCE_FROM_EYE_POINT
+    RangeList 2 {
+      6.8395e+06 1e+10
+      0 6.8395e+06
+    }
+    NumChildrenThatCannotBeExpired 0
+    FileNameList 2 {
+      ""
+      ../earth_subtile_L5_X10_Y10/earth_L5_X10_Y10_subtile.ive
+    }
+    num_children 1
+    osgTerrain::TerrainTile {
+      nodeMask 0xffffffff
+      cullingActive TRUE
+      CullCallbacks {
+        ClusterCullingCallback {
+          controlPoint 2676965.25 -5008250 3015059
+          normal 0.416352570056915 -0.778940856456757 0.468936800956726
+          radius 846751.3125
+          deviation -0.132038742303848
+        }
+      }
+      osgTerrain::Locator {
+        UniqueID Locator_0
+        Format "WKT"
+        CoordinateSystem "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AXIS[\"Lat\",NORTH],AXIS[\"Long\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]"
+        CoordinateSystemType GEOCENTRIC
+        TransformScaledByResolution FALSE
+        Transform {
+          0.196349540849362 0 0 0
+          0 0.196349540849362 0 0
+          0 0 1 0
+          0 0 0 1
+        }
+      }
+      ElevationLayer {
+        osgTerrain::HeightFieldLayer {
+          Use Locator_0
+          MinFilter LINEAR_MIPMAP_LINEAR
+          MagFilter LINEAR
+          HeightField {
+            Origin -67.5 22.5 0
+            XInterval 1.60714280605316
+            YInterval 1.60714280605316
+            SkirtHeight 16823.615234375
+            BorderWidth 0
+            Rotation 0 0 0 1
+            NumColumnsAndRows 8 8
+            Heights
+            {
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+            }
+          }
+        }
+      }
+      ColorLayer {
+        osgTerrain::ImageLayer {
+          Use Locator_0
+          MinFilter LINEAR
+          MagFilter LINEAR
+          file earth_L5_X10_Y10.dds
+        }
+      }
+      osgTerrain::GeometryTechnique {
+      }
+    }
+  }
+  PagedLOD {
+    nodeMask 0xffffffff
+    cullingActive TRUE
+    Center 3.55906e+06 -4.32789e+06 2.97454e+06
+    Radius -1
+    RangeMode DISTANCE_FROM_EYE_POINT
+    RangeList 2 {
+      7.00892e+06 1e+10
+      0 7.00892e+06
+    }
+    NumChildrenThatCannotBeExpired 0
+    FileNameList 2 {
+      ""
+      ../earth_subtile_L5_X11_Y10/earth_L5_X11_Y10_subtile.ive
+    }
+    num_children 1
+    osgTerrain::TerrainTile {
+      nodeMask 0xffffffff
+      cullingActive TRUE
+      CullCallbacks {
+        ClusterCullingCallback {
+          controlPoint 3602589.25 -4389768 3015059
+          normal 0.560316264629364 -0.682747364044189 0.468936800956726
+          radius 846751.25
+          deviation -0.132038742303848
+        }
+      }
+      osgTerrain::Locator {
+        UniqueID Locator_1
+        Format "WKT"
+        CoordinateSystem "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AXIS[\"Lat\",NORTH],AXIS[\"Long\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]"
+        CoordinateSystemType GEOCENTRIC
+        TransformScaledByResolution FALSE
+        Transform {
+          0.196349540849362 0 0 0
+          0 0.196349540849362 0 0
+          0 0 1 0
+          -0.98174770424681 0.392699081698724 0 1
+        }
+      }
+      ElevationLayer {
+        osgTerrain::HeightFieldLayer {
+          Use Locator_1
+          MinFilter LINEAR_MIPMAP_LINEAR
+          MagFilter LINEAR
+          HeightField {
+            Origin -56.25 22.5 0
+            XInterval 1.60714280605316
+            YInterval 1.60714280605316
+            SkirtHeight 16823.61328125
+            BorderWidth 0
+            Rotation 0 0 0 1
+            NumColumnsAndRows 8 8
+            Heights
+            {
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+            }
+          }
+        }
+      }
+      ColorLayer {
+        osgTerrain::ImageLayer {
+          Use Locator_1
+          MinFilter LINEAR
+          MagFilter LINEAR
+          file earth_L5_X11_Y10.dds
+        }
+      }
+      osgTerrain::GeometryTechnique {
+      }
+    }
+  }
+  PagedLOD {
+    nodeMask 0xffffffff
+    cullingActive TRUE
+    Center 2.33909e+06 -4.33043e+06 4.00539e+06
+    Radius -1
+    RangeMode DISTANCE_FROM_EYE_POINT
+    RangeList 2 {
+      6.76657e+06 1e+10
+      0 6.76657e+06
+    }
+    NumChildrenThatCannotBeExpired 0
+    FileNameList 2 {
+      ""
+      ../earth_subtile_L5_X10_Y11/earth_L5_X10_Y11_subtile.ive
+    }
+    num_children 1
+    osgTerrain::TerrainTile {
+      nodeMask 0xffffffff
+      cullingActive TRUE
+      CullCallbacks {
+        ClusterCullingCallback {
+          controlPoint 2345886.5 -4388844.5 4056733.5
+          normal 0.36537703871727 -0.683572351932526 0.63184529542923
+          radius 805886.5625
+          deviation -0.125769793987274
+        }
+      }
+      osgTerrain::Locator {
+        UniqueID Locator_2
+        Format "WKT"
+        CoordinateSystem "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AXIS[\"Lat\",NORTH],AXIS[\"Long\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]"
+        CoordinateSystemType GEOCENTRIC
+        TransformScaledByResolution FALSE
+        Transform {
+          0.196349540849362 0 0 0
+          0 0.196349540849362 0 0
+          0 0 1 0
+          -1.17809724509617 0.589048622548086 0 1
+        }
+      }
+      ElevationLayer {
+        osgTerrain::HeightFieldLayer {
+          Use Locator_2
+          MinFilter LINEAR_MIPMAP_LINEAR
+          MagFilter LINEAR
+          HeightField {
+            Origin -67.5 33.75 0
+            XInterval 1.60714280605316
+            YInterval 1.60714280605316
+            SkirtHeight 16021.583984375
+            BorderWidth 0
+            Rotation 0 0 0 1
+            NumColumnsAndRows 8 8
+            Heights
+            {
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+            }
+          }
+        }
+      }
+      ColorLayer {
+        osgTerrain::ImageLayer {
+          Use Locator_2
+          MinFilter LINEAR
+          MagFilter LINEAR
+          file earth_L5_X10_Y11.dds
+        }
+      }
+      osgTerrain::GeometryTechnique {
+      }
+    }
+  }
+  PagedLOD {
+    nodeMask 0xffffffff
+    cullingActive TRUE
+    Center 3.13183e+06 -3.80423e+06 4.00539e+06
+    Radius -1
+    RangeMode DISTANCE_FROM_EYE_POINT
+    RangeList 2 {
+      6.96854e+06 1e+10
+      0 6.96854e+06
+    }
+    NumChildrenThatCannotBeExpired 0
+    FileNameList 2 {
+      ""
+      ../earth_subtile_L5_X11_Y11/earth_L5_X11_Y11_subtile.ive
+    }
+    num_children 1
+    osgTerrain::TerrainTile {
+      nodeMask 0xffffffff
+      cullingActive TRUE
+      CullCallbacks {
+        ClusterCullingCallback {
+          controlPoint 3157032 -3846854.5 4056733.5
+          normal 0.491714775562286 -0.599156200885773 0.63184529542923
+          radius 805886.5
+          deviation -0.125769779086113
+        }
+      }
+      osgTerrain::Locator {
+        UniqueID Locator_3
+        Format "WKT"
+        CoordinateSystem "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AXIS[\"Lat\",NORTH],AXIS[\"Long\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]"
+        CoordinateSystemType GEOCENTRIC
+        TransformScaledByResolution FALSE
+        Transform {
+          0.196349540849362 0 0 0
+          0 0.196349540849362 0 0
+          0 0 1 0
+          -0.98174770424681 0.589048622548086 0 1
+        }
+      }
+      ElevationLayer {
+        osgTerrain::HeightFieldLayer {
+          Use Locator_3
+          MinFilter LINEAR_MIPMAP_LINEAR
+          MagFilter LINEAR
+          HeightField {
+            Origin -56.25 33.75 0
+            XInterval 1.60714280605316
+            YInterval 1.60714280605316
+            SkirtHeight 16021.5830078125
+            BorderWidth 0
+            Rotation 0 0 0 1
+            NumColumnsAndRows 8 8
+            Heights
+            {
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+              0 0 0 0 0 0 0 0 
+            }
+          }
+        }
+      }
+      ColorLayer {
+        osgTerrain::ImageLayer {
+          Use Locator_3
+          MinFilter LINEAR
+          MagFilter LINEAR
+          file earth_L5_X11_Y11.dds
+        }
+      }
+      osgTerrain::GeometryTechnique {
+      }
+    }
+  }
+}

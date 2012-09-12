@@ -7,8 +7,7 @@
 #include <osg/Geometry>
 #include "TexPyrAtlas.h"
 #include "TexturedSource.h"
-#include <libsnapper/auv_camera_calib.hpp>
-using libsnapper::Camera_Calib;
+#include "calibFile.h"
 void addDups(osg::Geode *geode);
 namespace vpb{
     class MyDestinationTile;
@@ -30,7 +29,7 @@ class TexturingQuery
 {
     friend class TexturedSource;
 public:
-    TexturingQuery(TexturedSource *source,const Camera_Calib &calib,TexPyrAtlas &atlasGen,bool useTextureArray);
+    TexturingQuery(TexturedSource *source,const CameraCalib &calib,TexPyrAtlas &atlasGen,bool useTextureArray);
     ~TexturingQuery();
     bool projectModel(osg::Geode *);
 
@@ -50,8 +49,8 @@ protected:
     void findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,SpatialIndex::id_type id);
     osg::Vec2 convertToUV(const osg::Vec2 &pix);
     const CamDists getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts);
-    std::string _bbox_file;
-    const Camera_Calib _calib;
+ //   std::string _bbox_file;
+    const CameraCalib _calib;
     //void remapSharedVert(osg::PrimitiveSet& prset, osg::Vec3Array &verts,std::map<int,int> remap);
 
     std::string baseName;
@@ -75,7 +74,7 @@ public :
     bool _useAtlas;
     TexturedSource *_source;
 
-    std::vector<std::set<long> > sets;
+    std::vector<std::set<SpatialIndex::id_type> > sets;
 
 
 

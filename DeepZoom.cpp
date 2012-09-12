@@ -4,6 +4,7 @@
 #include <osgDB/FileNameUtils>
 #include <vips/vips>
 #include <sstream>
+#include <iostream>
 #include <assert.h>
 using namespace std;
 using namespace vips;
@@ -146,7 +147,7 @@ void DeepZoom::processImageFile(string inFile, string outputDir) {
         // Scale down image for next level
         width = ceil(width * 0.5);
         height = ceil(height *0.5);
-        image = image.affine(0.5,0,0,0.5,0,0,0,0,width,height);
+        image = image.shrink(2,2);
     }
 
     saveImageDescriptor(originalWidth, originalHeight, descriptor);
@@ -222,7 +223,7 @@ void DeepZoom::saveHTML(int width, int height, std::string file) {
     s<< "<script type=\"text/javascript\">Seadragon.embed('100%', '100%','" << osgDB::getSimpleFileName(file) << "'," <<width << "," <<  height<<  "," << tileSize << "," << tileOverlap << ",'"<< tileFormat << "');</script>\n";
     lines.push_back(s.str());
     lines.push_back(htmlFooter);
-    saveText(lines, outputDir+"/"+osgDB::getNameLessAllExtensions(osgDB::getSimpleFileName(file))+".html");
+    saveText(lines, outputDir+"/"+osgDB::getNameLessExtension(osgDB::getSimpleFileName(file))+".html");
 }
 /**
      * Saves strings as text to the given file

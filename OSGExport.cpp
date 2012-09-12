@@ -16,7 +16,6 @@
 #include <osg/io_utils>
 #include <highgui.h>
 #include <boost/thread/thread.hpp>
-#include "novelty.h"
 #include <sys/stat.h>
 #include "auv_texture_utils.hpp"
 #include "auv_lod.hpp"

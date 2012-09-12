@@ -639,7 +639,7 @@ void PLYWriterNodeVisitor::apply( osg::Geode &node )
         }
     }
     write_header();
-    fprintf(stderr,"Faces %d Vert %d\n",_total_face_count,_total_vertex_count);
+  //  fprintf(stderr,"Faces %d Vert %d\n",_total_face_count,_total_vertex_count);
     for ( unsigned int i = 0; i < count; i++ )
     {
         osg::Geometry *g = node.getDrawable( i )->asGeometry();
@@ -662,7 +662,6 @@ void PLYWriterNodeVisitor::apply( osg::Geode &node )
 void PLYWriterNodeVisitor::write_header(void){
     _fout <<"ply\n";
     _fout <<"format binary_little_endian 1.0\n";
-    //_fout <<"comment %s\n",part_description;
     //_fout <<"comment PLY exporter written by Paul Adams\n";
     _fout <<"element vertex "<<_total_vertex_count <<std::endl;
     _fout <<"property float x\n";
@@ -677,6 +676,8 @@ void PLYWriterNodeVisitor::write_header(void){
             _fout <<"property list uchar float color\n";
         }
     }
+    if(_comment.size())
+        _fout <<"comment "<<_comment<<"\n";
 
     _fout <<"end_header\n";
 }

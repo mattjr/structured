@@ -16,12 +16,10 @@
 #include <osgGA/StateSetManipulator>
 #include <osgGA/AnimationPathManipulator>
 #include <osgGA/TerrainManipulator>
-#include <osgGA/SphericalManipulator>
 #include <osg/Texture3D>
 #include <iostream>
 #include "GLImaging.h"
 #include <osgGA/TrackballManipulator>
-
 
 int main( int argc, char **argv )
 {
@@ -29,8 +27,7 @@ int main( int argc, char **argv )
     osg::ArgumentParser arguments(&argc,argv);
     osgViewer::Viewer viewer(arguments);
     if (true) {
-        osg::DisplaySettings* ds = osg::DisplaySettings::instance();
-        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits(ds);
+        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits();
 
         if (viewer.getCamera()->getGraphicsContext() && viewer.getCamera()->getGraphicsContext()->getTraits()) {
             //use viewer settings for window size
@@ -119,6 +116,8 @@ int main( int argc, char **argv )
     viewer.setSceneData(model);
     //viewer.getCamera()->setProjectionMatrix(proj);
     //viewer.getCamera()->setViewMatrix(view);
+    return viewer.run();
+
     osg::BoundingSphere bs=model->getBound();
     std::cout << "Bounding " << bs.center()<<"\n";
     /*osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);

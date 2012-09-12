@@ -31,7 +31,6 @@
 #include <osgTerrain/TerrainTile>
 
 #include <osgDB/Archive>
-#include <osgDB/DatabaseRevisions>
 
 #include <set>
 
@@ -43,10 +42,14 @@
 #include <vpb/ObjectPlacer>
 #include <vpb/ThreadPool>
 #include <vpb/DataSet>
-#include <osgUtil/MeshOptimizers>
 #include "TexturingQuery.h"
 #include <OpenThreads/ScopedLock>
+#include <osg/MatrixTransform>
 #include <vips/vips>
+// GDAL includes
+#include "SpatialReference"
+#include <gdal_priv.h>
+#include <ogr_spatialref.h>
 namespace vpb
 {
 
@@ -161,6 +164,12 @@ class MyDataSet;
         OpenThreads::Mutex &_fileMutex;
         typedef std::vector< osg::ref_ptr<MyDestinationTile> > MyTileList;
         void writeCameraMatrix(osg::Node *scene);
+        bool
+        clampGeocentric( osg::CoordinateSystemNode* csn, double lat_rad, double lon_rad, osg::Vec3d& out ) const;
+        bool
+        clampProjected( osg::CoordinateSystemNode* csn, double x, double y, osg::Vec3d& out ) const;
+        bool
+        createPlacerMatrix(  const SpatialReference* srs,double lat_deg, double lon_deg, double height, osg::Matrixd& out_result,bool clamp=false ) const;
 int _numLevels;
     };
 
@@ -168,7 +177,7 @@ int _numLevels;
 class MyDataSet :  public DataSet
 {
     public:
-        MyDataSet(const Camera_Calib &calib,std::string basePath,bool useTextureArray,bool useReImage,bool useVirtualTex);
+        MyDataSet(const CameraCalib &calib,std::string basePath,bool useTextureArray,bool useReImage,bool useVirtualTex);
         void createNewDestinationGraph(
                                        const GeospatialExtents& extents,
                                        unsigned int maxImageSize,
@@ -196,12 +205,19 @@ class MyDataSet :  public DataSet
         void loadShaderSourcePrelude(osg::Shader* obj, const std::string& fileName );
         osg::Vec4 _zrange;
         bool _useStub;
+        //OGRSpatialReference oSourceSRS,oTargetSRS;
+
+        void setSourceCoordinateSystemProj4(const std::string proj4_src);
+        void setDestinationCoordinateSystem(const std::string& wellKnownText);
+        bool reprojectPoint(const osg::Vec3d &src,osg::Vec3d &dst);
+        SpatialReference *_SrcSRS,*_TargetSRS;
+
     protected:
         virtual ~MyDataSet() {if(in) delete in;}
         void _readRow(Row& row);
          void _writeRow(Row& row);
          void init();
-         const Camera_Calib &_calib;
+         const CameraCalib &_calib;
 
          MyCompositeDestination* createDestinationTile(int level, int tileX, int tileY);
          std::ofstream _file;
@@ -212,14 +228,86 @@ public:
          bool _useReImage;
          bool _useVirtualTex;
          OpenThreads::Mutex _imageMutex;
+         bool _useDebugShader;
 
 
 
 };
 
 }
+class  GeometryCollector : public osgUtil::BaseOptimizerVisitor
+{
+public:
+    GeometryCollector(osgUtil::Optimizer* optimizer,
+                      osgUtil::Optimizer::OptimizationOptions options)
+        : osgUtil::BaseOptimizerVisitor(optimizer, options) {}
+    typedef std::set<osg::Geometry*> GeometryList;
+    GeometryList& getGeometryList() { return _geometryList; };
+
+void reset()
+{
+    _geometryList.clear();
+}
+
+void apply(osg::Geode& geode)
+{
+    for(unsigned int i = 0; i < geode.getNumDrawables(); ++i )
+    {
+        osg::Geometry* geom = dynamic_cast<osg::Geometry*>(geode.getDrawable(i));
+        if (geom) _geometryList.insert(geom);
+    }
+}
+
+protected:
+    GeometryList _geometryList;
+};
+
 bool readMatrixToScreen(std::string fname,osg::Matrix &viewProj);
 bool readMatrix(std::string fname,osg::Matrix &viewProj);
+class MyGraphicsContext : public osg::Referenced {
+public:
+    MyGraphicsContext(vpb::BuildLog* buildLog=NULL)
+    {
+        osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
+        traits->readDISPLAY();
+        traits->x = 0;
+        traits->y = 0;
+        traits->width = 1;
+        traits->height = 1;
+        traits->windowDecoration = false;
+        traits->doubleBuffer = false;
+        traits->sharedContext = 0;
+        traits->pbuffer = true;
+
+        _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+
+        if (!_gc)
+        {
+            if (buildLog) buildLog->log(osg::NOTICE,"Failed to create pbuffer, failing back to normal graphics window.");
+else
+                osg::notify(osg::NOTICE)<<"Failed to create pbuffer, failing back to normal graphics window.\n";
+
+            traits->pbuffer = false;
+            _gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+        }
+
+        if (_gc.valid())
+
+
+        {
+            _gc->realize();
+            _gc->makeCurrent();
+
+            if (buildLog) buildLog->log(osg::NOTICE,"Realized window");
+            else osg::notify(osg::NOTICE)<<"Realized window\n";
+        }
+    }
+
+    bool valid() const { return _gc.valid() && _gc->isRealized(); }
+
+private:
+    osg::ref_ptr<osg::GraphicsContext> _gc;
+};
 
 
 #endif // EXTENTS_H

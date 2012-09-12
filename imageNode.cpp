@@ -29,14 +29,12 @@
 #include <iostream>
 #include "imageNode.h"
 #include "Extents.h"
-#include <vpb/TextureUtils>
 #include <osg/ComputeBoundsVisitor>
 #include <osg/io_utils>
 #include <iostream>
 #include <vips/vips.h>
 #include <vips/vips>
 #include <math.h>
-#include <osgUtil/ShaderGen>
 #include "Extents.h"
 #include <osg/LightModel>
 #include <osg/Material>
@@ -825,14 +823,10 @@ osg::Group *vpb::MyCompositeDestination::convertModel(osg::Group *group){
     {
         log(osg::NOTICE,"Compressed image");
 
-        bool generateMiMap = true;//getImageOptions(layerNum)->getMipMappingMode()==DataSet::MIP_MAPPING_IMAGERY;
-        bool resizePowerOfTwo = true;//getImageOptions(layerNum)->getPowerOfTwoImages();
-        if(_dataSet->getCompressionMethod()==vpb::BuildOptions::GL_DRIVER){
+
             OpenThreads::ScopedLock<OpenThreads::Mutex> lock(dynamic_cast<MyDataSet*>(_dataSet)->_imageMutex);
-            vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
-        }else{
-            vpb::compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo,_dataSet->getCompressionMethod(),_dataSet->getCompressionQuality());
-        }
+            compress(*_dataSet->getState(),*texture,internalFormatMode,generateMiMap,resizePowerOfTwo);
+       // }
       //  vpb::generateMipMap(*_dataSet->getState(),*texture,resizePowerOfTwo,vpb::BuildOptions::GL_DRIVER);
 
      //   log(osg::INFO,">>>>>>>>>>>>>>>compressed image.<<<<<<<<<<<<<<");

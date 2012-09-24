@@ -135,3 +135,5 @@ vrip/src/vrip/vriphead
 qtcreator-build
 build
 /CMakeLists.txt.user
+/progressbar.pyc
+/atlasmesh

@@ -21,7 +21,6 @@
 #include <osgUtil/DelaunayTriangulator>
 #include "PLYWriterNodeVisitor.h"
 #include <osg/ComputeBoundsVisitor>
-#include "configFile.h"
 #include "ShellCmd.h"
 #include "stereo_cells.hpp"
 #include <limits>

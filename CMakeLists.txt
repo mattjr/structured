@@ -8,7 +8,7 @@
 # * TCL/TK
 # * vips
 # *glib2
-PROJECT(structured)
+PROJECT(threadedStereo)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
@@ -16,10 +16,12 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 IF(COMMAND CMAKE_POLICY)
   CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(COMMAND CMAKE_POLICY)
+SET(USE_AUV_FOR_STEREO ON CACHE BOOL "Use AUVLibs for stereo currently good to have on!")
 
 #-----------------------#
 # Includes              #
 #-----------------------#
+INCLUDE( ${CMAKE_ROOT}/Modules/CheckIncludeFileCXX.cmake )
 
 find_package(PkgConfig)
 find_package(OpenMP)
@@ -66,15 +68,79 @@ IF( NOT CMAKE_INSTALL_PREFIX )
    SET( CMAKE_INSTALL_PREFIX "/usr/local" )
 ENDIF( NOT CMAKE_INSTALL_PREFIX )
 
-ExternalProject_Add(vrip
-  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vrip"
-  BUILD_IN_SOURCE 1 
-  BUILD_COMMAND $(MAKE)   
-  DOWNLOAD_COMMAND "" 
-  UPDATE_COMMAND "" 
-  CONFIGURE_COMMAND "" 
-  INSTALL_COMMAND "" 
-)
+IF(USE_AUV_FOR_STEREO)
+    ADD_DEFINITIONS("-DUSE_AUV_LIBS=1")
+IF( NOT LIBKEYPOINT_PREFIX )
+   SET( LIBKEYPOINT_PREFIX /usr/local/ )
+ENDIF( NOT LIBKEYPOINT_PREFIX )
+
+# libpolyp
+IF( NOT LIBSNAPPER_PREFIX )
+   SET( LIBSNAPPER_PREFIX /usr/local/ )
+ENDIF( NOT LIBSNAPPER_PREFIX )
+
+IF( NOT LIBCARP_PREFIX )
+   SET( LIBCARP_PREFIX /usr/local/ )
+ENDIF( NOT LIBCARP_PREFIX )
+
+IF( NOT LIBPOLYP_PREFIX )
+   SET( LIBPOLYP_PREFIX /usr/local )
+ENDIF( NOT LIBPOLYP_PREFIX )
+IF( NOT LIBPLANKTON_PREFIX )
+   SET( LIBPLANKTON_PREFIX /usr/local/ )
+ENDIF( NOT LIBPLANKTON_PREFIX )
+
+SET( LIBPOLYP_INC ${LIBPOLYP_PREFIX}/include/libpolyp )
+SET( LIBPOLYP_LIBRARY polyp )
+
+# libcarp - FIXME: Remove use of this library
+SET( LIBCARP_INC ${LIBCARP_PREFIX}/include/libcarp )
+SET( LIBCARP_LIBRARY carp )
+pkg_check_modules( GTS "gts" )
+IF( NOT GTS_FOUND )
+   MESSAGE( FATAL_ERROR  "ERROR - Can't find Gts" )
+ENDIF( NOT GTS_FOUND )
+ADD_DEFINITIONS( ${GTS_CFLAGS} )
+# libsnapper
+SET( LIBSNAPPER_INC ${LIBSNAPPER_PREFIX}/include/libsnapper )
+SET( LIBSNAPPER_LIBRARY snapper )
+# libplankton
+SET( LIBPLANKTON_INCLUDE_DIR ${LIBPLANKTON_PREFIX}/include/libplankton )
+SET( LIBPLANKTON_LIB plankton )
+CHECK_INCLUDE_FILE_CXX( "auv_matrix.hpp" HAVE_LIBPLANKTON "-I ${LIBPLANKTON_INCLUDE_DIR}" )
+IF( NOT HAVE_LIBPLANKTON )
+   MESSAGE( FATAL_ERROR  "ERROR - Can't find libplankton" )
+ENDIF( NOT HAVE_LIBPLANKTON )
+
+IF( NOT LIBKEYPOINT_PREFIX )
+   SET( LIBKEYPOINT_PREFIX /usr/local/ )
+ENDIF( NOT LIBKEYPOINT_PREFIX )
+   SET( LIBKEYPOINT_INCLUDE_DIR ${LIBKEYPOINT_PREFIX}/include/libkeypoint )
+   SET( LIBKEYPOINT_LIB keypoint  )
+   ADD_DEFINITIONS( "-DHAVE_LIBKEYPOINT" )
+
+   SET( CMAKE_REQUIRED_FLAGS "-I ${OPENCV_INCLUDE_DIRS} ${OPENCV_LIBRARIES}" )
+   CHECK_INCLUDE_FILE_CXX( "keypoint.hpp" HAVE_LIBKEYPOINT "-I ${LIBKEYPOINT_INCLUDE_DIR}" )
+   IF( NOT HAVE_LIBKEYPOINT )
+#      MESSAGE( FATAL_ERROR  "ERROR - Can't find libkeypoint" )
+   ENDIF( NOT HAVE_LIBKEYPOINT )
+IF( NOT LIBADT_PREFIX )
+   SET( LIBADT_PREFIX /usr/local )
+ENDIF( NOT LIBADT_PREFIX )
+
+# AUV data library
+SET( LIBADT_INCLUDE_DIR ${LIBADT_PREFIX}/include/libadt )
+SET( LIBADT_LIBRARY adt )
+ENDIF(USE_AUV_FOR_STEREO)
+#ExternalProject_Add(vrip
+#  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vrip"
+#  BUILD_IN_SOURCE 1
+#  BUILD_COMMAND $(MAKE)
+#  DOWNLOAD_COMMAND ""
+#  UPDATE_COMMAND ""
+#  CONFIGURE_COMMAND ""
+#  INSTALL_COMMAND ""
+#)
 
 #-----------------------#
 # Dependencies          #
@@ -140,7 +206,6 @@ cmake_policy(SET CMP0005 OLD)
 add_definitions("-DHAVE_FCNTL_H=1 -DHAVE_UNISTD_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_PTHREAD_H=1 -DHAVE_SYS_RESOURCE_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_STDINT_H=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_BZERO=1 -DHAVE_MEMSET=1 -DHAVE_MEMCPY=1 -DHAVE_BCOPY=1")
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${OPENCV_INCLUDE_DIRS}
-
 		     ${OPENGL_INCLUDE_DIR}
                      ${VIPS_INCLUDE_DIRS}
                     spatialindex-src-1.6.1/src spatialindex-src-1.6.1/include
@@ -149,7 +214,16 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
  ${OpenCV_INCLUDE_DIR}
                      ${GDAL_INCLUDE_DIR}
 		     ${OSG_INCLUDE_DIR}
-                   ${GLIB2_INCLUDE_DIRS}  )
+                   ${GLIB2_INCLUDE_DIRS}
+                     ${LIBPOLYP_INC}
+                     ${GTS_INCLUDE_DIRS}
+                     ${LIBSNAPPER_INC}
+                     ${LIBCARP_INC}
+                     ${LIBPLANKTON_INCLUDE_DIR}
+                     ${LIBKEYPOINT_INCLUDE_DIR}
+${LIBADT_INCLUDE_DIR}
+
+)
 
 LINK_DIRECTORIES( ${OPENCV_LIBRARY_DIRS}
 ${OpenCV_DIRS}
@@ -168,13 +242,18 @@ osgTerrain
 osgFX
 osgViewer
 osgSim
+                ${LIBPOLYP_LIBRARY}
         ${OpenCV_LIBS}
                 ${OSGSHADOW_LIBRARY}
                 ${OSGTEXT_LIBRARY_DEBUG}
                 ${OSGGA_LIBRARY_DEBUG}
                 ${OPENTHREADS_LIBRARY}
          ${GLIB2_LIBRARIES}
-          ${OPENGL_LIBRARY})
+          ${OPENGL_LIBRARY}
+                ${LIBSNAPPER_LIBRARY}
+                ${LIBCARP_LIBRARY}
+                ${LIBPLANKTON_LIB}
+                ${GTS_LIBRARIES})
 
 
 #-----------------------#
@@ -226,7 +305,7 @@ OptimizeForArchitecture()
 #add_definitions(-Wall -O3 -DNDEBUG -pipe -ffast-math -funroll-loops -ftree-vectorize -fomit-frame-pointer -pipe -mfpmath=sse -mmmx -msse -mtune=core2 -march=core2 -msse2 -msse3 -mssse3 -msse4)
 ENDIF()
 #SUBDIRS(src include tools )
-SUBDIRS(VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender )
+SUBDIRS(vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender )
 SET( SRCS
                 Extents.cpp
 calibFile.cpp
@@ -278,7 +357,6 @@ ADD_EXECUTABLE(genOverlappingPoses genOverlappingPoses.cpp)
 
 #ADD_EXECUTABLE(temp temp.cpp)
 TARGET_LINK_LIBRARIES( genOverlappingPoses ts )
-
 
 LINK_LIBRARIES(osgTerrain  osgFX osg  spindex vips vipsCC)
 TARGET_LINK_LIBRARIES( threadedStereo ts  vips vipsCC vpb spindex)

@@ -94,13 +94,12 @@ int main( int argc, char *argv[ ] )
     arguments.read("-r",image_scale);
     arguments.read("-m",max_feature_count);
     arguments.read("--tex-size",tex_size);
-double epipolar_dist=4.0;
+
     arguments.read("-z" ,feature_depth_guess);
     use_dense_stereo=arguments.read("--ds");
     bool verbose=arguments.read("-v");
     display_debug_images=arguments.read("-d");
     arguments.read("--maxlen",max_triangulation_len);
-    arguments.read("--epipolar-dist",epipolar_dist);
 
     if(!arguments.read("--edgethresh",edgethresh)){
         cout << "Can't load edgethresh\n";
@@ -109,15 +108,22 @@ double epipolar_dist=4.0;
 
     }
     string stereo_calib_file_name="stereo.calib";
-
+     Config_File *recon_config_file;
+    try {
+        recon_config_file= new Config_File("mesh.cfg");
+    }   catch( string error ) {
+        cerr << "ERROR - " << error << endl;
+        exit( 1 );
+    }
 
     StereoCalib stereocal((basedir+"/"+stereo_calib_file_name).c_str());
     OpenThreads::Mutex mutex;
     double min_feat_dist=3.0;
     double quality=0.0001;
-    StereoEngine engine(stereocal,edgethresh,epipolar_dist,max_triangulation_len,max_feature_count,min_feat_dist,quality,tex_size,mutex);
+    StereoEngine engine(stereocal,edgethresh,max_triangulation_len,max_feature_count,min_feat_dist,quality,tex_size,mutex);
     osg::BoundingBox bbox;
-    engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,feature_depth_guess,true);
+    MatchStats stats;
+    engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,stats,feature_depth_guess,true,false);
 
 
     //

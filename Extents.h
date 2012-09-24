@@ -409,7 +409,7 @@ else
         }
     }
 
-    bool valid() const { return _gc.valid() && _gc->isRealized(); }
+    bool valid() const { return _gc.valid() && _gc->isRealized() &&_gc->getTraits()->width >0  &&_gc->getTraits()->height >0; }
 
 private:
     osg::ref_ptr<osg::GraphicsContext> _gc;

@@ -441,6 +441,10 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read( "-t" ,num_threads);
     if(num_threads > 1)
         display_debug_images = false;
+
+    recon_config_file->set_value( "SKF_SHOW_DEBUG_IMAGES" , display_debug_images );
+    recon_config_file->set_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
+    recon_config_file->set_value( "SD_SHOW_DEBUG_IMAGES"  , display_debug_images );
     argp.read( "--res",vrip_res );
 
     if(argp.read( "-n",max_frame_count))
@@ -747,8 +751,12 @@ const char *uname="mesh";
 
   /*  osgDB::makeDirectory("mesh-pos");
 
-    chmod("mesh-pos",   0777);
-*/
+    chmod("mesh-pos",   0777);*/
+    osgDB::makeDirectory("debug");
+
+    chmod("debug",   0777);
+
+
     osgDB::makeDirectory(cachedmeshdir);
     chmod(cachedmeshdir,   0777);
     for(int i=0; i < (int)cachedtexdir.size(); i++){
@@ -983,19 +991,34 @@ const char *uname="mesh";
         double max_triangulation_len =  max_alt > 0.0 ? max_alt*3 : edgethresh * 20;
 #pragma omp parallel num_threads(num_threads)
         if(run_stereo){
-            StereoEngine engine(calib,edgethresh,epipolar_dist,max_triangulation_len,max_feature_count,  min_feat_dist, feat_quality_level,lodTexSize[0],mutex);
+            StereoEngine engine(calib,*recon_config_file,edgethresh,max_triangulation_len,max_feature_count,  min_feat_dist, feat_quality_level,lodTexSize[0],mutex,false,pause_after_each_frame);
             cvSetNumThreads(1);
 #pragma omp for
             for(int i=0; i < (int)tasks.size(); i++){
-                tasks[i].valid=engine.processPair(base_dir,tasks[i].left_name,
-                                                  tasks[i].right_name,tasks[i].mat,tasks[i].bbox,AUV_NO_Z_GUESS,hw_image);
+                MatchStats stats;
+                StereoStatusFlag statusFlag=engine.processPair(base_dir,tasks[i].left_name,
+                                                  tasks[i].right_name,tasks[i].mat,tasks[i].bbox,stats,feature_depth_guess,hw_image,use_cached);
 
-#pragma omp atomic
-                progCount++;
+#pragma omp critical
+                {
+                    if(statusFlag == FAIL_OTHER)
+                        tasks[i].valid=false;
+                    else
+                        tasks[i].valid=true;
 
-               if(!silent)
-                   formatBar("Stereo",startTick,progCount,totalTodoCount);
-
+                    progCount++;
+                    if(statusFlag == FAIL_FEAT_THRESH || statusFlag == FAIL_TRI_EDGE_THRESH){
+                        delayMessageFrame=10;
+                        printf("\r%s[ TrackRej %03d EpiRej %03d TriRej %03d OK %03d: %s ]%s", KBGRDRED,stats.total_tracking_fail,
+                               stats.total_epi_fail,stats.total_tri_fail,stats.total_accepted_feat,tasks[i].left_name.c_str(),KNRM); fflush(stdout);
+                    }else{
+                        if(delayMessageFrame > 0){
+                            delayMessageFrame--;
+                        }else{
+                            formatBar("Stereo",startTick,progCount,totalTodoCount);
+                        }
+                    }
+                }
             }
         }
         if(!silent)

@@ -1273,6 +1273,7 @@ const char *uname="mesh";
         string plymccmd="plymc.py";
         std::vector<string> postcmd;
         char tmpcmd[1024];
+        tmpcmd[0]='\0';
        /* const char *opts=" ";//-w0  -L0 -q50 -R0";
        // sprintf(tmpcmd,"cd %s;%s/vcgapps/bin/plymc_outofcore -i1 -M -V%f %s -S %d %d %d -o%s/vol %s",
         sprintf(tmpcmd,"cd %s;%s/vcgapps/bin/plymc -M -V%f %s -S %d %d %d -o%s/vol %s",

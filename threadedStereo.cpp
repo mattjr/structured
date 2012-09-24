@@ -21,7 +21,6 @@
 #include <osgUtil/DelaunayTriangulator>
 #include "PLYWriterNodeVisitor.h"
 #include <osg/ComputeBoundsVisitor>
-#include "configFile.h"
 #include "ShellCmd.h"
 #include "stereo_cells.hpp"
 #include <limits>
@@ -140,7 +139,7 @@ static double epipolar_dist;
 static double feat_quality_level;
 const char *aggdir="tmp/mesh-agg";
 static const char *serfile="localserver";
-
+static double plymc_expand_by=0.0;
 MyGraphicsContext *mgc=NULL;
 #define diced_fopen(x,y) fopen((string(diced_dir)+string(x)).c_str(),y)
 
@@ -374,7 +373,8 @@ static bool parse_args( int argc, char *argv[ ] )
                                   95);
     recon_config_file->get_value( "SCF_MAX_EPIPOLAR_DIST", epipolar_dist,
                                   4.0);
-
+    recon_config_file->get_value( "PLYMC_EXPAND_BY", plymc_expand_by,
+                                  0.0);
     if(recon_config_file->get_value( "REIMAGE_RES",reimageSize.x(),-1)){
         reimageSize.y()=reimageSize.x();
     }
@@ -412,6 +412,8 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--tex-margin",tex_margin);
     argp.read("--bbox-margin",bbox_margin);
     argp.read( "--sparseratio" ,sparseRatio);
+    argp.read( "--expand" ,plymc_expand_by);
+
     useReimage=false;
     useVirtTex=true;
     if(argp.read("--novt")){
@@ -668,7 +670,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
 
 
 bool getBBoxFromMesh(Stereo_Pose_Data &name){
-    ifstream mesh(string(aggdir+name.mesh_name).c_str());
+    ifstream mesh(string(string(aggdir)+string("/")+name.mesh_name).c_str());
     if(!mesh.good())
         return false;
     string line;
@@ -819,6 +821,7 @@ const char *uname="mesh";
 
     printf("Processing Meshes...\n");
     double max_alt=0;
+    char stereo_conf_name[2048];
 
     if(!externalMode){
         unsigned int stereo_pair_count =0;
@@ -883,18 +886,17 @@ const char *uname="mesh";
 
 
 
-        char conf_name[2048];
 
-        sprintf(conf_name,"%s/meshes.txt",aggdir);
+        sprintf(stereo_conf_name,"%s/meshes.txt",aggdir);
 
 
-        conf_ply_file=fopen(conf_name,"w");
+        conf_ply_file=fopen(stereo_conf_name,"w");
         if(!conf_ply_file){
-            fprintf(stderr,"Can't open %s\n",conf_name);
+            fprintf(stderr,"Can't open %s\n",stereo_conf_name);
             exit(-1);
         }
 
-        chmod(conf_name,0666);
+        chmod(stereo_conf_name,0666);
 
         int valid=0;
         for(unsigned int i=0; i < tasks.size(); i++){
@@ -965,9 +967,10 @@ const char *uname="mesh";
 
     ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,cwd,aggdir,diced_dir,num_threads);
     shellcm.write_setup();
-    /* string stereocmd="stereo.py";
-
-        shellcm.write_generic(stereocmd,conf_name,"Stereo");
+    string stereocmd="stereo.py";
+#define EXTERNSTEREO 1
+    #ifdef EXTERNSTEREO
+        shellcm.write_generic(stereocmd,stereo_conf_name,"Stereo");
         if(run_stereo)
             sysres=system("./stereo.py");
 
@@ -981,13 +984,18 @@ const char *uname="mesh";
 
             }
         }
-*/        double totalValidArea=0;
+
+        double totalValidArea=0;
+#endif
 
     if(!externalMode){
+#ifndef EXTERNSTEREO
+
         osg::Timer_t startTick= osg::Timer::instance()->tick();
         int totalTodoCount=tasks.size();
         int progCount=0;
         OpenThreads::Mutex mutex;
+        int delayMessageFrame=0;
         double max_triangulation_len =  max_alt > 0.0 ? max_alt*3 : edgethresh * 20;
 #pragma omp parallel num_threads(num_threads)
         if(run_stereo){
@@ -1042,6 +1050,8 @@ const char *uname="mesh";
 
         }
         printf("\n");
+#endif
+
         FILE *totalfp=diced_fopen("totalbbox.txt","w");
 
 
@@ -1282,7 +1292,7 @@ const char *uname="mesh";
     split_bounds<Stereo_Pose_Data>(bounds,tasks , targetVolume,minSplits,vol);
     if(!externalMode){
     {
-        WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks);
+        WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks,plymc_expand_by);
         int splits[3]={0,0,0};
         foreach_vol(cur,vol){
           //  cout <<cur->bounds.bbox._min<<" "<<cur->bounds.bbox._max<<endl;

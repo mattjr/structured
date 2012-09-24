@@ -134,12 +134,13 @@ class WriteSplitTP : public WriteTP{
 
 class WriteBoundTP : private WriteTP{
     public:
-    WriteBoundTP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks);
+    WriteBoundTP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy);
     bool write_cmd(Cell_Data<Stereo_Pose_Data> cell);
     std::string bboxfn;
     std::string getCmdFileName(){return cmdfn;}
     void close(){ if(cmdfp) fclose(cmdfp); if(cmd2fp) fclose(cmd2fp);}
     FILE*cmd2fp;
+    double _expandBy;
 
 
 

@@ -110,7 +110,7 @@ int main( int argc, char *argv[ ] )
     string stereo_calib_file_name="stereo.calib";
      Config_File *recon_config_file;
     try {
-        recon_config_file= new Config_File("mesh.cfg");
+        recon_config_file= new Config_File((basedir+"/"+"mesh.cfg").c_str());
     }   catch( string error ) {
         cerr << "ERROR - " << error << endl;
         exit( 1 );
@@ -120,7 +120,10 @@ int main( int argc, char *argv[ ] )
     OpenThreads::Mutex mutex;
     double min_feat_dist=3.0;
     double quality=0.0001;
-    StereoEngine engine(stereocal,edgethresh,max_triangulation_len,max_feature_count,min_feat_dist,quality,tex_size,mutex);
+
+    StereoEngine engine(stereocal,*recon_config_file,edgethresh,max_triangulation_len,max_feature_count,min_feat_dist,quality,tex_size,mutex,false,false);
+    cvSetNumThreads(1);
+
     osg::BoundingBox bbox;
     MatchStats stats;
     engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,stats,feature_depth_guess,true,false);

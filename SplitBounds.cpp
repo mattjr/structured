@@ -11,7 +11,7 @@ osg::Matrix  osgTranspose( const osg::Matrix& src )
     return dest;
 }
 
-WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks):WriteTP(res,fname,basepath,cwd){
+WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy):WriteTP(res,fname,basepath,cwd),_expandBy(expandBy){
     cmdfp =fopen(fname.c_str(),"w");
     if(!cmdfp){
         fprintf(stderr,"Can't create cmd file");
@@ -47,9 +47,14 @@ bool WriteBoundTP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
  const char *app=(runs ==1)? "plymc":"plymc_outofcore";
  for(int i=0; i<runs; i++){
      // fprintf(fps[i],"cd %s;%s/vcgapps/bin/%s -M -V%f -i%d -s %d %d %d %d %d %d -o%s/vol %s",
+     char expand_str[1024];
+     if(_expandBy > 0.0)
+         sprintf(expand_str,"-W%f",_expandBy);
+     else
+         sprintf(expand_str," ");
 
- fprintf(fps[i],"cd %s;%s/vcgapps/bin/%s -M -V%f  -s %d %d %d %d %d %d -o%s/vol %s",
-       _cwd.c_str(),  _basepath.c_str(),app,_res,
+ fprintf(fps[i],"cd %s;%s/vcgapps/bin/%s %s -V%f  -s %d %d %d %d %d %d -o%s/vol %s",
+       _cwd.c_str(),  _basepath.c_str(),app,expand_str,_res,
                     cell.splits[0],
                     cell.splits[1],
                     cell.splits[2],

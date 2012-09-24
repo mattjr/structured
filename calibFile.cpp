@@ -13,6 +13,7 @@ have_rect_params(false)
 }
 void StereoCalib::load_from_file( const string &calib_file_name )
 {
+    filename=calib_file_name;
     // Open the calibration file
     ifstream in_file( calib_file_name.c_str( ) );
     if( !in_file )

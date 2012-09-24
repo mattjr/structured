@@ -34,7 +34,7 @@ public:
                                                  bool have_3rd_radial_param);
     bool have_3rd_radial_param;
     bool have_rect_params;
-
+    std::string filename;
 
 };
 

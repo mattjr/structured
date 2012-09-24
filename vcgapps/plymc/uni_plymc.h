@@ -558,7 +558,7 @@ int cnt=0;
         Volume<Voxelf> &VV =vVV[xx][yy][zz];
 
         std::string filename=p.basename;
-        if(p.IDiv!=Point3i(1,1,1))
+      //  if(p.IDiv!=Point3i(1,1,1))
         {
           std::string subvoltag;
           VV.GetSubVolumeTag(subvoltag);

@@ -36,6 +36,22 @@
 #include <osgUtil/Optimizer>
 #include <osg/io_utils>
 #include <sys/time.h>
+#define USE_AUV_LIBS
+#ifdef USE_AUV_LIBS
+#include "auv_stereo_geometry_compat.hpp"
+#include "auv_stereo_keypoint_finder.hpp"
+#include "adt_image_norm.hpp"
+#include "auv_stereo_dense.hpp"
+#include "gts.h"
+#include "TriMesh.h"
+#include "TriMesh_algo.h"
+#include "XForm.h"
+#include "auv_mesh_utils.hpp"
+#include "auv_mesh.hpp"
+#include "auv_mesh_io.hpp"
+#include "auv_geometry.hpp"
+using namespace libsnapper;
+#endif
 using namespace std;
 void cacheImage(IplImage *img,string name,int tex_size){
 
@@ -226,13 +242,14 @@ void apply_epipolar_constraints(
 
 
 
-StereoEngine::StereoEngine(const StereoCalib &calib,double edgethresh,double epipolar_dist,double max_triangulation_len,int max_feature_count,double min_feat_dist,double feat_quality,int tex_size,OpenThreads::Mutex &mutex):
-        _calib(calib),edgethresh(edgethresh),_epipolar_dist(epipolar_dist),max_triangulation_len(max_triangulation_len),max_feature_count(max_feature_count),min_feat_dist(min_feat_dist),feat_quality(feat_quality), tex_size(tex_size),
-        verbose(false),display_debug_images(false),pause_after_each_frame(false),_osgDBMutex(mutex)
+StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double edgethresh,double max_triangulation_len,int max_feature_count,double min_feat_dist,double feat_quality,int tex_size,OpenThreads::Mutex &mutex,bool use_dense_stereo,bool pause_after_each_frame):
+        _calib(calib),_recon(recon),edgethresh(edgethresh),max_triangulation_len(max_triangulation_len),max_feature_count(max_feature_count),min_feat_dist(min_feat_dist),feat_quality(feat_quality), tex_size(tex_size),
+    verbose(false),display_debug_images(false),_osgDBMutex(mutex),use_dense_stereo(use_dense_stereo),pause_after_each_frame(pause_after_each_frame)
 {
 
 
     imageSize = cvSize(calib.camera_calibs[0].width,calib.camera_calibs[0].height);
+    _recon.get_value( "SCF_SHOW_DEBUG_IMAGES"  , display_debug_images );
 
 
     // leftImageR = cvCreateImage(imageSize, IPL_DEPTH_8U, 3);
@@ -293,6 +310,19 @@ StereoEngine::StereoEngine(const StereoCalib &calib,double edgethresh,double epi
     std::cout<<"uniquenessRatio- "<<BMState->uniquenessRatio<<std::endl;//=15;
 */
     loadMatrices();
+#ifdef USE_AUV_LIBS
+    _auv_stereo_calib = new libsnapper::Stereo_Calib(calib.filename);
+    double image_scale=1.0;
+    bool use_undistorted_images=false;
+    finder = new Stereo_Corner_Finder( recon,
+                       use_undistorted_images,
+                       image_scale,
+                       _auv_stereo_calib );
+
+    frame_id=0;
+    recon.get_value( "SCF_DEBUG_PER_REJECTED_OUTPUT_DEBUG", thresh_per_rejected_output_debug, SCF_THRESH_PER_REJECT );
+    recon.get_value( "DEBUG_MIN_FEAT_PER_FRAME",minFeatPerFrameThresh,100);
+#endif
 }
 
 StereoEngine::~StereoEngine()
@@ -1394,7 +1424,7 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
         //be sure the point's are saved in right matrix format 2xN 1 channel
 
     }
-    apply_epipolar_constraints(&F,_epipolar_dist,undist_coords1,undist_coords2,Rstatus,_calib);
+    apply_epipolar_constraints(&F,2.0,undist_coords1,undist_coords2,Rstatus,_calib);
 
     for ( int i=0; i < count; i++)
     {
@@ -1424,7 +1454,7 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
         //  cout << point3D->data.db[0] << " " << point3D->data.db[1] << " " << point3D->data.db[2];
         //cout << " "<<tmpL.x<< " "<< tmpL.y<< " "<< tmpR.x<< " "<<tmpR.y << endl;
         osg::Vec3 pt(point3D->data.db[0],point3D->data.db[1],point3D->data.db[2]);
-        if(pt.z() > 0.0 /*&& pt.length2() < max_triangulation_len*max_triangulation_len*/)
+        if(pt.z() > 0.0 && pt.length2() < max_triangulation_len*max_triangulation_len)
             points.push_back(pt);
         cvReleaseMat(&_pointImg1);
         cvReleaseMat(&_pointImg2);
@@ -1508,7 +1538,7 @@ void StereoEngine::displayOpticalFlow()
 }
 
 #endif
-bool StereoEngine::processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,const double feature_depth_guess,bool cache_img){
+StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,MatchStats &stats,const double feature_depth_guess,bool cache_img,bool use_cached){
 
     char cachedtexdir[1024];
     char meshfilename[1024];
@@ -1516,10 +1546,11 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
     char texfilename[1024];
     string imgadd= ((left_file_name.size() == osgDB::getSimpleFileName(left_file_name).size())? "/img/": "/");
     string imgdir=basedir+imgadd;
-
-    string cached_dir=basedir+"/tmp/cache-mesh-feat";
+    StereoStatusFlag statusFlag=STEREO_OK;
+    string cached_dir=basedir+"/cache-mesh-feat";
     checkmkdir(cached_dir);
-    string outputdir="tmp/mesh-agg/";
+
+    string outputdir="mesh-agg/";
     checkmkdir(outputdir);
     if(cache_img){
         sprintf(cachedtexdir,"%s/cache-tex-%d",basedir.c_str(),tex_size);
@@ -1530,13 +1561,14 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
     sprintf(tcmeshfilename,"%s/surface-%s.tc.ply",outputdir.c_str(),osgDB::getSimpleFileName(osgDB::getNameLessExtension(left_file_name)).c_str());
     sprintf(texfilename,"%s/%s.png",
             cachedtexdir,osgDB::getSimpleFileName(osgDB::getNameLessExtension(left_file_name)).c_str());
-    bool cachedMesh=osgDB::fileExists(meshfilename);
+    bool cachedMesh= use_cached ? osgDB::fileExists(meshfilename) : false;
     bool cachedTex=cache_img ? osgDB::fileExists(texfilename) : true;
 
     IplImage *left_frame;
     IplImage *color_image;
     IplImage *right_frame;
-
+    unsigned int left_frame_id=frame_id++;
+    unsigned int right_frame_id=frame_id++;
     double load_start_time;
     double load_end_time;
 
@@ -1556,7 +1588,7 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
                 left_frame, right_frame,color_image,
                 left_file_name, right_file_name ) )
         {
-            return false;
+            return FAIL_OTHER;
         }
         load_end_time = get_time( );
         if(verbose)
@@ -1566,6 +1598,284 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
         if(!cachedTex)
             cacheImage(color_image,texfilename,tex_size);
     }
+
+#ifdef USE_AUV_LIBS
+    TriMesh *mesh=NULL;
+    TriMesh::verbose=0;
+    bool no_depth=false;
+    GtsSurface *surf=NULL;
+    if(!cachedMesh){
+    int mesh_verts=0;
+      //printf("Not cached creating\n");
+
+     // if(feature_depth_guess == AUV_NO_Z_GUESS && !no_depth)
+   // feature_depth_guess = name.alt;
+
+      list<libsnapper::Stereo_Feature_Estimate> feature_positions;
+      GPtrArray *localV=NULL;
+      list<Feature *> features;
+      if(!use_dense_stereo){
+    //
+    // Find the features
+    //
+
+     stats=finder->find( left_frame,
+              right_frame,
+              left_frame_id,
+              right_frame_id,
+              max_feature_count,
+              features,
+              feature_depth_guess );
+
+
+     double per_failed=(stats.total_epi_fail+stats.total_tracking_fail)/(double)stats.total_matched_feat;
+
+     if(thresh_per_rejected_output_debug > 0 && per_failed > thresh_per_rejected_output_debug){
+        statusFlag=FAIL_FEAT_THRESH;
+     }
+
+    //
+    // Triangulate the features if requested
+    //
+
+
+
+    Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
+
+
+
+    /*Matrix pose_cov(4,4);
+      get_cov_mat(cov_file,pose_cov);
+    */
+    //cout << "Cov " << pose_cov << "Pose "<< veh_pose<<endl;
+    stereo_triangulate( *_auv_stereo_calib,
+                ref_frame,
+                features,
+                left_frame_id,
+                right_frame_id,
+                NULL,//image_coord_covar,
+                feature_positions );
+
+    //   static ofstream out_file( triangulation_file_name.c_str( ) );
+
+
+    static Vector stereo1_nav( AUV_NUM_POSE_STATES );
+    // Estimates of the stereo poses in the navigation frame
+
+
+    list<Stereo_Feature_Estimate>::iterator litr;
+    localV = g_ptr_array_new ();
+    GtsRange r;
+    gts_range_init(&r);
+    TVertex *vert;
+    for( litr  = feature_positions.begin( ) ;
+         litr != feature_positions.end( ) ;
+         litr++ )
+      {
+        // if(litr->x[2] > 8.0 || litr->x[2] < 0.25)
+        //continue;
+        //  if(name.alt > 5.0 || name.alt < 0.75)
+        //litr->x[2]=name.alt;
+        vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+                         litr->x[0],litr->x[1],litr->x[2]);
+        //printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
+
+        //double confidence=1.0;
+        Vector max_eig_v(3);
+        /*  if(have_cov_file){
+
+        Matrix eig_vecs( litr->P );
+        Vector eig_vals(3);
+        int work_size = eig_sym_get_work_size( eig_vecs, eig_vals );
+
+        Vector work( work_size );
+        eig_sym_inplace( eig_vecs, eig_vals, work );
+
+        double maxE=DBL_MIN;
+        int maxEidx=0;
+        for(int i=0; i < 3; i++){
+        if(eig_vals[i] > maxE){
+        maxE=eig_vals[i];
+        maxEidx=i;
+        }
+        }
+
+        for(int i=0; i<3; i++)
+        max_eig_v(i)=eig_vecs(i,maxEidx);
+
+        confidence= 2*sqrt(maxE);
+        max_eig_v = max_eig_v / sum(max_eig_v);
+        //    cout << "  eig_ max: " << max_eig_v << endl;
+
+
+        }
+        vert->confidence=confidence;
+        vert->ex=max_eig_v(0);
+        vert->ey=max_eig_v(1);
+        vert->ez=max_eig_v(2);
+        gts_range_add_value(&r,vert->confidence);*/
+        g_ptr_array_add(localV,GTS_VERTEX(vert));
+
+
+      }
+    list<Feature*>::iterator fitr;
+    for( fitr  = features.begin( ) ;
+         fitr != features.end( ) ;
+         fitr++ )
+      {
+        delete *fitr;
+      }
+
+
+
+    /*	 gts_range_update(&r);
+         for(unsigned int i=0; i < localV->len; i++){
+         TVertex *v=(TVertex *) g_ptr_array_index(localV,i);
+         if(have_cov_file){
+         float val= (v->confidence -r.min) /(r.max-r.min);
+         jet_color_map(val,v->r,v->g,v->b);
+         }
+         }
+    */
+        mesh_verts=localV->len;
+        double mult=0.00;
+        if(mesh_verts){
+            surf = auv_mesh_pts(localV,mult,0);
+            FILE *fp = fopen(meshfilename, "w" );
+            if(!fp){
+                fprintf(stderr,"\nWARNING - Can't open mesh file %s\n",meshfilename);
+                fflush(stderr);
+
+                // clean up
+                cvReleaseImage( &left_frame );
+                cvReleaseImage( &right_frame );
+                cvReleaseImage( &color_image);
+                return FAIL_OTHER;
+            }
+            bool have_cov_file=false;
+            auv_write_ply(surf, fp,have_cov_file,"test");
+            fflush(fp);
+            fclose(fp);
+            //Destory Surf
+            if(surf)
+              gts_object_destroy (GTS_OBJECT (surf));
+
+
+            // delete the vertices
+            g_ptr_array_free( localV, true );
+        }
+      }else{
+#ifdef USE_DENSE_STEREO
+
+    sdense->dense_stereo(left_frame,right_frame);
+        std::vector<libplankton::Vector> points;
+        IplImage *mask =cvCreateImage(cvSize(sdense->getDisp16()->width,sdense->getDisp16()->height),IPL_DEPTH_8U,1);
+        cvZero(mask);
+        sdense->get_points(points,mask);
+        mesh=get_dense_grid(mask,points);
+        cvReleaseImage(&mask);
+        mesh_verts = points.size();
+        if(mesh && mesh_verts)
+            mesh->write(meshfilename);
+
+        /*TVertex *vert;
+    for(int i=0; i<(int)points.size(); i++){
+      //	  printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
+      if(points[i](2) > dense_z_cutoff )
+        continue;
+
+      vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+                       points[i](0),points[i](1),
+                       points[i](2));
+      g_ptr_array_add(localV,GTS_VERTEX(vert));
+        } */
+#else
+    fprintf(stderr,"Dense support not compiled\n");
+    exit(0);
+    }
+#endif
+    }
+      if(!cachedMesh){
+
+              if( display_debug_images && pause_after_each_frame ){
+                  cout << left_file_name<<endl;
+                          cvWaitKey( 0 );
+              }
+              else if( display_debug_images )
+                  cvWaitKey( 100 );
+
+    }
+    }
+
+mesh = TriMesh::read(meshfilename);
+if(!mesh)
+    fprintf(stderr,"\nWARNING - mesh null after doing dense stereo\n");
+
+  if(!mesh){
+      fprintf(stderr,"\nWARNING - No cached mesh file %s\n",meshfilename);
+      fflush(stderr);
+
+      // clean up
+      cvReleaseImage( &left_frame );
+      cvReleaseImage( &right_frame );
+      cvReleaseImage( &color_image);
+      return FAIL_OTHER;
+  }
+    unsigned int triFeat=mesh->vertices.size();
+
+  edge_len_thresh(mesh,edgethresh);
+  unsigned int postEdgeThreshTriFeat=mesh->vertices.size();
+ // printf("%d/%d %f %f\n",(triFeat-postEdgeThreshTriFeat),triFeat,(triFeat-postEdgeThreshTriFeat)/(double)triFeat,
+      //   thresh_per_rejected_output_debug);
+  stats.total_tri_fail=triFeat-postEdgeThreshTriFeat;
+  if(( stats.total_tri_fail)/(double)triFeat > thresh_per_rejected_output_debug || postEdgeThreshTriFeat < minFeatPerFrameThresh){
+      char tmp[1024];
+      sprintf(tmp,"debug/%s-edgefail.txt",osgDB::getSimpleFileName(osgDB::getNameLessExtension(left_file_name)).c_str());
+
+      FILE *fp=fopen(tmp,"w");
+      fprintf(fp,"Init,Matched,PostEpipolar,Tri,TriEdge\n");
+      fprintf(fp,"%d,%d,%d,%d,%d\n",stats.total_init_feat,stats.total_matched_feat,stats.total_accepted_feat,triFeat,postEdgeThreshTriFeat);
+      fclose(fp);
+  }
+
+  if(!mesh->faces.size()){
+      fprintf(stderr,"\nWARNING - Mesh empty after edge threshold clipping %s\n",meshfilename);
+      fflush(stderr);
+
+      // clean up
+      cvReleaseImage( &left_frame );
+      cvReleaseImage( &right_frame );
+      cvReleaseImage( &color_image);
+      return FAIL_TRI_EDGE_THRESH;
+  }
+
+  /*xform xf(mat(0,0),mat(1,0),mat(2,0),mat(3,0),
+       mat(0,1),mat(1,1),mat(2,1),mat(3,1),
+       mat(0,2),mat(1,2),mat(2,2),mat(3,2),
+           mat(0,3),mat(1,3),mat(2,3),mat(3,3));
+*/
+  xform xf(mat(0,0),mat(0,1),mat(0,2),mat(0,3),
+       mat(1,0),mat(1,1),mat(1,2),mat(2,3),
+       mat(2,0),mat(2,1),mat(2,2),mat(2,3),
+           mat(3,0),mat(3,1),mat(3,2),mat(3,3));
+
+
+  stats.total_accepted_feat=mesh->vertices.size();
+
+  apply_xform(mesh,xf);
+  mesh->need_bbox();
+  osg::Vec3 maxbb(mesh->bbox.max[0],mesh->bbox.max[1],mesh->bbox.max[2]);
+
+  osg::Vec3 minbb(mesh->bbox.min[0],mesh->bbox.min[1],mesh->bbox.min[2]);
+  osg::BoundingBox tbbox;
+  tbbox.expandBy(maxbb);
+  tbbox.expandBy(minbb);
+  std::stringstream str;
+  str << minbb << " " << maxbb;
+  mesh->write(tcmeshfilename,str.str().c_str());
+  bbox = tbbox;
+
+#else
     osg::ref_ptr<osg::DrawElementsUInt> tris;
     osg::ref_ptr<osg::Vec3Array> points;
     osg::ref_ptr<osg::Geometry> gm;
@@ -1582,40 +1892,38 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
         if(!node.valid()){
             fprintf(stderr,"Can't load ply file\n");
             cachedMesh=false;
-	    return false;
+        return false;
         }else{
-	  geode=node->asGeode();
-	  if(!geode.valid()){
+      geode=node->asGeode();
+      if(!geode.valid()){
             fprintf(stderr,"Can't load ply file not GEODE\n");
             cachedMesh=false;
-	  }
-	  osg::Drawable *drawable = geode->getDrawable(0);
-	  gm = dynamic_cast< osg::Geometry*>(drawable);
-	  if(!gm.valid()){
+      }
+      osg::Drawable *drawable = geode->getDrawable(0);
+      gm = dynamic_cast< osg::Geometry*>(drawable);
+      if(!gm.valid()){
             fprintf(stderr,"Can't load ply file not GEOM\n");
             cachedMesh=false;
-	  }
+      }
           points=static_cast<osg::Vec3Array*>(gm->getVertexArray());
           tris=static_cast<osg::DrawElementsUInt *>(gm->getPrimitiveSet(0));
-	  
-	  if(!points || !tris){
+
+      if(!points || !tris){
             fprintf(stderr,"Can't load ply file no points\n");
             cachedMesh=false;
-	  }
-	  if(points->size()< 3 || !tris->size()){
+      }
+      if(points->size()< 3 || !tris->size()){
             if(!cachedTex){
-	      cvReleaseImage( &left_frame );
-	      cvReleaseImage( &right_frame );
-	      if(color_image)
-		cvReleaseImage( &color_image );
-	      
+          cvReleaseImage( &left_frame );
+          cvReleaseImage( &right_frame );
+          if(color_image)
+        cvReleaseImage( &color_image );
+
             }
-            return false;
-	  }
-	}
+            return FAIL_FEAT_THRESH;
+      }
     }
-
-
+    }
     if(!cachedMesh){
 
 
@@ -1661,7 +1969,7 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
                     cvReleaseImage( &color_image );
 
             }
-            return false;
+            return FAIL_OTHER;
         }
         geode = new osg::Geode();
         gm = new osg::Geometry;
@@ -1681,7 +1989,7 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
                         cvReleaseImage( &color_image );
 
                 }
-                return false;
+                return FAIL_OTHER;
             }
             PLYWriterNodeVisitor nv(f,NULL,NULL);
             geode->accept(nv);
@@ -1689,7 +1997,8 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
         double tri_end_time = get_time( );
 
         if(verbose)
-        {
+        {                cvReleaseImage( &color_frame);
+
             cout << "Trianulation finding time   "<< (tri_end_time-tri_start_time) <<endl;
             cout << endl;
             cout << "------------------------------------" << endl;
@@ -1768,11 +2077,13 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
                     cvReleaseImage( &color_image );
 
             }
-            return false;
+            return FAIL_OTHER;
         }
         PLYWriterNodeVisitor nv(f,NULL,NULL,str.str());
         geode->accept(nv);
     }
+
+#endif
 
     //
     // Clean-up
@@ -1784,6 +2095,6 @@ bool StereoEngine::processPair(const std::string basedir,const std::string left_
             cvReleaseImage( &color_image );
 
     }
-    return true;
+    return statusFlag;
 }
 // vim:ts=4:sw=4

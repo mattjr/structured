@@ -296,7 +296,7 @@ void GeometryProcessor::pdiv_and_vt()
 			v.y = (viewport_.py * -v.y + viewport_.oy) >> 12;
                        // printf("Orig Z: %f\n",fix2float<16>(v.z));
                         //v.z = fixmul<16>(depth_range_.fmndiv2,v.z) + depth_range_.npfdiv2;
-                        int tmp=fixdiv<16>(v.z-depth_range_.npfdiv2,depth_range_.fmndiv2);
+                        //int tmp=fixdiv<16>(v.z-depth_range_.npfdiv2,depth_range_.fmndiv2);
                        // printf("!tra Z: %f\n",fix2float<16>(tmp));
                       //  printf("leaveing 0x%x\n",v.z);
 			already_processed[indices_[i]] = true;

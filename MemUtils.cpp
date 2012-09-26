@@ -85,9 +85,28 @@ string getProj4StringForAUVFrame(double lat_origin,double lon_origin){
              "+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs",lat_origin,lon_origin,1.0,0.0,0.0);
     return string(szProj4);
 }
+void getULLR(osg::Matrix viewproj,int width,int height,osg::Vec4 &ullr){
+    osg::Matrix screenToWorldmitch=osg::Matrix::inverse(viewproj); // added by mitch
+
+    // Added by Mitch
+    osg::Vec4 tlmitch(-1.0,1.0,0,1.0);
+    osg::Vec4 brmitch(1.0,-1.0,0,1.0);
+    osg::Vec4 tlGlobalmitch=tlmitch*screenToWorldmitch;
+    osg::Vec4 brGlobalmitch=brmitch*screenToWorldmitch;
+
+
+
+
+
+    ullr[0]=tlGlobalmitch.y();
+    ullr[1]=tlGlobalmitch.x();
+    ullr[2]=brGlobalmitch.y();
+    ullr[3]=brGlobalmitch.x();
+
+}
 
 bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int width,int height,string basepath,string ext,int jpegQuality){
-
+#if 0
     osg::Matrix modWindow =( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*width,0.5*height,0.5f));
     osg::Matrix bottomLeftToTopLeft= (osg::Matrix::scale(1,-1,1)*osg::Matrix::translate(0,height,0));
     osg::Matrix worldtoScreen=/*viewMatrix * projMatrix*/ viewproj * modWindow*bottomLeftToTopLeft;
@@ -142,10 +161,19 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
 
                 proj4.c_str());*/
 
+
     sprintf(gdal_param," -a_ullr %.12f %.12f %.12f %.12f -a_srs \"%s\" ",
             tlGlobalmitch.y(),tlGlobalmitch.x(),brGlobalmitch.y(),brGlobalmitch.x(),
             proj4.c_str());
+#endif
+    osg::Vec4 ullr;
+    char gdal_param[4096];
 
+    getULLR(viewproj,width,height,ullr);
+    string proj4=getProj4StringForAUVFrame(geoOrigin.x(),geoOrigin.y());
+    sprintf(gdal_param," -a_ullr %.12f %.12f %.12f %.12f -a_srs \"%s\" ",
+            ullr[0],ullr[1],ullr[2],ullr[3],
+            proj4.c_str());
     char tmp[8192];
     sprintf(tmp,"%s-add_geo.sh",name.c_str());
     FILE *fp=fopen(tmp,"w");
@@ -156,7 +184,7 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
 
 
     fprintf(fp,"#gdal_translate %s %s %s\n",gdal_param,name.c_str(),name.c_str());
-    fprintf(fp,"#geotifcp -e %s %s %s.tif\n",wfname.c_str(),name.c_str(),name.c_str());
+    //fprintf(fp,"#geotifcp -e %s %s %s.tif\n",wfname.c_str(),name.c_str(),name.c_str());
 
     fchmod(fileno(fp),0777);
     fclose (fp);

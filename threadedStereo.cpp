@@ -1303,6 +1303,7 @@ const char *uname="mesh";
             splits[2]=cur->splits[2];
 
         }
+        cout << splits[0] << " " << splits[1] << " " <<splits[2] <<endl;
         string plymccmd="plymc.py";
         std::vector<string> postcmd;
         char tmpcmd[1024];
@@ -2256,9 +2257,9 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
     int tileBorder=1;
     int ajustedGLImageSizeX=(int)reimageSize.x() - (reparamTex ?  0 : ((reimageSize.x()/VTtileSize)*2*tileBorder));
     int ajustedGLImageSizeY=(int)reimageSize.y() - (reparamTex ?  0 : ((reimageSize.y()/VTtileSize)*2*tileBorder));
-    char tmpsize[1024];
+    //char tmpsize[1024];
     int totalX=ajustedGLImageSizeX*_tileRows;
-    int totalY=ajustedGLImageSizeY*_tileColumns;
+    //int totalY=ajustedGLImageSizeY*_tileColumns;
 
     /*if(!reparamTex){
         sprintf(tmpsize," --noatlas --size %d %d ",totalX,totalY);
@@ -2339,14 +2340,14 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
         }
         else{
             string teximgcmd;
-          ostringstream sizestr;
+            ostringstream sizestr;
             teximgcmd = reparamTex? "vcgapps/bin/reorder": "nonmem";
             sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
             if(useVirtTex)
                 sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
             if (!reparamTex)
                 sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
-else
+            else
                 sizestr<<"--scale "<<scaleRemapTex;
 
             fprintf(texcmds_fp,";%s/%s  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
@@ -2365,6 +2366,18 @@ else
                     latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
             if(blending)
                 fprintf(texcmds_fp," --blend");
+
+            fprintf(texcmds_fp,";%s/depthmap  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply  --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d --size %d %d",
+                    basepath.c_str(),
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    vpblod,
+
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    rx,ry,rz,
+                    cells[i].row,cells[i].col,_tileRows,_tileColumns,
+                    latOrigin , longOrigin,jpegQuality,i,ajustedGLImageSizeX,ajustedGLImageSizeY);
 
             fprintf(vartexcmds_fp,"%s/meshvar  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
                     basepath.c_str(),

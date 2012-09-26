@@ -110,7 +110,7 @@ private:
 					index * attributes_[i].stride;
 			}
 
-			unsigned cache_index = index & VERTEX_CACHE_SIZE - 1;
+            unsigned cache_index = index & (VERTEX_CACHE_SIZE - 1);
 			if (vcache[cache_index].index_in != index) {
 				VertexOutput& out = 
 					*static_cast<Derived*>(this)->acquire_output_location();

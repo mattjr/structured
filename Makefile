@@ -4,7 +4,8 @@
 # exist it is created.
 #
 
-BUILD_DIR = build
+BUILD_DIR = /tmp/$(shell whoami)/$(shell pwd) 
+SOURCE_DIR = $(shell pwd)
 
 ifndef OSTYPE
    OSTYPE = $(shell uname)
@@ -36,22 +37,22 @@ all: setup
 
 debug: setup
 	@cd $(BUILD_DIR); \
-	cmake .. -DCMAKE_BUILD_TYPE=Debug
+	cmake $(SOURCE_DIR) -DCMAKE_BUILD_TYPE=Debug
 	make ${ARGS}
 
 release: setup
 	@cd $(BUILD_DIR); \
-	cmake .. -DCMAKE_BUILD_TYPE=Release
+	cmake $(SOURCE_DIR) -DCMAKE_BUILD_TYPE=Release
 	make ${ARGS} 
 
 relwithdebinfo: setup
 	@cd $(BUILD_DIR); \
-	cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+	cmake $(SOURCE_DIR) -DCMAKE_BUILD_TYPE=RelWithDebInfo
 	make ${ARGS} 
 
 minsizerel: setup
 	@cd $(BUILD_DIR); \
-	cmake .. -DCMAKE_BUILD_TYPE=MinSizeRel
+	cmake $(SOURCE_DIR) -DCMAKE_BUILD_TYPE=MinSizeRel
 	make ${ARGS} 
 
 
@@ -75,12 +76,12 @@ setup:
 	then \
            if ! test -f $(BUILD_DIR)/Makefile  ; then \
 	      cd $(BUILD_DIR); \
-	      cmake ..; \
+	      cmake $(SOURCE_DIR); \
            fi \
 	else \
 	   mkdir -p $(BUILD_DIR); \
 	   cd $(BUILD_DIR); \
-	   cmake ..; \
+	   cmake $(SOURCE_DIR); \
 	fi 
 
 

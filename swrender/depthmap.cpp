@@ -325,7 +325,7 @@ int main(int ac, char *av[]) {
             _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
             viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
         }
-    sprintf(filename,"%s/image_r%04d_c%04d_rs%04d_cs%04d",diced_img_dir,row,col,_tileRows,_tileColumns);
+    sprintf(filename,"mosaic/depth_r%04d_c%04d_rs%04d_cs%04d.tif",row,col,_tileRows,_tileColumns);
 
     //unsigned int _tileRows;
     //unsigned int _tileColumns;
@@ -494,9 +494,7 @@ int main(int ac, char *av[]) {
 
             g.draw_triangles(3, indices);
         }
-        char tmp2[1024];
-        sprintf(tmp2,"%s.tif",filename);
-        cout <<"writing " << tmp2<<endl;
+        cout <<"writing " << filename<<endl;
           GDALAllRegister();
        // PFMWrite((float*)outputImage->imageData,tmp2,outputImage->width,outputImage->height);
        // cvSet(outputImage,cvScalar(-1.0));
@@ -505,7 +503,7 @@ int main(int ac, char *av[]) {
          string proj4=getProj4StringForAUVFrame(lat,lon);
          osg::Vec4 a_ullr;
          getULLR(viewProjRead,sizeX,sizeY,a_ullr);
-         TiffWrite((float*)outputImage->imageData,tmp2,outputImage->width,outputImage->height,proj4,a_ullr);
+         TiffWrite((float*)outputImage->imageData,filename,outputImage->width,outputImage->height,proj4,a_ullr);
 
         /*sprintf(tmp,"%s/%s.png",ddir.c_str(),itr->second.filename.c_str());
         if(!globalRange)

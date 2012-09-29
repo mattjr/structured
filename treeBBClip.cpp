@@ -153,9 +153,22 @@ int main( int argc, char **argv )
 
         }
     }
+    string empt=outfilename+".empty";
+
     if(!vertexData._vertices.valid() || vertexData._vertices->size() == 0){
         fprintf(stderr,"No valid data in bbox returning %d\n",vertexData._vertices.valid() ?  vertexData._vertices->size() : -1 );
+        FILE *fp=fopen(empt.c_str(),"w");
+        fprintf(fp,"0\n");
+        fclose(fp);
         return 0;
+    }
+    if(osgDB::fileExists(empt)){
+        if( remove( empt.c_str() ) != 0 ){
+            perror( "Error deleting empty file" );
+            exit(-1);
+        }
+        else
+            puts( "empty File successfully deleted" );
     }
     /*
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);

@@ -144,6 +144,8 @@ Added GPL comments
 #include "../GLImaging.h"
 #include "../swrender/VertexShaders.h"
 #include "../swrender/FragmentShaders.h"
+#include "../swrender/Raster.h"
+#include "../swrender/VipsSampler.h"
 #include "GenParam.h"
 // the software renderer stuff is located in the namespace "swr" so include
 // that here
@@ -443,6 +445,9 @@ int main(int ac, char *av[]) {
     }
     mat4x  viewProjReadA ;
     mat4x  viewProjRemapped ;
+    osg::Vec3 positions[4];
+        osg::Vec3 normals[4];
+        osg::Vec2 texcoords[4];
 
     osg::Matrixd viewProjRead;
     std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
@@ -660,7 +665,8 @@ int main(int ac, char *av[]) {
 
         }
         _file.close();
-*/
+*/      vips::VImage colorOutput(outputImage[0]);
+        VipsSampler viSamp(colorOutput);
 
         osg::Matrixd view,proj;
         osg::Vec3d eye(0.5,0.5,0);//totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
@@ -907,6 +913,23 @@ int main(int ac, char *av[]) {
 
                     if(process_tri(itr->second[t],use_vert,vertexData._texCoord,blending)){
                         g[i]->draw_triangles(3, indices);
+                    }
+                    if(i == 1){
+                        int vtxCount=3;
+                        for (uint k = 0; k < vtxCount; k++)
+                        {
+                            texcoords[k].set(newVerts->at(itr->second[t].idx[k]).x()*sizeX,
+                                             (1.0- newVerts->at(itr->second[t].idx[k]).y())*sizeY
+                                             );
+                            positions[k].set(newVerts->at(itr->second[t].idx[k]).x(),
+                                             newVerts->at(itr->second[t].idx[k]).y(),
+                                             newVerts->at(itr->second[t].idx[k]).z());
+
+                        }
+                        viSamp.setCurrentFace(vtxCount, positions, normals);
+
+                        Raster::drawTriangle(RASTER_ANTIALIAS, texSize, texcoords,
+                                    VipsSampler::sampleTriCallback, &viSamp);
                     }
                 }
             }

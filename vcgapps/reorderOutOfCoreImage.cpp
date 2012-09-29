@@ -416,11 +416,7 @@ int main(int ac, char *av[]) {
     arguments.read("--jpeg-quality",jpegQuality);
     bool useDisk=arguments.read("--outofcore");
     arguments.read("--scale",scaleTex);
-    osg::Vec2 srcsize;
-    if(!arguments.read("--srcsize",srcsize.x(),srcsize.y())){
-        fprintf(stderr,"need to have a src image size\n");
-        exit(-1);
-    }
+
     osg::Vec2 vtSize(-1,-1);
     arguments.read("--vt",vtSize.x(),vtSize.y());
 
@@ -502,13 +498,20 @@ int main(int ac, char *av[]) {
              assert(vertexData._vertices->at(tri->at(i+j))[k] == newVerts->at(tri->at(i+j))[k]);
 
         }*/
-        int sizeImage=  calcOptimalImageSize(srcsize,newVerts,tri,texCoord,scaleTex,(int)vtSize.x(),(int)vtSize.y());
-        int sizeX,sizeY; sizeX=sizeY=sizeImage;
+        int sizeX,sizeY;
+        if(!arguments.read("--size",sizeX,sizeY)){
+            osg::Vec2 srcsize;
+            if(!arguments.read("--srcsize",srcsize.x(),srcsize.y())){
+                fprintf(stderr,"need to have a src image size\n");
+                exit(-1);
+            }
+            int sizeImage=  calcOptimalImageSize(srcsize,newVerts,tri,texCoord,scaleTex,(int)vtSize.x(),(int)vtSize.y());
+            sizeX=sizeY=sizeImage;
+        }
 #if VIPS_MINOR_VERSION > 24
 
         vips_init(av[0]);
 #endif
-        arguments.read("--size",sizeX,sizeY);
         osg::Vec2 texSize(sizeX,sizeY);
         for(int i=0; i<2; i++){
             char tmp12[1024];
@@ -1006,7 +1009,13 @@ int main(int ac, char *av[]) {
         //(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str()
         IMAGE *tmpI=im_open("tmp","p");
         im_extract_bands(outputImage[0],tmpI,0,3);
-        dilateEdge(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str());
+        /*dilateEdge(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str());*/
+        if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str())){
+                  fprintf(stderr,"Failed to write\n");
+                  cerr << im_error_buffer()<<endl;
+                  im_close(tmpI);
+                  exit(-1);
+        }
         im_close(tmpI);
 
         tmpI=im_open("tmp","p");

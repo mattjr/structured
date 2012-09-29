@@ -267,7 +267,7 @@ static bool parse_args( int argc, char *argv[ ] )
         externalMode=true;
         printf("Using EXTERNAL Mode for outside computation of structure\n");
     }
-     silent=argp.read("--silent");
+    silent=argp.read("--silent");
 
     argp.read("--split-area",desired_area);
     argp.read("--stereo-calib",stereo_calib_file_name);
@@ -746,12 +746,12 @@ int main( int argc, char *argv[ ] )
 
     osgDB::makeDirectory(diced_dir);
     chmod(diced_dir,   0777);
-const char *uname="mesh";
+    const char *uname="mesh";
     osgDB::makeDirectory(uname);
 
     chmod(uname,   0777);
 
-  /*  osgDB::makeDirectory("mesh-pos");
+    /*  osgDB::makeDirectory("mesh-pos");
 
     chmod("mesh-pos",   0777);*/
     osgDB::makeDirectory("debug");
@@ -969,23 +969,23 @@ const char *uname="mesh";
     shellcm.write_setup();
     string stereocmd="stereo.py";
 #define EXTERNSTEREO 1
-    #ifdef EXTERNSTEREO
-        shellcm.write_generic(stereocmd,stereo_conf_name,"Stereo");
-        if(run_stereo)
-            sysres=system("./stereo.py");
+#ifdef EXTERNSTEREO
+    shellcm.write_generic(stereocmd,stereo_conf_name,"Stereo");
+    if(run_stereo)
+        sysres=system("./stereo.py");
 
-        for(unsigned int i=0; i < tasks.size(); i++){
-            Stereo_Pose_Data &name=tasks[i];
-            if(getBBoxFromMesh(name)){
-                name.valid=true;
-            }else{
-                fprintf(stderr,"Not valid %s\n", osgDB::getStrippedName(name.mesh_name).c_str()     );
-                name.valid=false;
+    for(unsigned int i=0; i < tasks.size(); i++){
+        Stereo_Pose_Data &name=tasks[i];
+        if(getBBoxFromMesh(name)){
+            name.valid=true;
+        }else{
+            fprintf(stderr,"Not valid %s\n", osgDB::getStrippedName(name.mesh_name).c_str()     );
+            name.valid=false;
 
-            }
         }
+    }
 
-        double totalValidArea=0;
+    double totalValidArea=0;
 #endif
 
     if(!externalMode){
@@ -1005,7 +1005,7 @@ const char *uname="mesh";
             for(int i=0; i < (int)tasks.size(); i++){
                 MatchStats stats;
                 StereoStatusFlag statusFlag=engine.processPair(base_dir,tasks[i].left_name,
-                                                  tasks[i].right_name,tasks[i].mat,tasks[i].bbox,stats,feature_depth_guess,hw_image,use_cached);
+                                                               tasks[i].right_name,tasks[i].mat,tasks[i].bbox,stats,feature_depth_guess,hw_image,use_cached);
 
 #pragma omp critical
                 {
@@ -1067,9 +1067,9 @@ const char *uname="mesh";
                 float margin=(name.bbox.radius() * bbox_margin);
                 name.bbox_margin.expandBy(name.bbox._min-osg::Vec3(margin,margin,margin));
                 name.bbox_margin.expandBy(name.bbox._max+osg::Vec3(margin,margin,margin));
-             }
-        fprintf(fpp_ic,"%d %f %s\n",
-                name.id,name.time,osgDB::getNameLessExtension(name.left_name).c_str());
+            }
+            fprintf(fpp_ic,"%d %f %s\n",
+                    name.id,name.time,osgDB::getNameLessExtension(name.left_name).c_str());
             fprintf(fpp,"%d %f %s %s ",
                     ct++,name.time,name.left_name.c_str(),name.right_name.c_str());
             fprintf(totalfp,"%d %s ",
@@ -1117,7 +1117,7 @@ const char *uname="mesh";
     std::vector<Cell_Data<Stereo_Pose_Data> > vrip_cells;
     vrip_cells=calc_cells<Stereo_Pose_Data> (tasks,vrip_img_per_cell);
     //for(int i=0; i< (int)vrip_cells.size(); i++)
-     //   vrip_cells[i].bounds.bbox._min<< " "<<   vrip_cells[i].bounds.bbox._max<<endl;
+    //   vrip_cells[i].bounds.bbox._min<< " "<<   vrip_cells[i].bounds.bbox._max<<endl;
     if(!externalMode){
         double fillRatio=(totalValidArea/bounds.area());
         printf("Valid Area %.2f Total Area %.2f\n",totalValidArea,bounds.area());
@@ -1259,11 +1259,11 @@ const char *uname="mesh";
 
             string vripcmd="runvrip.py";
             shellcm.write_generic(vripcmd,vripcmd_fn,"Vrip",NULL,&mergeandcleanCmds);
-           // if(!no_vrip && !cmvs)
-             //   sysres=system("python runvrip.py");
+            // if(!no_vrip && !cmvs)
+            //   sysres=system("python runvrip.py");
             char tmpfn[8192];
             //std::vector<Cell_Data<Stereo_Pose_Data> > stereo_poses_tmp;
-          /*  for(int i=0; i <(int)vrip_cells.size(); i++){
+            /*  for(int i=0; i <(int)vrip_cells.size(); i++){
                 if(vrip_cells[i].poses.size() == 0)
                     continue;
                 sprintf(tmpfn,"%s/tmp-clipped-diced-%08d.ply",diced_dir,i);
@@ -1286,35 +1286,35 @@ const char *uname="mesh";
         }
     }
 #endif
-     CellDataT<Stereo_Pose_Data>::type vol;
+    CellDataT<Stereo_Pose_Data>::type vol;
     int minSplits=-1;
     double targetVolume=10.0;
     split_bounds<Stereo_Pose_Data>(bounds,tasks , targetVolume,minSplits,vol);
     if(!externalMode){
-    {
-        WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks,plymc_expand_by);
-        int splits[3]={0,0,0};
-        foreach_vol(cur,vol){
-          //  cout <<cur->bounds.bbox._min<<" "<<cur->bounds.bbox._max<<endl;
-        //    cout <<"Poses " <<cur->poses.size()<<endl;
-            wbtp.write_cmd(*cur);
-            splits[0]=cur->splits[0];
-            splits[1]=cur->splits[1];
-            splits[2]=cur->splits[2];
+        {
+            WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks,plymc_expand_by);
+            int splits[3]={0,0,0};
+            foreach_vol(cur,vol){
+                //  cout <<cur->bounds.bbox._min<<" "<<cur->bounds.bbox._max<<endl;
+                //    cout <<"Poses " <<cur->poses.size()<<endl;
+                wbtp.write_cmd(*cur);
+                splits[0]=cur->splits[0];
+                splits[1]=cur->splits[1];
+                splits[2]=cur->splits[2];
 
-        }
-        cout << splits[0] << " " << splits[1] << " " <<splits[2] <<endl;
-        string plymccmd="plymc.py";
-        std::vector<string> postcmd;
-        char tmpcmd[1024];
-        tmpcmd[0]='\0';
-       /* const char *opts=" ";//-w0  -L0 -q50 -R0";
+            }
+            cout << splits[0] << " " << splits[1] << " " <<splits[2] <<endl;
+            string plymccmd="plymc.py";
+            std::vector<string> postcmd;
+            char tmpcmd[1024];
+            tmpcmd[0]='\0';
+            /* const char *opts=" ";//-w0  -L0 -q50 -R0";
        // sprintf(tmpcmd,"cd %s;%s/vcgapps/bin/plymc_outofcore -i1 -M -V%f %s -S %d %d %d -o%s/vol %s",
         sprintf(tmpcmd,"cd %s;%s/vcgapps/bin/plymc -M -V%f %s -S %d %d %d -o%s/vol %s",
                 cwd,basepath.c_str(),
                 vrip_res,
                 opts,
-                     
+
                            splits[0],
                           splits[1],
                            splits[2],
@@ -1323,31 +1323,31 @@ const char *uname="mesh";
         // postcmd.push_back(string(tmpcmd));
          sprintf(tmpcmd,"os.system(setupts.basepath +'/runtp_dist.py %s %s %s')\n",
                  (string(aggdir)+"/plymccmd2").c_str(),serfile,"PlyMC2");*/
-         shellcm.write_generic(plymccmd,wbtp.getCmdFileName(),"PlyMC",NULL,&postcmd,0,string(tmpcmd));
-        wbtp.close();
-    }
-    if(!no_vrip)
-        sysres=system("python plymc.py");
-    char tmpfn[8096];
-
-    foreach_vol(cur,vol){
-        sprintf(tmpfn,"%s/clean_%d%d%d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
-        osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpfn);
-        osg::Drawable *drawable = NULL;
-        if(model.valid())
-            drawable = model->asGeode()->getDrawable(0);
-        if(!drawable){
-            fprintf(stderr,"Failed to load model %s PLYMC failed on one chunk\nThere may be holes in it!!!!!!\nAlso check if this is part of ascent or decent where lots of Z variation occurs.\n",tmpfn);
-            //sleep(1);
-            continue;
-            exit(-1);
+            shellcm.write_generic(plymccmd,wbtp.getCmdFileName(),"PlyMC",NULL,&postcmd,0,string(tmpcmd));
+            wbtp.close();
         }
-        osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
-        numberFacesAll+=geom->getPrimitiveSet(0)->getNumPrimitives();
-        //stereo_poses_tmp.push_back(vrip_cells[i]);
+        if(!no_vrip)
+            sysres=system("python plymc.py");
+        char tmpfn[8096];
+
+        foreach_vol(cur,vol){
+            sprintf(tmpfn,"%s/clean_%d%d%d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+            osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpfn);
+            osg::Drawable *drawable = NULL;
+            if(model.valid())
+                drawable = model->asGeode()->getDrawable(0);
+            if(!drawable){
+                fprintf(stderr,"Failed to load model %s PLYMC failed on one chunk\nThere may be holes in it!!!!!!\nAlso check if this is part of ascent or decent where lots of Z variation occurs.\n",tmpfn);
+                //sleep(1);
+                continue;
+                exit(-1);
+            }
+            osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+            numberFacesAll+=geom->getPrimitiveSet(0)->getNumPrimitives();
+            //stereo_poses_tmp.push_back(vrip_cells[i]);
 
 
-    }
+        }
 
     }
 
@@ -1359,7 +1359,7 @@ const char *uname="mesh";
 
     osg::BoundingSphere bs;
     osg::Matrix rotM;
-   // float rx=0,ry=180.0,rz=-90;
+    // float rx=0,ry=180.0,rz=-90;
     float rx=0,ry=0.0,rz=0;
 
     rotM =osg::Matrix::rotate(
@@ -1405,7 +1405,7 @@ const char *uname="mesh";
     }
 
 
-   // cout << totalbb_unrot._min<< " " << totalbb_unrot._max<<endl;
+    // cout << totalbb_unrot._min<< " " << totalbb_unrot._max<<endl;
     //cout << totalbb._min<< " " << totalbb._max<<endl;
     /* osg::BoundingBox tmp=totalbb;
         tmp._min[2]= tmp._min[1];
@@ -1467,7 +1467,7 @@ const char *uname="mesh";
 
             int validCount=0;
             for(int i=0; i< (int)tasks.size(); i++)
-                 if(tasks[i].valid)
+                if(tasks[i].valid)
                     validCount++;
             printf("Auto computing tile and column splits %d valid images...\n",validCount);
             int numCells=(int)max(ceil(sqrt(ceil(validCount / tex_img_per_cell))),1.0);
@@ -1485,7 +1485,7 @@ const char *uname="mesh";
     int split= std::max(std::max(_tileRows,_tileColumns),1);
     if(reimageSize.x() < 0.0)
         reimageSize = reparamTex ? osg::Vec2(osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0),osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0)) : osg::Vec2(adjustedSize / (double)split,adjustedSize / (double)split);
-cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
+    cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
     if(reimageSize.x() > 8192){
         fprintf(stderr, "Can't have an imaging size %f its larger then 8192 dropping\n",reimageSize.x());
         double mult=reimageSize.x()/8192;
@@ -1521,7 +1521,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
     double xrange=totalbb.xMax()-totalbb.xMin();
     double yrange=totalbb.yMax()-totalbb.yMin();
     double largerSide=std::max(xrange,yrange);
- /*   osg::Matrixd matrix;
+    /*   osg::Matrixd matrix;
     matrix.makeTranslate( eye );
     osg::Matrixd view=osg::Matrix::inverse(matrix);
     osg::Matrixd proj= osg::Matrixd::ortho2D(-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));*/
@@ -1529,7 +1529,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
  printf("%f %f %f %f AAAA\n",-bs.radius(),bs.radius(),-bs.radius(),bs.radius());
  printf("%f %f %f %f AAAA\n",-(largerSide/2.0),(largerSide/2.0),-(largerSide/2.0),(largerSide/2.0));
 */
-/*
+    /*
     std::stringstream os2;
     os2<< "view.mat";
 
@@ -1571,7 +1571,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
     viewproj(3,1)=0;
     viewproj(3,2)=0;
     viewproj(3,3)= 1;
-  //  cout <<viewproj<<endl;
+    //  cout <<viewproj<<endl;
 
     std::stringstream os2;
     os2<< "viewproj.mat";
@@ -1633,18 +1633,18 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
                 m(3,1)=0;
                 m(3,2)=0;
                 m(3,3)= 1;
-               // cout <<m<<endl;
-    left=widthStart;
-    right=widthEnd;
-    top=heightEnd;
-    bottom=heightStart;
+                // cout <<m<<endl;
+                left=widthStart;
+                right=widthEnd;
+                top=heightEnd;
+                bottom=heightStart;
                 double margin=vrip_res*10;
                 osg::BoundingBox thisCellBbox;
                 thisCellBbox.expandBy(osg::Vec3(left,bottom,bs.center()[2]-bs.radius()));
-                        thisCellBbox.expandBy(osg::Vec3(right,top,bs.center()[2]+bs.radius()));
+                thisCellBbox.expandBy(osg::Vec3(right,top,bs.center()[2]+bs.radius()));
                 osg::BoundingBox thisCellBboxMargin(left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
 
-              //  printf("ANNNN %f %f %f %f %f %f\n",left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
+                //  printf("ANNNN %f %f %f %f %f %f\n",left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
                 osg::BoundingBox bboxMarginUnRot;
                 bboxMarginUnRot.expandBy(thisCellBboxMargin._min*osg::Matrix::inverse(rotM));
                 bboxMarginUnRot.expandBy(thisCellBboxMargin._max*osg::Matrix::inverse(rotM));
@@ -1662,7 +1662,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
                         break;
                     }
                 }
-                        /*
+                /*
                 for(int k=0; k< (int)vrip_cells.size(); k++){
                   //  cout << "FFF "<<vrip_cells[k].bounds.bbox._min << " "<<vrip_cells[k].bounds.bbox._max<<endl;
                   //  cout << "GLOBAL "<<totalbb._min << " "<<totalbb._max<<endl;
@@ -1710,8 +1710,8 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
                     osg::BoundingBox imgBox;
                     imgBox.expandBy(m1);
                     imgBox.expandBy(m2);
-                   //  cout << m1 << " "<< m2 << " bounds \n";
-                           // cout <<thisCellBbox._min << " "<< thisCellBbox._max<<" bbox\n";
+                    //  cout << m1 << " "<< m2 << " bounds \n";
+                    // cout <<thisCellBbox._min << " "<< thisCellBbox._max<<" bbox\n";
                     if(thisCellBbox.intersects(imgBox)){
                         //printf("ast\n");
                         cell.images.push_back(i);
@@ -1771,7 +1771,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
             for(int j=0; j <(int)vrip_cells.size(); j++){
                 if(vrip_cells[j].poses.size() == 0 || !cells[i].bboxMarginUnRot.intersects(vrip_cells[j].bounds.bbox))
                     continue;
-              //  sprintf(shr_tmp,"%s %s/tmp-clipped-diced-%08d.ply",shr_tmp,diced_dir,j);
+                //  sprintf(shr_tmp,"%s %s/tmp-clipped-diced-%08d.ply",shr_tmp,diced_dir,j);
                 v_count++;
             }
             if(v_count== 0)
@@ -1786,7 +1786,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
                     FLT_MAX,
                     diced_dir,
                     cells[i].row,cells[i].col,vpblod);
-          /*  sprintf(shr_tmp,"%s  %s/vcgapps/bin/mergeMesh %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply -flip -cleansize %f -P -thresh %f -out %s/tmp-tex-clipped-diced-r_%04d_c_%04d.ply ;",shr_tmp,
+            /*  sprintf(shr_tmp,"%s  %s/vcgapps/bin/mergeMesh %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply -flip -cleansize %f -P -thresh %f -out %s/tmp-tex-clipped-diced-r_%04d_c_%04d.ply ;",shr_tmp,
                     basepath.c_str(),diced_dir,cells[i].row,cells[i].col,smallCCPer,0.9*vrip_res,diced_dir,cells[i].row,cells[i].col);*/
 
             fprintf(splitcmds_fp,"%s;",shr_tmp);/*
@@ -1802,10 +1802,10 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
                     cells[i].row,cells[i].col,  diced_dir,cells[i].row,cells[i].col,vpblod);*/
             fprintf(splitcmds_fp,"setenv DISPLAY :0.0; %s/vcgapps/bin/sw-shadevis -P -n64 %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ;",
                     basepath.c_str(),diced_dir,
-                     cells[i].row,cells[i].col,vpblod);
+                    cells[i].row,cells[i].col,vpblod);
             fprintf(splitcmds_fp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/vis-un-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply -dup -F --outfile %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply \n",
                     basepath.c_str(),
-                   -FLT_MAX,
+                    -FLT_MAX,
                     -FLT_MAX,
                     -FLT_MAX,
                     FLT_MAX,
@@ -1814,7 +1814,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
                     diced_dir,
                     cells[i].row,cells[i].col,
                     vpblod,
-                     diced_dir,cells[i].row,cells[i].col,vpblod);
+                    diced_dir,cells[i].row,cells[i].col,vpblod);
             char tp[1024];
             sprintf(tp,"%s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",diced_dir,cells[i].row,cells[i].col);
             FILE *bboxfp=fopen(tp,"w");
@@ -1835,7 +1835,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
             }
             fclose(bboxfp);
         }
-      /*  for(int i=0; i <(int)vrip_cells.size(); i++){
+        /*  for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
                 continue;
             sprintf(tmp100, "mesh-diced/vis-clipped-diced-%08d-lod%d.ply",i,vpblod);
@@ -1843,7 +1843,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
         }
 */
 
-     //   sprintf(tmp100, " > mesh-diced/vis-total.ply; %s/vertCheck mesh-diced/vis-total.ply  --normcolor --outfile mesh-diced/vis-total.ply > /dev/null",basepath.c_str());
+        //   sprintf(tmp100, " > mesh-diced/vis-total.ply; %s/vertCheck mesh-diced/vis-total.ply  --normcolor --outfile mesh-diced/vis-total.ply > /dev/null",basepath.c_str());
         /*  sprintf(tmp100,"%s; %s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f mesh-diced/vis-total.ive -dup --outfile mesh-diced/vis-total.ply ",
                     tmp100,basepath.c_str(),
                     -FLT_MAX,-FLT_MAX,-FLT_MAX,
@@ -1851,7 +1851,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
         //tcmd+=tmp100;
         //postcmdv.push_back(tcmd);
 
-     /*   for(int i=0; i <(int)vrip_cells.size(); i++){
+        /*   for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
                 continue;
             int v_count=0;
@@ -1913,7 +1913,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
         fclose(splitcmds_fp);
         string splitcmd="split.py";
         string cwdmeshdiced=cwd;
-      //  std::string extraCheckCmd=createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
+        //  std::string extraCheckCmd=createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
 
         shellcm.write_generic(splitcmd,splitcmds_fn,"Split",NULL,NULL,0);
 #endif
@@ -2249,7 +2249,10 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
         //                 printf("Step size %d %f\n",sizeSteps[i],resFrac);
     }
 #endif
-    string texcmds_fn=string(diced_dir)+"/texcmds";
+    enum {REMAP,FLAT,REMAP_FLAT_SIZE,NUM_TEX_FILES};
+
+    string texcmds_fn[3]={string(diced_dir)+"/texcmds",string(diced_dir)+"/flattexcmds",string(diced_dir)+"/sizetexcmds"};
+
     string vartexcmds_fn=string(diced_dir)+"/vartexcmds";
 
     string imgbase=(compositeMission? "/":"/img/");
@@ -2274,7 +2277,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
 
     std::vector<string> cfiles;
 
-    FILE *texcmds_fp=fopen(texcmds_fn.c_str(),"w");
+    FILE *texcmds_fp[3]={fopen(texcmds_fn[REMAP].c_str(),"w"),fopen(texcmds_fn[FLAT].c_str(),"w"),fopen(texcmds_fn[REMAP_FLAT_SIZE].c_str(),"w")};
     FILE *vartexcmds_fp=fopen(vartexcmds_fn.c_str(),"w");
 
     FILE *FP2=fopen("image_areas.txt","w");
@@ -2282,7 +2285,9 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
 
     FILE *FP3=fopen("createmosaic.sh","w");
     FILE *FP4=fopen("createmosaicvar.sh","w");
-   // FILE *FP5=fopen("createrangeimg.sh","w");
+    FILE *FP5=fopen("createmosaicdepth.sh","w");
+
+    // FILE *FP5=fopen("createrangeimg.sh","w");
 
     if(!FP2 || ! FP3){
         fprintf(stderr,"Can't open mosaic scripts\n");
@@ -2290,6 +2295,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
     }
     fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaic.vrt ");
     fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaicvar.vrt ");
+    fprintf(FP5,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  depth.vrt ");
 
     fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
             totalbb.zMax(),_tileColumns,_tileRows);
@@ -2299,9 +2305,12 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
     for(int i=0; i <(int)cells.size(); i++){
         char tmpfn[1024];
         sprintf(tmpfn,"%s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply", diced_dir,cells[i].row,cells[i].col);
-        if(cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
-            printf("Failed cell images %d exists %d empty %d\n",(int)cells[i].images.size(),osgDB::fileExists(tmpfn),
+        if( cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
+            if(!osgDB::fileExists(string(tmpfn)+".empty")){
+                printf("Failed cell images %d exists %d empty %d\n",(int)cells[i].images.size(),osgDB::fileExists(tmpfn),
                    checkIsEmptyPly(tmpfn));
+                exit(-1);
+            }
             fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
             fprintf(FP2,"-1 -1 -1 -1 null null 0\n");
@@ -2311,73 +2320,91 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
                 cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
 
         string remap_mesh_ext=reparamTex ? "remap-" : "flat-";
-        fprintf(texcmds_fp,"cd %s;%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f ",
-                cwd,
-                basepath.c_str(),
-                base_dir.c_str(),
-                diced_dir,
-                cells[i].row,cells[i].col,
-                diced_dir,cells[i].row,cells[i].col,
-                diced_dir,
-                cells[i].row,cells[i].col,
-                vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
-                rx,ry,rz,tex_margin);
+
         sprintf(tmpfn2,"%s/%stex-clipped-diced-r_%04d_c_%04d-lod%d.ply", diced_dir,remap_mesh_ext.c_str(),cells[i].row,cells[i].col,vpblod);
         cfiles.push_back(tmpfn2);
-
-        if(hw_image){
-            fprintf(texcmds_fp," --tex_cache %s %d  --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat -lat %.28f -lon %.28f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,
+        for(int z=0; z<NUM_TEX_FILES; z++){
+            fprintf(texcmds_fp[z],"cd %s;%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f ",
+                    cwd,
+                    basepath.c_str(),
+                    base_dir.c_str(),
                     diced_dir,
                     cells[i].row,cells[i].col,
-                    latOrigin , longOrigin);
+                    diced_dir,cells[i].row,cells[i].col,
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
+                    rx,ry,rz,tex_margin);
 
-            if(use_debug_shader)
-                fprintf(texcmds_fp," --debug-shader ");
-            if(!storeTexMesh)
-                fprintf(texcmds_fp," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,_tileRows,_tileColumns,ajustedGLImageSizeX,ajustedGLImageSizeY);
-            if(useAtlas)
-                fprintf(texcmds_fp," --atlas");
+
+            if(hw_image){
+                fprintf(texcmds_fp[z]," --tex_cache %s %d  --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat -lat %.28f -lon %.28f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,
+                        diced_dir,
+                        cells[i].row,cells[i].col,
+                        latOrigin , longOrigin);
+
+                if(use_debug_shader)
+                    fprintf(texcmds_fp[z]," --debug-shader ");
+                if(!storeTexMesh)
+                    fprintf(texcmds_fp[z]," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,_tileRows,_tileColumns,ajustedGLImageSizeX,ajustedGLImageSizeY);
+                if(useAtlas)
+                    fprintf(texcmds_fp[z]," --atlas");
+            }
+            else{
+                string teximgcmd;
+                ostringstream sizestr;
+                switch(z){
+                case REMAP:
+                    teximgcmd = "vcgapps/bin/reorder";
+                    sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
+                    sizestr<<"--scale "<<scaleRemapTex;
+                    break;
+                case FLAT:
+                    teximgcmd="nonmem";
+                    sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+
+                    break;
+                case REMAP_FLAT_SIZE:
+                    teximgcmd = "vcgapps/bin/reorder";
+                    sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+
+                    break;
+                }
+
+                if(useVirtTex)
+                    sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
+
+                fprintf(texcmds_fp[z],";%s/%s  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
+                        basepath.c_str(),
+                        teximgcmd.c_str(),
+                        diced_dir,
+                        cells[i].row,cells[i].col,
+                        vpblod,
+                        diced_dir,
+                        cells[i].row,cells[i].col,
+                        (base_dir+imgbase).c_str(),
+                        diced_dir,
+                        cells[i].row,cells[i].col,
+                        rx,ry,rz,
+                        cells[i].row,cells[i].col,_tileRows,_tileColumns,
+                        latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
+                if(blending)
+                    fprintf(texcmds_fp[z]," --blend");
+
+                fprintf(texcmds_fp[z],";%s/depthmap  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply  --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d --size %d %d",
+                        basepath.c_str(),
+                        diced_dir,
+                        cells[i].row,cells[i].col,
+                        vpblod,
+
+                        diced_dir,
+                        cells[i].row,cells[i].col,
+                        rx,ry,rz,
+                        cells[i].row,cells[i].col,_tileRows,_tileColumns,
+                        latOrigin , longOrigin,jpegQuality,i,ajustedGLImageSizeX,ajustedGLImageSizeY);
+            }
         }
-        else{
-            string teximgcmd;
-            ostringstream sizestr;
-            teximgcmd = reparamTex? "vcgapps/bin/reorder": "nonmem";
-            sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
-            if(useVirtTex)
-                sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
-            if (!reparamTex)
-                sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
-            else
-                sizestr<<"--scale "<<scaleRemapTex;
-
-            fprintf(texcmds_fp,";%s/%s  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
-                    basepath.c_str(),
-                    teximgcmd.c_str(),
-                    diced_dir,
-                    cells[i].row,cells[i].col,
-                    vpblod,
-                    diced_dir,
-                    cells[i].row,cells[i].col,
-                    (base_dir+imgbase).c_str(),
-                    diced_dir,
-                    cells[i].row,cells[i].col,
-                    rx,ry,rz,
-                    cells[i].row,cells[i].col,_tileRows,_tileColumns,
-                    latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
-            if(blending)
-                fprintf(texcmds_fp," --blend");
-
-            fprintf(texcmds_fp,";%s/depthmap  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply  --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d --size %d %d",
-                    basepath.c_str(),
-                    diced_dir,
-                    cells[i].row,cells[i].col,
-                    vpblod,
-
-                    diced_dir,
-                    cells[i].row,cells[i].col,
-                    rx,ry,rz,
-                    cells[i].row,cells[i].col,_tileRows,_tileColumns,
-                    latOrigin , longOrigin,jpegQuality,i,ajustedGLImageSizeX,ajustedGLImageSizeY);
+        if(!hw_image){
 
             fprintf(vartexcmds_fp,"%s/meshvar  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
                     basepath.c_str(),
@@ -2402,19 +2429,22 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
         for(int p=0; p<num_samples; p++)
             sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2.0,p+1));
         if(jpegQuality<0){
-            fprintf(texcmds_fp,";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+            for(int z=0; z<NUM_TEX_FILES; z++)
+                fprintf(texcmds_fp[z],";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
             fprintf(vartexcmds_fp,";gdaladdo -r average mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
 
         }else{
-            fprintf(texcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+            for(int z=0; z<NUM_TEX_FILES; z++)
+
+                fprintf(texcmds_fp[z],";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
             fprintf(vartexcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
         }
         tmp_ds[0]='\0';
-      //  num_samples=0;
+        //  num_samples=0;
         int levels=useVirtTex ? 0:(int)ceil(log( max( ajustedGLImageSizeX, ajustedGLImageSizeY ))/log(2.0) );
         string remap_ext= reparamTex ? "remap" : "tmp";
-      //  for(int p=0; p<num_samples; p++)
-      //      sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
+        //  for(int p=0; p<num_samples; p++)
+        //      sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
         fprintf(FP2,"%d %d %d %d %s/image_r%04d_c%04d_rs%04d_cs%04d-%s.ppm %s/image_r%04d_c%04d_rs%04d_cs%04d.ppm %d\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),
                 (totalX-ajustedGLImageSizeX*(cells[i].row)),ajustedGLImageSizeY*cells[i].col,ajustedGLImageSizeY*(cells[i].col+1),diced_img_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns,
                 remap_ext.c_str(),diced_img_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns,levels);
@@ -2422,6 +2452,8 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
 
 
         fprintf(FP3,"image_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
+        fprintf(FP5,"depth_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
+
         fprintf(FP4,"var_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
 
         // fprintf(texcmds_fp,"\n");
@@ -2439,9 +2471,10 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
     std::string extraCheckCmd;
     sprintf(tmp100, " -outfile %s/tex-total.obj ; %s/vcgapps/bin/cleanTexMesh %s/tex-total.obj --normcolor -out %s/tex-total.ply",diced_dir,basepath.c_str(),diced_dir,diced_dir);
 
-  //  extraCheckCmd= reparamTex ? createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4): "";
-  extraCheckCmd=  createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
-    fclose(texcmds_fp);
+    //  extraCheckCmd= reparamTex ? createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4): "";
+    extraCheckCmd=  createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
+    for(int z=0; z<NUM_TEX_FILES; z++)
+        fclose(texcmds_fp[z]);
     fclose(vartexcmds_fp);
     fclose(reFP);
     fclose(FP2);
@@ -2452,6 +2485,8 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
 
     fprintf(FP4,"\n#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16 32\n");
     fchmod(fileno(FP4),0777);
+    fprintf(FP5,"\n#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG depth.vrt 2 4 8 16 32\n");
+    fchmod(fileno(FP5),0777);
     /*fprintf(FP5,"#!/bin/bash\n%s/rangeimg  mesh-diced/vis-total.ply mesh-diced/totalbbox.txt --size %d %d -calib %s\n",
             basepath.c_str(),
             calib.camera_calibs[0].width,
@@ -2492,7 +2527,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
                 cur->bounds.bbox.zMax(),cnt++,tmpt);
     }
     fclose(dBFP);
-   // fclose(FP5);
+    // fclose(FP5);
     if(!externalMode){
         double margin=vrip_res*10;
         string rangeimgcmds_fn[]={(string(diced_dir)+"/rangeimgcmds").c_str(),(string(diced_dir)+"/globalimgcmds").c_str()};
@@ -2570,7 +2605,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
 
     string vartexcmd="vartex.py";
 
-    string texcmd="tex.py";
+    string texcmd[3]={"tex.py","flat.py","hybrid.py"};
     vector<std::string> postcmdv;
     vector<std::string> varpostcmdv;
 
@@ -2584,6 +2619,8 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
         if(untex)
             p<< " -untex ";*/
     p<< "cd " << cwd <<";sh createmosaic.sh";
+    p<< ";cd " << cwd <<";sh createmosaicdepth.sh";
+
     pvar<< "cd " << cwd <<";sh createmosaicvar.sh";
     varpostcmdv.push_back(pvar.str());
 
@@ -2597,37 +2634,38 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
     //int adjustedSize=tileSize-(2*tileBorder);
     // int intDiv=sizeX/tileSize;
     //int embedSize=(intDiv* adjustedSize);
-   /* std::ostringstream p3;
+    /* std::ostringstream p3;
     // p3 << "vips " << " im_extract_area " << "out.tif "<< " tex.tif " << " 0 0 " <<  embedSize << " "<<embedSize<< ";";
     if(!useVirtTex)
         p3<<"#";
     p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" tex.tif ";
     postcmdv.push_back(p3.str());
 */
-    shellcm.write_generic(texcmd,texcmds_fn,"Tex",&(precmd),&(postcmdv),num_threads,extraCheckCmd);
+    for(int z=0; z<NUM_TEX_FILES; z++)
+        shellcm.write_generic(texcmd[z],texcmds_fn[z],"Tex",&(precmd),&(postcmdv),num_threads,extraCheckCmd);
     shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),std::max(num_threads/2,1));
 
     if(!no_tex)
-        sysres=system("python tex.py");
+        sysres=system("python hybrid.py");
 
     if(var_tex)
         sysres=system("python vartex.py");
     //if(useVirtTex)
     {
-      //  string vttexcmds_fn=string(diced_dir)+"/vttexcmds";
+        //  string vttexcmds_fn=string(diced_dir)+"/vttexcmds";
         string vttex="vttex.sh";
 
-       FILE *vttexcmds_fp=fopen(vttex.c_str(),"w");
-       fchmod(fileno(vttexcmds_fp),0777);
-       char flatflag[1024];
-       if(reparamTex)
-           sprintf(flatflag," ");
-       else
-           sprintf(flatflag,"-flatatlas ");
-       fprintf(vttexcmds_fp,"#!/bin/bash\n");
-       fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag);
+        FILE *vttexcmds_fp=fopen(vttex.c_str(),"w");
+        fchmod(fileno(vttexcmds_fp),0777);
+        char flatflag[1024];
+        if(reparamTex)
+            sprintf(flatflag," ");
+        else
+            sprintf(flatflag,"-flatatlas ");
+        fprintf(vttexcmds_fp,"#!/bin/bash\n");
+        fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag);
 
-     /*   for(int i=0; i <(int)vrip_cells.size(); i++){
+        /*   for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
                 continue;
             fprintf(vttexcmds_fp,"%s/singleImageTex %s/clipped-diced-%08d.ply --outfile %s/clipped-diced-%08d-lod%d.ply\n",
@@ -2648,11 +2686,11 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
         fprintf(stderr,"Can't open create createtabletdata\n");
         exit(-1);
     }
-   // int smallPOTX=osg::Image::computeNearestPowerOfTwo(totalX,0.0);
-   // int smallPOTY=osg::Image::computeNearestPowerOfTwo(totalY,0.0);
+    // int smallPOTX=osg::Image::computeNearestPowerOfTwo(totalX,0.0);
+    // int smallPOTY=osg::Image::computeNearestPowerOfTwo(totalY,0.0);
 
     //int totalXborder=(int)smallPOTX-((smallPOTX/VTtileSize)*2*tileBorder);
-   // int totalYborder=(int)smallPOTY-((smallPOTX/VTtileSize)*2*tileBorder);
+    // int totalYborder=(int)smallPOTY-((smallPOTX/VTtileSize)*2*tileBorder);
     int numOctrees=3;
 
     int maxFaceSizeIpad=((0xffff-1)-10)*(numOctrees-0.5);
@@ -2671,16 +2709,16 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
             (0xffff-1));
 
     std::ostringstream p2;
-  //  p2 << basepath << "/singleImageTex " << diced_dir<<"/ipad.ply --outfile "<<diced_dir<<"/ipadtex.ply "<< "--size " << totalXborder << " "<<totalYborder;
-   // p2      <<" --extra ipad/octree";
+    //  p2 << basepath << "/singleImageTex " << diced_dir<<"/ipad.ply --outfile "<<diced_dir<<"/ipadtex.ply "<< "--size " << totalXborder << " "<<totalYborder;
+    // p2      <<" --extra ipad/octree";
     fprintf(ipadViewerFP,"cd ipad;");
     for(int k=0; k<numOctrees; k++)
-       fprintf(ipadViewerFP,"%s/generateOctreeFromObj.py -o=vtex-%04d.octree octree-%04d.obj;",basepath.c_str(),k,k);
-       fprintf(ipadViewerFP,"\n");
-       fprintf(ipadViewerFP,"cd ..;%s/vipsVTAtlas -mat %s -cells %s -scale %f -dir %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt",scaleFactor,"ipad");
+        fprintf(ipadViewerFP,"%s/generateOctreeFromObj.py -o=vtex-%04d.octree octree-%04d.obj;",basepath.c_str(),k,k);
+    fprintf(ipadViewerFP,"\n");
+    fprintf(ipadViewerFP,"cd ..;%s/vipsVTAtlas -mat %s -cells %s -scale %f -dir %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt",scaleFactor,"ipad");
 
- //fprintf(ipadViewerFP,"(gdalwarp -overwrite -ts %d %d mosaic/mosaic.vrt vttex.tif; ",totalXborder,totalYborder);
-   /* std::ostringstream p4;
+    //fprintf(ipadViewerFP,"(gdalwarp -overwrite -ts %d %d mosaic/mosaic.vrt vttex.tif; ",totalXborder,totalYborder);
+    /* std::ostringstream p4;
 
     p4 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" vttex.tif ) &\nwait\necho 'Done'\n";
 
@@ -2727,11 +2765,11 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
 
     FILE *simpcmds_fp=fopen(simpcmds_fn.c_str(),"w");
     string app;
-   /* if(useReimage)
+    /* if(useReimage)
         app="tridecimator";
     else*/
-        app="texturedDecimator";
-     //    app="tridecimator";
+    app="texturedDecimator";
+    //    app="tridecimator";
     std::vector<std::vector<string> > datalist_lod;
     vector<string> mergeandcleanCmdsSimp;
 #define SINGLE_MESH_TEX 1
@@ -2755,9 +2793,9 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
         fclose(tp);
         char tmp[1024];
         //if(useVirtTex)
-         //   fprintf(simpcmds_fp,"cd %s/%s;cp totaltex.ply total-lod%d.ply;",cwd,diced_dir,vpblod);
-       // else
-         //   fprintf(simpcmds_fp,"cd %s/%s;cp tex-total.ply total-lod%d.ply;",cwd,diced_dir,vpblod);
+        //   fprintf(simpcmds_fp,"cd %s/%s;cp totaltex.ply total-lod%d.ply;",cwd,diced_dir,vpblod);
+        // else
+        //   fprintf(simpcmds_fp,"cd %s/%s;cp tex-total.ply total-lod%d.ply;",cwd,diced_dir,vpblod);
 
 
 
@@ -2783,7 +2821,7 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
         }
         for(int lod=0; lod < vpblod; ){
             std::vector<string> level;
-           // if(datalist_lod.size() >3)
+            // if(datalist_lod.size() >3)
             //for(int lod=0; lod <= vpblod; lod ++){
 
             char tmp[1024];
@@ -2861,16 +2899,16 @@ cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
     if(!no_simp)
         sysres=system("python simp.py");
 
-  //  char szProj4[4096];
-  //  char wkt[4096];
-   // sprintf(wkt,"PROJCS[\"unnamed\",GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AUTHORITY[\"EPSG\",\"4326\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",%.12f],PARAMETER[\"central_meridian\",%.12f],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"Meter\",1]]",
-     //       latOrigin,longOrigin);
+    //  char szProj4[4096];
+    //  char wkt[4096];
+    // sprintf(wkt,"PROJCS[\"unnamed\",GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9108\"]],AUTHORITY[\"EPSG\",\"4326\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",%.12f],PARAMETER[\"central_meridian\",%.12f],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"Meter\",1]]",
+    //       latOrigin,longOrigin);
     //sprintf( szProj4,
-      //       "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",latOrigin,longOrigin,1.0,0.0,0.0);
+    //       "\"+proj=tmerc +lat_0=%.24f +lon_0=%.24f +k=%.12f +x_0=%.12f +y_0=%.12f +datum=WGS84 +ellps=WGS84 +units=m +no_defs\"",latOrigin,longOrigin,1.0,0.0,0.0);
 
     string src_proj4=getProj4StringForAUVFrame(latOrigin,longOrigin);
     if(runIpad){
-            sysres=system("bash createtabletdata.sh");
+        sysres=system("bash createtabletdata.sh");
     }
 
     if(!novpb) {

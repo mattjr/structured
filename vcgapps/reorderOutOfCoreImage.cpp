@@ -451,7 +451,8 @@ int main(int ac, char *av[]) {
     osg::ref_ptr<osg::Node> model;//= osgDB::readNodeFile(av[1]);
     ply::VertexData vertexData;
     osg::ArgumentParser arguments(&ac,av);
-    for(int i=0; i<2; i++){
+    int passesFlatRemap=2;
+    for(int i=0; i<passesFlatRemap; i++){
         outputImage[i]=NULL;
         rangeImage[i]=NULL;
     }
@@ -562,7 +563,7 @@ int main(int ac, char *av[]) {
         vips_init(av[0]);
 #endif
         osg::Vec2 texSize(sizeX,sizeY);
-        for(int i=0; i<2; i++){
+        for(int i=0; i<passesFlatRemap; i++){
             char tmp12[1024];
             sprintf(tmp12,"tmp%d",i);
             outputImage[i]=im_open(tmp12,"p");
@@ -582,7 +583,7 @@ int main(int ac, char *av[]) {
         }
 */
         if(blending){
-            for(int i=0; i<2; i++){
+            for(int i=0; i<passesFlatRemap; i++){
                 char tmp12[1024];
                 sprintf(tmp12,"tmp_range%d",i);
                 rangeImage[i]=im_open(tmp12,"p");
@@ -607,7 +608,7 @@ int main(int ac, char *av[]) {
         double vm, rss;
         process_mem_usage(vm, rss);
         cout << "1st VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
-        for(int i=0; i<2; i++){
+        for(int i=0; i<passesFlatRemap; i++){
 
             if(  im_rwcheck(outputImage[i]) ){
                 fprintf(stderr,"can't open\n");
@@ -791,7 +792,7 @@ int main(int ac, char *av[]) {
         GeometryProcessor* g[2]={NULL,NULL};
         RasterizerSubdivAffine* r[2]={NULL,NULL};
 
-        for(int i=0; i<2; i++){
+        for(int i=0; i<passesFlatRemap; i++){
 
             // create a rasterizer class that will be used to rasterize primitives
             RasterizerSubdivAffine *rtmp =new RasterizerSubdivAffine;
@@ -932,7 +933,7 @@ int main(int ac, char *av[]) {
             }
         }
         //  return 0;
-        for(int i=0; i<2; i++){
+        for(int i=0; i<passesFlatRemap; i++){
             if(!blending){
                 g[i]->vertex_shader<VertexShader>();
                 r[i]->fragment_shader<FragmentShader>();
@@ -947,7 +948,7 @@ int main(int ac, char *av[]) {
 
 
 
-        for(int i=0;i <2; i++){
+        for(int i=0;i <passesFlatRemap; i++){
 
             FragmentShaderBlendingDistPass::regRange =regRange[i];
             FragmentShaderBlendingDistPass::doublecountmapPtr =&(doublecountmap[i]);
@@ -1037,7 +1038,7 @@ int main(int ac, char *av[]) {
                     continue;
 
             }
-            for(int i=0;i <2; i++){
+            for(int i=0;i <passesFlatRemap; i++){
                 if(!blending)
                     VertexShader::modelviewprojection_matrix=(*viewProjMats[i]);
                 else{
@@ -1107,7 +1108,7 @@ int main(int ac, char *av[]) {
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
         process_mem_usage(vm, rss);
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
-        for(int i=0; i<2; i++){
+        for(int i=0; i<passesFlatRemap; i++){
             im_region_free(regOutput[i]);
 
             if(blending){
@@ -1180,7 +1181,7 @@ int main(int ac, char *av[]) {
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
         process_mem_usage(vm, rss);
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
-        for(int i=0; i<2; i++)
+        for(int i=0; i<passesFlatRemap; i++)
             im_close(outputImage[i]);
 
         if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,basepath,"ppm",jpegQuality)){

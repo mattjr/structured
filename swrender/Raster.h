@@ -24,7 +24,7 @@
     typedef void ( * SamplingCallback)(void * param, int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
 
 		// Process the given triangle.
-         bool drawTriangle(bool antialias, const osg::Vec2 & extents, const osg::Vec2 v[3], SamplingCallback cb, void * param);
+         bool drawTriangle(bool antialias, const osg::Vec2 & extents, const osg::Vec2 v[3], const osg::Vec2 t[3],SamplingCallback cb, void * param);
 
 		// Process the given quad.
         //NVMESH_API bool drawQuad(bool antialias, Vector2::Arg extents, const Vector2 vertex[4], SamplingCallback, void * param);

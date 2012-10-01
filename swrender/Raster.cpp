@@ -474,9 +474,9 @@ namespace Raster
 
 
 /// Process the given triangle.
-bool Raster::drawTriangle(bool antialias, const Vector2& extents, const Vector2 v[3], SamplingCallback cb, void * param)
+bool Raster::drawTriangle(bool antialias, const Vector2& extents, const Vector2 v[3],const Vector2 t[3], SamplingCallback cb, void * param)
 {
-	Triangle tri(v[0], v[1], v[2], Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1));
+    Triangle tri(v[0], v[1], v[2], Vector3(t[0].x(), t[0].y(), 0), Vector3(t[1].x(), t[1].y(), 0), Vector3(t[2].x(), t[2].y(), 0));
 	if (tri.valid) {
 //		if (antialias) {
 			tri.drawAA(extents, cb, param);		

@@ -234,7 +234,7 @@ int main( int argc, char **argv )
                             marginFace->at(vertexData._triangles->at(i+j))= (vertexData._texIds->at(i/3).y() == -999);
                 }
 
-                PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second),"",marginFace);
+                PLYWriterNodeVisitor nv(f,tile->texCoordIDIndexPerModel.begin()->second,&(tile->texCoordsPerModel.begin()->second),"",marginFace,vertexData._colors);
                 model->accept(nv);
             }else{
                 // map<SpatialIndex::id_type,int> allIds=calcAllIds(tile->texCoordIDIndexPerModel.begin()->second);

@@ -138,3 +138,4 @@ build
 /CMakeLists.txt.user
 /progressbar.pyc
 /atlasmesh
+/borderClip

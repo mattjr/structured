@@ -6,9 +6,14 @@
 #include <iostream>
 using namespace std;
 
-void VipsSampler::sampleTriCallback(void * param, int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage)
+void VipsSampler::renderBlendedTriCallback(void * param, int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage)
 {
-    ((VipsSampler *)param)->sampleTri(x, y, bar, dx, dy, coverage);
+    ((VipsSampler *)param)->blendPassTri(x, y, bar, dx, dy, coverage);
+}
+
+void VipsSampler::renderDepthTriCallback(void * param, int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage)
+{
+    ((VipsSampler *)param)->depthPassTri(x, y, bar, dx, dy, coverage);
 }
 
 /*static*/
@@ -39,13 +44,62 @@ inline unsigned int floatColorToRGBA(osg::Vec3 color){
       return  clamp(color.x()*255.0,0,255) | clamp(color.y()*255.0,0,255) << 8 | clamp(color.z()*255.0,0,255) << 16 | 255 << 24;
 
 }
+void VipsSampler::depthPassTri(int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage)
+{
 
-void VipsSampler::sampleTri(int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage)
+    float u=bar.x(), v=bar.y();
+
+
+    gRect.left=x;
+    gRect.top=y;
+
+
+    if(im_prepare(regRange,&gRect)){
+        fprintf(stderr,"Prepare fail range blend pass\n");
+        exit(-1);
+    }
+    unsigned int *depth=(unsigned int*)IM_REGION_ADDR( regRange, x, y );
+
+    unsigned char dist=255; //No value sentinal
+    bool valid=false;
+    if(u>=0 && v>=0){
+
+        float distu=(u-0.5);//(texture->w_minus1/2.0))/(float)texture->w_minus1;
+        float distv=(v-0.5);//(texture->h_minus1/2.0))/(float)texture->h_minus1;
+        // printf("x: %f v%f\n",x/(double)texture->w_minus1,v/(double)texture->h_minus1);
+        float r1 = sqrtf( distu*distu + distv*distv);
+        dist=clamp((int)((r1/rmax)*255.0),0,255);
+        valid=true;
+
+    }
+    unsigned char  oldd[4];
+
+    unsigned int d=*depth;
+    oldd[0]= d & 0xFF;
+    oldd[1] = (d >> 8) & 0xFF;
+    oldd[2] = (d >> 16) & 0xFF;
+    oldd[3]= (d >> 24) & 0xFF;
+    if(valid){
+        if( oldd[idx]!=255){
+            // printf("Sentinal touch two %d %d\n",idx,triIdx);
+            if(!doublecountmapPtr->count(std::make_pair<int,int>(x,y))){
+                std::set<int> a;
+                (*doublecountmapPtr)[std::make_pair<int,int>(x,y)]=triIdx;
+               // (*doubleTouchCountPtr)++;
+            }
+        }else{
+            oldd[idx]=dist;
+        }
+    }
+    *depth= oldd[0] | oldd[1] << 8 | oldd[2] << 16 | oldd[3] << 24;
+
+}
+void VipsSampler::blendPassTri(int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage)
 {
 
 
-    //if(doublecountmapPtr->count(std::make_pair<int,int>(x,y)) && (*doublecountmapPtr)[std::make_pair<int,int>(x,y)] != triIdx)
-      //  return;
+    if(doublecountmapPtr->count(std::make_pair<int,int>(x,y)) && (*doublecountmapPtr)[std::make_pair<int,int>(x,y)] != triIdx)
+        return;
 
     gRect.left=x;
     gRect.top=y;
@@ -59,16 +113,15 @@ void VipsSampler::sampleTri(int x, int y, const osg::Vec3& bar, const osg::Vec3&
         fprintf(stderr,"Prepare fail range blend pass\n");
         exit(-1);
     }
-    unsigned int *color=(unsigned int*)IM_REGION_ADDR( regOutput, x, y );
    //*color=       255 | 0 << 8 | 0 << 16 | 255 << 24;
     //cout << bar.x() << " "<<bar.y()<<endl;
 
 
     float Cb[]={0.710000,0.650000,0.070000};
     float u=bar.x(), v=bar.y();
-    *color =floatColorToRGBA(texture->sample_nearest(u,v,0));
-return;
-    cout << bar.x() << " "<<bar.y()<<endl;
+    //    unsigned int *color=(unsigned int*)IM_REGION_ADDR( regOutput, x, y );
+
+   // *color =floatColorToRGBA(texture->sample_nearest(u,v,0));
 
     if(u <0 || v <0|| u>1.0 || v > 1.0){
         cout << bar.x() << " "<<bar.y()<<endl;
@@ -122,12 +175,7 @@ return;
     outComp[2]=outComp[2]/WSum[2];
 
     osg::Vec3 outP = outComp[0]+outComp[1]+outComp[2];
-    //unsigned int *color=(unsigned int*)IM_REGION_ADDR( regOutput, x, y );
-   return;
-    if(idx != 0)
-        return;
-    outP=texture->sample_nearest(u,v,0);
-
+   unsigned int *color=(unsigned int*)IM_REGION_ADDR( regOutput, x, y );
     int r,g,b;
     unsigned int c=*color;
     int oldblue,oldgreen,oldred;
@@ -149,33 +197,6 @@ return;
         c=  clamp(r+oldred,0,255) | clamp(g+oldgreen,0,255) << 8 | clamp(b+oldblue,0,255) << 16 | 255 << 24;
 
     *color = c;
-
-
-
-
-#if 0
-    //Vector3 normal = normalizeSafe(cross(m_positions[1] - m_positions[0], m_positions[2] - m_positions[0]), Vector3(zero), 0.0f);
-    Vector3 linearNormal = normalizeSafe(bar.x() * m_normals[0] + bar.y() * m_normals[1] + bar.z() * m_normals[2], Vector3(zero), 0.0f);
-    float u=bar.x(), v=bar.y(), w=bar.z();
-
-    Vector3 normal = normalizeSafe(	u*u*m_normals[0] + v*v*m_normals[1] + w*w*m_normals[2] +
-                                    2*(u*v*m_midedgenormals[0] + v*w*m_midedgenormals[1] + w*u*m_midedgenormals[2]), Vector3(zero), 0);
-
-    float mx = max(max(u,v),w);
-
-    m_image.addPixel(coverage * normal, x, y, m_image.normalChannel());
-
-    /*if (m_image.occlusionChannel() != -1)
-    {
-        float occlusion = sampleOcclusion(position, normal, x, y);
-        nvCheck(occlusion >= 0.0f && occlusion <= 1.0f);
-
-        m_image.addPixel(coverage * occlusion, x, y, m_image.occlusionChannel());
-    }*/
-
-    m_image.addPixel(coverage, x, y, m_image.coverageChannel());
-#endif
-    //m_imageMask.setBitAt(x, y);
 }
 
 

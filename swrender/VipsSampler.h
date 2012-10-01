@@ -17,13 +17,14 @@ public:
 
     VipsSampler(vips::VImage &img) :m_img(img){mipmapL[0]=0;
                                                mipmapL[1]=2;mipmapL[2]=4;};
-
-    static void sampleTriCallback(void * param, int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
+    static void renderDepthTriCallback(void * param, int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
+    static void renderBlendedTriCallback(void * param, int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
     static void sampleQuadCallback(void * param, int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
 
     void setCurrentFace(uint vertexCount, const osg::Vec3 * positions, const osg::Vec3 * normals);
+    void depthPassTri(int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
 
-    void sampleTri(int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
+    void blendPassTri(int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
     void sampleQuad(int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
     REGION *regOutput;
     REGION *regRange;

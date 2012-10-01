@@ -8,7 +8,7 @@
  *                                                                    \      *
  * All rights reserved.                                                      *
  *                                                                           *
- * This program is free software; you can redistribute it and/or modify      *   
+ * This program is free software; you can redistribute it and/or modify      *
  * it under the terms of the GNU General Public License as published by      *
  * the Free Software Foundation; either version 2 of the License, or         *
  * (at your option) any later version.                                       *
@@ -202,7 +202,7 @@ osg::Vec3Array * doMeshReorder(std::string basename);
  * Returns: 0 on success, -1 on error
  */
 int
-        im_white( IMAGE *out, int x, int y, int bands )
+im_white( IMAGE *out, int x, int y, int bands )
 {
     if( x <= 0 || y <= 0 || bands <= 0 ) {
         im_error( "im_white", "%s", "bad parameter"  );
@@ -337,10 +337,10 @@ void readFile(string fname,map<int,imgData> &imageList){
         imgData cam;
         double low[3], high[3];
         if(m_fin >> cam.id >> cam.filename >> low[0] >> low[1] >> low[2] >> high[0] >> high[1] >> high[2]
-           >> cam.m(0,0) >>cam.m(0,1)>>cam.m(0,2) >>cam.m(0,3)
-           >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
-           >> cam.m(2,0) >>cam.m(2,1)>>cam.m(2,2) >>cam.m(2,3)
-           >> cam.m(3,0) >>cam.m(3,1)>>cam.m(3,2) >>cam.m(3,3)){
+                >> cam.m(0,0) >>cam.m(0,1)>>cam.m(0,2) >>cam.m(0,3)
+                >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
+                >> cam.m(2,0) >>cam.m(2,1)>>cam.m(2,2) >>cam.m(2,3)
+                >> cam.m(3,0) >>cam.m(3,1)>>cam.m(3,2) >>cam.m(3,3)){
             cam.bbox.expandBy(low[0],low[1],low[2]);
             cam.bbox.expandBy(high[0],high[1],high[2]);
             imageList[cam.id]=cam;
@@ -446,8 +446,8 @@ int main(int ac, char *av[]) {
     mat4x  viewProjReadA ;
     mat4x  viewProjRemapped ;
     osg::Vec2 positions[4];
-        osg::Vec3 normals[4];
-        osg::Vec2 texcoords[4];
+    osg::Vec3 normals[4];
+    osg::Vec2 texcoords[4];
 
     osg::Matrixd viewProjRead;
     std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
@@ -457,9 +457,9 @@ int main(int ac, char *av[]) {
     }
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++){
-        _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
-        viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
-    }
+            _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
+            viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
+        }
     mat4x *viewProjMats[2]={&viewProjRemapped,&viewProjReadA};
     sprintf(tmp,"%s/image_r%04d_c%04d_rs%04d_cs%04d",diced_img_dir,row,col,_tileRows,_tileColumns);
 
@@ -625,9 +625,9 @@ int main(int ac, char *av[]) {
 
         if(arguments.read("--invrot",rx,ry,rz)){
             inverseM =osg::Matrix::rotate(
-                    osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
-                    osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
-                    osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
+                        osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
+                        osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
+                        osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
         }
         osg::Matrix rotM=osg::Matrix::inverse(inverseM);
 
@@ -695,8 +695,8 @@ int main(int ac, char *av[]) {
 
         for(int i=0; i<4; i++)
             for(int j=0; j<4; j++){
-            viewProjRemapped.elem[j][i]=fixed16_t(viewproj(i,j));
-        }
+                viewProjRemapped.elem[j][i]=fixed16_t(viewproj(i,j));
+            }
         //  cout << viewproj<<endl;
         //        printf("AAAA %d %d %d %d\n",row,col,_tileRows,_tileColumns);
 
@@ -908,15 +908,39 @@ int main(int ac, char *av[]) {
                 VertexShaderBlendingDistPass::modelviewprojection_matrix=(*viewProjMats[i]);
                 VertexShaderBlending::modelviewprojection_matrix=(*viewProjMats[i]);
             }
-        
+
 
             for( map<int,vector<ply::tri_t> >::iterator itr=vertexData._img2tri.begin(); itr!=vertexData._img2tri.end(); itr++){
                 for(int t=0; t< (int)itr->second.size(); t++){
                     osg::Vec3Array *use_vert= (i==0) ? verts : vertexData._vertices.get() ;
+                    if(i ==1 ){
+                        if(process_tri(itr->second[t],use_vert,vertexData._texCoord,blending)){
+                            g[i]->draw_triangles(3, indices);
+                        }
 
-                    if(process_tri(itr->second[t],use_vert,vertexData._texCoord,blending)){
-                        g[i]->draw_triangles(3, indices);
+                    }else if(i == 0){
+                        int vtxCount=3;
+                        int pos=itr->second[t].pos;
+                        viSamp.triIdx=itr->second[t].tri_idx;
+
+                        viSamp.idx =pos;
+
+                        for (uint k = 0; k < vtxCount; k++)
+                        {
+                            positions[k].set(newVerts->at(itr->second[t].idx[k]).x()*sizeX,
+                                             (1.0- newVerts->at(itr->second[t].idx[k]).y())*sizeY
+                                             );
+                            texcoords[k].set(vertexData._texCoord[pos]->at(itr->second[t].idx[k]).x(),
+                                             1.0-vertexData._texCoord[pos]->at(itr->second[t].idx[k]).y());
+                            //newVerts->at(itr->second[t].idx[k]).z());
+
+                        }
+                        //viSamp.setCurrentFace(vtxCount, positions, normals);
+                        Raster::drawTriangle(RASTER_ANTIALIAS, texSize, positions,texcoords,
+                                             VipsSampler::renderDepthTriCallback, &viSamp);
+
                     }
+
 
                 }
             }
@@ -983,12 +1007,14 @@ int main(int ac, char *av[]) {
                     osg::Vec3Array *use_vert= (i==0) ? verts : vertexData._vertices.get() ;
                     if(i==1){
                         if(process_tri(itr->second[t],use_vert,vertexData._texCoord,blending))
-                        g[i]->draw_triangles(3, indices);
+                            g[i]->draw_triangles(3, indices);
                     }else if(i == 0){
                         int vtxCount=3;
                         int pos=itr->second[t].pos;
-                        if(pos != 1)
-                            continue;
+                        viSamp.triIdx=itr->second[t].tri_idx;
+
+                        viSamp.idx =pos;
+
                         for (uint k = 0; k < vtxCount; k++)
                         {
                             positions[k].set(newVerts->at(itr->second[t].idx[k]).x()*sizeX,
@@ -996,12 +1022,12 @@ int main(int ac, char *av[]) {
                                              );
                             texcoords[k].set(vertexData._texCoord[pos]->at(itr->second[t].idx[k]).x(),
                                              1.0-vertexData._texCoord[pos]->at(itr->second[t].idx[k]).y());
-                                             //newVerts->at(itr->second[t].idx[k]).z());
+                            //newVerts->at(itr->second[t].idx[k]).z());
 
                         }
                         //viSamp.setCurrentFace(vtxCount, positions, normals);
                         Raster::drawTriangle(RASTER_ANTIALIAS, texSize, positions,texcoords,
-                                    VipsSampler::sampleTriCallback, &viSamp);
+                                             VipsSampler::renderBlendedTriCallback, &viSamp);
 
                     }
                 }
@@ -1045,10 +1071,10 @@ int main(int ac, char *av[]) {
         im_extract_bands(outputImage[0],tmpI,0,3);
         /*dilateEdge(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str());*/
         if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str())){
-                  fprintf(stderr,"Failed to write\n");
-                  cerr << im_error_buffer()<<endl;
-                  im_close(tmpI);
-                  exit(-1);
+            fprintf(stderr,"Failed to write\n");
+            cerr << im_error_buffer()<<endl;
+            im_close(tmpI);
+            exit(-1);
         }
         im_close(tmpI);
 
@@ -1398,10 +1424,10 @@ inline int getLongestEdge(const CMeshO::FaceType & f)
     double  maxd20 = SquaredDistance(p2,p0);
     if(maxd01 > maxd12)
         if(maxd01 > maxd20)     res = 0;
-    else                    res = 2;
+        else                    res = 2;
     else
         if(maxd12 > maxd20)     res = 1;
-    else                    res = 2;
+        else                    res = 2;
     return res;
 }
 
@@ -1489,10 +1515,10 @@ bool reorderVertsForTex(void){
         for (uint i=0; i<areas.size(); ++i)
             if (areas[i]>=0)
             {
-            int slot = (int)ceil(log2(maxArea/areas[i]) + DBL_EPSILON) - 1;
-            assert(slot < buckSize && slot >= 0);
-            buckets[slot].push_back(i);
-        }
+                int slot = (int)ceil(log2(maxArea/areas[i]) + DBL_EPSILON) - 1;
+                assert(slot < buckSize && slot >= 0);
+                buckets[slot].push_back(i);
+            }
 
         // Determines correct dimension and accordingly max halfening levels
         int dim = 0;
@@ -1513,7 +1539,7 @@ bool reorderVertsForTex(void){
 
             // this check triangles dimension limit too
             if (newenough && 1.0/tmp < (sqrt2Fact/M_SQRT2 + oneFact)*border +
-                (oneFact != sqrt2Fact ? oneFact*M_SQRT2*2.0/textDim : oneFact*2.0/textDim)) break;
+                    (oneFact != sqrt2Fact ? oneFact*M_SQRT2*2.0/textDim : oneFact*2.0/textDim)) break;
 
             enough = newenough;
             rest -= buckets[halfeningLevels].size();

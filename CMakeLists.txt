@@ -200,7 +200,7 @@ ENDIF(NOT PY_OGR)
 #-----------------------#
 # Compiler setup        #
 #-----------------------#
-ADD_DEFINITIONS( "-Wall" )
+ADD_DEFINITIONS( "-Wall -DGLIB_DISABLE_DEPRECATION_WARNINGS" )
 cmake_policy(SET CMP0005 OLD)
 #spatial lib defs
 add_definitions("-DHAVE_FCNTL_H=1 -DHAVE_UNISTD_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_PTHREAD_H=1 -DHAVE_SYS_RESOURCE_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_STDINT_H=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_BZERO=1 -DHAVE_MEMSET=1 -DHAVE_MEMCPY=1 -DHAVE_BCOPY=1")
@@ -352,6 +352,7 @@ ADD_EXECUTABLE(vertCheck vertCheck.cpp)
 ADD_EXECUTABLE(sparseJoin sparseJoin.cpp)
 ADD_EXECUTABLE(vipsVTAtlas vipsVTAtlas.cpp)
 ADD_EXECUTABLE(atlasmesh atlasmesh.cpp)
+ADD_EXECUTABLE( borderClip borderClip.cpp  )
 
 ADD_EXECUTABLE(genOverlappingPoses genOverlappingPoses.cpp)
 
@@ -376,6 +377,7 @@ TARGET_LINK_LIBRARIES( genRangeImg ts spindex )
 TARGET_LINK_LIBRARIES( vertCheck ts spindex )
 TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC)
 TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC)
+TARGET_LINK_LIBRARIES( borderClip ts spindex )
 
 TARGET_LINK_LIBRARIES( dicedImage vips vipsCC ts z)
 TARGET_LINK_LIBRARIES( sparseJoin vips vipsCC ts z)

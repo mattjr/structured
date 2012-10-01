@@ -701,6 +701,8 @@ bool cleanFlag=false;
     }
     vcg::tri::io::PlyInfo p;
     p.mask|=vcg::tri::io::Mask::IOM_VERTCOLOR  /* | vcg::ply::PLYMask::PM_VERTQUALITY*/ ;
+    p.mask|=vcg::tri::io::Mask::IOM_FACEQUALITY;
+    fprintf(stderr,"HasPerFaceQuality %d\n",HasPerFaceQuality(m));
     tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),true,p);
     //tri::io::ExporterPLY<AMesh>::Save(m,OutNameMsh.c_str(),false);
     //     exit(0);

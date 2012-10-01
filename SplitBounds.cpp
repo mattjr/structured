@@ -105,12 +105,27 @@ WriteSplitTP::WriteSplitTP(double res,string fname,std::string basepath,std::str
 }
 bool WriteSplitTP::write_cmd(const picture_cell &cell){
     char shr_tmp[8192];
-    sprintf(shr_tmp,"cd %s;%s/treeBBClip ",_cwd.c_str(),
+    sprintf(shr_tmp,"cd %s;%s/borderClip ",_cwd.c_str(),
             _basepath.c_str());
     int v_count=0;
+    osg::BoundingBox cellMargin;
+    double margin=cell.bbox.radius()*2;
+
+    cellMargin.expandBy(cell.bbox.xMin()-(margin),
+                               cell.bbox.yMin()-(margin),
+                               -FLT_MAX);
+    cellMargin.expandBy(cell.bbox.xMax()+(margin),cell.bbox.yMax()+(margin),FLT_MAX);
 
     foreach_vol(cur,_vol){
-        if(cur->poses.size() == 0 || !cell.bboxMarginUnRot.intersects(cur->bounds.bbox))
+        double margin=cur->bounds.bbox.radius()*2;
+
+        osg::BoundingBox curMargin;
+        curMargin.expandBy(cur->bounds.bbox.xMin()-(margin),
+                                   cur->bounds.bbox.yMin()-(margin),
+                                   -FLT_MAX);
+        curMargin.expandBy(cur->bounds.bbox.xMax()+(margin),cur->bounds.bbox.yMax()+(margin),FLT_MAX);
+
+        if(!cellMargin.intersects(curMargin))
             continue;
         sprintf(shr_tmp,"%s %s/clean_%d%d%d.ply",shr_tmp,aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
         v_count++;
@@ -118,7 +133,7 @@ bool WriteSplitTP::write_cmd(const picture_cell &cell){
     if(v_count== 0)
         return false;
 
-    sprintf(shr_tmp,"%s --bbox %.16f %.16f %.16f %.16f %.16f %.16f -dump -F --outfile %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply;",
+    sprintf(shr_tmp,"%s --bbox %.16f %.16f %.16f %.16f %.16f %.16f --bbox-margin %.16f %.16f %.16f %.16f %.16f %.16f -dump -F --outfile %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply;",
             shr_tmp,
             cell.bbox.xMin(),
             cell.bbox.yMin(),
@@ -126,6 +141,12 @@ bool WriteSplitTP::write_cmd(const picture_cell &cell){
             cell.bbox.xMax(),
             cell.bbox.yMax(),
             cell.bbox.zMax(),
+            cell.bboxMargin.xMin(),
+            cell.bboxMargin.yMin(),
+            cell.bboxMargin.zMin(),
+            cell.bboxMargin.xMax(),
+            cell.bboxMargin.yMax(),
+            cell.bboxMargin.zMax(),
             diced_dir,
             cell.row,cell.col);
     fprintf(cmdfp,"%s %s/vcgapps/bin/sw-shadevis -P -n64 %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply ;",

@@ -132,6 +132,10 @@ bool WriteSplitTP::write_cmd(const picture_cell &cell){
     }
     if(v_count== 0)
         return false;
+    osg::BoundingBox faceMarginBox;
+    double faceMargin=_res*5;
+    faceMarginBox.expandBy(cell.bbox.xMin()-faceMargin,cell.bbox.yMin()-faceMargin,cell.bbox.zMin());
+    faceMarginBox.expandBy(cell.bbox.xMax()+faceMargin,cell.bbox.yMax()+faceMargin,cell.bbox.zMax());
 
     sprintf(shr_tmp,"%s --bbox %.16f %.16f %.16f %.16f %.16f %.16f --bbox-margin %.16f %.16f %.16f %.16f %.16f %.16f -dump -F --outfile %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply;",
             shr_tmp,
@@ -141,12 +145,12 @@ bool WriteSplitTP::write_cmd(const picture_cell &cell){
             cell.bbox.xMax(),
             cell.bbox.yMax(),
             cell.bbox.zMax(),
-            cell.bboxMargin.xMin(),
-            cell.bboxMargin.yMin(),
-            cell.bboxMargin.zMin(),
-            cell.bboxMargin.xMax(),
-            cell.bboxMargin.yMax(),
-            cell.bboxMargin.zMax(),
+            faceMarginBox.xMin(),
+            faceMarginBox.yMin(),
+            faceMarginBox.zMin(),
+            faceMarginBox.xMax(),
+            faceMarginBox.yMax(),
+            faceMarginBox.zMax(),
             diced_dir,
             cell.row,cell.col);
     fprintf(cmdfp,"%s %s/vcgapps/bin/sw-shadevis -P -n64 %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply ;",

@@ -13,7 +13,7 @@
 
 void addDups(osg::Geode *geode);
 using namespace std;
-void write_header(std::ostream& _fout,int total_face_count,bool color){
+void write_header(std::ostream& _fout,int total_face_count,bool color,bool qual){
     _fout <<"ply\n";
     _fout <<"format binary_little_endian 1.0\n";
     //_fout <<"comment PLY exporter written by Paul Adams\n";
@@ -28,10 +28,12 @@ void write_header(std::ostream& _fout,int total_face_count,bool color){
     }
     _fout <<"element face " <<total_face_count/3<<std::endl;
     _fout <<"property list uchar int vertex_indices\n";
+    if(qual)
+        _fout <<"property float quality\n";
 
     _fout <<"end_header\n";
 }
-void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,bool flip,osg::Matrix m){
+void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,osg::Vec2Array *qual,bool flip,osg::Matrix m){
     int cnt=0;
     for(int i=0; i< (int)tri->size()-2; i+=3){
         for(int j=0; j<3; j++){
@@ -69,6 +71,10 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
 
         }
         _fout.write((char*)iout,sizeof(int)*3);
+        if(qual != NULL){
+            float qualV =qual->at(i/3)[0];
+            _fout.write((char*)&qualV,sizeof(float));
+        }
         cnt++;
 
     }
@@ -136,9 +142,10 @@ int main( int argc, char **argv )
     if(arguments.read("--invrot",rx,ry,rz)){
         rot=true;
     }
+    bool qualOn=arguments.read("-qual");
 
     ply::VertexData vertexData;
-    osg::Node *root;
+    osg::Node *root=NULL;
     osg::BoundingBox bb(minV,maxV);
     osg::notify(osg::NOTICE) << bb._min << " " << bb._max << endl;
     for(int pos=1;pos<arguments.argc();++pos)
@@ -148,7 +155,7 @@ int main( int argc, char **argv )
             // not an option so assume string is a filename.
             string fname= arguments[pos];
             cout <<"Loading:"<< fname <<endl;
-            root= vertexData.readPlyFile(fname.c_str(),false,&bb,mode);
+            root= vertexData.readPlyFile(fname.c_str(),false,&bb,mode,qualOn);
 
 
         }
@@ -156,7 +163,7 @@ int main( int argc, char **argv )
     string empt=outfilename+".empty";
 
     if(!vertexData._vertices.valid() || vertexData._vertices->size() == 0){
-        fprintf(stderr,"No valid data in bbox returning %d\n",vertexData._vertices.valid() ?  vertexData._vertices->size() : -1 );
+        fprintf(stderr,"No valid data in bbox returning %lu\n",vertexData._vertices.valid() ?  vertexData._vertices->size() : -1 );
         FILE *fp=fopen(empt.c_str(),"w");
         fprintf(fp,"0\n");
         fclose(fp);
@@ -259,8 +266,12 @@ int main( int argc, char **argv )
         //root->accept(sv);
         std::ofstream f(outfilename.c_str());
         bool color = vertexData._colors.valid() ? (vertexData._colors->size() >0) : false;
-        write_header(f,vertexData._triangles->size(),color);
-        write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,flip,inverseM);
+        osg::Vec2Array *validArr=(vertexData._qualArray.valid() && vertexData._qualArray->size()>0) ? vertexData._qualArray : NULL;
+        bool qual =(validArr != NULL);
+        printf("Writing QUAL?: %d %lu %lu\n",qual,qual ? vertexData._qualArray->size() : 0 ,vertexData._triangles->size());
+        write_header(f,vertexData._triangles->size(),color,qual);
+
+        write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,validArr,flip,inverseM);
         //PLYWriterNodeVisitor nv(f);
         //root->accept(nv);
         f.close();;

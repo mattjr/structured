@@ -397,6 +397,49 @@ inline bool process_tri(ply::tri_t &tri,osg::Vec3Array *verts, std::vector<osg::
     tmp_vertices[2].id=tc3.z();
     return true;
 }
+typedef struct _SamplerData{
+    osg::Vec2 positions[4];
+    osg::Vec3 normals[4];
+    osg::Vec2 texcoords[4];
+}SamplerData;
+
+inline bool process_tri_new(ply::tri_t &tri,osg::Vec3Array *verts,
+                            std::vector<osg::ref_ptr<osg::Vec3Array> >   &texCoord,
+                            bool blending,
+                            int sizeX,
+                            int sizeY,
+                            VipsSampler &viSamp,
+                            SamplerData &samp
+                            )
+{
+    int pos=tri.pos;
+
+
+
+
+    int vtxCount=3;
+
+    for (uint k = 0; k < vtxCount; k++)
+    {
+        double u=texCoord[pos]->at(tri.idx[k]).x();
+        double v=1.0-texCoord[pos]->at(tri.idx[k]).y();
+
+        if(u<0.0 || u >1.0 || v<0.0 ||v>1.0)
+            return false;
+        samp.positions[k].set(verts->at(tri.idx[k]).x()*sizeX,
+                         (1.0- verts->at(tri.idx[k]).y())*sizeY);
+        samp.texcoords[k].set(u,v);
+
+    }
+
+
+  //  viSamp.setCurrentFace(vtxCount, positions, normals);
+    viSamp.triIdx=tri.tri_idx;
+    viSamp.idx=pos;
+
+    return true;
+}
+
 int main(int ac, char *av[]) {
     string path=string(av[0]);
     unsigned int loc=path.rfind("/");
@@ -445,10 +488,11 @@ int main(int ac, char *av[]) {
     }
     mat4x  viewProjReadA ;
     mat4x  viewProjRemapped ;
-    osg::Vec2 positions[4];
+   /* osg::Vec2 positions[4];
     osg::Vec3 normals[4];
     osg::Vec2 texcoords[4];
-
+*/
+    SamplerData sData;
     osg::Matrixd viewProjRead;
     std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
     if(!_file.good()){
@@ -919,7 +963,7 @@ int main(int ac, char *av[]) {
                         }
 
                     }else if(i == 0){
-                        int vtxCount=3;
+                        /*int vtxCount=3;
                         int pos=itr->second[t].pos;
                         viSamp.triIdx=itr->second[t].tri_idx;
 
@@ -934,10 +978,13 @@ int main(int ac, char *av[]) {
                                              1.0-vertexData._texCoord[pos]->at(itr->second[t].idx[k]).y());
                             //newVerts->at(itr->second[t].idx[k]).z());
 
+
                         }
-                        //viSamp.setCurrentFace(vtxCount, positions, normals);
-                        Raster::drawTriangle(RASTER_ANTIALIAS, texSize, positions,texcoords,
+                        //viSamp.setCurrentFace(vtxCount, positions, normals);*/
+                        if(process_tri_new(itr->second[t],newVerts,vertexData._texCoord,blending,sizeX,sizeY,viSamp,sData)){
+                        Raster::drawTriangle(RASTER_ANTIALIAS, texSize, sData.positions,sData.texcoords,
                                              VipsSampler::renderDepthTriCallback, &viSamp);
+                        }
 
                     }
 
@@ -1009,7 +1056,7 @@ int main(int ac, char *av[]) {
                         if(process_tri(itr->second[t],use_vert,vertexData._texCoord,blending))
                             g[i]->draw_triangles(3, indices);
                     }else if(i == 0){
-                        int vtxCount=3;
+                       /* int vtxCount=3;
                         int pos=itr->second[t].pos;
                         viSamp.triIdx=itr->second[t].tri_idx;
 
@@ -1025,9 +1072,12 @@ int main(int ac, char *av[]) {
                             //newVerts->at(itr->second[t].idx[k]).z());
 
                         }
-                        //viSamp.setCurrentFace(vtxCount, positions, normals);
-                        Raster::drawTriangle(RASTER_ANTIALIAS, texSize, positions,texcoords,
+                        //viSamp.setCurrentFace(vtxCount, positions, normals);*/
+                        if(process_tri_new(itr->second[t],newVerts,vertexData._texCoord,blending,sizeX,sizeY,viSamp,sData)){
+
+                        Raster::drawTriangle(RASTER_ANTIALIAS, texSize, sData.positions,sData.texcoords,
                                              VipsSampler::renderBlendedTriCallback, &viSamp);
+                        }
 
                     }
                 }

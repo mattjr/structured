@@ -152,7 +152,7 @@ bool WriteSplitTP::write_cmd(const picture_cell &cell){
     fprintf(cmdfp,"%s %s/vcgapps/bin/sw-shadevis -P -n64 %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply ;",
             shr_tmp,_basepath.c_str(),diced_dir,
              cell.row,cell.col);
-    fprintf(cmdfp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/vis-un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup -F --outfile %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply \n",
+    fprintf(cmdfp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/vis-un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup -qual -F --outfile %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply \n",
             _basepath.c_str(),
            -FLT_MAX,
             -FLT_MAX,

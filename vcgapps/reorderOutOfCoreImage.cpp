@@ -898,7 +898,10 @@ int main(int ac, char *av[]) {
             FragmentShaderBlendingDistPass::regRange =regRange[i];
             FragmentShaderBlendingDistPass::doublecountmapPtr =&(doublecountmap[i]);
             FragmentShaderBlendingDistPass::doubleTouchCountPtr =&(doubleTouchCount[i]);
-
+            viSamp.regOutput=regOutput[i];
+            viSamp.regRange=regRange[i];
+            viSamp.doublecountmapPtr =&(doublecountmap[i]);
+            //viSamp.texture =textureMipMap;
             if(!blending)
                 VertexShader::modelviewprojection_matrix=(*viewProjMats[i]);
             else{
@@ -914,23 +917,7 @@ int main(int ac, char *av[]) {
                     if(process_tri(itr->second[t],use_vert,vertexData._texCoord,blending)){
                         g[i]->draw_triangles(3, indices);
                     }
-                    if(i == 1){
-                        int vtxCount=3;
-                        for (uint k = 0; k < vtxCount; k++)
-                        {
-                            texcoords[k].set(newVerts->at(itr->second[t].idx[k]).x()*sizeX,
-                                             (1.0- newVerts->at(itr->second[t].idx[k]).y())*sizeY
-                                             );
-                            positions[k].set(newVerts->at(itr->second[t].idx[k]).x(),
-                                             newVerts->at(itr->second[t].idx[k]).y(),
-                                             newVerts->at(itr->second[t].idx[k]).z());
 
-                        }
-                        viSamp.setCurrentFace(vtxCount, positions, normals);
-
-                        Raster::drawTriangle(RASTER_ANTIALIAS, texSize, texcoords,
-                                    VipsSampler::sampleTriCallback, &viSamp);
-                    }
                 }
             }
 
@@ -979,7 +966,10 @@ int main(int ac, char *av[]) {
                 FragmentShaderBlendingMain::regOutput=regOutput[i];
                 FragmentShaderBlendingMain::regRange=regRange[i];
                 FragmentShaderBlendingMain::doublecountmapPtr =&(doublecountmap[i]);
-
+                viSamp.regOutput=regOutput[i];
+                viSamp.regRange=regRange[i];
+                viSamp.doublecountmapPtr =&(doublecountmap[i]);
+                viSamp.texture =textureMipMap;
                 for(int t=0; t< (int)itr->second.size(); t++){
                     if(i==1){
                         if(count % 300 == 0){
@@ -991,8 +981,26 @@ int main(int ac, char *av[]) {
                     if(!blending && itr->second[t].pos !=0 )
                         continue;
                     osg::Vec3Array *use_vert= (i==0) ? verts : vertexData._vertices.get() ;
-                    if(process_tri(itr->second[t],use_vert,vertexData._texCoord,blending))
+                    if(i==1){
+                        if(process_tri(itr->second[t],use_vert,vertexData._texCoord,blending))
                         g[i]->draw_triangles(3, indices);
+                    }else if(i == 0){
+                        int vtxCount=3;
+                        for (uint k = 0; k < vtxCount; k++)
+                        {
+                            texcoords[k].set(newVerts->at(itr->second[t].idx[k]).x()*sizeX,
+                                             (1.0- newVerts->at(itr->second[t].idx[k]).y())*sizeY
+                                             );
+                            positions[k].set(newVerts->at(itr->second[t].idx[k]).x(),
+                                             newVerts->at(itr->second[t].idx[k]).y(),
+                                             newVerts->at(itr->second[t].idx[k]).z());
+
+                        }
+                        viSamp.setCurrentFace(vtxCount, positions, normals);
+
+                        Raster::drawTriangle(RASTER_ANTIALIAS, texSize, texcoords,texcoords,
+                                    VipsSampler::sampleTriCallback, &viSamp);
+                    }
                 }
             }
             if(!blending){

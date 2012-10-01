@@ -50,7 +50,7 @@
 class PLYWriterNodeVisitor: public osg::NodeVisitor {
 
 public:
-    PLYWriterNodeVisitor(std::ostream& fout, osg::Vec4Array *textureID=NULL,std::vector<osg::ref_ptr<osg::Vec3Array> > *texCoords=NULL,std::string comment="",std::vector<bool> *marginFace=NULL) :
+    PLYWriterNodeVisitor(std::ostream& fout, osg::Vec4Array *textureID=NULL,std::vector<osg::ref_ptr<osg::Vec3Array> > *texCoords=NULL,std::string comment="",std::vector<bool> *marginFace=NULL,osg::Vec4Array *colorArr=NULL) :
             osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN), 
             _fout(fout), 
             _currentStateSet(new osg::StateSet()),
@@ -63,7 +63,8 @@ public:
             _textureCoord(texCoords),
             _textured(texCoords != NULL),
             _comment(comment),
-            _marginFace(marginFace)
+            _marginFace(marginFace),
+        _colorArr(colorArr)
     {
         //            _fout << "# file written by OpenSceneGraph" << std::endl << std::endl;
 
@@ -132,6 +133,7 @@ public:
         osg::Vec4  diffuse, ambient, specular;
         std::string    image;
         std::string name;
+
     };
 
 protected:
@@ -150,6 +152,7 @@ private:
     void write_header(void);
     void processGeometry(osg::Geometry* geo, osg::Matrix& m);
     void processArray(const std::string& key, osg::Array* array, const osg::Matrix& m = osg::Matrix::identity(), bool isNormal = false);
+    void processArray(const std::string& key, osg::Array* array,osg::Array* array2, const osg::Matrix& m = osg::Matrix::identity(), bool isNormal = false);
 
     void processStateSet(osg::StateSet* stateset);
 
@@ -175,6 +178,8 @@ private:
     bool _mult_tex;
     std::string _comment;
     std::vector<bool> *_marginFace;
+    osg::Vec4Array *_colorArr;
+
 };
 
 #endif

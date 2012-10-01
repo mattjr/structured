@@ -8,11 +8,11 @@
  * Modified by Robert Osfield to support per Drawable coord, normal and
  * texture coord arrays, bug fixes, and support for texture mapping.
  *
- * Writing support added 2007 by Stephan Huber, http://digitalmind.de, 
+ * Writing support added 2007 by Stephan Huber, http://digitalmind.de,
  * some ideas taken from the dae-plugin
  *
- * The Open Scene Graph (OSG) is a cross platform C++/OpenGL library for 
- * real-time rendering of large 3D photo-realistic models. 
+ * The Open Scene Graph (OSG) is a cross platform C++/OpenGL library for
+ * real-time rendering of large 3D photo-realistic models.
  * The OSG homepage is http://www.openscenegraph.org/
  */
 
@@ -25,10 +25,10 @@
 class ValueVisitor : public osg::ValueVisitor {
 public:
     ValueVisitor(std::ostream& fout, const osg::Matrix& m = osg::Matrix::identity(), bool isNormal = false) :
-            osg::ValueVisitor(), 
-            _fout(fout), 
-            _m(m), 
-            _isNormal(isNormal)
+        osg::ValueVisitor(),
+        _fout(fout),
+        _m(m),
+        _isNormal(isNormal)
     {
         _applyMatrix = (_m != osg::Matrix::identity());
         if (_isNormal) _origin = osg::Vec3(0,0,0) * _m;
@@ -49,6 +49,18 @@ public:
         vf[1]=v[1];
         vf[2]=v[2];
         _fout.write((char *)vf,3*sizeof(float));
+        // _fout << v[0] << ' ' << v[1] << ' ' << v[2];
+    }
+    virtual void apply (osg::Vec4 & inv)
+    {
+        //FOR COLOR
+        osg::Vec4 v(inv);
+        unsigned char vf[3];
+
+        vf[0]=(unsigned char)(255.0*v[0]);
+        vf[1]=(unsigned char)(255.0*v[1]);
+        vf[2]=(unsigned char)(255.0*v[2]);
+        _fout.write((char *)vf,3*sizeof(unsigned char));
         // _fout << v[0] << ' ' << v[1] << ' ' << v[2];
     }
 
@@ -86,20 +98,21 @@ private:
 class PrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
     
 public:
-    PrimitiveIndexWriter(std::ostream& fout,osg::Geometry* geo, unsigned int normalIndex, unsigned int lastVertexIndex, unsigned int  lastNormalIndex, unsigned int lastTexIndex,bool textured,osg::Vec4Array *textureID,std::vector<osg::ref_ptr<osg::Vec3Array> > *textureCoord,    std::vector<bool> *marginFace) :
-            osg::PrimitiveIndexFunctor(), 
-            _fout(fout),
-            _lastVertexIndex(lastVertexIndex),
-            _lastNormalIndex(lastNormalIndex),
-            _lastTexIndex(lastTexIndex),
-            _hasNormalCoords(geo->getNormalArray() != NULL),
-            _hasTexCoords(geo->getTexCoordArray(0) != NULL),
-            _geo(geo),
-            _normalIndex(normalIndex),
-            _textured(textured),
-            _textureID(textureID),
-            _textureCoord(textureCoord),
-             _marginFace(marginFace)
+    PrimitiveIndexWriter(std::ostream& fout,osg::Geometry* geo, unsigned int normalIndex, unsigned int lastVertexIndex, unsigned int  lastNormalIndex, unsigned int lastTexIndex,bool textured,osg::Vec4Array *textureID,std::vector<osg::ref_ptr<osg::Vec3Array> > *textureCoord,    std::vector<bool> *marginFace,osg::Vec4Array *colorArr) :
+        osg::PrimitiveIndexFunctor(),
+        _fout(fout),
+        _lastVertexIndex(lastVertexIndex),
+        _lastNormalIndex(lastNormalIndex),
+        _lastTexIndex(lastTexIndex),
+        _hasNormalCoords(geo->getNormalArray() != NULL),
+        _hasTexCoords(geo->getTexCoordArray(0) != NULL),
+        _geo(geo),
+        _normalIndex(normalIndex),
+        _textured(textured),
+        _textureID(textureID),
+        _textureCoord(textureCoord),
+        _marginFace(marginFace),
+        _colorArr(colorArr)
 
     {
     }
@@ -268,96 +281,96 @@ protected:
         switch(mode)
         {
         case(GL_TRIANGLES):
-            {
-                IndexPointer ilast = &indices[count];
-                for(IndexPointer  iptr=indices;iptr<ilast;iptr+=3)
-                    writeTriangle(*iptr,*(iptr+1),*(iptr+2));
+        {
+            IndexPointer ilast = &indices[count];
+            for(IndexPointer  iptr=indices;iptr<ilast;iptr+=3)
+                writeTriangle(*iptr,*(iptr+1),*(iptr+2));
 
-                break;
-            }
+            break;
+        }
         case(GL_TRIANGLE_STRIP):
+        {
+            IndexPointer iptr = indices;
+            for(GLsizei i=2;i<count;++i,++iptr)
             {
-                IndexPointer iptr = indices;
-                for(GLsizei i=2;i<count;++i,++iptr)
-                {
-                    if ((i%2)) writeTriangle(*(iptr),*(iptr+2),*(iptr+1));
-                    else       writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
-                }
-                break;
+                if ((i%2)) writeTriangle(*(iptr),*(iptr+2),*(iptr+1));
+                else       writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
             }
+            break;
+        }
         case(GL_QUADS):
+        {
+            IndexPointer iptr = indices;
+            for(GLsizei i=3;i<count;i+=4,iptr+=4)
             {
-                IndexPointer iptr = indices;
-                for(GLsizei i=3;i<count;i+=4,iptr+=4)
-                {
-                    writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
-                    writeTriangle(*(iptr),*(iptr+2),*(iptr+3));
-                }
-                break;
+                writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
+                writeTriangle(*(iptr),*(iptr+2),*(iptr+3));
             }
+            break;
+        }
         case(GL_QUAD_STRIP):
+        {
+            IndexPointer iptr = indices;
+            for(GLsizei i=3;i<count;i+=2,iptr+=2)
             {
-                IndexPointer iptr = indices;
-                for(GLsizei i=3;i<count;i+=2,iptr+=2)
-                {
-                    writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
-                    writeTriangle(*(iptr+1),*(iptr+3),*(iptr+2));
-                }
-                break;
+                writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
+                writeTriangle(*(iptr+1),*(iptr+3),*(iptr+2));
             }
+            break;
+        }
         case(GL_POLYGON): // treat polygons as GL_TRIANGLE_FAN
         case(GL_TRIANGLE_FAN):
+        {
+            IndexPointer iptr = indices;
+            unsigned int first = *iptr;
+            ++iptr;
+            for(GLsizei i=2;i<count;++i,++iptr)
             {
-                IndexPointer iptr = indices;
-                unsigned int first = *iptr;
-                ++iptr;
-                for(GLsizei i=2;i<count;++i,++iptr)
-                {
-                    writeTriangle(first,*(iptr),*(iptr+1));
-                }
-                break;
+                writeTriangle(first,*(iptr),*(iptr+1));
             }
+            break;
+        }
         case(GL_POINTS):
+        {
+            IndexPointer ilast = &indices[count];
+            for(IndexPointer  iptr=indices;iptr<ilast;++iptr)
+
             {
-                IndexPointer ilast = &indices[count];
-                for(IndexPointer  iptr=indices;iptr<ilast;++iptr)
-                    
-                {
-                    writePoint(*iptr);
-                }
-                break;
+                writePoint(*iptr);
             }
+            break;
+        }
 
         case(GL_LINES):
+        {
+            IndexPointer ilast = &indices[count];
+            for(IndexPointer  iptr=indices;iptr<ilast;iptr+=2)
             {
-                IndexPointer ilast = &indices[count];
-                for(IndexPointer  iptr=indices;iptr<ilast;iptr+=2)
-                {
-                    writeLine(*iptr, *(iptr+1));
-                }
-                break;
+                writeLine(*iptr, *(iptr+1));
             }
+            break;
+        }
         case(GL_LINE_STRIP):
+        {
+
+            IndexPointer ilast = &indices[count];
+            for(IndexPointer  iptr=indices+1;iptr<ilast;iptr+=2)
+
             {
-
-                IndexPointer ilast = &indices[count];
-                for(IndexPointer  iptr=indices+1;iptr<ilast;iptr+=2)
-
-                {
-                    writeLine(*(iptr-1), *iptr);
-                }
-                break;
+                writeLine(*(iptr-1), *iptr);
             }
+            break;
+        }
         case(GL_LINE_LOOP):
+        {
+            IndexPointer ilast = &indices[count];
+            for(IndexPointer  iptr=indices+1;iptr<ilast;iptr+=2)
             {
-                IndexPointer ilast = &indices[count];
-                for(IndexPointer  iptr=indices+1;iptr<ilast;iptr+=2)
-                {
-                    writeLine(*(iptr-1), *iptr);
-                }
-                writeLine(*ilast, *indices);
-                break;
+                writeLine(*(iptr-1), *iptr);
             }
+            writeLine(*ilast, *indices);
+            break;
+        }
 
         default:
             // uhm should never come to this point :)
@@ -379,6 +392,7 @@ private:
     std::vector<osg::ref_ptr<osg::Vec3Array> > *_textureCoord;
 
     std::vector<bool> *_marginFace;
+    osg::Vec4Array *_colorArr;
 
 
 };
@@ -389,89 +403,89 @@ void PrimitiveIndexWriter::drawArrays(GLenum mode,GLint first,GLsizei count)
     switch(mode)
     {
     case(GL_TRIANGLES):
+    {
+        unsigned int pos=first;
+        for(GLsizei i=2;i<count;i+=3,pos+=3)
         {
-            unsigned int pos=first;
-            for(GLsizei i=2;i<count;i+=3,pos+=3)
-            {
-                writeTriangle(pos,pos+1,pos+2);
-            }
-            break;
+            writeTriangle(pos,pos+1,pos+2);
         }
+        break;
+    }
     case(GL_TRIANGLE_STRIP):
+    {
+        unsigned int pos=first;
+        for(GLsizei i=2;i<count;++i,++pos)
         {
-            unsigned int pos=first;
-            for(GLsizei i=2;i<count;++i,++pos)
-            {
-                if ((i%2)) writeTriangle(pos,pos+2,pos+1);
-                else       writeTriangle(pos,pos+1,pos+2);
-            }
-            break;
+            if ((i%2)) writeTriangle(pos,pos+2,pos+1);
+            else       writeTriangle(pos,pos+1,pos+2);
         }
+        break;
+    }
     case(GL_QUADS):
+    {
+        unsigned int pos=first;
+        for(GLsizei i=3;i<count;i+=4,pos+=4)
         {
-            unsigned int pos=first;
-            for(GLsizei i=3;i<count;i+=4,pos+=4)
-            {
-                writeTriangle(pos,pos+1,pos+2);
-                writeTriangle(pos,pos+2,pos+3);
-            }
-            break;
+            writeTriangle(pos,pos+1,pos+2);
+            writeTriangle(pos,pos+2,pos+3);
         }
+        break;
+    }
     case(GL_QUAD_STRIP):
+    {
+        unsigned int pos=first;
+        for(GLsizei i=3;i<count;i+=2,pos+=2)
         {
-            unsigned int pos=first;
-            for(GLsizei i=3;i<count;i+=2,pos+=2)
-            {
-                writeTriangle(pos,pos+1,pos+2);
-                writeTriangle(pos+1,pos+3,pos+2);
-            }
-            break;
+            writeTriangle(pos,pos+1,pos+2);
+            writeTriangle(pos+1,pos+3,pos+2);
         }
+        break;
+    }
     case(GL_POLYGON): // treat polygons as GL_TRIANGLE_FAN
     case(GL_TRIANGLE_FAN):
+    {
+        unsigned int pos=first+1;
+        for(GLsizei i=2;i<count;++i,++pos)
         {
-            unsigned int pos=first+1;
-            for(GLsizei i=2;i<count;++i,++pos)
-            {
-                writeTriangle(first,pos,pos+1);
-            }
-            break;
+            writeTriangle(first,pos,pos+1);
         }
+        break;
+    }
     case(GL_POINTS):
+    {
+
+        for(GLsizei i=0;i<count;++i)
         {
-            
-            for(GLsizei i=0;i<count;++i)
-            {
-                writePoint(i);
-            }
-            break;
+            writePoint(i);
         }
+        break;
+    }
 
     case(GL_LINES):
+    {
+        for(GLsizei i=0;i<count;i+=2)
         {
-            for(GLsizei i=0;i<count;i+=2)
-            {
-                writeLine(i, i+1);
-            }
-            break;
+            writeLine(i, i+1);
         }
+        break;
+    }
     case(GL_LINE_STRIP):
+    {
+        for(GLsizei i=1;i<count;++i)
         {
-            for(GLsizei i=1;i<count;++i)
-            {
-                writeLine(i-1, i);
-            }
-            break;
+            writeLine(i-1, i);
         }
+        break;
+    }
     case(GL_LINE_LOOP):
+    {
+        for(GLsizei i=1;i<count;++i)
         {
-            for(GLsizei i=1;i<count;++i)
-            {
-                writeLine(i-1, i);
-            }
-            writeLine(count-1, 0);
-            break;
+            writeLine(i-1, i);
         }
+        writeLine(count-1, 0);
+        break;
+    }
     default:
         osg::notify(osg::WARN) << "PLYWriterNodeVisitor :: can't handle mode " << mode << std::endl;
         break;
@@ -480,14 +494,14 @@ void PrimitiveIndexWriter::drawArrays(GLenum mode,GLint first,GLsizei count)
 
 
 PLYWriterNodeVisitor::PLYMaterial::PLYMaterial(osg::Material* mat, osg::Texture* tex) :
-        diffuse(1,1,1,1),
-        ambient(0.2,0.2,0.2,1),
-        specular(0,0,0,1),
-        image("")
+    diffuse(1,1,1,1),
+    ambient(0.2,0.2,0.2,1),
+    specular(0,0,0,1),
+    image("")
 {
     static unsigned int s_objmaterial_id = 0;
     ++s_objmaterial_id;
-    std::stringstream ss; 
+    std::stringstream ss;
     ss << "material_" << s_objmaterial_id;
     name = ss.str();
     
@@ -550,7 +564,7 @@ std::string PLYWriterNodeVisitor::getUniqueName(const std::string& defaultvalue)
 
 }
 
-void PLYWriterNodeVisitor::processArray(const std::string& key, osg::Array* array, const osg::Matrix& m, bool isNormal)
+void PLYWriterNodeVisitor::processArray(const std::string& key, osg::Array* array, osg::Array* array2,const osg::Matrix& m, bool isNormal)
 {
     if (array == NULL)
         return;
@@ -560,13 +574,31 @@ void PLYWriterNodeVisitor::processArray(const std::string& key, osg::Array* arra
     for(unsigned int i = 0; i < array->getNumElements(); ++i) {
         //        _fout << key << ' ';
         array->accept(i, vv);
-	//  _fout << std::endl;
+        array2->accept(i, vv);
+
+        //  _fout << std::endl;
     }
     
     //    _fout << "# " << array->getNumElements() << " elements written" << std::endl;
     
 }
+void PLYWriterNodeVisitor::processArray(const std::string& key, osg::Array* array,const osg::Matrix& m, bool isNormal)
+{
+    if (array == NULL)
+        return;
 
+    ValueVisitor vv(_fout, m, isNormal);
+    //    _fout << std::endl;
+    for(unsigned int i = 0; i < array->getNumElements(); ++i) {
+        //        _fout << key << ' ';
+        array->accept(i, vv);
+
+        //  _fout << std::endl;
+    }
+
+    //    _fout << "# " << array->getNumElements() << " elements written" << std::endl;
+
+}
 void PLYWriterNodeVisitor::processStateSet(osg::StateSet* ss) 
 {
     if (_materialMap.find(ss) != _materialMap.end()) {
@@ -577,7 +609,7 @@ void PLYWriterNodeVisitor::processStateSet(osg::StateSet* ss)
     osg::Material* mat = dynamic_cast<osg::Material*>(ss->getAttribute(osg::StateAttribute::MATERIAL));
     osg::Texture* tex = dynamic_cast<osg::Texture*>(ss->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
     
-    if (mat || tex) 
+    if (mat || tex)
     {
         _materialMap.insert(std::make_pair(osg::ref_ptr<osg::StateSet>(ss), PLYMaterial(mat, tex)));
         _fout << "usemtl " << _materialMap[ss].name << std::endl;
@@ -591,22 +623,25 @@ void PLYWriterNodeVisitor::processGeometry(osg::Geometry* geo, osg::Matrix& m) {
     //_fout << "o " << getUniqueName( geo->getName().empty() ? geo->className() : geo->getName() ) << std::endl;
     
     //    processStateSet(_currentStateSet.get());
-    
-    processArray("v", geo->getVertexArray(), m, false);
+    if(_colorArr != NULL)
+        processArray("v", geo->getVertexArray(), _colorArr,m, false);
+    else
+        processArray("v", geo->getVertexArray(),m, false);
+
     //processArray("vn", geo->getNormalArray(), m, true);
     //  processArray("vt", geo->getTexCoordArray(0)); // we support only tex-unit 0
     unsigned int normalIndex = 0;
-    for(unsigned int i = 0; i < geo->getNumPrimitiveSets(); ++i) 
+    for(unsigned int i = 0; i < geo->getNumPrimitiveSets(); ++i)
     {
         osg::PrimitiveSet* ps = geo->getPrimitiveSet(i);
         
-        PrimitiveIndexWriter pif(_fout, geo, normalIndex, _lastVertexIndex, _lastNormalIndex, _lastTexIndex,_textured,_textureID,_textureCoord,_marginFace);
+        PrimitiveIndexWriter pif(_fout, geo, normalIndex, _lastVertexIndex, _lastNormalIndex, _lastTexIndex,_textured,_textureID,_textureCoord,_marginFace,_colorArr);
         ps->accept(pif);
         
         if(geo->getNormalArray() && geo->getNormalBinding() == osg::Geometry::BIND_PER_PRIMITIVE_SET)
             ++normalIndex;
     }
-    if (geo->getVertexArray()) 
+    if (geo->getVertexArray())
         _lastVertexIndex += geo->getVertexArray()->getNumElements();
     if (geo->getNormalArray())
         _lastNormalIndex += geo->getNormalArray()->getNumElements();
@@ -621,9 +656,9 @@ void PLYWriterNodeVisitor::count_geo(osg::Geometry* geo) {
         osg::PrimitiveSet* ps = geo->getPrimitiveSet(i);
         _total_face_count+= ps->getNumPrimitives ();
     }
-    if (geo->getVertexArray()) 
+    if (geo->getVertexArray())
         _total_vertex_count += geo->getVertexArray()->getNumElements();
-    //    if (geo->getVertexArray()) 
+    //    if (geo->getVertexArray())
     //  _total_vertex_count += geo->getVertexArray()->getNumElements();
 
 
@@ -647,11 +682,11 @@ void PLYWriterNodeVisitor::apply( osg::Geode &node )
             
             count_geo(g);
             
-	    // popStateSet(g->getStateSet());
+            // popStateSet(g->getStateSet());
         }
     }
     write_header();
-  //  fprintf(stderr,"Faces %d Vert %d\n",_total_face_count,_total_vertex_count);
+    //  fprintf(stderr,"Faces %d Vert %d\n",_total_face_count,_total_vertex_count);
     for ( unsigned int i = 0; i < count; i++ )
     {
         osg::Geometry *g = node.getDrawable( i )->asGeometry();
@@ -661,7 +696,7 @@ void PLYWriterNodeVisitor::apply( osg::Geode &node )
             
             processGeometry(g,m);
             
-	    // popStateSet(g->getStateSet());
+            // popStateSet(g->getStateSet());
         }
     }
 
@@ -679,6 +714,11 @@ void PLYWriterNodeVisitor::write_header(void){
     _fout <<"property float x\n";
     _fout <<"property float y\n";
     _fout <<"property float z\n";
+    if(_colorArr != NULL){
+        _fout <<"property uchar red\n";
+        _fout <<"property uchar green\n";
+        _fout <<"property uchar blue\n";
+    }
     _fout <<"element face " <<_total_face_count<<std::endl;
     _fout <<"property list uchar int vertex_indices\n";
     if(_textured){

@@ -4,13 +4,19 @@
 #include <vips/vips.h>
 #include <osg/Vec3>
 #include <osg/Vec2>
+#include "render_utils.h"
+#include <map>
+
 /// Sampler that captures positions and normals.
 class VipsSampler
 {
+    typedef std::map<std::pair<int,int>,int > dcm_t;
+
 public:
     typedef unsigned int uint;
 
-    VipsSampler(vips::VImage &img) :m_img(img){};
+    VipsSampler(vips::VImage &img) :m_img(img){mipmapL[0]=0;
+                                               mipmapL[1]=2;mipmapL[2]=4;};
 
     static void sampleTriCallback(void * param, int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
     static void sampleQuadCallback(void * param, int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
@@ -19,11 +25,17 @@ public:
 
     void sampleTri(int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
     void sampleQuad(int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage);
+    REGION *regOutput;
+    REGION *regRange;
+    dcm_t *doublecountmapPtr;
+    int triIdx;
+    TextureMipMap *texture;
+    int idx;
 
 private:
-
+    static const float rmax=0.70710678;
+    int mipmapL[3];
     vips::VImage & m_img;
-    REGION *regOutput;
 
     uint m_currentVertexCount;
     const osg::Vec3 * m_normals;

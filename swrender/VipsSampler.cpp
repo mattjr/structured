@@ -1,6 +1,11 @@
 #include "VipsSampler.h"
 #include <stdlib.h>
+#include <osg/Vec3d>
+#include <osg/Vec4>
 /*static*/
+#include <iostream>
+using namespace std;
+
 void VipsSampler::sampleTriCallback(void * param, int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage)
 {
     ((VipsSampler *)param)->sampleTri(x, y, bar, dx, dy, coverage);
@@ -30,16 +35,15 @@ void VipsSampler::setCurrentFace(uint vertexCount, const osg::Vec3 * positions, 
     }
 }
 
-inline int clamp(int x, int a, int b){    return x < a ? a : (x > b ? b : x);}
 
 
 void VipsSampler::sampleTri(int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage)
 {
-    //nvDebugCheck(isFinite(coverage));
 
-    //Vector3 position = bar.x() * m_positions[0] + bar.y() * m_positions[1] + bar.z() * m_positions[2];
 
-    //m_image.pixel( x, y)=Color32(255,0,0);//, m_image.positionChannel());
+    //if(doublecountmapPtr->count(std::make_pair<int,int>(x,y)) && (*doublecountmapPtr)[std::make_pair<int,int>(x,y)] != triIdx)
+      //  return;
+
     gRect.left=x;
     gRect.top=y;
 
@@ -48,14 +52,99 @@ void VipsSampler::sampleTri(int x, int y, const osg::Vec3& bar, const osg::Vec3&
         exit(-1);
     }
 
-    unsigned int *ptr=(unsigned int*)IM_REGION_ADDR( regOutput, x, y );
-    unsigned int c=0;
-    unsigned char r,g,b;
-    r=255;
-    g=0;
-    b=0;
-    c= clamp(b,0,255) | clamp(g,0,255) << 8 | clamp(r,0,255) << 16 | 255 << 24;
-    *ptr = c;
+    if(im_prepare(regRange,&gRect)){
+        fprintf(stderr,"Prepare fail range blend pass\n");
+        exit(-1);
+    }
+    unsigned int *color=(unsigned int*)IM_REGION_ADDR( regOutput, x, y );
+   *color=       255 | 0 << 8 | 0 << 16 | 255 << 24;
+
+return;
+    float Cb[]={0.710000,0.650000,0.070000};
+    float u=bar.x(), v=bar.y();
+
+    if(u <0 || v <0|| u>1.0 || v > 1.0){
+        cout << bar.x() << " "<<bar.y()<<endl;
+        printf("Fail %f %f\n",u,v);
+        return;
+    }
+   // cout << u << " " << v<<endl;
+    unsigned int *depth=(unsigned int*)IM_REGION_ADDR( regRange, x, y );
+
+
+    unsigned char dist_curr=reinterpret_cast<unsigned char *>(depth)[idx];
+    //Need to handle invalid dist
+    float local_r=(dist_curr/255.0)*rmax;
+
+    osg::Vec3d outComp[3];
+    for(int j=0; j < 3; j++){
+        float W=exp(-local_r*10.0*16.0*Cb[j]);
+        // sample the texture and write the color information
+        if(j == 0){
+            outComp[j]=((texture->sample_nearest(u,v,mipmapL[0])-texture->sample_nearest(u,v,mipmapL[1]))*W);
+        }else if (j==1){
+            outComp[j]=((texture->sample_nearest(u,v,mipmapL[1])-texture->sample_nearest(u,v,mipmapL[2]))*W);
+        }else if(j==2){
+            outComp[j]=(texture->sample_nearest(u,v,mipmapL[2])*W);
+        }
+        // always write the color;
+    }
+    osg::Vec3 WSum(0.0,0.0,0.0);
+    osg::Vec4 r4(0.0,0.0,0.0,0.0);
+    for(int j=0; j < 3; j++){
+        for(int i=0;i<4; i++){
+            unsigned int d=*depth;
+            unsigned char oldd[4];
+
+            oldd[0]= d & 0xFF;
+            oldd[1] = (d >> 8) & 0xFF;
+            oldd[2] = (d >> 16) & 0xFF;
+            oldd[3]= (d >> 24) & 0xFF;
+            unsigned char dist=oldd[i];
+            if(dist ==255)
+                continue;
+            //Need to handle invalid dist
+            float local_r=(dist/255.0)*rmax;
+            r4[i]=local_r;
+            float W=exp(-local_r*10.0*16.0*Cb[j]);
+            WSum[j]+=W;
+        }
+    }
+    outComp[0]=outComp[0]/WSum[0];
+    outComp[1]=outComp[1]/WSum[1];
+    outComp[2]=outComp[2]/WSum[2];
+
+    osg::Vec3 outP = outComp[0]+outComp[1]+outComp[2];
+    //unsigned int *color=(unsigned int*)IM_REGION_ADDR( regOutput, x, y );
+   return;
+    if(idx != 0)
+        return;
+    outP=texture->sample_nearest(u,v,0);
+
+    int r,g,b;
+    unsigned int c=*color;
+    int oldblue,oldgreen,oldred;
+    if(USE_BGR){
+        oldblue = c & 0xFF;
+        oldred = (c >> 16) & 0xFF;
+    }else{
+        oldred = c & 0xFF;
+        oldblue = (c >> 16) & 0xFF;
+    }
+    oldgreen = (c >> 8) & 0xFF;
+
+    r=(int)(outP.x()*255.0);
+    g=(int)(outP.y()*255.0);
+    b=(int)(outP.z()*255.0);
+    if(USE_BGR)
+        c= clamp(b+oldblue,0,255) | clamp(g+oldgreen,0,255) << 8 | clamp(r+oldred,0,255) << 16 | 255 << 24;
+    else
+        c=  clamp(r+oldred,0,255) | clamp(g+oldgreen,0,255) << 8 | clamp(b+oldblue,0,255) << 16 | 255 << 24;
+
+    *color = c;
+
+
+
 
 #if 0
     //Vector3 normal = normalizeSafe(cross(m_positions[1] - m_positions[0], m_positions[2] - m_positions[0]), Vector3(zero), 0.0f);

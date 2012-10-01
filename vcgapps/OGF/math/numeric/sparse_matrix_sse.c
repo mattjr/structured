@@ -52,7 +52,7 @@
 #include <emmintrin.h>
 #endif
 
-#ifdef WIN32
+#if  defined(WIN32) || defined(__INTEL_COMPILER)
 #define __v4sf __m128
 #endif
 

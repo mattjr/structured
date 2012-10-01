@@ -118,6 +118,7 @@ Added GPL comments
 #include <vcg/complex/algorithms/update/topology.h>	/* topology */
 #include <vcg/complex/algorithms/update/bounding.h>	/* bounding box */
 #include <vcg/complex/algorithms/update/normal.h>		/* normal */
+#include <osgDB/FileUtils>
 
 using namespace vcg;
 using namespace std;
@@ -626,10 +627,28 @@ bool cleanFlag=false;
         printf("Error: Unknown file extension %s\n",basename.c_str());
         return 1;
     }
+    string path=(osgDB::getFilePath(string(argv[i])));
+    if(path.size()==0 || path=="/")
+        path=".";
+    OutNameMsh="vis-"+osgDB::getSimpleFileName(string(argv[i]));
+    OutNameMsh=path+"/"+OutNameMsh;
 
     // loading original mesh
     int ret=tri::io::ImporterPLY<AMesh>::Open(m,argv[i]);
-    if(ret) {printf("Error unable to open mesh %s : '%s' \n",argv[i],tri::io::ImporterPLY<AMesh>::ErrorMsg(ret));exit(-1);}
+    if(ret) {
+        string empt=string(argv[i])+".empty";
+        if(!osgDB::fileExists(empt)){
+            printf("Error unable to open mesh %s : '%s' \n",argv[i],tri::io::ImporterPLY<AMesh>::ErrorMsg(ret));
+
+            exit(-1);
+        }
+        string visempy=OutNameMsh+".empty";
+        FILE *fp=fopen(visempy.c_str(),"w");
+        fprintf(fp,"0\n");
+        fclose(fp);
+        return 0;
+
+    }
     if(m.fn == 0){
         printf("No faces empty mesh \n");
         //return 1;
@@ -666,11 +685,7 @@ bool cleanFlag=false;
                m.bbox.min[0],m.bbox.min[1],m.bbox.min[2],
                m.bbox.max[0],m.bbox.max[1],m.bbox.max[2]);
 
-        string path=(osgDB::getFilePath(string(argv[i])));
-        if(path.size()==0 || path=="/")
-            path=".";
-        OutNameMsh="vis-"+osgDB::getSimpleFileName(string(argv[i]));
-        OutNameMsh=path+"/"+OutNameMsh;
+
 
         printf("Mesh       Output filename %s\n",OutNameMsh.c_str());
 

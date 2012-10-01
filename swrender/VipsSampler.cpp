@@ -35,7 +35,10 @@ void VipsSampler::setCurrentFace(uint vertexCount, const osg::Vec3 * positions, 
     }
 }
 
+inline unsigned int floatColorToRGBA(osg::Vec3 color){
+      return  clamp(color.x()*255.0,0,255) | clamp(color.y()*255.0,0,255) << 8 | clamp(color.z()*255.0,0,255) << 16 | 255 << 24;
 
+}
 
 void VipsSampler::sampleTri(int x, int y, const osg::Vec3& bar, const osg::Vec3& dx, const osg::Vec3& dy, float coverage)
 {
@@ -57,11 +60,15 @@ void VipsSampler::sampleTri(int x, int y, const osg::Vec3& bar, const osg::Vec3&
         exit(-1);
     }
     unsigned int *color=(unsigned int*)IM_REGION_ADDR( regOutput, x, y );
-   *color=       255 | 0 << 8 | 0 << 16 | 255 << 24;
+   //*color=       255 | 0 << 8 | 0 << 16 | 255 << 24;
+    //cout << bar.x() << " "<<bar.y()<<endl;
 
-return;
+
     float Cb[]={0.710000,0.650000,0.070000};
     float u=bar.x(), v=bar.y();
+    *color =floatColorToRGBA(texture->sample_nearest(u,v,0));
+return;
+    cout << bar.x() << " "<<bar.y()<<endl;
 
     if(u <0 || v <0|| u>1.0 || v > 1.0){
         cout << bar.x() << " "<<bar.y()<<endl;

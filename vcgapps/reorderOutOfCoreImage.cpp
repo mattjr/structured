@@ -445,7 +445,7 @@ int main(int ac, char *av[]) {
     }
     mat4x  viewProjReadA ;
     mat4x  viewProjRemapped ;
-    osg::Vec3 positions[4];
+    osg::Vec2 positions[4];
         osg::Vec3 normals[4];
         osg::Vec2 texcoords[4];
 
@@ -986,20 +986,23 @@ int main(int ac, char *av[]) {
                         g[i]->draw_triangles(3, indices);
                     }else if(i == 0){
                         int vtxCount=3;
+                        int pos=itr->second[t].pos;
+                        if(pos != 1)
+                            continue;
                         for (uint k = 0; k < vtxCount; k++)
                         {
-                            texcoords[k].set(newVerts->at(itr->second[t].idx[k]).x()*sizeX,
+                            positions[k].set(newVerts->at(itr->second[t].idx[k]).x()*sizeX,
                                              (1.0- newVerts->at(itr->second[t].idx[k]).y())*sizeY
                                              );
-                            positions[k].set(newVerts->at(itr->second[t].idx[k]).x(),
-                                             newVerts->at(itr->second[t].idx[k]).y(),
-                                             newVerts->at(itr->second[t].idx[k]).z());
+                            texcoords[k].set(vertexData._texCoord[pos]->at(itr->second[t].idx[k]).x(),
+                                             1.0-vertexData._texCoord[pos]->at(itr->second[t].idx[k]).y());
+                                             //newVerts->at(itr->second[t].idx[k]).z());
 
                         }
-                        viSamp.setCurrentFace(vtxCount, positions, normals);
-
-                        Raster::drawTriangle(RASTER_ANTIALIAS, texSize, texcoords,texcoords,
+                        //viSamp.setCurrentFace(vtxCount, positions, normals);
+                        Raster::drawTriangle(RASTER_ANTIALIAS, texSize, positions,texcoords,
                                     VipsSampler::sampleTriCallback, &viSamp);
+
                     }
                 }
             }

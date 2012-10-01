@@ -124,8 +124,8 @@ void VipsSampler::blendPassTri(int x, int y, const osg::Vec3& bar, const osg::Ve
    // *color =floatColorToRGBA(texture->sample_nearest(u,v,0));
 
     if(u <0 || v <0|| u>1.0 || v > 1.0){
-        cout << bar.x() << " "<<bar.y()<<endl;
-        printf("Fail %f %f\n",u,v);
+       // cout << bar.x() << " "<<bar.y()<<endl;
+        //printf("Fail %f %f\n",u,v);
         return;
     }
    // cout << u << " " << v<<endl;

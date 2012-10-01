@@ -1453,6 +1453,10 @@ int main( int argc, char *argv[ ] )
 
     }
 #endif
+    enum {REMAP,FLAT,REMAP_FLAT_SIZE,NUM_TEX_FILES};
+    int selectedTexMode=REMAP_FLAT_SIZE;
+
+
     double rangeX=totalbb.xMax()-totalbb.xMin();
     double rangeY=totalbb.yMax()-totalbb.yMin();
     int minTexSize=8192;
@@ -1463,7 +1467,7 @@ int main( int argc, char *argv[ ] )
     printf("mm per pixel: %.1f Larger Axis %.2f m POT Image Size %dx%d\n",mmperpixel,
            largerAxis,adjustedSize,adjustedSize);
     if(_tileRows <0 || _tileColumns<0){
-        if(reparamTex){
+        if(selectedTexMode == REMAP){
 
             int validCount=0;
             for(int i=0; i< (int)tasks.size(); i++)
@@ -2249,7 +2253,6 @@ int main( int argc, char *argv[ ] )
         //                 printf("Step size %d %f\n",sizeSteps[i],resFrac);
     }
 #endif
-    enum {REMAP,FLAT,REMAP_FLAT_SIZE,NUM_TEX_FILES};
 
     string texcmds_fn[3]={string(diced_dir)+"/texcmds",string(diced_dir)+"/flattexcmds",string(diced_dir)+"/sizetexcmds"};
 
@@ -2258,8 +2261,8 @@ int main( int argc, char *argv[ ] )
     string imgbase=(compositeMission? "/":"/img/");
     int VTtileSize=256;
     int tileBorder=1;
-    int ajustedGLImageSizeX=(int)reimageSize.x() - (reparamTex ?  0 : ((reimageSize.x()/VTtileSize)*2*tileBorder));
-    int ajustedGLImageSizeY=(int)reimageSize.y() - (reparamTex ?  0 : ((reimageSize.y()/VTtileSize)*2*tileBorder));
+    int ajustedGLImageSizeX=(int)reimageSize.x() - (!useVirtTex ?  0 : ((reimageSize.x()/VTtileSize)*2*tileBorder));
+    int ajustedGLImageSizeY=(int)reimageSize.y() - (!useVirtTex ?  0 : ((reimageSize.y()/VTtileSize)*2*tileBorder));
     //char tmpsize[1024];
     int totalX=ajustedGLImageSizeX*_tileRows;
     //int totalY=ajustedGLImageSizeY*_tileColumns;
@@ -2646,7 +2649,7 @@ int main( int argc, char *argv[ ] )
     shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),std::max(num_threads/2,1));
 
     if(!no_tex)
-        sysres=system("python hybrid.py");
+        sysres=system(string("python "+texcmd[selectedTexMode]).c_str());
 
     if(var_tex)
         sysres=system("python vartex.py");

@@ -253,7 +253,7 @@ void write_header(std::ostream& _fout,int total_face_count,bool color){
 void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,const std::vector<int> &imageId,osg::Vec2Array *tcarr,const int mosaic,bool flip,osg::Vec2Array *valid){
     int cnt=0;
     for(int i=0; i< (int)tri->size()-2; i+=3){
-        if(valid->at(i/3).x() == -999.0)
+        if(valid != NULL && valid->at(i/3).x() == -999.0)
             continue;
         for(int j=0; j<3; j++){
             osg::Vec3 v=verts->at(tri->at(i+j));
@@ -262,7 +262,7 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
             vf[1]=v[1];
             vf[2]=v[2];
             _fout.write((char *)vf,3*sizeof(float));
-            if(colors && i+j <(int)colors->size() ){
+             if(colors != NULL && i+j <(int)colors->size() ){
                 unsigned char col[3];
                 osg::Vec4 c=colors->at(i+j);
                 // cout <<c<<endl;
@@ -308,7 +308,7 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
             fout[(j*2)+1]=tc.y();
         }
         _fout.write((char*)fout,sizeof(float)*ctex);
-        iout[0]=imageId.at(i/3);
+        iout[0]= ((i/3) < imageId.size()) ? imageId.at(i/3) : 1;
         _fout.write((char*)iout,sizeof(int));
 
         fout[0]=(float)mosaic;
@@ -880,12 +880,16 @@ int main(int ac, char *av[]) {
             printf("%d %d %d\n",vertexData._triangles->size(),vertexData._vertices->size(),newTCArr->size());
         }
         {
+
             std::vector<int>imageId;
-
-            for(int i=0; i< (int)tri->size()-2; i+=3){
-                imageId.push_back((int)vertexData._texIds->at(i)[0]);
+            if(vertexData._texIds.valid()){
+                for(int i=0; i< (int)tri->size()-2 && i < (int)vertexData._texIds->size(); i+=3){
+                    imageId.push_back((int)vertexData._texIds->at(i)[0]);
+                }
+            }else{
+                fprintf(stderr,"Failed to load texIDS\n");
+                exit(-1);
             }
-
             char tmp[1024];
             sprintf(tmp,"%s/remap-%s",diced_dir,osgDB::getSimpleFileName(av[1]).c_str());
             std::ofstream f(tmp);
@@ -905,8 +909,14 @@ int main(int ac, char *av[]) {
             printf("fc %d %d\n ",facecount,vertexData._triangles->size());
             write_header(f,facecount,color);
 
+            osg::Vec4Array *colorArr=color ? vertexData._colors.get() : NULL;
+            osg::Vec2Array *validArr=(vertexData._qualArray.valid() && vertexData._qualArray->size()>0) ? vertexData._qualArray : NULL;
+            if(!colorArr || !validArr){
+                fprintf(stderr,"Can't load ColorArr is null %d or validArr is null %d\n",(colorArr==NULL),(validArr == NULL));
+                exit(-1);
+            }
+            write_all(f,vertexData._triangles,vertexData._vertices,colorArr,imageId,newTCArr,mosaic,true,validArr);
 
-            write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,imageId,newTCArr,mosaic,true,vertexData._qualArray);
             f.close();
         }
 

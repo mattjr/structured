@@ -7,7 +7,10 @@ PROJECT(tridecimator)
 
 INCLUDE_DIRECTORIES(vcglib .. .)
 SET( SRCS vcglib/wrap/ply/plylib.cpp  quadric_tex_simp.cpp   )
-
+IF(USE_SSE2)
+ADD_DEFINITIONS("-DOGF_SSE")
+message("OGF SSE2 Enabled")
+ENDIF(USE_SSE2)
 SUBDIRS(OGF numeric_stuff plymc)
 
 

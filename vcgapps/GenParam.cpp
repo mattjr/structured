@@ -331,7 +331,7 @@ osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::
          cout <<"Final Coords"<<bbox._min<< " "<<bbox._max<<endl;
          return arr;
 }
-void dilateEdge(IMAGE *tmpI,const char *outfile){
+void dilateEdge(IMAGE *tmpI,const char *outfile,int count){
     OGF::Image* img = new OGF::Image(OGF::Image::RGB,tmpI->Xsize,tmpI->Ysize);
     OGF::Memory::byte* mem_img = img->base_mem_byte_ptr();
     vips::VImage tmpImage(mem_img,tmpI->Xsize,tmpI->Ysize,3,vips::VImage::FMTUCHAR);
@@ -340,9 +340,10 @@ void dilateEdge(IMAGE *tmpI,const char *outfile){
     OGF::MorphoMath morpho(img) ;
     OGF::ImageSerializer_ppm *p = new OGF::ImageSerializer_ppm;
     std::ofstream outf(outfile);
-    int number = std::max(2,(int)round(10*(tmpI->Xsize/(double)8192)));
-    printf("Dilating %d times\n",number);
-    for(int i=0; i<number; i++) {
+    if(count == -1)
+     count = std::max(2,(int)round(10*(tmpI->Xsize/(double)8192)));
+    printf("Dilating %d times\n",count);
+    for(int i=0; i<count; i++) {
         morpho.dilate(1) ;
     }
     p->serialize_write(outf,img);

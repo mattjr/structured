@@ -1119,13 +1119,13 @@ int main(int ac, char *av[]) {
         //(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str()
         IMAGE *tmpI=im_open("tmp","p");
         im_extract_bands(outputImage[0],tmpI,0,3);
-        /*dilateEdge(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str());*/
-        if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str())){
+        dilateEdge(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str(),1);
+        /*if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str())){
             fprintf(stderr,"Failed to write\n");
             cerr << im_error_buffer()<<endl;
             im_close(tmpI);
             exit(-1);
-        }
+        }*/
         im_close(tmpI);
 
         tmpI=im_open("tmp","p");

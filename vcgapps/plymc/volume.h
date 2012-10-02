@@ -463,9 +463,10 @@ public:
     void GetSubVolumeTag(std::string &subtag)
 	{
     char buf[32];
-		if     (div[0]<=  10 && div[1]<=  10 && div[2]<=  10 ) sprintf(buf,"_%01d%01d%01d",pos[0],pos[1],pos[2]);
-		else if(div[0]<= 100 && div[1]<= 100 && div[2]<= 100 ) sprintf(buf,"_%02d%02d%02d",pos[0],pos[1],pos[2]);
-		                                                 else  sprintf(buf,"_%03d%03d%03d",pos[0],pos[1],pos[2]);
+        //if     (div[0]<=  10 && div[1]<=  10 && div[2]<=  10 ) sprintf(buf,"_%01d%01d%01d",pos[0],pos[1],pos[2]);
+        //else if(div[0]<= 100 && div[1]<= 100 && div[2]<= 100 ) sprintf(buf,"_%02d%02d%02d",pos[0],pos[1],pos[2]);
+                                                     //    else
+        sprintf(buf,"_%04d%04d%04d",pos[0],pos[1],pos[2]);
 		subtag=buf;
 	}
 

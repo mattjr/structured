@@ -66,7 +66,7 @@ bool WriteBoundTP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
         );
  }
     // fprintf(cmdfp,"\n");
-     fprintf(cmdfp,";%s/vcgapps/bin/mergeMesh %s/vol_%d%d%d.ply  -cleansize %f -P -out %s/clean_%d%d%d.ply\n",
+     fprintf(cmdfp,";%s/vcgapps/bin/mergeMesh %s/vol_%04d%04d%04d.ply  -cleansize %f -P -out %s/clean_%04d%04d%04d.ply\n",
 
      /*_res,
                 cell.splits[0],
@@ -105,8 +105,10 @@ WriteSplitTP::WriteSplitTP(double res,string fname,std::string basepath,std::str
 }
 bool WriteSplitTP::write_cmd(const picture_cell &cell){
     char shr_tmp[8192];
+    string cmdtoRun;
     sprintf(shr_tmp,"cd %s;%s/borderClip ",_cwd.c_str(),
             _basepath.c_str());
+    cmdtoRun+=shr_tmp;
     int v_count=0;
     osg::BoundingBox cellMargin;
     double margin=cell.bbox.radius()*2;
@@ -115,7 +117,8 @@ bool WriteSplitTP::write_cmd(const picture_cell &cell){
                                cell.bbox.yMin()-(margin),
                                -FLT_MAX);
     cellMargin.expandBy(cell.bbox.xMax()+(margin),cell.bbox.yMax()+(margin),FLT_MAX);
-
+    string fileList;
+    char tmpstrdata[8192];
     foreach_vol(cur,_vol){
         double margin=cur->bounds.bbox.radius()*2;
 
@@ -127,18 +130,20 @@ bool WriteSplitTP::write_cmd(const picture_cell &cell){
 
         if(!cellMargin.intersects(curMargin))
             continue;
-        sprintf(shr_tmp,"%s %s/clean_%d%d%d.ply",shr_tmp,aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+        sprintf(tmpstrdata," %s/clean_%04d%04d%04d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+        fileList+=tmpstrdata;
         v_count++;
     }
     if(v_count== 0)
         return false;
+    cmdtoRun+=fileList;
+
     osg::BoundingBox faceMarginBox;
     double faceMargin=_res*5;
     faceMarginBox.expandBy(cell.bbox.xMin()-faceMargin,cell.bbox.yMin()-faceMargin,cell.bbox.zMin());
     faceMarginBox.expandBy(cell.bbox.xMax()+faceMargin,cell.bbox.yMax()+faceMargin,cell.bbox.zMax());
 
-    sprintf(shr_tmp,"%s --bbox %.16f %.16f %.16f %.16f %.16f %.16f --bbox-margin %.16f %.16f %.16f %.16f %.16f %.16f -dump -F --outfile %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply;",
-            shr_tmp,
+    sprintf(tmpstrdata," --bbox %.16f %.16f %.16f %.16f %.16f %.16f --bbox-margin %.16f %.16f %.16f %.16f %.16f %.16f -dump -F --outfile %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply;",
             cell.bbox.xMin(),
             cell.bbox.yMin(),
             cell.bbox.zMin(),
@@ -153,8 +158,10 @@ bool WriteSplitTP::write_cmd(const picture_cell &cell){
             faceMarginBox.zMax(),
             diced_dir,
             cell.row,cell.col);
+    cmdtoRun+=tmpstrdata;
+
     fprintf(cmdfp,"%s %s/vcgapps/bin/sw-shadevis -P -n64 %s/un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply ;",
-            shr_tmp,_basepath.c_str(),diced_dir,
+            cmdtoRun.c_str(),_basepath.c_str(),diced_dir,
              cell.row,cell.col);
     fprintf(cmdfp,"%s/treeBBClip --bbox %.16f %.16f %.16f %.16f %.16f %.16f %s/vis-un-tmp-tex-clipped-diced-r_%04d_c_%04d.ply -dup -qual -F --outfile %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply \n",
             _basepath.c_str(),

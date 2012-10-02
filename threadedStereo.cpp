@@ -1460,7 +1460,7 @@ int main( int argc, char *argv[ ] )
     }
 #endif
     enum {REMAP,FLAT,REMAP_FLAT_SIZE,NUM_TEX_FILES};
-    int selectedTexMode=REMAP_FLAT_SIZE;
+    int selectedTexMode=REMAP;
 
 
     double rangeX=totalbb.xMax()-totalbb.xMin();
@@ -2314,16 +2314,19 @@ int main( int argc, char *argv[ ] )
     for(int i=0; i <(int)cells.size(); i++){
         char tmpfn[1024];
         sprintf(tmpfn,"%s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply", diced_dir,cells[i].row,cells[i].col);
-        if( cells[i].images.size() == 0 || !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
-            if(!osgDB::fileExists(string(tmpfn)+".empty")){
-                printf("Failed cell images %d exists %d empty %d\n",(int)cells[i].images.size(),osgDB::fileExists(tmpfn),
-                   checkIsEmptyPly(tmpfn));
-                exit(-1);
-            }
+
+        if( cells[i].images.size() == 0){
             fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
             fprintf(FP2,"-1 -1 -1 -1 null null 0\n");
             continue;
+        }
+        if( !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
+            if(!osgDB::fileExists(string(tmpfn)+".empty")){
+                printf("Failed cell images %d exists %d empty %d %s\n",(int)cells[i].images.size(),osgDB::fileExists(tmpfn),
+                       checkIsEmptyPly(tmpfn),tmpfn);
+                exit(-1);
+            }
         }
         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                 cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());

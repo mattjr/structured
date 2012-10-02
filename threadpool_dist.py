@@ -287,9 +287,9 @@ class ThreadPool:
 
         """
         if len(host) > 0:
-            runwith = 'ssh %s srun -w %s -J %s -N1' % (slurmctrl.rstrip('\n'),host.rstrip('\n'),title.rstrip('\n'))
+            runwith = 'ssh %s srun -w %s -J %s -N1 ' % (slurmctrl.rstrip('\n'),host.rstrip('\n'),title.rstrip('\n'))
         else:
-            runwith = 'ssh %s srun -J %s -N1' % (slurmctrl.rstrip('\n'),title.rstrip('\n'))
+            runwith = 'ssh %s srun -J %s -N1 ' % (slurmctrl.rstrip('\n'),title.rstrip('\n'))
 
         for i in range(num_workers):
             self.workers.append(WorkerThread(self._requests_queue,

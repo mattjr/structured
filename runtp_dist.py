@@ -51,10 +51,10 @@ if len(sys.argv) > 2:
                 print 'ThreadPool spawning %d remote threads on %s' % (int(words[1]),words[2])
             elif(words[0] == 'SLURM'):
                 if len(words) == 4:
-                    main.createWorkersSLURM(int(words[1]),words[2],words[3])
+                    main.createWorkersSLURM(int(words[1]),words[2],words[3],title=title)
                     print 'ThreadPool spawning %d slurm threads using host %s' % (int(words[1]),words[3])
                 else:
-                    main.createWorkersSLURM(int(words[1]),words[2])
+                    main.createWorkersSLURM(int(words[1]),words[2],title=title)
                     print 'ThreadPool spawning %d slurm threads all hosts' % (int(words[1]))
 
 

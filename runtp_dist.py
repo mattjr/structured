@@ -34,6 +34,11 @@ def detectCPUs():
 
 main = ThreadPool(0)
 
+if len(sys.argv) > 3:
+    title = sys.argv[3]
+else:
+    title = 'Cmds: '
+
 if len(sys.argv) > 2:
     try:
         cfgfile = open(sys.argv[2], 'r')
@@ -127,10 +132,7 @@ fname = sys.argv[1];
 cmd_counter = 0
 
 
-if len(sys.argv) > 3:
-    title = sys.argv[3]
-else:
-    title = 'Cmds: '
+
 
 
 widgets = [title, ' ',Percentage(), ' ',Curr(),'/',Max(),' ', Bar(),

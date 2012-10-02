@@ -670,13 +670,18 @@ static int get_auv_image_name( const string  &contents_dir_name,
 
 
 bool getBBoxFromMesh(Stereo_Pose_Data &name){
-    ifstream mesh(string(string(aggdir)+string("/")+name.mesh_name).c_str());
-    if(!mesh.good())
+    string fname=string(string(aggdir)+string("/")+name.mesh_name);
+    ifstream mesh(fname.c_str());
+    if(!mesh.good()){
+        cerr <<"file not found "<<fname<<endl;
         return false;
+    }
     string line;
     getline(mesh,line);
-    if(line.substr(0,3) != "ply")
+    if(line.substr(0,3) != "ply"){
+        fprintf(stderr,"Not ply file\n");
         return false;
+    }
     while(mesh.good()){
         getline(mesh,line);
         if(line.substr(0,9) == "end_header"){
@@ -822,6 +827,13 @@ int main( int argc, char *argv[ ] )
     printf("Processing Meshes...\n");
     double max_alt=0;
     char stereo_conf_name[2048];
+    char cwd[2048];
+    char *dirres;
+    dirres=getcwd(cwd,2048);
+    if(dirres != cwd){
+        fprintf(stderr,"Can't get current working dir\n");
+
+    }
 
     if(!externalMode){
         unsigned int stereo_pair_count =0;
@@ -904,7 +916,8 @@ int main( int argc, char *argv[ ] )
             if(1){
                 const osg::Matrix &mat=tasks[i].mat;
                 fprintf(conf_ply_file,
-                        "%s/stereo_mesh_gen %s %s %s --mat-1-8 %f %f %f %f %f %f %f %f --mat-8-16 %f %f %f %f %f %f %f %f --edgethresh %f -m %d -z %f\n"
+                        "cd %s;%s/stereo_mesh_gen %s %s %s --mat-1-8 %f %f %f %f %f %f %f %f --mat-8-16 %f %f %f %f %f %f %f %f --edgethresh %f -m %d -z %f\n"
+                        ,cwd
                         ,basepath.c_str(),base_dir.c_str(),tasks[i].left_name.c_str(),tasks[i].right_name.c_str(),
                         mat(0,0),mat(1,0),mat(2,0),mat(3,0),
                         mat(0,1),mat(1,1),mat(2,1),mat(3,1),
@@ -925,13 +938,6 @@ int main( int argc, char *argv[ ] )
             fprintf(stderr,"No valid meshes bailing\n");
             exit(-1);
         }
-
-    }
-    char cwd[2048];
-    char *dirres;
-    dirres=getcwd(cwd,2048);
-    if(dirres != cwd){
-        fprintf(stderr,"Can't get current working dir\n");
 
     }
 
@@ -1331,7 +1337,7 @@ int main( int argc, char *argv[ ] )
         char tmpfn[8096];
 
         foreach_vol(cur,vol){
-            sprintf(tmpfn,"%s/clean_%d%d%d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+            sprintf(tmpfn,"%s/clean_%04d%04d%04d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
             osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpfn);
             osg::Drawable *drawable = NULL;
             if(model.valid())
@@ -2006,7 +2012,7 @@ int main( int argc, char *argv[ ] )
                                 continue;
                             }
                             osg::BoundingBox box=cur->bounds.bbox;
-                            sprintf(tmpname,"%s/clean_%d%d%d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+                            sprintf(tmpname,"%s/clean_%04d%04d%04d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
 
                             cur->valid=cut_model(kdbb,tmpname,box,DUP);
                             formatBar("Split",startTick,progCount,totalTodoCount);
@@ -2525,7 +2531,7 @@ int main( int argc, char *argv[ ] )
         if(cur->poses.size() == 0)
             continue;
         char tmpt[1024];
-        sprintf(tmpt,"%s/clean_%d%d%d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+        sprintf(tmpt,"%s/clean_%04d%04d%04d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
         fprintf(dBFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %s\n",cur->bounds.bbox.xMin(),cur->bounds.bbox.xMax(),cur->bounds.bbox.yMin(),cur->bounds.bbox.yMax(),cur->bounds.bbox.zMin(),
                 cur->bounds.bbox.zMax(),cnt++,tmpt);
     }
@@ -2544,7 +2550,7 @@ int main( int argc, char *argv[ ] )
                 continue;
 
             char tmpp[1024];
-            sprintf(tmpp,"%s/range-clean_%d%d%d.txt",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+            sprintf(tmpp,"%s/range-clean_%04d%04d%04d.txt",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
             FILE *rfp=fopen(tmpp,"w");
             string mesh_list;
             for(int t=0; t<2; t++){
@@ -2554,13 +2560,13 @@ int main( int argc, char *argv[ ] )
                 foreach_vol(cur2,vol){
                     if(expanded.intersects(cur2->bounds.bbox)){
                         char tmpt[1024];
-                        sprintf(tmpt,"%s/clean_%d%d%d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+                        sprintf(tmpt,"%s/clean_%04d%04d%04d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
                         mesh_list+=tmpt;
                     }
 
                 }
                 const char *globalstr= (t==1) ? "--global" : "";
-                fprintf(rangeimgcmds_fp[t],"%s --bbox %s/range-clean_%d%d%d.txt --size %d %d --calib %s %s\n",
+                fprintf(rangeimgcmds_fp[t],"%s --bbox %s/range-clean_%04d%04d%04d.txt --size %d %d --calib %s %s\n",
                         mesh_list.c_str(),
                         aggdir,
                         cur->volIdx[0],cur->volIdx[1],cur->volIdx[2],

@@ -17,6 +17,8 @@ import taskworkers # the related library with many useful functions
 
 import string # for the keygen
 
+import logging
+
 # Widgets for the progress bar
 class Curr(ProgressBarWidget):
     "Just the percentage done."
@@ -62,6 +64,8 @@ authkey = key_generator()
 manager = taskworkers.initialise_server(port, authkey)
 job_queue = manager.job_queue()
 job_results = manager.job_results()
+job_count = 0
+job_finished = 0
 #hold = manager.hold()
 params = (port, authkey, manager)
 numworkers = 0
@@ -75,6 +79,7 @@ total = len(commands)
 # load the commands and now run them on the pool
 for command in commands:
     job_queue.put(command)
+    job_count += 1
 
 # parse the configuration file
 for line in cfg_file:
@@ -120,6 +125,13 @@ for line in cfg_file:
         threads += taskworkers.create_slurm_remote(params, int(elements[1]), gateway='archipelago', nodes=elements[2:])
         numworkers += int(elements[1])
 
+
+# put termination/empty/none commands on queue, one for each worker
+worker_terminations = numworkers
+while worker_terminations:
+    job_queue.put(None)
+    worker_terminations -= 1
+
 print "Spawned {0} workers.".format(numworkers)
 
 
@@ -135,27 +147,31 @@ progress_bar = ProgressBar(widgets=widgets, maxval=total)
 progress_bar.start()
 
 # wait for jobs...
-while not job_queue.empty():
+while not job_finished == job_count:
     # when there are results pending
-    while not job_results.empty():
-        result = job_results.get()
+    result = job_results.get()
 
-        if result[0] != 0:
-            # this was an error
-            print "problem running: {0}\noutput: {1}".format(result[1], result[2])
+    if result[0] != 0:
+        # this was an error
+        print "problem running: {0}\noutput: {1}".format(result[1], result[2])
 
-        # increment the count
-        progress_bar.inc()
-        job_results.task_done()
+    # increment the count
+    progress_bar.inc()
+    job_finished += 1
+    job_results.task_done()
+
+logging.debug("jobs all finished")
+#job_results.close()
+job_queue.close()
 
 # make sure they are all done...
-print "job queue joining"
+logging.debug("job queue joining")
 job_queue.join()
 
-print "prog bar finishing"
+logging.debug("prog bar finishing")
 progress_bar.finish()
 
-print "manager shutting down"
+logging.debug("manager shutting down")
 manager.shutdown()
 
 #print "waiting for controller threads"
@@ -163,7 +179,7 @@ manager.shutdown()
 #    t.join()
 #    print "joined controller thread"
 
-print "writing timing"
+logging.debug("writing timing")
 timing = open('timing.txt', 'a')
 timing.write("{0} {1}\n".format(title, progress_bar.seconds_elapsed))
 timing.close()

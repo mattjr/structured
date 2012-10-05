@@ -8,6 +8,9 @@ import os.path
 
 import Queue
 
+import logging
+
+
 def get_remote_script():
     """Get the full path of the script to execute."""
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), 'taskworkers.py')
@@ -116,9 +119,9 @@ def execute_command(command_line):
         # write this out!
         # somewhere
         # probably print back to base... and write out
-        message = (status, output)
+        message = (status, command_line, output)
     else:
-        message = (status, "")
+        message = (status, command_line, "output")
 
     return message
 
@@ -168,11 +171,12 @@ def client_thread(manager):
     job_results = manager.job_results()
     #hold = manager.hold()
 
+    # loop until None command
     while True:
-        try:
-            # give a second for a job to appear
-            command = job_queue.get(False)
-        except Queue.Empty:
+        command = job_queue.get()
+
+        # poison pill command
+        if command is None:
             break
 
         # now do the command
@@ -184,9 +188,9 @@ def client_thread(manager):
 
         # mark the task complete
         job_queue.task_done()
-        print "task complete"
+        logging.debug("task complete")
 
-    print "exiting Client thread, no pending jobs."
+    logging.debug("exiting Client thread, no pending jobs.")
 
 def client_start(manager, threads):
     procs = []
@@ -219,9 +223,10 @@ def spawn_remote(remote_host, port, authkey, n, remote_user=None):
     else:
         cmd = "/usr/bin/ssh {remote_host} /usr/bin/python {script} {args}".format(**elements)
 
-    print "spawn_remote: Calling '{0}'".format(cmd)
+    logging.debug("spawn_remote: Calling '{0}'".format(cmd))
     subprocess.call(cmd, shell=True)
-    print "spawn_remote: finished"
+    logging.debug("spawn_remote: finished")
+    #sys.exit(0)
 
 def spawn_slurm_local(port, authkey, n=1, srun_args=None):
     """This is blocking, should be called from a thread/process."""
@@ -231,9 +236,10 @@ def spawn_slurm_local(port, authkey, n=1, srun_args=None):
     elements['script'] = get_remote_script()
 
     cmd = "/usr/bin/srun {srun_args} python {script} {script_args}".format(**elements)
-    print "spawn_slurm_local: Calling '{0}'".format(cmd)
+    logging.debug("spawn_slurm_local: Calling '{0}'".format(cmd))
     subprocess.call(cmd, shell=True)
-    print "spawn_slurm_local: finished"
+    logging.debug("spawn_slurm_local: finished")
+    #sys.exit(0)
 
 def spawn_slurm_remote(port, authkey, gateway, n=1, remote_user=None, srun_args=None):
     """This is blocking, should be called from a thread/process."""
@@ -249,9 +255,10 @@ def spawn_slurm_remote(port, authkey, gateway, n=1, remote_user=None, srun_args=
     else:
         cmd = "ssh {remote_host} srun {srun_args} python {script} {script_args}".format(**elements)
 
-    print "spawn_slurm_remote: Calling '{0}'".format(cmd)
+    logging.debug("spawn_slurm_remote: Calling '{0}'".format(cmd))
     subprocess.call(cmd, shell=True)
-    print "spawn_slurm_remote: finished"
+    logging.debug("spawn_slurm_remote: finished")
+    #sys.exit(0)
 
 
 if __name__ == '__main__':
@@ -290,7 +297,7 @@ if __name__ == '__main__':
 
     # and wait for them to finish
     for p in procs:
-        print "Joined a worker thread."
         p.join()
-    print "Exiting from worker process."
+        logging.debug("{0}: Joined a worker thread.".format(client_type))
+    logging.debug("{0}: Exiting from worker process.".format(client_type))
 

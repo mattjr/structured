@@ -82,6 +82,7 @@ static bool storeTexMesh=false;
 static bool do_novelty=false;
 static double dense_scale;
 static bool no_tex=false;
+static bool no_tc=false;
 static bool no_vttex=false;
 static bool use_debug_shader=false;
 static vector<string> mb_xyz_files;
@@ -504,6 +505,8 @@ static bool parse_args( int argc, char *argv[ ] )
         no_atlas=true;
     if(argp.read("--notex"))
         no_tex=true;
+    if(argp.read("--notc"))
+        no_tc=true;
 
     if(argp.read("--novttex"))
         no_vttex=true;
@@ -2284,6 +2287,10 @@ int main( int argc, char *argv[ ] )
     char tmp100[8096];
     char tmpfn2[8096];
 
+    string calcTexFn=string(diced_dir)+"/"+"calctexcmds";
+    FILE *calcTexFn_fp=fopen(calcTexFn.c_str(),"w");
+
+
     std::vector<string> cfiles;
 
     FILE *texcmds_fp[4]={fopen(texcmds_fn[REMAP].c_str(),"w"),fopen(texcmds_fn[DEPTH].c_str(),"w"),fopen(texcmds_fn[FLAT].c_str(),"w"),fopen(texcmds_fn[REMAP_FLAT_SIZE].c_str(),"w")};
@@ -2338,21 +2345,24 @@ int main( int argc, char *argv[ ] )
 
         sprintf(tmpfn2,"%s/%stex-clipped-diced-r_%04d_c_%04d-lod%d.ply", diced_dir,remap_mesh_ext.c_str(),cells[i].row,cells[i].col,vpblod);
         cfiles.push_back(tmpfn2);
+
+        fprintf(calcTexFn_fp,"cd %s",
+                cwd);
+        fprintf(calcTexFn_fp,";%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f\n",
+                basepath.c_str(),
+                base_dir.c_str(),
+                diced_dir,
+                cells[i].row,cells[i].col,
+                diced_dir,cells[i].row,cells[i].col,
+                diced_dir,
+                cells[i].row,cells[i].col,
+                vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
+                rx,ry,rz,tex_margin);
+
+
         for(int z=0; z<NUM_TEX_FILES; z++){
-             fprintf(texcmds_fp[z],"cd %s",
-                     cwd);
-            if(z < 1){
-                fprintf(texcmds_fp[z],";%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f ",
-                    basepath.c_str(),
-                    base_dir.c_str(),
-                    diced_dir,
-                    cells[i].row,cells[i].col,
-                    diced_dir,cells[i].row,cells[i].col,
-                    diced_dir,
-                    cells[i].row,cells[i].col,
-                    vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
-                    rx,ry,rz,tex_margin);
-           }
+            fprintf(texcmds_fp[z],"cd %s",
+                    cwd);
 
             if(hw_image){
                 fprintf(texcmds_fp[z]," --tex_cache %s %d  --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat -lat %.28f -lon %.28f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,
@@ -2514,6 +2524,7 @@ int main( int argc, char *argv[ ] )
     fclose(vartexcmds_fp);
     fclose(reFP);
     fclose(FP2);
+    fclose(calcTexFn_fp);
     fprintf(FP3,"\n#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16 32\n");
     fchmod(fileno(FP3),0777);
 
@@ -2667,6 +2678,11 @@ int main( int argc, char *argv[ ] )
     pvar<< "cd " << cwd <<";sh createmosaicvar.sh";
 
     varpostcmdv.push_back(pvar.str());
+
+    string calcTexCmd="tc_calc.py";
+    shellcm.write_generic(calcTexCmd,calcTexFn,"TC",NULL,NULL,num_threads);
+    if(!no_tc)
+        sysres=system(string("python "+calcTexCmd).c_str());
 
     shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),std::max(num_threads/2,1));
 

@@ -30,6 +30,8 @@ TARGET_LINK_LIBRARIES(texturedDecimator ts)
 #ADD_EXECUTABLE( shadevis shadevis.cpp vcglib/wrap/ply/plylib.cpp vcglib/wrap/gui/trackball.cpp vcglib/wrap/gui/trackmode.cpp  ../swrender/render_utils.cpp  )
 ADD_EXECUTABLE( sw-shadevis sw-shadevis vcglib/wrap/ply/plylib.cpp vcglib/wrap/gui/trackball.cpp vcglib/wrap/gui/trackmode.cpp  ../swrender/render_utils.cpp ../swrender/generic_fragment_shader.cpp ../swrender/generic_vertex_shader.cpp)
 ADD_EXECUTABLE( reorder  reorderOutOfCoreImage.cpp  GenParam.cpp vcglib/wrap/ply/plylib.cpp vcglib/wrap/gui/trackball.cpp vcglib/wrap/gui/trackmode.cpp  ../swrender/render_utils.cpp ../swrender/generic_fragment_shader.cpp ../swrender/generic_vertex_shader.cpp)
+ADD_EXECUTABLE( reparam  reparam.cpp  GenParam.cpp vcglib/wrap/ply/plylib.cpp vcglib/wrap/gui/trackball.cpp vcglib/wrap/gui/trackmode.cpp  ../swrender/render_utils.cpp ../swrender/generic_fragment_shader.cpp ../swrender/generic_vertex_shader.cpp)
+ADD_EXECUTABLE( renderReorder  renderReorder.cpp  GenParam.cpp vcglib/wrap/ply/plylib.cpp vcglib/wrap/gui/trackball.cpp vcglib/wrap/gui/trackmode.cpp  ../swrender/render_utils.cpp ../swrender/generic_fragment_shader.cpp ../swrender/generic_vertex_shader.cpp)
 
 #IF( APPLE )
 #SET(GLEW_LIB glew)
@@ -38,6 +40,8 @@ ADD_EXECUTABLE( reorder  reorderOutOfCoreImage.cpp  GenParam.cpp vcglib/wrap/ply
 #ENDIF(APPLE)
 #TARGET_LINK_LIBRARIES(shadevis  ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIB})
 TARGET_LINK_LIBRARIES(sw-shadevis  ${OPENGL_LIBRARIES} swrender)
+TARGET_LINK_LIBRARIES(reparam  ${OPENGL_LIBRARIES} ts swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )
+TARGET_LINK_LIBRARIES(renderReorder  ${OPENGL_LIBRARIES} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )
 
 TARGET_LINK_LIBRARIES(reorder  ${OPENGL_LIBRARIES} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )
 TARGET_LINK_LIBRARIES(OGFClean  ${OPENGL_LIBRARIES} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )

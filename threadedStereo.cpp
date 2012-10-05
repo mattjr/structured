@@ -1459,7 +1459,7 @@ int main( int argc, char *argv[ ] )
 
     }
 #endif
-    enum {REMAP,FLAT,REMAP_FLAT_SIZE,NUM_TEX_FILES};
+    enum {REMAP,DEPTH,FLAT,REMAP_FLAT_SIZE,NUM_TEX_FILES};
     int selectedTexMode=REMAP;
 
 
@@ -2260,7 +2260,7 @@ int main( int argc, char *argv[ ] )
     }
 #endif
 
-    string texcmds_fn[3]={string(diced_dir)+"/texcmds",string(diced_dir)+"/flattexcmds",string(diced_dir)+"/sizetexcmds"};
+    string texcmds_fn[]={string(diced_dir)+"/remapcmds",string(diced_dir)+"/depthtexcmds",string(diced_dir)+"/flattexcmds",string(diced_dir)+"/sizetexcmds"};
 
     string vartexcmds_fn=string(diced_dir)+"/vartexcmds";
 
@@ -2286,7 +2286,7 @@ int main( int argc, char *argv[ ] )
 
     std::vector<string> cfiles;
 
-    FILE *texcmds_fp[3]={fopen(texcmds_fn[REMAP].c_str(),"w"),fopen(texcmds_fn[FLAT].c_str(),"w"),fopen(texcmds_fn[REMAP_FLAT_SIZE].c_str(),"w")};
+    FILE *texcmds_fp[4]={fopen(texcmds_fn[REMAP].c_str(),"w"),fopen(texcmds_fn[DEPTH].c_str(),"w"),fopen(texcmds_fn[FLAT].c_str(),"w"),fopen(texcmds_fn[REMAP_FLAT_SIZE].c_str(),"w")};
     FILE *vartexcmds_fp=fopen(vartexcmds_fn.c_str(),"w");
 
     FILE *FP2=fopen("image_areas.txt","w");
@@ -2315,18 +2315,21 @@ int main( int argc, char *argv[ ] )
         char tmpfn[1024];
         sprintf(tmpfn,"%s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply", diced_dir,cells[i].row,cells[i].col);
 
-        if( cells[i].images.size() == 0){
+        if( cells[i].images.size() == 0 ||  !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
+
             fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                     cells[i].bbox.zMax(),cells[i].col,cells[i].row,"null");
             fprintf(FP2,"-1 -1 -1 -1 null null 0\n");
-            continue;
-        }
-        if( !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
-            if(!osgDB::fileExists(string(tmpfn)+".empty")){
+            if( !osgDB::fileExists(tmpfn) && !osgDB::fileExists(string(tmpfn)+".empty")){
                 printf("Failed cell images %d exists %d empty %d %s\n",(int)cells[i].images.size(),osgDB::fileExists(tmpfn),
                        checkIsEmptyPly(tmpfn),tmpfn);
                 exit(-1);
+
             }
+            continue;
+
+
+
         }
         fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells[i].bbox.xMin(),cells[i].bbox.xMax(),cells[i].bbox.yMin(),cells[i].bbox.yMax(),cells[i].bbox.zMin(),
                 cells[i].bbox.zMax(),cells[i].col,cells[i].row,cells[i].name.c_str());
@@ -2336,8 +2339,10 @@ int main( int argc, char *argv[ ] )
         sprintf(tmpfn2,"%s/%stex-clipped-diced-r_%04d_c_%04d-lod%d.ply", diced_dir,remap_mesh_ext.c_str(),cells[i].row,cells[i].col,vpblod);
         cfiles.push_back(tmpfn2);
         for(int z=0; z<NUM_TEX_FILES; z++){
-            fprintf(texcmds_fp[z],"cd %s;%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f ",
-                    cwd,
+             fprintf(texcmds_fp[z],"cd %s",
+                     cwd);
+            if(z < 1){
+                fprintf(texcmds_fp[z],";%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f ",
                     basepath.c_str(),
                     base_dir.c_str(),
                     diced_dir,
@@ -2347,7 +2352,7 @@ int main( int argc, char *argv[ ] )
                     cells[i].row,cells[i].col,
                     vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
                     rx,ry,rz,tex_margin);
-
+           }
 
             if(hw_image){
                 fprintf(texcmds_fp[z]," --tex_cache %s %d  --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat -lat %.28f -lon %.28f ",cachedtexdir[0].first.c_str(),cachedtexdir[0].second,
@@ -2365,11 +2370,17 @@ int main( int argc, char *argv[ ] )
             else{
                 string teximgcmd;
                 ostringstream sizestr;
+                char tmpfn[1024];
                 switch(z){
                 case REMAP:
-                    teximgcmd = "vcgapps/bin/reorder";
+                    teximgcmd = "vcgapps/bin/reparam";
                     sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
                     sizestr<<"--scale "<<scaleRemapTex;
+                    break;
+                case DEPTH:
+                    teximgcmd="depthmap";
+                    sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+
                     break;
                 case FLAT:
                     teximgcmd="nonmem";
@@ -2377,9 +2388,13 @@ int main( int argc, char *argv[ ] )
 
                     break;
                 case REMAP_FLAT_SIZE:
-                    teximgcmd = "vcgapps/bin/reorder";
+                    teximgcmd = "vcgapps/bin/renderReorder";
                     sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
-
+                    sprintf(tmpfn," --remap %s/param-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ",
+                            diced_dir,
+                            cells[i].row,cells[i].col,
+                            vpblod);
+                    sizestr << tmpfn;
                     break;
                 }
 
@@ -2403,7 +2418,7 @@ int main( int argc, char *argv[ ] )
                 if(blending)
                     fprintf(texcmds_fp[z]," --blend");
 
-                fprintf(texcmds_fp[z],";%s/depthmap  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply  --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d --size %d %d",
+                /*                fprintf(texcmds_fp[z],";%s/depthmap  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply  --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d --size %d %d",
                         basepath.c_str(),
                         diced_dir,
                         cells[i].row,cells[i].col,
@@ -2413,7 +2428,7 @@ int main( int argc, char *argv[ ] )
                         cells[i].row,cells[i].col,
                         rx,ry,rz,
                         cells[i].row,cells[i].col,_tileRows,_tileColumns,
-                        latOrigin , longOrigin,jpegQuality,i,ajustedGLImageSizeX,ajustedGLImageSizeY);
+                        latOrigin , longOrigin,jpegQuality,i,ajustedGLImageSizeX,ajustedGLImageSizeY);*/
             }
         }
         if(!hw_image){
@@ -2441,16 +2456,25 @@ int main( int argc, char *argv[ ] )
         for(int p=0; p<num_samples; p++)
             sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2.0,p+1));
         if(jpegQuality<0){
-            for(int z=0; z<NUM_TEX_FILES; z++)
-                fprintf(texcmds_fp[z],";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+            for(int z=0; z<NUM_TEX_FILES; z++){
+                if(z != REMAP)
+                    fprintf(texcmds_fp[z],";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+                else
+                    fprintf(texcmds_fp[z],"\n");
+            }
             fprintf(vartexcmds_fp,";gdaladdo -r average mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
 
         }else{
-            for(int z=0; z<NUM_TEX_FILES; z++)
+            for(int z=0; z<NUM_TEX_FILES; z++){
+                if(z != REMAP)
+                    fprintf(texcmds_fp[z],";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+                else
+                    fprintf(texcmds_fp[z],"\n");
 
-                fprintf(texcmds_fp[z],";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+            }
             fprintf(vartexcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
         }
+
         tmp_ds[0]='\0';
         //  num_samples=0;
         int levels=useVirtTex ? 0:(int)ceil(log( max( ajustedGLImageSizeX, ajustedGLImageSizeY ))/log(2.0) );
@@ -2617,48 +2641,39 @@ int main( int argc, char *argv[ ] )
 
     string vartexcmd="vartex.py";
 
-    string texcmd[3]={"tex.py","flat.py","hybrid.py"};
-    vector<std::string> postcmdv;
-    vector<std::string> varpostcmdv;
+    string texcmd[4]={"tex.py","depth.py","flat.py","hybrid.py"};
+    string nameCmd[4]={"Remap","Depth","Render","Render"};
 
+    for(int z=0; z<NUM_TEX_FILES; z++){
+
+        vector<std::string> postcmdv;
+
+
+        std::ostringstream p;
+
+        if(z == REMAP_FLAT_SIZE || z == FLAT){
+            p<< "cd " << cwd <<";sh createmosaic.sh";
+        }else if(z== DEPTH){
+            p<< "cd " << cwd <<";sh createmosaicdepth.sh";
+        }
+
+        postcmdv.push_back(p.str());
+
+        shellcm.write_generic(texcmd[z],texcmds_fn[z],nameCmd[z],&(precmd),&(postcmdv),num_threads,(z == REMAP_FLAT_SIZE || z == FLAT) ? extraCheckCmd : "");
+    }
+    vector<std::string> varpostcmdv;
     std::ostringstream pvar;
 
-    std::ostringstream p;
-    //bool singleThreadedDicedTex=false;
-    /*p<<"#"<<basepath << "/sparseJoin rebbox.txt  " << cwd  << " --pbuffer-only " << ajustedGLImageSizeX << " "<< ajustedGLImageSizeY  << setprecision(28) <<" -lat " << latOrigin << " -lon " << longOrigin;
-        if(!singleThreadedDicedTex)
-            p<<" -nogfx " << (hw_image ? "png" : "ppm");
-        if(untex)
-            p<< " -untex ";*/
-    p<< "cd " << cwd <<";sh createmosaic.sh";
-    p<< ";cd " << cwd <<";sh createmosaicdepth.sh";
-
     pvar<< "cd " << cwd <<";sh createmosaicvar.sh";
+
     varpostcmdv.push_back(pvar.str());
 
-    postcmdv.push_back(p.str());
-
-
-
-
-
-    //int sizeX=reimageSize.x()*_tileRows;
-    //int adjustedSize=tileSize-(2*tileBorder);
-    // int intDiv=sizeX/tileSize;
-    //int embedSize=(intDiv* adjustedSize);
-    /* std::ostringstream p3;
-    // p3 << "vips " << " im_extract_area " << "out.tif "<< " tex.tif " << " 0 0 " <<  embedSize << " "<<embedSize<< ";";
-    if(!useVirtTex)
-        p3<<"#";
-    p3 << basepath << "/generateVirtualTextureTiles.py " << "-f=jpg  -b="<<tileBorder<<" tex.tif ";
-    postcmdv.push_back(p3.str());
-*/
-    for(int z=0; z<NUM_TEX_FILES; z++)
-        shellcm.write_generic(texcmd[z],texcmds_fn[z],"Tex",&(precmd),&(postcmdv),num_threads,extraCheckCmd);
     shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),std::max(num_threads/2,1));
 
     if(!no_tex)
-        sysres=system(string("python "+texcmd[selectedTexMode]).c_str());
+        sysres=system(string("python "+texcmd[REMAP]).c_str());
+    if(!no_tex)
+        sysres=system(string("python "+texcmd[REMAP_FLAT_SIZE]).c_str());
 
     if(var_tex)
         sysres=system("python vartex.py");

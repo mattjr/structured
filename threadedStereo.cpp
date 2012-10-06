@@ -1484,6 +1484,13 @@ int main( int argc, char *argv[ ] )
                     validCount++;
             printf("Auto computing tile and column splits %d valid images...\n",validCount);
             int numCells=(int)max(ceil(sqrt(ceil(validCount / tex_img_per_cell))),1.0);
+            printf("Selected %d\n",numCells);
+
+            while((largerAxis*largerAxis)/(float)(numCells*numCells)>(targetVolume*targetVolume)){
+                numCells++;
+            }
+            printf("Adjusted to %d based on targetVolume %f final volume %f total splits %d\n",numCells,targetVolume*targetVolume,(largerAxis*largerAxis)/(float)(numCells*numCells),numCells*numCells);
+
             _tileRows=numCells;
             _tileColumns=numCells;
         }else{

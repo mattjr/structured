@@ -140,3 +140,4 @@ build
 /atlasmesh
 /borderClip
 vecmath.pyc
+taskworkers.pyc

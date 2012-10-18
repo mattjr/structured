@@ -972,32 +972,33 @@ int main( int argc, char *argv[ ] )
     //const char *vriplogdir="/mnt/shared/log-vrip";
 
     float simp_mult=1.0;
-
-
     ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,cwd,aggdir,diced_dir,num_threads);
     shellcm.write_setup();
-    string stereocmd="stereo.py";
+    if(!externalMode){
+
+
+
+        string stereocmd="stereo.py";
 #define EXTERNSTEREO 1
 #ifdef EXTERNSTEREO
-    shellcm.write_generic(stereocmd,stereo_conf_name,"Stereo");
-    if(run_stereo)
-        sysres=system("./stereo.py");
+        shellcm.write_generic(stereocmd,stereo_conf_name,"Stereo");
+        if(run_stereo)
+            sysres=system("./stereo.py");
 
-    for(unsigned int i=0; i < tasks.size(); i++){
-        Stereo_Pose_Data &name=tasks[i];
-        if(getBBoxFromMesh(name)){
-            name.valid=true;
-        }else{
-            fprintf(stderr,"Not valid %s\n", osgDB::getStrippedName(name.mesh_name).c_str()     );
-            name.valid=false;
+        for(unsigned int i=0; i < tasks.size(); i++){
+            Stereo_Pose_Data &name=tasks[i];
+            if(getBBoxFromMesh(name)){
+                name.valid=true;
+            }else{
+                fprintf(stderr,"Not valid %s\n", osgDB::getStrippedName(name.mesh_name).c_str()     );
+                name.valid=false;
 
+            }
         }
-    }
 
-    double totalValidArea=0;
+        double totalValidArea=0;
 #endif
 
-    if(!externalMode){
 #ifndef EXTERNSTEREO
 
         osg::Timer_t startTick= osg::Timer::instance()->tick();

@@ -159,7 +159,8 @@ while not job_finished == job_count:
     progress_bar.inc()
     job_finished += 1
     job_results.task_done()
-
+#hack for now because otherwise dones exit
+sys.exit(0)
 logging.debug("jobs all finished")
 #job_results.close()
 job_queue.close()

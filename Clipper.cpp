@@ -624,12 +624,22 @@ bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox b
     int numTex=kdtreeBBox->_src.texcoords.size();
     geom_elems_dst dstGeom(numTex,kdtreeBBox->_src.texAndAux != NULL);
     root=kdtreeBBox->intersect(bbox,dstGeom,mode,bbox_margin);
+    osg::Vec4Array *colors=NULL;
+    if(mode == TWOBOX){
+        int vertSize = dstGeom.vertices->size();
+        if(kdtreeBBox->_src.colors && kdtreeBBox->_src.colors->size() == vertSize )
+            colors=kdtreeBBox->_src.colors;
+        else{
+            colors=new osg::Vec4Array;
+            colors->resize( vertSize,osg::Vec4(0,0,0,0));
+        }
+    }
     if(dstGeom.faces->size()){
         if(osgDB::getFileExtension(outfilename) == "ply"){
           //  osgUtil::SmoothingVisitor sv;
            // root->accept(sv);
             std::ofstream f(outfilename.c_str());
-            PLYWriterNodeVisitor nv(f,NULL,NULL,"",(mode == TWOBOX) ? dstGeom.marginFace : NULL);
+            PLYWriterNodeVisitor nv(f,NULL,NULL,"",(mode == TWOBOX) ? dstGeom.marginFace : NULL,colors);
             root->accept(nv);
         }else{
             osgUtil::SmoothingVisitor sv;

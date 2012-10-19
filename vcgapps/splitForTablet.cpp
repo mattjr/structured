@@ -271,6 +271,6 @@ void splitMeshOuput(CMeshO &m,const char *basename, int splitting){
     sprintf(fname,"%s/octree.txt",path.c_str());
 
     FILE *fp=fopen(fname,"w");
-    fprintf(fp,"%d\n",mesh_count-1);
+    fprintf(fp,"%d\n",mesh_count);
     fclose(fp);
 }

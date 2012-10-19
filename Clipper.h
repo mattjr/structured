@@ -240,7 +240,7 @@ public:
 };
 KdTreeBbox *setupKdTree(osg::ref_ptr<osg::Node> model);
 KdTreeBbox *createKdTreeForUnbuilt(osg::ref_ptr<osg::Node> model);
-bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const OverlapMode &mode,osg::BoundingBox *bbox_margin=NULL);
+bool cut_model(int &outputFaceCnt,KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const OverlapMode &mode,osg::BoundingBox *bbox_margin=NULL);
 struct CheckKdTreeBbox
 {
     CheckKdTreeBbox(    const osg::ref_ptr<osg::Vec3Array>  vertices,

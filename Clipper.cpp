@@ -615,7 +615,7 @@ KdTreeBbox *createKdTreeForUnbuilt(osg::ref_ptr<osg::Node> model){
     return NULL;
 }
 
-bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const OverlapMode &mode,osg::BoundingBox *bbox_margin){
+bool cut_model(int &outputFaceCnt,KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox bbox,const OverlapMode &mode,osg::BoundingBox *bbox_margin){
     if(!kdtreeBBox){
         fprintf(stderr,"Failed to load kdtree\n");
         return false;
@@ -627,6 +627,8 @@ bool cut_model(KdTreeBbox *kdtreeBBox,std::string outfilename,osg::BoundingBox b
     osg::Vec4Array *colors=NULL;
     if(mode == TWOBOX){
         int vertSize = dstGeom.vertices->size();
+        outputFaceCnt= dstGeom.faces->size();
+
         if(kdtreeBBox->_src.colors && kdtreeBBox->_src.colors->size() == vertSize )
             colors=kdtreeBBox->_src.colors;
         else{

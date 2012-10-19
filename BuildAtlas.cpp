@@ -693,7 +693,7 @@ void loadMosaicCells(std::string fname,int &totalX,int &totalY,std::vector<mosai
 
 VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int totalY,
                                 const std::vector<mosaic_cell> &mosaic_cells,
-                                bool writeAtlas,double scaleFactor,string basedir,string imgOutput,bool flat){
+                                bool writeAtlas,double scaleFactor,string basedir,string imgOutput,bool flat,double maxRes){
     int tileSize=256;
     int border=1;
     VipsAtlasBuilder* _atlas =new VipsAtlasBuilder(mosaic_cells.size(),tileSize,border,!writeAtlas );
@@ -843,8 +843,15 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
     }
 
 #endif
-
-
+    if(maxRes > 0){
+        if(atlas_image->Xsize()*scaleFactor > maxRes){
+            double tmpScale=maxRes/(double)osg::Image::computeNearestPowerOfTwo(atlas_image->Xsize());
+            if(scaleFactor>tmpScale){
+                printf("New scale factor for max res %f was %f\n",tmpScale,scaleFactor);
+                scaleFactor=tmpScale;
+            }
+        }
+    }
     double downsampleFactorMult=1.0/scaleFactor;
     printf("--------------Atlas Size %dx%d------------------\n",(int)(atlas_image->Xsize()*scaleFactor),(int)(atlas_image->Ysize()*scaleFactor));
     if(imgOutput.size())

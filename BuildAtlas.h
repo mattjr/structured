@@ -33,7 +33,7 @@ void  generateAtlasAndTexCoordMappingFromExtents(const std::vector<mosaic_cell> 
                                      int level);
 VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int totalY,
                                 const std::vector<mosaic_cell> &mosaic_cells,
-                                bool writeAtlas,double scaleFactor=1.0,std::string basedir="mesh",std::string imgOutput="",bool flat=false);
+                                bool writeAtlas,double scaleFactor=1.0,std::string basedir="mesh",std::string imgOutput="",bool flat=false,double maxRes=-1);
 void generateImageFromExtents(const std::vector<mosaic_cell> &mosaic_cells,
                                              const osg::Vec2 minT,
                                      const osg::Vec2 maxT,int origX,int origY,

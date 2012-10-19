@@ -19,6 +19,9 @@ int main( int argc, char **argv )
     }
     double scaleFactor=1.0;
     arguments.read("-scale",scaleFactor);
+    double maxRes=pow(2,17);
+    arguments.read("-maxRes",maxRes);
+
     string basedir="mesh";
     arguments.read("-dir",basedir);
 
@@ -45,7 +48,7 @@ int main( int argc, char **argv )
             outputPyr=false;
             createVTAtlas( viewProj, totalX, totalY,
                          mosaic_cells,
-                       outputPyr,scaleFactor,basedir,imgFile,flat);
+                       outputPyr,scaleFactor,basedir,imgFile,flat,maxRes);
    osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
 
    cout << "Time for vipsAtlas = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;

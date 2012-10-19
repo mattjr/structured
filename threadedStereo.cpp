@@ -2781,9 +2781,9 @@ int main( int argc, char *argv[ ] )
     //int totalXborder=(int)smallPOTX-((smallPOTX/VTtileSize)*2*tileBorder);
     // int totalYborder=(int)smallPOTY-((smallPOTX/VTtileSize)*2*tileBorder);
     int numOctrees=3;
-
+    double maxResIpad=pow(2,15);//32k
     int maxFaceSizeIpad=((0xffff-1)-10)*(numOctrees-0.5);
-    double scaleFactor=0.25;
+    double scaleFactor=0.5;
     fprintf(ipadViewerFP,"#!/bin/bash\n");
     fprintf(ipadViewerFP,"mkdir ipad\n");
     fprintf(ipadViewerFP,"cd %s;%s/vcgapps/bin/texturedDecimator %s/tex-total.ply %s/ipad.ply %d -Oy -V -P ;",
@@ -2804,7 +2804,7 @@ int main( int argc, char *argv[ ] )
     for(int k=0; k<numOctrees; k++)
         fprintf(ipadViewerFP,"%s/generateOctreeFromObj.py -o=vtex-%04d.octree octree-%04d.obj;",basepath.c_str(),k,k);
     fprintf(ipadViewerFP,"\n");
-    fprintf(ipadViewerFP,"cd ..;%s/vipsVTAtlas -mat %s -cells %s -scale %f -dir %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt",scaleFactor,"ipad");
+    fprintf(ipadViewerFP,"cd ..;%s/vipsVTAtlas -mat %s -cells %s -maxRes %f -scale %f -dir %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt",maxResIpad,scaleFactor,"ipad");
 
     //fprintf(ipadViewerFP,"(gdalwarp -overwrite -ts %d %d mosaic/mosaic.vrt vttex.tif; ",totalXborder,totalYborder);
     /* std::ostringstream p4;

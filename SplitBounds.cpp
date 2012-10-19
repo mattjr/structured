@@ -2,6 +2,18 @@
 #include "MemUtils.h"
 #include "ShellCmd.h"
 using namespace std;
+int count_vol(const CellDataT<Stereo_Pose_Data>::type &container) {
+    CellDataT<Stereo_Pose_Data>::type::iterator var;
+    int count=0;
+    for(unsigned int ii=0; ii < container.size(); ii++)\
+    for(unsigned int jj=0; jj < container[ii].size(); jj++)\
+    for(typeof((container[ii][jj]).begin()) var = (container[ii][jj]).begin(); \
+         var != (container[ii][jj]).end(); \
+         ++var)
+            count++;
+    return count;
+}
+
 osg::Matrix  osgTranspose( const osg::Matrix& src )
 {
     osg::Matrix dest;

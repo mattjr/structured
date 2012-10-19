@@ -11,6 +11,7 @@ struct CellDataT
 {
 typedef std::vector<std::vector<std::vector<Cell_Data<ValType> > > >  type;
 };
+int count_vol(const CellDataT<Stereo_Pose_Data>::type &container) ;
 
 #define foreach_vol(var, container) \
     for(unsigned int ii=0; ii < container.size(); ii++)\
@@ -28,7 +29,7 @@ typedef std::vector<std::vector<std::vector<Cell_Data<ValType> > > >  type;
 
 
 template <typename CellType>
-bool split_bounds(const Bounds &bounds,const std::vector<CellType> &poses ,double targetVolume,int minSplits,typename CellDataT<CellType>::type &Vol){
+bool split_bounds(const Bounds &bounds,const std::vector<CellType> &poses ,double targetSide,int minSplits,typename CellDataT<CellType>::type &Vol){
 
     double ran[3];
     for(int i=0; i<3; i++)
@@ -36,7 +37,7 @@ bool split_bounds(const Bounds &bounds,const std::vector<CellType> &poses ,doubl
 
     int splits[3];
     for(int i=0;i<3; i++)
-        splits[i]=ceil(ran[i]/targetVolume);
+        splits[i]=ceil(ran[i]/targetSide);
 
 
     if(minSplits>0){

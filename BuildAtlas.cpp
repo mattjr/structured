@@ -282,19 +282,19 @@ im_shrink_noblack( IMAGE *in, IMAGE *out, double xshrink, double yshrink )
 // im_shrink: shrink image by xfac, yfac times
 vips::VImage shrink_noblack(vips::VImage &in, double xfac, double yfac )
 {
-        vips::VImage out;
+    vips::VImage out;
 
-       /* vips::Vargv _vec( "im_shrink" );
+    /* vips::Vargv _vec( "im_shrink" );
 
         _vec.data(0) = in.image();
         _vec.data(1) = out.image();
         *((double*) _vec.data(2)) = xfac;
         *((double*) _vec.data(3)) = yfac;
         _vec.call();*/
-        im_shrink_noblack(in.image(),out.image(),xfac,yfac);
-        out._ref->addref( in._ref );
+    im_shrink_noblack(in.image(),out.image(),xfac,yfac);
+    out._ref->addref( in._ref );
 
-        return( out );
+    return( out );
 }
 bool readMatrixToScreen(std::string fname,osg::Matrixd &viewProj){
     std::fstream file(fname.c_str(), std::ios::binary|std::ios::in);
@@ -870,14 +870,7 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
                     double downsampleFactor=pow(2.0,level)*downsampleFactorMult;
 
                     if (x != 0 && y !=0 && x !=(numXtiles-1) && y != (numYtiles-1) ){
-
-
-                        if(level == 0)
-                            part=  atlas_image->extract_area(x * adjustedTileSize - border, y * adjustedTileSize - border, tileSize,tileSize);
-                        else
-                            part=  shrink_noblack(*atlas_image,downsampleFactor,downsampleFactor).extract_area(x * adjustedTileSize - border, y * adjustedTileSize - border, tileSize,tileSize);
-
-
+                         part=  shrink_noblack(*atlas_image,downsampleFactor,downsampleFactor).extract_area(x * adjustedTileSize - border, y * adjustedTileSize - border, tileSize,tileSize);
                     }else{
                         int offx=(x * adjustedTileSize - border);
                         int offy=(y * adjustedTileSize - border);
@@ -902,11 +895,7 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
                             offy=0;
                         }
                       //  printf("Extracing %d,%d -- %d -- %d width %d height %d\n",offx,offy,offx+w,offy+h,sizeX,sizeY);
-                         vips::VImage tmpI;
-                        if(level == 0)
-                            tmpI =  atlas_image->extract_area(offx , offy , w,h);
-                        else
-                            tmpI =  shrink_noblack(*atlas_image,downsampleFactor,downsampleFactor).extract_area(offx , offy , w,h);
+                        vips::VImage tmpI =  shrink_noblack(*atlas_image,downsampleFactor,downsampleFactor).extract_area(offx , offy , w,h);
                         vips::VImage blackI= vips::VImage::black(tileSize,tileSize,3);
 
                         part =blackI.insert_noexpand(tmpI,x1,y1);

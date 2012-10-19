@@ -1377,7 +1377,9 @@ int main( int argc, char *argv[ ] )
     CellDataT<Stereo_Pose_Data>::type vol;
     int minSplits=-1;
     double faceChunkTarget=50000;
-    double targetSide=(faceChunkTarget/numberFacesAll)*largerAxis;
+    int faceGuess = externalMode ? numberFacesAll : ((rangeX * rangeY) / (vrip_res*vrip_res));
+    printf("%d %f\n",faceGuess,largerAxis);
+    double targetSide=(faceChunkTarget/faceGuess)*largerAxis;
     printf("Target Side %f\n",targetSide);
   //  double cubicRootSide =pow(targetVolume ,1./3.);
     printf("side %f\n", largerAxis);
@@ -1446,7 +1448,7 @@ int main( int argc, char *argv[ ] )
     }
 
 
-
+    printf("Face Guess %d Real %d\n",faceGuess,numberFacesAll);
 
 #if 0
     // float rx=0,ry=180.0,rz=-90;

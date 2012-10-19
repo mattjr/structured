@@ -1,7 +1,23 @@
 #!/bin/bash
-meshTitle=`zenity --entry --title="Title" --text="Enter a title for the mesh:"`
-meshDescription=`zenity --entry --title="Description" --text="Enter a description of the mesh:"`
-folder=`zenity --entry --title="Folder" --text="Enter a folder name:"`
+if [ ! -f title.txt ]
+then
+    zenity --entry --title="Title" --text="Enter a title for the mesh:" > title.txt
+fi
+meshTitle=`cat title.txt `
+
+if [ ! -f desc.txt ]
+then
+    zenity --entry --title="Description" --text="Enter a description of the mesh:" > desc.txt
+
+fi
+meshDescription=`cat desc.txt `
+
+if [ ! -f folder.txt ]
+then
+    zenity --entry --title="Folder" --text="Enter a folder name:" > folder.txt
+
+fi
+folder=`cat folder.txt `
 
 LAT=`cut -f1 -d" " ../tmp/mesh-diced/firstpt.txt`
 LON=`cut -f2 -d" " ../tmp/mesh-diced/firstpt.txt`
@@ -32,7 +48,7 @@ printf "$descfmt" "$meshDescription"
 printf "$latfmt" "$LAT"
 printf "$lonfmt" "$LON"
 printf "$filenamefmt" "$basename"
-printf "$linkfmt" "$URLBASE" "$2" "$basename"
+printf "$linkfmt" "$URLBASE" "__REPLACEFOLDERNAME__" "$basename"
 printf "$folderfmt" "$folder"
 printf "$sizefmt" `du -b $basename.tar | cut -f 1`
 printf "$reportfmt" "$reportbase"

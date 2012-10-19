@@ -459,25 +459,25 @@ static bool parse_args( int argc, char *argv[ ] )
 
 
 
-
-    if(!useOrthoTex){
-        for(int i=0; (lodTexSize[0]/pow(2.0,i)) >= 8; i++){
+    if(!externalMode){
+        if(!useOrthoTex){
+            for(int i=0; (lodTexSize[0]/pow(2.0,i)) >= 8; i++){
+                char tmppp[1024];
+                int size=lodTexSize[0]/pow(2.0,i);
+                if(size <8)
+                    continue;
+                sprintf(tmppp,"cache-tex-%d/",size);
+                cachedtexdir.push_back(make_pair<string,int> (string(tmppp),size));
+                if(i==0 && reimage)
+                    break;
+            }
+        }else{
             char tmppp[1024];
-            int size=lodTexSize[0]/pow(2.0,i);
-            if(size <8)
-                continue;
-            sprintf(tmppp,"cache-tex-%d/",size);
-            cachedtexdir.push_back(make_pair<string,int> (string(tmppp),size));
-            if(i==0 && reimage)
-                break;
+            sprintf(tmppp,"cache-tex-%d/",lodTexSize[0]);
+            cachedtexdir.push_back(make_pair<string,int> (string(tmppp),lodTexSize[0]));
         }
-    }else{
-        char tmppp[1024];
-        sprintf(tmppp,"cache-tex-%d/",lodTexSize[0]);
-        cachedtexdir.push_back(make_pair<string,int> (string(tmppp),lodTexSize[0]));
+
     }
-
-
 
 
 
@@ -844,6 +844,13 @@ int main( int argc, char *argv[ ] )
         sprintf(cptmp,"cp %s/surface.ply %s/%s/vis-total.ply",cwd,cwd,diced_dir);
         //printf("%s\n",cptmp);
         sysres=system(cptmp);
+        FILE *firstpt=diced_fopen("firstpt.txt","w");
+        if(!firstpt ){
+            fprintf(stderr,"Cannot open mesh/firstpt.txt\n");
+            exit(-1);
+        }
+        fprintf(firstpt,"%f %f\n",latOrigin,longOrigin);
+        fclose(firstpt);
     }
     if(!externalMode){
         unsigned int stereo_pair_count =0;
@@ -2811,6 +2818,32 @@ int main( int argc, char *argv[ ] )
 
     fclose(ipadViewerFP);
 
+    FILE *metaFP=fopen("ipadtar.sh","w");
+
+    if(!metaFP){
+        fprintf(stderr,"Can't open create ipadtar");
+        exit(-1);
+    }
+    fprintf(metaFP,"#!/bin/bash\n");
+    fprintf(metaFP,"EXPECTED_ARGS=1\nE_BADARGS=65\n");
+    fprintf(metaFP,"if [ $# -ne $EXPECTED_ARGS ]\nthen\n\techo \"Usage: `basename $0` {basename}\"\nexit $E_BADARGS\nfi\n");
+    fprintf(metaFP,"cd ipad\n");
+    fprintf(metaFP,"mkdir $1\n");
+    fprintf(metaFP,"ln -sf $PWD/vtex $PWD/$1/\n");
+    for(int k=0; k<numOctrees; k++)
+        fprintf(metaFP,"ln -sf $PWD/vtex-%04d.octree $PWD/$1/m-%04d.octree\n",k,k);
+    fprintf(metaFP,"ln -sf $PWD/octree.txt $PWD/$1/cnt\n");
+    fprintf(metaFP,"gdalwarp ../mosaic/mosaic.vrt -ts 256 256 out.tif\n");
+    fprintf(metaFP,"convert $PWD/out.tif $1/m.jpg\n");
+    fprintf(metaFP,"rm -f $1/m.xml\n");
+    fprintf(metaFP,"tar cvfh $1.tar $1\n");
+    fprintf(metaFP,"bash %s/getmeta.sh $1 > $1/m.xml\n",basepath.c_str());
+    fprintf(metaFP,"tar rvf $1.tar $1/m.xml\n");
+    fprintf(metaFP,"echo -n $1 > tarname\n");
+    fchmod(fileno(metaFP),0777);
+
+    fclose(metaFP);
+
     FILE *uploadFP=fopen("uploadmesh.sh","w");
 
     if(!uploadFP){
@@ -2818,25 +2851,20 @@ int main( int argc, char *argv[ ] )
         exit(-1);
     }
     fprintf(uploadFP,"#!/bin/bash\n");
-    fprintf(uploadFP,"EXPECTED_ARGS=2\nE_BADARGS=65\n");
+    fprintf(uploadFP,"EXPECTED_ARGS=1\nE_BADARGS=65\n");
     fprintf(uploadFP,"if [ $# -ne $EXPECTED_ARGS ]\nthen\n\techo \"Usage: `basename $0` {basename}\"\nexit $E_BADARGS\nfi\n");
     fprintf(uploadFP,"cd ipad\n");
-    fprintf(uploadFP,"mkdir $1\n");
-    fprintf(uploadFP,"ln -sf $PWD/vtex $PWD/$1/\n");
-    for(int k=0; k<numOctrees; k++)
-        fprintf(uploadFP,"ln -sf $PWD/vtex-%04d.octree $PWD/$1/m-%04d.octree\n",k,k);
-    fprintf(uploadFP,"ln -sf $PWD/octree.txt $PWD/$1/cnt\n");
-    fprintf(uploadFP,"gdalwarp ../mosaic/mosaic.vrt -ts 256 256 out.tif\n");
-    fprintf(uploadFP,"convert $PWD/out.tif $1/m.jpg\n");
-    fprintf(uploadFP,"rm -f $1/m.xml\n");
-    fprintf(uploadFP,"tar cvfh $1.tar $1\n");
-    fprintf(uploadFP,"bash %s/getmeta.sh $1 $2> $1/m.xml\n",basepath.c_str());
-    fprintf(uploadFP,"tar rvf $1.tar $1/m.xml\n");
-    fprintf(uploadFP,"scp $1.tar mattjr@aguacate:benthos/$2/\n");
-    fprintf(uploadFP,"scp %s/updatemodelxml.sh mattjr@aguacate:benthos/\n",basepath.c_str());
-    fprintf(uploadFP,"scp %s/create_main_feed.sh mattjr@aguacate:benthos/\n",basepath.c_str());
-    fprintf(uploadFP,"ssh mattjr@aguacate \"cd benthos;bash updatemodelxml.sh\"\n");
-    fprintf(uploadFP,"ssh mattjr@aguacate \"cd benthos;bash create_main_feed.sh\"\n");
+    fprintf(uploadFP,"if [ ! -f tarname ]; then\n");
+    fprintf(uploadFP,"\techo \"tarname file is missing\" \n\texit $E_BADARGS\n");
+    fprintf(uploadFP,"fi\n");
+    fprintf(uploadFP,"TARNAME=`cat tarname`\n");
+    fprintf(uploadFP,"sed -i'' \"s/__REPLACEFOLDERNAME__/$1/g\" $TARNAME/m.xml\n");
+    fprintf(uploadFP,"tar rvf $TARNAME.tar $TARNAME/m.xml\n");
+    fprintf(uploadFP,"scp $TARNAME.tar mattjr@aguacate.acfr.usyd.edu.au:benthos/$1/\n");
+    fprintf(uploadFP,"scp %s/updatemodelxml.sh mattjr@aguacate.acfr.usyd.edu.au:benthos/\n",basepath.c_str());
+    fprintf(uploadFP,"scp %s/create_main_feed.sh mattjr@aguacate.acfr.usyd.edu.au:benthos/\n",basepath.c_str());
+    fprintf(uploadFP,"ssh mattjr@aguacate.acfr.usyd.edu.au \"cd benthos;bash updatemodelxml.sh\"\n");
+    fprintf(uploadFP,"ssh mattjr@aguacate.acfr.usyd.edu.au \"cd benthos;bash create_main_feed.sh\"\n");
 
     fchmod(fileno(uploadFP),0777);
 

@@ -260,6 +260,8 @@ int main(int argc ,char**argv){
     float TargetError=numeric_limits<float>::max();
     bool CleaningFlag =false;
     bool UseVertStop=false;
+    bool FlipFlag=false;
+
     int splitting=0;
     char basename[1024];
     // parse command line.
@@ -286,6 +288,8 @@ int main(int argc ,char**argv){
 				case 'b' :	qparams.BoundaryWeight  = atof(argv[i]+2);			printf("Setting Boundary Weight to %f\n",atof(argv[i]+2)); break;		
 				case 'e' :	TargetError = float(atof(argv[i]+2));			printf("Setting TargetError to %g\n",atof(argv[i]+2)); break;		
 				case 'P' :	CleaningFlag=true;  printf("Cleaning mesh before simplification\n"); break;	
+                case 'F' : FlipFlag=true; break;
+
                                 case 'V': UseVertStop=true;break;
                                 case 's' :	splitting = atoi(argv[i]+2);  printf("Splitting output at %d\n",atoi(argv[i]+2)); break;
                                 case 'u' :	strcpy(basename ,argv[i]+2);  printf("Splitting output fn %s\n",basename); break;
@@ -350,7 +354,8 @@ int main(int argc ,char**argv){
         int unref =  tri::Clean<CMeshO>::RemoveUnreferencedVertex(mesh);
         printf("Removed %i duplicate vetex %i duplicate faces  and %i unreferenced vertices from mesh \n",dup,dup2,unref);
     }
-
+    if(FlipFlag)
+        tri::Clean<CMeshO>::FlipMesh(mesh);
     if(!tri::HasPerWedgeTexCoord(mesh))
     {
         printf("Warning: nothing have been done. Mesh has no Texture.\n");

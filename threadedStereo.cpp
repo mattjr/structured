@@ -1516,7 +1516,7 @@ int main( int argc, char *argv[ ] )
             while((largerAxis*largerAxis)/(float)(numCells*numCells)>(targetSide*targetSide)){
                 numCells++;
             }
-            printf("Adjusted to %d based on targetVolume %f final volume %f total splits %d\n",numCells,targetSide*targetSide,(largerAxis*largerAxis)/(float)(numCells*numCells),numCells*numCells);
+            printf("Adjusted to %d based on targetVolume %0.3f final volume %0.3f total splits %d\n",numCells,targetSide*targetSide,(largerAxis*largerAxis)/(float)(numCells*numCells),numCells*numCells);
 
             _tileRows=numCells;
             _tileColumns=numCells;

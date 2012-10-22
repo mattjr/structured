@@ -720,6 +720,8 @@ int main(int ac, char *av[]) {
                 texture = new Texture(tmp);
                 FragmentShader::texture = texture;
                 VertexShader::texture = texture;
+                FragmentShader::regOutput=regOutput;
+
                 if(!texture->surface)
                     continue;
             }else{

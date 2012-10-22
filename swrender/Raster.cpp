@@ -17,7 +17,7 @@
 #include "Raster.h"
 #include <stdlib.h>
 #include <algorithm>
-
+#include <osg/io_utils>
 #define RA_EPSILON		0.00001f
 
 //using namespace nv;
@@ -211,7 +211,7 @@ namespace Raster
 			Vector3 ht=t1; t1=t2; t2=ht; // swap tex
 		}
 	}
-#if 0
+#if 1
 	void Triangle::draw(const Vector2 & extents, SamplingCallback cb, void * param)
 	{
 		// 28.4 fixed-point coordinates
@@ -247,10 +247,10 @@ namespace Raster
 		int frustumY1 =  (int)extents.y() << 4;
 		
 		// Bounding rectangle
-		int minx = (::max(min(X1, X2, X3), frustumX0) + 0xF) >> 4;
-		int miny = (::max(min(Y1, Y2, Y3), frustumY0) + 0xF) >> 4;
-		int maxx = (::min(max(X1, X2, X3), frustumX1) + 0xF) >> 4;
-		int maxy = (::min(max(Y1, Y2, Y3), frustumY1) + 0xF) >> 4;
+        int minx = (std::max(min(X1, X2, X3), frustumX0) + 0xF) >> 4;
+        int miny = (std::max(min(Y1, Y2, Y3), frustumY0) + 0xF) >> 4;
+        int maxx = (std::min(max(X1, X2, X3), frustumX1) + 0xF) >> 4;
+        int maxy = (std::min(max(Y1, Y2, Y3), frustumY1) + 0xF) >> 4;
 	
 		// Block size, standard 8x8 (must be power of two)
 		const int q = 8;
@@ -276,8 +276,11 @@ namespace Raster
 			{
 				// Corners of block
 				int x0 = x << 4;
+                float x0_upscaled=(x0/16.0f)+0.5;
+
 				int x1 = (x + q - 1) << 4;
 				int y0 = y << 4;
+                float y0_upscaled=(y0/16.0f)+0.5;
 				int y1 = (y + q - 1) << 4;
 	
 				// Evaluate half-space functions
@@ -305,14 +308,14 @@ namespace Raster
 				// Accept whole block when totally covered
 				if(a == 0xF && b == 0xF && c == 0xF)
 				{
-					Vector3 texRow = t1 + dy*(y0 - v1.y()) + dx*(x0 - v1.x());
-
+                    //Vector3 texRow = t1 + dy*(y0 - v1.y()) + dx*(x0 - v1.x());
+                    Vector3 texRow = t1 + dy*(y0_upscaled - v1.y()) + dx*(x0_upscaled - v1.x());
 					for(int iy = y; iy < y + q; iy++)
 					{
 						Vector3 tex = texRow;
 						for(int ix = x; ix < x + q; ix++)
 						{
-							//Vector3 tex = t1 + dx * (ix - v1.x()) + dy * (iy - v1.y());
+                            //Vector3 tex = t1 + dx * (ix - v1.x()) + dy * (iy - v1.y());
 							cb(param, ix, iy, tex, dx, dy, 1.0);
 							tex += dx;
 						}
@@ -324,7 +327,8 @@ namespace Raster
 					int CY1 = C1 + DX12 * y0 - DY12 * x0;
 					int CY2 = C2 + DX23 * y0 - DY23 * x0;
 					int CY3 = C3 + DX31 * y0 - DY31 * x0;
-					Vector3 texRow = t1 + dy*(y0 - v1.y()) + dx*(x0 - v1.x());
+                    //Vector3 texRow = t1 + dy*(y0 - v1.y()) + dx*(x0 - v1.x());
+                    Vector3 texRow = t1 + dy*(y0_upscaled - v1.y()) + dx*(x0_upscaled - v1.x());
 
 					for(int iy = y; iy < y + q; iy++)
 					{
@@ -478,11 +482,11 @@ bool Raster::drawTriangle(bool antialias, const Vector2& extents, const Vector2 
 {
     Triangle tri(v[0], v[1], v[2], Vector3(t[0].x(), t[0].y(), 0), Vector3(t[1].x(), t[1].y(), 0), Vector3(t[2].x(), t[2].y(), 0));
 	if (tri.valid) {
-//		if (antialias) {
+        if (antialias) {
 			tri.drawAA(extents, cb, param);		
-    //	} else {
-        //	tri.draw(extents, cb, param);
-    //	}
+        } else {
+            tri.draw(extents, cb, param);
+        }
 		return true;
 	}
 	return false;

@@ -2442,7 +2442,7 @@ int main( int argc, char *argv[ ] )
 
                     break;
                 case REMAP_FLAT_SIZE:
-                    teximgcmd = "vcgapps/bin/renderReorder";
+                    teximgcmd = "vcgapps/bin/renderReorderAA";
                     sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
                     sprintf(tmpfn," --remap %s/param-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ",
                             diced_dir,

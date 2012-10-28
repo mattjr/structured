@@ -325,6 +325,7 @@ SpatialReference.cpp
 MemUtils.cpp
 CheckThreadPool.cpp
 		stereo_cells.cpp
+OctreeBuilder.cpp
 SplitBounds.cpp
 ProgressBar.cpp
 BuildAtlas.cpp

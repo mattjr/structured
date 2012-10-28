@@ -142,3 +142,7 @@ build
 /borderClip
 vecmath.pyc
 taskworkers.pyc
+/vrip/src/pvrip/out
+/vrip/src/pvrip/out.set
+/vrip/src/pvrip/plymerge_surfmrs
+/vrip/src/pvrip/plymerge_surfmrs.cc~

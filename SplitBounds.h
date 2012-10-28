@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <osg/io_utils>
+#include "OctreeBuilder.h"
 template <typename ValType>
 struct CellDataT
 {
@@ -26,8 +27,148 @@ int count_vol(const CellDataT<Stereo_Pose_Data>::type &container) ;
     for(typeof((container[iii][jjj]).begin()) var = (container[iii][jjj]).begin(); \
          var != (container[iii][jjj]).end(); \
          ++var)
+template <typename CellType>
+bool split_boundsOctree(const Bounds &bounds,const std::vector<CellType> &poses ,int maxFaces,int minSplits,typename CellDataT<CellType>::type &Vol){
+    OctreeBuilder<CellType> octree;
+    int splits[3]={0,0,0};
+    int zero[3]={0,0,0};
+
+    std::vector< std::pair<std::vector<CellType> , osg::BoundingBox> > cells;
+    octree.setMaxChildNumber(2);
+    octree.setMaxFaces(maxFaces);
+    octree.build(splits, cells,zero, bounds.bbox, poses );
+    printf("Splits %d %d %d\n",splits[0],splits[1],splits[2]);
+
+    double ran[3];
+    for(int i=0; i<3; i++)
+        ran[i]=(bounds.bbox._max[i]-bounds.bbox._min[i]);
+
+//    int split=pow(2,largestDepth);
+  //  int splits[3];
+   // for(int i=0;i<3; i++)
+     //   splits[i]=splits[];
 
 
+  /*  if(minSplits>0){
+        while( splits[0]* splits[1]* splits[2] < minSplits){
+            splits[0]++;
+            splits[1]++;
+        }
+    }*/
+    //Ensure one volume
+    for(int i=0; i<3; i++)
+        splits[i]=std::max(splits[i],1);
+    printf("Split %d poses into %d %d %d\n",(int)poses.size(),splits[0],splits[1],splits[2]);
+    double stepSize[3];
+    for(int i=0;i<3; i++)
+        stepSize[i]=ran[i]/(double)splits[i];
+
+    Vol.resize(splits[0]);
+    for(unsigned int j=0; j<Vol.size(); j++){
+        Vol[j].resize(splits[1]);
+         for(unsigned int k=0; k<Vol[j].size(); k++)
+            Vol[j][k].resize(splits[2]);
+    }
+
+    for(int i=0; i< splits[0]; i++){
+        for(int j=0; j< splits[1]; j++){
+            for(int k=0; k< splits[2]; k++){
+                osg::BoundingBox cellBounds(bounds.bbox.xMin()+(i*stepSize[0]) ,bounds.bbox.yMin()+(j*stepSize[1]),bounds.bbox.zMin()+(k*stepSize[2]),
+                                            bounds.bbox.xMin()+((i+1)*stepSize[0]),bounds.bbox.yMin()+((j+1)*stepSize[1]),bounds.bbox.zMin()+((k+1)*stepSize[2]));
+                std::vector<const CellType *> touchedPoses;
+                for(int l=0; l<(int)poses.size(); l++){
+                    if(cellBounds.intersects(poses[l].bbox))
+                        touchedPoses.push_back(&poses[l]);
+
+                }
+                Bounds cB;
+                cB.bbox=cellBounds;
+                Cell_Data<CellType> cell(touchedPoses,cB);
+                cell.volIdx[0]=i;
+                cell.volIdx[1]=j;
+                cell.volIdx[2]=k;
+                cell.splits[0]=splits[0];
+                cell.splits[1]=splits[1];
+                cell.splits[2]=splits[2];
+
+                Vol[i][j][k]=cell;
+            }
+        }
+    }
+
+    return true;
+
+}
+#if 0
+
+template <typename CellType>
+bool split_boundsOctree(const Bounds &bounds,const std::vector<CellType> &poses ,int maxFaces,int minSplits,typename CellDataT<CellType>::type &Vol){
+    OctreeBuilder<CellType> octree;
+    int largestDepth=0;
+    std::vector< std::pair<std::vector<CellType> , osg::BoundingBox> > cells;
+    octree.setMaxChildNumber(2);
+    octree.setMaxFaces(maxFaces);
+    octree.build(largestDepth, cells,0, bounds.bbox, poses );
+    printf("Largest Depth %d\n",largestDepth);
+/*
+    double ran[3];
+    for(int i=0; i<3; i++)
+        ran[i]=(bounds.bbox._max[i]-bounds.bbox._min[i]);
+
+    int splits[3];
+    for(int i=0;i<3; i++)
+        splits[i]=ceil(ran[i]/targetSide);
+
+
+    if(minSplits>0){
+        while( splits[0]* splits[1]* splits[2] < minSplits){
+            splits[0]++;
+            splits[1]++;
+        }
+    }
+    //Ensure one volume
+    for(int i=0; i<3; i++)
+        splits[i]=std::max(splits[i],1);
+    printf("Split %d poses into %d %d %d\n",(int)poses.size(),splits[0],splits[1],splits[2]);
+    double stepSize[3];
+    for(int i=0;i<3; i++)
+        stepSize[i]=ran[i]/(double)splits[i];
+*/
+    Vol.resize(1);
+   /* for(unsigned int j=0; j<Vol.size(); j++){
+        Vol[j].resize(splits[1]);
+         for(unsigned int k=0; k<Vol[j].size(); k++)
+            Vol[j][k].resize(splits[2]);
+    }*/
+    Vol[0].resize(1);
+    std::cout << "Split into " << cells.size()<<std::endl;
+    for(int i=0; i<(int)cells.size(); i++){
+        osg::BoundingBox cellBounds=cells[i].second;
+        std::vector<const CellType *> touchedPoses;
+        int face_count=0;
+        for(int l=0; l<(int)cells[i].first.size(); l++){
+                touchedPoses.psplit_boundsOctreeush_back(&cells[i].first[l]);
+                face_count+=cells[i].first[l].faces;
+        }
+        Bounds cB;
+        cB.bbox=cellBounds;
+        Cell_Data<CellType> cell(touchedPoses,cB);
+        cell.volIdx[0]=0;
+        cell.volIdx[1]=0;
+        cell.volIdx[2]=i;
+        cell.splits[0]=1;
+        cell.splits[1]=1;
+        cell.splits[2]=cells.size();
+        std::cout << cell <<std::endl;
+        //std::cout <<"Faces " << face_count<<std::endl;
+        Vol[0][0].push_back(cell);
+
+
+    }
+    return true;
+
+}
+#endif
 template <typename CellType>
 bool split_bounds(const Bounds &bounds,const std::vector<CellType> &poses ,double targetSide,int minSplits,typename CellDataT<CellType>::type &Vol){
 

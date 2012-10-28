@@ -681,6 +681,7 @@ bool getBBoxFromMesh(Stereo_Pose_Data &name){
         cerr <<"file not found "<<fname<<endl;
         return false;
     }
+    bool got_bbox=false;
     string line;
     getline(mesh,line);
     if(line.substr(0,3) != "ply"){
@@ -689,18 +690,22 @@ bool getBBoxFromMesh(Stereo_Pose_Data &name){
     }
     while(mesh.good()){
         getline(mesh,line);
-        if(line.substr(0,9) == "end_header"){
-            cerr << "valid file but no comment in header for bbox\n";
-            return false;
-        }
-        if(line.substr(0,7) == "comment"){
+        if(line.substr(0,10) == "end_header"){
+            if(!got_bbox)
+                cerr << "valid file but no comment in header for bbox\n";
+            return got_bbox;
+        }else if(line.substr(0,7) == "comment"){
             std::string bboxstr=line.substr(8,line.size());
             istringstream iss(bboxstr);
             osg::Vec3d minB,maxB;
             iss >> minB;
             iss >> maxB;
             name.bbox = osg::BoundingBox(minB,maxB);
-            return true;
+            got_bbox=true;
+        }else if(line.substr(0,12) == "element face"){
+            std::string fstr=line.substr(13,line.size());
+            istringstream iss(fstr);
+            iss >> name.faces;
         }
     }
 
@@ -1376,7 +1381,7 @@ int main( int argc, char *argv[ ] )
 
     CellDataT<Stereo_Pose_Data>::type vol;
     int minSplits=-1;
-    double faceChunkTarget=50000;
+    double faceChunkTarget=200000;
     int faceGuess = externalMode ? numberFacesAll : ((rangeX * rangeY) / (vrip_res*vrip_res));
     printf("%d %f\n",faceGuess,largerAxis);
     double targetSide=(faceChunkTarget/faceGuess)*largerAxis;
@@ -1385,7 +1390,9 @@ int main( int argc, char *argv[ ] )
     printf("side %f\n", largerAxis);
     cout << bounds.bbox._min << " "<< bounds.bbox._max<<endl;
     //double targetVolume=10.0;
-    split_bounds<Stereo_Pose_Data>(bounds,tasks , targetSide,minSplits,vol);
+  //  split_boundsOctree<Stereo_Pose_Data>(bounds,tasks , targetSide,minSplits,vol);
+    split_boundsOctree<Stereo_Pose_Data>(bounds,tasks , faceChunkTarget,minSplits,vol);
+
     if(!externalMode){
         {
             WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks,plymc_expand_by);

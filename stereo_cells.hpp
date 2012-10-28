@@ -12,6 +12,8 @@
 #include <osg/BoundingBox>
 #include <iostream>
 #include <stdlib.h>
+#include <osg/io_utils>
+
 enum{ POSE_INDEX_X,
      POSE_INDEX_Y,
      POSE_INDEX_Z,
@@ -56,7 +58,7 @@ public:
   double alt;
   double radius;
   bool overlap;
-
+  int faces;
 };
 
 
@@ -77,7 +79,10 @@ public:
 
 
 enum{AUV_SPLIT,EVEN_SPLIT};
-
+inline std::ostream& operator<<(std::ostream& os, const osg::BoundingBox &bbox) {
+    os << bbox._min << " - " << bbox._max <<std::endl;
+    return os;
+}
 template <class A>
 class Cell_Data
 {
@@ -100,6 +105,13 @@ public:
    bool valid;
 
 };
+template <class A>
+std::ostream& operator<<(std::ostream& os,const Cell_Data<A> &obj) {
+    os <<"Cell:\n";
+    os <<obj.bounds.bbox << std::endl;
+    os<< "Poses: "<<obj.poses.size() << std::endl;
+       return os;
+}
 
 
 //

@@ -9,6 +9,7 @@
 
 #include <vcg/math/quadric.h>
 #include <vcg/complex/algorithms/clean.h>
+#include <vcg/complex/algorithms/smooth.h>
 
 // io
 #include <wrap/io_trimesh/import.h>
@@ -39,8 +40,8 @@ bool multtex=false;
      tex=true;
      multtex=true;
  }
-
-
+int smooth_iter;
+ bool smooth=argp.read("-smooth",smooth_iter);
     vcg::tri::io::PlyInfo pi;
     bool flip=argp.read("-flip");
     bool color=argp.read("-color");
@@ -102,7 +103,16 @@ bool multtex=false;
 
         }
     }
+    if(smooth){
+        printf("Smoothing %d\n",smooth_iter);
+        tri::UpdateFlags<CMeshO>::FaceBorderFromNone(cm);
+        bool boundarySmooth = true;
 
+       // "Max Normal Dev (deg)"),	tr("maximum mean normal angle displacement (degrees) from old to new faces")));
+        tri::Smooth<CMeshO>::VertexCoordLaplacian(cm, smooth_iter, false,NULL);
+        tri::UpdateNormals<CMeshO>::PerVertexNormalizedPerFace(cm);
+
+    }
     bool binaryFlag =true;
     if(tex)
         pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;

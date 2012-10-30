@@ -3,6 +3,8 @@
 #include <osg/Vec3>
 #include <string>
 #include <vips/vips.h>
+#include <vips/vips>
+
 #include <osg/Vec2>
 #include <osg/Array>
 #include <osg/Drawable>
@@ -15,6 +17,7 @@
 osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::DrawElementsUInt> triangles);
 int calcOptimalImageSize(const osg::Vec2 imageSize,osg::Vec3Array *verts,osg::DrawElementsUInt* triangles,std::vector<osg::Vec3Array *>   &texCoord,double scaletex=1.0,int VTtileSize=-1,int border=-1);
 void dilateEdge(IMAGE *tmpI,const char *outfile,int count=-1);
+void dilateEdgeNew(vips::VImage &input,const char *outfile,int count);
 class LoaderOSG2OGF  {
 
 

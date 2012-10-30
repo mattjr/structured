@@ -151,9 +151,9 @@ namespace OGF {
                 target_->width() * target_->height() * 
                 target_->bytes_per_pixel()
             ) ;
-            std::cerr << "." << std::flush ;
+           // std::cerr << "." << std::flush ;
         }
-        std::cerr << std::endl ;
+        //std::cerr << std::endl ;
     }
 }
 

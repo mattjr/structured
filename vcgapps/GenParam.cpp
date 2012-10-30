@@ -351,6 +351,23 @@ void dilateEdge(IMAGE *tmpI,const char *outfile,int count){
 
 }
 
+void dilateEdgeNew(vips::VImage &input,const char *outfile,int count){
+    OGF::Image* img = new OGF::Image(OGF::Image::RGB,input.Xsize(),input.Ysize());
+    OGF::Memory::byte* mem_img = img->base_mem_byte_ptr();
+    vips::VImage tmpImage(mem_img,input.Xsize(),input.Ysize(),3,vips::VImage::FMTUCHAR);
+
+    input.write(tmpImage);
+    OGF::MorphoMath morpho(img) ;
+    if(count == -1)
+     count = std::max(2,(int)round(10*(input.Xsize()/(double)8192)));
+   // printf("Dilating %d times\n",count);
+    for(int i=0; i<count; i++) {
+        morpho.dilate(1) ;
+    }
+    tmpImage.write(outfile);
+}
+
+
 using namespace std;
 
 #if 0

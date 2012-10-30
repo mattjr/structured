@@ -205,6 +205,7 @@ cmake_policy(SET CMP0005 OLD)
 #spatial lib defs
 add_definitions("-DHAVE_FCNTL_H=1 -DHAVE_UNISTD_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_PTHREAD_H=1 -DHAVE_SYS_RESOURCE_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_STDINT_H=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_BZERO=1 -DHAVE_MEMSET=1 -DHAVE_MEMCPY=1 -DHAVE_BCOPY=1")
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
+                     ${PROJECT_SOURCE_DIR}/vcgapps/
                      ${OPENCV_INCLUDE_DIRS}
 		     ${OPENGL_INCLUDE_DIR}
                      ${VIPS_INCLUDE_DIRS}
@@ -324,7 +325,8 @@ SeaBedIO.cpp
 SpatialReference.cpp
 MemUtils.cpp
 CheckThreadPool.cpp
-		stereo_cells.cpp
+vcgapps/GenParam.cpp
+                stereo_cells.cpp
 OctreeBuilder.cpp
 SplitBounds.cpp
 ProgressBar.cpp
@@ -359,25 +361,25 @@ ADD_EXECUTABLE(genOverlappingPoses genOverlappingPoses.cpp)
 
 #ADD_EXECUTABLE(temp temp.cpp)
 TARGET_LINK_LIBRARIES( genOverlappingPoses ts )
-
+SET(OGF_LIBS basic math  cells  numeric_stuff image z  m )
 LINK_LIBRARIES(osgTerrain  osgFX osg  spindex vips vipsCC)
-TARGET_LINK_LIBRARIES( threadedStereo ts  vips vipsCC vpb spindex)
+TARGET_LINK_LIBRARIES( threadedStereo ts  vips vipsCC vpb spindex  ${OGF_LIBS})
 #TARGET_LINK_LIBRARIES( engine ts  vips vipsCC vpb spindex)
 TARGET_LINK_LIBRARIES( osgdem vpb  )
-TARGET_LINK_LIBRARIES( vipsVTAtlas ts  vips vipsCC spindex)
-TARGET_LINK_LIBRARIES( atlasmesh ts  vips vipsCC spindex)
+TARGET_LINK_LIBRARIES( vipsVTAtlas ts  vips vipsCC spindex   ${OGF_LIBS})
+TARGET_LINK_LIBRARIES( atlasmesh ts  vips vipsCC spindex  ${OGF_LIBS})
 
 TARGET_LINK_LIBRARIES( testImageModel ts  )
 TARGET_LINK_LIBRARIES( deepzoomVIPS  vips vipsCC)
 TARGET_LINK_LIBRARIES( testImageModel ts  )
 
 TARGET_LINK_LIBRARIES( stereo_mesh_gen ts  )
-TARGET_LINK_LIBRARIES( treeBBClip ts spindex )
+TARGET_LINK_LIBRARIES( treeBBClip ts spindex  )
 TARGET_LINK_LIBRARIES( genRangeImg ts spindex )
 
 TARGET_LINK_LIBRARIES( vertCheck ts spindex )
-TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC)
-TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC)
+TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC  ${OGF_LIBS})
+TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC  ${OGF_LIBS})
 TARGET_LINK_LIBRARIES( borderClip ts spindex )
 
 TARGET_LINK_LIBRARIES( dicedImage vips vipsCC ts z)

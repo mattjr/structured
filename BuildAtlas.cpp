@@ -1,6 +1,7 @@
 #include "BuildAtlas.h"
 #include "Extents.h"
 #include <vips/vips.h>
+#include "vcgapps/GenParam.h"
 #include <osgDB/WriteFile>
 using namespace std;
 using namespace SpatialIndex;
@@ -870,6 +871,7 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
             int cnt=0;
             for(int x=0; x<numXtiles; x++){
                 for(int y=0; y <numYtiles;y++){
+                    printf("\33[2K\r");
                     printf("\rDoing VT Level %02d/%02d - %dx%d - %.2f%%",level,maxLevels,numXtiles,numYtiles,100.0*(cnt++/(double)(numYtiles*numXtiles)));
                     fflush(stdout);
 
@@ -914,7 +916,11 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
                     }
                     char tmp[1024];
                     sprintf(tmp,"%s/tile_%d_%d_%d.jpg",dirname,level,x,y);
-                    part.write(tmp);
+                    if(level >maxLevels-3-1){
+                        dilateEdgeNew(part,tmp,1    );
+                    }else{
+                        part.write(tmp);
+                    }
                 }
             }
         }

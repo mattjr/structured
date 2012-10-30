@@ -44,12 +44,12 @@ template <typename CellType>
 void OctreeBuilder<CellType>::build(int *finaldepth, std::vector<OctNode> &group ,int *depth, const osg::BoundingBox& total,
                                   const std::vector<CellType>& elements )
 {
-    int s[3];  // axis sides (0 or 1)
+    /*int s[3];  // axis sides (0 or 1)
     osg::Vec3 extentSet[3] = {
         total._min,
         (total._max + total._min) * 0.5f,
         total._max
-    };
+    };*/
     int faces=0;
     std::vector<CellType> childData;
     for ( unsigned int i=0; i<elements.size(); ++i )
@@ -246,5 +246,4 @@ void OctreeBuilder<CellType>::build( std::vector<OctNode> &group ,int depth, con
     //return ;
 }
 #endif
-
 #endif

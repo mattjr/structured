@@ -46,10 +46,14 @@ static double start_time = 0.0;
 static bool no_rangeimg=true;
 static bool apply_aug=false;
 static double stop_time = numeric_limits<double>::max();
+static double marginExpand=2;
 static int vpblod_override=0;
 static bool compositeMission=false;
 static bool writeout_meshvar=true;
 static double smallCCPer=0.2;
+static unsigned int faceChunkTarget;
+static unsigned int texRemapChunk;
+
 //
 // Command-line arguments
 //
@@ -101,6 +105,8 @@ static int gpunum=0;
 static string stereo_calib_file_name;
 static bool no_simp=true;
 static bool no_split=false;
+static bool no_init=false;
+
 static ofstream file_name_list;
 static string base_dir;
 static bool no_depth=false;
@@ -354,7 +360,9 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("MAX_FEAT_COUNT",max_feature_count,5000);
     recon_config_file->get_value("VRIP_RAMP",vrip_ramp,500.0);
     recon_config_file->get_value("EDGE_THRESH",edgethresh,0.5);
-
+    recon_config_file->get_value("STRUCT_FACE_CHUNK_SIZE",faceChunkTarget,200000);
+    recon_config_file->get_value("REMAP_FACE_CHUNK_SIZE",texRemapChunk,50000);
+    recon_config_file->get_value("MARGIN_EXPAND_REMAP_BBOX",marginExpand,10);
     recon_config_file->get_value("SPARSE_RATIO",sparseRatio,0.2);
 
     recon_config_file->get_value("VRIP_RES",vrip_res,0.033);
@@ -487,7 +495,7 @@ static bool parse_args( int argc, char *argv[ ] )
     no_simp=argp.read( "--nosimp" );
 
     no_split=argp.read( "--nosplit" );
-
+    no_init=argp.read("--noinit");
     argp.read("--maxaltcutoff",max_alt_cutoff);
 
     use_cached=(!argp.read("--no_cached" ));
@@ -846,9 +854,20 @@ int main( int argc, char *argv[ ] )
     }
     if(externalMode){
         char cptmp[8192];
-        sprintf(cptmp,"cp %s/surface.ply %s/%s/vis-total.ply",cwd,cwd,diced_dir);
+        int iter=5;
+        sprintf(cptmp,"%s/vcgapps/bin/mergeMesh %s/surface.ply -smooth %d -out %s/%s/full-total.ply",
+                basepath.c_str(),cwd,iter,cwd,diced_dir);
+        sprintf(cptmp,"%s/vcgapps/bin/mergeMesh %s/surface.ply -smooth %d -out %s/%s/full-total.ply",basepath.c_str(),cwd,iter,cwd,diced_dir);
+
         //printf("%s\n",cptmp);
-        sysres=system(cptmp);
+        if(!no_init)
+         sysres=system(cptmp);
+        double err_stop=1e-14*0.5;
+        sprintf(cptmp,"%s/vcgapps/bin/tridecimator %s/%s/full-total.ply %s/%s/vis-total.ply 1 -q0.3 -P -e%g",basepath.c_str(),cwd,diced_dir,cwd,diced_dir,err_stop);
+       // printf("%s\n",cptmp);
+        if(!no_init)
+         sysres=system(cptmp);
+
         FILE *firstpt=diced_fopen("firstpt.txt","w");
         if(!firstpt ){
             fprintf(stderr,"Cannot open mesh/firstpt.txt\n");
@@ -1381,10 +1400,9 @@ int main( int argc, char *argv[ ] )
 
     CellDataT<Stereo_Pose_Data>::type vol;
     int minSplits=-1;
-    double faceChunkTarget=200000;
     int faceGuess = externalMode ? numberFacesAll : ((rangeX * rangeY) / (vrip_res*vrip_res));
     printf("%d %f\n",faceGuess,largerAxis);
-    double targetSide=(faceChunkTarget/faceGuess)*largerAxis;
+    double targetSide=((double)faceChunkTarget/faceGuess)*largerAxis;
     printf("Target Side %f\n",targetSide);
   //  double cubicRootSide =pow(targetVolume ,1./3.);
     printf("side %f\n", largerAxis);
@@ -1392,7 +1410,8 @@ int main( int argc, char *argv[ ] )
     //double targetVolume=10.0;
   //  split_boundsOctree<Stereo_Pose_Data>(bounds,tasks , targetSide,minSplits,vol);
     split_boundsOctree<Stereo_Pose_Data>(bounds,tasks , faceChunkTarget,minSplits,vol);
-
+    std::vector<osg::BoundingBox> kd_bboxes;
+    double avgEdgeLen=0.0;
     if(!externalMode){
         {
             WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks,plymc_expand_by);
@@ -1432,23 +1451,34 @@ int main( int argc, char *argv[ ] )
         if(!no_vrip)
             sysres=system("python plymc.py");
         char tmpfn[8096];
+        {
+            osg::ref_ptr<osg::Node> model;
+            ply::VertexData vertexData;
 
-        foreach_vol(cur,vol){
-            sprintf(tmpfn,"%s/clean_%04d%04d%04d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
-            osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpfn);
-            osg::Drawable *drawable = NULL;
-            if(model.valid())
-                drawable = model->asGeode()->getDrawable(0);
-            if(!drawable){
-                fprintf(stderr,"Failed to load model %s PLYMC failed on one chunk\nThere may be holes in it!!!!!!\nAlso check if this is part of ascent or decent where lots of Z variation occurs.\n",tmpfn);
-                //sleep(1);
-                continue;
+            foreach_vol(cur,vol){
+                sprintf(tmpfn,"%s/clean_%04d%04d%04d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+                // osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpfn);
+                model= vertexData.readPlyFile(tmpfn);
+
+                osg::Drawable *drawable = NULL;
+                if(model.valid())
+                    drawable = model->asGeode()->getDrawable(0);
+                if(!drawable){
+                    fprintf(stderr,"Failed to load model %s PLYMC failed on one chunk\nThere may be holes in it!!!!!!\nAlso check if this is part of ascent or decent where lots of Z variation occurs.\n",tmpfn);
+                    //sleep(1);
+                    continue;
+                    exit(-1);
+                }
+                osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+                // numberFacesAll+=geom->getPrimitiveSet(0)->getNumPrimitives();
+                //stereo_poses_tmp.push_back(vrip_cells[i]);
+
+
+            }
+            if(!getFaceDivision(model,avgEdgeLen,numberFacesAll,texRemapChunk,kd_bboxes)){
+                fprintf(stderr,"Can't load divisions\n");
                 exit(-1);
             }
-            osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
-            numberFacesAll+=geom->getPrimitiveSet(0)->getNumPrimitives();
-            //stereo_poses_tmp.push_back(vrip_cells[i]);
-
 
         }
 
@@ -1645,151 +1675,22 @@ int main( int argc, char *argv[ ] )
             _file2.write(reinterpret_cast<char*>(&(rotM(i,j))),sizeof(double));
     _file2.close();
 
-    std::vector<picture_cell> cells;
-
+    if(externalMode){
+        osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(string(diced_dir)+"/vis-total.ply");
+        if(!getFaceDivision(model,avgEdgeLen,numberFacesAll,texRemapChunk,kd_bboxes)){
+            fprintf(stderr,"Can't load divisions\n");
+            exit(-1);
+        }
+    }
     char tmp4[1024];
     cout << "Assign splits...\n";
     int validF=0;
-    //#pragma omp parallel num_threads(num_threads)
-    {
-        //#pragma omp parallel for shared(_tileRows, _tileColumns)
-        for(int row=0; row< _tileRows; row++){
-            for(int col=0; col<_tileColumns; col++){
-                printf("\r%04d/%04d %04d/%04d",row,_tileRows,col,_tileColumns);
-                fflush(stdout);
-                osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
-                double left,right,bottom,top;//,znear,zfar;
-                osg::Matrix m;//=(view*proj*offsetMatrix);
-                //m.getOrtho(left,right,bottom,top,znear,zfar);
-                double chunkSize=(totalbb.xMax()-totalbb.xMin())/(double)_tileRows;
-                double widthEnd=totalbb.xMin()+((row+1)*chunkSize);
-                double widthStart=totalbb.xMin()+((row)*chunkSize);
-                double heightEnd=totalbb.yMin()+((col+1)*chunkSize);
-                double heightStart=totalbb.yMin()+((col)*chunkSize);
-                m(0,0)=0;
-                m(0,1)=2/chunkSize;
-                m(0,2)=0;
-                m(0,3)= (-(heightEnd+heightStart)/(heightEnd-heightStart));
-
-
-                m(1,0)=2/chunkSize;
-                m(1,1)=0;
-                m(1,2)=0;
-                m(1,3)= (-(widthEnd+widthStart)/(widthEnd-widthStart));
-
-
-                m(2,0)=0;
-                m(2,1)=0;
-                m(2,2)=2;
-                m(2,3)=-1;
-
-                m(3,0)=0;
-                m(3,1)=0;
-                m(3,2)=0;
-                m(3,3)= 1;
-                // cout <<m<<endl;
-                left=widthStart;
-                right=widthEnd;
-                top=heightEnd;
-                bottom=heightStart;
-                double margin= externalMode ? targetSide *0.2 :vrip_res*10;
-                osg::BoundingBox thisCellBbox;
-                thisCellBbox.expandBy(osg::Vec3(left,bottom,bs.center()[2]-bs.radius()));
-                thisCellBbox.expandBy(osg::Vec3(right,top,bs.center()[2]+bs.radius()));
-                osg::BoundingBox thisCellBboxMargin(left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
-
-                //  printf("ANNNN %f %f %f %f %f %f\n",left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
-                osg::BoundingBox bboxMarginUnRot;
-                bboxMarginUnRot.expandBy(thisCellBboxMargin._min*osg::Matrix::inverse(rotM));
-                bboxMarginUnRot.expandBy(thisCellBboxMargin._max*osg::Matrix::inverse(rotM));
-                //  std::cout<< thisCellBbox._max-thisCellBbox._min <<"\n";
-                //  std::cout<< "A"<<thisCellBboxMargin._min << " "<< thisCellBboxMargin._max<<"\n\n";
-                bool hitcell=false;
-
-                foreach_vol(cur,vol){
-                    if(cur->poses.size() == 0){
-                        continue;
-                    }
-
-                    if(bboxMarginUnRot.intersects(cur->bounds.bbox)){
-                        hitcell=true;
-                        break;
-                    }
-                }
-                /*
-                for(int k=0; k< (int)vrip_cells.size(); k++){
-                  //  cout << "FFF "<<vrip_cells[k].bounds.bbox._min << " "<<vrip_cells[k].bounds.bbox._max<<endl;
-                  //  cout << "GLOBAL "<<totalbb._min << " "<<totalbb._max<<endl;
-
-                    if(bboxMarginUnRot.intersects(vrip_cells[k].bounds.bbox)){
-                        hitcell=true;
-                        break;
-                    }
-                }*/
-                if(!hitcell)
-                    continue;
-                //osg::Timer_t st= osg::Timer::instance()->tick();
-
-                picture_cell cell;
-                cell.bbox=thisCellBbox;
-                cell.bboxMargin=thisCellBboxMargin;
-                cell.bboxUnRot.expandBy(cell.bbox._min*osg::Matrix::inverse(rotM));
-                cell.bboxUnRot.expandBy(cell.bbox._max*osg::Matrix::inverse(rotM));
-
-                cell.bboxMarginUnRot=bboxMarginUnRot;
-
-                cell.row=row;
-                cell.col=col;
-                cell.m=m;
-                sprintf(tmp4,"%s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive",diced_dir,row,col,vpblod);
-                cell.name=string(tmp4);
-                sprintf(tmp4,"%s/tex-clipped-diced-r_%04d_c_%04d.mat",diced_dir,row,col);
-                validF++;
-                std::fstream _file(tmp4,std::ios::binary|std::ios::out);
-                for(int k=0; k<4; k++)
-                    for(int l=0; l<4; l++){
-                        //Transpose matrix
-                        _file.write(reinterpret_cast<char*>(&(cell.m(l,k))),sizeof(double));
-                    }
-                _file.close();
-                // double timeForReadPixels = osg::Timer::instance()->delta_s(st, osg::Timer::instance()->tick());
-                //printf("Time %f\n",timeForReadPixels);
-                for(int i=0; i < (int)tasks.size(); i++){
-                    if(!tasks[i].valid || !tasks[i].bbox.valid())
-                        continue;
-
-                    osg::Vec3 m1=osg::Vec3(tasks[i].bbox_margin.xMin(),tasks[i].bbox_margin.yMin(),tasks[i].bbox_margin.zMin())*rotM;
-                    osg::Vec3 m2=osg::Vec3(tasks[i].bbox_margin.xMax(),tasks[i].bbox_margin.yMax(),tasks[i].bbox_margin.zMax())*rotM;
-
-                    osg::BoundingBox imgBox;
-                    imgBox.expandBy(m1);
-                    imgBox.expandBy(m2);
-                    //  cout << m1 << " "<< m2 << " bounds \n";
-                    // cout <<thisCellBbox._min << " "<< thisCellBbox._max<<" bbox\n";
-                    if(thisCellBbox.intersects(imgBox)){
-                        //printf("ast\n");
-                        cell.images.push_back(i);
-                    }
-                    if(thisCellBboxMargin.intersects(imgBox)){
-                        //printf("!!!ast\n");
-
-                        cell.imagesMargin.push_back(i);
-                    }
-                }
-                //#pragma omp critical
-                {
-                    cells.push_back(cell);
-                }
-
-            }
-        }
-
-    }
-    printf("\nValid %d\n",validF);
-    if(validF ==0){
-        fprintf(stderr,"No valid cells\n");
-        exit(-1);
-    }
+    std::vector<picture_cell> cells;
+   // splitPictureCellsEven(cells,vol,_tileRows,_tileColumns,totalbb,vpblod,tasks);
+    double margin =avgEdgeLen*marginExpand;
+    splitPictureCells(cells,vol,margin,kd_bboxes,totalbb,vpblod,tasks);
+    _tileRows=kd_bboxes.size();
+    _tileColumns=1;
 
     if(!externalMode){
 
@@ -1984,10 +1885,12 @@ int main( int argc, char *argv[ ] )
             {
                 osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
                 osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(string(diced_dir)+"/totalrot.ive");
+
                 if(!model.valid()){
                     fprintf(stderr,"Failed to load mesh-diced/totalrot.ive can't split bailing!\n");
                     exit(-1);
                 }
+
 
                 /*    OpenThreads::Mutex mutex;
 
@@ -2077,8 +1980,8 @@ int main( int argc, char *argv[ ] )
                     }
                 }
             }
+            formatBar("Split",startTick,totalTodoCount,totalTodoCount);
         }
-        formatBar("Split",startTick,totalTodoCount,totalTodoCount);
     }
     //  fprintf(reFP,"%f %f %f %f clipped-diced-%08d-lod%d.ive\n",vrip_cells[i].bounds.min_x,vrip_cells[i].bounds.max_x,vrip_cells[i].bounds.min_y,vrip_cells[i].bounds.max_y,i,vpblod);
 #ifdef USE_PROCESSES_SPLIT
@@ -2450,7 +2353,9 @@ int main( int argc, char *argv[ ] )
                     break;
                 case REMAP_FLAT_SIZE:
                     teximgcmd = "vcgapps/bin/renderReorderAA";
-                    sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+                    sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
+
+//                    sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
                     sprintf(tmpfn," --remap %s/param-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ",
                             diced_dir,
                             cells[i].row,cells[i].col,

@@ -288,5 +288,8 @@ class WriteBoundTP : private WriteTP{
 
 };
 osg::Matrix  osgTranspose( const osg::Matrix& src );
+void splitPictureCellsEven( std::vector<picture_cell> &cells,    const CellDataT<Stereo_Pose_Data>::type &vol,int _tileRows,int _tileColumns,osg::BoundingBox totalbb,int vpblod,const std::vector<Stereo_Pose_Data> &tasks);
+void splitPictureCells( std::vector<picture_cell> &cells,    const CellDataT<Stereo_Pose_Data>::type &vol,double margin,std::vector<osg::BoundingBox> &kd_bboxes,osg::BoundingBox totalbb,int vpblod,const std::vector<Stereo_Pose_Data> &tasks);
+bool getFaceDivision(osg::ref_ptr<osg::Node> &model,double &avgLen,int &numberFacesAll,unsigned int targetNumTrianglesPerLeaf,   std::vector<osg::BoundingBox> &kd_bboxes);
 
 #endif // SPLITBOUNDS_H

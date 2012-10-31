@@ -414,7 +414,11 @@ int main(int ac, char *av[]) {
     arguments.read("--jpeg-quality",jpegQuality);
     bool useDisk=arguments.read("--outofcore");
     arguments.read("--scale",scaleTex);
-
+    string imgdir;
+    if(!arguments.read("--imagedir",imgdir)){
+        fprintf(stderr,"Need image dir\n");
+        exit(-1);
+    }
     osg::Vec2 vtSize(-1,-1);
     arguments.read("--vt",vtSize.x(),vtSize.y());
 
@@ -434,11 +438,11 @@ int main(int ac, char *av[]) {
         return -1;
     }
 
-   /* std::string matfile;
+    std::string matfile;
     if(!arguments.read("--mat",matfile)){
         fprintf(stderr,"Fail mat file\n");
         return -1;
-    }*/
+    }
     mat4x  viewProjReadA ;
     mat4x  viewProjRemapped ;
    /* osg::Vec2 positions[4];
@@ -447,7 +451,7 @@ int main(int ac, char *av[]) {
 */
     SamplerData sData;
     osg::Matrixd viewProjRead;
-  /*  std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
+    std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
     if(!_file.good()){
         fprintf(stderr,"Can't load %s\n",matfile.c_str());
         exit(-1);
@@ -457,7 +461,6 @@ int main(int ac, char *av[]) {
             _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
             viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
         }
-    mat4x *viewProjMats[2]={&viewProjRemapped,&viewProjReadA};*/
     mat4x *viewProjMats[2]={&viewProjRemapped,&viewProjReadA};
     sprintf(tmp,"%s/image_r%04d_c%04d_rs%04d_cs%04d",diced_img_dir,row,col,_tileRows,_tileColumns);
 
@@ -471,25 +474,43 @@ int main(int ac, char *av[]) {
     bool blending = arguments.read("--blend");
     if(blending)
         printf("Blending Enabled\n");
-    string remappedName;
+    /*string remappedName;
     if(!arguments.read("--remap",remappedName)){
         fprintf(stderr,"-remap must be passed with model name\n");
         exit(-1);
+    }*/
+    osg::Vec3 minV,maxV;
+
+    if(!arguments.read("--bbox",minV.x(),minV.y(),minV.z(),maxV.x() ,maxV.y() ,maxV.z() )){
+        fprintf(stderr,"Must pass two meshes and bbox arg must be base dir\n");
+        arguments.getApplicationUsage()->write(std::cerr,osg::ApplicationUsage::COMMAND_LINE_OPTION);
+        exit(-1);
     }
+
+
+    osg::BoundingBox bb(minV,maxV);
     map<int,imgData> imageList;
     enum{ORIG_MAPPING,REMAPPED_MAPPING};
+    string imgFile;
+    if(!arguments.read("--imglist",imgFile)){
+        fprintf(stderr,"Can't get -imglist\n");
+        exit(-1);
+    }
+    for(int pos=1;pos<arguments.argc();++pos)
+    {
+        if (!arguments.isOption(pos))
+        {
+            // not an option so assume string is a filename.
+            string fname= arguments[pos];
+            cout <<"Loading:"<< fname <<endl;
+            tmpmodel= vertexData[ORIG_MAPPING].readPlyFile(fname.c_str(),false,&bb, DUP);
 
-    tmpmodel= vertexData[ORIG_MAPPING].readPlyFile(av[1],false,NULL,DUP,true);
-    if(!tmpmodel.valid()){
-        fprintf(stderr,"can't load %s\n",av[1]);
-        exit(-1);
+
+        }else
+            break;
     }
-    tmpmodel= vertexData[REMAPPED_MAPPING].readPlyFile(remappedName.c_str(),false,NULL,DUP,true);
-    if(!tmpmodel.valid()){
-        fprintf(stderr,"can't load %s\n",remappedName.c_str());
-        exit(-1);
-    }
-    readFile(av[2],imageList);
+
+    readFile(imgFile,imageList);
     if(tmpmodel.valid()){
         osg::Timer_t t=osg::Timer::instance()->tick();
 
@@ -768,7 +789,7 @@ int main(int ac, char *av[]) {
             fprintf(stderr,"No tex coords\n");
             exit(-1);
         }
-        osg::Vec2Array *newTCArr=new osg::Vec2Array;
+       /* osg::Vec2Array *newTCArr=new osg::Vec2Array;
         newTCArr->resize(vertexData[REMAPPED_MAPPING]._vertices->size());
         for(int i=0; i< (int)vertexData[REMAPPED_MAPPING]._triangles->size(); i++){
             osg::Vec2  tc2=osg::Vec2(vertexData[REMAPPED_MAPPING]._vertices->at(vertexData[REMAPPED_MAPPING]._triangles->at(i))[0],
@@ -796,7 +817,7 @@ int main(int ac, char *av[]) {
 
             osgDB::writeNodeFile(*tmpGeode,"hawk.ive");
             printf("%d %d %d\n",vertexData[ORIG_MAPPING]._triangles->size(),vertexData[ORIG_MAPPING]._vertices->size(),vertexData[REMAPPED_MAPPING]._vertices->size());
-        }
+        }*/
        /* {
 
             std::vector<int>imageId;
@@ -843,7 +864,7 @@ int main(int ac, char *av[]) {
         if(blending){
             map<int,vector<ply::tri_t> >::iterator itr=vertexData[ORIG_MAPPING]._img2tri.begin();
             while((!sizeI || sizeI->surface==NULL) && itr!=vertexData[ORIG_MAPPING]._img2tri.end()){
-                string tmp=string(string(av[3])+string("/")+imageList[itr->first].filename);
+                string tmp=string(string(imgdir)+string("/")+imageList[itr->first].filename);
 
                 sizeI=new TextureMipMap(tmp);
                 itr++;
@@ -888,11 +909,11 @@ int main(int ac, char *av[]) {
                     int aliasing;
                     osg::Matrix *proj;
                     int mapping;
-                    if(i == 0){
+                    /*if(i == 0){
                         mapping=REMAPPED_MAPPING;
                         aliasing=RASTER_ANTIALIAS;
                         proj=NULL;
-                    }else{
+                    }else*/{
                         aliasing=RASTER_NOAA;
                         mapping=ORIG_MAPPING;
                         proj=&viewProjRead;
@@ -922,7 +943,7 @@ int main(int ac, char *av[]) {
             total_tri_count+=itr->second.size();
 
         for( map<int,vector<ply::tri_t> >::iterator itr=vertexData[ORIG_MAPPING]._img2tri.begin(); itr!=vertexData[ORIG_MAPPING]._img2tri.end(); itr++){
-            string tmp=string(string(av[3])+string("/")+imageList[itr->first].filename);
+            string tmp=string(string(imgdir)+string("/")+imageList[itr->first].filename);
 
             Texture *texture=NULL;
             TextureMipMap *textureMipMap=NULL;
@@ -956,7 +977,7 @@ int main(int ac, char *av[]) {
                 viSamp.doublecountmapPtr =&(doublecountmap[i]);
                 viSamp.texture =textureMipMap;
                 for(int t=0; t< (int)itr->second.size(); t++){
-                    if(i==1){
+                    if(i==0){
                         if(count % 300 == 0){
                             printf("\r %02d%%: %d/%d",(int)(100.0*(count/(float)total_tri_count)),count,total_tri_count);
                             fflush(stdout);
@@ -969,11 +990,11 @@ int main(int ac, char *av[]) {
                     int aliasing;
                     osg::Matrix *proj;
                     int mapping;
-                    if(i == 0){
+                   /* if(i == 0){
                         mapping=REMAPPED_MAPPING;
                         aliasing=RASTER_ANTIALIAS;
                         proj=NULL;
-                    }else{
+                    }else*/{
                         aliasing=RASTER_NOAA;
                         mapping=ORIG_MAPPING;
                         proj=&viewProjRead;
@@ -1019,7 +1040,7 @@ int main(int ac, char *av[]) {
 
         start=osg::Timer::instance()->tick();
         //(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str()
-        IMAGE *tmpI=im_open("tmp","p");
+       /* IMAGE *tmpI=im_open("tmp","p");
         im_extract_bands(outputImage[0],tmpI,0,3);
         dilateEdge(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str(),1);
         /*if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str())){
@@ -1027,12 +1048,11 @@ int main(int ac, char *av[]) {
             cerr << im_error_buffer()<<endl;
             im_close(tmpI);
             exit(-1);
-        }*/
+        }*//*
         im_close(tmpI);
-        if(passesFlatRemap > 1){
-
-            tmpI=im_open("tmp","p");
-            im_extract_bands(outputImage[1],tmpI,0,3);
+        if(passesFlatRemap > 1){*/
+               IMAGE * tmpI=im_open("tmp","p");
+            im_extract_bands(outputImage[0],tmpI,0,3);
 
             if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str())){
                 fprintf(stderr,"Failed to write\n");
@@ -1061,7 +1081,7 @@ int main(int ac, char *av[]) {
         }
 */
             IMAGE *tmpI2=im_open("tmp2","p");
-            im_extract_bands(outputImage[1],tmpI2,3,1);
+            im_extract_bands(outputImage[0],tmpI2,3,1);
             if( im_vips2ppm(tmpI2,(osgDB::getNameLessExtension(imageName)+"-tmp-mask.pgm").c_str())){
                 fprintf(stderr,"Failed to write\n");
                 cerr << im_error_buffer()<<endl;
@@ -1069,21 +1089,20 @@ int main(int ac, char *av[]) {
                 exit(-1);
             }
             im_close(tmpI2);
-        }
+       // }
         elapsed=osg::Timer::instance()->delta_s(start,osg::Timer::instance()->tick());
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;
         process_mem_usage(vm, rss);
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
         for(int i=0; i<passesFlatRemap; i++)
             im_close(outputImage[i]);
-        if(passesFlatRemap > 1){
-            if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,basepath,"ppm",jpegQuality)){
-                /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
+        if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,basepath,"ppm",jpegQuality)){
+            /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
                 perror( "Error deleting file" );
             else
                 puts( "File successfully deleted" );*/
-            }
         }
+
 
 
         if(useDisk){

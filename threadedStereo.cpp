@@ -86,6 +86,7 @@ static bool storeTexMesh=false;
 static bool do_novelty=false;
 static double dense_scale;
 static bool no_tex=false;
+static bool no_run_remap=false;
 static bool no_tc=false;
 static bool no_vttex=false;
 static bool use_debug_shader=false;
@@ -106,7 +107,7 @@ static string stereo_calib_file_name;
 static bool no_simp=true;
 static bool no_split=false;
 static bool no_init=false;
-
+static bool no_mosaic=false;
 static ofstream file_name_list;
 static string base_dir;
 static bool no_depth=false;
@@ -283,7 +284,10 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--poses",contents_file_name );
 
     if(argp.read("--noremap"))
-        reparamTex=false;
+        no_run_remap=false;
+
+        if(argp.read("--flat"))
+            reparamTex=false;
 
     apply_aug =argp.read("--apply_aug");
     argp.read("--gpu",gpunum);
@@ -496,6 +500,7 @@ static bool parse_args( int argc, char *argv[ ] )
 
     no_split=argp.read( "--nosplit" );
     no_init=argp.read("--noinit");
+    no_mosaic=argp.read("--nomosaic");
     argp.read("--maxaltcutoff",max_alt_cutoff);
 
     use_cached=(!argp.read("--no_cached" ));
@@ -1469,7 +1474,7 @@ int main( int argc, char *argv[ ] )
                     continue;
                     exit(-1);
                 }
-                osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+                //osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
                 // numberFacesAll+=geom->getPrimitiveSet(0)->getNumPrimitives();
                 //stereo_poses_tmp.push_back(vrip_cells[i]);
 
@@ -1682,13 +1687,17 @@ int main( int argc, char *argv[ ] )
             exit(-1);
         }
     }
-    char tmp4[1024];
+    //char tmp4[1024];
     cout << "Assign splits...\n";
-    int validF=0;
+    //int validF=0;
     std::vector<picture_cell> cells;
+    std::vector<picture_cell> cells_mosaic;
+
    // splitPictureCellsEven(cells,vol,_tileRows,_tileColumns,totalbb,vpblod,tasks);
     double margin =avgEdgeLen*marginExpand;
     splitPictureCells(cells,vol,margin,kd_bboxes,totalbb,vpblod,tasks);
+    splitPictureCellsEven(cells_mosaic,vol,_tileRows,_tileColumns,totalbb,vpblod,tasks);
+
     _tileRows=kd_bboxes.size();
     _tileColumns=1;
 
@@ -2247,25 +2256,13 @@ int main( int argc, char *argv[ ] )
 
     std::vector<string> cfiles;
 
-    FILE *texcmds_fp[4]={fopen(texcmds_fn[REMAP].c_str(),"w"),fopen(texcmds_fn[DEPTH].c_str(),"w"),fopen(texcmds_fn[FLAT].c_str(),"w"),fopen(texcmds_fn[REMAP_FLAT_SIZE].c_str(),"w")};
-    FILE *vartexcmds_fp=fopen(vartexcmds_fn.c_str(),"w");
+{
+        FILE *texcmds_fp[4]={fopen(texcmds_fn[REMAP].c_str(),"w"),fopen(texcmds_fn[DEPTH].c_str(),"w"),fopen(texcmds_fn[FLAT].c_str(),"w"),fopen(texcmds_fn[REMAP_FLAT_SIZE].c_str(),"w")};
 
     FILE *FP2=fopen("image_areas.txt","w");
     FILE *reFP=fopen("rebbox.txt","w");
 
-    FILE *FP3=fopen("createmosaic.sh","w");
-    FILE *FP4=fopen("createmosaicvar.sh","w");
-    FILE *FP5=fopen("createmosaicdepth.sh","w");
 
-    // FILE *FP5=fopen("createrangeimg.sh","w");
-
-    if(!FP2 || ! FP3){
-        fprintf(stderr,"Can't open mosaic scripts\n");
-        exit(-1);
-    }
-    fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaic.vrt ");
-    fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaicvar.vrt ");
-    fprintf(FP5,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  depth.vrt ");
 
     fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
             totalbb.zMax(),_tileColumns,_tileRows);
@@ -2367,7 +2364,7 @@ int main( int argc, char *argv[ ] )
                 if(useVirtTex)
                     sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
 
-                fprintf(texcmds_fp[z],";%s/%s  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
+                fprintf(texcmds_fp[z],";%s/%s  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s  --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
                         basepath.c_str(),
                         teximgcmd.c_str(),
                         diced_dir,
@@ -2376,8 +2373,6 @@ int main( int argc, char *argv[ ] )
                         diced_dir,
                         cells[i].row,cells[i].col,
                         (base_dir+imgbase).c_str(),
-                        diced_dir,
-                        cells[i].row,cells[i].col,
                         rx,ry,rz,
                         cells[i].row,cells[i].col,_tileRows,_tileColumns,
                         latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
@@ -2397,7 +2392,7 @@ int main( int argc, char *argv[ ] )
                         latOrigin , longOrigin,jpegQuality,i,ajustedGLImageSizeX,ajustedGLImageSizeY);*/
             }
         }
-        if(!hw_image){
+     /*   if(!hw_image){
 
             fprintf(vartexcmds_fp,"%s/meshvar  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
                     basepath.c_str(),
@@ -2415,33 +2410,21 @@ int main( int argc, char *argv[ ] )
                     latOrigin , longOrigin);
             if(writeout_meshvar)
                 fprintf(vartexcmds_fp," --write");
-        }
-        char tmp_ds[1024];
+        }*/
+       /* char tmp_ds[1024];
         tmp_ds[0]='\0';
         int num_samples=6;
         for(int p=0; p<num_samples; p++)
             sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2.0,p+1));
-        if(jpegQuality<0){
+     */
             for(int z=0; z<NUM_TEX_FILES; z++){
-                if(z != REMAP)
-                    fprintf(texcmds_fp[z],";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
-                else
-                    fprintf(texcmds_fp[z],"\n");
-            }
-            fprintf(vartexcmds_fp,";gdaladdo -r average mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
-
-        }else{
-            for(int z=0; z<NUM_TEX_FILES; z++){
-                if(z != REMAP)
-                    fprintf(texcmds_fp[z],";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
-                else
                     fprintf(texcmds_fp[z],"\n");
 
-            }
-            fprintf(vartexcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells[i].row,cells[i].col,_tileRows,_tileColumns, tmp_ds);
+
+
         }
 
-        tmp_ds[0]='\0';
+        //tmp_ds[0]='\0';
         //  num_samples=0;
         int levels=useVirtTex ? 0:(int)ceil(log( max( ajustedGLImageSizeX, ajustedGLImageSizeY ))/log(2.0) );
         string remap_ext= reparamTex ? "remap" : "tmp";
@@ -2452,12 +2435,12 @@ int main( int argc, char *argv[ ] )
                 remap_ext.c_str(),diced_img_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns,levels);
 
 
-
+/*
         fprintf(FP3,"image_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
         fprintf(FP5,"depth_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
 
         fprintf(FP4,"var_r%04d_c%04d_rs%04d_cs%04d.tif ",cells[i].row,cells[i].col,_tileRows,_tileColumns);
-
+*/
         // fprintf(texcmds_fp,"\n");
 
         /* fprintf(texcmds_fp,"osgconv -O \"compressed=1 noTexturesInIVEFile=1 noLoadExternalReferenceFiles=1 useOriginalExternalReferences=1\" mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d-uncomp.ive  mesh-diced/tex-clipped-diced-r_%04d_c_%04d-lod%d.ive\n",
@@ -2468,6 +2451,189 @@ int main( int argc, char *argv[ ] )
                             ,vpblod);*/
 
     }
+    fclose(reFP);
+    fclose(FP2);
+    for(int z=0; z<NUM_TEX_FILES; z++)
+        fclose(texcmds_fp[z]);
+}
+    enum {MOSAIC,DEPTHMOSAIC,NUM_MOSAIC_FILES};
+    FILE *vartexcmds_fp=fopen(vartexcmds_fn.c_str(),"w");
+
+    string mosaiccmmds_fn[]={string(diced_dir)+"/mosaiccmds",string(diced_dir)+"/depthmosaiccmds"};
+
+    FILE *mosaiccmds_fp[2]={fopen(mosaiccmmds_fn[MOSAIC].c_str(),"w"),fopen(mosaiccmmds_fn[DEPTHMOSAIC].c_str(),"w")};
+
+    FILE *FP3=fopen("createmosaic.sh","w");
+    FILE *FP4=fopen("createmosaicvar.sh","w");
+    FILE *FP5=fopen("createmosaicdepth.sh","w");
+
+    // FILE *FP5=fopen("createrangeimg.sh","w");
+
+    if( ! FP3){
+        fprintf(stderr,"Can't open mosaic scripts\n");
+        exit(-1);
+    }
+    fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaic.vrt ");
+    fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaicvar.vrt ");
+    fprintf(FP5,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  depth.vrt ");
+    for(int i=0; i <(int)cells_mosaic.size(); i++){
+        char tmpfn[1024];
+        string mesh_list;
+
+        for(int j=0; j <(int)cells.size(); j++){
+            if(cells_mosaic[i].bbox.intersects(cells.at(j).bbox)){
+
+                sprintf(tmpfn,"%s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ", diced_dir,cells[j].row,cells[j].col,vpblod);
+                mesh_list+=tmpfn;
+            }
+        }
+            if( cells_mosaic[i].images.size() == 0 || mesh_list.size() == 0){
+                continue;
+            }
+/*
+        if( cells_mosaic[i].images.size() == 0 || mesh_list.size() == 0){
+
+            fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells_mosaic[i].bbox.xMin(),cells_mosaic[i].bbox.xMax(),cells_mosaic[i].bbox.yMin(),cells_mosaic[i].bbox.yMax(),cells_mosaic[i].bbox.zMin(),
+                    cells_mosaic[i].bbox.zMax(),cells_mosaic[i].col,cells_mosaic[i].row,"null");
+            fprintf(FP2,"-1 -1 -1 -1 null null 0\n");
+            ///if( !osgDB::fileExists(tmpfn) && !osgDB::fileExists(string(tmpfn)+".empty")){
+               // printf("Failed cell images %d exists %d empty %d %s\n",(int)cells_mosaic[i].images.size(),osgDB::fileExists(tmpfn),
+                //       checkIsEmptyPly(tmpfn),tmpfn);
+               // exit(-1);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            exit(-1);
+
+           // }
+            continue;
+
+
+
+        }
+*/
+      /*  fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells_mosaic[i].bbox.xMin(),cells_mosaic[i].bbox.xMax(),cells_mosaic[i].bbox.yMin(),cells_mosaic[i].bbox.yMax(),cells_mosaic[i].bbox.zMin(),
+                cells_mosaic[i].bbox.zMax(),cells_mosaic[i].col,cells_mosaic[i].row,cells_mosaic[i].name.c_str());
+
+        string remap_mesh_ext=reparamTex ? "remap-" : "flat-";
+
+        sprintf(tmpfn2,"%s/%stex-clipped-diced-r_%04d_c_%04d-lod%d.ply", diced_dir,remap_mesh_ext.c_str(),cells_mosaic[i].row,cells_mosaic[i].col,vpblod);
+        cfiles.push_back(tmpfn2);
+
+*/
+
+        for(int z=0; z<NUM_MOSAIC_FILES; z++){
+            fprintf(mosaiccmds_fp[z],"cd %s",
+                    cwd);
+
+
+                string teximgcmd;
+                ostringstream sizestr;
+                //char tmpfn[1024];
+                switch(z){
+                case MOSAIC:
+                    teximgcmd = "vcgapps/bin/renderSquareAA";
+                    sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+
+                    break;
+                case DEPTHMOSAIC:
+                    teximgcmd="depthmap";
+                    sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+
+                    break;
+
+          /*      case REMAP_FLAT_SIZE:
+                    teximgcmd = "vcgapps/bin/renderReorderAA";
+                    sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
+
+//                    sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+                    sprintf(tmpfn," --remap %s/param-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ",
+                            diced_dir,
+                            cells[i].row,cells[i].col,
+                            vpblod);
+                    sizestr << tmpfn;
+                    break;*/
+                }
+
+                if(useVirtTex)
+                    sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
+
+                fprintf(mosaiccmds_fp[z],";%s/%s  %s  --bbox %.16f %.16f %.16f %.16f %.16f %.16f --imglist %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --imagedir %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
+                        basepath.c_str(),
+                        teximgcmd.c_str(),
+                        mesh_list.c_str(),
+                        cells_mosaic[i].bbox.xMin(),
+                        cells_mosaic[i].bbox.yMin(),
+                        cells_mosaic[i].bbox.zMin(),
+                        cells_mosaic[i].bbox.xMax(),
+                        cells_mosaic[i].bbox.yMax(),
+                        cells_mosaic[i].bbox.zMax(),
+                        diced_dir,
+                        cells_mosaic[i].row,cells_mosaic[i].col,
+                        (base_dir+imgbase).c_str(),
+                        diced_dir,
+                        cells_mosaic[i].row,cells_mosaic[i].col,
+                        rx,ry,rz,
+                        cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns,
+                        latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
+                if(blending)
+                    fprintf(mosaiccmds_fp[z]," --blend");
+
+
+
+        }
+        if(!hw_image){
+
+            fprintf(vartexcmds_fp,"%s/meshvar  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
+                    basepath.c_str(),
+                    diced_dir,
+                    cells_mosaic[i].row,cells_mosaic[i].col,
+                    vpblod,
+                    diced_dir,
+                    cells_mosaic[i].row,cells_mosaic[i].col,
+                    (base_dir+imgbase).c_str(),
+                    diced_dir,
+                    cells_mosaic[i].row,cells_mosaic[i].col,
+                    rx,ry,rz,
+                    ajustedGLImageSizeX,ajustedGLImageSizeY,
+                    cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns,
+                    latOrigin , longOrigin);
+            if(writeout_meshvar)
+                fprintf(vartexcmds_fp," --write");
+        }
+        char tmp_ds[1024];
+        tmp_ds[0]='\0';
+        int num_samples=6;
+        for(int p=0; p<num_samples; p++)
+            sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2.0,p+1));
+        if(jpegQuality<0){
+            for(int z=0; z<NUM_MOSAIC_FILES; z++){
+                    fprintf(mosaiccmds_fp[z],";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
+               // else
+                   // fprintf(texcmds_fp[z],"\n");
+            }
+            fprintf(vartexcmds_fp,";gdaladdo -r average mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
+
+        }else{
+            for(int z=0; z<NUM_MOSAIC_FILES; z++){
+               // if(z != REMAP)
+                    fprintf(mosaiccmds_fp[z],";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
+                //else
+                   // fprintf(texcmds_fp[z],"\n");
+
+            }
+            fprintf(vartexcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
+        }
+
+        tmp_ds[0]='\0';
+        //  num_samples=0;
+        //int levels=useVirtTex ? 0:(int)ceil(log( max( ajustedGLImageSizeX, ajustedGLImageSizeY ))/log(2.0) );
+        string remap_ext= reparamTex ? "remap" : "tmp";
+        /*fprintf(FP2,"%d %d %d %d %s/image_r%04d_c%04d_rs%04d_cs%04d-%s.ppm %s/image_r%04d_c%04d_rs%04d_cs%04d.ppm %d\n",(totalX-(ajustedGLImageSizeX*(cells_mosaic[i].row+1))),
+                (totalX-ajustedGLImageSizeX*(cells_mosaic[i].row)),ajustedGLImageSizeY*cells_mosaic[i].col,ajustedGLImageSizeY*(cells_mosaic[i].col+1),diced_img_dir,cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns,
+                remap_ext.c_str(),diced_img_dir,cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns,levels);
+*/
+        fprintf(FP3,"image_r%04d_c%04d_rs%04d_cs%04d.tif ",cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns);
+        fprintf(FP5,"depth_r%04d_c%04d_rs%04d_cs%04d.tif ",cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns);
+        fprintf(FP4,"var_r%04d_c%04d_rs%04d_cs%04d.tif ",cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns);
+
+    }
     string cwdmeshdiced=cwd;
 
     std::string extraCheckCmd;
@@ -2475,11 +2641,10 @@ int main( int argc, char *argv[ ] )
 
     //  extraCheckCmd= reparamTex ? createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4): "";
     extraCheckCmd=  createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
-    for(int z=0; z<NUM_TEX_FILES; z++)
-        fclose(texcmds_fp[z]);
+    for(int z=0; z<NUM_MOSAIC_FILES; z++)
+        fclose(mosaiccmds_fp[z]);
     fclose(vartexcmds_fp);
-    fclose(reFP);
-    fclose(FP2);
+
     fclose(calcTexFn_fp);
     fprintf(FP3,"\n#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16 32\n");
     fchmod(fileno(FP3),0777);
@@ -2497,7 +2662,32 @@ int main( int argc, char *argv[ ] )
             stereo_calib_file_name.c_str()
             );*/
     fclose(FP4);
+    vector<std::string> precmd;
+    std::ostringstream p1;
+    if(hw_image){
+        p1 <<basepath << "/createSem";
+        precmd.push_back(p1.str());
+    }
+    string mosaiccmd[4]={"mosaic.py","depthmosaic.py"};
+    string mosiacnameCmd[4]={"Mosaic","Depth"};
 
+    for(int z=0; z<NUM_MOSAIC_FILES; z++){
+
+        vector<std::string> postcmdv;
+
+
+        std::ostringstream p;
+
+        if(z == MOSAIC){
+            p<< "cd " << cwd <<";sh createmosaic.sh";
+        }else if(z== DEPTHMOSAIC){
+            p<< "cd " << cwd <<";sh createmosaicdepth.sh";
+        }
+
+        postcmdv.push_back(p.str());
+
+        shellcm.write_generic(mosaiccmd[z],mosaiccmmds_fn[z],mosiacnameCmd[z],&(precmd),&(postcmdv),num_threads, "");
+    }
     /*FILE *dBFP=fopen("diced-bounds.txt","w");
 
     fprintf(dBFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d total\n",totalbb_unrot.xMin(),totalbb_unrot.xMax(),totalbb_unrot.yMin(),totalbb_unrot.yMax(),totalbb_unrot.zMin(),
@@ -2597,26 +2787,21 @@ int main( int argc, char *argv[ ] )
             sysres=system("python rangeimg.py");
 
     }
-    std::ostringstream p1;
 
-    vector<std::string> precmd;
-    if(hw_image){
-        p1 <<basepath << "/createSem";
-        precmd.push_back(p1.str());
-    }
+
 
 
     string vartexcmd="vartex.py";
 
-    string texcmd[4]={"tex.py","depth.py","flat.py","hybrid.py"};
-    string nameCmd[4]={"Remap","Depth","Render","Render"};
+    string texcmd[4]={"tex.py","depth.py","flat.py","render.py"};
+    string nameCmd[4]={"Remap","Depth","RenderFlat","Render3D"};
 
     for(int z=0; z<NUM_TEX_FILES; z++){
 
         vector<std::string> postcmdv;
 
 
-        std::ostringstream p;
+       /* std::ostringstream p;
 
         if(z == REMAP_FLAT_SIZE || z == FLAT){
             p<< "cd " << cwd <<";sh createmosaic.sh";
@@ -2625,7 +2810,7 @@ int main( int argc, char *argv[ ] )
         }
 
         postcmdv.push_back(p.str());
-
+*/
         shellcm.write_generic(texcmd[z],texcmds_fn[z],nameCmd[z],&(precmd),&(postcmdv),num_threads,(z == REMAP_FLAT_SIZE || z == FLAT) ? extraCheckCmd : "");
     }
     vector<std::string> varpostcmdv;
@@ -2642,14 +2827,16 @@ int main( int argc, char *argv[ ] )
 
     shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),std::max(num_threads/2,1));
     if(reparamTex){
-    if(!no_tex)
+    if(!no_run_remap)
         sysres=system(string("python "+texcmd[REMAP]).c_str());
     if(!no_tex)
         sysres=system(string("python "+texcmd[REMAP_FLAT_SIZE]).c_str());
-    }else{
+    }/*else{
         if(!no_tex)
             sysres=system(string("python "+texcmd[FLAT]).c_str());
-    }
+    }*/
+    if(!no_mosaic)
+        sysres=system(string("python "+mosaiccmd[MOSAIC]).c_str());
 
     if(var_tex)
         sysres=system("python vartex.py");

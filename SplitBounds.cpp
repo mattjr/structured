@@ -291,8 +291,8 @@ void splitPictureCells( std::vector<picture_cell> &cells,    const CellDataT<Ste
 
             double widthEnd=kd_bboxes[i].xMax();
             double widthStart=kd_bboxes[i].xMin();
-            double heightEnd=kd_bboxes[i].yMin();
-            double heightStart=kd_bboxes[i].yMax();
+            double heightEnd=kd_bboxes[i].yMax();
+            double heightStart=kd_bboxes[i].yMin();
             m(0,0)=0;
             m(0,1)=2/chunkSizeX;
             m(0,2)=0;
@@ -378,13 +378,13 @@ void splitPictureCells( std::vector<picture_cell> &cells,    const CellDataT<Ste
             cell.name=string(tmp4);
             sprintf(tmp4,"%s/tex-clipped-diced-r_%04d_c_%04d.mat",diced_dir,row,col);
             validF++;
-            std::fstream _file(tmp4,std::ios::binary|std::ios::out);
+           /* std::fstream _file(tmp4,std::ios::binary|std::ios::out);
             for(int k=0; k<4; k++)
                 for(int l=0; l<4; l++){
                     //Transpose matrix
                     _file.write(reinterpret_cast<char*>(&(cell.m(l,k))),sizeof(double));
                 }
-            _file.close();
+            _file.close();*/
             // double timeForReadPixels = osg::Timer::instance()->delta_s(st, osg::Timer::instance()->tick());
             //printf("Time %f\n",timeForReadPixels);
             for(int l=0; l < (int)tasks.size(); l++){
@@ -551,6 +551,7 @@ void splitPictureCellsEven( std::vector<picture_cell> &cells,const CellDataT<Ste
                     osg::BoundingBox imgBox;
                     imgBox.expandBy(m1);
                     imgBox.expandBy(m2);
+                    //cout << "SAD "<<tasks[i].left_name.c_str() <<  "\n";
                     //  cout << m1 << " "<< m2 << " bounds \n";
                     // cout <<thisCellBbox._min << " "<< thisCellBbox._max<<" bbox\n";
                     if(thisCellBbox.intersects(imgBox)){
@@ -567,6 +568,26 @@ void splitPictureCellsEven( std::vector<picture_cell> &cells,const CellDataT<Ste
                 {
                     cells.push_back(cell);
                 }
+                char tp[1024];
+                sprintf(tp,"%s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",diced_dir,cell.row,cell.col);
+
+                FILE *bboxfp=fopen(tp,"w");
+
+                for(int k=0; k < (int)cell.imagesMargin.size(); k++){
+                    const Stereo_Pose_Data *pose=(&tasks[cell.imagesMargin[k]]);
+                    if(pose && pose->valid){
+                        fprintf(bboxfp, "%d %s " ,pose->id,pose->file_name.c_str());
+                        save_bbox_frame(pose->bbox,bboxfp);
+                        osg::Matrix texmat=osgTranspose(pose->mat);
+                        texmat=osg::Matrix::inverse(texmat);
+                        for(int f=0; f < 4; f++)
+                            for(int n=0; n < 4; n++)
+                                fprintf(bboxfp," %lf",texmat(f,n));
+                        fprintf(bboxfp,"\n");
+                    }
+
+                }
+                fclose(bboxfp);
 
             }
         }

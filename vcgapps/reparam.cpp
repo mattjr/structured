@@ -329,7 +329,7 @@ int main(int ac, char *av[]) {
         return -1;
     }
 
-    std::string matfile;
+    /*std::string matfile;
     if(!arguments.read("--mat",matfile)){
         fprintf(stderr,"Fail mat file\n");
         return -1;
@@ -339,7 +339,7 @@ int main(int ac, char *av[]) {
     /* osg::Vec2 positions[4];
     osg::Vec3 normals[4];
     osg::Vec2 texcoords[4];
-*/
+
     osg::Matrixd viewProjRead;
     std::fstream _file(matfile.c_str(),std::ios::binary|std::ios::in);
     if(!_file.good()){
@@ -351,7 +351,7 @@ int main(int ac, char *av[]) {
             _file.read(reinterpret_cast<char*>(&(viewProjRead(i,j))),sizeof(double));
             viewProjReadA.elem[j][i]=fixed16_t(viewProjRead(i,j));
         }
-    mat4x *viewProjMats[2]={&viewProjRemapped,&viewProjReadA};
+    mat4x *viewProjMats[2]={&viewProjRemapped,&viewProjReadA};*/
     sprintf(tmp,"%s/image_r%04d_c%04d_rs%04d_cs%04d",diced_img_dir,row,col,_tileRows,_tileColumns);
 
     imageName=string(tmp)+".v";
@@ -492,11 +492,11 @@ int main(int ac, char *av[]) {
     geom->setTexCoordArray(0,newTCArr);
     // set up the texture state.
 
-    for(int i=0; i<4; i++)
+  /*  for(int i=0; i<4; i++)
         for(int j=0; j<4; j++){
             viewProjRemapped.elem[j][i]=fixed16_t(viewproj(i,j));
         }
-
+*/
 
     for(int i=0; i< (int)vertexData._triangles->size(); i++){
         osg::Vec2  tc2=osg::Vec2(newVerts->at(vertexData._triangles->at(i))[0],

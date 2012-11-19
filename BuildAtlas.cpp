@@ -589,7 +589,7 @@ void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cel
                             continue;
                         atlas->atlasSourceMatrix[i]=v;
                         dynamic_cast<VipsAtlasBuilder*>(atlas)->addSource( v);
-
+                        //cout << used_img->filename()<<endl;
                     //mosaics_added++;
 
 
@@ -603,7 +603,10 @@ void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cel
             exit(-1);
         }
 
-
+        if(atlas->_atlasList.front()->_sourceList.size() != mosaic_cells.size()){
+            fprintf(stderr,"Atlas sizes different %d %d\n",(int)atlas->_atlasList.front()->_sourceList.size() ,(int)mosaic_cells.size());
+            exit(-1);
+        }
 
 }
 

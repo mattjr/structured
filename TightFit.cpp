@@ -1,6 +1,7 @@
 #include "TightFit.h"
 #include <stdio.h>
 #include <algorithm>
+#include <iostream>
 TightFitAtlasBuilder::TightFitAtlasBuilder(int mosaic_cell_num){
         atlasSourceMatrix.resize(mosaic_cell_num,NULL);
         offsetMats.resize(mosaic_cell_num);
@@ -40,10 +41,21 @@ osg::Matrix VipsAtlasBuilder::getTextureMatrix(vips::VImage *img)
 
 
     VSource* source =   getSource(img);
-    if(!source || !source->_atlas || !source->_image || !source->_atlas->_image){
-        fprintf(stderr,"Failed to get source 0x%lx 0x%lx 0x%lx 0x%lx %d %d\n",(long int)source,(long int)source->_atlas, (long int)source->_image ,
-                (long int)source->_atlas->_image,source->_atlas->_width,source->_atlas->_height);
+    if(!source )    {
+
+        fprintf(stderr,"no source\n");
         return osg::Matrix();
+
+    }
+    if( source->_atlas == NULL || !source->_image){
+        fprintf(stderr,"Failed to get source or atlas 0x%lx 0x%lx 0x%lx %s\n",(long int)source,(long int)source->_atlas, (long int)source->_image,img->filename());
+        return osg::Matrix();
+    }
+    if(!source->_atlas->_image){
+    fprintf(stderr,"Failed to get atlas image 0x%lx 0x%lx 0x%lx 0x%lx %d %d\n",(long int)source,(long int)source->_atlas, (long int)source->_image ,
+            (long int)source->_atlas->_image,source->_atlas->_width,source->_atlas->_height);
+    return osg::Matrix();
+
     }
     typedef osg::Matrix::value_type Float;
     return osg::Matrix::scale(Float(source->width)/Float(source->_atlas->_width), Float(source->height)/Float(source->_atlas->_height), 1.0)*
@@ -115,7 +127,7 @@ void VipsAtlasBuilder::buildAtlas()
                     ((*aitr)->_image->BandFmt() == (*sitr)->_image->BandFmt() &&
                     (*aitr)->_image->Bands() == (*sitr)->_image->Bands()))*/
                 {
-//                    osg::notify(osg::INFO)<<"checking source "<<source->_image->filename()<<" to see it it'll fit in atlas "<<aitr->get()<<std::endl;
+                    osg::notify(osg::INFO)<<"checking source "<<source->_image->filename()<<" to see it it'll fit in atlas "<<aitr->get()<<std::endl;
                     VAtlas::FitsIn fitsIn = (*aitr)->doesSourceFit(source);
                     if (fitsIn == VAtlas::FITS_IN_CURRENT_ROW)
                     {
@@ -149,6 +161,11 @@ void VipsAtlasBuilder::buildAtlas()
 
                 _atlasList.push_back(atlas);
                 if (!source->_atlas) atlas->addSource(source);
+            }
+        }else{
+            fprintf(stderr, "Not suitable for atlas\n");
+            if(source->_image){
+                fprintf(stderr,"Image name %s\n",source->_image->filename());
             }
         }
     }
@@ -195,7 +212,7 @@ void VipsAtlasBuilder::completeRow(unsigned int indexAtlas)
     VAtlasList::iterator aitr = _atlasList.begin() + indexAtlas;
     //SourceList::iterator sitr = _sourceList.begin() + indexSource;
     VAtlas * atlas = aitr->get();
-    if(atlas->_indexFirstOfRow < atlas->_sourceList.size())
+    if(atlas->_indexFirstOfRow < (int) atlas->_sourceList.size())
     {
         //Try to fill the row with smaller images.
         int x_max = atlas->_width  - _margin;
@@ -455,8 +472,8 @@ bool VipsAtlasBuilder::VSource::suitableForAtlas(int maximumAtlasWidth, int maxi
     if (!_image) return false;
 
     // size too big?
-    if (_image->Xsize()*2 > maximumAtlasWidth) return false;
-    if (_image->Ysize()*2 > maximumAtlasHeight) return false;
+    if (_image->Xsize() > maximumAtlasWidth) return false;
+    if (_image->Ysize() > maximumAtlasHeight) return false;
 
     return true;
 }

@@ -76,7 +76,7 @@ int main( int argc, char **argv )
             if(mosaic_id >= 0 && mosaic_id< tf_atlas->atlasSourceMatrix.size()){
                 if(tf_atlas->atlasSourceMatrix[mosaic_id] != NULL){
                     //     printf("%d\n", atlas->atlasMatrix[mosaic_id]);
-
+                   //  cout << ((vips::VImage*)tf_atlas->atlasSourceMatrix[mosaic_id])->filename() <<endl;
                     // cout<< "orig: "<< tc<<endl;
                     // cout <<"offset "<<atlas->offsetMats[mosaic_id]<<endl;
                     osg::Matrix matrix2;

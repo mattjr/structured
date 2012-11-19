@@ -383,6 +383,7 @@ int main(int ac, char *av[]) {
         exit(-1);
     }
 
+
     std::vector<osg::Vec3Array *>   texCoord;
     texCoord.push_back(vertexData._texCoord[0]);
     texCoord.push_back(vertexData._texCoord[1]);
@@ -406,6 +407,18 @@ int main(int ac, char *av[]) {
         int sizeImage=  calcOptimalImageSize(srcsize,newVerts,tri,texCoord,scaleTex,(int)vtSize.x(),(int)vtSize.y());
         sizeX=sizeY=sizeImage;
     }
+    osg::Vec2 minTC,maxTC;
+    getBoundsForClippingReparam(newVerts,minTC,maxTC);
+    cout << minTC << " -- "<< maxTC<<endl;
+    osg::Vec2 rangeTC((maxTC-minTC).x(),(maxTC-minTC).y());
+    osg::Vec2 adjSize=osg::Vec2(sizeX *rangeTC.x(),sizeY*rangeTC.y());
+    char tmp11[8192];
+    sprintf(tmp11,"%s/image_r%04d_c%04d_rs%04d_cs%04d-remap.size.txt",diced_dir,row,col,_tileRows,_tileColumns);
+    FILE *fp=fopen(tmp11,"w");
+    fprintf(fp,"%f %f %f %f %d %d %d %d\n",minTC.x(),minTC.y(),maxTC.x(),maxTC.y(),sizeX,sizeY,(int)adjSize.x(),(int)adjSize.y());
+    fclose(fp);
+    printf("Org %dx%d\n",sizeX,sizeY);
+    printf("Adj %dx%d\n",(int)adjSize.x(),(int)adjSize.y());
 #if VIPS_MINOR_VERSION > 24
 
     vips_init(av[0]);

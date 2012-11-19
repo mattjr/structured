@@ -548,7 +548,7 @@ int main(int ac, char *av[]) {
         osg::DrawElementsUInt *tri=vertexData[ORIG_MAPPING]._triangles.get();
 
         int sizeX,sizeY;
-        if(!arguments.read("--size",sizeX,sizeY)){
+       /* if(!arguments.read("--size",sizeX,sizeY)){
             osg::Vec2 srcsize;
             if(!arguments.read("--srcsize",srcsize.x(),srcsize.y())){
                 fprintf(stderr,"need to have a src image size\n");
@@ -556,7 +556,23 @@ int main(int ac, char *av[]) {
             }
             int sizeImage=  calcOptimalImageSize(srcsize,vertexData[REMAPPED_MAPPING]._vertices,tri,texCoord,scaleTex,(int)vtSize.x(),(int)vtSize.y());
             sizeX=sizeY=sizeImage;
+        }*/
+        int origX,origY;
+        char tmp11[8192];
+        osg::Vec2 minTC,maxTC;
+
+        sprintf(tmp11,"%s/image_r%04d_c%04d_rs%04d_cs%04d-remap.size.txt",diced_dir,row,col,_tileRows,_tileColumns);
+        FILE *fp=fopen(tmp11,"r");
+        if(!fp){
+            fprintf(stderr,"Can't open %s\n",tmp11);
+            exit(-1);
         }
+        int ret=fscanf(fp,"%f %f %f %f %d %d %d %d\n",&(minTC.x()),&(minTC.y()),&(maxTC.x()),&(maxTC.y()),&origX,&origY,&sizeX,&sizeY);
+        if(ret != 8){
+            fprintf(stderr,"Can't parse %s\n",tmp11);
+            exit(-1);
+        }
+        fclose(fp);
 #if VIPS_MINOR_VERSION > 24
 
         vips_init(av[0]);

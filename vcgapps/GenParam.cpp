@@ -114,6 +114,76 @@ std::vector<double> pixelSides;
 
 return potSize;
 }
+int median(vector<double> &v)
+{
+    size_t n = v.size() / 2;
+    nth_element(v.begin(), v.begin()+n, v.end());
+    return v[n];
+}
+int calcOptimalImageSizeRaw(const osg::Vec2 imageSize,osg::Vec3Array *verts,osg::DrawElementsUInt* triangles,std::vector<osg::Vec3Array *>   &texCoord,double scaletex,int VTtileSize,int border){
+    if(!verts || !triangles || texCoord.size()==0)
+    return -1;
+std::vector<double> pixelSides;
+    for (int i = 0 ; i < (int)triangles->size()-2 ; i+=3) {
+        int idx=i/3;
+        int in0=triangles->at(i+0);
+        int in1=triangles->at(i+1);
+        int in2=triangles->at(i+2);
+        if(in0 <0 || in1< 0 || in2<0||in0>=verts->size()|| in1>=verts->size()|| in2>=verts->size())
+            continue;
+        const osg::Vec3 &v1=verts->at(in0);
+            const osg::Vec3 &v2=verts->at(in1);
+            const osg::Vec3 &v3=verts->at(in2);
+            double tex_area=((v2-v1)^(v3-v2)).length()/2.0;
+           // cout << tex_area <<endl;
+           // cout << v1 << " " << v2 << " "<<v3<<endl;
+            double max_orig_tex_area=0.0;
+            for(int c=0; c <4; c++){
+             //   printf("Bla %f %f\n",texCoord[c]->at(idx).x(),texCoord[c]->at(idx).y());
+              osg::Vec3 tc1=  osg::Vec3(texCoord[c]->at(in0).x()*imageSize.x(),texCoord[c]->at(in0).y()*imageSize.y(),0);
+              osg::Vec3 tc2=   osg::Vec3(texCoord[c]->at(in1).x()*imageSize.x(),texCoord[c]->at(in1).y()*imageSize.y(),0);
+              osg::Vec3 tc3=   osg::Vec3(texCoord[c]->at(in2).x()*imageSize.x(),texCoord[c]->at(in2).y()*imageSize.y(),0);
+//              cout <<tc1 <<" " <<tc2<< " "<<tc3<<endl;
+              if(tc1.x() < 0 || tc1.y() < 0 ||tc2.x() < 0 || tc2.y() < 0||tc3.x() < 0 || tc3.y() < 0)
+                  continue;
+             double orig_tex_area=((tc2-tc1)^(tc3-tc2)).length()/2.0;
+            // cout <<orig_tex_area<<endl;
+             if(orig_tex_area>max_orig_tex_area)
+                 max_orig_tex_area=orig_tex_area;
+            }
+            if(max_orig_tex_area ==0.0)
+                continue;
+           // printf("%f %f\n",max_orig_tex_area,8192*tex_area);
+            double sidePixels=sqrt(max_orig_tex_area/tex_area);
+            //cout <<sidePixels<<endl;
+            if(isfinite(sidePixels) && sidePixels >0 && sidePixels < pow(2.0f,17))
+                pixelSides.push_back(sidePixels);
+    }
+    if(pixelSides.size() ==0)
+        return 1;
+    double avgEl=0.0;
+    for(int i=0;i < pixelSides.size(); i++){
+       avgEl+= (pixelSides[i]/pixelSides.size());
+    }
+    double medianVal=median(pixelSides);
+   // long double sum = std::accumulate( pixelSides.begin(), pixelSides.begin()+pixelSides.size(), 0 ) ;
+
+//   double avgEl =sum/pixelSides.size();
+
+    //if(avgEl<0)
+  /* FILE*fp =fopen("tmp.txt","w");
+   for(int i=0;i < pixelSides.size(); i++)
+       fprintf(fp,"%f\n",pixelSides[i]);
+   fclose(fp);
+   {
+       for(int i=0;i < pixelSides.size(); i++)
+           printf("%f ",pixelSides[i]);
+                   printf("\n");
+       avgEl=maxEl/2.0;
+   }*/
+
+return medianVal;
+}
 
 namespace OGF {
 class AtlasValidator: public ParamValidator{
@@ -280,7 +350,35 @@ public:
 }
 using namespace std;
 
+void getBoundsForClippingReparam(osg::Vec3Array*coords, osg::Vec2 &minV, osg::Vec2 &maxV){
+    minV=osg::Vec2(FLT_MAX,FLT_MAX);
+    maxV=osg::Vec2(-FLT_MAX,-FLT_MAX);
 
+    for(int i=0; i< coords->size(); i++){
+        for(int j=0; j <2; j++){
+            if(!( coords->at(i)[j] >= 0.0 && coords->at(i)[j] <= 1.0))
+                continue;
+
+            if(coords->at(i)[j] < minV[j])
+                minV[j]=coords->at(i)[j];
+            if(coords->at(i)[j] > maxV[j])
+                maxV[j]=coords->at(i)[j];
+        }
+
+    }
+    osg::Vec2 rangeV((maxV-minV).x(),(maxV-minV).y());
+    for(int i=0; i< coords->size(); i++){
+        for(int j=0; j <2; j++){
+            if(!( coords->at(i)[j] >= 0.0 && coords->at(i)[j] <= 1.0))
+                continue;
+
+            coords->at(i)[j]=(coords->at(i)[j]-minV[j])/rangeV[j];
+
+        }
+
+    }
+
+}
 
 osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::DrawElementsUInt> triangles){
     OGF::Map the_map ;

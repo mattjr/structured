@@ -265,7 +265,7 @@ void readFile(string fname,map<int,imgData> &imageList){
 
     std::ifstream m_fin(fname.c_str());
     if(!osgDB::fileExists(fname.c_str())||!m_fin.good() ){
-        fprintf(stderr,"Can't load %s\n",fname.c_str());
+        fprintf(stderr,"Can't  load imglst file %s\n",fname.c_str());
         exit(-1);
     }
     while(!m_fin.eof()){
@@ -276,6 +276,13 @@ void readFile(string fname,map<int,imgData> &imageList){
                 >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
                 >> cam.m(2,0) >>cam.m(2,1)>>cam.m(2,2) >>cam.m(2,3)
                 >> cam.m(3,0) >>cam.m(3,1)>>cam.m(3,2) >>cam.m(3,3)){
+            if(cam.filename.size() == 0 ){
+                fprintf(stderr,"Can't parse file bailing\n");
+                cerr << cam.id << " "<< cam.filename << " "<<low[0]<< " "<< low[1] << " " <<low[2]<<endl;
+                exit(-1);
+            }
+           //cerr << cam.id << " "<< cam.filename << " "<<low[0]<< " "<< low[1] << " " <<low[2]<<endl;
+
             cam.bbox.expandBy(low[0],low[1],low[2]);
             cam.bbox.expandBy(high[0],high[1],high[2]);
             imageList[cam.id]=cam;
@@ -864,6 +871,11 @@ int main(int ac, char *av[]) {
         if(blending){
             map<int,vector<ply::tri_t> >::iterator itr=vertexData[ORIG_MAPPING]._img2tri.begin();
             while((!sizeI || sizeI->surface==NULL) && itr!=vertexData[ORIG_MAPPING]._img2tri.end()){
+                if(imageList.count(itr->first) == 0){
+                    fprintf(stderr,"Can't get image for %d\n",itr->first);
+                     itr++;
+                     continue;
+                }
                 string tmp=string(string(imgdir)+string("/")+imageList[itr->first].filename);
 
                 sizeI=new TextureMipMap(tmp);
@@ -904,6 +916,10 @@ int main(int ac, char *av[]) {
 
 
             for( map<int,vector<ply::tri_t> >::iterator itr=vertexData[ORIG_MAPPING]._img2tri.begin(); itr!=vertexData[ORIG_MAPPING]._img2tri.end(); itr++){
+                if(imageList.count(itr->first) == 0){
+                    fprintf(stderr,"2Can't get image for %d\n",itr->first);
+                     continue;
+                }
                 for(int t=0; t< (int)itr->second.size(); t++){
                     osg::Vec3Array *use_vert= (i==0) ? verts : vertexData[ORIG_MAPPING]._vertices.get() ;
                     int aliasing;

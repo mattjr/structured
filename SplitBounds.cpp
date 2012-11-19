@@ -482,8 +482,8 @@ void splitPictureCellsEven( std::vector<picture_cell> &cells,const CellDataT<Ste
                 thisCellBbox.expandBy(osg::Vec3(left,bottom,bs.center()[2]-bs.radius()));
                 thisCellBbox.expandBy(osg::Vec3(right,top,bs.center()[2]+bs.radius()));
                 double margin= (thisCellBbox.xMax()-thisCellBbox.xMin())*0.2;
-
-                osg::BoundingBox thisCellBboxMargin(left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
+             //   cout << left << " "<<bottom <<  " "<<right<< " "<<top<<endl;
+                osg::BoundingBox thisCellBboxMargin(left-(margin),bottom-(margin),bs.center()[2]-bs.radius()-margin,right+(margin),top+(margin),bs.center()[2]+bs.radius()+margin);
 
                 //  printf("ANNNN %f %f %f %f %f %f\n",left-(margin),bottom-(margin),bs.center()[2]-bs.radius(),right+(margin),top+(margin),bs.center()[2]+bs.radius());
                 osg::BoundingBox bboxMarginUnRot;
@@ -569,7 +569,7 @@ void splitPictureCellsEven( std::vector<picture_cell> &cells,const CellDataT<Ste
                     cells.push_back(cell);
                 }
                 char tp[1024];
-                sprintf(tp,"%s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt",diced_dir,cell.row,cell.col);
+                sprintf(tp,"%s/even-bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d_rs%04d_cs%04d.ply.txt",diced_dir,cell.row,cell.col,_tileRows,_tileColumns);
 
                 FILE *bboxfp=fopen(tp,"w");
 

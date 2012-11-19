@@ -659,6 +659,7 @@ static int get_auv_image_name( const string  &contents_dir_name,
     name.pose[POSE_INDEX_PSI] = pose.pose_est[POSE_INDEX_PSI];
     name.left_name = pose.left_image_name;
     name.right_name = pose.right_image_name;
+    name.file_name=name.left_name;
     name.alt= pose.altitude;
     name.radius= pose.image_footprint_radius;
     name.overlap = pose.likely_overlap;
@@ -1698,8 +1699,8 @@ int main( int argc, char *argv[ ] )
     splitPictureCells(cells,vol,margin,kd_bboxes,totalbb,vpblod,tasks);
     splitPictureCellsEven(cells_mosaic,vol,_tileRows,_tileColumns,totalbb,vpblod,tasks);
 
-    _tileRows=kd_bboxes.size();
-    _tileColumns=1;
+   int  faketileRows=kd_bboxes.size();
+   int faketileColumns=1;
 
     if(!externalMode){
 
@@ -2236,7 +2237,7 @@ int main( int argc, char *argv[ ] )
     int ajustedGLImageSizeX=(int)reimageSize.x() - (!useVirtTex ?  0 : ((reimageSize.x()/VTtileSize)*2*tileBorder));
     int ajustedGLImageSizeY=(int)reimageSize.y() - (!useVirtTex ?  0 : ((reimageSize.y()/VTtileSize)*2*tileBorder));
     //char tmpsize[1024];
-    int totalX=ajustedGLImageSizeX*_tileRows;
+    int totalX=ajustedGLImageSizeX*faketileRows;
     //int totalY=ajustedGLImageSizeY*_tileColumns;
 
     /*if(!reparamTex){
@@ -2265,9 +2266,9 @@ int main( int argc, char *argv[ ] )
 
 
     fprintf(reFP,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d total\n",totalbb.xMin(),totalbb.xMax(),totalbb.yMin(),totalbb.yMax(),totalbb.zMin(),
-            totalbb.zMax(),_tileColumns,_tileRows);
+            totalbb.zMax(),faketileColumns,faketileRows);
 
-    fprintf(FP2,"0 %d 0 %d total total 0\n",ajustedGLImageSizeX*_tileRows,ajustedGLImageSizeY*_tileColumns);
+    fprintf(FP2,"0 %d 0 %d total total 0\n",ajustedGLImageSizeX*faketileRows,ajustedGLImageSizeY*faketileColumns);
 
     for(int i=0; i <(int)cells.size(); i++){
         char tmpfn[1024];
@@ -2324,7 +2325,7 @@ int main( int argc, char *argv[ ] )
                 if(use_debug_shader)
                     fprintf(texcmds_fp[z]," --debug-shader ");
                 if(!storeTexMesh)
-                    fprintf(texcmds_fp[z]," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,_tileRows,_tileColumns,ajustedGLImageSizeX,ajustedGLImageSizeY);
+                    fprintf(texcmds_fp[z]," --imageNode %d %d %d %d %d %d --untex",cells[i].row,cells[i].col,faketileRows,faketileColumns,ajustedGLImageSizeX,ajustedGLImageSizeY);
                 if(useAtlas)
                     fprintf(texcmds_fp[z]," --atlas");
             }
@@ -2432,7 +2433,7 @@ int main( int argc, char *argv[ ] )
         //      sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2,p+1));
         fprintf(FP2,"%d %d %d %d %s/image_r%04d_c%04d_rs%04d_cs%04d-%s.ppm %s/image_r%04d_c%04d_rs%04d_cs%04d.ppm %d\n",(totalX-(ajustedGLImageSizeX*(cells[i].row+1))),
                 (totalX-ajustedGLImageSizeX*(cells[i].row)),ajustedGLImageSizeY*cells[i].col,ajustedGLImageSizeY*(cells[i].col+1),diced_img_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns,
-                remap_ext.c_str(),diced_img_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns,levels);
+                remap_ext.c_str(),diced_img_dir,cells[i].row,cells[i].col,faketileRows,faketileColumns,levels);
 
 
 /*
@@ -2554,7 +2555,7 @@ int main( int argc, char *argv[ ] )
                 if(useVirtTex)
                     sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
 
-                fprintf(mosaiccmds_fp[z],";%s/%s  %s  --bbox %.16f %.16f %.16f %.16f %.16f %.16f --imglist %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --imagedir %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
+                fprintf(mosaiccmds_fp[z],";%s/%s  %s  --bbox %.16f %.16f %.16f %.16f %.16f %.16f --imglist %s/even-bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d_rs%04d_cs%04d.ply.txt --imagedir %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
                         basepath.c_str(),
                         teximgcmd.c_str(),
                         mesh_list.c_str(),
@@ -2565,7 +2566,7 @@ int main( int argc, char *argv[ ] )
                         cells_mosaic[i].bbox.yMax(),
                         cells_mosaic[i].bbox.zMax(),
                         diced_dir,
-                        cells_mosaic[i].row,cells_mosaic[i].col,
+                        cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns,
                         (base_dir+imgbase).c_str(),
                         diced_dir,
                         cells_mosaic[i].row,cells_mosaic[i].col,

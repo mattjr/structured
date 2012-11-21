@@ -1,47 +1,6 @@
 #include "GLImaging.h"
 #include "MemUtils.h"
-/* Hold our state in this.
- */
-std::string format_elapsed(double d)
-{
-    char buf[256] = {0};
 
-    if( d < 0.00000001 )
-    {
-        // show in ps with 4 digits
-        sprintf(buf, "%0.4f ps", d * 1000000000000.0);
-    }
-    else if( d < 0.00001 )
-    {
-        // show in ns
-        sprintf(buf, "%0.0f ns", d * 1000000000.0);
-    }
-    else if( d < 0.001 )
-    {
-        // show in us
-        sprintf(buf, "%0.0f us", d * 1000000.0);
-    }
-    else if( d < 0.1 )
-    {
-        // show in ms
-        sprintf(buf, "%0.0f ms", d * 1000.0);
-    }
-    else if( d <= 60.0 )
-    {
-        // show in seconds
-        sprintf(buf, "%0.2f s", d);
-    }
-    else if( d < 3600.0 )
-    {
-        // show in min:sec
-        sprintf(buf, "%01.0f:%02.2f", floor(d/60.0), fmod(d,60.0));
-    }
-    // show in h:min:sec
-    else
-        sprintf(buf, "%01.0f:%02.0f:%02.2f", floor(d/3600.0), floor(fmod(d,3600.0)/60.0), fmod(d,60.0));
-
-    return buf;
-}
 typedef struct {
     /* Args.
          */

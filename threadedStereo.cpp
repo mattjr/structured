@@ -1020,11 +1020,11 @@ int main( int argc, char *argv[ ] )
     shellcm.write_setup();
     if(!externalMode){
 
-
-
+double totalValidArea=0;
+bool externalStereo=false;
+        if(externalStereo){
         string stereocmd="stereo.py";
-#define EXTERNSTEREO 1
-#ifdef EXTERNSTEREO
+
         shellcm.write_generic(stereocmd,stereo_conf_name,"Stereo");
         if(run_stereo)
             sysres=system("./stereo.py");
@@ -1040,10 +1040,7 @@ int main( int argc, char *argv[ ] )
             }
         }
 
-        double totalValidArea=0;
-#endif
-
-#ifndef EXTERNSTEREO
+        }else{
 
         osg::Timer_t startTick= osg::Timer::instance()->tick();
         int totalTodoCount=tasks.size();
@@ -1067,7 +1064,7 @@ int main( int argc, char *argv[ ] )
                         tasks[i].valid=false;
                     else
                         tasks[i].valid=true;
-
+                    tasks[i].faces=stats.total_accepted_feat;
                     progCount++;
                     if(statusFlag == FAIL_FEAT_THRESH || statusFlag == FAIL_TRI_EDGE_THRESH){
                         delayMessageFrame=10;
@@ -1104,7 +1101,7 @@ int main( int argc, char *argv[ ] )
 
         }
         printf("\n");
-#endif
+}
 
         FILE *totalfp=diced_fopen("totalbbox.txt","w");
 

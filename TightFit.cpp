@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <algorithm>
 #include <iostream>
+using namespace std;
 TightFitAtlasBuilder::TightFitAtlasBuilder(int mosaic_cell_num){
         atlasSourceMatrix.resize(mosaic_cell_num,NULL);
         offsetMats.resize(mosaic_cell_num);
@@ -153,20 +154,27 @@ void VipsAtlasBuilder::buildAtlas()
 
             if (!addedSourceToAtlas)
             {
-                osg::notify(osg::INFO)<<"creating new Atlas for "<<source->_image->filename()<<std::endl;
+                //osg::notify(osg::INFO)
+                        cerr<<"creating new Atlas for "<<source->_image->filename()<<std::endl;
 
                 osg::ref_ptr<VAtlas> atlas = new VAtlas(_maximumAtlasWidth,_maximumAtlasHeight,_margin);
-              //  atlas->_height=_maximumAtlasHeight;
+                //  atlas->_height=_maximumAtlasHeight;
                 atlas->_width=_maximumAtlasWidth;
 
                 _atlasList.push_back(atlas);
                 if (!source->_atlas) atlas->addSource(source);
             }
         }else{
-            fprintf(stderr, "Not suitable for atlas\n");
-            if(source->_image){
-                fprintf(stderr,"Image name %s\n",source->_image->filename());
+            if(!source->suitableForAtlas(_maximumAtlasWidth,_maximumAtlasHeight)){
+                fprintf(stderr, "Not suitable for atlas\n");
+                if(source->_atlas)
+                    fprintf(stderr,"Atlas 0x%x: x:%d y%d h:%d w:%d Atlas Size %dx%d\n",(long int)source->_atlas,source->_x,source->_y, source->_image->Xsize(),source->_image->Ysize(),_maximumAtlasWidth,_maximumAtlasHeight);
+                if(source->_image){
+                    fprintf(stderr,"Image name %s\n",source->_image->filename());
+                }
             }
+
+
         }
     }
 
@@ -469,12 +477,22 @@ void VipsAtlasBuilder::VAtlas::copySources(bool dryRun)
 }
 bool VipsAtlasBuilder::VSource::suitableForAtlas(int maximumAtlasWidth, int maximumAtlasHeight)
 {
-    if (!_image) return false;
+    if (!_image) {
+        cerr<<"Image invalid\n";
+        return false;
+    }
 
     // size too big?
-    if (_image->Xsize() > maximumAtlasWidth) return false;
-    if (_image->Ysize() > maximumAtlasHeight) return false;
+    if (_image->Xsize() > maximumAtlasWidth) {
+        cerr<<"Image too large " << _image->Xsize() << "x" << _image->Ysize() << " max: " << maximumAtlasWidth<< "x" << maximumAtlasHeight<<endl;
 
+        return false;
+    }
+    if (_image->Ysize() > maximumAtlasHeight) {
+        cerr<<"Image too large " << _image->Xsize() << "x" << _image->Ysize() << " max: " << maximumAtlasWidth<< "x" << maximumAtlasHeight<<endl;
+
+        return false;
+    }
     return true;
 }
 

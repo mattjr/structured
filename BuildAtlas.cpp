@@ -603,7 +603,7 @@ void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cel
             exit(-1);
         }
 
-        if(atlas->_atlasList.front()->_sourceList.size() != mosaic_cells.size()){
+        if(atlas->_atlasList.front()->_sourceList.size() < mosaic_cells.size()){
             fprintf(stderr,"Atlas sizes different %d %d\n",(int)atlas->_atlasList.front()->_sourceList.size() ,(int)mosaic_cells.size());
             exit(-1);
         }
@@ -712,12 +712,17 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
 
     osg::Matrix toTex=viewProj*( osg::Matrix::translate(1.0,1.0,1.0)*osg::Matrix::scale(0.5*totalX,0.5*totalY,0.5f))*bottomLeftToTopLeft;
     vips::VImage *atlas_image;
+    //cout <<"Loading images...\n";
+    //im__print_all();
+
   //  if(!flat){
         generateAtlasAndTexCoordMappingFromExtentsVips(mosaic_cells,_atlas,flat);
         if(!_atlas || !_atlas->_atlasList.size() || !_atlas->_atlasList.front() ){
             fprintf(stderr,"Can't create atlas bailing\n");
             return NULL;
         }
+       // printf("Loaded images\n");
+        //im__print_all();
 
         VipsAtlasBuilder::VAtlas *vatlas=_atlas->_atlasList.front();
         atlas_image=vatlas->_image;

@@ -182,7 +182,7 @@ std::vector<double> pixelSides;
        avgEl=maxEl/2.0;
    }*/
 
-return medianVal;
+return medianVal*scaletex;
 }
 
 namespace OGF {

@@ -404,7 +404,7 @@ int main(int ac, char *av[]) {
             fprintf(stderr,"need to have a src image size\n");
             exit(-1);
         }
-        int sizeImage=  calcOptimalImageSize(srcsize,newVerts,tri,texCoord,scaleTex,(int)vtSize.x(),(int)vtSize.y());
+        int sizeImage=  calcOptimalImageSizeRaw(srcsize,newVerts,tri,texCoord,scaleTex,(int)vtSize.x(),(int)vtSize.y());
         sizeX=sizeY=sizeImage;
     }
     osg::Vec2 minTC,maxTC;

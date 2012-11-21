@@ -5,6 +5,7 @@
 #include <string>
 #include <vips/vips.h>
 #include "BuildAtlas.h"
+#include "MemUtils.h"
 using namespace std;
 int main( int argc, char **argv )
 {
@@ -50,8 +51,10 @@ int main( int argc, char **argv )
                          mosaic_cells,
                        outputPyr,scaleFactor,basedir,imgFile,flat,maxRes);
    osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
+   double totalTime=osg::Timer::instance()->delta_s(before_computeMax, after_computeMax);
+   printf("Total Time vipsAtlas %s\n",format_elapsed(totalTime).c_str());
 
-   cout << "Time for vipsAtlas = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
+   //cout << "Time for vipsAtlas = " << osg::Timer::instance()->delta_s(before_computeMax, after_computeMax) <<endl;
 
 
 }

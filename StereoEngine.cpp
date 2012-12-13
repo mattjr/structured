@@ -1874,7 +1874,7 @@ if(!mesh)
   str << minbb << " " << maxbb;
   mesh->write(tcmeshfilename,str.str().c_str());
   bbox = tbbox;
-
+  stats.total_faces=mesh->faces.size();
 #else
     osg::ref_ptr<osg::DrawElementsUInt> tris;
     osg::ref_ptr<osg::Vec3Array> points;

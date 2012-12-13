@@ -60,11 +60,12 @@ class MatchStats{
   unsigned int total_accepted_feat;
   unsigned int total_tracking_fail;
   unsigned int total_tri_fail;
-
   unsigned int total_epi_fail;
+  unsigned int total_faces;
+
   MatchStats(void) : total_init_feat(0),total_matched_feat(0),
       total_accepted_feat(0),total_tracking_fail(0),total_tri_fail(0),
-      total_epi_fail(0)
+      total_epi_fail(0),total_faces(0)
   { }
 };
 #endif

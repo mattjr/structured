@@ -356,6 +356,7 @@ ADD_EXECUTABLE(sparseJoin sparseJoin.cpp)
 ADD_EXECUTABLE(vipsVTAtlas vipsVTAtlas.cpp)
 ADD_EXECUTABLE(atlasmesh atlasmesh.cpp)
 ADD_EXECUTABLE( borderClip borderClip.cpp  )
+ADD_EXECUTABLE( dumpPCD dumpPCD.cpp  )
 
 ADD_EXECUTABLE(genOverlappingPoses genOverlappingPoses.cpp)
 
@@ -381,6 +382,7 @@ TARGET_LINK_LIBRARIES( vertCheck ts spindex )
 TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC  ${OGF_LIBS})
 TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC  ${OGF_LIBS})
 TARGET_LINK_LIBRARIES( borderClip ts spindex )
+TARGET_LINK_LIBRARIES( dumpPCD vips vipsCC ts z)
 
 TARGET_LINK_LIBRARIES( dicedImage vips vipsCC ts z)
 TARGET_LINK_LIBRARIES( sparseJoin vips vipsCC ts z)

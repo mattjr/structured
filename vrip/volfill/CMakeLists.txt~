@@ -1,3 +1,0 @@
-file(GLOB SRCS *.cpp)
-add_target(volfill ${SRCS})
-target_link_libraries(${OPENGL_LIBRARY})

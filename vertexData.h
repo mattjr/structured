@@ -50,6 +50,7 @@ namespace ply
         void useInvertedFaces() { _invertFaces = true; }
         osg::ref_ptr<osg::Vec4Array>   _texIds;
         std::vector<osg::ref_ptr<osg::Vec3Array> >   _texCoord;
+        void calcNorms( osg::Vec3Array *norms );
 
     private:
         // Function which reads all the vertices and colors if color info is
@@ -65,7 +66,7 @@ namespace ply
         // otherwise per triangle means per face
     protected:
         void _calculateNormals( const bool vertexNormals = true );
-        
+
         bool        _invertFaces;
         bool qual;
         osg::ref_ptr<osg::Geode>   _geode;

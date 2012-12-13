@@ -764,7 +764,50 @@ void VertexData::_calculateNormals( const bool vertexNormals )
         MESHINFO << wrongNormals << " faces had no valid normal." << endl;
 #endif
 }
+/*  Calculate the face or vertex normals of the current vertex data.  */
+void VertexData::calcNorms(osg::Vec3Array *norms )
+{
 
+    if(!norms)
+        return;
+
+    norms->clear();
+    // initialize all normals to zero
+    for( size_t i = 0; i < _vertices->size(); ++i )
+    {
+        norms->push_back( osg::Vec3( 0, 0, 0 ) );
+    }
+
+
+
+    for( size_t i = 0; i < ((_triangles->size()));  i += 3 )
+    {
+        // iterate over all triangles and add their normals to adjacent vertices
+        Normal  triangleNormal;
+        unsigned int i0, i1, i2;
+        i0 = (*_triangles)[i+0];
+        i1 = (*_triangles)[i+1];
+        i2 = (*_triangles)[i+2];
+        triangleNormal.normal((*_vertices)[i0],
+                              (*_vertices)[i1],
+                              (*_vertices)[i2] );
+
+
+
+            (*norms)[i0] += triangleNormal.triNormal;
+            (*norms)[i1] += triangleNormal.triNormal;
+            (*norms)[i2] += triangleNormal.triNormal;
+
+
+    }
+
+    // normalize all the normals
+
+        for( size_t i = 0; i < _normals->size(); ++i )
+            (*norms)[i].normalize();
+
+
+}
 bool checkIsEmptyPly(const char *filename){
     int     nPlyElems;
     char**  elemNames;

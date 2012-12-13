@@ -3,6 +3,9 @@
 #include "ShellCmd.h"
 #include <osg/KdTree>
 #include <osgDB/ReadFile>
+#include <osgDB/FileNameUtils>
+extern const char *thrpool;
+extern const char *serfile;
 using namespace std;
 int count_vol(const CellDataT<Stereo_Pose_Data>::type &container) {
     CellDataT<Stereo_Pose_Data>::type::iterator var;
@@ -23,6 +26,131 @@ osg::Matrix  osgTranspose( const osg::Matrix& src )
         for( int j = 0; j < 4; j++ )
             dest(i,j) = src(j,i);
     return dest;
+}
+
+WriteBoundVRIP::WriteBoundVRIP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy):WriteTP(res,fname,basepath,cwd),_expandBy(expandBy){
+    cmdfp =fopen(fname.c_str(),"w");
+    if(!cmdfp){
+        fprintf(stderr,"Can't create cmd file");
+        exit(-1);
+    }
+
+
+}
+std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol){
+    vector<string> allmeshes;
+    stringstream cmdpost;
+    double smallCCPer=0.2;
+
+    foreach_vol(cur,vol){
+        char tmp[2048];
+        if(cur->poses.size() == 0)
+            continue;
+        sprintf(tmp,"clean-clipped-diced-%08d_%08d_%08d.ply",
+                cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+        allmeshes.push_back(tmp);//string(" ")+tmp+string(" "));
+    }
+    char tmp[1024];
+    sprintf(tmp, "%s/tmp-total.txt",diced_dir);
+    FILE *fp=fopen(tmp,"w");
+    fprintf(fp,"tmp-total.ply %f 1\n",_res);
+    fclose(fp);
+
+    cmdpost <<"cd "<<_cwd<<"/"<<diced_dir<< ";"<< _basepath << "/vrip/bin/plymerge ";
+    stringstream output;
+    output << " > tmp-total.ply;";//" > unclean-total.ply;";
+   // sprintf(tmp,"%s/vcgapps/bin/mergeMesh unclean-total.ply  -cleansize %f -P -out tmp-total.ply;",_basepath.c_str(),smallCCPer);
+   // output <<tmp;
+    sprintf(tmp,"export BASEDIR=\"%s\"; export OUTDIR=\"%s/\";export VRIP_HOME=\"$BASEDIR/vrip\";export VRIP_DIR=\"$VRIP_HOME/src/vrip/\";export PATH=$PATH:$VRIP_HOME/bin;cd %s/$OUTDIR;",_basepath.c_str(),diced_dir,_cwd.c_str());
+    output << tmp;
+    sprintf(tmp,"$BASEDIR/vrip/bin/vripnew tmp-total.vri tmp-total.txt tmp-total.txt %f -rampscale %f > log-tmp-total.txt;$BASEDIR/vrip/bin/volfill tmp-total.vri exp-total.vri >log-volfill.txt;$BASEDIR/vrip/bin/vripsurf exp-total.vri exp-total.ply >log-surf.txt;",_res,_expandBy);
+    output << tmp;
+    sprintf(tmp,"%s/vcgapps/bin/mergeMesh exp-total.ply  -cleansize %f -P -flip -out total.ply > log-merge.txt",_basepath.c_str(),smallCCPer);
+    output << tmp;
+    string cmdfile=string(aggdir)+"/finsplitcmd";
+    FILE *fp2=fopen(cmdfile.c_str(),"w");
+    foreach_vol(cur,vol){
+    fprintf(fp2,"%s/treeBBClip %s/total.ply --bbox %f %f %f %f %f %f -dup --outfile %s/%s/clean_%04d%04d%04d.ply\n",
+            _basepath.c_str(),
+            diced_dir,
+            cur->bounds.bbox.xMin(),
+            cur->bounds.bbox.yMin(),
+            cur->bounds.bbox.zMin(),
+            cur->bounds.bbox.xMax(),
+            cur->bounds.bbox.yMax(),
+            cur->bounds.bbox.zMax(),
+            _cwd.c_str(),
+            aggdir,
+            cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
+    }
+    fclose(fp2);
+    sprintf(tmp,"\nos.system(setupts.basepath +'/%s %s %s %s')\n",
+            thrpool,cmdfile.c_str(),serfile,"PRESPLIT");
+    return createFileCheckPython(cmdpost.str(),_cwd+"/"+diced_dir,allmeshes,output.str(),4)+tmp;
+
+}
+bool WriteBoundVRIP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
+ double smallCCPer=0.2;
+ //int runs=1;
+ char vrip_seg_fname[2048];
+ char conf_name[2048];
+  sprintf(vrip_seg_fname,"%s/vripseg-%08d_%08d_%08d.txt",aggdir, cell.volIdx[0],cell.volIdx[1],cell.volIdx[2]);
+  sprintf(conf_name,"%s/bbox-clipped-diced-%08d_%08d_%08d.ply.txt",diced_dir,cell.volIdx[0],cell.volIdx[1],cell.volIdx[2]);
+
+  FILE *vrip_seg_fp=fopen(vrip_seg_fname,"w");
+ FILE * bboxfp = fopen(conf_name,"w");
+  if(!vrip_seg_fp || !bboxfp){
+      printf("Unable to open %s\n",vrip_seg_fname);
+  }
+
+ fprintf(cmdfp,"export BASEDIR=\"%s\"; export OUTDIR=\"%s/\";export VRIP_HOME=\"$BASEDIR/vrip\";export VRIP_DIR=\"$VRIP_HOME/src/vrip/\";export PATH=$PATH:$VRIP_HOME/bin;cd %s/$OUTDIR;",_basepath.c_str(),aggdir,_cwd.c_str());
+ fprintf(cmdfp,"$BASEDIR/vrip/bin/vripnew auto-%08d_%08d_%08d.vri %s %s %f -rampscale %f;$BASEDIR/vrip/bin/vripsurf auto-%08d_%08d_%08d.vri seg-%08d_%08d_%08d.ply ;",cell.volIdx[0],cell.volIdx[1],cell.volIdx[2],osgDB::getSimpleFileName(vrip_seg_fname).c_str(),osgDB::getSimpleFileName(vrip_seg_fname).c_str(),_res,_expandBy,cell.volIdx[0],cell.volIdx[1],cell.volIdx[2],cell.volIdx[0],cell.volIdx[1],cell.volIdx[2]);
+
+ fprintf(cmdfp,"$BASEDIR/treeBBClip seg-%08d_%08d_%08d.ply --bbox %f %f %f %f %f %f -dup --outfile %s/%s/tmp-clipped-diced-%08d_%08d_%08d.ply;",
+         cell.volIdx[0],cell.volIdx[1],cell.volIdx[2],
+         cell.bounds.bbox.xMin(),
+         cell.bounds.bbox.yMin(),
+         cell.bounds.bbox.zMin(),
+         cell.bounds.bbox.xMax(),
+        cell.bounds.bbox.yMax(),
+         cell.bounds.bbox.zMax(),
+         _cwd.c_str(),
+         diced_dir,
+         cell.volIdx[0],cell.volIdx[1],cell.volIdx[2]);
+ fprintf(cmdfp,"%s/vcgapps/bin/mergeMesh %s/%s/tmp-clipped-diced-%08d_%08d_%08d.ply  -cleansize %f -P -flip -out %s/%s/clean-clipped-diced-%08d_%08d_%08d.ply;",
+         _basepath.c_str(),
+         _cwd.c_str(),
+         diced_dir,
+         cell.volIdx[0],cell.volIdx[1],cell.volIdx[2],
+         smallCCPer,
+         _cwd.c_str(),
+         diced_dir,
+         cell.volIdx[0],cell.volIdx[1],cell.volIdx[2]);
+ fprintf(cmdfp,"cd ..\n");
+ for(unsigned int j=0; j <cell.poses.size(); j++){
+     const Stereo_Pose_Data *pose=cell.poses[j];
+     if(!pose->valid)
+         continue;
+     //Vrip List
+     fprintf(vrip_seg_fp,"%s %f 1\n",pose->mesh_name.c_str(),_res);
+     //Gen Tex File bbox
+     fprintf(bboxfp, "%d %s " ,pose->id,pose->left_name.c_str());
+     save_bbox_frame(pose->bbox,bboxfp);
+     osg::Matrix texmat=osgTranspose(pose->mat);
+     texmat=osg::Matrix::inverse(texmat);
+     for(int k=0; k < 4; k++)
+         for(int n=0; n < 4; n++)
+             fprintf(bboxfp," %lf",texmat(k,n));
+     fprintf(bboxfp,"\n");
+ }
+
+
+ fclose(vrip_seg_fp);
+ fclose(bboxfp);
+
+
+
+    return true;
 }
 
 WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy):WriteTP(res,fname,basepath,cwd),_expandBy(expandBy){
@@ -117,6 +245,8 @@ WriteSplitTP::WriteSplitTP(double res,string fname,std::string basepath,std::str
     }
 
 }
+
+
 bool WriteSplitTP::write_cmd(const picture_cell &cell){
     char shr_tmp[8192];
     string cmdtoRun;
@@ -226,8 +356,8 @@ bool getFaceDivision(osg::ref_ptr<osg::Node> &model,double &avgLen,int &numberFa
             osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
 
             osg::Vec3Array *verts=static_cast< osg::Vec3Array*>(geom->getVertexArray());
-            osg::Vec4Array *colors=static_cast< osg::Vec4Array*>(geom->getColorArray());
-            osg::Vec4Array *texCoordsStored=static_cast< osg::Vec4Array*>(geom->getTexCoordArray(0));
+            //osg::Vec4Array *colors=static_cast< osg::Vec4Array*>(geom->getColorArray());
+            //osg::Vec4Array *texCoordsStored=static_cast< osg::Vec4Array*>(geom->getTexCoordArray(0));
 
             osg::DrawElementsUInt* primitiveSet = dynamic_cast<osg::DrawElementsUInt*>(geom->getPrimitiveSet(0));
             avgLen=0.0;

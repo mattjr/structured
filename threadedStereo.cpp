@@ -284,7 +284,7 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read("--poses",contents_file_name );
 
     if(argp.read("--noremap"))
-        no_run_remap=false;
+        no_run_remap=true;
 
         if(argp.read("--flat"))
             reparamTex=false;
@@ -696,6 +696,8 @@ bool getBBoxFromMesh(Stereo_Pose_Data &name){
         return false;
     }
     bool got_bbox=false;
+    bool got_faces=false;
+
     string line;
     getline(mesh,line);
     if(line.substr(0,3) != "ply"){
@@ -707,7 +709,9 @@ bool getBBoxFromMesh(Stereo_Pose_Data &name){
         if(line.substr(0,10) == "end_header"){
             if(!got_bbox)
                 cerr << "valid file but no comment in header for bbox\n";
-            return got_bbox;
+            if(!got_faces)
+                cerr << "can't parse face number file not standard header\n";
+            return (got_faces && got_bbox);
         }else if(line.substr(0,7) == "comment"){
             std::string bboxstr=line.substr(8,line.size());
             istringstream iss(bboxstr);
@@ -720,6 +724,7 @@ bool getBBoxFromMesh(Stereo_Pose_Data &name){
             std::string fstr=line.substr(13,line.size());
             istringstream iss(fstr);
             iss >> name.faces;
+            got_faces=true;
         }
     }
 
@@ -1064,7 +1069,7 @@ bool externalStereo=false;
                         tasks[i].valid=false;
                     else
                         tasks[i].valid=true;
-                    tasks[i].faces=stats.total_accepted_feat;
+                    tasks[i].faces=stats.total_faces;
                     progCount++;
                     if(statusFlag == FAIL_FEAT_THRESH || statusFlag == FAIL_TRI_EDGE_THRESH){
                         delayMessageFrame=10;
@@ -1418,11 +1423,15 @@ bool externalStereo=false;
     if(!externalMode){
         {
             WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks,plymc_expand_by);
+            WriteBoundVRIP wbvrip(vrip_res,string(aggdir)+"/vripcmd",basepath,cwd,tasks,vrip_ramp);
+
             int splits[3]={0,0,0};
             foreach_vol(cur,vol){
                 //  cout <<cur->bounds.bbox._min<<" "<<cur->bounds.bbox._max<<endl;
                 //    cout <<"Poses " <<cur->poses.size()<<endl;
+                wbvrip.write_cmd(*cur);
                 wbtp.write_cmd(*cur);
+
                 splits[0]=cur->splits[0];
                 splits[1]=cur->splits[1];
                 splits[2]=cur->splits[2];
@@ -1430,6 +1439,8 @@ bool externalStereo=false;
             }
             cout << splits[0] << " " << splits[1] << " " <<splits[2] <<endl;
             string plymccmd="plymc.py";
+            string vripccmd="runvrip.py";
+
             std::vector<string> postcmd;
             char tmpcmd[1024];
             tmpcmd[0]='\0';
@@ -1449,10 +1460,12 @@ bool externalStereo=false;
          sprintf(tmpcmd,"os.system(setupts.basepath +'/runtp_dist.py %s %s %s')\n",
                  (string(aggdir)+"/plymccmd2").c_str(),serfile,"PlyMC2");*/
             shellcm.write_generic(plymccmd,wbtp.getCmdFileName(),"PlyMC",NULL,&postcmd,0,string(tmpcmd));
+            shellcm.write_generic(vripccmd,wbvrip.getCmdFileName(),"VRIP",NULL,&postcmd,0,wbvrip.getPostCmds(vol));
+            wbvrip.close();
             wbtp.close();
         }
         if(!no_vrip)
-            sysres=system("python plymc.py");
+            sysres=system("python runvrip.py");
         char tmpfn[8096];
         {
             osg::ref_ptr<osg::Node> model;
@@ -1461,13 +1474,16 @@ bool externalStereo=false;
             foreach_vol(cur,vol){
                 sprintf(tmpfn,"%s/clean_%04d%04d%04d.ply",aggdir,cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
                 // osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpfn);
+                if(osgDB::fileExists(tmpfn+string(".empty")))
+                    continue;
                 model= vertexData.readPlyFile(tmpfn);
 
                 osg::Drawable *drawable = NULL;
                 if(model.valid())
                     drawable = model->asGeode()->getDrawable(0);
                 if(!drawable){
-                    fprintf(stderr,"Failed to load model %s PLYMC failed on one chunk\nThere may be holes in it!!!!!!\nAlso check if this is part of ascent or decent where lots of Z variation occurs.\n",tmpfn);
+                    fprintf(stderr,"Failed to load model %s VRIP/PLYMC failed on one chunk should have %d poses\nThere may be holes in it!!!!!!\nAlso check if this is part of ascent or decent where lots of Z variation occurs.\n",
+                            tmpfn,(int)cur->poses.size());
                     //sleep(1);
                     continue;
                     exit(-1);
@@ -2297,7 +2313,7 @@ bool externalStereo=false;
 
         fprintf(calcTexFn_fp,"cd %s",
                 cwd);
-        fprintf(calcTexFn_fp,";%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f\n",
+        fprintf(calcTexFn_fp,";%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin %f\n",
                 basepath.c_str(),
                 base_dir.c_str(),
                 diced_dir,
@@ -2306,7 +2322,7 @@ bool externalStereo=false;
                 diced_dir,
                 cells[i].row,cells[i].col,
                 vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
-                rx,ry,rz,tex_margin);
+                rx,ry,rz,tex_margin,bbox_margin*5);
 
 
         for(int z=0; z<NUM_TEX_FILES; z++){

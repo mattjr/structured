@@ -16,4 +16,5 @@ do
 
 done
 echo "Copying mesh.cfg"
-cp ~/git/structured-vt-reorder/mesh.cfg $2/
+cp `dirname $0`/mesh.cfg $2/
+

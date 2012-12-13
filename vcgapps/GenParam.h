@@ -25,8 +25,6 @@ class LoaderOSG2OGF  {
 
 
 private:
-    osg::Vec3Array* _verts;
-    osg::DrawElementsUInt *_triangles;
 public:
 
    /// Constructor
@@ -67,6 +65,9 @@ public:
       return false;
    }
    OGF::MapBuilder B;
+   osg::Vec3Array* _verts;
+   osg::DrawElementsUInt *_triangles;
+
    std::vector<OGF::Map::Facet*> facet_map;
 
 };

@@ -146,3 +146,6 @@ taskworkers.pyc
 /vrip/src/pvrip/out.set
 /vrip/src/pvrip/plymerge_surfmrs
 /vrip/src/pvrip/plymerge_surfmrs.cc~
+/vrip/bin/volfill
+/volfill
+/dumpPCD

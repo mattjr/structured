@@ -14,7 +14,7 @@ class TexturedSource : public vpb::Source
 {
     friend class TexturingQuery;
 public:
-    TexturedSource(Type type, const std::string& filename,const std::string &bbox_file,bool use_tex=true,bool use_texaux=false);
+    TexturedSource(Type type, const std::string& filename,const std::string &bbox_file,bool use_tex=true,bool use_texaux=false,float expandBy=0.0);
     TexturedSource(Type type, const std::string& filename);
     ~TexturedSource();
 
@@ -198,7 +198,7 @@ public:
 class MyDataStream : public SpatialIndex::IDataStream
 {
 public:
-    MyDataStream(std::string inputFile,TexturedSource::CameraVector &cam) : m_pNext(0),m_camVec(cam)
+    MyDataStream(std::string inputFile,TexturedSource::CameraVector &cam,float expandBy=0.0) : m_pNext(0),m_camVec(cam),_expandBy(expandBy)
     {
         m_fin.open(inputFile.c_str());
 
@@ -264,7 +264,19 @@ public:
         {
             cam.m=m;//osg::Matrix::inverse(m);
             //std::cout << m<<std::endl;
+            if(_expandBy>0.0){
 
+                double mod0=(high[0]-low[0])*_expandBy;
+            double mod1=(high[1]-low[1])*_expandBy;
+            double mod2=(high[2]-low[2])*_expandBy;
+            high[0]+=mod0;
+            high[1]+=mod1;
+            high[2]+=mod2;
+
+            low[0]-=mod0;
+            low[1]-=mod1;
+            low[2]-=mod2;
+}
             cam.bb = osg::BoundingBox(low[0],low[1],low[2],high[0],high[1],high[2]);
 //            std::cout << cam.bb._min<<" "<< cam.bb._max<<std::endl;
             m_camVec[cam.id]=cam;
@@ -285,7 +297,7 @@ public:
     std::ifstream m_fin;
     SpatialIndex::RTree::Data* m_pNext;
     TexturedSource::CameraVector &m_camVec;
-
+    float _expandBy;
 
 };
 

@@ -1,7 +1,7 @@
 #include "TexturedSource.h"
 using namespace SpatialIndex;
 using namespace std;
-TexturedSource::TexturedSource(Type type, const std::string& filename,const std::string &bbox_file,bool use_tex,bool use_texaux): Source(type,filename)
+TexturedSource::TexturedSource(Type type, const std::string& filename,const std::string &bbox_file,bool use_tex,bool use_texaux,float expandBy): Source(type,filename)
 {
     std::string mf=filename;
     _bbox_file=bbox_file;
@@ -15,7 +15,7 @@ TexturedSource::TexturedSource(Type type, const std::string& filename,const std:
     manager = StorageManager::createNewRandomEvictionsBuffer(*memstore, 10, false);
     // applies a main memory random buffer on top of the persistent storage manager
     // (LRU buffer, etc can be created the same way).
-    stream = new MyDataStream(_bbox_file,_cameras);
+    stream = new MyDataStream(_bbox_file,_cameras,expandBy);
 
     // Create and bulk load a new RTree with dimensionality 3, using "file" as
     // the StorageManager and the RSTAR splitting policy.

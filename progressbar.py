@@ -281,7 +281,7 @@ class ProgressBar(object):
         else:
             self.finished = True
             self.fd.write(self._format_line() + '\n')
-
+        self.fd.flush()
     def inc(self):
         "Updates the progress bar to a new value."
         
@@ -297,7 +297,7 @@ class ProgressBar(object):
         else:
             self.finished = True
             self.fd.write(self._format_line() + '\n')
-
+        self.fd.flush()
     def start(self):
         """Start measuring time, and prints the bar at 0%.
 

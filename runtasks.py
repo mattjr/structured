@@ -137,7 +137,7 @@ print "Spawned {0} workers.".format(numworkers)
 
 # create the progress bar
 widgets = [title, ' ', Percentage(), ' ', Curr(), '/', Max(), ' ', Bar(), ' ', ETA()]
-progress_bar = ProgressBar(widgets=widgets, maxval=total)
+progress_bar = ProgressBar(widgets=widgets, maxval=total,fd=sys.stdout)
 
 
 # release the hold that kept the clients active

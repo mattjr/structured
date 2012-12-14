@@ -219,11 +219,11 @@ bool genPyramid(std::string name,int pyramidHeight,string ext){
     char tmp2[1024];
     for(int i=1; i < pyramidHeight+1; i++){
         if(i==1)
-            sprintf(tmp2,"%s-tmp.%s",osgDB::getNameLessExtension(name).c_str(),ext.c_str());
+            sprintf(tmp2,"%s.%s",osgDB::getNameLessExtension(name).c_str(),ext.c_str());
         else
-            sprintf(tmp2,"%s-%d.%s",(string(diced_img_dir)+"/"+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i-1,ext.c_str());
+            sprintf(tmp2,"%s-%02d.%s",(string(diced_img_dir)+"/"+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i-1,ext.c_str());
 
-        sprintf(tmp,"%s vips im_shrink %s %s-%d.%s 2 2;",tmp,tmp2,
+        sprintf(tmp,"%s vips im_shrink %s %s-%02d.%s 2 2;",tmp,tmp2,
                 (string(diced_img_dir)+"/"+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i,ext.c_str());
     }
     int res= system(tmp);

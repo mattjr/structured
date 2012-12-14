@@ -212,6 +212,11 @@ void VipsAtlasBuilder::addSource(vips::VImage *img){
     _sourceList.push_back(new VSource(img));
     _sourceList.back()->ref();
 }
+
+void VipsAtlasBuilder::addSource(vips::VImage *img,vips::VImage *imglevel,int level){
+    _sourceList.push_back(new VSource(img,imglevel,level));
+    _sourceList.back()->ref();
+}
 VipsAtlasBuilder::VipsAtlasBuilder(int count,int VTtileSize,int VToverlap,bool dryRun):TightFitAtlasBuilder(count),_VTtileSize(VTtileSize),_VToverlap(VToverlap),_dryRun(dryRun){
 
 }
@@ -316,9 +321,13 @@ void VipsAtlasBuilder::VAtlas::copySources(bool dryRun)
                           pixelFormat, dataType,
                           packing);
 */
-    _image = new vips::VImage(vips::VImage::black(_maximumAtlasWidth,_maximumAtlasHeight,3));//initdesc(_maximumAtlasWidth,_maximumAtlasHeight,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
+    _image = new vips::VImage();
+    _image->initdesc(_maximumAtlasWidth,_maximumAtlasHeight,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);//new vips::VImage(vips::VImage::black(1,1,3));//new vips::VImage();//vips::VImage::black(_maximumAtlasWidth,_maximumAtlasHeight,3));//initdesc(_maximumAtlasWidth,_maximumAtlasHeight,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
 
-    //printf("Creating atlas image of %dx%d\n",_maximumAtlasWidth,_maximumAtlasHeight);
+    if(_level >0){
+    _ds_image = new vips::VImage();
+    _ds_image->initdesc(_maximumAtlasWidth >>_level ,_maximumAtlasHeight>>_level,3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
+    }//printf("Creating atlas image of %dx%d\n",_maximumAtlasWidth,_maximumAtlasHeight);
     osg::notify(osg::INFO)<<"Atlas::copySources() "<<std::endl;
     _height=_maximumAtlasHeight;
     _width=_maximumAtlasWidth;
@@ -336,6 +345,10 @@ void VipsAtlasBuilder::VAtlas::copySources(bool dryRun)
 
             vips::VImage * sourceImage = source->_image;
             vips::VImage* atlasImage = atlas->_image;
+
+            vips::VImage* ds_atlasImage = atlas->_ds_image;
+            vips::VImage * ds_sourceImage = source->_ds_image;
+            int ds_height=_height>>_level;
             //assert(sourceImage->getPacking() == atlasImage->getPacking()); //Test if packings are equals.
             /*unsigned int rowSize = sourceImage->getRowSizeInBytes();
             unsigned int pixelSizeInBits = sourceImage->getPixelSizeInBits();
@@ -350,9 +363,21 @@ void VipsAtlasBuilder::VAtlas::copySources(bool dryRun)
             //assert(source->_y >= _margin);
             int x = source->_x;
             int y = source->_y;
-            if(!dryRun)
-                atlasImage->insertplace(*sourceImage,x,_height-y-sourceImage->Ysize());
-         /*   int t;
+
+            int x_ds=source->_x >> _level;
+            int y_ds=source->_y >> _level;
+
+            //if(!dryRun)
+              //  atlasImage->insertplace(*sourceImage,x,_height-y-sourceImage->Ysize());
+            if(!dryRun){
+                if(_level >0)
+                    atlas->_ds_image=new vips::VImage(ds_atlasImage->insert(*ds_sourceImage,x_ds,ds_height-y_ds-ds_sourceImage->Ysize()));
+
+                atlas->_image=new vips::VImage(atlasImage->insert(*sourceImage,x,_height-y-sourceImage->Ysize()));
+              //  char t[1024];
+                //sprintf(t,"%d.ppm",rand());
+               // atlas->_image->write(t);;
+            }/*   int t;
             for(t=0; t<sourceImage->t(); ++t, ++y)
             {
                 unsigned char* destPtr = atlasImage->data(x, y);
@@ -504,6 +529,16 @@ bool VipsAtlasBuilder::VAtlas::addSource(VSource* source)
         OSG_INFO<<"source "<<source->_image->getFileName()<<" does not fit in atlas "<<this<<std::endl;
         return false;
     }*/
+    if(source->_level>0){
+        if(_level != -1 ){
+            if(_level != source->_level){
+                fprintf(stderr,"Failed to get all same ds level sources\n");
+                exit(-1);
+            }
+        }
+        _level=source->_level;
+
+    }
     vips::VImage* sourceImage = source->_image;
 
     if (!_image)

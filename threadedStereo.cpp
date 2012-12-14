@@ -2371,6 +2371,7 @@ bool externalStereo=false;
                             diced_dir,
                             cells[i].row,cells[i].col,
                             vpblod);
+                    sizestr << " -pyr ";
                     sizestr << tmpfn;
                     break;
                 }
@@ -2843,6 +2844,8 @@ bool externalStereo=false;
     if(reparamTex){
     if(!no_run_remap)
         sysres=system(string("python "+texcmd[REMAP]).c_str());
+
+
     if(!no_tex)
         sysres=system(string("python "+texcmd[REMAP_FLAT_SIZE]).c_str());
     }/*else{
@@ -2856,19 +2859,40 @@ bool externalStereo=false;
         sysres=system("python vartex.py");
     //if(useVirtTex)
     {
-        //  string vttexcmds_fn=string(diced_dir)+"/vttexcmds";
-        string vttex="vttex.sh";
+        int sizeForLevel=(int)pow(2,16);
+        int sizeLevel=sizeForLevel;
 
-        FILE *vttexcmds_fp=fopen(vttex.c_str(),"w");
-        fchmod(fileno(vttexcmds_fp),0777);
+        int tileSize=256;
+        int border=1;
+
+        int maxLevels=    (int)ceil(std::log((double)sizeForLevel/tileSize) / std::log(2.0));
+
+        string vttexcmds_fn=string(diced_dir)+"/vttexcmds";
+        string vttex="vttex.py";
+
+        FILE *vttexcmds_fp=fopen(vttexcmds_fn.c_str(),"w");
+       // fchmod(fileno(vttexcmds_fp),0777);
         char flatflag[1024];
         if(reparamTex)
             sprintf(flatflag," ");
         else
             sprintf(flatflag,"-flatatlas ");
-        fprintf(vttexcmds_fp,"#!/bin/bash\n");
-        fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag);
+       // fprintf(vttexcmds_fp,"#!/bin/bash\n");
+        int adjustedTileSize=tileSize-(border *2);
+        for(int level=0; sizeLevel>=adjustedTileSize; level++,sizeLevel/=2 ){
 
+            int numXtiles=(sizeLevel/adjustedTileSize);
+            if(numXtiles <= 4){
+                fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s -level %d \n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag,level);
+
+
+            }else{
+                for(int x=0; x<numXtiles; x++){
+
+                    fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s -level %d -row %d\n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag,level,x);
+                }
+            }
+        }
         /*   for(int i=0; i <(int)vrip_cells.size(); i++){
             if(vrip_cells[i].poses.size() == 0)
                 continue;
@@ -2876,12 +2900,12 @@ bool externalStereo=false;
                     basepath.c_str(),
                     diced_dir,
                     i,diced_dir,i,vpblod);
-        }
+        }*/
         fclose(vttexcmds_fp);
-        shellcm.write_generic(vttex,vttexcmds_fn,"VT Tex",NULL,NULL,num_threads);*/
-        fclose(vttexcmds_fp);
+        shellcm.write_generic(vttex,vttexcmds_fn,"VT Tex",NULL,NULL,num_threads);
+   //     fclose(vttexcmds_fp);
         if(useVirtTex && !no_vttex)
-            sysres=system("bash vttex.sh");
+            sysres=system(("python "+vttex).c_str());
 
     }
 

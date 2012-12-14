@@ -31,6 +31,10 @@ int main( int argc, char **argv )
         fprintf(stderr, "need mat\n");
         exit(-1);
     }
+    int level = -1;
+    int row=-1;
+    arguments.read("-level",level);
+    arguments.read("-row",row);
     bool flat=arguments.read("-flatatlas");
     int totalX,totalY;
     std::vector<mosaic_cell> mosaic_cells;
@@ -49,7 +53,7 @@ int main( int argc, char **argv )
             outputPyr=false;
             createVTAtlas( viewProj, totalX, totalY,
                          mosaic_cells,
-                       outputPyr,scaleFactor,basedir,imgFile,flat,maxRes);
+                       outputPyr,scaleFactor,basedir,imgFile,flat,maxRes,level,row);
    osg::Timer_t after_computeMax = osg::Timer::instance()->tick();
    double totalTime=osg::Timer::instance()->delta_s(before_computeMax, after_computeMax);
    printf("Total Time vipsAtlas %s\n",format_elapsed(totalTime).c_str());

@@ -48,16 +48,23 @@ public:
     int getAtlasWidth(){return _maximumAtlasWidth;}
     bool _dryRun;
     void addSource(vips::VImage *img);
+    void addSource(vips::VImage *img,vips::VImage *imglevel,int level);
+
     void buildAtlas(void);
     void completeRow(unsigned int indexAtlas);
 class VAtlas;
      class VSource : public Source{
      public:
          VSource( vips::VImage * image): Source((const osg::Image*)NULL),
-             _image(image) ,_atlas(NULL){width=_image->Xsize(); height=_image->Ysize();}
+             _image(image) ,_atlas(NULL),_level(-1){width=_image->Xsize(); height=_image->Ysize();}
+         VSource( vips::VImage * image,vips::VImage *ds_img,int level): Source((const osg::Image*)NULL),
+             _image(image) ,_atlas(NULL),_ds_image(ds_img),_level(level){width=_image->Xsize(); height=_image->Ysize();}
       vips::VImage *_image;
       VAtlas *_atlas;
       int width,height;
+      vips::VImage *_ds_image;
+      int _level;
+
       bool suitableForAtlas(int maximumAtlasWidth, int maximumAtlasHeight);
 
      };
@@ -66,9 +73,11 @@ class VAtlas;
 
      class VAtlas: public Atlas{
      public:
-         VAtlas(int width, int height, int margin):Atlas(width,height,0),_image(NULL),_indexFirstOfRow(0){if(margin>0){fprintf(stderr,"Cannot have margin in this implmentation being reset to 0 margin!\n");}}
+         VAtlas(int width, int height, int margin,int level=-1):Atlas(width,height,0),_image(NULL),_indexFirstOfRow(0),_level(level){if(margin>0){fprintf(stderr,"Cannot have margin in this implmentation being reset to 0 margin!\n");}}
 
          vips::VImage *_image;
+         vips::VImage *_ds_image;
+
          VSourceList _sourceList;
          bool addSource(VSource* source);
        enum FitsIn
@@ -82,6 +91,7 @@ class VAtlas;
          void copySources(bool dryRun=false);
 
          int _indexFirstOfRow;
+         int _level;
 
      };
      VSourceList _sourceList;

@@ -1040,7 +1040,8 @@ int main(int ac, char *av[]) {
         //(osgDB::getNameLessExtension(imageName)+"-tmp.tif:packbits,tile:256x256").c_str()
         IMAGE *tmpI=im_open("tmp","p");
         im_extract_bands(outputImage[0],tmpI,0,3);
-        dilateEdge(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str(),1);
+        string remapName=(osgDB::getNameLessExtension(imageName)+"-remap.ppm");
+        dilateEdge(tmpI,remapName.c_str(),1);
         /*if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-remap.ppm").c_str())){
             fprintf(stderr,"Failed to write\n");
             cerr << im_error_buffer()<<endl;
@@ -1048,6 +1049,12 @@ int main(int ac, char *av[]) {
             exit(-1);
         }*/
         im_close(tmpI);
+        int levels=(int)floor(log( min( sizeX, sizeY ))/log(2.0) );
+        if(pyramid){ if(!genPyramid(remapName,levels,"ppm")){
+                fprintf(stderr,"FAil to gen pyramid\n");
+                exit(-1);
+            }
+        }
         if(passesFlatRemap > 1){
 
             tmpI=im_open("tmp","p");
@@ -1072,13 +1079,8 @@ int main(int ac, char *av[]) {
         (maskI.more(1.0).invert().andimage(dilatedI.dilate(mask))).add(maskI).write("total.png");*/
             im_close(tmpI);
 
-            /*int levels=(int)ceil(log( max( sizeX, sizeY ))/log(2.0) );
-        if(pyramid){ if(!genPyramid(osgDB::getNameLessExtension(imageName)+".tif",levels,"ppm")){
-                fprintf(stderr,"FAil to gen pyramid\n");
-                exit(-1);
-            }
-        }
-*/
+
+
             IMAGE *tmpI2=im_open("tmp2","p");
             im_extract_bands(outputImage[1],tmpI2,3,1);
             if( im_vips2ppm(tmpI2,(osgDB::getNameLessExtension(imageName)+"-tmp-mask.pgm").c_str())){

@@ -32,12 +32,12 @@ struct strWinInfo {
 } winInfo;
 
 void Usage() {
-	std::cerr << "Usage: volfill <in.vri> <out.vri> ...  " << std::endl; 
-	std::cerr << "-g" << std::endl;
-	std::cerr << "-n <number of Iterations>" << std::endl;
-	std::cerr << "-d1 <d1 distance>" << std::endl;
-	std::cerr << "-d2 <d2 distance>" << std::endl;
-	std::cerr << "-p" << std::endl;
+    std::cerr << "Usage: volfill <in.vri> <out.vri> ...  " << std::endl;
+    std::cerr << "-g" << std::endl;
+    std::cerr << "-n <number of Iterations>" << std::endl;
+    std::cerr << "-d1 <d1 distance>" << std::endl;
+    std::cerr << "-d2 <d2 distance>" << std::endl;
+    std::cerr << "-p" << std::endl;
 	exit(1);
 }
 #ifdef GLUT
@@ -103,7 +103,7 @@ void Keyboard( unsigned char key, int x, int y )
 		display();
 		break;
 	case 'w':
-		std::cerr << "Writing output...";
+        std::cout << "Writing output...";
 		ogSrc = new OccGridRLE(1,1,1, CHUNK_SIZE);
 		if (!ogSrc->read(inFile)) Usage();
 
@@ -120,7 +120,7 @@ void Keyboard( unsigned char key, int x, int y )
 		delete ogSrc;
 		delete ogDst;
 
-		std::cerr << "Done" << std::endl;
+        std::cout << "Done" << std::endl;
 
 		break;
 	case '1':
@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
 			PrintResourceUsage("After an Iteration");
 		}
 		
-		std::cerr << "Writing output...";
+        std::cout << "Writing output...";
 		ogSrc = new OccGridRLE(1,1,1, CHUNK_SIZE);
 		if (!ogSrc->read(inFile)) Usage();
 
@@ -264,7 +264,7 @@ int main(int argc, char *argv[]) {
 		delete ogSrc;
 		delete ogDst;
 
-		std::cerr << "Done" << std::endl;
+        std::cout << "Done" << std::endl;
 	}
 
 	return 0;

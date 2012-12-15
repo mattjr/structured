@@ -7,7 +7,7 @@
 
 void PrintResourceUsage(const char *msg) {
 
-    std::cerr << "volfill info: " << msg << ":";
+    std::cout << "volfill info: " << msg << ":";
 	
 	struct rusage ru;
 	getrusage(RUSAGE_SELF, &ru);
@@ -17,7 +17,7 @@ void PrintResourceUsage(const char *msg) {
 					ru.ru_stime.tv_usec / 100000);
 	
 #ifdef linux   
-	std::cerr << buf;
+    std::cout << buf;
 	sprintf(buf, "ps h -o vsize -p %d", getpid());
 	FILE *p = popen(buf, "r");
 	int vsize;
@@ -26,5 +26,5 @@ void PrintResourceUsage(const char *msg) {
 	sprintf(buf, " vsize %.2fMB", vsize / 1024.0);
 #endif // linux   
 
-	std::cerr << buf << std::endl;
+    std::cout << buf << std::endl;
 }

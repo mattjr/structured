@@ -70,8 +70,9 @@ std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol)
     string cmdfile=string(aggdir)+"/finsplitcmd";
     FILE *fp2=fopen(cmdfile.c_str(),"w");
     foreach_vol(cur,vol){
-    fprintf(fp2,"%s/treeBBClip %s/total.ply --bbox %f %f %f %f %f %f -dup --outfile %s/%s/clean_%04d%04d%04d.ply\n",
+    fprintf(fp2,"%s/treeBBClip %s/%s/total.ply --bbox %f %f %f %f %f %f -dup --outfile %s/%s/clean_%04d%04d%04d.ply\n",
             _basepath.c_str(),
+            _cwd.c_str(),
             diced_dir,
             cur->bounds.bbox.xMin(),
             cur->bounds.bbox.yMin(),

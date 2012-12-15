@@ -1124,7 +1124,7 @@ double totalValidArea=0;
 
 
         int ct=0;
-        printf("Bbox margin is %f\n",bbox_margin);
+       // printf("Bbox margin is %f\n",bbox_margin);
         for(vector<Stereo_Pose_Data>::iterator itr=tasks.begin(); itr != tasks.end(); itr++){
             Stereo_Pose_Data &name=(*itr);
 
@@ -1421,12 +1421,12 @@ double totalValidArea=0;
     CellDataT<Stereo_Pose_Data>::type vol;
     int minSplits=-1;
     int faceGuess = externalMode ? numberFacesAll : ((rangeX * rangeY) / (vrip_res*vrip_res));
-    printf("%d %f\n",faceGuess,largerAxis);
+    //printf("%d %f\n",faceGuess,largerAxis);
     double targetSide=((double)faceChunkTarget/faceGuess)*largerAxis;
-    printf("Target Side %f\n",targetSide);
+    //printf("Target Side %f\n",targetSide);
   //  double cubicRootSide =pow(targetVolume ,1./3.);
-    printf("side %f\n", largerAxis);
-    cout << bounds.bbox._min << " "<< bounds.bbox._max<<endl;
+    //printf("side %f\n", largerAxis);
+    //cout << bounds.bbox._min << " "<< bounds.bbox._max<<endl;
     //double targetVolume=10.0;
   //  split_boundsOctree<Stereo_Pose_Data>(bounds,tasks , targetSide,minSplits,vol);
     split_boundsOctree<Stereo_Pose_Data>(bounds,tasks , faceChunkTarget,minSplits,vol);
@@ -1449,7 +1449,7 @@ double totalValidArea=0;
                 splits[2]=cur->splits[2];
 
             }
-            cout << splits[0] << " " << splits[1] << " " <<splits[2] <<endl;
+           // cout << splits[0] << " " << splits[1] << " " <<splits[2] <<endl;
             string plymccmd="plymc.py";
             string vripccmd="runvrip.py";
 
@@ -1516,7 +1516,7 @@ double totalValidArea=0;
     }
 
 
-    printf("Face Guess %d Real %d\n",faceGuess,numberFacesAll);
+    //printf("Face Guess %d Real %d\n",faceGuess,numberFacesAll);
 
 #if 0
     // float rx=0,ry=180.0,rz=-90;
@@ -1577,14 +1577,14 @@ double totalValidArea=0;
             for(int i=0; i< (int)tasks.size(); i++)
                 if(tasks[i].valid)
                     validCount++;
-            printf("Auto computing tile and column splits %d valid images...\n",validCount);
+            //printf("Auto computing tile and column splits %d valid images...\n",validCount);
             int numCells=(int)max(ceil(sqrt(ceil(validCount / tex_img_per_cell))),1.0);
-            printf("Selected %d\n",numCells);
+            //printf("Selected %d\n",numCells);
 
             while((largerAxis*largerAxis)/(float)(numCells*numCells)>(targetSide*targetSide)){
                 numCells++;
             }
-            printf("Adjusted to %d based on targetVolume %0.3f final volume %0.3f total splits %d\n",numCells,targetSide*targetSide,(largerAxis*largerAxis)/(float)(numCells*numCells),numCells*numCells);
+            //printf("Adjusted to %d based on targetVolume %0.3f final volume %0.3f total splits %d\n",numCells,targetSide*targetSide,(largerAxis*largerAxis)/(float)(numCells*numCells),numCells*numCells);
 
             _tileRows=numCells;
             _tileColumns=numCells;
@@ -1600,7 +1600,7 @@ double totalValidArea=0;
     int split= std::max(std::max(_tileRows,_tileColumns),1);
     if(reimageSize.x() < 0.0)
         reimageSize = reparamTex ? osg::Vec2(osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0),osg::Image::computeNearestPowerOfTwo(adjustedSize / split,1.0)) : osg::Vec2(adjustedSize / (double)split,adjustedSize / (double)split);
-    cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
+   // cout << reimageSize <<endl << adjustedSize<<endl << split<<endl;
     if(reimageSize.x() > 8192){
         fprintf(stderr, "Can't have an imaging size %f its larger then 8192 dropping\n",reimageSize.x());
         double mult=reimageSize.x()/8192;
@@ -1627,7 +1627,7 @@ double totalValidArea=0;
     }else{
         int faceTmp=numberFacesAll;
         while(faceTmp > targetFaces ){
-            cout << "faces: "<<faceTmp<<" "<<vpblod<<endl;
+            //cout << "faces: "<<faceTmp<<" "<<vpblod<<endl;
             faceTmp /= pow(4.0,++vpblod);
         }
         std::cout << "Target LOD height is : " << vpblod <<std::endl;

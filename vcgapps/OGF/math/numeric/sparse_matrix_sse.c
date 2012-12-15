@@ -65,7 +65,7 @@ void sparse_matrix_SSE2_initialize() {
 #ifdef OGF_SSE
     SSE2_supported = 1 ;
 #endif
-    fprintf(stderr, "sparse matrix SSE2: %d\n", SSE2_supported) ;
+   // fprintf(stderr, "sparse matrix SSE2: %d\n", SSE2_supported) ;
 }
 
 /*

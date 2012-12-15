@@ -64,7 +64,7 @@ namespace OGF {
 #ifdef OGF_SSE
             SSE2_supported = true ;
 #endif
-            std::cerr << "QuickBLAS SSE2: " << SSE2_supported << std::endl ;
+            //std::cerr << "QuickBLAS SSE2: " << SSE2_supported << std::endl ;
         }
 
         Numeric::uint64 flops_counter = 0 ;

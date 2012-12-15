@@ -37,7 +37,7 @@ bool split_boundsOctree(const Bounds &bounds,const std::vector<CellType> &poses 
     octree.setMaxChildNumber(2);
     octree.setMaxFaces(maxFaces);
     octree.build(splits, cells,zero, bounds.bbox, poses );
-    printf("Splits %d %d %d\n",splits[0],splits[1],splits[2]);
+    //printf("Splits %d %d %d\n",splits[0],splits[1],splits[2]);
 
     double ran[3];
     for(int i=0; i<3; i++)

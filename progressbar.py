@@ -209,12 +209,13 @@ class ProgressBar(object):
     - percentage(): percentage of the progress (this is a method)
     """
     def __init__(self, maxval=100, widgets=default_widgets, term_width=None,
-                 fd=sys.stderr):
+                 fd=sys.stderr,using_file=False):
         assert maxval > 0
         self.maxval = maxval
         self.widgets = widgets
         self.fd = fd
         self.signal_set = False
+        self.using_file = using_file
         if term_width is None:
             try:
                 self.handle_resize(None,None)
@@ -276,12 +277,20 @@ class ProgressBar(object):
             self.start_time = time.time()
         self.seconds_elapsed = time.time() - self.start_time
         self.prev_percentage = self.percentage()
-        if value != self.maxval:
-            self.fd.write(self._format_line() + '\r')
+        if not self.using_file:
+            if value != self.maxval:
+                self.fd.write(self._format_line() + '\r')
+            else:
+                self.finished = True
+                self.fd.write(self._format_line() + '\n')
         else:
-            self.finished = True
-            self.fd.write(self._format_line() + '\n')
-        self.fd.flush()
+            if value != self.maxval:
+                self.fd.write(self._format_line())
+            else:
+                self.finished = True
+                self.fd.write(self._format_line() + '\n')
+                self.fd.write('Time: %s' % time.strftime('%H:%M:%S', time.gmtime(self.seconds_elapsed)))
+            self.fd.flush()
     def inc(self):
         "Updates the progress bar to a new value."
         
@@ -292,12 +301,20 @@ class ProgressBar(object):
             self.start_time = time.time()
         self.seconds_elapsed = time.time() - self.start_time
         self.prev_percentage = self.percentage()
-        if self.currval != self.maxval:
-            self.fd.write(self._format_line() + '\r')
+        if not self.using_file:
+            if self.currval != self.maxval:
+                self.fd.write(self._format_line() + '\r')
+            else:
+                self.finished = True
+                self.fd.write(self._format_line() + '\n')
         else:
-            self.finished = True
-            self.fd.write(self._format_line() + '\n')
-        self.fd.flush()
+            if self.currval != self.maxval:
+                self.fd.write(self._format_line())
+            else:
+                self.finished = True
+                self.fd.write(self._format_line() + '\n')
+                self.fd.write('Time: %s\n' % time.strftime('%H:%M:%S', time.gmtime(self.seconds_elapsed)))
+            self.fd.flush()
     def start(self):
         """Start measuring time, and prints the bar at 0%.
 

@@ -16,7 +16,7 @@ from progressbar import ProgressBar, ProgressBarWidget, Percentage, Bar, ETA
 import taskworkers # the related library with many useful functions
 
 import string # for the keygen
-
+import os #for checking env
 import logging
 
 # Widgets for the progress bar
@@ -136,8 +136,13 @@ print "Spawned {0} workers.".format(numworkers)
 
 
 # create the progress bar
-widgets = [title, ' ', Percentage(), ' ', Curr(), '/', Max(), ' ', Bar(), ' ', ETA()]
-progress_bar = ProgressBar(widgets=widgets, maxval=total,fd=sys.stdout)
+if os.environ.get('FILEOUTPUT_STATUS') == '1':
+    print title
+    widgets = [Percentage()]
+    progress_bar = ProgressBar(widgets=widgets, maxval=total,term_width=5,fd=sys.stdout,using_file=True)
+else:
+    widgets = [title, ' ', Percentage(), ' ', Curr(), '/', Max(), ' ', Bar(), ' ', ETA()]
+    progress_bar = ProgressBar(widgets=widgets, maxval=total,fd=sys.stderr)
 
 
 # release the hold that kept the clients active
@@ -145,7 +150,7 @@ progress_bar = ProgressBar(widgets=widgets, maxval=total,fd=sys.stdout)
 
 # display the progress bar
 progress_bar.start()
-
+ranOK=0
 # wait for jobs...
 while not job_finished == job_count:
     # when there are results pending
@@ -153,13 +158,18 @@ while not job_finished == job_count:
 
     if result[0] != 0:
         # this was an error
-        print "problem running: {0}\noutput: {1}".format(result[1], result[2])
-
+        sys.stderr.write("problem running: {0}\noutput: {1}".format(result[1], result[2]))
+    else:
+        ranOK += 1
     # increment the count
     progress_bar.inc()
     job_finished += 1
     job_results.task_done()
 #hack for now because otherwise dones exit
+if ranOK == 0:
+    sys.stderr.write('No tasks ran sucessfully! Bailing.\n')
+    sys.exit(-1)
+
 sys.exit(0)
 logging.debug("jobs all finished")
 #job_results.close()

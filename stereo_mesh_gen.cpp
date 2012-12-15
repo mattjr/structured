@@ -175,15 +175,16 @@ int main( int argc, char *argv[ ] )
     }else{
         left_file_name=arguments[2];
         right_file_name=arguments[3];
+        if(!(arguments.read("--mat-1-8",mat(0,0),mat(1,0),mat(2,0),mat(3,0),
+                            mat(0,1),mat(1,1),mat(2,1),mat(3,1)) && arguments.read("--mat-8-16",mat(0,2),mat(1,2),mat(2,2),mat(3,2),
+                                                                                   mat(0,3),mat(1,3),mat(2,3),mat(3,3)))){
+            cout << "Can't load mat\n";
+            arguments.getApplicationUsage()->write(cout);
+            return -1;
+        }
     }
 
-    if(!(arguments.read("--mat-1-8",mat(0,0),mat(1,0),mat(2,0),mat(3,0),
-                        mat(0,1),mat(1,1),mat(2,1),mat(3,1)) && arguments.read("--mat-8-16",mat(0,2),mat(1,2),mat(2,2),mat(3,2),
-                                                                               mat(0,3),mat(1,3),mat(2,3),mat(3,3)))){
-        cout << "Can't load mat\n";
-        arguments.getApplicationUsage()->write(cout);
-        return -1;
-    }
+
     arguments.read("-r",image_scale);
     arguments.read("-m",max_feature_count);
     arguments.read("--tex-size",tex_size);
@@ -256,7 +257,8 @@ int main( int argc, char *argv[ ] )
         for(int i=0; i<(int)tasks.size(); i++){
             left_file_name=tasks[i].left_name;
             right_file_name=tasks[i].right_name;
-
+            feature_depth_guess=tasks[i].alt;
+            mat=tasks[i].mat;
             engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,stats,feature_depth_guess,true,false);
             printf("\r%03d/%03d",i,(int)tasks.size());
             fflush(stdout);

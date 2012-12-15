@@ -974,14 +974,20 @@ int main( int argc, char *argv[ ] )
             // if(tasks[i].valid)
             if(1){
                 const osg::Matrix &mat=tasks[i].mat;
-                fprintf(conf_ply_file,
+              /*  fprintf(conf_ply_file,
                         "cd %s;%s/stereo_mesh_gen %s --batch %s %d %d --mat-1-8 %f %f %f %f %f %f %f %f --mat-8-16 %f %f %f %f %f %f %f %f --edgethresh %f -m %d -z %f\n"
                         ,cwd
                         ,basepath.c_str(),base_dir.c_str(),contents_file_name.c_str(),i,i+taskSplitSize,
                         mat(0,0),mat(1,0),mat(2,0),mat(3,0),
                         mat(0,1),mat(1,1),mat(2,1),mat(3,1),
                         mat(0,2),mat(1,2),mat(2,2),mat(3,2),mat(0,3),mat(1,3),mat(2,3),mat(3,3),edgethresh,
-                        max_feature_count,tasks[i].alt);
+                        max_feature_count,tasks[i].alt);*/
+                fprintf(conf_ply_file,
+                        "cd %s;%s/stereo_mesh_gen %s --batch %s %d %d --edgethresh %f -m %d \n"
+                        ,cwd
+                        ,basepath.c_str(),base_dir.c_str(),contents_file_name.c_str(),i,i+taskSplitSize,
+                        edgethresh,
+                        max_feature_count);
                 valid++;
 
             }else{

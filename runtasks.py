@@ -17,8 +17,9 @@ import taskworkers # the related library with many useful functions
 
 import string # for the keygen
 import os #for checking env
-import logging
 
+import logging
+import time
 # Widgets for the progress bar
 class Curr(ProgressBarWidget):
     "Just the percentage done."
@@ -122,8 +123,9 @@ for line in cfg_file:
     elif client_type == "SLURM_REMOTE":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for SLURM_REMOTE, need n workers and optional node names.")
-        threads += taskworkers.create_slurm_remote(params, int(elements[1]), gateway='archipelago', nodes=elements[2:])
-        numworkers += int(elements[1])
+		argnum = min(int(elements[1]),total)
+        threads += taskworkers.create_slurm_remote(params, argnum, gateway='archipelago', nodes=elements[2:])
+        numworkers += argnum
 
 
 # put termination/empty/none commands on queue, one for each worker
@@ -150,6 +152,8 @@ else:
 
 # display the progress bar
 progress_bar.start()
+#hack to keep jobs from finishing too fast
+time.sleep(10)
 ranOK=0
 # wait for jobs...
 while not job_finished == job_count:

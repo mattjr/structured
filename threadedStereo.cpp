@@ -2372,6 +2372,7 @@ bool externalStereo=false;
                             cells[i].row,cells[i].col,
                             vpblod);
                     sizestr << " -pyr ";
+                    sizestr << " -scalefile " << diced_dir <<"/globalscale.txt ";
                     sizestr << tmpfn;
                     break;
                 }
@@ -2471,6 +2472,7 @@ bool externalStereo=false;
     for(int z=0; z<NUM_TEX_FILES; z++)
         fclose(texcmds_fp[z]);
 }
+
     enum {MOSAIC,DEPTHMOSAIC,NUM_MOSAIC_FILES};
     FILE *vartexcmds_fp=fopen(vartexcmds_fn.c_str(),"w");
 
@@ -2841,11 +2843,43 @@ bool externalStereo=false;
         sysres=system(string("python "+calcTexCmd).c_str());
 
     shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),std::max(num_threads/2,1));
+    long int totalSide=0;
+
     if(reparamTex){
     if(!no_run_remap)
         sysres=system(string("python "+texcmd[REMAP]).c_str());
 
+    for(int i=0; i <(int)cells.size(); i++){
+        osg::Vec2 minTC,maxTC;
+        int origX,origY;
+        char tmp11[8192];
+        int sizeX,sizeY;
+        sprintf(tmp11,"%s/image_r%04d_c%04d_rs%04d_cs%04d-remap.size.txt",diced_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns);
+        FILE *fp=fopen(tmp11,"r");
+        if(!fp){
+            fprintf(stderr,"Can't open %s\n",tmp11);
+            exit(-1);
+        }
+        int ret=fscanf(fp,"%f %f %f %f %d %d %d %d\n",&(minTC.x()),&(minTC.y()),&(maxTC.x()),&(maxTC.y()),&origX,&origY,&sizeX,&sizeY);
+        if(ret != 8){
+            fprintf(stderr,"Can't parse %s\n",tmp11);
+            exit(-1);
+        }
+        fclose(fp);
+        int maxSide=std::max(sizeX,sizeY);
+        totalSide+=(maxSide*maxSide);
 
+    }
+    int sqrtSize=    ceil(sqrt(totalSide));
+   // printf("Un adjusted size %d\n",sqrtSize);
+    int ajustedGLImageSize=(int)sqrtSize+((sqrtSize/VTtileSize)*2*tileBorder);
+    totalSide=osg::Image::computeNearestPowerOfTwo(ajustedGLImageSize);
+
+    float closeFitScale=(ajustedGLImageSize > totalSide) ? totalSide/(double)ajustedGLImageSize : 1.0;
+    printf("Adjusted POT %d using %ld scale %f\n",ajustedGLImageSize,totalSide,closeFitScale);
+    FILE *fpscale=fopen((string(diced_dir)+string("/globalscale.txt")).c_str(),"w");
+    fprintf(fpscale,"%f\n",closeFitScale);
+    fclose(fpscale);
     if(!no_tex)
         sysres=system(string("python "+texcmd[REMAP_FLAT_SIZE]).c_str());
     }/*else{
@@ -2859,13 +2893,13 @@ bool externalStereo=false;
         sysres=system("python vartex.py");
     //if(useVirtTex)
     {
-        int sizeForLevel=(int)pow(2,16);
+        int sizeForLevel=totalSide;
         int sizeLevel=sizeForLevel;
 
         int tileSize=256;
         int border=1;
 
-        int maxLevels=    (int)ceil(std::log((double)sizeForLevel/tileSize) / std::log(2.0));
+        //int maxLevels=    (int)ceil(std::log((double)sizeForLevel/tileSize) / std::log(2.0));
 
         string vttexcmds_fn=string(diced_dir)+"/vttexcmds";
         string vttex="vttex.py";

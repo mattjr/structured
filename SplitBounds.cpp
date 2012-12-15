@@ -731,4 +731,97 @@ void splitPictureCellsEven( std::vector<picture_cell> &cells,const CellDataT<Ste
 
 
 }
+#if 0
+vector<string> genTexCmds(vector<picture_cell> cells,string cmdname,bool reparamTex,int typecmd,bool useVirtTex){
+    {
+        FILE *texcmds_fp =fopen(cmdname.c_str(),"w");
+        for(int i=0; i <(int)cells.size(); i++){
+            char tmpfn[1024];
+            sprintf(tmpfn,"%s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply", diced_dir,cells[i].row,cells[i].col);
 
+            if( cells[i].images.size() == 0 ||  !osgDB::fileExists(tmpfn) || checkIsEmptyPly(tmpfn)){
+
+                continue;
+
+
+
+            }
+
+            string remap_mesh_ext=reparamTex ? "remap-" : "flat-";
+
+            sprintf(tmpfn2,"%s/%stex-clipped-diced-r_%04d_c_%04d-lod%d.ply", diced_dir,remap_mesh_ext.c_str(),cells[i].row,cells[i].col,vpblod);
+            cfiles.push_back(tmpfn2);
+
+
+
+
+            fprintf(texcmds_fp,"cd %s",
+                    cwd);
+
+            string teximgcmd;
+            ostringstream sizestr;
+            char tmpfn[1024];
+            switch(typecmd){
+            case REMAP:
+                teximgcmd = "vcgapps/bin/reparam";
+                sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
+                sizestr<<"--scale "<<scaleRemapTex;
+                break;
+            case DEPTH:
+                teximgcmd="depthmap";
+                sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+
+                break;
+            case FLAT:
+                teximgcmd="nonmem";
+                sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+
+                break;
+            case REMAP_FLAT_SIZE:
+                teximgcmd = "vcgapps/bin/renderReorderAA";
+                sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
+
+                //                    sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+                sprintf(tmpfn," --remap %s/param-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ",
+                        diced_dir,
+                        cells[i].row,cells[i].col,
+                        vpblod);
+                sizestr << " -pyr ";
+                sizestr << tmpfn;
+                break;
+            }
+
+            if(useVirtTex)
+                sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
+
+            fprintf(texcmds_fp,";%s/%s  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s  --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
+                    basepath.c_str(),
+                    teximgcmd.c_str(),
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    vpblod,
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    (base_dir+imgbase).c_str(),
+                    rx,ry,rz,
+                    cells[i].row,cells[i].col,_tileRows,_tileColumns,
+                    latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
+            if(blending)
+                fprintf(texcmds_fp," --blend");
+
+
+            fprintf(texcmds_fp,"\n");
+
+
+
+        }
+
+
+
+
+    }
+
+    fclose(texcmds_fp);
+
+}
+#endif

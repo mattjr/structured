@@ -433,7 +433,15 @@ int main(int ac, char *av[]) {
         fprintf(stderr,"Fail to get mosaic id\n");
         return -1;
     }
-
+    string global_scalefile;
+    if(!arguments.read("-scalefile",global_scalefile)){
+        fprintf(stderr,"Fail to get global_scalefile\n");
+        return -1;
+    }
+    float global_scaleVal=1.0;
+    FILE *ffp=fopen(global_scalefile.c_str(), "r");
+    fscanf(ffp,"%f\n",&global_scaleVal);
+    fclose(ffp);
    /* std::string matfile;
     if(!arguments.read("--mat",matfile)){
         fprintf(stderr,"Fail mat file\n");
@@ -528,7 +536,9 @@ int main(int ac, char *av[]) {
         }
         fclose(fp);
         cout <<"Size "<< sizeX << "x"<<sizeY<<endl;
-
+        sizeX*=global_scaleVal;
+        sizeY*=global_scaleVal;
+        cout <<"Globally scaled to " << sizeX << "x"<<sizeY<<endl;
 #if VIPS_MINOR_VERSION > 24
 
         vips_init(av[0]);

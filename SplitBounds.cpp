@@ -559,7 +559,7 @@ void splitPictureCells( std::vector<picture_cell> &cells,    const CellDataT<Ste
 
 }
 void splitPictureCellsEven( std::vector<picture_cell> &cells,const CellDataT<Stereo_Pose_Data>::type &vol,
-                            int _tileRows,int _tileColumns,osg::BoundingBox totalbb,int vpblod,const std::vector<Stereo_Pose_Data> &tasks){
+                            int _tileRows,int _tileColumns,osg::BoundingBox totalbb,int vpblod,const std::vector<Stereo_Pose_Data> &tasks,bool prog){
 
 
     osg::BoundingSphere bs;
@@ -572,8 +572,10 @@ void splitPictureCellsEven( std::vector<picture_cell> &cells,const CellDataT<Ste
         //#pragma omp parallel for shared(_tileRows, _tileColumns)
         for(int row=0; row< _tileRows; row++){
             for(int col=0; col<_tileColumns; col++){
-                printf("\r%04d/%04d %04d/%04d",row,_tileRows,col,_tileColumns);
-                fflush(stdout);
+                if(prog){
+                    printf("\r%04d/%04d %04d/%04d",row,_tileRows,col,_tileColumns);
+                    fflush(stdout);
+                }
                 osg::Matrix offsetMatrix=   osg::Matrix::scale(_tileColumns, _tileRows, 1.0) *osg::Matrix::translate(_tileColumns-1-2*col, _tileRows-1-2*row, 0.0);
                 double left,right,bottom,top;//,znear,zfar;
                 osg::Matrix m;//=(view*proj*offsetMatrix);

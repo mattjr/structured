@@ -1715,7 +1715,7 @@ double totalValidArea=0;
    // splitPictureCellsEven(cells,vol,_tileRows,_tileColumns,totalbb,vpblod,tasks);
     double margin =avgEdgeLen*marginExpand;
     splitPictureCells(cells,vol,margin,kd_bboxes,totalbb,vpblod,tasks);
-    splitPictureCellsEven(cells_mosaic,vol,_tileRows,_tileColumns,totalbb,vpblod,tasks);
+    splitPictureCellsEven(cells_mosaic,vol,_tileRows,_tileColumns,totalbb,vpblod,tasks,!clusterRun);
 
    int  faketileRows=kd_bboxes.size();
    int faketileColumns=1;

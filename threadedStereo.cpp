@@ -101,7 +101,7 @@ static double max_alt_cutoff=20.0;
 //static bool use_ncc = false;
 static double vrip_ramp;
 static int num_skip=0;
-
+static bool clusterRun=false;
 static int gpunum=0;
 static string stereo_calib_file_name;
 static bool no_simp=true;
@@ -119,6 +119,8 @@ static bool useReimage=true;
 static float tex_margin=0.01;
 static float bbox_margin=0.2;
 static bool no_vrip=false;
+static bool externalStereo=false;
+
 static double vrip_res;
 static string basepath;
 static bool use_dense_stereo=false;
@@ -300,7 +302,11 @@ static bool parse_args( int argc, char *argv[ ] )
     novpb=argp.read("--novpb");
     storeTexMesh=argp.read("--storetex");
     argp.read("--jpeg-quality",jpegQuality);
-
+    externalStereo= argp.read("--extstereo");
+    if(argp.read("--cluster")){
+        externalStereo=true;
+        clusterRun=true;
+    }
     if(argp.read("--debug-shader")){
         use_debug_shader=true;
         useAtlas=true;
@@ -1026,7 +1032,6 @@ int main( int argc, char *argv[ ] )
     if(!externalMode){
 
 double totalValidArea=0;
-bool externalStereo=false;
         if(externalStereo){
         string stereocmd="stereo.py";
 

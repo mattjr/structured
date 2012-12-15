@@ -312,7 +312,6 @@ bool makeDirectory( const std::string &path ,__mode_t maskval)
                 continue;
             }
         #endif
-        umask(maskval);
 
         if( mkdir( dir.c_str(), maskval )< 0 )
         {

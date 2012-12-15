@@ -884,8 +884,12 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
     }
    // im__print_all();
 
+
     int sizeLevel=atlas_image->Xsize()*scaleFactor;
     char dirname[1024];
+    sprintf(dirname,"%s/vtex",basedir.c_str());
+    osgDB::makeDirectory(dirname);
+    chmod(dirname,0775);
     int maxLevels=    (int)ceil(std::log((double)sizeLevel/tileSize) / std::log(2.0));
 
     if(writeAtlas){
@@ -898,7 +902,8 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
             sprintf(dirname,"%s/vtex/tiles_b%d_level%d",basedir.c_str(),border,level);
             int numXtiles=(sizeLevel/adjustedTileSize);
             int numYtiles=(sizeLevel/adjustedTileSize);
-            makeDirectory(dirname,0775);
+            osgDB::makeDirectory(dirname);
+            chmod(dirname,0775);
             int cnt=0;
 
 

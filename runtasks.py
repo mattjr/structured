@@ -123,7 +123,7 @@ for line in cfg_file:
     elif client_type == "SLURM_REMOTE":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for SLURM_REMOTE, need n workers and optional node names.")
-		argnum = min(int(elements[1]),total)
+	argnum = min(int(elements[1]),total)
         threads += taskworkers.create_slurm_remote(params, argnum, gateway='archipelago', nodes=elements[2:])
         numworkers += argnum
 

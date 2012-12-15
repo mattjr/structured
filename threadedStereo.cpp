@@ -2879,7 +2879,8 @@ double totalValidArea=0;
     int sqrtSize=    ceil(sqrt(totalSide));
    // printf("Un adjusted size %d\n",sqrtSize);
     int ajustedGLImageSize=(int)sqrtSize+((sqrtSize/VTtileSize)*2*tileBorder);
-    totalSide=osg::Image::computeNearestPowerOfTwo(ajustedGLImageSize);
+    int maxVTSize=(int)pow(2,17); //~128k max size
+    totalSide=min(osg::Image::computeNearestPowerOfTwo(ajustedGLImageSize),(int)maxVTSize);
     double marginAtlas=1.1;
     float closeFitScale=(ajustedGLImageSize > totalSide) ? totalSide/(double)(ajustedGLImageSize*marginAtlas) : 1.0;
     printf("Adjusted POT %d using %ld scale %f\n",ajustedGLImageSize,totalSide,closeFitScale);

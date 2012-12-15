@@ -3,6 +3,7 @@
 #include <vips/vips.h>
 #include "vcgapps/GenParam.h"
 #include <osgDB/WriteFile>
+#include "MemUtils.h"
 using namespace std;
 using namespace SpatialIndex;
 using namespace vpb;
@@ -897,7 +898,7 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
             sprintf(dirname,"%s/vtex/tiles_b%d_level%d",basedir.c_str(),border,level);
             int numXtiles=(sizeLevel/adjustedTileSize);
             int numYtiles=(sizeLevel/adjustedTileSize);
-            osgDB::makeDirectory(dirname);
+            makeDirectory(dirname,0775);
             int cnt=0;
 
 

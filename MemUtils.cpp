@@ -1,6 +1,10 @@
 #include "MemUtils.h"
 #include <osgDB/FileNameUtils>
 extern const char *diced_dir;
+#include <stack>
+#include <errno.h>
+#include <string.h>
+
 using namespace std;
 #define KILOBYTE_FACTOR 1024.0
 #define MEGABYTE_FACTOR ( 1024.0 * 1024.0 )
@@ -251,4 +255,71 @@ osg::Vec2 calcCoordReprojSimple(const osg::Vec3 &vert,const osg::Matrix &trans,c
 
     return tc;
 
+}
+bool makeDirectory( const std::string &path ,__mode_t maskval)
+{
+    if (path.empty())
+    {
+        osg::notify(osg::DEBUG_INFO) << "osgDB::makeDirectory(): cannot create an empty directory" << std::endl;
+        return false;
+    }
+
+    struct stat64 stbuf;
+    if( stat64( path.c_str(), &stbuf ) == 0 )
+    {
+        if( S_ISDIR(stbuf.st_mode))
+            return true;
+        else
+        {
+            osg::notify(osg::DEBUG_INFO) << "osgDB::makeDirectory(): "  <<
+                    path << " already exists and is not a directory!" << std::endl;
+            return false;
+        }
+    }
+
+    std::string dir = path;
+    std::stack<std::string> paths;
+    while( true )
+    {
+        if( dir.empty() )
+            break;
+
+        if( stat64( dir.c_str(), &stbuf ) < 0 )
+        {
+            switch( errno )
+            {
+                case ENOENT:
+                case ENOTDIR:
+                    paths.push( dir );
+                    break;
+
+                default:
+                    osg::notify(osg::DEBUG_INFO) << "osgDB::makeDirectory(): "  << strerror(errno) << std::endl;
+                    return false;
+            }
+        }
+        dir = osgDB::getFilePath(std::string(dir));
+    }
+
+    while( !paths.empty() )
+    {
+        std::string dir = paths.top();
+
+        #if defined(WIN32)
+            //catch drive name
+            if (dir.size() == 2 && dir.c_str()[1] == ':') {
+                paths.pop();
+                continue;
+            }
+        #endif
+        umask(maskval);
+
+        if( mkdir( dir.c_str(), maskval )< 0 )
+        {
+            osg::notify(osg::DEBUG_INFO) << "osgDB::makeDirectory(): "  << strerror(errno) << std::endl;
+            return false;
+        }
+        paths.pop();
+    }
+    return true;
 }

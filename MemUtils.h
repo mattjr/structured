@@ -64,6 +64,7 @@ void getULLR(osg::Matrix viewproj,int width,int height,osg::Vec4 &ullr);
 extern const char *uname;
 extern const char *diced_dir;
 extern const char *diced_img_dir;
+bool makeDirectory( const std::string &path ,__mode_t maskval);
 
 extern const char *mosdir;
 extern const char *aggdir;

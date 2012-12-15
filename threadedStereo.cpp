@@ -2874,8 +2874,8 @@ bool externalStereo=false;
    // printf("Un adjusted size %d\n",sqrtSize);
     int ajustedGLImageSize=(int)sqrtSize+((sqrtSize/VTtileSize)*2*tileBorder);
     totalSide=osg::Image::computeNearestPowerOfTwo(ajustedGLImageSize);
-
-    float closeFitScale=(ajustedGLImageSize > totalSide) ? totalSide/(double)ajustedGLImageSize : 1.0;
+    double marginAtlas=1.1;
+    float closeFitScale=(ajustedGLImageSize > totalSide) ? totalSide/(double)(ajustedGLImageSize*marginAtlas) : 1.0;
     printf("Adjusted POT %d using %ld scale %f\n",ajustedGLImageSize,totalSide,closeFitScale);
     FILE *fpscale=fopen((string(diced_dir)+string("/globalscale.txt")).c_str(),"w");
     fprintf(fpscale,"%f\n",closeFitScale);

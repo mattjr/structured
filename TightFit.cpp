@@ -155,7 +155,7 @@ void VipsAtlasBuilder::buildAtlas()
             if (!addedSourceToAtlas)
             {
                 //osg::notify(osg::INFO)
-                        cerr<<"creating new Atlas for "<<source->_image->filename()<<std::endl;
+                          osg::notify(osg::INFO)<<"creating new Atlas for "<<source->_image->filename()<<std::endl;
 
                 osg::ref_ptr<VAtlas> atlas = new VAtlas(_maximumAtlasWidth,_maximumAtlasHeight,_margin);
                 //  atlas->_height=_maximumAtlasHeight;

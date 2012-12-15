@@ -3203,12 +3203,14 @@ double totalValidArea=0;
     }
 
     if(!novpb) {
-        if(!mgc){
+        if(!mgc && !useVirtTex){
             mgc = new MyGraphicsContext();
             if(!mgc->valid()){
                 no_hw_context=true;
                 printf("Forcing no hw compression due to lack of graphics card context\n");
             }
+        }else{
+            no_hw_context=true;
         }
         doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot,src_proj4,dst_proj4_coord_system,sparseRatio,no_hw_context,no_atlas);
     }

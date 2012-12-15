@@ -65,7 +65,7 @@ std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol)
     output << tmp;
     sprintf(tmp,"$BASEDIR/vrip/bin/vripnew tmp-total.vri tmp-total.txt tmp-total.txt %f -rampscale %f > log-tmp-total.txt;$BASEDIR/vrip/bin/volfill tmp-total.vri exp-total.vri >log-volfill.txt;$BASEDIR/vrip/bin/vripsurf exp-total.vri exp-total.ply >log-surf.txt;",_res,_expandBy);
     output << tmp;
-    sprintf(tmp,"%s/vcgapps/bin/mergeMesh exp-total.ply  -cleansize %f -P -flip -out total.ply > log-merge.txt",_basepath.c_str(),smallCCPer);
+    sprintf(tmp,"%s/vcgapps/bin/mergeMesh exp-total.ply  -cleansize %f -P -out total.ply > log-merge.txt",_basepath.c_str(),smallCCPer);
     output << tmp;
     string cmdfile=string(aggdir)+"/finsplitcmd";
     FILE *fp2=fopen(cmdfile.c_str(),"w");

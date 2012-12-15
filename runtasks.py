@@ -139,7 +139,7 @@ print "Spawned {0} workers.".format(numworkers)
 
 # create the progress bar
 if os.environ.get('FILEOUTPUT_STATUS') == '1':
-    print title
+    print '%s: %d tasks' % (title ,total)
     widgets = [Percentage()]
     progress_bar = ProgressBar(widgets=widgets, maxval=total,term_width=5,fd=sys.stdout,using_file=True)
 else:

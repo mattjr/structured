@@ -973,8 +973,8 @@ int main( int argc, char *argv[ ] )
         for(unsigned int i=0; i < tasks.size(); i+=taskSplitSize){
             // if(tasks[i].valid)
             if(1){
-                const osg::Matrix &mat=tasks[i].mat;
-              /*  fprintf(conf_ply_file,
+               /*const osg::Matrix &mat=tasks[i].mat;
+                 fprintf(conf_ply_file,
                         "cd %s;%s/stereo_mesh_gen %s --batch %s %d %d --mat-1-8 %f %f %f %f %f %f %f %f --mat-8-16 %f %f %f %f %f %f %f %f --edgethresh %f -m %d -z %f\n"
                         ,cwd
                         ,basepath.c_str(),base_dir.c_str(),contents_file_name.c_str(),i,i+taskSplitSize,
@@ -1437,17 +1437,17 @@ double totalValidArea=0;
             WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks,plymc_expand_by);
             WriteBoundVRIP wbvrip(vrip_res,string(aggdir)+"/vripcmd",basepath,cwd,tasks,vrip_ramp);
 
-            int splits[3]={0,0,0};
+           // int splits[3]={0,0,0};
             foreach_vol(cur,vol){
                 //  cout <<cur->bounds.bbox._min<<" "<<cur->bounds.bbox._max<<endl;
                 //    cout <<"Poses " <<cur->poses.size()<<endl;
                 wbvrip.write_cmd(*cur);
                 wbtp.write_cmd(*cur);
 
-                splits[0]=cur->splits[0];
+              /*  splits[0]=cur->splits[0];
                 splits[1]=cur->splits[1];
                 splits[2]=cur->splits[2];
-
+*/
             }
            // cout << splits[0] << " " << splits[1] << " " <<splits[2] <<endl;
             string plymccmd="plymc.py";
@@ -1476,8 +1476,13 @@ double totalValidArea=0;
             wbvrip.close();
             wbtp.close();
         }
-        if(!no_vrip)
+        if(!no_vrip){
             sysres=system("python runvrip.py");
+            if(sysres <0){
+                fprintf(stderr,"Failed to run runvrip.py\n");
+                exit(-1);
+            }
+        }
         char tmpfn[8096];
         {
             osg::ref_ptr<osg::Node> model;
@@ -1907,8 +1912,13 @@ double totalValidArea=0;
 
         shellcm.write_generic(splitcmd,splitcmds_fn,"Split",NULL,NULL,0);
 #endif
-        if(!no_split)
+        if(!no_split){
             sysres=system("python split.py");
+            if(sysres <0){
+                fprintf(stderr,"Failed to run split\n");
+                exit(-1);
+            }
+        }
     }else{
         //printf("Split for Tex %d\n",(int)cells.size());
         osg::Timer_t startTick= osg::Timer::instance()->tick();
@@ -2851,50 +2861,59 @@ double totalValidArea=0;
 
     string calcTexCmd="tc_calc.py";
     shellcm.write_generic(calcTexCmd,calcTexFn,"TC",NULL,NULL,num_threads);
-    if(!no_tc)
+    if(!no_tc){
         sysres=system(string("python "+calcTexCmd).c_str());
-
+        if(sysres <0){
+            fprintf(stderr,"Failed to run %s\n",calcTexCmd.c_str());
+            exit(-1);
+        }
+    }
     shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),std::max(num_threads/2,1));
     long int totalSide=0;
 
     if(reparamTex){
-    if(!no_run_remap)
-        sysres=system(string("python "+texcmd[REMAP]).c_str());
+        if(!no_run_remap)
+            sysres=system(string("python "+texcmd[REMAP]).c_str());
 
-    for(int i=0; i <(int)cells.size(); i++){
-        osg::Vec2 minTC,maxTC;
-        int origX,origY;
-        char tmp11[8192];
-        int sizeX,sizeY;
-        sprintf(tmp11,"%s/image_r%04d_c%04d_rs%04d_cs%04d-remap.size.txt",diced_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns);
-        FILE *fp=fopen(tmp11,"r");
-        if(!fp){
-            fprintf(stderr,"Can't open %s\n",tmp11);
-            exit(-1);
-        }
-        int ret=fscanf(fp,"%f %f %f %f %d %d %d %d\n",&(minTC.x()),&(minTC.y()),&(maxTC.x()),&(maxTC.y()),&origX,&origY,&sizeX,&sizeY);
-        if(ret != 8){
-            fprintf(stderr,"Can't parse %s\n",tmp11);
-            exit(-1);
-        }
-        fclose(fp);
-        int maxSide=std::max(sizeX,sizeY);
-        totalSide+=(maxSide*maxSide);
+        for(int i=0; i <(int)cells.size(); i++){
+            osg::Vec2 minTC,maxTC;
+            int origX,origY;
+            char tmp11[8192];
+            int sizeX,sizeY;
+            sprintf(tmp11,"%s/image_r%04d_c%04d_rs%04d_cs%04d-remap.size.txt",diced_dir,cells[i].row,cells[i].col,_tileRows,_tileColumns);
+            FILE *fp=fopen(tmp11,"r");
+            if(!fp){
+                fprintf(stderr,"Can't open %s\n",tmp11);
+                exit(-1);
+            }
+            int ret=fscanf(fp,"%f %f %f %f %d %d %d %d\n",&(minTC.x()),&(minTC.y()),&(maxTC.x()),&(maxTC.y()),&origX,&origY,&sizeX,&sizeY);
+            if(ret != 8){
+                fprintf(stderr,"Can't parse %s\n",tmp11);
+                exit(-1);
+            }
+            fclose(fp);
+            int maxSide=std::max(sizeX,sizeY);
+            totalSide+=(maxSide*maxSide);
 
-    }
-    int sqrtSize=    ceil(sqrt(totalSide));
-   // printf("Un adjusted size %d\n",sqrtSize);
-    int ajustedGLImageSize=(int)sqrtSize+((sqrtSize/VTtileSize)*2*tileBorder);
-    int maxVTSize=(int)pow(2,17); //~128k max size
-    totalSide=min(osg::Image::computeNearestPowerOfTwo(ajustedGLImageSize),(int)maxVTSize);
-    double marginAtlas=1.1;
-    float closeFitScale=(ajustedGLImageSize > totalSide) ? totalSide/(double)(ajustedGLImageSize*marginAtlas) : 1.0;
-    printf("Adjusted POT %d using %ld scale %f\n",ajustedGLImageSize,totalSide,closeFitScale);
-    FILE *fpscale=fopen((string(diced_dir)+string("/globalscale.txt")).c_str(),"w");
-    fprintf(fpscale,"%f\n",closeFitScale);
-    fclose(fpscale);
-    if(!no_tex)
-        sysres=system(string("python "+texcmd[REMAP_FLAT_SIZE]).c_str());
+        }
+        int sqrtSize=    ceil(sqrt(totalSide));
+        // printf("Un adjusted size %d\n",sqrtSize);
+        int ajustedGLImageSize=(int)sqrtSize+((sqrtSize/VTtileSize)*2*tileBorder);
+        int maxVTSize=(int)pow(2,17); //~128k max size
+        totalSide=min(osg::Image::computeNearestPowerOfTwo(ajustedGLImageSize),(int)maxVTSize);
+        double marginAtlas=1.1;
+        float closeFitScale=(ajustedGLImageSize > totalSide) ? totalSide/(double)(ajustedGLImageSize*marginAtlas) : 1.0;
+        printf("Adjusted POT %d using %ld scale %f\n",ajustedGLImageSize,totalSide,closeFitScale);
+        FILE *fpscale=fopen((string(diced_dir)+string("/globalscale.txt")).c_str(),"w");
+        fprintf(fpscale,"%f\n",closeFitScale);
+        fclose(fpscale);
+        if(!no_tex){
+            sysres=system(string("python "+texcmd[REMAP_FLAT_SIZE]).c_str());
+            if(sysres <0){
+                fprintf(stderr,"Failed to run %s\n",texcmd[REMAP_FLAT_SIZE].c_str());
+                exit(-1);
+            }
+        }
     }/*else{
         if(!no_tex)
             sysres=system(string("python "+texcmd[FLAT]).c_str());
@@ -2952,9 +2971,13 @@ double totalValidArea=0;
         fclose(vttexcmds_fp);
         shellcm.write_generic(vttex,vttexcmds_fn,"VT Tex",NULL,NULL,num_threads);
    //     fclose(vttexcmds_fp);
-        if(useVirtTex && !no_vttex)
+        if(useVirtTex && !no_vttex){
             sysres=system(("python "+vttex).c_str());
-
+            if(sysres <0){
+                fprintf(stderr,"Failed to run %s\n",vttex.c_str());
+                exit(-1);
+            }
+        }
     }
 
     FILE *ipadViewerFP=fopen("createtabletdata.sh","w");

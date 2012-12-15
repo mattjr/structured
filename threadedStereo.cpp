@@ -969,14 +969,15 @@ int main( int argc, char *argv[ ] )
         chmod(stereo_conf_name,0666);
 
         int valid=0;
-        for(unsigned int i=0; i < tasks.size(); i++){
+        int taskSplitSize=100;
+        for(unsigned int i=0; i < tasks.size(); i+=taskSplitSize){
             // if(tasks[i].valid)
             if(1){
                 const osg::Matrix &mat=tasks[i].mat;
                 fprintf(conf_ply_file,
-                        "cd %s;%s/stereo_mesh_gen %s %s %s --mat-1-8 %f %f %f %f %f %f %f %f --mat-8-16 %f %f %f %f %f %f %f %f --edgethresh %f -m %d -z %f\n"
+                        "cd %s;%s/stereo_mesh_gen %s --batch %s %d %d --mat-1-8 %f %f %f %f %f %f %f %f --mat-8-16 %f %f %f %f %f %f %f %f --edgethresh %f -m %d -z %f\n"
                         ,cwd
-                        ,basepath.c_str(),base_dir.c_str(),tasks[i].left_name.c_str(),tasks[i].right_name.c_str(),
+                        ,basepath.c_str(),base_dir.c_str(),contents_file_name.c_str(),i,i+taskSplitSize,
                         mat(0,0),mat(1,0),mat(2,0),mat(3,0),
                         mat(0,1),mat(1,1),mat(2,1),mat(3,1),
                         mat(0,2),mat(1,2),mat(2,2),mat(3,2),mat(0,3),mat(1,3),mat(2,3),mat(3,3),edgethresh,
@@ -2919,16 +2920,16 @@ double totalValidArea=0;
        // fprintf(vttexcmds_fp,"#!/bin/bash\n");
         int adjustedTileSize=tileSize-(border *2);
         for(int level=0; sizeLevel>=adjustedTileSize; level++,sizeLevel/=2 ){
-            fprintf(vttexcmds_fp,"cd %s;",cwd);
 
             int numXtiles=(sizeLevel/adjustedTileSize);
             if(numXtiles <= 4){
+                fprintf(vttexcmds_fp,"cd %s;",cwd);
                 fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s -level %d \n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag,level);
 
 
             }else{
                 for(int x=0; x<numXtiles; x++){
-
+                    fprintf(vttexcmds_fp,"cd %s;",cwd);
                     fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s -level %d -row %d\n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag,level,x);
                 }
             }

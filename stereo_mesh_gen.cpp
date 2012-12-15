@@ -28,6 +28,10 @@
 #include <osg/io_utils>
 #include <osg/ArgumentParser>
 #include <osg/ComputeBoundsVisitor>
+#include "stereo_cells.hpp"
+
+#include "SeaBedIO.h"
+#include <fstream>
 using namespace std;
 
 
@@ -50,7 +54,88 @@ static int tex_size=512;
 static double feature_depth_guess = AUV_NO_Z_GUESS;
 static double edgethresh=0.5;
 static bool use_dense_stereo=false;
+void fill_osg_matrix(double *cam_pose,osg::Matrix &trans){
 
+
+
+
+
+    double slam_x = cam_pose[POSE_INDEX_X];
+    double slam_y = cam_pose[POSE_INDEX_Y];
+    double slam_z = cam_pose[POSE_INDEX_Z];
+    double slam_phi   =cam_pose[POSE_INDEX_PHI];
+    double slam_theta =cam_pose[POSE_INDEX_THETA];
+    double slam_psi   = cam_pose[POSE_INDEX_PSI];
+    trans.makeRotate( slam_phi,osg::Vec3(1,0,0), slam_theta,osg::Vec3(0,1,0), slam_psi ,osg::Vec3(0,0,1));
+    //cout << trans<<endl;
+
+    trans*=osg::Matrix::translate(slam_x,slam_y,slam_z);
+    //  trans=osgTranspose(trans);
+
+
+    //   trans=osg::Matrix::inverse(trans);
+    // cout << trans<<endl;
+
+
+    /* trans(0, 3) = slam_x;
+  trans(1, 3) = slam_y;
+  trans(2, 3) = slam_z;
+  trans(3, 3) = 1;
+*/
+}
+
+static int get_auv_image_name( const string  &contents_dir_name,
+                               Stereo_Pose pose,
+                               Stereo_Pose_Data &name
+                               )
+{
+
+    //name.cam_pose = new Vector(AUV_NUM_POSE_STATES);
+    //name.m =gts_matrix_identity (NULL);
+
+    //
+    // Try to read timestamp and file names
+    //
+
+    //int index;
+
+    name.id= pose.pose_id;
+    name.time = pose.pose_time;
+    name.pose[POSE_INDEX_X] = pose.pose_est[POSE_INDEX_X];
+    name.pose[POSE_INDEX_Y] = pose.pose_est[POSE_INDEX_Y];
+    name.pose[POSE_INDEX_Z] = pose.pose_est[POSE_INDEX_Z];
+    name.pose[POSE_INDEX_PHI] = pose.pose_est[POSE_INDEX_PHI];
+    name.pose[POSE_INDEX_THETA] = pose.pose_est[POSE_INDEX_THETA];
+    name.pose[POSE_INDEX_PSI] = pose.pose_est[POSE_INDEX_PSI];
+    name.left_name = pose.left_image_name;
+    name.right_name = pose.right_image_name;
+    name.file_name=name.left_name;
+    name.alt= pose.altitude;
+    name.radius= pose.image_footprint_radius;
+    name.overlap = pose.likely_overlap;
+
+
+    name.mesh_name = "surface-"+osgDB::getStrippedName(name.left_name)+".tc.ply";
+    osg::Matrix trans;
+    fill_osg_matrix(name.pose, name.mat);
+    //fill_gts_matrix(name.pose,name.m);
+    /*name.mat= osg::Matrix(name.m[0][0],name.m[1][0],name.m[2][0],name.m[3][0],
+                          name.m[0][1],name.m[1][1],name.m[2][1],name.m[3][1],
+                          name.m[0][2],name.m[1][2],name.m[2][2],name.m[3][2],
+                          name.m[0][3],name.m[1][3],name.m[2][3],name.m[3][3]);*/
+    /*name.mat= osg::Matrix( name.mat(0,0) ,name.mat(0,1),name.mat(0,2) ,name.mat(0,3)
+                              , name.mat(1,0) ,name.mat(1,1),name.mat(1,2) ,name.mat(1,3)
+                              , name.mat(2,0) ,name.mat(2,1),name.mat(2,2) ,name.mat(2,3)
+                              , name.mat(3,0) ,name.mat(3,1),name.mat(3,2) ,name.mat(3,3));
+
+*/
+
+    //cout <<"New" << trans<<endl;
+    //cout << "orig " << name.mat<<endl;
+
+    return 1;
+
+}
 
 
 int main( int argc, char *argv[ ] )
@@ -81,8 +166,16 @@ int main( int argc, char *argv[ ] )
     }
     string basedir=arguments[1];
     string imgdir=basedir+"/img/";
-    left_file_name=arguments[2];
-    right_file_name=arguments[3];
+    bool batch=false;
+    string posefile;
+    int start=0,end=0;
+
+    if(arguments.read("--batch",posefile,start,end)){
+        batch=true;
+    }else{
+        left_file_name=arguments[2];
+        right_file_name=arguments[3];
+    }
 
     if(!(arguments.read("--mat-1-8",mat(0,0),mat(1,0),mat(2,0),mat(3,0),
                         mat(0,1),mat(1,1),mat(2,1),mat(3,1)) && arguments.read("--mat-8-16",mat(0,2),mat(1,2),mat(2,2),mat(3,2),
@@ -97,7 +190,7 @@ int main( int argc, char *argv[ ] )
 
     arguments.read("-z" ,feature_depth_guess);
     use_dense_stereo=arguments.read("--ds");
-    bool verbose=arguments.read("-v");
+    //bool verbose=arguments.read("-v");
     display_debug_images=arguments.read("-d");
     arguments.read("--maxlen",max_triangulation_len);
 
@@ -115,7 +208,40 @@ int main( int argc, char *argv[ ] )
         cerr << "ERROR - " << error << endl;
         exit( 1 );
     }
+  vector<Stereo_Pose_Data> tasks;
 
+     if(batch){
+
+         Stereo_Pose_File pose_data=read_stereo_pose_est_file(posefile );
+         int cnt=0;
+         vector<Stereo_Pose>::const_iterator cii;
+         cii=pose_data.poses.begin();
+         while( cii != pose_data.poses.end() ){
+
+
+
+             Stereo_Pose_Data name;
+             get_auv_image_name( imgdir, *cii, name) ;
+             cii++;
+             cnt++;
+             if(cnt-1 < start || cnt-1 >= end){
+                 continue;
+             }
+
+
+             name.valid=false;
+             tasks.push_back(name);
+
+         }
+
+
+
+         if(tasks.size() <= 0){
+             fprintf(stderr,"No tasks loaded check %s\n",posefile.c_str());
+             exit(-1);
+         }
+
+     }
     StereoCalib stereocal((basedir+"/"+stereo_calib_file_name).c_str());
     OpenThreads::Mutex mutex;
     double min_feat_dist=3.0;
@@ -126,8 +252,21 @@ int main( int argc, char *argv[ ] )
 
     osg::BoundingBox bbox;
     MatchStats stats;
-    engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,stats,feature_depth_guess,true,false);
+    if(batch){
+        for(int i=0; i<(int)tasks.size(); i++){
+            left_file_name=tasks[i].left_name;
+            right_file_name=tasks[i].right_name;
 
+            engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,stats,feature_depth_guess,true,false);
+            printf("\r%03d/%03d",i,(int)tasks.size());
+            fflush(stdout);
+        }
+        printf("\n");
+
+    }else{
+        engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,stats,feature_depth_guess,true,false);
+
+    }
 
     //
     // Clean-up

@@ -1472,7 +1472,7 @@ double totalValidArea=0;
          sprintf(tmpcmd,"os.system(setupts.basepath +'/runtp_dist.py %s %s %s')\n",
                  (string(aggdir)+"/plymccmd2").c_str(),serfile,"PlyMC2");*/
             shellcm.write_generic(plymccmd,wbtp.getCmdFileName(),"PlyMC",NULL,&postcmd,0,string(tmpcmd));
-            shellcm.write_generic(vripccmd,wbvrip.getCmdFileName(),"VRIP",NULL,&postcmd,0,wbvrip.getPostCmds(vol));
+            shellcm.write_generic(vripccmd,wbvrip.getCmdFileName(),"Vrip",NULL,&postcmd,0,wbvrip.getPostCmds(vol));
             wbvrip.close();
             wbtp.close();
         }

@@ -86,7 +86,7 @@ std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol)
     }
     fclose(fp2);
     sprintf(tmp,"\nos.system(setupts.basepath +'/%s %s %s %s')\n",
-            thrpool,cmdfile.c_str(),serfile,"PRESPLIT");
+            thrpool,cmdfile.c_str(),serfile,"Presplit");
     return createFileCheckPython(cmdpost.str(),_cwd+"/"+diced_dir,allmeshes,output.str(),4)+tmp;
 
 }
@@ -343,7 +343,7 @@ bool WriteSplitTP::write_cmd(const picture_cell &cell){
 
 }
 bool getFaceDivision(osg::ref_ptr<osg::Node> &model,double &avgLen,int &numberFacesAll,unsigned int targetNumTrianglesPerLeaf,    std::vector<osg::BoundingBox> &kd_bboxes){
-    printf("Getting face divisions\n");
+    //printf("Getting face divisions\n");
     if(model.valid()){
         osg::Geode *geode= dynamic_cast<osg::Geode*>(model.get());
         if(!geode)
@@ -377,7 +377,7 @@ bool getFaceDivision(osg::ref_ptr<osg::Node> &model,double &avgLen,int &numberFa
                 avgLen+=d20/primitiveSet->getNumIndices();
 
             }
-            printf("Average Len %f\n",avgLen);
+           // printf("Average Len %f\n",avgLen);
             if(!kdTree){
                 fprintf(stderr,"Can't be converted to kdtree\n");
                 exit(-1);
@@ -389,13 +389,13 @@ bool getFaceDivision(osg::ref_ptr<osg::Node> &model,double &avgLen,int &numberFa
                     if(list[i].first < 0)
                         kd_bboxes.push_back(list[i].bb);
                 }
-                printf("Kdtree cells %d\n",(int)kd_bboxes.size());
+                 printf("Kdtree cells %d\n",(int)kd_bboxes.size());
 
                 //cout << list[i].bb <<endl;
             }
 
             numberFacesAll=geom->getPrimitiveSet(0)->getNumPrimitives();
-            printf("Face %d\n",numberFacesAll);
+           // printf("Face %d\n",numberFacesAll);
             return true;
 
         }

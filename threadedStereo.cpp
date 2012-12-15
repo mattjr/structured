@@ -2919,6 +2919,7 @@ double totalValidArea=0;
        // fprintf(vttexcmds_fp,"#!/bin/bash\n");
         int adjustedTileSize=tileSize-(border *2);
         for(int level=0; sizeLevel>=adjustedTileSize; level++,sizeLevel/=2 ){
+            fprintf(vttexcmds_fp,"cd %s;",cwd);
 
             int numXtiles=(sizeLevel/adjustedTileSize);
             if(numXtiles <= 4){

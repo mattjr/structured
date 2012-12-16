@@ -259,8 +259,17 @@ int main( int argc, char *argv[ ] )
             right_file_name=tasks[i].right_name;
             feature_depth_guess=tasks[i].alt;
             mat=tasks[i].mat;
-            if(engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,stats,feature_depth_guess,true,false) == STEREO_OK)
+            StereoStatusFlag statusFlag=engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,
+                                                           stats,feature_depth_guess,true,false);
+            if(statusFlag == STEREO_OK)
                 goodMeshes++;
+            else if(statusFlag == FAIL_OTHER){
+                fprintf(stderr,"Fail other\n");
+            }else if(statusFlag == FAIL_FEAT_THRESH || statusFlag == FAIL_TRI_EDGE_THRESH){
+                fprintf(stderr," TrackRej %03d EpiRej %03d TriRej %03d OK %03d: %s",stats.total_tracking_fail,
+                       stats.total_epi_fail,stats.total_tri_fail,stats.total_accepted_feat,tasks[i].left_name.c_str());
+            }
+
             printf("\r%03d/%03d",i,(int)tasks.size());
             fflush(stdout);
         }

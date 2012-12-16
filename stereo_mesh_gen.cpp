@@ -268,8 +268,8 @@ int main( int argc, char *argv[ ] )
             }else if(statusFlag == FAIL_FEAT_THRESH || statusFlag == FAIL_TRI_EDGE_THRESH){
                 fprintf(stderr," TrackRej %03d EpiRej %03d TriRej %03d OK %03d: %s",stats.total_tracking_fail,
                        stats.total_epi_fail,stats.total_tri_fail,stats.total_accepted_feat,tasks[i].left_name.c_str());
-                if(stats.total_accepted_feat >0 )
-                    goodMeshes++;
+                //if(stats.total_accepted_feat >0 )
+                  //  goodMeshes++;
             }
 
             printf("\r%03d/%03d",i,(int)tasks.size());

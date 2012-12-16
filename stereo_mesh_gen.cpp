@@ -210,7 +210,7 @@ int main( int argc, char *argv[ ] )
         exit( 1 );
     }
   vector<Stereo_Pose_Data> tasks;
-
+    int goodMeshes=0;
      if(batch){
 
          Stereo_Pose_File pose_data=read_stereo_pose_est_file(posefile );
@@ -259,7 +259,8 @@ int main( int argc, char *argv[ ] )
             right_file_name=tasks[i].right_name;
             feature_depth_guess=tasks[i].alt;
             mat=tasks[i].mat;
-            engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,stats,feature_depth_guess,true,false);
+            if(engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,stats,feature_depth_guess,true,false) == STEREO_OK)
+                goodMeshes++;
             printf("\r%03d/%03d",i,(int)tasks.size());
             fflush(stdout);
         }
@@ -273,6 +274,9 @@ int main( int argc, char *argv[ ] )
     //
     // Clean-up
     //
-
+    if(batch && goodMeshes ==0){
+        fprintf(stderr,"All meshes in this batch failed to process correctly!\n");
+        return -1;
+    }
     return 0;
 }

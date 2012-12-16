@@ -1067,16 +1067,40 @@ int main(int ac, char *av[]) {
         }*//*
         im_close(tmpI);
         if(passesFlatRemap > 1){*/
-               IMAGE * tmpI=im_open("tmp","p");
-            im_extract_bands(outputImage[0],tmpI,0,3);
 
-            if( im_vips2ppm(tmpI,(osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str())){
-                fprintf(stderr,"Failed to write\n");
-                cerr << im_error_buffer()<<endl;
-                im_close(tmpI);
-                exit(-1);
-            }
-            /*  vips::VImage maskI(tmpI);
+        IMAGE *maskBand=im_open("tmp2","p");
+        im_extract_bands(outputImage[0],maskBand,3,1);
+        if( im_vips2ppm(maskBand,(osgDB::getNameLessExtension(imageName)+"-tmp-mask.pgm").c_str())){
+            fprintf(stderr,"Failed to write\n");
+            cerr << im_error_buffer()<<endl;
+            im_close(maskBand);
+            exit(-1);
+        }
+        IMAGE * invMask=im_open("tmp11","p");
+        im_invert(maskBand,invMask);
+        IMAGE * rgbI=im_open("tmp","p");
+        im_extract_bands(outputImage[0],rgbI,0,3);
+        IMAGE * joinedMask=im_open("tmp7","p");
+        IMAGE *arr[]={invMask,invMask,invMask};
+        im_gbandjoin(arr,joinedMask,3);
+        IMAGE * finalI=im_open("tmp9","p");
+
+        im_ifthenelse(invMask,joinedMask,rgbI,finalI);
+
+
+        if( im_vips2ppm(finalI,(osgDB::getNameLessExtension(imageName)+"-tmp.ppm").c_str())){
+            fprintf(stderr,"Failed to write\n");
+            cerr << im_error_buffer()<<endl;
+            im_close(finalI);
+            exit(-1);
+        }
+        im_close(invMask);
+
+        im_close(joinedMask);
+        im_close(maskBand);
+        im_close(rgbI);
+
+        /*  vips::VImage maskI(tmpI);
         vips::VImage dilatedI(tmpI);
         const int size=4;
         std::vector<int> coeff(size*size,255);
@@ -1087,7 +1111,7 @@ int main(int ac, char *av[]) {
 
         maskI.more(1.0).invert().andimage(dilatedI.dilate(mask)).write("wa.ppm");
         (maskI.more(1.0).invert().andimage(dilatedI.dilate(mask))).add(maskI).write("total.png");*/
-            im_close(tmpI);
+        im_close(finalI);
 
             /*int levels=(int)ceil(log( max( sizeX, sizeY ))/log(2.0) );
         if(pyramid){ if(!genPyramid(osgDB::getNameLessExtension(imageName)+".tif",levels,"ppm")){
@@ -1096,15 +1120,7 @@ int main(int ac, char *av[]) {
             }
         }
 */
-            IMAGE *tmpI2=im_open("tmp2","p");
-            im_extract_bands(outputImage[0],tmpI2,3,1);
-            if( im_vips2ppm(tmpI2,(osgDB::getNameLessExtension(imageName)+"-tmp-mask.pgm").c_str())){
-                fprintf(stderr,"Failed to write\n");
-                cerr << im_error_buffer()<<endl;
-                im_close(tmpI2);
-                exit(-1);
-            }
-            im_close(tmpI2);
+
        // }
         elapsed=osg::Timer::instance()->delta_s(start,osg::Timer::instance()->tick());
         std::cout << "\n"<<format_elapsed(elapsed) << std::endl;

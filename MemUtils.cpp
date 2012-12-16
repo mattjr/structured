@@ -201,12 +201,19 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
             gdal_param,
             osgDB::getNameLessExtension(name).c_str(),
             ("mosaic/"+osgDB::getSimpleFileName(name)).c_str());*/
-    sprintf(tmp,"%s/create_masked.py %s  %s-tmp.%s %s-tmp-mask.pgm %s",
+    /*sprintf(tmp,"%s/create_masked.py %s  %s-tmp.%s %s-tmp-mask.pgm %s",
                basepath.c_str(),
                gdal_param,
                osgDB::getNameLessExtension(name).c_str(),ext.c_str(),
                osgDB::getNameLessExtension(name).c_str(),
-               ("mosaic/"+osgDB::getSimpleFileName(name)).c_str());
+               ("mosaic/"+osgDB::getSimpleFileName(name)).c_str());*/
+    char nodata[1024];
+    sprintf(nodata," -a_nodata 255,255,255 ");
+    sprintf(tmp,"gdal_translate %s %s %s-tmp.%s  %s",
+            gdal_param,
+            nodata,
+            osgDB::getNameLessExtension(name).c_str(),ext.c_str(),
+            ("mosaic/"+osgDB::getSimpleFileName(name)).c_str());
     int res= system(tmp);
     // printf("%s\n",tmp);
     if(res != 0){

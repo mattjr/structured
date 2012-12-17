@@ -1720,9 +1720,21 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
           std::vector<CvPoint2D64f>  left_coords;
           std::vector<CvPoint2D64f>  right_coords;
           //vector<bool>status(descriptors1.rows,true);
+//Horrible hack
+          libsnapper::Camera_Calib local_calib[2];
+          for(int i=0; i< 2; i++){
+            local_calib[i].ccx=_calib.camera_calibs[i].ccx;
+            local_calib[i].ccy=_calib.camera_calibs[i].ccy;
+            local_calib[i].fcx=_calib.camera_calibs[i].fcx;
+            local_calib[i].fcy=_calib.camera_calibs[i].fcy;
 
+            local_calib[i].kc1=_calib.camera_calibs[i].kc1;
+            local_calib[i].kc2=_calib.camera_calibs[i].kc2;
+            local_calib[i].kc3=_calib.camera_calibs[i].kc3;
+            local_calib[i].kc4=_calib.camera_calibs[i].kc4;
+            local_calib[i].kc5=_calib.camera_calibs[i].kc5;
 
-
+          }
           for( int i = 0; i < matches.size(); i++ )
           { //if( matches[i].distance < 2*min_dist )
               {
@@ -1735,12 +1747,19 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
                 {
 
                       CvPoint2D64f l,r;
+                      double undist1_x,undist1_y;
+                      double undist2_x,undist2_y;
 
-                      l.x=keypoints1[matches[i].queryIdx].pt.x;
-                      l.y=keypoints1[matches[i].queryIdx].pt.y;
-                      r.x=keypoints2[matches[i].trainIdx].pt.x;
-                      r.y=keypoints2[matches[i].trainIdx].pt.y;
-                   //   printf("bad %f %f -- %f %f\n",l.x,l.y,r.x,r.y);
+
+                      dist_to_undist_pixel_coords(local_calib[0],keypoints1[matches[i].queryIdx].pt.x,keypoints1[matches[i].queryIdx].pt.y,
+                                                  undist1_x,undist1_y);
+                      dist_to_undist_pixel_coords(local_calib[1],keypoints2[matches[i].trainIdx].pt.x,keypoints2[matches[i].trainIdx].pt.y,
+                                                  undist2_x,undist2_y);
+                      l.x=undist1_x;
+                      l.y=undist1_y;
+                      r.x=undist2_x;
+                      r.y=undist2_y;
+                      //   printf("bad %f %f -- %f %f\n",l.x,l.y,r.x,r.y);
                       left_coords.push_back(l);
                       right_coords.push_back(r);
 

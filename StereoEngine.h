@@ -89,7 +89,10 @@ public:
     int minFeatPerFrameThresh;
   //  CvMat *F;
    // cv::Mat _F;
-
+    libsnapper::Camera_Calib local_calib[2];
+    libsnapper::Undistort_Data *undist_left;
+    libsnapper::Undistort_Data *undist_right;
+    bool _writeDebugImages;
 #define KRED  "\x1B[31m"
 #define KNRM  "\x1B[0m"
 #define KBGRDRED "\033[41m"

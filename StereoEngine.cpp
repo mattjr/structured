@@ -326,6 +326,7 @@ StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double ed
     frame_id=0;
     recon.get_value( "SCF_DEBUG_PER_REJECTED_OUTPUT_DEBUG", thresh_per_rejected_output_debug, SCF_THRESH_PER_REJECT );
     recon.get_value( "DEBUG_MIN_FEAT_PER_FRAME",minFeatPerFrameThresh,100);
+    recon.get_value("SCF_SAVE_DEBUG_IMAGES",_writeDebugImages,false);
 
                /*_F.create(3,3,CV_64FC1);
                for( int i=0 ; i<3 ; i++ )
@@ -339,7 +340,21 @@ StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double ed
                       for( int j=0 ; j<3 ; j++ )
                          cvmSet( F, i, j, _auv_stereo_calib->F_left_to_right(i,j) );
                    }*/
+    for(int i=0; i< 2; i++){
+        local_calib[i].ccx=_calib.camera_calibs[i].ccx;
+        local_calib[i].ccy=_calib.camera_calibs[i].ccy;
+        local_calib[i].fcx=_calib.camera_calibs[i].fcx;
+        local_calib[i].fcy=_calib.camera_calibs[i].fcy;
 
+        local_calib[i].kc1=_calib.camera_calibs[i].kc1;
+        local_calib[i].kc2=_calib.camera_calibs[i].kc2;
+        local_calib[i].kc3=_calib.camera_calibs[i].kc3;
+        local_calib[i].kc4=_calib.camera_calibs[i].kc4;
+        local_calib[i].kc5=_calib.camera_calibs[i].kc5;
+
+    }
+undist_left=NULL;
+    undist_right=NULL;
 #endif
 }
 
@@ -1692,9 +1707,25 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
          Mat descriptors1, descriptors2;
          extractor.compute(left_frame, keypoints1, descriptors1);
          extractor.compute(right_frame, keypoints2, descriptors2);*/
+         IplImage *left_undist_image=cvCreateImage(cvSize(left_frame->width,left_frame->height),IPL_DEPTH_8U,1);
+         IplImage *right_undist_image=cvCreateImage(cvSize(right_frame->width,right_frame->height),IPL_DEPTH_8U,1);
+         IplImage *invalidMask=cvCreateImage(cvSize(right_frame->width,right_frame->height),IPL_DEPTH_8U,1);
+         IplImage *tmp=cvCreateImage(cvSize(right_frame->width,right_frame->height),IPL_DEPTH_8U,1);
+
+         if(!undist_left)
+             undist_left=new Undistort_Data(local_calib[0],left_frame,true);
+         if(!undist_right)
+             undist_right=new Undistort_Data(local_calib[1],right_frame,true);
+
+         undistort_image(*undist_left,left_frame,left_undist_image);
+         undistort_image(*undist_right,right_frame,right_undist_image);
+         cvCmpS( left_undist_image, 1.0, invalidMask,  CV_CMP_LT );
+         cvCmpS( right_undist_image, 1.0, tmp,  CV_CMP_LT );
+         cvAdd(invalidMask,tmp,invalidMask);
+         cvReleaseImage(&tmp);
         RobustMatcher matcher;
         vector<DMatch> matches;
-        matcher.match(left_frame,right_frame,matches,keypoints1, keypoints2);
+        matcher.match(left_undist_image,right_undist_image,matches,keypoints1, keypoints2);
        /*  // matching descriptors
          FlannBasedMatcher matcher;
          vector<DMatch> matches;
@@ -1716,25 +1747,11 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
           //-- Draw only "good" matches (i.e. whose distance is less than 2*min_dist )
           //-- PS.- radiusMatch can also be used here.
           std::vector< DMatch > good_matches;*/
-
+        std::vector< DMatch > good_matches;
           std::vector<CvPoint2D64f>  left_coords;
           std::vector<CvPoint2D64f>  right_coords;
           //vector<bool>status(descriptors1.rows,true);
-//Horrible hack
-          libsnapper::Camera_Calib local_calib[2];
-          for(int i=0; i< 2; i++){
-            local_calib[i].ccx=_calib.camera_calibs[i].ccx;
-            local_calib[i].ccy=_calib.camera_calibs[i].ccy;
-            local_calib[i].fcx=_calib.camera_calibs[i].fcx;
-            local_calib[i].fcy=_calib.camera_calibs[i].fcy;
 
-            local_calib[i].kc1=_calib.camera_calibs[i].kc1;
-            local_calib[i].kc2=_calib.camera_calibs[i].kc2;
-            local_calib[i].kc3=_calib.camera_calibs[i].kc3;
-            local_calib[i].kc4=_calib.camera_calibs[i].kc4;
-            local_calib[i].kc5=_calib.camera_calibs[i].kc5;
-
-          }
           for( int i = 0; i < matches.size(); i++ )
           { //if( matches[i].distance < 2*min_dist )
               {
@@ -1744,30 +1761,28 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
                // double dist=pointToEpipolarLineCost(lp,rp,_F);
                 //printf("%f\n",dist);
                // if(dist < 2.0)
+
                 {
 
                       CvPoint2D64f l,r;
-                      double undist1_x,undist1_y;
-                      double undist2_x,undist2_y;
 
-
-                      dist_to_undist_pixel_coords(local_calib[0],keypoints1[matches[i].queryIdx].pt.x,keypoints1[matches[i].queryIdx].pt.y,
-                                                  undist1_x,undist1_y);
-                      dist_to_undist_pixel_coords(local_calib[1],keypoints2[matches[i].trainIdx].pt.x,keypoints2[matches[i].trainIdx].pt.y,
-                                                  undist2_x,undist2_y);
-                      l.x=undist1_x;
-                      l.y=undist1_y;
-                      r.x=undist2_x;
-                      r.y=undist2_y;
+                      l.x=keypoints1[matches[i].queryIdx].pt.x;
+                      l.y=keypoints1[matches[i].queryIdx].pt.y;
+                      r.x=keypoints2[matches[i].trainIdx].pt.x;
+                      r.y=keypoints2[matches[i].trainIdx].pt.y;
                       //   printf("bad %f %f -- %f %f\n",l.x,l.y,r.x,r.y);
+                    // cvShowImage( "Good Matches", invalidMask );
+                      //  waitKey(0);
+                      if( CV_IMAGE_ELEM(invalidMask,uchar,(int)l.y,(int)l.x) ==0 &&  CV_IMAGE_ELEM(invalidMask,uchar,(int)r.y,(int)r.x) == 0){
                       left_coords.push_back(l);
                       right_coords.push_back(r);
-
+                      good_matches.push_back( matches[i]);
+                      }
 
                   }
               }
           }
-
+          cout << "Number of matched points (after dist clean): "<<good_matches.size()<<endl;
           /*apply_epipolar_constraints(F,2.0,right_coords,left_coords,status,_calib);
           for(int i=0; i< status.size(); i++){
               if(status[i]){
@@ -1776,19 +1791,25 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
               }
           }*/
           //free(status);
+          if(_writeDebugImages){
 
-          Mat img_matches;
-          drawMatches( left_frame, keypoints1, right_frame, keypoints2,
-                       matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-                       vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+              Mat img_matches;
+              drawMatches( left_undist_image, keypoints1, right_undist_image, keypoints2,
+                           good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+                           vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
-          //-- Show detected matches
-         // imshow( "Good Matches", img_matches );
-          string debugfilename=string("debug/"+osgDB::getSimpleFileName(left_file_name)+".surf.png");
-	  // cout <<debugfilename <<endl;
-          if(!imwrite(debugfilename.c_str(),img_matches))
-              fprintf(stderr,"Failed to write debug image %s\n",debugfilename.c_str());
-         // waitKey(0);
+              //-- Show detected matches
+              // imshow( "Good Matches", img_matches );
+
+              string debugfilename=string("debug/"+osgDB::getSimpleFileName(left_file_name)+".surf.png");
+              // cout <<debugfilename <<endl;
+              if(!imwrite(debugfilename.c_str(),img_matches))
+                  fprintf(stderr,"Failed to write debug image %s\n",debugfilename.c_str());
+              // waitKey(0);
+          }
+          cvReleaseImage(&left_undist_image);
+          cvReleaseImage(&right_undist_image);
+          cvReleaseImage(&invalidMask);
 
           std::vector<bool>          valid;
               std::vector<libplankton::Vector> feats;

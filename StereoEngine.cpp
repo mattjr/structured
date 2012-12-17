@@ -1784,8 +1784,8 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
 
           //-- Show detected matches
          // imshow( "Good Matches", img_matches );
-          string debugfilename=string("debug/"+left_file_name+".surf.png");
-          cout <<debugfilename <<endl;
+          string debugfilename=string("debug/"+osgDB::getSimpleFileName(left_file_name)+".surf.png");
+	  // cout <<debugfilename <<endl;
           if(!imwrite(debugfilename.c_str(),img_matches))
               fprintf(stderr,"Failed to write debug image %s\n",debugfilename.c_str());
          // waitKey(0);

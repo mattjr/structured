@@ -58,10 +58,10 @@ def create_slurm_local(params, n, nodes=None):
     if not nodes:
         pass
     elif isinstance(nodes, basestring): # isinstance(nodes, str) in py3k
-        kwargs['srun_args'] = "-w {0}".format(nodes)
+        kwargs['srun_args'] = "-q -w {0}".format(nodes)
     elif isinstance(nodes, list):
         # create comma separated list through magic
-        kwargs['srun_args'] = "-w {0}".format(",".join(map(str, nodes)))
+        kwargs['srun_args'] = "-q -w {0}".format(",".join(map(str, nodes)))
 
     # at this question there is a choice - create all threads in one
     # instance, or blocks of threads in many instances or single threads
@@ -89,10 +89,10 @@ def create_slurm_remote(params, n, gateway, username=None, nodes=None):
     if not nodes:
         pass
     elif isinstance(nodes, basestring): # isinstance(nodes, str) in py3k
-        kwargs['srun_args'] = "-w {0}".format(nodes)
+        kwargs['srun_args'] = "-q -w {0}".format(nodes)
     elif isinstance(nodes, list):
         # create comma separated list through magic
-        kwargs['srun_args'] = "-w {0}".format(",".join(map(str, nodes)))
+        kwargs['srun_args'] = "-q -w {0}".format(",".join(map(str, nodes)))
 
     # at this question there is a choice - create all threads in one
     # instance, or blocks of threads in many instances or single threads

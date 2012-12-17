@@ -134,7 +134,7 @@ class RobustMatcher {
                          const std::vector<cv::KeyPoint>& keypoints1,
                          const std::vector<cv::KeyPoint>& keypoints2,
                          std::vector<cv::DMatch>& outMatches) {
-
+	
         // Convert keypoints into Point2f
         std::vector<cv::Point2f> points1, points2;
         for (std::vector<cv::DMatch>::const_iterator it= matches.begin();
@@ -152,13 +152,15 @@ class RobustMatcher {
 
         // Compute F matrix using RANSAC
         std::vector<uchar> inliers(points1.size(),0);
-        cv::Mat fundemental= cv::findFundamentalMat(
+        cv::Mat fundemental;
+	if(points1.size() && points2.size()){
+	  fundemental= cv::findFundamentalMat(
             cv::Mat(points1),cv::Mat(points2), // matching points
             inliers,      // match status (inlier ou outlier)
             CV_FM_RANSAC, // RANSAC method
             distance,     // distance to epipolar line
             confidence);  // confidence probability
-
+	}
         // extract the surviving (inliers) matches
         std::vector<uchar>::const_iterator itIn= inliers.begin();
         std::vector<cv::DMatch>::const_iterator itM= matches.begin();
@@ -192,11 +194,12 @@ class RobustMatcher {
                  y= keypoints2[it->trainIdx].pt.y;
                  points2.push_back(cv::Point2f(x,y));
             }
-
+	    if(points1.size()>=8 && points2.size()>=8){
             // Compute 8-point F from all accepted matches
             fundemental= cv::findFundamentalMat(
                 cv::Mat(points1),cv::Mat(points2), // matching points
                 CV_FM_8POINT); // 8-point method
+	    }
         }
 
         return fundemental;
@@ -262,9 +265,11 @@ class RobustMatcher {
         symmetryTest(matches1,matches2,symMatches);
 
         std::cout << "Number of matched points (symmetry test): " << symMatches.size() << std::endl;
-
+       
         // 5. Validate matches using RANSAC
-        cv::Mat fundemental= ransacTest(symMatches, keypoints1, keypoints2, matches);
+        cv::Mat fundemental;
+	if(symMatches.size())
+	  fundemental= ransacTest(symMatches, keypoints1, keypoints2, matches);
 
         // return the found fundemental matrix
         return fundemental;

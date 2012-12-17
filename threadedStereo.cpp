@@ -2512,7 +2512,7 @@ double totalValidArea=0;
         fprintf(stderr,"Can't open mosaic scripts\n");
         exit(-1);
     }
-    fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaic.vrt; rm -f thumb.tif; gdalwarp mosaic.vrt -ts 512 512 thumb.tif;convert thumb.tif thumb.jpg\n");
+    fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaic.vrt; rm -f thumb.tif; gdalwarp mosaic.vrt -ts 512 512 thumb.tif;convert thumb.tif thumb.png\n");
     fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaicvar.vrt ");
     fprintf(FP5,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  depth.vrt ");
     for(int i=0; i <(int)cells_mosaic.size(); i++){

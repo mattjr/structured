@@ -1672,6 +1672,8 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
     //
      //Fallback slow matching
      if(statusFlag != STEREO_OK &&  features.size() < minForKeypoint){
+         statusFlag=FALLBACK_KEYPOINT;
+
          printf("Orig %d\n",features.size());
          features.clear();;
         // SurfFeatureDetector detector(50);
@@ -1768,7 +1770,6 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
           if(!imwrite(debugfilename.c_str(),img_matches))
               fprintf(stderr,"Failed to write debug image %s\n",debugfilename.c_str());
          // waitKey(0);
-          stats.total_accepted_feat =matches.size();
 
           std::vector<bool>          valid;
               std::vector<libplankton::Vector> feats;

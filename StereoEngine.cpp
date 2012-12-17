@@ -50,9 +50,11 @@
 #include "auv_mesh.hpp"
 #include "auv_mesh_io.hpp"
 #include "auv_geometry.hpp"
+#include "RobustMatcher.h"
 using namespace libsnapper;
 #endif
 using namespace std;
+using namespace cv;
 void cacheImage(IplImage *img,string name,int tex_size){
 
 
@@ -242,6 +244,8 @@ void apply_epipolar_constraints(
 
 
 
+
+
 StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double edgethresh,double max_triangulation_len,int max_feature_count,double min_feat_dist,double feat_quality,int tex_size,OpenThreads::Mutex &mutex,bool use_dense_stereo,bool pause_after_each_frame):
         _calib(calib),_recon(recon),edgethresh(edgethresh),max_triangulation_len(max_triangulation_len),max_feature_count(max_feature_count),min_feat_dist(min_feat_dist),feat_quality(feat_quality), tex_size(tex_size),
     verbose(false),display_debug_images(false),_osgDBMutex(mutex),use_dense_stereo(use_dense_stereo),pause_after_each_frame(pause_after_each_frame)
@@ -322,6 +326,20 @@ StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double ed
     frame_id=0;
     recon.get_value( "SCF_DEBUG_PER_REJECTED_OUTPUT_DEBUG", thresh_per_rejected_output_debug, SCF_THRESH_PER_REJECT );
     recon.get_value( "DEBUG_MIN_FEAT_PER_FRAME",minFeatPerFrameThresh,100);
+
+               /*_F.create(3,3,CV_64FC1);
+               for( int i=0 ; i<3 ; i++ )
+               {
+                  for( int j=0 ; j<3 ; j++ )
+                     _F.at<float>( i, j)= _auv_stereo_calib->F_left_to_right(i,j) ;
+               }
+               F = cvCreateMat(3,3,CV_32F);
+                   for( int i=0 ; i<3 ; i++ )
+                   {
+                      for( int j=0 ; j<3 ; j++ )
+                         cvmSet( F, i, j, _auv_stereo_calib->F_left_to_right(i,j) );
+                   }*/
+
 #endif
 }
 
@@ -1626,21 +1644,154 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
               max_feature_count,
               features,
               feature_depth_guess );
+    /* list<Feature *>::iterator fitr;
+     for(fitr=features.begin(); fitr != features.end(); fitr++){
+         printf("%f %f -- ",  (*fitr)->get_observation(left_frame_id)->u,(*fitr)->get_observation(left_frame_id)->v);
+           printf(" %f %f\n",       (*fitr)->get_observation(right_frame_id)->u,(*fitr)->get_observation(right_frame_id)->v);
 
+
+     }
+*/
 
      double per_failed=(stats.total_epi_fail+stats.total_tracking_fail)/(double)stats.total_matched_feat;
 
      if(thresh_per_rejected_output_debug > 0 && per_failed > thresh_per_rejected_output_debug){
         statusFlag=FAIL_FEAT_THRESH;
      }
+     Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
+     list<Stereo_Feature_Estimate>::iterator litr;
+     list<libplankton::Vector>::iterator viter;
 
+     localV = g_ptr_array_new ();
+     GtsRange r;
+     gts_range_init(&r);
+     TVertex *vert;
+     int minForKeypoint =50;
     //
     // Triangulate the features if requested
     //
+     //Fallback slow matching
+     if(statusFlag != STEREO_OK &&  features.size() < minForKeypoint){
+         printf("Orig %d\n",features.size());
+         features.clear();;
+        // SurfFeatureDetector detector(50);
+        // DynamicAdaptedFeatureDetector
+         int n_features=400;
+         //Ptr<AdjusterAdapter> adjuster = new FastAdjuster(10);
+        // DynamicAdaptedFeatureDetector detector(adjuster, n_features * 0.9, n_features * 1.1, 1000);
+        // Ptr<FeatureDetector> detector(new DynamicAdaptedFeatureDetector (100, 110, 10,
+             //                          new FastAdjuster(20,true)));
+         vector<KeyPoint> keypoints1, keypoints2;
+       /*  detector.detect(left_frame, keypoints1);
+         detector.detect(right_frame, keypoints2);
+*/
+         // computing descriptors
+       /*  SurfDescriptorExtractor extractor;
+         Mat descriptors1, descriptors2;
+         extractor.compute(left_frame, keypoints1, descriptors1);
+         extractor.compute(right_frame, keypoints2, descriptors2);*/
+        RobustMatcher matcher;
+        vector<DMatch> matches;
+        matcher.match(left_frame,right_frame,matches,keypoints1, keypoints2);
+       /*  // matching descriptors
+         FlannBasedMatcher matcher;
+         vector<DMatch> matches;
+         matcher.match(descriptors1, descriptors2, matches);
+         double max_dist = 0; double min_dist = 100;
 
 
 
-    Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
+         //-- Quick calculation of max and min distances between keypoints
+          for( int i = 0; i < descriptors1.rows; i++ )
+          { double dist = matches[i].distance;
+            if( dist < min_dist ) min_dist = dist;
+            if( dist > max_dist ) max_dist = dist;
+          }
+
+          printf("-- Max dist : %f \n", max_dist );
+          printf("-- Min dist : %f \n", min_dist );
+
+          //-- Draw only "good" matches (i.e. whose distance is less than 2*min_dist )
+          //-- PS.- radiusMatch can also be used here.
+          std::vector< DMatch > good_matches;*/
+
+          std::vector<CvPoint2D64f>  left_coords;
+          std::vector<CvPoint2D64f>  right_coords;
+          //vector<bool>status(descriptors1.rows,true);
+
+
+
+          for( int i = 0; i < matches.size(); i++ )
+          { //if( matches[i].distance < 2*min_dist )
+              {
+               // cv::Point2f lp,rp;
+                // lp=keypoints1[matches[i].queryIdx].pt;
+                // rp=keypoints1[matches[i].trainIdx].pt;
+               // double dist=pointToEpipolarLineCost(lp,rp,_F);
+                //printf("%f\n",dist);
+               // if(dist < 2.0)
+                {
+
+                      CvPoint2D64f l,r;
+
+                      l.x=keypoints1[matches[i].queryIdx].pt.x;
+                      l.y=keypoints1[matches[i].queryIdx].pt.y;
+                      r.x=keypoints2[matches[i].trainIdx].pt.x;
+                      r.y=keypoints2[matches[i].trainIdx].pt.y;
+                   //   printf("bad %f %f -- %f %f\n",l.x,l.y,r.x,r.y);
+                      left_coords.push_back(l);
+                      right_coords.push_back(r);
+
+
+                  }
+              }
+          }
+
+          /*apply_epipolar_constraints(F,2.0,right_coords,left_coords,status,_calib);
+          for(int i=0; i< status.size(); i++){
+              if(status[i]){
+                  good_matches.push_back( matches[i]);
+
+              }
+          }*/
+          //free(status);
+
+          Mat img_matches;
+          drawMatches( left_frame, keypoints1, right_frame, keypoints2,
+                       matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+                       vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+
+          //-- Show detected matches
+         // imshow( "Good Matches", img_matches );
+          string debugfilename=string("debug/"+left_file_name+".surf.png");
+          cout <<debugfilename <<endl;
+          if(!imwrite(debugfilename.c_str(),img_matches))
+              fprintf(stderr,"Failed to write debug image %s\n",debugfilename.c_str());
+         // waitKey(0);
+          stats.total_accepted_feat =matches.size();
+
+          std::vector<bool>          valid;
+              std::vector<libplankton::Vector> feats;
+          stereo_triangulate( *_auv_stereo_calib,
+                              ref_frame,
+                              left_coords,
+                              right_coords,
+                              valid,
+
+                              feats );
+          for(int i=0; i<feats.size(); i++)
+            {
+
+              vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+                               feats[i][0],feats[i][1],feats[i][2]);
+            // printf("%f %f %f\n", feats[i][0],feats[i][1],feats[i][2]);
+
+              g_ptr_array_add(localV,GTS_VERTEX(vert));
+
+
+            }
+
+     }else{
 
 
 
@@ -1656,18 +1807,6 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
                 NULL,//image_coord_covar,
                 feature_positions );
 
-    //   static ofstream out_file( triangulation_file_name.c_str( ) );
-
-
-    static Vector stereo1_nav( AUV_NUM_POSE_STATES );
-    // Estimates of the stereo poses in the navigation frame
-
-
-    list<Stereo_Feature_Estimate>::iterator litr;
-    localV = g_ptr_array_new ();
-    GtsRange r;
-    gts_range_init(&r);
-    TVertex *vert;
     for( litr  = feature_positions.begin( ) ;
          litr != feature_positions.end( ) ;
          litr++ )
@@ -1681,7 +1820,7 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
         //printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
 
         //double confidence=1.0;
-        Vector max_eig_v(3);
+        libplankton::Vector max_eig_v(3);
         /*  if(have_cov_file){
 
         Matrix eig_vecs( litr->P );
@@ -1725,6 +1864,15 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
       {
         delete *fitr;
       }
+
+    }
+    //   static ofstream out_file( triangulation_file_name.c_str( ) );
+
+
+    //static libplankton::Vector stereo1_nav( AUV_NUM_POSE_STATES );
+    // Estimates of the stereo poses in the navigation frame
+
+
 
 
 

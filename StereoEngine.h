@@ -73,7 +73,8 @@ typedef enum {
     STEREO_OK,
     FAIL_FEAT_THRESH,
     FAIL_TRI_EDGE_THRESH,
-    FAIL_OTHER
+    FAIL_OTHER,
+    FALLBACK_KEYPOINT
 }StereoStatusFlag;
 class StereoEngine
 {
@@ -86,6 +87,9 @@ public:
     libsnapper::Stereo_Calib *_auv_stereo_calib;
     double thresh_per_rejected_output_debug;
     int minFeatPerFrameThresh;
+  //  CvMat *F;
+   // cv::Mat _F;
+
 #define KRED  "\x1B[31m"
 #define KNRM  "\x1B[0m"
 #define KBGRDRED "\033[41m"

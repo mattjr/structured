@@ -270,6 +270,9 @@ int main( int argc, char *argv[ ] )
                        stats.total_epi_fail,stats.total_tri_fail,stats.total_accepted_feat,tasks[i].left_name.c_str());
                 //if(stats.total_accepted_feat >0 )
                   //  goodMeshes++;
+            }else if(statusFlag == FALLBACK_KEYPOINT){
+                if(stats.total_accepted_feat >0 )
+                    goodMeshes++;
             }
 
             printf("\r%03d/%03d",i,(int)tasks.size());

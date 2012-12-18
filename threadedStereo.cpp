@@ -2690,7 +2690,7 @@ double totalValidArea=0;
     fclose(vartexcmds_fp);
 
     fclose(calcTexFn_fp);
-    fprintf(FP3,"\nrm -f thumb.tif\ngdalwarp mosaic.vrt -ts 512 512 thumb.tif\nconvert thumb.tif thumb.png\n");
+    fprintf(FP3,"\nrm -f thumb.tif\ngdalwarp mosaic.vrt -ts 512 512 thumb.tif\nconvert thumb.tif thumb.png &> /dev/null\n");
         //#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16 32\n");
     fchmod(fileno(FP3),0777);
 

@@ -7,6 +7,83 @@
 #include <vips/vips.h>
 #include <vips/version.h>
 using namespace std;
+void write_header(std::ostream& _fout,int total_face_count,bool color,bool tex){
+    _fout <<"ply\n";
+    _fout <<"format binary_little_endian 1.0\n";
+    //_fout <<"comment PLY exporter written by Paul Adams\n";
+    _fout <<"element vertex "<<total_face_count <<std::endl;
+    _fout <<"property float x\n";
+    _fout <<"property float y\n";
+    _fout <<"property float z\n";
+    if(color){
+        _fout <<"property uchar red\n";
+        _fout <<"property uchar green\n";
+        _fout <<"property uchar blue\n";
+    }
+    if(tex){
+       _fout <<"property float texture_u\n";
+        _fout <<"property float texture_v\n";
+    }
+    _fout <<"element face " <<total_face_count/3<<std::endl;
+    _fout <<"property list uchar int vertex_indices\n";
+
+
+    _fout <<"end_header\n";
+}
+void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,osg::Vec3Array *tex,bool flip){
+    int cnt=0;
+    for(int i=0; i< (int)tri->size()-2; i+=3){
+        for(int j=0; j<3; j++){
+            osg::Vec3 v=verts->at(tri->at(i+j));
+            float vf[3];
+            vf[0]=v[0];
+            vf[1]=v[1];
+            vf[2]=v[2];
+            _fout.write((char *)vf,3*sizeof(float));
+            if(colors && i+j <(int)colors->size() ){
+                unsigned char col[3];
+                osg::Vec4 c=colors->at(i+j);
+               // cout <<c<<endl;
+                col[0]=c[0]*255.0;
+                col[1]=c[1]*255.0;
+                col[2]=c[2]*255.0;
+                _fout.write((char *)col,3*sizeof(unsigned char));
+
+            }
+            if(tex && i+j <(int)tex->size() ){
+                float t[2];
+                osg::Vec3 tc=tex->at(i+j);
+               // cout <<c<<endl;
+                t[0]=tc[0];
+                t[1]=tc[1];
+                _fout.write((char *)t,2*sizeof(float));
+
+            }
+        }
+    }
+    int iout[3];
+    unsigned char c=3;
+    for(int i=0; i<(int) tri->size()-2; i+=3){
+        _fout.write((char *)&c,sizeof(char));
+
+        if(flip){
+            iout[0]=i;
+            iout[1]=i+1;
+            iout[2]=i+2;
+        }else{
+            iout[0]=i+2;
+            iout[1]=i+1;
+            iout[2]=i+0;
+
+        }
+        _fout.write((char*)iout,sizeof(int)*3);
+        cnt++;
+
+    }
+    printf("%d\n",cnt);
+
+
+}
 int main( int argc, char **argv )
 {
     // use an ArgumentParser object to manage the program arguments.
@@ -26,6 +103,7 @@ int main( int argc, char **argv )
     arguments.read("-dir",basedir);
     std::string outfile="temp.obj";
     arguments.read("-outfile",outfile);
+    bool flip=arguments.read("-F");
 
     string mosaic_cells_fname;
     if(!arguments.read("-cells",mosaic_cells_fname)){
@@ -73,7 +151,7 @@ int main( int argc, char **argv )
             int mosaic_id=( int)vertexData._texIds->at(i/3)[1];
             osg::Vec3f &tc =    vertexData._texCoord[0]->at(i+j);
 
-            if(mosaic_id >= 0 && mosaic_id< tf_atlas->atlasSourceMatrix.size()){
+            if(mosaic_id >= 0 && mosaic_id< (int)tf_atlas->atlasSourceMatrix.size()){
                 if(tf_atlas->atlasSourceMatrix[mosaic_id] != NULL){
                     //     printf("%d\n", atlas->atlasMatrix[mosaic_id]);
                    //  cout << ((vips::VImage*)tf_atlas->atlasSourceMatrix[mosaic_id])->filename() <<endl;
@@ -123,8 +201,16 @@ int main( int argc, char **argv )
     model->asGeode()->getDrawable(0)->asGeometry()->setTexCoordArray(0,vertexData._texCoord[0]);
 
   //  cout << model->asGeode()->getDrawable(0)->asGeometry()->getPrimitiveSet(0)->getNumIndices()<<endl;
+    std::ofstream f(outfile.c_str());
+    bool color = vertexData._colors.valid() ? (vertexData._colors->size() >0) : false;
+    bool tex = vertexData._texCoord[0].valid() ? (vertexData._texCoord[0]->size() >0) : false;
 
-    osgDB::writeNodeFile(*model,outfile.c_str());
+    write_header(f,vertexData._triangles->size(),color,tex);
+    write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,vertexData._texCoord[0],flip);
+    //PLYWriterNodeVisitor nv(f);
+    //root->accept(nv);
+    f.close();;
+   // osgDB::writeNodeFile(*model,outfile.c_str());
 
 
 

@@ -16,6 +16,7 @@
 #include <vcg/complex/algorithms/update/topology.h>	/* topology */
 #include <vcg/complex/algorithms/update/bounding.h>	/* bounding box */
 #include <vcg/complex/algorithms/update/normal.h>		/* normal */
+#include <vcg/complex/algorithms/update/texture.h>
 
 // local optimization
 #include <vcg/complex/algorithms/local_optimization.h>
@@ -36,6 +37,18 @@ inline void ExtractVertex(const CMeshO & srcMesh, const CMeshO::FaceType & f, in
     v.ImportData(*f.cV(whichWedge));
     v.T() = f.cWT(whichWedge);
 }
+static void WedgeTexFromVertexTex(CMeshO &m)
+   {
+     for(CMeshO::FaceIterator fi=m.face.begin();fi!=m.face.end();++fi)
+             if(!(*fi).IsD())
+                 {
+                  for(int i=0;i<3;++i)
+                  {
+                    (*fi).WT(i).U() = (*fi).V(i)->T().U();
+                    (*fi).WT(i).V() = (*fi).V(i)->T().V();
+                  }
+                 }
+   }
 inline bool CompareVertex(const CMeshO & m, const CMeshO::VertexType & vA, const CMeshO::VertexType & vB)
 {
     (void)m;
@@ -105,6 +118,11 @@ int main(int argc ,char**argv){
                                          return false; // no undefined texture should be allowed
                                      }
       }
+    if(!HasPerVertexTexCoord(mesh)){
+        fprintf(stderr,"Can't get per vertex tex coords! Bailing.\n");
+        exit(-1);
+    }
+    WedgeTexFromVertexTex(mesh);
 
     std::string outfile="out.ply";
     argp.read("-out",outfile);
@@ -142,7 +160,8 @@ int main(int argc ,char**argv){
     vcg::tri::io::PlyInfo pi;
 
     pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
-    pi.mask &= ~vcg::tri::io::Mask::IOM_VERTCOLOR;
+    pi.mask |= vcg::tri::io::Mask::IOM_VERTCOLOR;
+    //pi.mask &= ~vcg::tri::io::Mask::IOM_VERTCOLOR;
 
     int result2 = tri::io::ExporterPLY<CMeshO>::Save(mesh,outfile.c_str(),binaryFlag,pi);
 }

@@ -2638,18 +2638,23 @@ double totalValidArea=0;
         }
         char tmp_ds[1024];
         tmp_ds[0]='\0';
-        int num_samples=6;
+        //int num_samples=6;
+        int num_samples= (int)floor(std::log(max(ajustedGLImageSizeX,ajustedGLImageSizeY)) / std::log(2.0));
+        //printf("Num samples %d\n",num_samples);
         for(int p=0; p<num_samples; p++)
             sprintf(tmp_ds,"%s %d",tmp_ds,(int)pow(2.0,p+1));
-        if(jpegQuality<0){
+        sprintf(tmp_ds,"%s %d",tmp_ds,max(ajustedGLImageSizeX,ajustedGLImageSizeY));
+       // printf("levels %s\n",tmp_ds);
+       // if(jpegQuality<0)
+        {
             for(int z=0; z<NUM_MOSAIC_FILES; z++){
-                    fprintf(mosaiccmds_fp[z],";gdaladdo -r average mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
+                    fprintf(mosaiccmds_fp[z],";gdaladdo -r average --config COMPRESS_OVERVIEW DEFLATE mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
                // else
                    // fprintf(texcmds_fp[z],"\n");
             }
-            fprintf(vartexcmds_fp,";gdaladdo -r average mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
+            fprintf(vartexcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW DEFLATE  mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
 
-        }else{
+        }/*else{
             for(int z=0; z<NUM_MOSAIC_FILES; z++){
                // if(z != REMAP)
                     fprintf(mosaiccmds_fp[z],";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
@@ -2658,7 +2663,7 @@ double totalValidArea=0;
 
             }
             fprintf(vartexcmds_fp,";gdaladdo -r average --config COMPRESS_OVERVIEW JPEG --config PHOTOMETRIC_OVERVIEW YCBCR --config INTERLEAVE_OVERVIEW PIXEL --config JPEG_QUALITY_OVERVIEW %d mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",jpegQuality,cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
-        }
+        }*/
 
         tmp_ds[0]='\0';
         //  num_samples=0;
@@ -2676,7 +2681,7 @@ double totalValidArea=0;
     string cwdmeshdiced=cwd;
 
     std::string extraCheckCmd;
-    sprintf(tmp100, " -outfile %s/tex-total.obj ; %s/vcgapps/bin/cleanTexMesh %s/tex-total.obj --normcolor -out %s/tex-total.ply",diced_dir,basepath.c_str(),diced_dir,diced_dir);
+    sprintf(tmp100, " -F -outfile %s/unclean-tex-total.ply ; %s/vcgapps/bin/cleanTexMesh %s/unclean-tex-total.ply --normcolor -out %s/tex-total.ply",diced_dir,basepath.c_str(),diced_dir,diced_dir);
 
     //  extraCheckCmd= reparamTex ? createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4): "";
     extraCheckCmd=  createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);

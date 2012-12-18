@@ -63,7 +63,7 @@ void writeOSG(string fname,CMeshO &m){
     osg::ref_ptr<osg::Vec3Array> verts=new osg::Vec3Array;
     osg::ref_ptr<osg::Vec2Array> texcoords=new osg::Vec2Array;
     osg::ref_ptr<osg::Vec2Array> auxData=new osg::Vec2Array;
-
+    printf("Have aux data %d\n",HasPerVertexColor(m));
     osg::ref_ptr<osg::DrawElementsUInt> tri=new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
      CMeshO::VertexPointer  vp;
      CMeshO::VertexIterator vi;

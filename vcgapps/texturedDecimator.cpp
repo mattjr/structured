@@ -64,6 +64,8 @@ void writeOSG(string fname,CMeshO &m){
     osg::ref_ptr<osg::Vec2Array> texcoords=new osg::Vec2Array;
     osg::ref_ptr<osg::Vec2Array> auxData=new osg::Vec2Array;
     printf("Have aux data %d\n",HasPerVertexColor(m));
+    printf("Have per vertex quality data %d\n",HasPerVertexQuality(m));
+
     osg::ref_ptr<osg::DrawElementsUInt> tri=new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
      CMeshO::VertexPointer  vp;
      CMeshO::VertexIterator vi;
@@ -340,6 +342,7 @@ int main(int argc ,char**argv){
     pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
     pi.mask |= vcg::tri::io::Mask::IOM_VERTCOLOR;
     pi.mask |= vcg::tri::io::Mask::IOM_FACEQUALITY;
+    pi.mask |= vcg::tri::io::Mask::IOM_VERTQUALITY;
 
    // pi.mask |= vcg::tri::io::Mask::IOM_WEDGCOLOR;
 

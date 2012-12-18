@@ -161,6 +161,8 @@ int main(int argc ,char**argv){
 
     pi.mask |= vcg::tri::io::Mask::IOM_WEDGTEXCOORD;
     pi.mask |= vcg::tri::io::Mask::IOM_VERTCOLOR;
+    pi.mask |= vcg::tri::io::Mask::IOM_VERTQUALITY;
+
     //pi.mask &= ~vcg::tri::io::Mask::IOM_VERTCOLOR;
 
     int result2 = tri::io::ExporterPLY<CMeshO>::Save(mesh,outfile.c_str(),binaryFlag,pi);

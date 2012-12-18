@@ -7,7 +7,7 @@
 #include <vips/vips.h>
 #include <vips/version.h>
 using namespace std;
-void write_header(std::ostream& _fout,int total_face_count,bool color,bool tex){
+void write_header(std::ostream& _fout,int total_face_count,bool color,bool aux,bool tex){
     _fout <<"ply\n";
     _fout <<"format binary_little_endian 1.0\n";
     //_fout <<"comment PLY exporter written by Paul Adams\n";
@@ -20,6 +20,9 @@ void write_header(std::ostream& _fout,int total_face_count,bool color,bool tex){
         _fout <<"property uchar green\n";
         _fout <<"property uchar blue\n";
     }
+    if(aux){
+                _fout <<"property float confidence\n";
+    }
     if(tex){
        _fout <<"property float texture_u\n";
         _fout <<"property float texture_v\n";
@@ -30,7 +33,7 @@ void write_header(std::ostream& _fout,int total_face_count,bool color,bool tex){
 
     _fout <<"end_header\n";
 }
-void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,osg::Vec3Array *tex,bool flip){
+void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *verts,osg::Vec4Array *colors,osg::Vec3Array *tex,vector<float>&aux,bool flip){
     int cnt=0;
     for(int i=0; i< (int)tri->size()-2; i+=3){
         for(int j=0; j<3; j++){
@@ -48,6 +51,12 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
                 col[1]=c[1]*255.0;
                 col[2]=c[2]*255.0;
                 _fout.write((char *)col,3*sizeof(unsigned char));
+
+            }
+            if(aux.size() && i+j<(int)aux.size()){
+                float a;
+                a=aux.at(i+j);
+                _fout.write((char *)&a,1*sizeof(float));
 
             }
             if(tex && i+j <(int)tex->size() ){
@@ -145,10 +154,14 @@ int main( int argc, char **argv )
     osg::ref_ptr<VipsAtlasBuilder >tf_atlas=createVTAtlas( viewProj, totalX, totalY,
                  mosaic_cells,
                false,scaleFactor,basedir);
+    vector<float>aux(vertexData._texCoord[0]->size(),-1.0f);
 
     for(int i=0; i< (int)primitiveSet->getNumIndices()-2; i+=3){
         for(int j=0; j <3; j++){
             int mosaic_id=( int)vertexData._texIds->at(i/3)[1];
+            int aux_data=( int)vertexData._texIds->at(i/3)[0];
+
+            aux.at(i+j)=(float)aux_data;
             osg::Vec3f &tc =    vertexData._texCoord[0]->at(i+j);
 
             if(mosaic_id >= 0 && mosaic_id< (int)tf_atlas->atlasSourceMatrix.size()){
@@ -204,9 +217,9 @@ int main( int argc, char **argv )
     std::ofstream f(outfile.c_str());
     bool color = vertexData._colors.valid() ? (vertexData._colors->size() >0) : false;
     bool tex = vertexData._texCoord[0].valid() ? (vertexData._texCoord[0]->size() >0) : false;
-
-    write_header(f,vertexData._triangles->size(),color,tex);
-    write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,vertexData._texCoord[0],flip);
+    bool auxUsed=aux.size()>0 &&aux.size() == vertexData._texCoord[0]->size();
+    write_header(f,vertexData._triangles->size(),color,auxUsed,tex);
+    write_all(f,vertexData._triangles,vertexData._vertices,vertexData._colors,vertexData._texCoord[0],aux,flip);
     //PLYWriterNodeVisitor nv(f);
     //root->accept(nv);
     f.close();;

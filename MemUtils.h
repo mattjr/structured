@@ -57,7 +57,7 @@ inline std::string format_elapsed(double d)
     return buf;
 }
 bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int width,int height,std::string basepath,std::string ext="ppm",int jpegQuality=95);
-bool genPyramid(std::string name,int pyramidHeight,std::string ext="ppm");
+bool genPyramid(std::string name,std::string basepath,int pyramidHeight,std::string ext="ppm");
 std::string getProj4StringForAUVFrame(double lat_origin,double lon_origin);
 osg::Vec2 calcCoordReprojSimple(const osg::Vec3 &vert,const osg::Matrix &trans,const osg::Matrix &viewProj,const osg::Vec2 &size);
 void getULLR(osg::Matrix viewproj,int width,int height,osg::Vec4 &ullr);

@@ -224,7 +224,7 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
 }
 
 
-bool genPyramid(std::string name,int pyramidHeight,string ext){
+bool genPyramid(std::string name,std::string basepath,int pyramidHeight,string ext){
     char tmp[8192];
     tmp[0]='\0';
     char tmp2[1024];
@@ -234,7 +234,7 @@ bool genPyramid(std::string name,int pyramidHeight,string ext){
         else
             sprintf(tmp2,"%s-%02d.%s",(string(diced_img_dir)+"/"+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i-1,ext.c_str());
 
-        sprintf(tmp,"%s vips im_shrink %s %s-%02d.%s 2 2;",tmp,tmp2,
+        sprintf(tmp,"%s %s/im_shrink_noblack %s %s-%02d.%s 2 2;",tmp,basepath.c_str(),tmp2,
                 (string(diced_img_dir)+"/"+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i,ext.c_str());
     }
     int res= system(tmp);

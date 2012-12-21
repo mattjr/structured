@@ -11,6 +11,7 @@ genOverlappingPoses
 genRangeImg
 lib/
 meshvar
+im_shrink_noblack
 nonmem
 osgdem
 rangeimg

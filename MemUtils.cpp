@@ -208,7 +208,7 @@ bool applyGeoTags(std::string name,osg::Vec2 geoOrigin,osg::Matrix viewproj,int 
                osgDB::getNameLessExtension(name).c_str(),
                ("mosaic/"+osgDB::getSimpleFileName(name)).c_str());*/
     char nodata[1024];
-    sprintf(nodata," -a_nodata 255,255,255 ");
+    sprintf(nodata," -a_nodata 255,255,255 -co \"TILED=YES\" -co \"COMPRESS=DEFLATE\" ");
     sprintf(tmp,"gdal_translate %s %s %s-tmp.%s  %s",
             gdal_param,
             nodata,

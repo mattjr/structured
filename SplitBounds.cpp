@@ -359,7 +359,7 @@ bool getFaceDivision(osg::ref_ptr<osg::Node> &model,double &avgLen,int &numberFa
             osg::Vec3Array *verts=static_cast< osg::Vec3Array*>(geom->getVertexArray());
             //osg::Vec4Array *colors=static_cast< osg::Vec4Array*>(geom->getColorArray());
             //osg::Vec4Array *texCoordsStored=static_cast< osg::Vec4Array*>(geom->getTexCoordArray(0));
-
+            osg::BoundingBox bbox;
             osg::DrawElementsUInt* primitiveSet = dynamic_cast<osg::DrawElementsUInt*>(geom->getPrimitiveSet(0));
             avgLen=0.0;
             for(int i=0; i< (int)primitiveSet->getNumIndices()-2; i+=3){
@@ -369,6 +369,9 @@ bool getFaceDivision(osg::ref_ptr<osg::Node> &model,double &avgLen,int &numberFa
                 const osg::Vec3 &v0=verts->at(i0);
                 const osg::Vec3 &v1=verts->at(i1);
                 const osg::Vec3 &v2=verts->at(i2);
+                bbox.expandBy(v0);
+                bbox.expandBy(v1);
+                bbox.expandBy(v2);
                 double d01 = (v0-v1).length2();
                 double d12 = (v1 -v2).length2();
                 double d20 = (v2-v0).length2();
@@ -377,21 +380,29 @@ bool getFaceDivision(osg::ref_ptr<osg::Node> &model,double &avgLen,int &numberFa
                 avgLen+=d20/primitiveSet->getNumIndices();
 
             }
-           // printf("Average Len %f\n",avgLen);
-            if(!kdTree){
-                fprintf(stderr,"Can't be converted to kdtree\n");
-                exit(-1);
+            if(targetNumTrianglesPerLeaf > verts->size() ){
+                fprintf(stderr,"warning: targetNumTrianglesPerLeaf %d is greater than number of prims: %d clipping to one box\n",targetNumTrianglesPerLeaf,
+                        primitiveSet->getNumPrimitives());
+                kd_bboxes.push_back(bbox);
             }else{
-                osg::KdTree::KdNodeList list;
-                list=kdTree->getNodes();
-                //printf("Kdtree cells %d\n",(int)list.size());
-                for(int i=0; i< (int)list.size(); i++){
-                    if(list[i].first < 0)
-                        kd_bboxes.push_back(list[i].bb);
-                }
-                 printf("Kdtree cells %d\n",(int)kd_bboxes.size());
 
-                //cout << list[i].bb <<endl;
+
+                // printf("Average Len %f\n",avgLen);
+                if(!kdTree){
+                    fprintf(stderr,"Can't be converted to kdtree\n");
+                    exit(-1);
+                }else{
+                    osg::KdTree::KdNodeList list;
+                    list=kdTree->getNodes();
+                    //printf("Kdtree cells %d\n",(int)list.size());
+                    for(int i=0; i< (int)list.size(); i++){
+                        if(list[i].first < 0)
+                            kd_bboxes.push_back(list[i].bb);
+                    }
+                    printf("Kdtree cells %d\n",(int)kd_bboxes.size());
+
+                    //cout << list[i].bb <<endl;
+                }
             }
 
             numberFacesAll=geom->getPrimitiveSet(0)->getNumPrimitives();

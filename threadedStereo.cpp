@@ -1631,10 +1631,10 @@ double totalValidArea=0;
         std::cout << "Target LOD height is : " << vpblod <<std::endl;
     }else{
         int faceTmp=numberFacesAll;
-        while(faceTmp > targetFaces ){
-            //cout << "faces: "<<faceTmp<<" "<<vpblod<<endl;
+        do{    //cout << "faces: "<<faceTmp<<" "<<vpblod<<endl;
             faceTmp /= pow(4.0,++vpblod);
-        }
+        }while(faceTmp > targetFaces );
+
         std::cout << "Target LOD height is : " << vpblod <<std::endl;
     }
     osg::Vec3d eye(totalbb.center()+osg::Vec3(0,0,3.5*totalbb.radius()));
@@ -2344,7 +2344,7 @@ double totalValidArea=0;
                 diced_dir,
                 cells[i].row,cells[i].col,
                 vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
-                rx,ry,rz,tex_margin,bbox_margin*5);
+                rx,ry,rz,tex_margin,bbox_margin);
 
 
         for(int z=0; z<NUM_TEX_FILES; z++){

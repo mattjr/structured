@@ -80,7 +80,7 @@ bool toVert(osg::Node *node,const TexBlendCoord &texcoord,osg::Vec4Array *ids,Te
     return true;
 }
 #endif
-void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datalist_lod,Bounds bounds,CameraCalib &calib,texcache_t cachedDirs,bool useTextureArray,bool useReimage,bool useVirtualTex,const osg::BoundingBox &bbox,string src_proj4_coord_system,string dst_proj4_coord_system,double sparseRatio,bool no_hw_context,bool no_atlas){
+void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datalist_lod,Bounds bounds,CameraCalib &calib,texcache_t cachedDirs,int POTAtlasSize,bool useTextureArray,bool useReimage,bool useVirtualTex,const osg::BoundingBox &bbox,string src_proj4_coord_system,string dst_proj4_coord_system,double sparseRatio,bool no_hw_context,bool no_atlas){
     //vector<osg::KdTree*> trees;
     vpb::GeospatialExtents geo(bounds.bbox.xMin(), bounds.bbox.yMin(), bounds.bbox.xMax(),bounds.bbox.yMax(),false);
     int numlod=datalist_lod.size();
@@ -88,7 +88,7 @@ void doQuadTreeVPB(std::string basePath,std::vector<std::vector<string> > datali
         useReimage=false;
     osg::ref_ptr<vpb::MyDataSet> m=new vpb::MyDataSet(calib,basePath,useTextureArray,useReimage,useVirtualTex);
     if(useVirtualTex)
-        m->_atlas=createVTAtlas( m->viewProj, m->totalX, m->totalY,
+        m->_atlas=createVTAtlas( m->viewProj, m->totalX, m->totalY,POTAtlasSize,
                                  m->mosaic_cells,
                                false);
     m->_cachedDirs=cachedDirs;

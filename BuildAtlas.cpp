@@ -550,13 +550,18 @@ downsampledYoff,
         //osg::setNotifyLevel(osg::INFO);
         if(dynamic_cast<VipsAtlasBuilder*>(atlas)){
                 dynamic_cast<VipsAtlasBuilder*>(atlas)->buildAtlas();
-        }else
+            if( dynamic_cast<VipsAtlasBuilder*>(atlas)->getNumAtlases() != 1){
+                fprintf(stderr,"Atlas fail!!! Downsample didn't allow for one atlas WIP! SEE MATT\nHopefully this will one day be replaced with working code :-)\n%d atlas\n",atlas->getNumAtlases());
+                exit(-1);
+            }
+        }else{
             atlas->buildAtlas();
         //   printf("%d %d\n",atlas->getAtlasByNumber(0)->t(),atlas->getAtlasByNumber(0)->s());
 
-        if( atlas->getNumAtlases() > 1){
-            fprintf(stderr,"Atlas fail!!! Downsample didn't allow for one atlas WIP! SEE MATT\nHopefully this will one day be replaced with working code :-)\n%d atlas\n",atlas->getNumAtlases());
-            exit(-1);
+            if( atlas->getNumAtlases() != 1){
+                fprintf(stderr,"Atlas fail!!! Downsample didn't allow for one atlas WIP! SEE MATT\nHopefully this will one day be replaced with working code :-)\n%d atlas\n",atlas->getNumAtlases());
+                exit(-1);
+            }
         }
         //   exit(-1);
     }
@@ -611,13 +616,13 @@ void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cel
 
      atlas->buildAtlas();
 
-        if( atlas->getNumAtlases() > 1){
-            fprintf(stderr,"Atlas fail!!! Downsample didn't allow for one atlas WIP! SEE MATT\nHopefully this will one day be replaced with working code :-)\n%d atlas\n",atlas->getNumAtlases());
+        if(  dynamic_cast<VipsAtlasBuilder*>(atlas)->getNumAtlases() != 1){
+            fprintf(stderr,"VipsAtlasBuilder: Downsample didn't allow for one atlas FitCheck failing for some reason look there.\n%d atlas\n",atlas->getNumAtlases());
             exit(-1);
         }
 
         if(atlas->_atlasList.front()->_sourceList.size() < mosaic_cells.size()){
-            fprintf(stderr,"Atlas sizes different %d %d\n",(int)atlas->_atlasList.front()->_sourceList.size() ,(int)mosaic_cells.size());
+            fprintf(stderr,"Atlas sizes different %d %d Downsample didn't allow for one atlas FitCheck failing for some reason look there.\n",(int)atlas->_atlasList.front()->_sourceList.size() ,(int)mosaic_cells.size());
             exit(-1);
         }
 
@@ -708,16 +713,16 @@ void loadMosaicCells(std::string fname,int &totalX,int &totalY,std::vector<mosai
     }
 }
 
-VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int totalY,
+VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int totalY,int POTAtlasSize,
                                 const std::vector<mosaic_cell> &mosaic_cells,
                                 bool writeAtlas,double scaleFactor,string basedir,string imgOutput,bool flat,double maxRes,int levelRun,int rowRun){
     int tileSize=256;
     int border=1;
-    VipsAtlasBuilder* _atlas =new VipsAtlasBuilder(mosaic_cells.size(),tileSize,border,false );
-    _atlas->setMargin(0);
-    int maxSize=pow(2.0,17);
+    VipsAtlasBuilder* _atlas =new VipsAtlasBuilder(POTAtlasSize,mosaic_cells.size(),tileSize,border,false );
+   // _atlas->setMargin(0);
+  /*  int maxSize=pow(2.0,17);
     _atlas->setMaximumAtlasSize(maxSize,maxSize);
-
+*/
     osg::Vec4 ratio(0.0,0.0,0,0);
 
     osg::Vec2 minT(0,0),maxT(totalX,totalY);

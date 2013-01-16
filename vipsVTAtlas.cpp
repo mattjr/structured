@@ -22,7 +22,11 @@ int main( int argc, char **argv )
     arguments.read("-scale",scaleFactor);
     double maxRes=pow(2,17);
     arguments.read("-maxRes",maxRes);
-
+    int POTatlasSize;
+    if(!arguments.read("-potsize",POTatlasSize)){
+        fprintf(stderr,"-potsize required\n");
+        exit(-1);
+    }
     string basedir="mesh";
     arguments.read("-dir",basedir);
 
@@ -51,7 +55,7 @@ int main( int argc, char **argv )
         string imgFile;
         if(arguments.read("-img",imgFile))
             outputPyr=false;
-            createVTAtlas( viewProj, totalX, totalY,
+            createVTAtlas( viewProj, totalX, totalY,POTatlasSize,
                          mosaic_cells,
                        outputPyr,scaleFactor,basedir,imgFile,flat,maxRes,level,row);
    osg::Timer_t after_computeMax = osg::Timer::instance()->tick();

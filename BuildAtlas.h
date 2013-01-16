@@ -31,7 +31,7 @@ void  generateAtlasAndTexCoordMappingFromExtents(const std::vector<mosaic_cell> 
                                                  TightFitAtlasBuilder* atlas,
                                      osg::Vec4 &ratio,
                                      int level);
-VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int totalY,
+VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int totalY,int POTAtlasSize,
                                 const std::vector<mosaic_cell> &mosaic_cells,
                                 bool writeAtlas,double scaleFactor=1.0,std::string basedir="mesh",std::string imgOutput="",
                                 bool flat=false,double maxRes=-1,

@@ -3,6 +3,49 @@
 #include <algorithm>
 #include <iostream>
 using namespace std;
+bool getScaleFactorForAtlasFit(float &scale,std::vector<std::pair<int,int> > &imageSizes,int POTsize,int VTtileSize,int VToverlap){
+    double scaleStep=0.001;
+     //scaleStep=0.00001;
+
+    for(;scale > 0.0; scale-=scaleStep){
+        FitChecker fit(imageSizes,POTsize,scale, VTtileSize, VToverlap ,true);
+
+        //printf("Checking fit at %f\n",scale);
+        fit.buildAtlas();
+        if(fit.getNumAtlases() == 1 && fit._atlasList.front()->_sourceList.size() == imageSizes.size()){
+
+            printf("Found fit at %f\n",scale);
+            return true;
+        }
+    }
+    scale=-1;
+    return false;
+
+}
+FitChecker::~FitChecker(){
+   // printf("Deleting %d\n",_tmp_images.size());
+    for(int i=0; i<_tmp_images.size(); i++){
+        delete _tmp_images[i];
+        _tmp_images[i]=NULL;
+    }
+    _tmp_images.clear();
+}
+
+FitChecker::FitChecker(std::vector<std::pair<int,int> > &imageSizes,int POTsize,double scale,int VTtileSize,int VToverlap,bool dryRun=true) :
+    VipsAtlasBuilder( POTsize,imageSizes.size(), VTtileSize, VToverlap, dryRun ){
+    _tmp_images.resize(imageSizes.size());
+    for(int i=0; i<(int)imageSizes.size(); i++){
+        std::pair<int,int> p=imageSizes[i];
+        p.first=(int)ceil(p.first*scale);
+        p.second=(int)ceil(p.second*scale);
+        _tmp_images[i] = new vips::VImage;
+        _tmp_images[i]->initdesc(p.first,p.second,
+                                3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);
+        addSource(_tmp_images[i]);
+    }
+}
+
+
 TightFitAtlasBuilder::TightFitAtlasBuilder(int mosaic_cell_num){
         atlasSourceMatrix.resize(mosaic_cell_num,NULL);
         offsetMats.resize(mosaic_cell_num);
@@ -67,7 +110,7 @@ void VipsAtlasBuilder::buildAtlas()
 {
     if(_sourceList.size() ==0)
         return;
-    long int totalSide=0;
+   /* long int totalSide=0;
     int largestTile=0;
     for(int i=0; i <(int)_sourceList.size(); i++){
         if(_sourceList[i]->_image){
@@ -91,6 +134,9 @@ void VipsAtlasBuilder::buildAtlas()
 
     _maximumAtlasWidth=totalSide;
     _maximumAtlasHeight=totalSide;
+
+   */
+    //printf("Adjusted Atlas Size %dx%d\n",_maximumAtlasWidth,_maximumAtlasHeight);
 
     if(_sourceList.size() == 1)
        {
@@ -217,8 +263,22 @@ void VipsAtlasBuilder::addSource(vips::VImage *img,vips::VImage *imglevel,int le
     _sourceList.push_back(new VSource(img,imglevel,level));
     _sourceList.back()->ref();
 }
-VipsAtlasBuilder::VipsAtlasBuilder(int count,int VTtileSize,int VToverlap,bool dryRun):TightFitAtlasBuilder(count),_VTtileSize(VTtileSize),_VToverlap(VToverlap),_dryRun(dryRun){
+VipsAtlasBuilder::VAtlas::~VAtlas(){
+    if(_image){
+        delete _image;
+        _image= NULL;
+    }
 
+    if(_ds_image){
+        delete _ds_image;
+        _ds_image= NULL;
+    }
+}
+VipsAtlasBuilder::VipsAtlasBuilder(int POTAtlasSize, int count,int VTtileSize,int VToverlap,bool dryRun):TightFitAtlasBuilder(count),_VTtileSize(VTtileSize),_VToverlap(VToverlap),_dryRun(dryRun){
+    int atlasSize=(int)POTAtlasSize-((POTAtlasSize/_VTtileSize)*2*_VToverlap);
+
+    setMaximumAtlasSize(atlasSize,atlasSize);
+    setMargin(0);
 }
 void VipsAtlasBuilder::completeRow(unsigned int indexAtlas)
 {

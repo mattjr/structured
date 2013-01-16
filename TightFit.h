@@ -40,8 +40,9 @@ public:
 class VipsAtlasBuilder : public TightFitAtlasBuilder
 {
 public:
+    unsigned int getNumAtlases(){return _atlasList.size();}
 
-    VipsAtlasBuilder(int mosaic_cell_num,int VTtileSize,int VToverlap,bool dryRun=false );
+    VipsAtlasBuilder(int POTAtlasSize,int mosaic_cell_num,int VTtileSize,int VToverlap,bool dryRun=false );
     int _VTtileSize,_VToverlap;
     osg::Matrix getTextureMatrix(vips::VImage *);
     int getAtlasHeight(){return _maximumAtlasHeight;}
@@ -50,13 +51,13 @@ public:
     void addSource(vips::VImage *img);
     void addSource(vips::VImage *img,vips::VImage *imglevel,int level);
 
-    void buildAtlas(void);
+    void buildAtlas();
     void completeRow(unsigned int indexAtlas);
 class VAtlas;
      class VSource : public Source{
      public:
          VSource( vips::VImage * image): Source((const osg::Image*)NULL),
-             _image(image) ,_atlas(NULL),_level(-1){width=_image->Xsize(); height=_image->Ysize();}
+             _image(image) ,_atlas(NULL),_ds_image(NULL),_level(-1){width=_image->Xsize(); height=_image->Ysize();}
          VSource( vips::VImage * image,vips::VImage *ds_img,int level): Source((const osg::Image*)NULL),
              _image(image) ,_atlas(NULL),_ds_image(ds_img),_level(level){width=_image->Xsize(); height=_image->Ysize();}
       vips::VImage *_image;
@@ -64,7 +65,6 @@ class VAtlas;
       int width,height;
       vips::VImage *_ds_image;
       int _level;
-
       bool suitableForAtlas(int maximumAtlasWidth, int maximumAtlasHeight);
 
      };
@@ -73,7 +73,8 @@ class VAtlas;
 
      class VAtlas: public Atlas{
      public:
-         VAtlas(int width, int height, int margin,int level=-1):Atlas(width,height,0),_image(NULL),_indexFirstOfRow(0),_level(level){if(margin>0){fprintf(stderr,"Cannot have margin in this implmentation being reset to 0 margin!\n");}}
+         VAtlas(int width, int height, int margin,int level=-1):Atlas(width,height,0),_image(NULL),_ds_image(NULL),_indexFirstOfRow(0),_level(level){if(margin>0){fprintf(stderr,"Cannot have margin in this implmentation being reset to 0 margin!\n");}}
+         ~VAtlas();
 
          vips::VImage *_image;
          vips::VImage *_ds_image;
@@ -107,6 +108,13 @@ class VAtlas;
      };
 };
 
+class FitChecker  : public VipsAtlasBuilder{
+  public:
+    FitChecker(std::vector<std::pair<int,int> > &imageSizes,int POTsize,double scale, int VTtileSize, int VToverlap, bool dryRun);
+    std::vector<vips::VImage *> _tmp_images;
+    ~FitChecker();
+};
+bool getScaleFactorForAtlasFit(float &scale,std::vector<std::pair<int,int> > &imageSizes,int POTsize,int VTtileSize,int VToverlap);
 
 
 #endif // TightFit_H

@@ -89,7 +89,7 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
         cnt++;
 
     }
-    printf("%d\n",cnt);
+   // printf("%d\n",cnt);
 
 
 }
@@ -113,7 +113,11 @@ int main( int argc, char **argv )
     std::string outfile="temp.obj";
     arguments.read("-outfile",outfile);
     bool flip=arguments.read("-F");
-
+    int POTAtlasSize;
+    if(!arguments.read("-potsize",POTAtlasSize)){
+        fprintf(stderr, "need atlasSize\n");
+        exit(-1);
+    }
     string mosaic_cells_fname;
     if(!arguments.read("-cells",mosaic_cells_fname)){
         fprintf(stderr, "need mat\n");
@@ -151,7 +155,7 @@ int main( int argc, char **argv )
 
     osg::DrawElementsUInt* primitiveSet = dynamic_cast<osg::DrawElementsUInt*>(geom->getPrimitiveSet(0));
     //int offset=newVerts->size();
-    osg::ref_ptr<VipsAtlasBuilder >tf_atlas=createVTAtlas( viewProj, totalX, totalY,
+    osg::ref_ptr<VipsAtlasBuilder >tf_atlas=createVTAtlas( viewProj, totalX, totalY,POTAtlasSize,
                  mosaic_cells,
                false,scaleFactor,basedir);
     vector<float>aux(vertexData._texCoord[0]->size(),-1.0f);

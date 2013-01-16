@@ -2282,8 +2282,7 @@ double totalValidArea=0;
 
     }*/
 
-    string tcmd =basepath+string("/atlasmesh -mat viewproj.mat -cells image_areas.txt ");// + string(tmpsize);
-    char tmp100[8096];
+    //string tcmd =basepath+string("/atlasmesh -mat viewproj.mat -cells image_areas.txt ");// + string(tmpsize);
     char tmpfn2[8096];
 
     string calcTexFn=string(diced_dir)+"/"+"calctexcmds";
@@ -2680,11 +2679,11 @@ double totalValidArea=0;
     }
     string cwdmeshdiced=cwd;
 
-    std::string extraCheckCmd;
-    sprintf(tmp100, " -F -outfile %s/unclean-tex-total.ply ; %s/vcgapps/bin/cleanTexMesh %s/unclean-tex-total.ply --normcolor -out %s/tex-total.ply",diced_dir,basepath.c_str(),diced_dir,diced_dir);
+    //std::string extraCheckCmd;
+    //sprintf(tmp100, " -F -outfile %s/unclean-tex-total.ply ; %s/vcgapps/bin/cleanTexMesh %s/unclean-tex-total.ply --normcolor -out %s/tex-total.ply",diced_dir,basepath.c_str(),diced_dir,diced_dir);
 
     //  extraCheckCmd= reparamTex ? createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4): "";
-    extraCheckCmd=  createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
+    //extraCheckCmd=  createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
     for(int z=0; z<NUM_MOSAIC_FILES; z++)
         fclose(mosaiccmds_fp[z]);
     fclose(vartexcmds_fp);
@@ -2841,7 +2840,7 @@ double totalValidArea=0;
     string texcmd[4]={"tex.py","depth.py","flat.py","render.py"};
     string nameCmd[4]={"Remap","Depth","RenderFlat","Render3D"};
 
-    for(int z=0; z<NUM_TEX_FILES; z++){
+    for(int z=0; z<2/*Just first two not render ones which need data from remap step*/; z++){
 
         vector<std::string> postcmdv;
 
@@ -2856,7 +2855,7 @@ double totalValidArea=0;
 
         postcmdv.push_back(p.str());
 */
-        shellcm.write_generic(texcmd[z],texcmds_fn[z],nameCmd[z],&(precmd),&(postcmdv),num_threads,(z == REMAP_FLAT_SIZE || z == FLAT) ? extraCheckCmd : "");
+        shellcm.write_generic(texcmd[z],texcmds_fn[z],nameCmd[z],&(precmd),&(postcmdv),num_threads);
     }
     vector<std::string> varpostcmdv;
     std::ostringstream pvar;
@@ -2876,7 +2875,8 @@ double totalValidArea=0;
     }
     shellcm.write_generic(vartexcmd,vartexcmds_fn,"Var Tex",NULL,&(varpostcmdv),std::max(num_threads/2,1));
     long int totalSide=0;
-
+    int POTatlasSize=0;
+    std::vector<std::pair<int,int> > remapSizes;
     if(reparamTex){
         if(!no_run_remap)
             sysres=system(string("python "+texcmd[REMAP]).c_str());
@@ -2900,19 +2900,36 @@ double totalValidArea=0;
             fclose(fp);
             int maxSide=std::max(sizeX,sizeY);
             totalSide+=(maxSide*maxSide);
-
+            remapSizes.push_back(make_pair<int,int>(sizeX,sizeY));
         }
         int sqrtSize=    ceil(sqrt(totalSide));
         // printf("Un adjusted size %d\n",sqrtSize);
         int ajustedGLImageSize=(int)sqrtSize+((sqrtSize/VTtileSize)*2*tileBorder);
         int maxVTSize=(int)pow(2,17); //~128k max size
-        totalSide=min(osg::Image::computeNearestPowerOfTwo(ajustedGLImageSize),(int)maxVTSize);
-        double marginAtlas=1.1;
-        float closeFitScale=(ajustedGLImageSize > totalSide) ? totalSide/(double)(ajustedGLImageSize*marginAtlas) : 1.0;
-        printf("Adjusted POT %d using %ld scale %f\n",ajustedGLImageSize,totalSide,closeFitScale);
+        POTatlasSize=min(osg::Image::computeNearestPowerOfTwo(ajustedGLImageSize),(int)maxVTSize);
+      /*  double marginAtlas=1.3;
+        float closeFitScale=(ajustedGLImageSize > POTatlasSize) ? POTatlasSize/(double)(ajustedGLImageSize*marginAtlas) : 1.0;*/
+        float closeFitScale=1.0;
+        if(!getScaleFactorForAtlasFit(closeFitScale,remapSizes,POTatlasSize, VTtileSize, tileBorder)){
+                   fprintf(stderr,"Can't get atlas fit for remapping bailing!\n");
+                   exit(-1);
+        }
+        printf("Adjusted POT %d using %d scale %f\n",ajustedGLImageSize,POTatlasSize,closeFitScale);
         FILE *fpscale=fopen((string(diced_dir)+string("/globalscale.txt")).c_str(),"w");
         fprintf(fpscale,"%f\n",closeFitScale);
         fclose(fpscale);
+        char atlasSizeStr[1024];
+        sprintf(atlasSizeStr," -potsize %d  ",POTatlasSize);
+        string tcmd =basepath+string("/atlasmesh -mat viewproj.mat -cells image_areas.txt ")+atlasSizeStr;// + string(tmpsize);
+        char tmp100[8096];
+        sprintf(tmp100, " -F -outfile %s/unclean-tex-total.ply ; %s/vcgapps/bin/cleanTexMesh %s/unclean-tex-total.ply --normcolor -out %s/tex-total.ply",diced_dir,basepath.c_str(),diced_dir,diced_dir);
+
+        std::string extraCheckCmd=  createFileCheckPython(tcmd,cwdmeshdiced,cfiles,string(tmp100),4);
+        for(int z=2; z<NUM_TEX_FILES; z++){
+
+            vector<std::string> postcmdv;
+            shellcm.write_generic(texcmd[z],texcmds_fn[z],nameCmd[z],&(precmd),&(postcmdv),num_threads,extraCheckCmd);
+        }
         if(!no_tex){
             sysres=system(string("python "+texcmd[REMAP_FLAT_SIZE]).c_str());
             if(sysres <0){
@@ -2931,7 +2948,7 @@ double totalValidArea=0;
         sysres=system("python vartex.py");
     //if(useVirtTex)
     {
-        int sizeForLevel=totalSide;
+        int sizeForLevel=POTatlasSize;
         int sizeLevel=sizeForLevel;
 
         int tileSize=256;
@@ -2956,13 +2973,13 @@ double totalValidArea=0;
             int numXtiles=(sizeLevel/adjustedTileSize);
             if(numXtiles <= 4){
                 fprintf(vttexcmds_fp,"cd %s;",cwd);
-                fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s -level %d \n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag,level);
+                fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s -level %d -potsize %d \n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag,level,POTatlasSize);
 
 
             }else{
                 for(int x=0; x<numXtiles; x++){
                     fprintf(vttexcmds_fp,"cd %s;",cwd);
-                    fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s -level %d -row %d\n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag,level,x);
+                    fprintf(vttexcmds_fp,"%s/vipsVTAtlas -mat %s -cells %s %s -level %d -row %d  -potsize %d \n",basepath.c_str(),"viewproj.mat","image_areas.txt",flatflag,level,x,POTatlasSize);
                 }
             }
         }
@@ -3247,7 +3264,7 @@ double totalValidArea=0;
         }else{
             no_hw_context=true;
         }
-        doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,useTextureArray,useReimage,useVirtTex,totalbb_unrot,src_proj4,dst_proj4_coord_system,sparseRatio,no_hw_context,no_atlas);
+        doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,POTatlasSize,useTextureArray,useReimage,useVirtTex,totalbb_unrot,src_proj4,dst_proj4_coord_system,sparseRatio,no_hw_context,no_atlas);
     }
 
     char zipstr[1024];

@@ -536,8 +536,8 @@ int main(int ac, char *av[]) {
         }
         fclose(fp);
         cout <<"Size "<< sizeX << "x"<<sizeY<<endl;
-        sizeX*=global_scaleVal;
-        sizeY*=global_scaleVal;
+        sizeX=ceil(sizeX*global_scaleVal);
+        sizeY=ceil(sizeY*global_scaleVal);
         cout <<"Globally scaled to " << sizeX << "x"<<sizeY<<endl;
 #if VIPS_MINOR_VERSION > 24
 

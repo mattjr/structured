@@ -52,10 +52,11 @@ void VipsSampler::depthPassTri(int x, int y, const osg::Vec3& bar, const osg::Ve
 
     gRect.left=x;
     gRect.top=y;
-
+    if(gRect.left>=regRange->im->Xsize || gRect.top>=regRange->im->Ysize)
+        return;
 
     if(im_prepare(regRange,&gRect)){
-        fprintf(stderr,"Prepare fail range blend pass\n");
+        fprintf(stderr,"depthPassTri : Prepare fail range blend pass x: %d y: %d w:%d h:%d im w:%d h:%d\n",x,y,gRect.width,gRect.height,regRange->im->Xsize,regRange->im->Ysize);
         exit(-1);
     }
     unsigned int *depth=(unsigned int*)IM_REGION_ADDR( regRange, x, y );
@@ -103,14 +104,15 @@ void VipsSampler::blendPassTri(int x, int y, const osg::Vec3& bar, const osg::Ve
 
     gRect.left=x;
     gRect.top=y;
-
+    if(gRect.left>=regRange->im->Xsize || gRect.top>=regRange->im->Ysize)
+        return;
     if(im_prepare(regOutput,&gRect)){
-        fprintf(stderr,"Prepare fail\n");
+        fprintf(stderr,"blendPassTri : Prepare fail\n");
         exit(-1);
     }
 
     if(im_prepare(regRange,&gRect)){
-        fprintf(stderr,"Prepare fail range blend pass\n");
+        fprintf(stderr,"blendPassTri: Prepare fail range blend pass\n");
         exit(-1);
     }
    //*color=       255 | 0 << 8 | 0 << 16 | 255 << 24;

@@ -45,7 +45,7 @@ namespace OGF {
 
 //_________________________________________________________
 
-    Image* ImageSerializer_ppm::serialize_read(std::istream& in) {
+    Image* ImageSerializer_ppm::serialize_read(std::istream& in,bool flip) {
         // Read header
         char buff[256] ;
 
@@ -94,7 +94,8 @@ namespace OGF {
             result->base_mem()[3*i+1] = g ;
             result->base_mem()[3*i+2] = b ;
         }
-        flip_image(*result) ;
+        if(flip)
+            flip_image(*result) ;
         return result ;
     }
 

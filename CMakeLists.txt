@@ -333,6 +333,7 @@ ProgressBar.cpp
 BuildAtlas.cpp
 TightFit.cpp
 GLImaging.cpp
+mipmap.cpp
                 )
 ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} ${SPINDEX_SRC})
@@ -344,7 +345,7 @@ ADD_EXECUTABLE(  genRangeImg genRangeImg.cpp )
 ADD_EXECUTABLE(  im_shrink_noblack im_shrink_noblack.cpp)
 
 ADD_EXECUTABLE( osgdem  VirtualPlanetBuilder/applications/osgdem/osgdem.cpp )
-
+ADD_EXECUTABLE(create_mipmap create_mipmap.cpp)
 ADD_EXECUTABLE( treeBBClip treeBBClip.cpp  )
 ADD_EXECUTABLE( calcTexCoord calcTexCoord.cpp )
 ADD_EXECUTABLE( testImageModel testImageModel.cpp )
@@ -370,7 +371,9 @@ TARGET_LINK_LIBRARIES( threadedStereo ts  vips vipsCC vpb spindex  ${OGF_LIBS})
 TARGET_LINK_LIBRARIES( osgdem vpb  )
 TARGET_LINK_LIBRARIES( vipsVTAtlas ts  vips vipsCC spindex   ${OGF_LIBS})
 TARGET_LINK_LIBRARIES( atlasmesh ts  vips vipsCC spindex  ${OGF_LIBS})
-TARGET_LINK_LIBRARIES(im_shrink_noblack vips vipsCC)
+TARGET_LINK_LIBRARIES(im_shrink_noblack ts vips vipsCC ${OGF_LIBS})
+TARGET_LINK_LIBRARIES(create_mipmap ts vips vipsCC ${OGF_LIBS} dl)
+
 TARGET_LINK_LIBRARIES( testImageModel ts  )
 TARGET_LINK_LIBRARIES( deepzoomVIPS  vips vipsCC)
 TARGET_LINK_LIBRARIES( testImageModel ts  )

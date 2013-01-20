@@ -49,7 +49,7 @@ namespace OGF {
     class IMAGE_API ImageSerializer_ppm : public ImageSerializer {
     public:
 
-        virtual Image* serialize_read(std::istream& stream) ;
+        virtual Image* serialize_read(std::istream& stream,bool flip=true) ;
         virtual bool read_supported() const ;
 
         virtual bool serialize_write(

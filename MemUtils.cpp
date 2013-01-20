@@ -234,7 +234,7 @@ bool genPyramid(std::string name,std::string basepath,int pyramidHeight,string e
         else
             sprintf(tmp2,"%s-%02d.%s",(string(diced_img_dir)+"/"+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i-1,ext.c_str());
 
-        sprintf(tmp,"%s %s/im_shrink_noblack %s %s-%02d.%s 2 2;",tmp,basepath.c_str(),tmp2,
+        sprintf(tmp,"%s %s/create_mipmap %s %s-%02d.%s 2 2;",tmp,basepath.c_str(),tmp2,
                 (string(diced_img_dir)+"/"+osgDB::getNameLessExtension(osgDB::getSimpleFileName(name))).c_str(),i,ext.c_str());
     }
     int res= system(tmp);

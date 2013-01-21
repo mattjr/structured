@@ -976,11 +976,12 @@ VipsAtlasBuilder* createVTAtlas(const osg::Matrix &viewProj,int totalX,int total
                     }
                     char tmp[1024];
                     sprintf(tmp,"%s/tile_%d_%d_%d.jpg",dirname,level,x,y);
-                    if(level >maxLevels-3-1){
+                    part.write((string(tmp)+":92").c_str());
+                    /*if(level >maxLevels-3-1){
                         dilateEdgeNew(part,tmp,1);
                     }else{
                         part.write(tmp);
-                    }
+                    }*/
                 }
             }
         }

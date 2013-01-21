@@ -408,10 +408,11 @@ int main(int ac, char *av[]) {
         sizeX=sizeY=sizeImage;
     }
     osg::Vec2 minTC,maxTC;
-    getBoundsForClippingReparam(newVerts,minTC,maxTC);
+    double margin=0.05;
+    getBoundsForClippingReparam(newVerts,minTC,maxTC,margin);
     cout << minTC << " -- "<< maxTC<<endl;
     osg::Vec2 rangeTC((maxTC-minTC).x(),(maxTC-minTC).y());
-    osg::Vec2 adjSize=osg::Vec2(sizeX *rangeTC.x(),sizeY*rangeTC.y());
+    osg::Vec2 adjSize=osg::Vec2(sizeX *(rangeTC.x()+(2*margin)),sizeY*(rangeTC.y()+(2*margin)));
     char tmp11[8192];
     sprintf(tmp11,"%s/image_r%04d_c%04d_rs%04d_cs%04d-remap.size.txt",diced_dir,row,col,_tileRows,_tileColumns);
     FILE *fp=fopen(tmp11,"w");

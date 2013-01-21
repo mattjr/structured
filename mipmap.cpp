@@ -70,7 +70,7 @@ int sRGB_to_linear(int c)
 
 typedef float (*filterfunc_t)(float);
 typedef int   (*wrapfunc_t)(int, int);
-typedef void  (*mipmapfunc_t)(unsigned char *, int, int, unsigned char *, int, int,unsigned char *, int, filterfunc_t, float, wrapfunc_t, int, float);
+typedef void  (*mipmapfunc_t)(unsigned char *, int, int, unsigned char *, int, int, int, filterfunc_t, float, wrapfunc_t, int, float);
 
 
 /******************************************************************************
@@ -267,7 +267,7 @@ static float kaiser_filter(float t)
  ******************************************************************************/
 
 static void scale_image_nearest(unsigned char *dst, int dw, int dh,
-                                unsigned char *src, int sw, int sh,unsigned char *mask,
+                                unsigned char *src, int sw, int sh,
                                 int bpp, filterfunc_t filter, float support,
                                 wrapfunc_t wrap,
                                 int gc, float gamma)
@@ -293,7 +293,7 @@ static void scale_image_nearest(unsigned char *dst, int dw, int dh,
 }
 
 static void scale_image(unsigned char *dst, int dw, int dh,
-                        unsigned char *src, int sw, int sh,unsigned char *mask,
+                        unsigned char *src, int sw, int sh,
                         int bpp, filterfunc_t filter, float support,
                         wrapfunc_t wrap,
                         int gc, float gamma)
@@ -302,11 +302,11 @@ static void scale_image(unsigned char *dst, int dw, int dh,
    const float xfactor = (float)dw / (float)sw;
    const float yfactor = (float)dh / (float)sh;
 
-   int x, y, start, stop, nmax, n, i,ex,ey;
+   int x, y, start, stop, nmax, n, i;
    int sstride = sw * bpp;
    float center, contrib, density, s, r, t;
-   bool edgePixel;
-   unsigned char *d, *row, *col,*mcol;
+
+   unsigned char *d, *row, *col;
 
    float xscale = MIN(xfactor, 1.0f) / blur;
    float yscale = MIN(yfactor, 1.0f) / blur;
@@ -334,7 +334,7 @@ static void scale_image(unsigned char *dst, int dw, int dh,
 
 #ifdef _OPENMP
    #pragma omp parallel for schedule(dynamic) \
-      private(x, y, d, row, col,mrow,mcol, center, start, stop, nmax, s, i, n, density, r, t, contrib,ex,ey)
+      private(x, y, d, row, col, center, start, stop, nmax, s, i, n, density, r, t, contrib,ex,ey)
 #endif
    for(y = 0; y < dh; ++y)
    {
@@ -353,19 +353,17 @@ static void scale_image(unsigned char *dst, int dw, int dh,
       for(x = 0; x < sw; ++x)
       {
          col = src + (x * bpp);
-         mcol = mask + x ;
 
          for(i = 0; i < bpp; ++i)
          {
             density = 0.0f;
             r = 0.0f;
-            edgePixel = false;
+
             for(n = 0; n < nmax; ++n)
             {
-                if(mask && mcol[(wrap_clamp(start + n, sh) * sw) ] == 255){
-                    edgePixel=true;
-                    //break;
-                }
+
+                if(col[(wrap(start + n, sh) * sstride) + 0] == 0 &&col[(wrap(start + n, sh) * sstride) + 1] == 0 && col[(wrap(start + n, sh) * sstride) + 2] == 0)
+                    continue;
                contrib = filter((s + n) * yscale);
                density += contrib;
                if(i == 3)
@@ -382,8 +380,7 @@ static void scale_image(unsigned char *dst, int dw, int dh,
 
             if(i != 3)
                r = gamma_to_linear(gc, r, gamma);
-            if(edgePixel)
-                r=255;
+
             d[(x * bpp) + i] = (unsigned char)r;
          }
       }
@@ -403,14 +400,12 @@ static void scale_image(unsigned char *dst, int dw, int dh,
          {
             density = 0.0f;
             r = 0.0f;
-            edgePixel = false;
 
             for(n = 0; n < nmax; ++n)
             {
-                if(mask && row[(wrap(start + n, sw) * bpp) + i] == 255 ){
-                     edgePixel=true;
-                    // break;
-                }
+                if(row[(wrap(start + n, sw) * bpp) + 0] == 0 && row[(wrap(start + n, sw) * bpp) + 1] == 0 && row[(wrap(start + n, sw) * bpp) + 2] == 0)
+                    continue;
+
                contrib = filter((s + n) * xscale);
                density += contrib;
                if(i == 3)
@@ -427,14 +422,8 @@ static void scale_image(unsigned char *dst, int dw, int dh,
 
             if(i != 3)
                r = gamma_to_linear(gc, r, gamma);
-            if(edgePixel){
-                ey = (y * sh + sh / 2) / dh;
-                   ex = (x * sw + sw / 2) / dw;
-                   d[(y * (dw * bpp)) + (x * bpp) + i] =   src[ey * (sw * bpp) + (ex * bpp) + n];
 
-            }else
-             d[(y * (dw * bpp)) + (x * bpp) + i] = (unsigned char)r;
-
+            d[(y * (dw * bpp)) + (x * bpp) + i] = (unsigned char)r;
          }
       }
    }
@@ -468,7 +457,7 @@ static struct
  * mipmap generation                                                          *
  ******************************************************************************/
 
-int generate_mipmaps(unsigned char *dst, unsigned char *src,unsigned char *mask,
+int generate_mipmaps(unsigned char *dst, unsigned char *src,
                      unsigned int width, unsigned int height, int bpp,
                      int indexed, int mipmaps, int filter, int wrap,
                      int gc, float gamma)
@@ -525,7 +514,7 @@ int generate_mipmaps(unsigned char *dst, unsigned char *src,unsigned char *mask,
       dw = MAX(1, sw >> 1);
       dh = MAX(1, sh >> 1);
       printf("%d %d -- %d %d\n",sw,sh,dw,dh);
-      mipmap_func(d, dw, dh, s, sw, sh,mask,bpp, filter_func, support, wrap_func, gc, gamma);
+      mipmap_func(d, dw, dh, s, sw, sh,bpp, filter_func, support, wrap_func, gc, gamma);
 
       s = d;
       sw = dw;

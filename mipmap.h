@@ -33,7 +33,7 @@ int get_next_mipmap_dimensions(int *next_w, int *next_h,
                                int  curr_w, int  curr_h);
 
 float cubic_interpolate(float a, float b, float c, float d, float x);
-int generate_mipmaps(unsigned char *dst, unsigned char *src,unsigned char *mask,
+int generate_mipmaps(unsigned char *dst, unsigned char *src,
                      unsigned int width, unsigned int height, int bpp,
                      int indexed, int mipmaps, int filter, int wrap,
                      int gamma_correct, float gamma);

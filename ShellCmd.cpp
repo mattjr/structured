@@ -9,6 +9,10 @@ const char *serfile="localserver";
 
 void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds,int thread_override,string custom){
     FILE *fp=fopen(filename.c_str(),"w");
+    if(!fp){
+        fprintf(stderr,"Can't open %s\n",filename.c_str());
+        exit(-1);
+    }
     fprintf(fp,"#!/usr/bin/python\n");
     fprintf(fp,"import sys\n");
     fprintf(fp,"import os\n");

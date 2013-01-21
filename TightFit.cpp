@@ -401,14 +401,21 @@ void VipsAtlasBuilder::VAtlas::copySources(bool dryRun)
         if (atlas == this)
         {
             osg::notify(osg::INFO)<<"Copying image"<<" to "<<source->_x<<" ,"<<source->_y<<std::endl;
-            osg::notify(osg::INFO)<<"        image size "<<source->_image->Ysize()<<","<<source->_image->Xsize()<<std::endl;
+            if(source->_image)
+                osg::notify(osg::INFO)<<"        image size "<<source->_image->Ysize()<<","<<source->_image->Xsize()<<std::endl;
 
             vips::VImage * sourceImage = source->_image;
             vips::VImage* atlasImage = atlas->_image;
 
             vips::VImage* ds_atlasImage = atlas->_ds_image;
             vips::VImage * ds_sourceImage = source->_ds_image;
-            int ds_height=_height>>_level;
+
+
+
+            int x = source->_x;
+            int y = source->_y;
+
+
             //assert(sourceImage->getPacking() == atlasImage->getPacking()); //Test if packings are equals.
             /*unsigned int rowSize = sourceImage->getRowSizeInBytes();
             unsigned int pixelSizeInBits = sourceImage->getPixelSizeInBits();
@@ -421,18 +428,21 @@ void VipsAtlasBuilder::VAtlas::copySources(bool dryRun)
             //assert(source->_y + static_cast<int>(source->_image->t())+_margin <= static_cast<int>(atlas->_image->t()));
             //assert(source->_x >= _margin);
             //assert(source->_y >= _margin);
-            int x = source->_x;
-            int y = source->_y;
 
-            int x_ds=source->_x >> _level;
-            int y_ds=source->_y >> _level;
 
             //if(!dryRun)
               //  atlasImage->insertplace(*sourceImage,x,_height-y-sourceImage->Ysize());
             if(!dryRun){
-                if(_level >0)
-                    atlas->_ds_image=new vips::VImage(ds_atlasImage->insert(*ds_sourceImage,x_ds,ds_height-y_ds-ds_sourceImage->Ysize()));
 
+                if(_level >0){
+                    int ds_height=_height/pow(2,_level);//_height>>_level;
+                    //int ds_width=_width/pow(2,_level);
+                    int x_ds=floor(source->_x/pow(2,_level)); //source->_x >> _level;
+                    int y_ds=(source->_y/pow(2,_level));//source->_y >> _level;
+                    int flipped_y_ds=floor(ds_height-y_ds-ds_sourceImage->Ysize());
+                    atlas->_ds_image=new vips::VImage(ds_atlasImage->insert(*ds_sourceImage,x_ds,flipped_y_ds));
+
+                }
                 atlas->_image=new vips::VImage(atlasImage->insert(*sourceImage,x,_height-y-sourceImage->Ysize()));
               //  char t[1024];
                 //sprintf(t,"%d.ppm",rand());

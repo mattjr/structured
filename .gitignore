@@ -151,3 +151,5 @@ taskworkers.pyc
 /volfill
 /dumpPCD
 /create_mipmap
+/im_shrink_noblack.sh~
+/threadpool.pyc

@@ -18,7 +18,7 @@ osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::
 int calcOptimalImageSize(const osg::Vec2 imageSize,osg::Vec3Array *verts,osg::DrawElementsUInt* triangles,std::vector<osg::Vec3Array *>   &texCoord,double scaletex=1.0,int VTtileSize=-1,int border=-1);
 int calcOptimalImageSizeRaw(const osg::Vec2 imageSize,osg::Vec3Array *verts,osg::DrawElementsUInt* triangles,std::vector<osg::Vec3Array *>   &texCoord,double scaletex=1.0,int VTtileSize=-1,int border=-1);
 void dilateEdge(IMAGE *tmpI,const char *outfile,int count=-1);
-void getBoundsForClippingReparam(osg::Vec3Array*coords, osg::Vec2 &minV, osg::Vec2 &maxV);
+void getBoundsForClippingReparam(osg::Vec3Array*coords, osg::Vec2 &minV, osg::Vec2 &maxV,double margin);
 void dilateEdgeNew(vips::VImage &input,const char *outfile,int count);
 class LoaderOSG2OGF  {
 

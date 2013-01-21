@@ -24,15 +24,24 @@ int main(int argc,char **argv){
 
     OGF::Image* img = p->serialize_read(infile,false) ;
     std::ofstream outf(argv[2]);
+    int origX=atoi(argv[3]);
+    int origY=atoi(argv[4]);
+    int level=atoi(argv[5]);
+
     const int src_width = img->width();
     const int src_height =img->height();
-    const int dst_width = img->width()/atoi(argv[3]);
-    const int dst_height =img->height()/atoi(argv[4]);
+    const int dst_width = ceil(origX/pow(2,level));
+    const int dst_height =ceil(origY/pow(2,level));
     OGF::Image* ds_img = new OGF::Image(OGF::Image::RGB,dst_width,dst_height);
 
 
+    OGF::MorphoMath morpho(img) ;
+    int count =10;
+    for(int i=0; i<count; i++) {
+        morpho.dilate(1) ;
+    }
 
-    // unsigned char *colorData = new unsigned char[ src_width * src_height * 3 ];
+  /*  // unsigned char *colorData = new unsigned char[ src_width * src_height * 3 ];
     unsigned char *maskData = new unsigned char[ src_width * src_height ];
 
     unsigned char *s =  img->base_mem_byte_ptr();
@@ -45,19 +54,19 @@ int main(int argc,char **argv){
       ad++;
       s+=img->bytes_per_pixel();
     };
-
+*/
 
     generate_mipmaps(ds_img->base_mem_byte_ptr(),img->base_mem_byte_ptr(),
-                     maskData,src_width,src_height,img->bytes_per_pixel(),0,2,
+                     src_width,src_height,img->bytes_per_pixel(),0,2,
                      DDS_MIPMAP_FILTER_LANCZOS,0,
                      0,0.0);
-
-    int count =1;
-    OGF::MorphoMath morpho(ds_img) ;
+    //memset(ds_img->base_mem_byte_ptr(),255,dst_width*dst_height*img->bytes_per_pixel());
+    //count =1;
+  /*  OGF::MorphoMath morpho(ds_img) ;
 
     for(int i=0; i<count; i++) {
         morpho.dilate(1) ;
-    }
+    }*/
     p->serialize_write(outf,ds_img);
     delete p;
 

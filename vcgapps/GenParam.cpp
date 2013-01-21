@@ -350,7 +350,7 @@ public:
 }
 using namespace std;
 
-void getBoundsForClippingReparam(osg::Vec3Array*coords, osg::Vec2 &minV, osg::Vec2 &maxV){
+void getBoundsForClippingReparam(osg::Vec3Array*coords, osg::Vec2 &minV, osg::Vec2 &maxV,double margin){
     minV=osg::Vec2(FLT_MAX,FLT_MAX);
     maxV=osg::Vec2(-FLT_MAX,-FLT_MAX);
 
@@ -367,12 +367,13 @@ void getBoundsForClippingReparam(osg::Vec3Array*coords, osg::Vec2 &minV, osg::Ve
 
     }
     osg::Vec2 rangeV((maxV-minV).x(),(maxV-minV).y());
+    double marginRange=1.0-(2*margin);
     for(int i=0; i< coords->size(); i++){
         for(int j=0; j <2; j++){
             if(!( coords->at(i)[j] >= 0.0 && coords->at(i)[j] <= 1.0))
                 continue;
 
-            coords->at(i)[j]=(coords->at(i)[j]-minV[j])/rangeV[j];
+            coords->at(i)[j]= (((coords->at(i)[j]-minV[j])/rangeV[j])/marginRange)+margin;
 
         }
 
@@ -462,7 +463,7 @@ void dilateEdgeNew(vips::VImage &input,const char *outfile,int count){
     for(int i=0; i<count; i++) {
         morpho.dilate(1) ;
     }
-    tmpImage.write(outfile);
+    tmpImage.write((string(outfile)+":90").c_str());
 }
 
 

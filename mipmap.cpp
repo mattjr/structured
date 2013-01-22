@@ -459,18 +459,18 @@ static struct
 
 int generate_mipmaps(unsigned char *dst, unsigned char *src,
                      unsigned int width, unsigned int height, int bpp,
-                     int indexed, int mipmaps, int filter, int wrap,
+                     int dw, int dh, int filter, int wrap,
                      int gc, float gamma)
 {
    int i;
-   unsigned int sw, sh, dw, dh;
+   unsigned int sw, sh;
    unsigned char *s, *d;
    mipmapfunc_t mipmap_func = NULL;
    filterfunc_t filter_func = NULL;
    wrapfunc_t wrap_func = NULL;
    float support = 0.0f;
 
-   if(indexed || filter == DDS_MIPMAP_FILTER_NEAREST)
+   if( filter == DDS_MIPMAP_FILTER_NEAREST)
    {
       mipmap_func = scale_image_nearest;
    }
@@ -509,18 +509,18 @@ int generate_mipmaps(unsigned char *dst, unsigned char *src,
    sw = width;
    sh = height;
 
-   for(i = 1; i < mipmaps; ++i)
+   /*for(i = 1; i < mipmaps; ++i)
    {
       dw = MAX(1, sw >> 1);
-      dh = MAX(1, sh >> 1);
+      dh = MAX(1, sh >> 1);*/
       printf("%d %d -- %d %d\n",sw,sh,dw,dh);
       mipmap_func(d, dw, dh, s, sw, sh,bpp, filter_func, support, wrap_func, gc, gamma);
 
       s = d;
-      sw = dw;
+    /*  sw = dw;
       sh = dh;
       d += (dw * dh * bpp);
-   }
+   }*/
 
    return(1);
 }

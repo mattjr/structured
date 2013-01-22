@@ -32,6 +32,7 @@ int main(int argc,char **argv){
     const int src_height =img->height();
     const int dst_width = ceil(origX/pow(2,level));
     const int dst_height =ceil(origY/pow(2,level));
+    printf("%d %d\n",dst_width,dst_height);
     OGF::Image* ds_img = new OGF::Image(OGF::Image::RGB,dst_width,dst_height);
 
 
@@ -57,7 +58,7 @@ int main(int argc,char **argv){
 */
 
     generate_mipmaps(ds_img->base_mem_byte_ptr(),img->base_mem_byte_ptr(),
-                     src_width,src_height,img->bytes_per_pixel(),0,2,
+                     src_width,src_height,img->bytes_per_pixel(),dst_width,dst_height,
                      DDS_MIPMAP_FILTER_LANCZOS,0,
                      0,0.0);
     //memset(ds_img->base_mem_byte_ptr(),255,dst_width*dst_height*img->bytes_per_pixel());

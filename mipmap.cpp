@@ -291,7 +291,32 @@ static void scale_image_nearest(unsigned char *dst, int dw, int dh,
       }
    }
 }
+void scale_image_boxmax(unsigned char *dst, int dw, int dh,
+                                unsigned char *src, int sw, int sh){
+    unsigned char A, B, C, D,gray;
+    int x, y, index ;
+    float x_ratio = ((float)(sw-1))/dw ;
+    float y_ratio = ((float)(sh-1))/dh ;
+    int offset = 0 ;
+    for (int i=0;i<dh;i++) {
+        for (int j=0;j<dw;j++) {
+            x = (int)(x_ratio * j) ;
+            y = (int)(y_ratio * i) ;
 
+            index = y*sw+x ;
+
+            A = src[index];
+            B = src[index+1];
+            C = src[index+sw] ;
+            D = src[index+sw+1];
+
+            // Y = A(1-w)(1-h) + B(w)(1-h) + C(h)(1-w) + Dwh
+            gray = MAX(MAX(MAX(A,B),C),D);
+
+            dst[offset++] = gray ;
+        }
+    }
+}
 static void scale_image(unsigned char *dst, int dw, int dh,
                         unsigned char *src, int sw, int sh,
                         int bpp, filterfunc_t filter, float support,

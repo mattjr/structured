@@ -42,7 +42,8 @@ int generate_volume_mipmaps(unsigned char *dst, unsigned char *src,
                             unsigned int depth, int bpp, int indexed,
                             int mipmaps, int filter, int wrap,
                             int gamma_correct, float gamma);
-
+void scale_image_boxmax(unsigned char *dst, int dw, int dh,
+                                unsigned char *src, int sw, int sh);
 typedef enum
 {
    DDS_MIPMAP_FILTER_DEFAULT = 0,

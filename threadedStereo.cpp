@@ -3013,10 +3013,10 @@ double totalValidArea=0;
 
     //int totalXborder=(int)smallPOTX-((smallPOTX/VTtileSize)*2*tileBorder);
     // int totalYborder=(int)smallPOTY-((smallPOTX/VTtileSize)*2*tileBorder);
-    int numOctrees=3;
     double maxResIpad=pow(2,15);//32k
+    int numOctrees=3;
     int maxFaceSizeIpad=((0xffff-1)-10)*(numOctrees-0.5);
-    double scaleFactor= (POTatlasSize > 8192 ) ? 0.5 : 1.0;
+    double scaleFactor= (POTatlasSize > 16384 ) ? 0.5 : 1.0;
     fprintf(ipadViewerFP,"#!/bin/bash\n");
     fprintf(ipadViewerFP,"mkdir ipad\n");
     fprintf(ipadViewerFP,"cd %s;%s/vcgapps/bin/texturedDecimator %s/tex-total.ply %s/ipad.ply %d -Oy -V -P ;",
@@ -3036,7 +3036,7 @@ double totalValidArea=0;
     fprintf(ipadViewerFP,"cd ipad\n");
     fprintf(ipadViewerFP,"n=`cat octree.txt`\n");
     fprintf(ipadViewerFP,"nm=$[$n-1]\n");
-     fprintf(ipadViewerFP,"for i in `seq 0 $nm`;do\n");
+    fprintf(ipadViewerFP,"for i in `seq 0 $nm`;do\n");
     fprintf(ipadViewerFP,"\tfilesuf=`printf \"%%04d\" $i`\n");
     fprintf(ipadViewerFP,"\t%s/generateOctreeFromObj.py -o=vtex-$filesuf.octree octree-$filesuf.obj\n",basepath.c_str());
     fprintf(ipadViewerFP,"done\n");
@@ -3066,8 +3066,12 @@ double totalValidArea=0;
     fprintf(metaFP,"cd ipad\n");
     fprintf(metaFP,"mkdir $1\n");
     fprintf(metaFP,"ln -sf $PWD/vtex $PWD/$1/\n");
-    for(int k=0; k<numOctrees; k++)
-        fprintf(metaFP,"ln -sf $PWD/vtex-%04d.octree $PWD/$1/m-%04d.octree\n",k,k);
+    fprintf(metaFP,"n=`cat octree.txt`\n");
+    fprintf(metaFP,"nm=$[$n-1]\n");
+     fprintf(metaFP,"for i in `seq 0 $nm`;do\n");
+    fprintf(metaFP,"\tfilesuf=`printf \"%%04d\" $i`\n");
+    fprintf(metaFP,"\tln -sf $PWD/vtex-$filesuf.octree $PWD/$1/m-$filesuf.octree\n");
+    fprintf(metaFP,"done\n");
     fprintf(metaFP,"ln -sf $PWD/octree.txt $PWD/$1/cnt\n");
     fprintf(metaFP,"gdalwarp ../mosaic/mosaic.vrt -ts 256 256 out.tif\n");
     fprintf(metaFP,"convert $PWD/out.tif $1/m.jpg\n");

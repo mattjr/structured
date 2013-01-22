@@ -373,12 +373,11 @@ void getBoundsForClippingReparam(osg::Vec3Array*coords, osg::Vec2 &minV, osg::Ve
             if(!( coords->at(i)[j] >= 0.0 && coords->at(i)[j] <= 1.0))
                 continue;
 
-            coords->at(i)[j]= (((coords->at(i)[j]-minV[j])/rangeV[j])/marginRange)+margin;
+            coords->at(i)[j]= (((coords->at(i)[j]-minV[j])/rangeV[j])*marginRange)+margin;
 
         }
 
     }
-
 }
 
 osg::Vec3Array* OGFreparam(osg::ref_ptr<osg::Vec3Array> verts,osg::ref_ptr<osg::DrawElementsUInt> triangles){

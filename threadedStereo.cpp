@@ -3016,7 +3016,7 @@ double totalValidArea=0;
     int numOctrees=3;
     double maxResIpad=pow(2,15);//32k
     int maxFaceSizeIpad=((0xffff-1)-10)*(numOctrees-0.5);
-    double scaleFactor=0.5;
+    double scaleFactor= (POTatlasSize > 8192 ) ? 0.5 : 1.0;
     fprintf(ipadViewerFP,"#!/bin/bash\n");
     fprintf(ipadViewerFP,"mkdir ipad\n");
     fprintf(ipadViewerFP,"cd %s;%s/vcgapps/bin/texturedDecimator %s/tex-total.ply %s/ipad.ply %d -Oy -V -P ;",
@@ -3033,11 +3033,14 @@ double totalValidArea=0;
     std::ostringstream p2;
     //  p2 << basepath << "/singleImageTex " << diced_dir<<"/ipad.ply --outfile "<<diced_dir<<"/ipadtex.ply "<< "--size " << totalXborder << " "<<totalYborder;
     // p2      <<" --extra ipad/octree";
-    fprintf(ipadViewerFP,"cd ipad;");
-    for(int k=0; k<numOctrees; k++)
-        fprintf(ipadViewerFP,"%s/generateOctreeFromObj.py -o=vtex-%04d.octree octree-%04d.obj;",basepath.c_str(),k,k);
-    fprintf(ipadViewerFP,"\n");
-    fprintf(ipadViewerFP,"cd ..;%s/vipsVTAtlas -mat %s -cells %s -maxRes %f -scale %f -dir %s\n",basepath.c_str(),"viewproj.mat","image_areas.txt",maxResIpad,scaleFactor,"ipad");
+    fprintf(ipadViewerFP,"cd ipad\n");
+    fprintf(ipadViewerFP,"n=`cat octree.txt`\n");
+    fprintf(ipadViewerFP,"nm=$[$n-1]\n");
+     fprintf(ipadViewerFP,"for i in `seq 0 $nm`;do\n");
+    fprintf(ipadViewerFP,"\tfilesuf=`printf \"%%04d\" $i`\n");
+    fprintf(ipadViewerFP,"\t%s/generateOctreeFromObj.py -o=vtex-$filesuf.octree octree-$filesuf.obj\n",basepath.c_str());
+    fprintf(ipadViewerFP,"done\n");
+    fprintf(ipadViewerFP,"cd ..;%s/vipsVTAtlas -mat %s -cells %s -maxRes %f -scale %f -dir %s -potsize %d\n",basepath.c_str(),"viewproj.mat","image_areas.txt",maxResIpad,scaleFactor,"ipad",POTatlasSize);
 
     //fprintf(ipadViewerFP,"(gdalwarp -overwrite -ts %d %d mosaic/mosaic.vrt vttex.tif; ",totalXborder,totalYborder);
     /* std::ostringstream p4;

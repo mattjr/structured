@@ -78,7 +78,7 @@ int main(int argc,char **argv){
         morpho.dilate(1) ;
     }*/
 
-    s =  ds_img->base_mem_byte_ptr();
+ /*   s =  ds_img->base_mem_byte_ptr();
     s_target = s+(dst_width*dst_height*ds_img->bytes_per_pixel());
 
     ad = maskDataDS;
@@ -90,7 +90,7 @@ int main(int argc,char **argv){
       }
       ad++;
       s+=ds_img->bytes_per_pixel();
-    };
+    };*/
     p->serialize_write(outf,ds_img);
     delete p;
     delete maskImage;

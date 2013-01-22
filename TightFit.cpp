@@ -695,20 +695,20 @@ VipsAtlasBuilder::VAtlas::FitsIn VipsAtlasBuilder::VAtlas::doesSourceFit(VSource
 
 
     if (sourceImage->Xsize() + 2*_margin > _maximumAtlasWidth)
-    {   osg::notify(osg::NOTICE)<<"// image too big for Atlas width."<<std::endl;
+    {   osg::notify(osg::INFO)<<"// image too big for Atlas width."<<std::endl;
         // image too big for Atlas
         return DOES_NOT_FIT_IN_ANY_ROW;
     }
 
     if (sourceImage->Ysize() + 2*_margin > _maximumAtlasHeight)
-    {            osg::notify(osg::NOTICE)<<"// image too big for Atlas."<<std::endl;
+    {            osg::notify(osg::INFO)<<"// image too big for Atlas."<<std::endl;
 
         // image too big for Atlas
         return DOES_NOT_FIT_IN_ANY_ROW;
     }
 
     if ((_y + sourceImage->Ysize() + 2*_margin) > _maximumAtlasHeight)
-    {         osg::notify(osg::NOTICE)<<"image doesn't have up space in height axis."<<std::endl;
+    {         osg::notify(osg::INFO)<<"image doesn't have up space in height axis."<<std::endl;
 
         // image doesn't have up space in height axis.
         return DOES_NOT_FIT_IN_ANY_ROW;

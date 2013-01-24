@@ -357,7 +357,7 @@ struct FragmentShaderBlendingMain : public swr::SpanDrawer32BitColorAndDepthSetD
         gRect.top=y;
 
         if(im_prepare(regRange,&gRect)){
-            im_errormsg( "depth_pointer: im_prepare  failed");
+           
 
             fprintf(stderr,"Prepare fail range blend pass\n");
             assert(0);

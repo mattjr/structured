@@ -194,7 +194,7 @@ shrink_noblack( IMAGE *in, IMAGE *out, double xshrink, double yshrink )
 
         /* Check parameters.
          */
-        if( !in || vips_bandfmt_iscomplex( in->BandFmt ) ) {
+        if( !in /*|| vips_bandfmt_iscomplex( in->BandFmt )*/ ) {
                 im_error( "im_shrink", "%s", _( "non-complex input only" ) );
                 return( -1 );
         }

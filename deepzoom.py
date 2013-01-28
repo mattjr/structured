@@ -1066,7 +1066,7 @@ gdal2tiles temp.vrt""" % self.input )
                                                   tile_format=self.tile_format)
         # Create tiles
         image_files = _get_or_create_path(_get_files_path(destination))
-        for level in []: #xrange(self.descriptor.num_levels):
+        for level in xrange(self.descriptor.num_levels):
             level_dir = _get_or_create_path(os.path.join(image_files, str(level)))
             level_image = self.get_image(level)
             for (column, row) in self.tiles(level):

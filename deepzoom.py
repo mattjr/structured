@@ -61,7 +61,7 @@ from osgeo import osr
 import osgeo.gdal_array as gdalarray
 import base64
 import bz2
-
+import struct
 
 NS_DEEPZOOM = 'http://schemas.microsoft.com/deepzoom/2008'
 
@@ -634,8 +634,9 @@ class DeepZoomCollectionItem(object):
 class ImageCreator(object):
     """Creates Deep Zoom images."""
     def __init__(self, tile_size=254, tile_overlap=1, tile_format='jpg',
-                 image_quality=0.8, resize_filter=None, copy_metadata=False):
+                 image_quality=0.8, resize_filter=None, copy_metadata=False,clearcolor=None):
         self.tile_size = int(tile_size)
+        self.clearcolor = clearcolor
         self.tile_format = tile_format
         self.tile_overlap = _clamp(int(tile_overlap), 0, 10)
         self.image_quality = _clamp(image_quality, 0, 1.0)
@@ -656,6 +657,16 @@ class ImageCreator(object):
                                      help="NODATA transparency value to assign to the input data")
 		gdal.AllRegister()
                 self.options = p
+                if self.clearcolor == None:
+                    self.clearcolor= numpy.array([255,255,255])
+                else:
+                    if self.clearcolor[0] == '#':      
+                        self.clearcolor=numpy.array(struct.unpack('BBB',self.clearcolor[1:].decode('hex')))
+                        print 'Using clear color'
+                        print self.clearcolor
+                    else:
+                        print 'invalid pass #hexstring failing!'
+                        sys.exit(-1)
                 self.options.verbose = 0
                 self.options.srcnodata = None
                 self.options.s_srs = None
@@ -1031,10 +1042,17 @@ gdal2tiles temp.vrt""" % self.input )
         assert 0 <= level and level < self.descriptor.num_levels, 'Invalid pyramid level'
         width, height = self.descriptor.get_dimensions(level)
 	# Scaling by PIL (Python Imaging Library) - improved Lanczos
-        array = numpy.zeros((self.descriptor.width, self.descriptor.height, 4), numpy.uint8)
+        array = numpy.zeros((self.descriptor.width, self.descriptor.height, 3), numpy.uint8)
+        myNDVs=numpy.zeros((self.descriptor.width, self.descriptor.height,1), numpy.uint8)
+
         for i in range(3):
             array[:,:,i] = gdalarray.BandReadAsArray(self.in_ds.GetRasterBand(i+1), 0, 0, self.descriptor.width, self.descriptor.height)
-        im = PIL.Image.fromarray(array, 'RGBA') # Always four bands
+
+
+        ndmask=(array[:,:,0]==self.in_nodata[0]) & (array[:,:,1]==self.in_nodata[1]) & (array[:,:,2]==self.in_nodata[2])
+        ndx = (ndmask==1)
+        array[ndx,0:3]=self.clearcolor
+        im = PIL.Image.fromarray(array, 'RGB') # Always four bands
         # don't transform to what we already have
         if self.descriptor.width == width and self.descriptor.height == height:
             return im
@@ -1206,6 +1224,7 @@ def main():
                       default=0.8, help='Quality of the image output (0-1). Default: 0.8')
     parser.add_option('-r', '--resize_filter', dest='resize_filter', default=DEFAULT_RESIZE_FILTER,
                       help='Type of filter for resizing (bicubic, nearest, bilinear, antialias (best). Default: antialias')
+    parser.add_option('-c', '--clear-color', dest='clearcolor', default=None)
 
     (options, args) = parser.parse_args()
 
@@ -1226,7 +1245,8 @@ def main():
     creator = ImageCreator(tile_size=options.tile_size,
                            tile_format=options.tile_format,
                            image_quality=options.image_quality,
-                           resize_filter=options.resize_filter)
+                           resize_filter=options.resize_filter,
+                           clearcolor=options.clearcolor)
     creator.create(source, options.destination)
 
 if __name__ == '__main__':

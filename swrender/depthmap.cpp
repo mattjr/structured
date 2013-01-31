@@ -139,7 +139,8 @@ struct VertexShaderBlending {
         // this mean it has to be converted to fixed point and premultiplied with the width, height of the
         // texture minus 1. Doing this in the vertex shader saves us from doing this in the fragment shader
         // which makes things faster.
-        out.varyings[0] = tvertex.z.intValue;//static_cast<int>(v.tx * (1 << 16));
+        //printf("1 %f\n",v.z);
+        out.varyings[0] = fixed16_t(v.z).intValue;//tvertex.z.intValue;//static_cast<int>(v.tx * (1 << 16));
 
 
     }
@@ -370,8 +371,29 @@ int main(int ac, char *av[]) {
     ply::VertexData vertexData;
     //  osg::BoundingBox bb(minV,maxV);
     //  osg::notify(osg::NOTICE) << bb._min << " " << bb._max << endl;
-    model= vertexData.readPlyFile(av[1]);
+    osg::Vec3 minV,maxV;
 
+    if(!arguments.read("--bbox",minV.x(),minV.y(),minV.z(),maxV.x() ,maxV.y() ,maxV.z() )){
+        fprintf(stderr,"Must pass bbox arg must be base dir\n");
+        arguments.getApplicationUsage()->write(std::cerr,osg::ApplicationUsage::COMMAND_LINE_OPTION);
+        exit(-1);
+    }
+
+
+    osg::BoundingBox bb(minV,maxV);
+    for(int pos=1;pos<arguments.argc();++pos)
+    {
+        if (!arguments.isOption(pos))
+        {
+            // not an option so assume string is a filename.
+            string fname= arguments[pos];
+            cout <<"Loading:"<< fname <<endl;
+            model= vertexData.readPlyFile(fname.c_str(),false,&bb, DUP);
+
+        }else
+            break;
+    }
+//    cout << vertexData._vertices->size()<<endl;
     osg::Vec3Array *verts=vertexData._vertices;
 
     if(!model){
@@ -491,7 +513,6 @@ int main(int ac, char *av[]) {
             tmp_vertices[2].x=v3.x();
             tmp_vertices[2].y=v3.y();
             tmp_vertices[2].z=v3.z();
-
             g.draw_triangles(3, indices);
         }
         cout <<"writing " << filename<<endl;

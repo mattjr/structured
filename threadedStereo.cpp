@@ -2645,9 +2645,10 @@ double totalValidArea=0;
         sprintf(tmp_ds,"%s %d",tmp_ds,max(ajustedGLImageSizeX,ajustedGLImageSizeY));
        // printf("levels %s\n",tmp_ds);
        // if(jpegQuality<0)
+        const char *mosaicname[2]={"image","depth"};
         {
             for(int z=0; z<NUM_MOSAIC_FILES; z++){
-                    fprintf(mosaiccmds_fp[z],";gdaladdo -r average --config COMPRESS_OVERVIEW DEFLATE mosaic/image_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
+                fprintf(mosaiccmds_fp[z],";gdaladdo -r average --config COMPRESS_OVERVIEW DEFLATE mosaic/%s_r%04d_c%04d_rs%04d_cs%04d.tif %s\n",mosaicname[z],cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns, tmp_ds);
                // else
                    // fprintf(texcmds_fp[z],"\n");
             }

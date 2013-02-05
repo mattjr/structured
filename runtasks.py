@@ -73,7 +73,6 @@ job_finished = 0
 params = (port, authkey, manager)
 numworkers = 0
 
-threads = []
 
 # load all the commands in to a list and get the count
 commands = task_file.readlines()
@@ -85,7 +84,14 @@ for command in commands:
     job_queue.put(command)
     job_count += 1
 
-logging.warning("Creating Worker Threads")
+# store the commands to create the workers
+# a 3-tuple of function name and args and kwargs
+spawn_commands = []
+
+# the threads the workers will be accessed from
+threads = []
+
+logging.warning("Preparing Worker Commands")
 # parse the configuration file
 for line in cfg_file:
     # this creates all the workers
@@ -97,38 +103,38 @@ for line in cfg_file:
     client_type = elements[0]
 
     if client_type == "AUTO":
-        threads += taskworkers.create_auto(params)
+        spawn_commands.append((taskworkers.create_auto, [params], {}))
         numworkers += multiprocessing.cpu_count()
 
     elif client_type == "LOCAL":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for LOCAL, need n workers.")
-        threads += taskworkers.create_local(params, int(elements[1]))
+        spawn_commands.append((taskworkers.create_local, [params, int(elements[1])], {}))
         numworkers += int(elements[1])
 
     elif client_type == "REMOTE":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for REMOTE, need n workers and remote name.")
-        threads += taskworkers.create_remote(params, int(elements[1]), remote=elements[2])
+        spawn_commands.append((taskworkers.create_remote, [params, int(elements[1])], {'remote': elements[2]}))
         numworkers += int(elements[1])
 
     elif client_type == "SLURM":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for SLURM, need n workers.")
-        threads += taskworkers.create_slurm(params, int(elements[1]), gateway='archipelago', nodes=elements[2:])
+        spawn_commands.append((taskworkers.create_slurm, [params, int(elements[1])], {'gateway': 'archipelago', 'nodes': elements[2:]}))
         numworkers += int(elements[1])
 
     elif client_type == "SLURM_LOCAL":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for SLURM_LOCAL, need n workers and optional node names.")
-        threads += taskworkers.create_slurm_local(params, int(elements[1]), nodes=elements[2:])
+        spawn_commands.append((taskworkers.create_slurm_local, [params, int(elements[1])], {'nodes': elements[2:]}))
         numworkers += int(elements[1])
 
     elif client_type == "SLURM_REMOTE":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for SLURM_REMOTE, need n workers and optional node names.")
 	argnum = min(int(elements[1]),total)
-        threads += taskworkers.create_slurm_remote(params, argnum, gateway='archipelago', nodes=elements[2:])
+        spawn_commands.append((taskworkers.create_slurm_remote, [params, argnum], {'gateway': 'archipelago', 'nodes': elements[2:]}))
         numworkers += argnum
 
 
@@ -138,6 +144,12 @@ worker_terminations = numworkers
 while worker_terminations:
     job_queue.put(None)
     worker_terminations -= 1
+
+
+
+logging.warning("Creating Worker Threads")
+for ca in spawn_commands:
+    threads += ca[0](*ca[1], **ca[2])
 
 print "Spawned {0} workers.".format(numworkers)
 
@@ -179,6 +191,7 @@ if ranOK == 0:
 logging.warning("Cleaning Up Parallel Code")
 logging.debug("jobs all finished")
 #job_results.close()
+# we aren't putting anything else on it
 job_queue.close()
 
 # make sure they are all done...

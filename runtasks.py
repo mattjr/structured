@@ -35,6 +35,7 @@ def key_generator(size=12, chars=string.letters + string.digits):
     return ''.join(random.choice(chars) for x in range(size))
 
 # parse the arguments first
+#logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(filename)s - %(funcName)s - %(message)s')
 
 # check we have sufficient arguments
 if len(sys.argv) < 3:
@@ -147,9 +148,6 @@ else:
     progress_bar = ProgressBar(widgets=widgets, maxval=total,fd=sys.stderr)
 
 
-# release the hold that kept the clients active
-#hold = False
-
 # display the progress bar
 progress_bar.start()
 #hack to keep jobs from finishing too fast
@@ -162,7 +160,7 @@ while not job_finished == job_count:
 
     if result[0] != 0:
         # this was an error
-        sys.stderr.write("runtasks.py: problem running: {0}\noutput: {1}".format(result[1], result[2]))
+        logging.error("runtasks.py: problem running\n{0}\n\noutput:\n{1}\n\n".format(result[1], result[2]))
     else:
         ranOK += 1
     # increment the count
@@ -171,7 +169,7 @@ while not job_finished == job_count:
     job_results.task_done()
 #hack for now because otherwise dones exit
 if ranOK == 0:
-    sys.stderr.write('runtasks.py: No tasks ran sucessfully! Bailing.\n')
+    logging.error('runtasks.py: No tasks ran sucessfully! Bailing.\n')
     sys.exit(-1)
 
 logging.debug("jobs all finished")

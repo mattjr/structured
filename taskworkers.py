@@ -169,7 +169,11 @@ def client_thread(manager):
 
     # loop until None command
     while True:
-        command = job_queue.get()
+	try:
+            command = job_queue.get()
+        except IOError as e:
+            job_results.put((-2, "job_queue.get()", "IOError: {0}".format(e)))
+            break
 
         # poison pill command
         if command is None:

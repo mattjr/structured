@@ -36,6 +36,7 @@ def key_generator(size=12, chars=string.letters + string.digits):
 
 # parse the arguments first
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(filename)s - %(funcName)s - %(message)s')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(filename)s - %(funcName)s - %(message)s')
 
 # check we have sufficient arguments
 if len(sys.argv) < 3:
@@ -78,11 +79,13 @@ threads = []
 commands = task_file.readlines()
 total = len(commands)
 
+logging.warning("Creating Parallel Commands")
 # load the commands and now run them on the pool
 for command in commands:
     job_queue.put(command)
     job_count += 1
 
+logging.warning("Creating Worker Threads")
 # parse the configuration file
 for line in cfg_file:
     # this creates all the workers
@@ -129,6 +132,7 @@ for line in cfg_file:
         numworkers += argnum
 
 
+logging.warning("Creating Worker Poison Pills")
 # put termination/empty/none commands on queue, one for each worker
 worker_terminations = numworkers
 while worker_terminations:
@@ -172,6 +176,7 @@ if ranOK == 0:
     logging.error('runtasks.py: No tasks ran sucessfully! Bailing.\n')
     sys.exit(-1)
 
+logging.warning("Cleaning Up Parallel Code")
 logging.debug("jobs all finished")
 #job_results.close()
 job_queue.close()
@@ -195,4 +200,4 @@ logging.debug("writing timing")
 timing = open('timing.txt', 'a')
 timing.write("{0} {1}\n".format(title, progress_bar.seconds_elapsed))
 timing.close()
-
+logging.warning("Exiting Parallel Code")

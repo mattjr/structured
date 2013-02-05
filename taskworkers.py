@@ -134,12 +134,10 @@ def initialise_server(port, authkey):
     # create queues for commands and results
     job_queue = multiprocessing.JoinableQueue()
     job_results = multiprocessing.JoinableQueue()
-    #hold = SyncManager.Value(bool, False) # tells clients not to quit
 
     # register with manager
     JobQueueManager.register('job_queue', callable=lambda: job_queue)
     JobQueueManager.register('job_results', callable=lambda: job_results)
-    #JobQueueManager.register('hold', callable=lambda: hold)
 
     # create our instance, listen on all IPs
     manager = JobQueueManager(address=('', port), authkey=authkey)
@@ -177,6 +175,9 @@ def client_thread(manager):
 
         # poison pill command
         if command is None:
+            # note that we have done the task
+            # before quitting out
+            job_queue.task_done()
             break
 
         # now do the command

@@ -162,7 +162,7 @@ while not job_finished == job_count:
 
     if result[0] != 0:
         # this was an error
-        sys.stderr.write("problem running: {0}\noutput: {1}".format(result[1], result[2]))
+        sys.stderr.write("runtasks.py: problem running: {0}\noutput: {1}".format(result[1], result[2]))
     else:
         ranOK += 1
     # increment the count
@@ -171,10 +171,9 @@ while not job_finished == job_count:
     job_results.task_done()
 #hack for now because otherwise dones exit
 if ranOK == 0:
-    sys.stderr.write('No tasks ran sucessfully! Bailing.\n')
+    sys.stderr.write('runtasks.py: No tasks ran sucessfully! Bailing.\n')
     sys.exit(-1)
 
-sys.exit(0)
 logging.debug("jobs all finished")
 #job_results.close()
 job_queue.close()

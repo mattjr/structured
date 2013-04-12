@@ -1,4 +1,5 @@
 *.autosave
+keypoint_mesh
 depthmap
 blendincore
 build/

@@ -366,7 +366,7 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("VRIP_IMG_PER_CELL",vrip_img_per_cell,1000);
     recon_config_file->get_value("FEAT_MIN_DIST",min_feat_dist,3.0);
     recon_config_file->get_value("FEAT_QUALITY_LEVEL",feat_quality_level,0.0001);
-    recon_config_file->get_value("CC_CLEAN_PERCENT",smallCCPer,0.2);
+    recon_config_file->get_value("CC_CLEAN_PERCENT",smallCCPer,0.1);
     recon_config_file->get_value("MAX_FEAT_COUNT",max_feature_count,5000);
     recon_config_file->get_value("VRIP_RAMP",vrip_ramp,500.0);
     recon_config_file->get_value("EDGE_THRESH",edgethresh,0.5);
@@ -1067,16 +1067,24 @@ double totalValidArea=0;
         double max_triangulation_len =  max_alt > 0.0 ? max_alt*3 : edgethresh * 20;
 #pragma omp parallel num_threads(num_threads)
         if(run_stereo){
-            StereoEngine engine(calib,*recon_config_file,edgethresh,max_triangulation_len,max_feature_count,  min_feat_dist, feat_quality_level,lodTexSize[0],mutex,false,pause_after_each_frame);
+            StereoEngine engine(calib,*recon_config_file,edgethresh,max_triangulation_len,max_feature_count,  min_feat_dist, feat_quality_level,lodTexSize[0],mutex,use_dense_stereo,pause_after_each_frame);
             cvSetNumThreads(1);
 #pragma omp for
             for(int i=0; i < (int)tasks.size(); i++){
                 MatchStats stats;
                 StereoStatusFlag statusFlag=engine.processPair(base_dir,tasks[i].left_name,
                                                                tasks[i].right_name,tasks[i].mat,tasks[i].bbox,stats,feature_depth_guess,hw_image,use_cached);
+                if(statusFlag == FAIL_FEAT_THRESH || statusFlag == FAIL_TRI_EDGE_THRESH){
+                    fprintf(stderr,"Rerunning\n");
+                    statusFlag=engine.processPair(base_dir,tasks[i].left_name,
+                                       tasks[i].right_name,tasks[i].mat,tasks[i].bbox,stats,feature_depth_guess,hw_image,false,true);
 
+                }
 #pragma omp critical
                 {
+                    if(statusFlag == FALLBACK_KEYPOINT){
+                        printf("Fail fallback: %s\n",tasks[i].left_name.c_str());
+                    }
                     if(statusFlag == FAIL_OTHER)
                         tasks[i].valid=false;
                     else
@@ -2699,6 +2707,19 @@ double totalValidArea=0;
     fprintf(FP4,"\n#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16 32\n");
     fchmod(fileno(FP4),0777);
     fprintf(FP5,"\n#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG depth.vrt 2 4 8 16 32\n");
+    fprintf(FP5,"\ngdaldem slope depth.vrt slope.tif\n"\
+            "echo -n -e '90 0 0 0\\n0 255 255 255\\n' > slope-ramp.txt\n"\
+            "echo -n -e '0%% 191   0 255\\n10%%  63   0 255\\n20%%   0  63 255\\n30%%   0 191 255\\n"\
+            "40%%   0 255 191\\n50%%   0 255  63\\n60%%  63 255   0\\n70%% 191 255   0\\n80%% 255 191   0\\n"\
+            "90%% 255  63   0\\nnv    255   255   255\\n' > ramp.txt\n"\
+            "gdaldem color-relief slope.tif slope-ramp.txt slope_render.tif\n"\
+            "gdaldem hillshade depth.vrt hillshade.tif\n"\
+            "mogrify -fill \"#b5b5b5\" -opaque \"#000\" hillshade.tif\n"\
+            "gdaldem color-relief  depth.vrt ramp.txt color.tif\n"\
+            "convert color.tif "\
+            "-compose soft-light hillshade.tif -composite "\
+            " -compose multiply slope_render.tif -composite "\
+            " relief.tif\n");
     fchmod(fileno(FP5),0777);
     /*fprintf(FP5,"#!/bin/bash\n%s/rangeimg  mesh-diced/vis-total.ply mesh-diced/totalbbox.txt --size %d %d -calib %s\n",
             basepath.c_str(),
@@ -2765,7 +2786,7 @@ double totalValidArea=0;
                 cur->bounds.bbox.zMax(),cnt++,tmpt);
     }
     fclose(dBFP);
-    // fclose(FP5);
+    fclose(FP5);
     if(!externalMode){
         double margin=vrip_res*10;
         string rangeimgcmds_fn[]={(string(diced_dir)+"/rangeimgcmds").c_str(),(string(diced_dir)+"/globalimgcmds").c_str()};

@@ -93,6 +93,8 @@ public:
     libsnapper::Undistort_Data *undist_left;
     libsnapper::Undistort_Data *undist_right;
     bool _writeDebugImages;
+    double _max_epi_dist;
+    bool show_debug_images;
 #define KRED  "\x1B[31m"
 #define KNRM  "\x1B[0m"
 #define KBGRDRED "\033[41m"
@@ -142,7 +144,7 @@ public:
     void drawPoints(CvArr* image, CvPoint2D32f points[], int count);
     void calculateOpticalFlow();
     void displayOpticalFlow();
-    StereoStatusFlag processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,MatchStats &stats,const double feature_depth_guess,bool cache_img,bool use_cached);
+    StereoStatusFlag processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,MatchStats &stats,const double feature_depth_guess,bool cache_img,bool use_cached,bool force_keypoint=false);
     double edgethresh;
     double max_triangulation_len;
     int max_feature_count;

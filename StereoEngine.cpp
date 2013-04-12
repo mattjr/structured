@@ -323,11 +323,14 @@ StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double ed
                        image_scale,
                        _auv_stereo_calib );
 
+    sdense= new Stereo_Dense(recon,1.0,_auv_stereo_calib);
     frame_id=0;
     recon.get_value( "SCF_DEBUG_PER_REJECTED_OUTPUT_DEBUG", thresh_per_rejected_output_debug, SCF_THRESH_PER_REJECT );
     recon.get_value( "DEBUG_MIN_FEAT_PER_FRAME",minFeatPerFrameThresh,100);
     recon.get_value("SCF_SAVE_DEBUG_IMAGES",_writeDebugImages,false);
-
+    recon.get_value( "SCF_MAX_EPIPOLAR_DIST", _max_epi_dist,4.0);
+                     recon.get_value( "SKF_SHOW_DEBUG_IMAGES",
+                                  show_debug_images);
                /*_F.create(3,3,CV_64FC1);
                for( int i=0 ; i<3 ; i++ )
                {
@@ -1571,7 +1574,7 @@ void StereoEngine::displayOpticalFlow()
 }
 
 #endif
-StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,MatchStats &stats,const double feature_depth_guess,bool cache_img,bool use_cached){
+StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,MatchStats &stats,const double feature_depth_guess,bool cache_img,bool use_cached,bool force_keypoint){
 
     char cachedtexdir[1024];
     char meshfilename[1024];
@@ -1597,9 +1600,9 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
     bool cachedMesh= use_cached ? osgDB::fileExists(meshfilename) : false;
     bool cachedTex=cache_img ? osgDB::fileExists(texfilename) : true;
 
-    IplImage *left_frame;
-    IplImage *color_image;
-    IplImage *right_frame;
+    IplImage *left_frame=NULL;
+    IplImage *color_image=NULL;
+    IplImage *right_frame=NULL;
     unsigned int left_frame_id=frame_id++;
     unsigned int right_frame_id=frame_id++;
     double load_start_time;
@@ -1681,19 +1684,19 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
      GtsRange r;
      gts_range_init(&r);
      TVertex *vert;
-     int minForKeypoint =50;
+     int minForKeypoint =100;
     //
     // Triangulate the features if requested
     //
      //Fallback slow matching
-     if(statusFlag != STEREO_OK &&  features.size() < minForKeypoint){
+     if(statusFlag != STEREO_OK &&  features.size() < minForKeypoint || force_keypoint){
          statusFlag=FALLBACK_KEYPOINT;
 
          printf("Orig %d\n",features.size());
          features.clear();;
         // SurfFeatureDetector detector(50);
         // DynamicAdaptedFeatureDetector
-         int n_features=400;
+        // int n_features=400;
          //Ptr<AdjusterAdapter> adjuster = new FastAdjuster(10);
         // DynamicAdaptedFeatureDetector detector(adjuster, n_features * 0.9, n_features * 1.1, 1000);
         // Ptr<FeatureDetector> detector(new DynamicAdaptedFeatureDetector (100, 110, 10,
@@ -1723,7 +1726,8 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
          cvCmpS( right_undist_image, 1.0, tmp,  CV_CMP_LT );
          cvAdd(invalidMask,tmp,invalidMask);
          cvReleaseImage(&tmp);
-        RobustMatcher matcher;
+
+         RobustMatcher matcher(5000,8000,0.65,_max_epi_dist);
         vector<DMatch> matches;
         matcher.match(left_undist_image,right_undist_image,matches,keypoints1, keypoints2);
        /*  // matching descriptors
@@ -1791,7 +1795,7 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
               }
           }*/
           //free(status);
-          if(_writeDebugImages){
+          if(show_debug_images|| _writeDebugImages){
 
               Mat img_matches;
               drawMatches( left_undist_image, keypoints1, right_undist_image, keypoints2,
@@ -1799,13 +1803,18 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
                            vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
               //-- Show detected matches
-              // imshow( "Good Matches", img_matches );
+              if(show_debug_images)
+                  imshow( "Good Matches", img_matches );
 
               string debugfilename=string("debug/"+osgDB::getSimpleFileName(left_file_name)+".surf.png");
               // cout <<debugfilename <<endl;
-              if(!imwrite(debugfilename.c_str(),img_matches))
+              if(_writeDebugImages)
+              {
+                  if(!imwrite(debugfilename.c_str(),img_matches))
                   fprintf(stderr,"Failed to write debug image %s\n",debugfilename.c_str());
-              // waitKey(0);
+              }
+               if(show_debug_images)
+                   waitKey(5);
           }
           cvReleaseImage(&left_undist_image);
           cvReleaseImage(&right_undist_image);
@@ -2005,9 +2014,20 @@ if(!mesh)
       fflush(stderr);
 
       // clean up
-      cvReleaseImage( &left_frame );
-      cvReleaseImage( &right_frame );
-      cvReleaseImage( &color_image);
+      if(!cachedTex || !cachedMesh){
+          if(left_frame){
+              cvReleaseImage( &left_frame );
+              left_frame=NULL;
+          }
+          if(right_frame){
+              cvReleaseImage( &right_frame );
+              right_frame=NULL;
+          }
+          if(color_image){
+              cvReleaseImage( &color_image );
+              color_image=NULL;
+          }
+      }
       return FAIL_OTHER;
   }
     unsigned int triFeat=mesh->vertices.size();
@@ -2278,11 +2298,18 @@ if(!mesh)
     // Clean-up
     //
     if(!cachedTex || !cachedMesh){
-        cvReleaseImage( &left_frame );
-        cvReleaseImage( &right_frame );
-        if(color_image)
+        if(left_frame){
+            cvReleaseImage( &left_frame );
+            left_frame=NULL;
+        }
+        if(right_frame){
+            cvReleaseImage( &right_frame );
+            right_frame=NULL;
+        }
+        if(color_image){
             cvReleaseImage( &color_image );
-
+            color_image=NULL;
+        }
     }
     return statusFlag;
 }

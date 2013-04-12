@@ -359,6 +359,7 @@ ADD_EXECUTABLE(vipsVTAtlas vipsVTAtlas.cpp)
 ADD_EXECUTABLE(atlasmesh atlasmesh.cpp)
 ADD_EXECUTABLE( borderClip borderClip.cpp  )
 ADD_EXECUTABLE( dumpPCD dumpPCD.cpp  )
+ADD_EXECUTABLE( keypoint_mesh keypoint_mesh.cpp  )
 
 ADD_EXECUTABLE(genOverlappingPoses genOverlappingPoses.cpp)
 
@@ -373,6 +374,7 @@ TARGET_LINK_LIBRARIES( vipsVTAtlas ts  vips vipsCC spindex   ${OGF_LIBS})
 TARGET_LINK_LIBRARIES( atlasmesh ts  vips vipsCC spindex  ${OGF_LIBS})
 TARGET_LINK_LIBRARIES(im_shrink_noblack ts vips vipsCC ${OGF_LIBS})
 TARGET_LINK_LIBRARIES(create_mipmap ts vips vipsCC ${OGF_LIBS} dl)
+TARGET_LINK_LIBRARIES(keypoint_mesh ts vips vipsCC ${OGF_LIBS} dl)
 
 TARGET_LINK_LIBRARIES( testImageModel ts  )
 TARGET_LINK_LIBRARIES( deepzoomVIPS  vips vipsCC)

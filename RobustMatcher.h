@@ -1,5 +1,6 @@
 #ifndef ROBUSTMATCHER_H
 #define ROBUSTMATCHER_H
+#define USE_BRIEF 1
 class RobustMatcher {
 
   private:
@@ -15,10 +16,13 @@ class RobustMatcher {
 
   public:
 
-      RobustMatcher() : ratio(0.65f), refineF(true), confidence(0.99), distance(3.0) {
+      RobustMatcher(int minFeat=5000,int maxFeat=8000,float nn_ratio=0.65,double dist=3.0) : ratio(nn_ratio), refineF(true), confidence(0.99), distance(dist) {
 
           // SURF is the default feature
-          detector= new cv::SurfFeatureDetector(100);
+          //detector= new cv::SurfFeatureDetector(100);
+          detector= new cv::DynamicAdaptedFeatureDetector(new cv::FastAdjuster(10,true), minFeat, maxFeat,
+                                                           40);
+                 // cv::SurfFeatureDetector(100);
           //detector = new cv::FastFeatureDetector(100);
 
             #ifdef USE_BRIEF

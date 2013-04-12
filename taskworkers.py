@@ -39,7 +39,6 @@ def create_slurm(params, n, gateway=None, username=None, nodes=None):
     # not really a good choice to use
 
     # then call the correct function with the args
-    pass
 
     if local:
         create_slurm_local(params, n, nodes)
@@ -134,12 +133,10 @@ def initialise_server(port, authkey):
     # create queues for commands and results
     job_queue = multiprocessing.JoinableQueue()
     job_results = multiprocessing.JoinableQueue()
-    #hold = SyncManager.Value(bool, False) # tells clients not to quit
 
     # register with manager
     JobQueueManager.register('job_queue', callable=lambda: job_queue)
     JobQueueManager.register('job_results', callable=lambda: job_results)
-    #JobQueueManager.register('hold', callable=lambda: hold)
 
     # create our instance, listen on all IPs
     manager = JobQueueManager(address=('', port), authkey=authkey)
@@ -154,7 +151,6 @@ def initialise_client(ip, port, authkey):
 
     ServerQueueManager.register('job_queue')
     ServerQueueManager.register('job_results')
-    #ServerQueueManager.register('hold')
 
     manager = ServerQueueManager(address=(ip, port), authkey=authkey)
     manager.connect()
@@ -173,21 +169,37 @@ def client_thread(manager):
 
     # loop until None command
     while True:
-        command = job_queue.get()
+	try:
+            command = job_queue.get()
+        except IOError as e:
+            job_results.put((-2, "job_queue.get()", "IOError: {0}".format(e)))
+            break
 
         # poison pill command
         if command is None:
+            # note that we have done the task
+            # before quitting out
+            job_queue.task_done()
             break
 
         # now do the command
-        result = execute_command(command)
+	try:
+            result = execute_command(command)
+        except Exception as e:
+            # capture the exception text and return it
+            job_results.put((-1, command, "Exception: {0}".format(e)), True, 1)
+            logging.debug("Exception from execute_command.")
+        else:
+            # worked, no exception capture result and return as well
+            job_results.put(result, True, 1)
+        finally:
+            # always make sure the task is flagged as done
+            job_queue.task_done()
 
         # there may be an exception if we can't push to the queue
         # as it is full... I think unlikely. Give it 5 seconds however
-        job_results.put(result, True, 1)
 
         # mark the task complete
-        job_queue.task_done()
         logging.debug("task complete")
 
     logging.debug("exiting Client thread, no pending jobs.")

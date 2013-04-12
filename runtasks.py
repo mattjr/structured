@@ -35,6 +35,8 @@ def key_generator(size=12, chars=string.letters + string.digits):
     return ''.join(random.choice(chars) for x in range(size))
 
 # parse the arguments first
+#logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(filename)s - %(funcName)s - %(message)s')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(filename)s - %(funcName)s - %(message)s')
 
 # check we have sufficient arguments
 if len(sys.argv) < 3:
@@ -71,17 +73,25 @@ job_finished = 0
 params = (port, authkey, manager)
 numworkers = 0
 
-threads = []
 
 # load all the commands in to a list and get the count
 commands = task_file.readlines()
 total = len(commands)
 
+logging.warning("Creating Parallel Commands")
 # load the commands and now run them on the pool
 for command in commands:
     job_queue.put(command)
     job_count += 1
 
+# store the commands to create the workers
+# a 3-tuple of function name and args and kwargs
+spawn_commands = []
+
+# the threads the workers will be accessed from
+threads = []
+
+logging.warning("Preparing Worker Commands")
 # parse the configuration file
 for line in cfg_file:
     # this creates all the workers
@@ -93,46 +103,53 @@ for line in cfg_file:
     client_type = elements[0]
 
     if client_type == "AUTO":
-        threads += taskworkers.create_auto(params)
+        spawn_commands.append((taskworkers.create_auto, [params], {}))
         numworkers += multiprocessing.cpu_count()
 
     elif client_type == "LOCAL":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for LOCAL, need n workers.")
-        threads += taskworkers.create_local(params, int(elements[1]))
+        spawn_commands.append((taskworkers.create_local, [params, int(elements[1])], {}))
         numworkers += int(elements[1])
 
     elif client_type == "REMOTE":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for REMOTE, need n workers and remote name.")
-        threads += taskworkers.create_remote(params, int(elements[1]), remote=elements[2])
+        spawn_commands.append((taskworkers.create_remote, [params, int(elements[1])], {'remote': elements[2]}))
         numworkers += int(elements[1])
 
     elif client_type == "SLURM":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for SLURM, need n workers.")
-        threads += taskworkers.create_slurm(params, int(elements[1]), gateway='archipelago', nodes=elements[2:])
+        spawn_commands.append((taskworkers.create_slurm, [params, int(elements[1])], {'gateway': 'archipelago', 'nodes': elements[2:]}))
         numworkers += int(elements[1])
 
     elif client_type == "SLURM_LOCAL":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for SLURM_LOCAL, need n workers and optional node names.")
-        threads += taskworkers.create_slurm_local(params, int(elements[1]), nodes=elements[2:])
+        spawn_commands.append((taskworkers.create_slurm_local, [params, int(elements[1])], {'nodes': elements[2:]}))
         numworkers += int(elements[1])
 
     elif client_type == "SLURM_REMOTE":
         if len(elements) < 2:
             raise ValueError("Not enough parameters for SLURM_REMOTE, need n workers and optional node names.")
 	argnum = min(int(elements[1]),total)
-        threads += taskworkers.create_slurm_remote(params, argnum, gateway='archipelago', nodes=elements[2:])
+        spawn_commands.append((taskworkers.create_slurm_remote, [params, argnum], {'gateway': 'archipelago', 'nodes': elements[2:]}))
         numworkers += argnum
 
 
+logging.warning("Creating Worker Poison Pills")
 # put termination/empty/none commands on queue, one for each worker
 worker_terminations = numworkers
 while worker_terminations:
     job_queue.put(None)
     worker_terminations -= 1
+
+
+
+logging.warning("Creating Worker Threads")
+for ca in spawn_commands:
+    threads += ca[0](*ca[1], **ca[2])
 
 print "Spawned {0} workers.".format(numworkers)
 
@@ -147,9 +164,6 @@ else:
     progress_bar = ProgressBar(widgets=widgets, maxval=total,fd=sys.stderr)
 
 
-# release the hold that kept the clients active
-#hold = False
-
 # display the progress bar
 progress_bar.start()
 #hack to keep jobs from finishing too fast
@@ -162,7 +176,7 @@ while not job_finished == job_count:
 
     if result[0] != 0:
         # this was an error
-        sys.stderr.write("problem running: {0}\noutput: {1}".format(result[1], result[2]))
+        logging.error("runtasks.py: problem running\n{0}\n\noutput:\n{1}\n\n".format(result[1], result[2]))
     else:
         ranOK += 1
     # increment the count
@@ -171,12 +185,13 @@ while not job_finished == job_count:
     job_results.task_done()
 #hack for now because otherwise dones exit
 if ranOK == 0:
-    sys.stderr.write('No tasks ran sucessfully! Bailing.\n')
+    logging.error('runtasks.py: No tasks ran sucessfully! Bailing.\n')
     sys.exit(-1)
 
-sys.exit(0)
+logging.warning("Cleaning Up Parallel Code")
 logging.debug("jobs all finished")
 #job_results.close()
+# we aren't putting anything else on it
 job_queue.close()
 
 # make sure they are all done...
@@ -198,4 +213,4 @@ logging.debug("writing timing")
 timing = open('timing.txt', 'a')
 timing.write("{0} {1}\n".format(title, progress_bar.seconds_elapsed))
 timing.close()
-
+logging.warning("Exiting Parallel Code")

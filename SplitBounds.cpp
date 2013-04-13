@@ -28,7 +28,7 @@ osg::Matrix  osgTranspose( const osg::Matrix& src )
     return dest;
 }
 
-WriteBoundVRIP::WriteBoundVRIP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy):WriteTP(res,fname,basepath,cwd),_expandBy(expandBy){
+WriteBoundVRIP::WriteBoundVRIP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer):WriteTP(res,fname,basepath,cwd),_expandBy(expandBy),_smallCCPer(smallCCPer){
     cmdfp =fopen(fname.c_str(),"w");
     if(!cmdfp){
         fprintf(stderr,"Can't create cmd file");
@@ -40,7 +40,6 @@ WriteBoundVRIP::WriteBoundVRIP(double res,string fname,std::string basepath,std:
 std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol){
     vector<string> allmeshes;
     stringstream cmdpost;
-    double smallCCPer=0.2;
 
     foreach_vol(cur,vol){
         char tmp[2048];
@@ -65,7 +64,7 @@ std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol)
     output << tmp;
     sprintf(tmp,"$BASEDIR/vrip/bin/vripnew tmp-total.vri tmp-total.txt tmp-total.txt %f -rampscale %f > log-tmp-total.txt;$BASEDIR/vrip/bin/volfill tmp-total.vri exp-total.vri >log-volfill.txt;$BASEDIR/vrip/bin/vripsurf exp-total.vri exp-total.ply >log-surf.txt;",_res,_expandBy);
     output << tmp;
-    sprintf(tmp,"%s/vcgapps/bin/mergeMesh exp-total.ply  -cleansize %f -P -out total.ply > log-merge.txt",_basepath.c_str(),smallCCPer);
+    sprintf(tmp,"%s/vcgapps/bin/mergeMesh exp-total.ply  -cleansize %f -P -out total.ply > log-merge.txt",_basepath.c_str(),_smallCCPer);
     output << tmp;
     string cmdfile=string(aggdir)+"/finsplitcmd";
     FILE *fp2=fopen(cmdfile.c_str(),"w");
@@ -91,7 +90,6 @@ std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol)
 
 }
 bool WriteBoundVRIP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
- double smallCCPer=0.2;
  //int runs=1;
  char vrip_seg_fname[2048];
  char conf_name[2048];
@@ -123,7 +121,7 @@ bool WriteBoundVRIP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
          _cwd.c_str(),
          diced_dir,
          cell.volIdx[0],cell.volIdx[1],cell.volIdx[2],
-         smallCCPer,
+         _smallCCPer,
          _cwd.c_str(),
          diced_dir,
          cell.volIdx[0],cell.volIdx[1],cell.volIdx[2]);
@@ -154,7 +152,7 @@ bool WriteBoundVRIP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
     return true;
 }
 
-WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy):WriteTP(res,fname,basepath,cwd),_expandBy(expandBy){
+WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer):WriteTP(res,fname,basepath,cwd),_expandBy(expandBy),_smallCCPer(smallCCPer){
     cmdfp =fopen(fname.c_str(),"w");
     if(!cmdfp){
         fprintf(stderr,"Can't create cmd file");
@@ -184,7 +182,6 @@ WriteBoundTP::WriteBoundTP(double res,string fname,std::string basepath,std::str
 }
 
 bool WriteBoundTP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
- double smallCCPer=0.2;
  FILE *fps[]={cmdfp,cmd2fp};
  int runs=1;
  const char *app=(runs ==1)? "plymc":"plymc_outofcore";
@@ -225,7 +222,7 @@ bool WriteBoundTP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){
                 cell.volIdx[0],
                 cell.volIdx[1],
                 cell.volIdx[2],
-                smallCCPer,
+                _smallCCPer,
                 aggdir,
                 cell.volIdx[0],
                 cell.volIdx[1],

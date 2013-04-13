@@ -1059,7 +1059,7 @@ int main(int ac, char *av[]) {
             exit(-1);
         }*/
         im_close(tmpI);
-        int levels=(int)floor(log( min( sizeX, sizeY ))/log(2.0) );
+        int levels=(int)ceil(log( min( sizeX, sizeY ))/log(2.0) );
         if(pyramid){ if(!genPyramid(remapName,basepath,levels,sizeX,sizeY,"ppm")){
                 fprintf(stderr,"FAil to gen pyramid\n");
                 exit(-1);

@@ -275,12 +275,13 @@ class WriteSplitTP : public WriteTP{
 
 class WriteBoundVRIP : private WriteTP{
     public:
-    WriteBoundVRIP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy);
+  WriteBoundVRIP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer);
     bool write_cmd(Cell_Data<Stereo_Pose_Data> cell);
     std::string bboxfn;
     std::string getCmdFileName(){return cmdfn;}
     void close(){ if(cmdfp) fclose(cmdfp); }
     double _expandBy;
+    double _smallCCPer;
     std::string getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol);
 
 
@@ -288,13 +289,14 @@ class WriteBoundVRIP : private WriteTP{
 };
 class WriteBoundTP : private WriteTP{
     public:
-    WriteBoundTP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy);
+    WriteBoundTP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer);
     bool write_cmd(Cell_Data<Stereo_Pose_Data> cell);
     std::string bboxfn;
     std::string getCmdFileName(){return cmdfn;}
     void close(){ if(cmdfp) fclose(cmdfp); if(cmd2fp) fclose(cmd2fp);}
     FILE*cmd2fp;
     double _expandBy;
+    double _smallCCPer;
 
 
 

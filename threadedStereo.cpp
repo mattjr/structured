@@ -50,7 +50,7 @@ static double marginExpand=2;
 static int vpblod_override=0;
 static bool compositeMission=false;
 static bool writeout_meshvar=true;
-static double smallCCPer=0.2;
+static double smallCCPer;
 static unsigned int faceChunkTarget;
 static unsigned int texRemapChunk;
 
@@ -1442,8 +1442,8 @@ double totalValidArea=0;
     double avgEdgeLen=0.0;
     if(!externalMode){
         {
-            WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks,plymc_expand_by);
-            WriteBoundVRIP wbvrip(vrip_res,string(aggdir)+"/vripcmd",basepath,cwd,tasks,vrip_ramp);
+            WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks,plymc_expand_by,smallCCPer);
+            WriteBoundVRIP wbvrip(vrip_res,string(aggdir)+"/vripcmd",basepath,cwd,tasks,vrip_ramp,smallCCPer);
 
            // int splits[3]={0,0,0};
             foreach_vol(cur,vol){

@@ -30,8 +30,8 @@ int main(int argc,char **argv){
 
     const int src_width = img->width();
     const int src_height =img->height();
-    const int dst_width = ceil(origX/pow(2,level));
-    const int dst_height =ceil(origY/pow(2,level));
+    const int dst_width = (int)std::max(ceil(origX/pow(2,level)),1.0);
+    const int dst_height =(int)std::max(ceil(origY/pow(2,level)),1.0);
     printf("%d %d\n",dst_width,dst_height);
     OGF::Image* ds_img = new OGF::Image(OGF::Image::RGB,dst_width,dst_height);
 

@@ -260,7 +260,13 @@ int main( int argc, char *argv[ ] )
             feature_depth_guess=tasks[i].alt;
             mat=tasks[i].mat;
             StereoStatusFlag statusFlag=engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,
-                                                           stats,feature_depth_guess,true,false);
+                                                           stats,feature_depth_guess,false,true,false);
+            if(statusFlag == FAIL_FEAT_THRESH || statusFlag == FAIL_TRI_EDGE_THRESH){
+                fprintf(stderr,"Rerunning\n");
+                statusFlag=engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,
+                                              stats,feature_depth_guess,false,false,true);
+
+            }
             if(statusFlag == STEREO_OK)
                 goodMeshes++;
             else if(statusFlag == FAIL_OTHER){

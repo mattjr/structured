@@ -22,71 +22,7 @@
 // along with structured.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-/****************************************************************************
- * VCGLib                                                            o o     *
- * Visual and Computer Graphics Library                            o     o   *
- *                                                                _   O  _   *
- * Copyright(C) 2004                                                \/)\/    *
- * Visual Computing Lab                                            /\/|      *
- * ISTI - Italian National Research Council                           |      *
- *                                                                    \      *
- * All rights reserved.                                                      *
- *                                                                           *
- * This program is free software; you can redistribute it and/or modify      *
- * it under the terms of the GNU General Public License as published by      *
- * the Free Software Foundation; either version 2 of the License, or         *
- * (at your option) any later version.                                       *
- *                                                                           *
- * This program is distributed in the hope that it will be useful,           *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of            *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             *
- * GNU General Public License (http://www.gnu.org/licenses/gpl.txt)          *
- * for more details.                                                         *
- *                                                                           *
- ****************************************************************************/
-/****************************************************************************
-  History
 
-$Log: not supported by cvs2svn $
-Revision 1.2  2009-01-07 22:44:33  m.roberson
-ao calcultor
-
-Revision 1.1  2009-01-07 22:03:13  m.roberson
-shadevis
-
-Revision 1.11  2006/01/10 13:20:42  cignoni
-Changed ply::PlyMask to io::Mask
-
-Revision 1.10  2005/11/12 06:48:47   cignoni
-Version 1.0
-Added management of point set, correct bug in printing on the screen,
-
-Revision 1.9  2005/01/03 13:59:54  cignoni
-Resolved min/max macro conflict
-
-Revision 1.8  2004/09/30 00:57:42  ponchio
-Reference to temporary fixed and indented.
-
-Revision 1.7  2004/09/28 09:46:51  cignoni
-Added MapFalseColor
-
-Revision 1.6  2004/09/16 14:08:35  ponchio
-gamma is a math function.
-
-Revision 1.5  2004/09/10 14:02:20  cignoni
-Added Cone directions
-
-Revision 1.4  2004/09/09 22:34:38  cignoni
-Integrated lost modifications...
-
-Revision 1.3  2004/09/09 14:35:54  ponchio
-Various changes for gcc compatibility
-
-Revision 1.2  2004/07/11 22:13:30  cignoni
-Added GPL comments
-
-
-****************************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>

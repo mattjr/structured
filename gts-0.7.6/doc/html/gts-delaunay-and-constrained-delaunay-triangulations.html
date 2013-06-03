@@ -1,0 +1,2046 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Delaunay and constrained Delaunay triangulations</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="GTS Library Reference Manual"
+HREF="book1.html"><LINK
+REL="UP"
+TITLE="Surface operations"
+HREF="c12206.html"><LINK
+REL="PREVIOUS"
+TITLE="Isosurfaces from 3D functions"
+HREF="gts-isosurfaces-from-3d-functions.html"><LINK
+REL="NEXT"
+TITLE="Differential geometry operators"
+HREF="gts-differential-geometry-operators.html"><STYLE
+TYPE="text/css"
+>.synopsis, .classsynopsis {
+    background: #eeeeee;
+    border: solid 1px #aaaaaa;
+    padding: 0.5em;
+}
+.programlisting {
+    background: #eeeeff;
+    border: solid 1px #aaaaff;
+    padding: 0.5em;
+}
+.variablelist {
+    padding: 4px;
+    margin-left: 3em;
+}
+.navigation {
+    background: #ffeeee;
+    border: solid 1px #ffaaaa;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+.navigation a {
+    color: #770000;
+}
+.navigation a:visited {
+    color: #550000;
+}
+.navigation .title {
+    font-size: 200%;
+}</STYLE
+></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><TABLE
+WIDTH="100%"
+CLASS="navigation"
+SUMMARY="Navigation header"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+><A
+ACCESSKEY="p"
+HREF="gts-isosurfaces-from-3d-functions.html"
+><IMG
+SRC="left.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Prev"></A
+></TD
+><TD
+><A
+ACCESSKEY="u"
+HREF="c12206.html"
+><IMG
+SRC="up.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Up"></A
+></TD
+><TD
+><A
+ACCESSKEY="h"
+HREF="book1.html"
+><IMG
+SRC="home.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Home"></A
+></TD
+><TH
+WIDTH="100%"
+align="center"
+>GTS Library Reference Manual</TH
+><TD
+><A
+ACCESSKEY="n"
+HREF="gts-differential-geometry-operators.html"
+><IMG
+SRC="right.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Next"></A
+></TD
+></TR
+></TABLE
+><H1
+><A
+NAME="GTS-DELAUNAY-AND-CONSTRAINED-DELAUNAY-TRIANGULATIONS"
+></A
+>Delaunay and constrained Delaunay triangulations</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN14488"
+></A
+><H2
+>Name</H2
+>Delaunay and constrained Delaunay triangulations&nbsp;--&nbsp;implementation of a dynamic Delaunay triangulation algorithm.</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN14491"
+></A
+><H2
+>Synopsis</H2
+><PRE
+CLASS="SYNOPSIS"
+>&#13;#include &lt;gts.h&gt;
+
+
+#define     <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-CONSTRAINT-CLASS:CAPS"
+>GTS_CONSTRAINT_CLASS</A
+>            (klass)
+#define     <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-CONSTRAINT:CAPS"
+>GTS_CONSTRAINT</A
+>                  (obj)
+#define     <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-IS-CONSTRAINT:CAPS"
+>GTS_IS_CONSTRAINT</A
+>               (obj)
+            <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINTCLASS"
+>GtsConstraintClass</A
+>;
+            <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINT"
+>GtsConstraint</A
+>;
+
+<A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINTCLASS"
+>GtsConstraintClass</A
+>* <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-CONSTRAINT-CLASS"
+>gts_constraint_class</A
+>    (void);
+<A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+>*    <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-POINT-LOCATE"
+>gts_point_locate</A
+>                (<A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *guess);
+<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-DELAUNAY-ADD-VERTEX"
+>gts_delaunay_add_vertex</A
+>         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *guess);
+<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-DELAUNAY-ADD-VERTEX-TO-FACE"
+>gts_delaunay_add_vertex_to_face</A
+> (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *f);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-DELAUNAY-REMOVE-VERTEX"
+>gts_delaunay_remove_vertex</A
+>      (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v);
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-DELAUNAY-ADD-CONSTRAINT"
+>gts_delaunay_add_constraint</A
+>     (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINT"
+>GtsConstraint</A
+> *c);
+<A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+>*    <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-DELAUNAY-CHECK"
+>gts_delaunay_check</A
+>              (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-DELAUNAY-REMOVE-HULL"
+>gts_delaunay_remove_hull</A
+>        (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface);
+<GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-DELAUNAY-CONFORM"
+>gts_delaunay_conform</A
+>            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <GTKDOCLINK
+HREF="GINT"
+>gint</GTKDOCLINK
+> steiner_max,
+                                             <A
+HREF="gts-edges.html#GTSENCROACHFUNC"
+>GtsEncroachFunc</A
+> encroaches,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-DELAUNAY-REFINE"
+>gts_delaunay_refine</A
+>             (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <GTKDOCLINK
+HREF="GINT"
+>gint</GTKDOCLINK
+> steiner_max,
+                                             <A
+HREF="gts-edges.html#GTSENCROACHFUNC"
+>GtsEncroachFunc</A
+> encroaches,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> encroach_data,
+                                             <A
+HREF="gts-extended-binary-heaps.html#GTSKEYFUNC"
+>GtsKeyFunc</A
+> cost,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> cost_data);</PRE
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN14544"
+></A
+><H2
+>Description</H2
+><P
+>The functions described in this section are useful to build two-dimensional Delaunay and constrained Delaunay triangulations. Only the <CODE
+CLASS="PARAMETER"
+>x</CODE
+> and <CODE
+CLASS="PARAMETER"
+>y</CODE
+> coordinates of the points are taken into account.</P
+><P
+>The algorithm is fully dynamic (insertion and deletion) for Delaunay triangulation and semi-dynamic (insertion only of vertices and constraints) for constrained Delaunay triangulation. </P
+><P
+>The insertion part uses a very simple jump-and-walk location algorithm which can be used on any (even non-Delaunay) 2D triangulation as long as its boundary is convex.</P
+><P
+>The functions <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-DELAUNAY-CONFORM"
+><CODE
+CLASS="FUNCTION"
+>gts_delaunay_conform()</CODE
+></A
+> and <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTS-DELAUNAY-REFINE"
+><CODE
+CLASS="FUNCTION"
+>gts_delaunay_refine()</CODE
+></A
+> can be used to build Delaunay conforming constrained triangulations and to refine them.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN14556"
+></A
+><H2
+>Details</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14558"
+></A
+><H3
+><A
+NAME="GTS-CONSTRAINT-CLASS:CAPS"
+></A
+>GTS_CONSTRAINT_CLASS()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_CONSTRAINT_CLASS(klass)</PRE
+><P
+>Casts <CODE
+CLASS="PARAMETER"
+>klass</CODE
+> to <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINTCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsConstraintClass</SPAN
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14570"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a desscendant of <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINTCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsConstraintClass</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14577"
+></A
+><H3
+><A
+NAME="GTS-CONSTRAINT:CAPS"
+></A
+>GTS_CONSTRAINT()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_CONSTRAINT(obj)</PRE
+><P
+>Casts <CODE
+CLASS="PARAMETER"
+>obj</CODE
+> to <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINT"
+><SPAN
+CLASS="TYPE"
+>GtsConstraint</SPAN
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14589"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a descendant of <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINT"
+><SPAN
+CLASS="TYPE"
+>GtsConstraint</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14596"
+></A
+><H3
+><A
+NAME="GTS-IS-CONSTRAINT:CAPS"
+></A
+>GTS_IS_CONSTRAINT()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_IS_CONSTRAINT(obj)</PRE
+><P
+>Evaluates to <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>obj</CODE
+> is a <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINT"
+><SPAN
+CLASS="TYPE"
+>GtsConstraint</SPAN
+></A
+>, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14610"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-object-class.html#GTSOBJECT"
+><SPAN
+CLASS="TYPE"
+>GtsObject</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14617"
+></A
+><H3
+><A
+NAME="GTSCONSTRAINTCLASS"
+></A
+>GtsConstraintClass</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct _GtsConstraintClass GtsConstraintClass;</PRE
+><P
+></P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14624"
+></A
+><H3
+><A
+NAME="GTSCONSTRAINT"
+></A
+>GtsConstraint</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct _GtsConstraint GtsConstraint;</PRE
+><P
+></P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14631"
+></A
+><H3
+><A
+NAME="GTS-CONSTRAINT-CLASS"
+></A
+>gts_constraint_class ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINTCLASS"
+>GtsConstraintClass</A
+>* gts_constraint_class    (void);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14641"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINTCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsConstraintClass</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14648"
+></A
+><H3
+><A
+NAME="GTS-POINT-LOCATE"
+></A
+>gts_point_locate ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+>*    gts_point_locate                (<A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *guess);</PRE
+><P
+>Locates the face of the planar projection of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> containing
+<CODE
+CLASS="PARAMETER"
+>p</CODE
+>. The planar projection of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> must define a connected set
+of triangles without holes and bounded by a convex boundary. The
+algorithm is randomized and performs in O(n^1/3) expected time
+where n is the number of triangles of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+>.</P
+><P
+>If a good <CODE
+CLASS="PARAMETER"
+>guess</CODE
+> is given the point location can be significantly faster.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14667"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14674"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14681"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>guess</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>NULL</TT
+> or a face of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> close to <CODE
+CLASS="PARAMETER"
+>p</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14689"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-faces.html#GTSFACE"
+><SPAN
+CLASS="TYPE"
+>GtsFace</SPAN
+></A
+> of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> containing <CODE
+CLASS="PARAMETER"
+>p</CODE
+> or <TT
+CLASS="LITERAL"
+>NULL</TT
+> if <CODE
+CLASS="PARAMETER"
+>p</CODE
+> is not
+contained within the boundary of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+>.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14701"
+></A
+><H3
+><A
+NAME="GTS-DELAUNAY-ADD-VERTEX"
+></A
+>gts_delaunay_add_vertex ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  gts_delaunay_add_vertex         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *guess);</PRE
+><P
+>Adds vertex <CODE
+CLASS="PARAMETER"
+>v</CODE
+> to the Delaunay triangulation defined by
+<CODE
+CLASS="PARAMETER"
+>surface</CODE
+>. If <CODE
+CLASS="PARAMETER"
+>v</CODE
+> is not contained in the convex hull bounding
+<CODE
+CLASS="PARAMETER"
+>surface</CODE
+>, <CODE
+CLASS="PARAMETER"
+>v</CODE
+> is not added to the triangulation.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14719"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.  </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14726"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.  </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14733"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>guess</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>NULL</TT
+> or a <A
+HREF="gts-faces.html#GTSFACE"
+><SPAN
+CLASS="TYPE"
+>GtsFace</SPAN
+></A
+> belonging to <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> to be used as an initial
+guess for point location.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14742"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>NULL</TT
+> is <CODE
+CLASS="PARAMETER"
+>v</CODE
+> has been successfully added to <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> or was
+already contained in <CODE
+CLASS="PARAMETER"
+>surface</CODE
+>, <CODE
+CLASS="PARAMETER"
+>v</CODE
+> if <CODE
+CLASS="PARAMETER"
+>v</CODE
+> is not contained in the
+convex hull bounding surface or a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+> having the same x and
+y coordinates as <CODE
+CLASS="PARAMETER"
+>v</CODE
+>.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14756"
+></A
+><H3
+><A
+NAME="GTS-DELAUNAY-ADD-VERTEX-TO-FACE"
+></A
+>gts_delaunay_add_vertex_to_face ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  gts_delaunay_add_vertex_to_face (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *f);</PRE
+><P
+>Adds vertex <CODE
+CLASS="PARAMETER"
+>v</CODE
+> to the face <CODE
+CLASS="PARAMETER"
+>f</CODE
+> of the Delaunay triangulation defined
+by <CODE
+CLASS="PARAMETER"
+>surface</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14772"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14779"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14786"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>f</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-faces.html#GTSFACE"
+><SPAN
+CLASS="TYPE"
+>GtsFace</SPAN
+></A
+> belonging to <CODE
+CLASS="PARAMETER"
+>surface</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14794"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>NULL</TT
+> is <CODE
+CLASS="PARAMETER"
+>v</CODE
+> has been successfully added to <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> or was
+already contained in <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> or a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+> having the same x and
+y coordinates as <CODE
+CLASS="PARAMETER"
+>v</CODE
+>.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14806"
+></A
+><H3
+><A
+NAME="GTS-DELAUNAY-REMOVE-VERTEX"
+></A
+>gts_delaunay_remove_vertex ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_delaunay_remove_vertex      (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v);</PRE
+><P
+>Removes <CODE
+CLASS="PARAMETER"
+>v</CODE
+> from the Delaunay triangulation defined by <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> and
+restores the Delaunay property. Vertex <CODE
+CLASS="PARAMETER"
+>v</CODE
+> must not be used by any
+constrained edge otherwise the triangulation is not guaranteed to
+be Delaunay.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14821"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14828"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14835"
+></A
+><H3
+><A
+NAME="GTS-DELAUNAY-ADD-CONSTRAINT"
+></A
+>gts_delaunay_add_constraint ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_delaunay_add_constraint     (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINT"
+>GtsConstraint</A
+> *c);</PRE
+><P
+>Add constraint <CODE
+CLASS="PARAMETER"
+>c</CODE
+> to the constrained Delaunay triangulation defined by
+<CODE
+CLASS="PARAMETER"
+>surface</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14849"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14856"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>c</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINT"
+><SPAN
+CLASS="TYPE"
+>GtsConstraint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14863"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <A
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html#GTSCONSTRAINT"
+><SPAN
+CLASS="TYPE"
+>GtsConstraint</SPAN
+></A
+> conflicting (i.e. intersecting) with <CODE
+CLASS="PARAMETER"
+>c</CODE
+> 
+which were removed from <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> (<TT
+CLASS="LITERAL"
+>NULL</TT
+> if there was none).</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14873"
+></A
+><H3
+><A
+NAME="GTS-DELAUNAY-CHECK"
+></A
+>gts_delaunay_check ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+>*    gts_delaunay_check              (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14884"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14891"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>NULL</TT
+> if the planar projection of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> is a Delaunay 
+triangulation (unconstrained), a <A
+HREF="gts-faces.html#GTSFACE"
+><SPAN
+CLASS="TYPE"
+>GtsFace</SPAN
+></A
+> violating the Delaunay
+property otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14900"
+></A
+><H3
+><A
+NAME="GTS-DELAUNAY-REMOVE-HULL"
+></A
+>gts_delaunay_remove_hull ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_delaunay_remove_hull        (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface);</PRE
+><P
+>Removes all the edges of the boundary of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> which are not
+constraints.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14912"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14919"
+></A
+><H3
+><A
+NAME="GTS-DELAUNAY-CONFORM"
+></A
+>gts_delaunay_conform ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       gts_delaunay_conform            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <GTKDOCLINK
+HREF="GINT"
+>gint</GTKDOCLINK
+> steiner_max,
+                                             <A
+HREF="gts-edges.html#GTSENCROACHFUNC"
+>GtsEncroachFunc</A
+> encroaches,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>Recursively split constraints of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> which are encroached by
+vertices of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> (see Shewchuk 96 for details). The split
+constraints are destroyed and replaced by a set of new constraints
+of the same class. If <A
+HREF="gts-vertices.html#GTS-VERTEX-ENCROACHES-EDGE"
+><CODE
+CLASS="FUNCTION"
+>gts_vertex_encroaches_edge()</CODE
+></A
+> is used for
+<CODE
+CLASS="PARAMETER"
+>encroaches</CODE
+>, the resulting surface will be Delaunay conforming.</P
+><P
+>If <CODE
+CLASS="PARAMETER"
+>steiner_max</CODE
+> is positive or nul, the recursive splitting
+procedure will stop when this maximum number of Steiner points is
+reached. In that case the resulting surface will not necessarily be
+Delaunay conforming.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14940"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+> describing a constrained Delaunay triangulation.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14947"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>steiner_max</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> maximum number of Steiner points.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14952"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>encroaches</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSENCROACHFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsEncroachFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14959"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user-data to pass to <CODE
+CLASS="PARAMETER"
+>encroaches</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14965"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of remaining encroached edges. If <CODE
+CLASS="PARAMETER"
+>steiner_max</CODE
+>
+is set to a negative value and <A
+HREF="gts-vertices.html#GTS-VERTEX-ENCROACHES-EDGE"
+><CODE
+CLASS="FUNCTION"
+>gts_vertex_encroaches_edge()</CODE
+></A
+> is used
+for <CODE
+CLASS="PARAMETER"
+>encroaches</CODE
+> this should always be zero. </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN14974"
+></A
+><H3
+><A
+NAME="GTS-DELAUNAY-REFINE"
+></A
+>gts_delaunay_refine ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       gts_delaunay_refine             (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <GTKDOCLINK
+HREF="GINT"
+>gint</GTKDOCLINK
+> steiner_max,
+                                             <A
+HREF="gts-edges.html#GTSENCROACHFUNC"
+>GtsEncroachFunc</A
+> encroaches,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> encroach_data,
+                                             <A
+HREF="gts-extended-binary-heaps.html#GTSKEYFUNC"
+>GtsKeyFunc</A
+> cost,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> cost_data);</PRE
+><P
+>An implementation of the refinement algorithm described in Ruppert
+(1995) and Shewchuk (1996).</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14990"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+> describing a conforming Delaunay triangulation.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN14997"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>steiner_max</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> maximum number of Steiner points.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15002"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>encroaches</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSENCROACHFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsEncroachFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15009"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>encroach_data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user-data to pass to <CODE
+CLASS="PARAMETER"
+>encroaches</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15015"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>cost</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-extended-binary-heaps.html#GTSKEYFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsKeyFunc</SPAN
+></A
+> used to sort the faces during refinement.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15022"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>cost_data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user-data to pass to <CODE
+CLASS="PARAMETER"
+>cost</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15028"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of unrefined faces of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> left. Should be zero
+if <CODE
+CLASS="PARAMETER"
+>steiner_max</CODE
+> is set to a negative value.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><TABLE
+CLASS="navigation"
+WIDTH="100%"
+SUMMARY="Navigation footer"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+ALIGN="left"
+><A
+ACCESSKEY="p"
+HREF="gts-isosurfaces-from-3d-functions.html"
+><B
+>&lt;&lt;&lt;&nbsp;Isosurfaces from 3D functions</B
+></A
+></TD
+><TD
+ALIGN="right"
+><A
+ACCESSKEY="n"
+HREF="gts-differential-geometry-operators.html"
+><B
+>Differential geometry operators&nbsp;&gt;&gt;&gt;</B
+></A
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

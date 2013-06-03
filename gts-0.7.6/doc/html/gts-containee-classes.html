@@ -1,0 +1,1075 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Containee classes</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="GTS Library Reference Manual"
+HREF="book1.html"><LINK
+REL="UP"
+TITLE="Geometrical Object Hierarchy"
+HREF="c2915.html"><LINK
+REL="PREVIOUS"
+TITLE="Container classes"
+HREF="gts-container-classes.html"><LINK
+REL="NEXT"
+TITLE="Points"
+HREF="gts-points.html"><STYLE
+TYPE="text/css"
+>.synopsis, .classsynopsis {
+    background: #eeeeee;
+    border: solid 1px #aaaaaa;
+    padding: 0.5em;
+}
+.programlisting {
+    background: #eeeeff;
+    border: solid 1px #aaaaff;
+    padding: 0.5em;
+}
+.variablelist {
+    padding: 4px;
+    margin-left: 3em;
+}
+.navigation {
+    background: #ffeeee;
+    border: solid 1px #ffaaaa;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+.navigation a {
+    color: #770000;
+}
+.navigation a:visited {
+    color: #550000;
+}
+.navigation .title {
+    font-size: 200%;
+}</STYLE
+></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><TABLE
+WIDTH="100%"
+CLASS="navigation"
+SUMMARY="Navigation header"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+><A
+ACCESSKEY="p"
+HREF="gts-container-classes.html"
+><IMG
+SRC="left.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Prev"></A
+></TD
+><TD
+><A
+ACCESSKEY="u"
+HREF="c2915.html"
+><IMG
+SRC="up.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Up"></A
+></TD
+><TD
+><A
+ACCESSKEY="h"
+HREF="book1.html"
+><IMG
+SRC="home.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Home"></A
+></TD
+><TH
+WIDTH="100%"
+align="center"
+>GTS Library Reference Manual</TH
+><TD
+><A
+ACCESSKEY="n"
+HREF="gts-points.html"
+><IMG
+SRC="right.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Next"></A
+></TD
+></TR
+></TABLE
+><H1
+><A
+NAME="GTS-CONTAINEE-CLASSES"
+></A
+>Containee classes</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN4086"
+></A
+><H2
+>Name</H2
+>Containee classes&nbsp;--&nbsp;</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN4089"
+></A
+><H2
+>Synopsis</H2
+><PRE
+CLASS="SYNOPSIS"
+>&#13;#include &lt;gts.h&gt;
+
+
+#define     <A
+HREF="gts-containee-classes.html#GTS-CONTAINEE-CLASS:CAPS"
+>GTS_CONTAINEE_CLASS</A
+>             (klass)
+#define     <A
+HREF="gts-containee-classes.html#GTS-CONTAINEE:CAPS"
+>GTS_CONTAINEE</A
+>                   (obj)
+#define     <A
+HREF="gts-containee-classes.html#GTS-IS-CONTAINEE:CAPS"
+>GTS_IS_CONTAINEE</A
+>                (obj)
+            <A
+HREF="gts-containee-classes.html#GTSCONTAINEECLASS"
+>GtsContaineeClass</A
+>;
+            <A
+HREF="gts-containee-classes.html#GTSCONTAINEE"
+>GtsContainee</A
+>;
+
+<A
+HREF="gts-containee-classes.html#GTSCONTAINEECLASS"
+>GtsContaineeClass</A
+>* <A
+HREF="gts-containee-classes.html#GTS-CONTAINEE-CLASS"
+>gts_containee_class</A
+>      (void);
+<A
+HREF="gts-containee-classes.html#GTSCONTAINEE"
+>GtsContainee</A
+>* <A
+HREF="gts-containee-classes.html#GTS-CONTAINEE-NEW"
+>gts_containee_new</A
+>             (<A
+HREF="gts-containee-classes.html#GTSCONTAINEECLASS"
+>GtsContaineeClass</A
+> *klass);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-containee-classes.html#GTS-CONTAINEE-IS-CONTAINED"
+>gts_containee_is_contained</A
+>      (<A
+HREF="gts-containee-classes.html#GTSCONTAINEE"
+>GtsContainee</A
+> *item,
+                                             <A
+HREF="gts-container-classes.html#GTSCONTAINER"
+>GtsContainer</A
+> *c);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-containee-classes.html#GTS-CONTAINEE-REPLACE"
+>gts_containee_replace</A
+>           (<A
+HREF="gts-containee-classes.html#GTSCONTAINEE"
+>GtsContainee</A
+> *item,
+                                             <A
+HREF="gts-containee-classes.html#GTSCONTAINEE"
+>GtsContainee</A
+> *with);
+
+#define     <A
+HREF="gts-containee-classes.html#GTS-SLIST-CONTAINEE-CLASS:CAPS"
+>GTS_SLIST_CONTAINEE_CLASS</A
+>       (klass)
+#define     <A
+HREF="gts-containee-classes.html#GTS-SLIST-CONTAINEE:CAPS"
+>GTS_SLIST_CONTAINEE</A
+>             (obj)
+#define     <A
+HREF="gts-containee-classes.html#GTS-IS-SLIST-CONTAINEE:CAPS"
+>GTS_IS_SLIST_CONTAINEE</A
+>          (obj)
+            <A
+HREF="gts-containee-classes.html#GTSSLISTCONTAINEECLASS"
+>GtsSListContaineeClass</A
+>;
+            <A
+HREF="gts-containee-classes.html#GTSSLISTCONTAINEE"
+>GtsSListContainee</A
+>;
+
+<A
+HREF="gts-containee-classes.html#GTSSLISTCONTAINEECLASS"
+>GtsSListContaineeClass</A
+>* <A
+HREF="gts-containee-classes.html#GTS-SLIST-CONTAINEE-CLASS"
+>gts_slist_containee_class</A
+>
+                                            (void);</PRE
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN4117"
+></A
+><H2
+>Description</H2
+><P
+></P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN4120"
+></A
+><H2
+>Details</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4122"
+></A
+><H3
+><A
+NAME="GTS-CONTAINEE-CLASS:CAPS"
+></A
+>GTS_CONTAINEE_CLASS()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_CONTAINEE_CLASS(klass)</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4130"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4135"
+></A
+><H3
+><A
+NAME="GTS-CONTAINEE:CAPS"
+></A
+>GTS_CONTAINEE()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_CONTAINEE(obj)</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4143"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4148"
+></A
+><H3
+><A
+NAME="GTS-IS-CONTAINEE:CAPS"
+></A
+>GTS_IS_CONTAINEE()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_IS_CONTAINEE(obj)</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4156"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4161"
+></A
+><H3
+><A
+NAME="GTSCONTAINEECLASS"
+></A
+>GtsContaineeClass</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsObjectClass parent_class;
+
+  void     (* add_container)    (GtsContainee *, GtsContainer *);
+  void     (* remove_container) (GtsContainee *, GtsContainer *);
+  void     (* foreach)          (GtsContainee *, GtsFunc, gpointer);
+  gboolean (* is_contained)     (GtsContainee *, GtsContainer *);
+  void     (* replace)          (GtsContainee *, GtsContainee *);
+} GtsContaineeClass;</PRE
+><P
+></P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4168"
+></A
+><H3
+><A
+NAME="GTSCONTAINEE"
+></A
+>GtsContainee</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsObject object;
+} GtsContainee;</PRE
+><P
+>The containee object.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4176"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>object</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>The parent object.&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4182"
+></A
+><H3
+><A
+NAME="GTS-CONTAINEE-CLASS"
+></A
+>gts_containee_class ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-containee-classes.html#GTSCONTAINEECLASS"
+>GtsContaineeClass</A
+>* gts_containee_class      (void);</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4191"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4196"
+></A
+><H3
+><A
+NAME="GTS-CONTAINEE-NEW"
+></A
+>gts_containee_new ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-containee-classes.html#GTSCONTAINEE"
+>GtsContainee</A
+>* gts_containee_new             (<A
+HREF="gts-containee-classes.html#GTSCONTAINEECLASS"
+>GtsContaineeClass</A
+> *klass);</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4206"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4211"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4216"
+></A
+><H3
+><A
+NAME="GTS-CONTAINEE-IS-CONTAINED"
+></A
+>gts_containee_is_contained ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_containee_is_contained      (<A
+HREF="gts-containee-classes.html#GTSCONTAINEE"
+>GtsContainee</A
+> *item,
+                                             <A
+HREF="gts-container-classes.html#GTSCONTAINER"
+>GtsContainer</A
+> *c);</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4227"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>item</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4232"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>c</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4237"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4242"
+></A
+><H3
+><A
+NAME="GTS-CONTAINEE-REPLACE"
+></A
+>gts_containee_replace ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_containee_replace           (<A
+HREF="gts-containee-classes.html#GTSCONTAINEE"
+>GtsContainee</A
+> *item,
+                                             <A
+HREF="gts-containee-classes.html#GTSCONTAINEE"
+>GtsContainee</A
+> *with);</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4253"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>item</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4258"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>with</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4263"
+></A
+><H3
+><A
+NAME="GTS-SLIST-CONTAINEE-CLASS:CAPS"
+></A
+>GTS_SLIST_CONTAINEE_CLASS()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_SLIST_CONTAINEE_CLASS(klass)</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4271"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4276"
+></A
+><H3
+><A
+NAME="GTS-SLIST-CONTAINEE:CAPS"
+></A
+>GTS_SLIST_CONTAINEE()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_SLIST_CONTAINEE(obj)</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4284"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4289"
+></A
+><H3
+><A
+NAME="GTS-IS-SLIST-CONTAINEE:CAPS"
+></A
+>GTS_IS_SLIST_CONTAINEE()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_IS_SLIST_CONTAINEE(obj)</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4297"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4302"
+></A
+><H3
+><A
+NAME="GTSSLISTCONTAINEECLASS"
+></A
+>GtsSListContaineeClass</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsContaineeClass parent_class;
+} GtsSListContaineeClass;</PRE
+><P
+></P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4309"
+></A
+><H3
+><A
+NAME="GTSSLISTCONTAINEE"
+></A
+>GtsSListContainee</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsContainee containee;
+
+  GSList * containers;
+} GtsSListContainee;</PRE
+><P
+>The singly-linked list containee object.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4317"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-containee-classes.html#GTSCONTAINEE"
+>GtsContainee</A
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>containee</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>The parent object.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4323"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>&nbsp;*<CODE
+CLASS="STRUCTFIELD"
+>containers</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>A list of <A
+HREF="gts-container-classes.html#GTSCONTAINER"
+><SPAN
+CLASS="TYPE"
+>GtsContainer</SPAN
+></A
+> containing this object.&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN4331"
+></A
+><H3
+><A
+NAME="GTS-SLIST-CONTAINEE-CLASS"
+></A
+>gts_slist_containee_class ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-containee-classes.html#GTSSLISTCONTAINEECLASS"
+>GtsSListContaineeClass</A
+>* gts_slist_containee_class
+                                            (void);</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN4340"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><TABLE
+CLASS="navigation"
+WIDTH="100%"
+SUMMARY="Navigation footer"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+ALIGN="left"
+><A
+ACCESSKEY="p"
+HREF="gts-container-classes.html"
+><B
+>&lt;&lt;&lt;&nbsp;Container classes</B
+></A
+></TD
+><TD
+ALIGN="right"
+><A
+ACCESSKEY="n"
+HREF="gts-points.html"
+><B
+>Points&nbsp;&gt;&gt;&gt;</B
+></A
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

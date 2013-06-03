@@ -1,0 +1,2392 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Graph partitioning</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="GTS Library Reference Manual"
+HREF="book1.html"><LINK
+REL="UP"
+TITLE="Graph and operations on graphs"
+HREF="c17114.html"><LINK
+REL="PREVIOUS"
+TITLE="Progressive graph"
+HREF="gts-progressive-graph.html"><STYLE
+TYPE="text/css"
+>.synopsis, .classsynopsis {
+    background: #eeeeee;
+    border: solid 1px #aaaaaa;
+    padding: 0.5em;
+}
+.programlisting {
+    background: #eeeeff;
+    border: solid 1px #aaaaff;
+    padding: 0.5em;
+}
+.variablelist {
+    padding: 4px;
+    margin-left: 3em;
+}
+.navigation {
+    background: #ffeeee;
+    border: solid 1px #ffaaaa;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+.navigation a {
+    color: #770000;
+}
+.navigation a:visited {
+    color: #550000;
+}
+.navigation .title {
+    font-size: 200%;
+}</STYLE
+></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><TABLE
+WIDTH="100%"
+CLASS="navigation"
+SUMMARY="Navigation header"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+><A
+ACCESSKEY="p"
+HREF="gts-progressive-graph.html"
+><IMG
+SRC="left.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Prev"></A
+></TD
+><TD
+><A
+ACCESSKEY="u"
+HREF="c17114.html"
+><IMG
+SRC="up.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Up"></A
+></TD
+><TD
+><A
+ACCESSKEY="h"
+HREF="book1.html"
+><IMG
+SRC="home.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Home"></A
+></TD
+><TH
+WIDTH="100%"
+align="center"
+>GTS Library Reference Manual</TH
+></TR
+></TABLE
+><H1
+><A
+NAME="GTS-GRAPH-PARTITIONING"
+></A
+>Graph partitioning</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN19614"
+></A
+><H2
+>Name</H2
+>Graph partitioning&nbsp;--&nbsp;</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN19617"
+></A
+><H2
+>Synopsis</H2
+><PRE
+CLASS="SYNOPSIS"
+>&#13;#include &lt;gts.h&gt;
+
+
+            <A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+>;
+<A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+>* <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-BISECTION-NEW"
+>gts_graph_bisection_new</A
+>  (<A
+HREF="gts-weighted-graph.html#GTSWGRAPH"
+>GtsWGraph</A
+> *wg,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> ntry,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> mmax,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> nmin,
+                                             <GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+> imbalance);
+<A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+>* <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-GGG-BISECTION"
+>gts_graph_ggg_bisection</A
+>  (<A
+HREF="gts-graph-class.html#GTSGRAPH"
+>GtsGraph</A
+> *g,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> ntry);
+<A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+>* <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-BFGG-BISECTION"
+>gts_graph_bfgg_bisection</A
+> (<A
+HREF="gts-graph-class.html#GTSGRAPH"
+>GtsGraph</A
+> *g,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> ntry);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-BISECTION-CHECK"
+>gts_graph_bisection_check</A
+>       (<A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+> *bg);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-BISECTION-KL-REFINE"
+>gts_graph_bisection_kl_refine</A
+>   (<A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+> *bg,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> mmax);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-BISECTION-BKL-REFINE"
+>gts_graph_bisection_bkl_refine</A
+>  (<A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+> *bg,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> mmax,
+                                             <GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+> imbalance);
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-RECURSIVE-BISECTION"
+>gts_graph_recursive_bisection</A
+>   (<A
+HREF="gts-weighted-graph.html#GTSWGRAPH"
+>GtsWGraph</A
+> *wg,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> n,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> ntry,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> mmax,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> nmin,
+                                             <GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+> imbalance);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-BISECTION-DESTROY"
+>gts_graph_bisection_destroy</A
+>     (<A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+> *bg,
+                                             <GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+> destroy_graphs);
+
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-BUBBLE-PARTITION"
+>gts_graph_bubble_partition</A
+>      (<A
+HREF="gts-graph-class.html#GTSGRAPH"
+>GtsGraph</A
+> *g,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> np,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> niter,
+                                             <A
+HREF="gts-surfaces.html#GTSFUNC"
+>GtsFunc</A
+> step_info,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       <A
+HREF="gts-graph-class.html#GTS-GRAPH-EDGES-CUT"
+>gts_graph_edges_cut</A
+>             (<A
+HREF="gts-graph-class.html#GTSGRAPH"
+>GtsGraph</A
+> *g);
+<GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+>      <A
+HREF="gts-graph-class.html#GTS-GRAPH-EDGES-CUT-WEIGHT"
+>gts_graph_edges_cut_weight</A
+>      (<A
+HREF="gts-graph-class.html#GTSGRAPH"
+>GtsGraph</A
+> *g);
+<GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-PARTITION-EDGES-CUT"
+>gts_graph_partition_edges_cut</A
+>   (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition);
+<GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+>      <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-PARTITION-BALANCE"
+>gts_graph_partition_balance</A
+>     (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition);
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-PARTITION-CLONE"
+>gts_graph_partition_clone</A
+>       (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-PARTITION-PRINT-STATS"
+>gts_graph_partition_print_stats</A
+> (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fp);
+<GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+>      <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-PARTITION-EDGES-CUT-WEIGHT"
+>gts_graph_partition_edges_cut_weight</A
+>
+                                            (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-PARTITION-DESTROY"
+>gts_graph_partition_destroy</A
+>     (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition);</PRE
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN19692"
+></A
+><H2
+>Description</H2
+><P
+></P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN19695"
+></A
+><H2
+>Details</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN19697"
+></A
+><H3
+><A
+NAME="GTSGRAPHBISECTION"
+></A
+>GtsGraphBisection</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsGraph * g;
+  GtsGraph * g1;
+  GtsGraph * g2;
+  GHashTable * bg1;
+  GHashTable * bg2;
+} GtsGraphBisection;</PRE
+><P
+></P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN19704"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-BISECTION-NEW"
+></A
+>gts_graph_bisection_new ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+>* gts_graph_bisection_new  (<A
+HREF="gts-weighted-graph.html#GTSWGRAPH"
+>GtsWGraph</A
+> *wg,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> ntry,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> mmax,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> nmin,
+                                             <GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+> imbalance);</PRE
+><P
+>An implementation of a multilevel bisection algorithm as presented
+in Karypis and Kumar (1997). A multilevel hierarchy of graphs is
+created using the <A
+HREF="gts-progressive-graph.html#GTSPGRAPH"
+><SPAN
+CLASS="TYPE"
+>GtsPGraph</SPAN
+></A
+> object. The bisection of the coarsest
+graph is created using the <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-GGG-BISECTION"
+><CODE
+CLASS="FUNCTION"
+>gts_graph_ggg_bisection()</CODE
+></A
+> function. The
+graph is then uncoarsened using <A
+HREF="gts-progressive-graph.html#GTS-PGRAPH-DOWN"
+><CODE
+CLASS="FUNCTION"
+>gts_pgraph_down()</CODE
+></A
+> and at each level
+the bisection is refined using <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-BISECTION-BKL-REFINE"
+><CODE
+CLASS="FUNCTION"
+>gts_graph_bisection_bkl_refine()</CODE
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19727"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>wg</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-weighted-graph.html#GTSWGRAPH"
+><SPAN
+CLASS="TYPE"
+>GtsWGraph</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19734"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>ntry</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of tries for the graph growing algorithm.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19739"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>mmax</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of unsucessful moves for the refinement algorithm.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19744"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>nmin</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the minimum number of nodes of the coarsest graph.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19749"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>imbalance</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the maximum relative imbalance allowed between the
+weights of both halves of the partition.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19754"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+><SPAN
+CLASS="TYPE"
+>GtsGraphBisection</SPAN
+></A
+> of <CODE
+CLASS="PARAMETER"
+>wg</CODE
+>.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN19762"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-GGG-BISECTION"
+></A
+>gts_graph_ggg_bisection ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+>* gts_graph_ggg_bisection  (<A
+HREF="gts-graph-class.html#GTSGRAPH"
+>GtsGraph</A
+> *g,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> ntry);</PRE
+><P
+>An implementation of the "Greedy Graph Growing" algorithm of
+Karypis and Kumar (1997).  </P
+><P
+><CODE
+CLASS="PARAMETER"
+>ntry</CODE
+> randomly chosen seeds are used and the best partition is retained.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19776"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>g</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-graph-class.html#GTSGRAPH"
+><SPAN
+CLASS="TYPE"
+>GtsGraph</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19783"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>ntry</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of randomly selected initial seeds.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19788"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+><SPAN
+CLASS="TYPE"
+>GtsGraphBisection</SPAN
+></A
+> of <CODE
+CLASS="PARAMETER"
+>g</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN19796"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-BFGG-BISECTION"
+></A
+>gts_graph_bfgg_bisection ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+>* gts_graph_bfgg_bisection (<A
+HREF="gts-graph-class.html#GTSGRAPH"
+>GtsGraph</A
+> *g,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> ntry);</PRE
+><P
+>An implementation of a "Breadth-First Graph Growing" algorithm.</P
+><P
+><CODE
+CLASS="PARAMETER"
+>ntry</CODE
+> randomly chosen seeds are used and the best partition is retained.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19810"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>g</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-graph-class.html#GTSGRAPH"
+><SPAN
+CLASS="TYPE"
+>GtsGraph</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19817"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>ntry</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of randomly selected initial seeds.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19822"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+><SPAN
+CLASS="TYPE"
+>GtsGraphBisection</SPAN
+></A
+> of <CODE
+CLASS="PARAMETER"
+>g</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN19830"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-BISECTION-CHECK"
+></A
+>gts_graph_bisection_check ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_graph_bisection_check       (<A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+> *bg);</PRE
+><P
+>Checks that the boundary of <CODE
+CLASS="PARAMETER"
+>bg</CODE
+> is correctly defined (used for
+debugging purposes).</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19842"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bg</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+><SPAN
+CLASS="TYPE"
+>GtsGraphBisection</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19849"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>bg</CODE
+> is ok, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN19857"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-BISECTION-KL-REFINE"
+></A
+>gts_graph_bisection_kl_refine ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_graph_bisection_kl_refine   (<A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+> *bg,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> mmax);</PRE
+><P
+>An implementation of the simplified Kernighan-Lin algorithm for
+graph bisection refinement as described in Karypis and Kumar
+(1997).</P
+><P
+>The algorithm stops if <CODE
+CLASS="PARAMETER"
+>mmax</CODE
+> consecutive modes do not lead to a
+decrease in the number of edges cut. This last <CODE
+CLASS="PARAMETER"
+>mmax</CODE
+> moves are
+undone.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19872"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bg</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+><SPAN
+CLASS="TYPE"
+>GtsGraphBisection</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19879"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>mmax</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the maximum number of unsuccessful successive moves.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19884"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the decrease in the weight of the edges cut by the bisection.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN19889"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-BISECTION-BKL-REFINE"
+></A
+>gts_graph_bisection_bkl_refine ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_graph_bisection_bkl_refine  (<A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+> *bg,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> mmax,
+                                             <GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+> imbalance);</PRE
+><P
+>An implementation of the simplified boundary Kernighan-Lin
+algorithm for graph bisection refinement as described in Karypis
+and Kumar (1997).</P
+><P
+>The algorithm stops if <CODE
+CLASS="PARAMETER"
+>mmax</CODE
+> consecutive modes do not lead to a
+decrease in the number of edges cut. This last <CODE
+CLASS="PARAMETER"
+>mmax</CODE
+> moves are
+undone.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19905"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bg</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+><SPAN
+CLASS="TYPE"
+>GtsGraphBisection</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19912"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>mmax</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the maximum number of unsuccessful successive moves.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19917"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>imbalance</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the maximum relative imbalance allowed between the
+weights of both halves of the partition.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19922"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the decrease in the weight of the edges cut by the bisection.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN19927"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-RECURSIVE-BISECTION"
+></A
+>gts_graph_recursive_bisection ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_graph_recursive_bisection   (<A
+HREF="gts-weighted-graph.html#GTSWGRAPH"
+>GtsWGraph</A
+> *wg,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> n,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> ntry,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> mmax,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> nmin,
+                                             <GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+> imbalance);</PRE
+><P
+>Calls <A
+HREF="gts-graph-partitioning.html#GTS-GRAPH-BISECTION-NEW"
+><CODE
+CLASS="FUNCTION"
+>gts_graph_bisection_new()</CODE
+></A
+> recursively in order to obtain a
+2^<CODE
+CLASS="PARAMETER"
+>n</CODE
+> partition of <CODE
+CLASS="PARAMETER"
+>wg</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19947"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>wg</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-weighted-graph.html#GTSWGRAPH"
+><SPAN
+CLASS="TYPE"
+>GtsWGraph</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19954"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>n</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of bisection levels.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19959"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>ntry</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of tries for the graph growing algorithm.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19964"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>mmax</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of unsucessful moves for the refinement algorithm.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19969"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>nmin</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the minimum number of nodes of the coarsest graph.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19974"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>imbalance</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the maximum relative imbalance allowed between the
+weights of both halves of the partition.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN19979"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of 2^<CODE
+CLASS="PARAMETER"
+>n</CODE
+> new <A
+HREF="gts-graph-class.html#GTSGRAPH"
+><SPAN
+CLASS="TYPE"
+>GtsGraph</SPAN
+></A
+> representing the partition.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN19987"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-BISECTION-DESTROY"
+></A
+>gts_graph_bisection_destroy ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_graph_bisection_destroy     (<A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+>GtsGraphBisection</A
+> *bg,
+                                             <GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+> destroy_graphs);</PRE
+><P
+>Frees all the memory allocated for <CODE
+CLASS="PARAMETER"
+>bg</CODE
+>. If <CODE
+CLASS="PARAMETER"
+>destroy_graphs</CODE
+> is <TT
+CLASS="LITERAL"
+>TRUE</TT
+>
+the graphs created by <CODE
+CLASS="PARAMETER"
+>bg</CODE
+> are destroyed.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20003"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bg</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-graph-partitioning.html#GTSGRAPHBISECTION"
+><SPAN
+CLASS="TYPE"
+>GtsGraphBisection</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20010"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>destroy_graphs</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> controls graph destruction.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN20015"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-BUBBLE-PARTITION"
+></A
+>gts_graph_bubble_partition ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_graph_bubble_partition      (<A
+HREF="gts-graph-class.html#GTSGRAPH"
+>GtsGraph</A
+> *g,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> np,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> niter,
+                                             <A
+HREF="gts-surfaces.html#GTSFUNC"
+>GtsFunc</A
+> step_info,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>An implementation of the "bubble partitioning algorithm" of
+Diekmann, Preis, Schlimbach and Walshaw (2000). The maximum number
+of iteration on the positions of the graph growing seeds is
+controlled by <CODE
+CLASS="PARAMETER"
+>niter</CODE
+>.</P
+><P
+>If not <TT
+CLASS="LITERAL"
+>NULL</TT
+> <CODE
+CLASS="PARAMETER"
+>step_info</CODE
+> is called after each iteration on the seeds
+positions passing the partition (a GSList) as argument.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20034"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>g</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-graph-class.html#GTSGRAPH"
+><SPAN
+CLASS="TYPE"
+>GtsGraph</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20041"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>np</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> number of partitions.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20046"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>niter</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the maximum number of iterations.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20051"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>step_info</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsFunc</SPAN
+></A
+> or <TT
+CLASS="LITERAL"
+>NULL</TT
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20059"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to pass to <CODE
+CLASS="PARAMETER"
+>step_info</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20065"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <CODE
+CLASS="PARAMETER"
+>np</CODE
+> new <A
+HREF="gts-graph-class.html#GTSGRAPH"
+><SPAN
+CLASS="TYPE"
+>GtsGraph</SPAN
+></A
+> representing the partition.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN20073"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-EDGES-CUT"
+></A
+>gts_graph_edges_cut ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       gts_graph_edges_cut             (<A
+HREF="gts-graph-class.html#GTSGRAPH"
+>GtsGraph</A
+> *g);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20084"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>g</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20089"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN20094"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-EDGES-CUT-WEIGHT"
+></A
+>gts_graph_edges_cut_weight ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+>      gts_graph_edges_cut_weight      (<A
+HREF="gts-graph-class.html#GTSGRAPH"
+>GtsGraph</A
+> *g);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20105"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>g</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20110"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN20115"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-PARTITION-EDGES-CUT"
+></A
+>gts_graph_partition_edges_cut ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       gts_graph_partition_edges_cut   (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20126"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>partition</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <CODE
+CLASS="PARAMETER"
+>GtsGraph</CODE
+> representing a partition.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20132"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of edges cut by the partition.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN20137"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-PARTITION-BALANCE"
+></A
+>gts_graph_partition_balance ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+>      gts_graph_partition_balance     (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20148"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>partition</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <CODE
+CLASS="PARAMETER"
+>GtsGraph</CODE
+> representing a partition.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20154"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the difference between the maximum and the minimum weight
+of the graphs in <CODE
+CLASS="PARAMETER"
+>partition</CODE
+>.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN20160"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-PARTITION-CLONE"
+></A
+>gts_graph_partition_clone ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_graph_partition_clone       (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20171"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>partition</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <CODE
+CLASS="PARAMETER"
+>GtsGraph</CODE
+> representing a partition.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20177"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new partition clone of <CODE
+CLASS="PARAMETER"
+>partition</CODE
+> (i.e. a list of new
+graphs clones of the graphs in <CODE
+CLASS="PARAMETER"
+>partition</CODE
+>).  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN20184"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-PARTITION-PRINT-STATS"
+></A
+>gts_graph_partition_print_stats ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_graph_partition_print_stats (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fp);</PRE
+><P
+>Writes to <CODE
+CLASS="PARAMETER"
+>fp</CODE
+> a summary of the properties of <CODE
+CLASS="PARAMETER"
+>partition</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20198"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>partition</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <CODE
+CLASS="PARAMETER"
+>GtsGraph</CODE
+> representing a partition.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20204"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>fp</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a file pointer.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN20209"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-PARTITION-EDGES-CUT-WEIGHT"
+></A
+>gts_graph_partition_edges_cut_weight ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GFLOAT"
+>gfloat</GTKDOCLINK
+>      gts_graph_partition_edges_cut_weight
+                                            (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20220"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>partition</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <CODE
+CLASS="PARAMETER"
+>GtsGraph</CODE
+> representing a partition.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20226"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the total weight of the edges cut by the partition.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN20231"
+></A
+><H3
+><A
+NAME="GTS-GRAPH-PARTITION-DESTROY"
+></A
+>gts_graph_partition_destroy ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_graph_partition_destroy     (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *partition);</PRE
+><P
+>Destroys all the graphs in <CODE
+CLASS="PARAMETER"
+>partition</CODE
+> and frees <CODE
+CLASS="PARAMETER"
+>partition</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN20244"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>partition</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <CODE
+CLASS="PARAMETER"
+>GtsGraph</CODE
+> representing a partition.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><TABLE
+CLASS="navigation"
+WIDTH="100%"
+SUMMARY="Navigation footer"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+ALIGN="left"
+><A
+ACCESSKEY="p"
+HREF="gts-progressive-graph.html"
+><B
+>&lt;&lt;&lt;&nbsp;Progressive graph</B
+></A
+></TD
+><TD
+ALIGN="right"
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

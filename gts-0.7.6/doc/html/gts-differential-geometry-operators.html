@@ -1,0 +1,960 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Differential geometry operators</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="GTS Library Reference Manual"
+HREF="book1.html"><LINK
+REL="UP"
+TITLE="Surface operations"
+HREF="c12206.html"><LINK
+REL="PREVIOUS"
+TITLE="Delaunay and constrained Delaunay triangulations"
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html"><LINK
+REL="NEXT"
+TITLE="Progressive and Hierarchical surfaces"
+HREF="c15264.html"><STYLE
+TYPE="text/css"
+>.synopsis, .classsynopsis {
+    background: #eeeeee;
+    border: solid 1px #aaaaaa;
+    padding: 0.5em;
+}
+.programlisting {
+    background: #eeeeff;
+    border: solid 1px #aaaaff;
+    padding: 0.5em;
+}
+.variablelist {
+    padding: 4px;
+    margin-left: 3em;
+}
+.navigation {
+    background: #ffeeee;
+    border: solid 1px #ffaaaa;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+.navigation a {
+    color: #770000;
+}
+.navigation a:visited {
+    color: #550000;
+}
+.navigation .title {
+    font-size: 200%;
+}</STYLE
+></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><TABLE
+WIDTH="100%"
+CLASS="navigation"
+SUMMARY="Navigation header"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+><A
+ACCESSKEY="p"
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html"
+><IMG
+SRC="left.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Prev"></A
+></TD
+><TD
+><A
+ACCESSKEY="u"
+HREF="c12206.html"
+><IMG
+SRC="up.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Up"></A
+></TD
+><TD
+><A
+ACCESSKEY="h"
+HREF="book1.html"
+><IMG
+SRC="home.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Home"></A
+></TD
+><TH
+WIDTH="100%"
+align="center"
+>GTS Library Reference Manual</TH
+><TD
+><A
+ACCESSKEY="n"
+HREF="c15264.html"
+><IMG
+SRC="right.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Next"></A
+></TD
+></TR
+></TABLE
+><H1
+><A
+NAME="GTS-DIFFERENTIAL-GEOMETRY-OPERATORS"
+></A
+>Differential geometry operators</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN15040"
+></A
+><H2
+>Name</H2
+>Differential geometry operators&nbsp;--&nbsp;</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN15043"
+></A
+><H2
+>Synopsis</H2
+><PRE
+CLASS="SYNOPSIS"
+>&#13;#include &lt;gts.h&gt;
+
+
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-differential-geometry-operators.html#GTS-VERTEX-GAUSSIAN-CURVATURE"
+>gts_vertex_gaussian_curvature</A
+>   (<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *Kg);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-differential-geometry-operators.html#GTS-VERTEX-MEAN-CURVATURE-NORMAL"
+>gts_vertex_mean_curvature_normal</A
+>
+                                            (<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> Kh);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-differential-geometry-operators.html#GTS-VERTEX-PRINCIPAL-CURVATURES"
+>gts_vertex_principal_curvatures</A
+> (<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> Kh,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> Kg,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *K1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *K2);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-differential-geometry-operators.html#GTS-VERTEX-PRINCIPAL-DIRECTIONS"
+>gts_vertex_principal_directions</A
+> (<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> Kh,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> Kg,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> e1,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> e2);</PRE
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN15070"
+></A
+><H2
+>Description</H2
+><P
+></P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN15073"
+></A
+><H2
+>Details</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15075"
+></A
+><H3
+><A
+NAME="GTS-VERTEX-GAUSSIAN-CURVATURE"
+></A
+>gts_vertex_gaussian_curvature ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_vertex_gaussian_curvature   (<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *Kg);</PRE
+><P
+>Computes the Discrete Gaussian Curvature approximation at <CODE
+CLASS="PARAMETER"
+>v</CODE
+>.</P
+><P
+>This approximation is from the paper:
+Discrete Differential-Geometry Operators for Triangulated 2-Manifolds
+Mark Meyer, Mathieu Desbrun, Peter Schroder, Alan H. Barr
+VisMath '02, Berlin (Germany) 
+http://www-grail.usc.edu/pubs.html</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15090"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.  </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15097"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15104"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>Kg</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the Discrete Gaussian Curvature approximation at <CODE
+CLASS="PARAMETER"
+>v</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15110"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if the operator could be evaluated, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> if the
+evaluation failed for some reason (<CODE
+CLASS="PARAMETER"
+>v</CODE
+> is boundary or is the
+endpoint of a non-manifold edge.)</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15118"
+></A
+><H3
+><A
+NAME="GTS-VERTEX-MEAN-CURVATURE-NORMAL"
+></A
+>gts_vertex_mean_curvature_normal ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_vertex_mean_curvature_normal
+                                            (<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> Kh);</PRE
+><P
+>Computes the Discrete Mean Curvature Normal approximation at <CODE
+CLASS="PARAMETER"
+>v</CODE
+>.
+The mean curvature at <CODE
+CLASS="PARAMETER"
+>v</CODE
+> is half the magnitude of the vector <CODE
+CLASS="PARAMETER"
+>Kh</CODE
+>.</P
+><P
+>Note: the normal computed is not unit length, and may point either
+into or out of the surface, depending on the curvature at <CODE
+CLASS="PARAMETER"
+>v</CODE
+>.  It
+is the responsibility of the caller of the function to use the mean
+curvature normal appropriately.</P
+><P
+>This approximation is from the paper:
+Discrete Differential-Geometry Operators for Triangulated 2-Manifolds
+Mark Meyer, Mathieu Desbrun, Peter Schroder, Alan H. Barr
+VisMath '02, Berlin (Germany) 
+http://www-grail.usc.edu/pubs.html</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15137"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.  </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15144"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15151"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>Kh</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the Mean Curvature Normal at <CODE
+CLASS="PARAMETER"
+>v</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15157"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if the operator could be evaluated, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> if the
+evaluation failed for some reason (<CODE
+CLASS="PARAMETER"
+>v</CODE
+> is boundary or is the
+endpoint of a non-manifold edge.)</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15165"
+></A
+><H3
+><A
+NAME="GTS-VERTEX-PRINCIPAL-CURVATURES"
+></A
+>gts_vertex_principal_curvatures ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_vertex_principal_curvatures (<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> Kh,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> Kg,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *K1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *K2);</PRE
+><P
+>Computes the principal curvatures at a point given the mean and
+Gaussian curvatures at that point.  </P
+><P
+>The mean curvature can be computed as one-half the magnitude of the
+vector computed by <A
+HREF="gts-differential-geometry-operators.html#GTS-VERTEX-MEAN-CURVATURE-NORMAL"
+><CODE
+CLASS="FUNCTION"
+>gts_vertex_mean_curvature_normal()</CODE
+></A
+>.</P
+><P
+>The Gaussian curvature can be computed with
+<A
+HREF="gts-differential-geometry-operators.html#GTS-VERTEX-GAUSSIAN-CURVATURE"
+><CODE
+CLASS="FUNCTION"
+>gts_vertex_gaussian_curvature()</CODE
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15185"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>Kh</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> mean curvature.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15190"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>Kg</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> Gaussian curvature.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15195"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>K1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> first principal curvature.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15200"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>K2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> second principal curvature.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15205"
+></A
+><H3
+><A
+NAME="GTS-VERTEX-PRINCIPAL-DIRECTIONS"
+></A
+>gts_vertex_principal_directions ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_vertex_principal_directions (<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> Kh,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> Kg,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> e1,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> e2);</PRE
+><P
+>Computes the principal curvature directions at a point given <CODE
+CLASS="PARAMETER"
+>Kh</CODE
+>
+and <CODE
+CLASS="PARAMETER"
+>Kg</CODE
+>, the mean curvature normal and Gaussian curvatures at that
+point, computed with <A
+HREF="gts-differential-geometry-operators.html#GTS-VERTEX-MEAN-CURVATURE-NORMAL"
+><CODE
+CLASS="FUNCTION"
+>gts_vertex_mean_curvature_normal()</CODE
+></A
+> and
+<A
+HREF="gts-differential-geometry-operators.html#GTS-VERTEX-GAUSSIAN-CURVATURE"
+><CODE
+CLASS="FUNCTION"
+>gts_vertex_gaussian_curvature()</CODE
+></A
+>, respectively. </P
+><P
+>Note that this computation is very approximate and tends to be
+unstable.  Smoothing of the surface or the principal directions may
+be necessary to achieve reasonable results.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15228"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.  </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15235"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15242"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>Kh</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> mean curvature normal (a <GTKDOCLINK
+HREF="GTSVECTOR"
+><SPAN
+CLASS="TYPE"
+>GtsVector</SPAN
+></GTKDOCLINK
+>).</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15249"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>Kg</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> Gaussian curvature (a gdouble).</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15254"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> first principal curvature direction (direction of largest curvature).</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15259"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> second principal curvature direction.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><TABLE
+CLASS="navigation"
+WIDTH="100%"
+SUMMARY="Navigation footer"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+ALIGN="left"
+><A
+ACCESSKEY="p"
+HREF="gts-delaunay-and-constrained-delaunay-triangulations.html"
+><B
+>&lt;&lt;&lt;&nbsp;Delaunay and constrained Delaunay triangulations</B
+></A
+></TD
+><TD
+ALIGN="right"
+><A
+ACCESSKEY="n"
+HREF="c15264.html"
+><B
+>Progressive and Hierarchical surfaces&nbsp;&gt;&gt;&gt;</B
+></A
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

@@ -1,0 +1,5621 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Bounding boxes trees</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="GTS Library Reference Manual"
+HREF="book1.html"><LINK
+REL="UP"
+TITLE="Geometrical data structures"
+HREF="c10545.html"><LINK
+REL="PREVIOUS"
+TITLE="Kd-Trees"
+HREF="gts-kd-trees.html"><LINK
+REL="NEXT"
+TITLE="Surface operations"
+HREF="c12206.html"><STYLE
+TYPE="text/css"
+>.synopsis, .classsynopsis {
+    background: #eeeeee;
+    border: solid 1px #aaaaaa;
+    padding: 0.5em;
+}
+.programlisting {
+    background: #eeeeff;
+    border: solid 1px #aaaaff;
+    padding: 0.5em;
+}
+.variablelist {
+    padding: 4px;
+    margin-left: 3em;
+}
+.navigation {
+    background: #ffeeee;
+    border: solid 1px #ffaaaa;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+.navigation a {
+    color: #770000;
+}
+.navigation a:visited {
+    color: #550000;
+}
+.navigation .title {
+    font-size: 200%;
+}</STYLE
+></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><TABLE
+WIDTH="100%"
+CLASS="navigation"
+SUMMARY="Navigation header"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+><A
+ACCESSKEY="p"
+HREF="gts-kd-trees.html"
+><IMG
+SRC="left.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Prev"></A
+></TD
+><TD
+><A
+ACCESSKEY="u"
+HREF="c10545.html"
+><IMG
+SRC="up.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Up"></A
+></TD
+><TD
+><A
+ACCESSKEY="h"
+HREF="book1.html"
+><IMG
+SRC="home.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Home"></A
+></TD
+><TH
+WIDTH="100%"
+align="center"
+>GTS Library Reference Manual</TH
+><TD
+><A
+ACCESSKEY="n"
+HREF="c12206.html"
+><IMG
+SRC="right.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Next"></A
+></TD
+></TR
+></TABLE
+><H1
+><A
+NAME="GTS-BOUNDING-BOXES-TREES"
+></A
+>Bounding boxes trees</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN10663"
+></A
+><H2
+>Name</H2
+>Bounding boxes trees&nbsp;--&nbsp;implementation of axis-aligned bounding-box trees.</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN10666"
+></A
+><H2
+>Synopsis</H2
+><PRE
+CLASS="SYNOPSIS"
+>&#13;#include &lt;gts.h&gt;
+
+
+#define     <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-CLASS:CAPS"
+>GTS_BBOX_CLASS</A
+>                  (klass)
+#define     <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX:CAPS"
+>GTS_BBOX</A
+>                        (obj)
+#define     <A
+HREF="gts-bounding-boxes-trees.html#GTS-IS-BBOX:CAPS"
+>GTS_IS_BBOX</A
+>                     (obj)
+            <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+>;
+            <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>;
+
+<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+>* <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-CLASS"
+>gts_bbox_class</A
+>                (void);
+<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-NEW"
+>gts_bbox_new</A
+>                    (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> bounded,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> x1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> y1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> z1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> x2,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> y2,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> z2);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-SET"
+>gts_bbox_set</A
+>                    (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bbox,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> bounded,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> x1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> y1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> z1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> x2,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> y2,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> z2);
+<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-SEGMENT"
+>gts_bbox_segment</A
+>                (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <A
+HREF="gts-segments.html#GTSSEGMENT"
+>GtsSegment</A
+> *s);
+<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-TRIANGLE"
+>gts_bbox_triangle</A
+>               (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);
+<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-SURFACE"
+>gts_bbox_surface</A
+>                (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface);
+<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-POINTS"
+>gts_bbox_points</A
+>                 (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *points);
+<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-BBOXES"
+>gts_bbox_bboxes</A
+>                 (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *bboxes);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-DRAW"
+>gts_bbox_draw</A
+>                   (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);
+#define     <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-POINT-IS-INSIDE"
+>gts_bbox_point_is_inside</A
+>        (bbox, p)
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOXES-ARE-OVERLAPPING"
+>gts_bboxes_are_overlapping</A
+>      (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb1,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb2);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-DIAGONAL2"
+>gts_bbox_diagonal2</A
+>              (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-POINT-DISTANCE2"
+>gts_bbox_point_distance2</A
+>        (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *min,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *max);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-IS-STABBED"
+>gts_bbox_is_stabbed</A
+>             (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-OVERLAPS-TRIANGLE"
+>gts_bbox_overlaps_triangle</A
+>      (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);
+
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBTREETRAVERSEFUNC"
+>*GtsBBTreeTraverseFunc</A
+>)        (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb1,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb2,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+>*      <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-NEW"
+>gts_bb_tree_new</A
+>                 (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *bboxes);
+<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+>*      <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-SURFACE"
+>gts_bb_tree_surface</A
+>             (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-OVERLAP"
+>gts_bb_tree_overlap</A
+>             (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bbox);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-IS-OVERLAPPING"
+>gts_bb_tree_is_overlapping</A
+>      (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bbox);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-TRAVERSE-OVERLAPPING"
+>gts_bb_tree_traverse_overlapping</A
+>
+                                            (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree1,
+                                             <GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree2,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBTREETRAVERSEFUNC"
+>GtsBBTreeTraverseFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-DRAW"
+>gts_bb_tree_draw</A
+>                (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> depth,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-DESTROY"
+>gts_bb_tree_destroy</A
+>             (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+> free_leaves);
+
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+>*GtsBBoxDistFunc</A
+>)              (<A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> bounded);
+<A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+>*   (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLOSESTFUNC"
+>*GtsBBoxClosestFunc</A
+>)           (<A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> bounded);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-POINT-DISTANCE"
+>gts_bb_tree_point_distance</A
+>      (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+>GtsBBoxDistFunc</A
+> distance,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> **bbox);
+<A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+>*   <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-POINT-CLOSEST"
+>gts_bb_tree_point_closest</A
+>       (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLOSESTFUNC"
+>GtsBBoxClosestFunc</A
+> closest,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *distance);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-SEGMENT-DISTANCE"
+>gts_bb_tree_segment_distance</A
+>    (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-segments.html#GTSSEGMENT"
+>GtsSegment</A
+> *s,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+>GtsBBoxDistFunc</A
+> distance,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> delta,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *range);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-TRIANGLE-DISTANCE"
+>gts_bb_tree_triangle_distance</A
+>   (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+>GtsBBoxDistFunc</A
+> distance,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> delta,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *range);
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-POINT-CLOSEST-BBOXES"
+>gts_bb_tree_point_closest_bboxes</A
+>
+                                            (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-SURFACE-BOUNDARY-DISTANCE"
+>gts_bb_tree_surface_boundary_distance</A
+>
+                                            (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+>GtsBBoxDistFunc</A
+> distance,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> delta,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *range);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-SURFACE-DISTANCE"
+>gts_bb_tree_surface_distance</A
+>    (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+>GtsBBoxDistFunc</A
+> distance,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> delta,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *range);
+
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-STABBED"
+>gts_bb_tree_stabbed</A
+>             (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p);</PRE
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN10832"
+></A
+><H2
+>Description</H2
+><P
+>Axis-aligned bounding box trees can be used for intersection/collision detection using <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-TRAVERSE-OVERLAPPING"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_traverse_overlapping()</CODE
+></A
+>, or to compute the minimum distance between an object and a collection of others using <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-POINT-DISTANCE"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_point_distance()</CODE
+></A
+>, <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-SEGMENT-DISTANCE"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_segment_distance()</CODE
+></A
+>, <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-TRIANGLE-DISTANCE"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_triangle_distance()</CODE
+></A
+> or <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-SURFACE-DISTANCE"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_surface_distance()</CODE
+></A
+>.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN10845"
+></A
+><H2
+>Details</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10847"
+></A
+><H3
+><A
+NAME="GTS-BBOX-CLASS:CAPS"
+></A
+>GTS_BBOX_CLASS()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_BBOX_CLASS(klass)</PRE
+><P
+>Casts <CODE
+CLASS="PARAMETER"
+>klass</CODE
+> to <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxClass</SPAN
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10859"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a descendant of <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxClass</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10866"
+></A
+><H3
+><A
+NAME="GTS-BBOX:CAPS"
+></A
+>GTS_BBOX()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_BBOX(obj)</PRE
+><P
+>Casts <CODE
+CLASS="PARAMETER"
+>obj</CODE
+> to <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10878"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-object-class.html#GTSOBJECT"
+><SPAN
+CLASS="TYPE"
+>GtsObject</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10885"
+></A
+><H3
+><A
+NAME="GTS-IS-BBOX:CAPS"
+></A
+>GTS_IS_BBOX()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_IS_BBOX(obj)</PRE
+><P
+>Evaluates to <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>obj</CODE
+> is a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10899"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-object-class.html#GTSOBJECT"
+><SPAN
+CLASS="TYPE"
+>GtsObject</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10906"
+></A
+><H3
+><A
+NAME="GTSBBOXCLASS"
+></A
+>GtsBBoxClass</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsObjectClass parent_class;
+} GtsBBoxClass;</PRE
+><P
+>The bounding box class derived from <A
+HREF="gts-object-class.html#GTSOBJECTCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsObjectClass</SPAN
+></A
+>.</P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10915"
+></A
+><H3
+><A
+NAME="GTSBBOX"
+></A
+>GtsBBox</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsObject object;
+  gpointer bounded;
+  gdouble x1, y1, z1;
+  gdouble x2, y2, z2;
+} GtsBBox;</PRE
+><P
+>The bounding box structure.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10923"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>object</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Parent object.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10929"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>bounded</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Bounded object.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10935"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>x1</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>x coordinate of the lower-left front corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10941"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>y1</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>y coordinate of the lower-left front corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10947"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>z1</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>z coordinate of the lower-left front corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10953"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>x2</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>x coordinate of the upper-right back corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10959"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>y2</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>y coordinate of the upper-right back corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10965"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>z2</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>z coordinate of the upper-right back corner.&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10971"
+></A
+><H3
+><A
+NAME="GTS-BBOX-CLASS"
+></A
+>gts_bbox_class ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+>* gts_bbox_class                (void);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10981"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxClass</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10988"
+></A
+><H3
+><A
+NAME="GTS-BBOX-NEW"
+></A
+>gts_bbox_new ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    gts_bbox_new                    (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> bounded,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> x1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> y1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> z1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> x2,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> y2,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> z2);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11006"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11013"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bounded</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the object to be bounded.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11018"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>x1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> x-coordinate of the lower left corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11023"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>y1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> y-coordinate of the lower left corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11028"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>z1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> z-coordinate of the lower left corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11033"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>x2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> x-coordinate of the upper right corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11038"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>y2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> y-coordinate of the upper right corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11043"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>z2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> z-coordinate of the upper right corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11048"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11055"
+></A
+><H3
+><A
+NAME="GTS-BBOX-SET"
+></A
+>gts_bbox_set ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_bbox_set                    (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bbox,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> bounded,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> x1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> y1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> z1,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> x2,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> y2,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> z2);</PRE
+><P
+>Sets fields of <CODE
+CLASS="PARAMETER"
+>bbox</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11074"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bbox</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11081"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bounded</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the object to be bounded.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11086"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>x1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> x-coordinate of the lower left corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11091"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>y1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> y-coordinate of the lower left corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11096"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>z1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> z-coordinate of the lower left corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11101"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>x2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> x-coordinate of the upper right corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11106"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>y2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> y-coordinate of the upper right corner.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11111"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>z2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> z-coordinate of the upper right corner.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11116"
+></A
+><H3
+><A
+NAME="GTS-BBOX-SEGMENT"
+></A
+>gts_bbox_segment ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    gts_bbox_segment                (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <A
+HREF="gts-segments.html#GTSSEGMENT"
+>GtsSegment</A
+> *s);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11128"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11135"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-segments.html#GTSSEGMENT"
+><SPAN
+CLASS="TYPE"
+>GtsSegment</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11142"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+> bounding box of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11150"
+></A
+><H3
+><A
+NAME="GTS-BBOX-TRIANGLE"
+></A
+>gts_bbox_triangle ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    gts_bbox_triangle               (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11162"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11169"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11176"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+> bounding box of <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11184"
+></A
+><H3
+><A
+NAME="GTS-BBOX-SURFACE"
+></A
+>gts_bbox_surface ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    gts_bbox_surface                (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11196"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11203"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11210"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+> bounding box of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11218"
+></A
+><H3
+><A
+NAME="GTS-BBOX-POINTS"
+></A
+>gts_bbox_points ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    gts_bbox_points                 (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *points);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11230"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11237"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>points</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11244"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+> bounding box of <CODE
+CLASS="PARAMETER"
+>points</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11252"
+></A
+><H3
+><A
+NAME="GTS-BBOX-BBOXES"
+></A
+>gts_bbox_bboxes ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+>*    gts_bbox_bboxes                 (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+>GtsBBoxClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *bboxes);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11264"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11271"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bboxes</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11278"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+> bounding box of all the bounding boxes in
+<CODE
+CLASS="PARAMETER"
+>bboxes</CODE
+>.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11286"
+></A
+><H3
+><A
+NAME="GTS-BBOX-DRAW"
+></A
+>gts_bbox_draw ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_bbox_draw                   (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);</PRE
+><P
+>Writes in file <CODE
+CLASS="PARAMETER"
+>fptr</CODE
+> an OOGL (Geomview) description of <CODE
+CLASS="PARAMETER"
+>bb</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11300"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bb</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11307"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>fptr</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a file pointer.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11312"
+></A
+><H3
+><A
+NAME="GTS-BBOX-POINT-IS-INSIDE"
+></A
+>gts_bbox_point_is_inside()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     gts_bbox_point_is_inside(bbox, p)</PRE
+><P
+>Evaluates to <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>p</CODE
+> is inside (or on the boundary) of <CODE
+CLASS="PARAMETER"
+>bbox</CODE
+>, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11325"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bbox</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11332"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11339"
+></A
+><H3
+><A
+NAME="GTS-BBOXES-ARE-OVERLAPPING"
+></A
+>gts_bboxes_are_overlapping ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_bboxes_are_overlapping      (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb1,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb2);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11351"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bb1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11358"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bb2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11365"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if the bounding boxes <CODE
+CLASS="PARAMETER"
+>bb1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>bb2</CODE
+> are overlapping
+(including just touching), <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11374"
+></A
+><H3
+><A
+NAME="GTS-BBOX-DIAGONAL2"
+></A
+>gts_bbox_diagonal2 ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_bbox_diagonal2              (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11385"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bb</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11392"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the squared length of the diagonal of <CODE
+CLASS="PARAMETER"
+>bb</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11398"
+></A
+><H3
+><A
+NAME="GTS-BBOX-POINT-DISTANCE2"
+></A
+>gts_bbox_point_distance2 ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_bbox_point_distance2        (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *min,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *max);</PRE
+><P
+>Sets <CODE
+CLASS="PARAMETER"
+>min</CODE
+> and <CODE
+CLASS="PARAMETER"
+>max</CODE
+> to lower and upper bounds for the square of the
+Euclidean distance between the object contained in <CODE
+CLASS="PARAMETER"
+>bb</CODE
+> and <CODE
+CLASS="PARAMETER"
+>p</CODE
+>. For these
+bounds to make any sense the bounding box must be "tight" i.e. each of the
+6 faces of the box must at least be touched by one point of the bounded
+object.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11416"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bb</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11423"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11430"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>min</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a pointer on a gdouble.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11435"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>max</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a pointer on a gdouble.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11440"
+></A
+><H3
+><A
+NAME="GTS-BBOX-IS-STABBED"
+></A
+>gts_bbox_is_stabbed ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_bbox_is_stabbed             (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11452"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bb</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11459"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11466"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if the ray starting at <CODE
+CLASS="PARAMETER"
+>p</CODE
+> and ending at (+infty,
+<CODE
+CLASS="PARAMETER"
+>p</CODE
+>-&gt;y, <CODE
+CLASS="PARAMETER"
+>p</CODE
+>-&gt;z) intersects with <CODE
+CLASS="PARAMETER"
+>bb</CODE
+>, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11477"
+></A
+><H3
+><A
+NAME="GTS-BBOX-OVERLAPS-TRIANGLE"
+></A
+>gts_bbox_overlaps_triangle ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_bbox_overlaps_triangle      (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);</PRE
+><P
+>This is a wrapper around the fast overlap test of Tomas
+Akenine-Moller (http://www.cs.lth.se/home/Tomas_Akenine_Moller/).</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11489"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bb</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11496"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11503"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>bb</CODE
+> overlaps with <CODE
+CLASS="PARAMETER"
+>t</CODE
+>, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11512"
+></A
+><H3
+><A
+NAME="GTSBBTREETRAVERSEFUNC"
+></A
+>GtsBBTreeTraverseFunc ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        (*GtsBBTreeTraverseFunc)        (<A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb1,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bb2,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>User function called for each pair of overlapping bounding
+boxes. See <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-TRAVERSE-OVERLAPPING"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_traverse_overlapping()</CODE
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11527"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bb1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11534"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bb2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> another <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11541"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data passed to the function.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11546"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-NEW"
+></A
+>gts_bb_tree_new ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+>*      gts_bb_tree_new                 (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *bboxes);</PRE
+><P
+>Builds a new hierarchy of bounding boxes for <CODE
+CLASS="PARAMETER"
+>bboxes</CODE
+>. At each
+level, the GNode-&gt;data field contains a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+> bounding box of
+all the children. The tree is binary and is built by repeatedly
+cutting in two approximately equal halves the bounding boxes at
+each level until a leaf node (i.e. a bounding box given in <CODE
+CLASS="PARAMETER"
+>bboxes</CODE
+>)
+is reached. In order to minimize the depth of the tree, the cutting
+direction is always chosen as perpendicular to the longest
+dimension of the bounding box.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11561"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bboxes</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11568"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new hierarchy of bounding boxes.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11573"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-SURFACE"
+></A
+>gts_bb_tree_surface ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+>*      gts_bb_tree_surface             (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11584"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11591"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new hierarchy of bounding boxes bounding the faces of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11597"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-OVERLAP"
+></A
+>gts_bb_tree_overlap ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_bb_tree_overlap             (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bbox);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11609"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11614"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bbox</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11621"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of bounding boxes, leaves of <CODE
+CLASS="PARAMETER"
+>tree</CODE
+> which overlap <CODE
+CLASS="PARAMETER"
+>bbox</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11628"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-IS-OVERLAPPING"
+></A
+>gts_bb_tree_is_overlapping ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_bb_tree_is_overlapping      (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bbox);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11640"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11645"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bbox</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11652"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if any leaf of <CODE
+CLASS="PARAMETER"
+>tree</CODE
+> overlaps <CODE
+CLASS="PARAMETER"
+>bbox</CODE
+>, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11661"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-TRAVERSE-OVERLAPPING"
+></A
+>gts_bb_tree_traverse_overlapping ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_bb_tree_traverse_overlapping
+                                            (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree1,
+                                             <GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree2,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBTREETRAVERSEFUNC"
+>GtsBBTreeTraverseFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>Calls <CODE
+CLASS="PARAMETER"
+>func</CODE
+> for each overlapping pair of leaves of <CODE
+CLASS="PARAMETER"
+>tree1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>tree2</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11678"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11683"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11688"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBTREETRAVERSEFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsBBTreeTraverseFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11695"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>func</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11701"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-DRAW"
+></A
+>gts_bb_tree_draw ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_bb_tree_draw                (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> depth,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);</PRE
+><P
+>Write in <CODE
+CLASS="PARAMETER"
+>fptr</CODE
+> an OOGL (Geomview) description of <CODE
+CLASS="PARAMETER"
+>tree</CODE
+> for the
+depth specified by <CODE
+CLASS="PARAMETER"
+>depth</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11717"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11722"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>depth</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a specified depth.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11727"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>fptr</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a file pointer.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11732"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-DESTROY"
+></A
+>gts_bb_tree_destroy ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_bb_tree_destroy             (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+> free_leaves);</PRE
+><P
+>Destroys all the bounding boxes created by <CODE
+CLASS="PARAMETER"
+>tree</CODE
+> and destroys the
+tree itself. If <CODE
+CLASS="PARAMETER"
+>free_leaves</CODE
+> is set to <TT
+CLASS="LITERAL"
+>TRUE</TT
+>, destroys boxes given
+by the user when creating the tree (i.e. leaves of the tree).</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11747"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11752"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>free_leaves</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> if <TT
+CLASS="LITERAL"
+>TRUE</TT
+> the bounding boxes given by the user are freed.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11758"
+></A
+><H3
+><A
+NAME="GTSBBOXDISTFUNC"
+></A
+>GtsBBoxDistFunc ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     (*GtsBBoxDistFunc)              (<A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> bounded);</PRE
+><P
+>User function returning the (minimum) distance between the object
+defined by <CODE
+CLASS="PARAMETER"
+>bounded</CODE
+> and point <CODE
+CLASS="PARAMETER"
+>p</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11772"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11779"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bounded</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> an object bounded by a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11786"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the distance between <CODE
+CLASS="PARAMETER"
+>p</CODE
+> and <CODE
+CLASS="PARAMETER"
+>bounded</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11793"
+></A
+><H3
+><A
+NAME="GTSBBOXCLOSESTFUNC"
+></A
+>GtsBBoxClosestFunc ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+>*   (*GtsBBoxClosestFunc)           (<A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> bounded);</PRE
+><P
+>User function returning a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+> belonging to the object defined
+by <CODE
+CLASS="PARAMETER"
+>bounded</CODE
+> and closest to <CODE
+CLASS="PARAMETER"
+>p</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11809"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11816"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bounded</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> an object bounded by a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11823"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11830"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-POINT-DISTANCE"
+></A
+>gts_bb_tree_point_distance ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_bb_tree_point_distance      (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+>GtsBBoxDistFunc</A
+> distance,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> **bbox);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11844"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11849"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11856"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>distance</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxDistFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11863"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bbox</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> if not <TT
+CLASS="LITERAL"
+>NULL</TT
+> is set to the bounding box containing the closest 
+object.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11869"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the distance as evaluated by <CODE
+CLASS="PARAMETER"
+>distance</CODE
+> between <CODE
+CLASS="PARAMETER"
+>p</CODE
+> and the closest
+object in <CODE
+CLASS="PARAMETER"
+>tree</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11877"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-POINT-CLOSEST"
+></A
+>gts_bb_tree_point_closest ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+>*   gts_bb_tree_point_closest       (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLOSESTFUNC"
+>GtsBBoxClosestFunc</A
+> closest,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *distance);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11891"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11896"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11903"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>closest</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXCLOSESTFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxClosestFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11910"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>distance</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> if not <TT
+CLASS="LITERAL"
+>NULL</TT
+> is set to the distance between <CODE
+CLASS="PARAMETER"
+>p</CODE
+> and the 
+new <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11919"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>, closest point to <CODE
+CLASS="PARAMETER"
+>p</CODE
+> and belonging to an object of
+<CODE
+CLASS="PARAMETER"
+>tree</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11928"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-SEGMENT-DISTANCE"
+></A
+>gts_bb_tree_segment_distance ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_bb_tree_segment_distance    (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-segments.html#GTSSEGMENT"
+>GtsSegment</A
+> *s,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+>GtsBBoxDistFunc</A
+> distance,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> delta,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *range);</PRE
+><P
+>Given a segment <CODE
+CLASS="PARAMETER"
+>s</CODE
+>, points are sampled regularly on its length
+using <CODE
+CLASS="PARAMETER"
+>delta</CODE
+> as increment. The distance from each of these points
+to the closest object of <CODE
+CLASS="PARAMETER"
+>tree</CODE
+> is computed using <CODE
+CLASS="PARAMETER"
+>distance</CODE
+> and the
+<A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-POINT-DISTANCE"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_point_distance()</CODE
+></A
+> function. The fields of <CODE
+CLASS="PARAMETER"
+>range</CODE
+> are
+filled with the number of points sampled, the minimum, average and
+maximum value and the standard deviation.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11950"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11955"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-segments.html#GTSSEGMENT"
+><SPAN
+CLASS="TYPE"
+>GtsSegment</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11962"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>distance</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxDistFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11969"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>delta</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> spatial scale of the sampling to be used.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN11974"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>range</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+> to be filled with the results.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN11981"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-TRIANGLE-DISTANCE"
+></A
+>gts_bb_tree_triangle_distance ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_bb_tree_triangle_distance   (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+>GtsBBoxDistFunc</A
+> distance,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> delta,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *range);</PRE
+><P
+>Given a triangle <CODE
+CLASS="PARAMETER"
+>t</CODE
+>, points are sampled regularly on its surface
+using <CODE
+CLASS="PARAMETER"
+>delta</CODE
+> as increment. The distance from each of these points
+to the closest object of <CODE
+CLASS="PARAMETER"
+>tree</CODE
+> is computed using <CODE
+CLASS="PARAMETER"
+>distance</CODE
+> and the
+<A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-POINT-DISTANCE"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_point_distance()</CODE
+></A
+> function. The fields of <CODE
+CLASS="PARAMETER"
+>range</CODE
+> are
+filled with the number of points sampled, the minimum, average and
+maximum value and the standard deviation.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12003"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12008"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12015"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>distance</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxDistFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12022"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>delta</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> spatial scale of the sampling to be used.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12027"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>range</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+> to be filled with the results.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN12034"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-POINT-CLOSEST-BBOXES"
+></A
+>gts_bb_tree_point_closest_bboxes ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_bb_tree_point_closest_bboxes
+                                            (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12046"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12051"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12058"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>. One of the bounding boxes is assured to contain
+the object of <CODE
+CLASS="PARAMETER"
+>tree</CODE
+> closest to <CODE
+CLASS="PARAMETER"
+>p</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN12067"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-SURFACE-BOUNDARY-DISTANCE"
+></A
+>gts_bb_tree_surface_boundary_distance ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_bb_tree_surface_boundary_distance
+                                            (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+>GtsBBoxDistFunc</A
+> distance,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> delta,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *range);</PRE
+><P
+>Calls <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-SEGMENT-DISTANCE"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_segment_distance()</CODE
+></A
+> for each edge boundary of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.
+The fields of <CODE
+CLASS="PARAMETER"
+>range</CODE
+> are filled with the minimum, maximum and
+average distance. The average distance is defined as the sum of the
+average distances for each boundary edge weighthed by their length
+and divided by the total length of the boundaries. The standard
+deviation is defined accordingly. The <CODE
+CLASS="PARAMETER"
+>n</CODE
+> field of <CODE
+CLASS="PARAMETER"
+>range</CODE
+> is filled
+with the number of sampled points used.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12088"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12093"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12100"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>distance</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxDistFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12107"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>delta</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a sampling increment defined as the percentage of the diagonal
+of the root bounding box of <CODE
+CLASS="PARAMETER"
+>tree</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12113"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>range</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+> to be filled with the results.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN12120"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-SURFACE-DISTANCE"
+></A
+>gts_bb_tree_surface_distance ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_bb_tree_surface_distance    (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+>GtsBBoxDistFunc</A
+> distance,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> delta,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *range);</PRE
+><P
+>Calls <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-TRIANGLE-DISTANCE"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_triangle_distance()</CODE
+></A
+> for each face of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>. The
+fields of <CODE
+CLASS="PARAMETER"
+>range</CODE
+> are filled with the minimum, maximum and average
+distance. The average distance is defined as the sum of the average
+distances for each triangle weighthed by their area and divided by
+the total area of the surface. The standard deviation is defined
+accordingly. The <CODE
+CLASS="PARAMETER"
+>n</CODE
+> field of <CODE
+CLASS="PARAMETER"
+>range</CODE
+> is filled with the number of
+sampled points used.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12141"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12146"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12153"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>distance</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOXDISTFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsBBoxDistFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12160"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>delta</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a sampling increment defined as the percentage of the diagonal
+of the root bounding box of <CODE
+CLASS="PARAMETER"
+>tree</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12166"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>range</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+> to be filled with the results.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN12173"
+></A
+><H3
+><A
+NAME="GTS-BB-TREE-STABBED"
+></A
+>gts_bb_tree_stabbed ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_bb_tree_stabbed             (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12185"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a bounding box tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12190"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12197"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of bounding boxes, leaves of <CODE
+CLASS="PARAMETER"
+>tree</CODE
+> which are
+stabbed by the ray defined by <CODE
+CLASS="PARAMETER"
+>p</CODE
+> (see <A
+HREF="gts-bounding-boxes-trees.html#GTS-BBOX-IS-STABBED"
+><CODE
+CLASS="FUNCTION"
+>gts_bbox_is_stabbed()</CODE
+></A
+>).</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><TABLE
+CLASS="navigation"
+WIDTH="100%"
+SUMMARY="Navigation footer"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+ALIGN="left"
+><A
+ACCESSKEY="p"
+HREF="gts-kd-trees.html"
+><B
+>&lt;&lt;&lt;&nbsp;Kd-Trees</B
+></A
+></TD
+><TD
+ALIGN="right"
+><A
+ACCESSKEY="n"
+HREF="c12206.html"
+><B
+>Surface operations&nbsp;&gt;&gt;&gt;</B
+></A
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

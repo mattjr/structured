@@ -1,0 +1,5639 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Surfaces</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="GTS Library Reference Manual"
+HREF="book1.html"><LINK
+REL="UP"
+TITLE="Geometrical Object Hierarchy"
+HREF="c2915.html"><LINK
+REL="PREVIOUS"
+TITLE="Faces"
+HREF="gts-faces.html"><LINK
+REL="NEXT"
+TITLE="Geometrical data structures"
+HREF="c10545.html"><STYLE
+TYPE="text/css"
+>.synopsis, .classsynopsis {
+    background: #eeeeee;
+    border: solid 1px #aaaaaa;
+    padding: 0.5em;
+}
+.programlisting {
+    background: #eeeeff;
+    border: solid 1px #aaaaff;
+    padding: 0.5em;
+}
+.variablelist {
+    padding: 4px;
+    margin-left: 3em;
+}
+.navigation {
+    background: #ffeeee;
+    border: solid 1px #ffaaaa;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+.navigation a {
+    color: #770000;
+}
+.navigation a:visited {
+    color: #550000;
+}
+.navigation .title {
+    font-size: 200%;
+}</STYLE
+></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><TABLE
+WIDTH="100%"
+CLASS="navigation"
+SUMMARY="Navigation header"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+><A
+ACCESSKEY="p"
+HREF="gts-faces.html"
+><IMG
+SRC="left.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Prev"></A
+></TD
+><TD
+><A
+ACCESSKEY="u"
+HREF="c2915.html"
+><IMG
+SRC="up.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Up"></A
+></TD
+><TD
+><A
+ACCESSKEY="h"
+HREF="book1.html"
+><IMG
+SRC="home.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Home"></A
+></TD
+><TH
+WIDTH="100%"
+align="center"
+>GTS Library Reference Manual</TH
+><TD
+><A
+ACCESSKEY="n"
+HREF="c10545.html"
+><IMG
+SRC="right.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Next"></A
+></TD
+></TR
+></TABLE
+><H1
+><A
+NAME="GTS-SURFACES"
+></A
+>Surfaces</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN8974"
+></A
+><H2
+>Name</H2
+>Surfaces&nbsp;--&nbsp;surface object and related functions.</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8977"
+></A
+><H2
+>Synopsis</H2
+><PRE
+CLASS="SYNOPSIS"
+>&#13;#include &lt;gts.h&gt;
+
+
+#define     <A
+HREF="gts-surfaces.html#GTS-SURFACE-CLASS:CAPS"
+>GTS_SURFACE_CLASS</A
+>               (klass)
+#define     <A
+HREF="gts-surfaces.html#GTS-SURFACE:CAPS"
+>GTS_SURFACE</A
+>                     (obj)
+#define     <A
+HREF="gts-surfaces.html#GTS-IS-SURFACE:CAPS"
+>GTS_IS_SURFACE</A
+>                  (obj)
+            <A
+HREF="gts-surfaces.html#GTSSURFACECLASS"
+>GtsSurfaceClass</A
+>;
+            <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+>;
+
+<A
+HREF="gts-surfaces.html#GTSSURFACECLASS"
+>GtsSurfaceClass</A
+>* <A
+HREF="gts-surfaces.html#GTS-SURFACE-CLASS"
+>gts_surface_class</A
+>          (void);
+<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+>* <A
+HREF="gts-surfaces.html#GTS-SURFACE-NEW"
+>gts_surface_new</A
+>                 (<A
+HREF="gts-surfaces.html#GTSSURFACECLASS"
+>GtsSurfaceClass</A
+> *klass,
+                                             <A
+HREF="gts-faces.html#GTSFACECLASS"
+>GtsFaceClass</A
+> *face_class,
+                                             <A
+HREF="gts-edges.html#GTSEDGECLASS"
+>GtsEdgeClass</A
+> *edge_class,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEXCLASS"
+>GtsVertexClass</A
+> *vertex_class);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-ADD-FACE"
+>gts_surface_add_face</A
+>            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *f);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-REMOVE-FACE"
+>gts_surface_remove_face</A
+>         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *f);
+<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+>* <A
+HREF="gts-surfaces.html#GTS-SURFACE-COPY"
+>gts_surface_copy</A
+>                (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s1,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s2);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-MERGE"
+>gts_surface_merge</A
+>               (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *with);
+<GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       <A
+HREF="gts-surfaces.html#GTS-SURFACE-READ"
+>gts_surface_read</A
+>                (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-miscellaneous-macros-and-functions.html#GTSFILE"
+>GtsFile</A
+> *f);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-surfaces.html#GTS-SURFACE-IS-MANIFOLD"
+>gts_surface_is_manifold</A
+>         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-surfaces.html#GTS-SURFACE-IS-ORIENTABLE"
+>gts_surface_is_orientable</A
+>       (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-surfaces.html#GTS-SURFACE-IS-CLOSED"
+>gts_surface_is_closed</A
+>           (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);
+<GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       <A
+HREF="gts-surfaces.html#GTS-SURFACE-VERTEX-NUMBER"
+>gts_surface_vertex_number</A
+>       (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);
+<GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       <A
+HREF="gts-surfaces.html#GTS-SURFACE-EDGE-NUMBER"
+>gts_surface_edge_number</A
+>         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);
+<GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       <A
+HREF="gts-surfaces.html#GTS-SURFACE-FACE-NUMBER"
+>gts_surface_face_number</A
+>         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-surfaces.html#GTS-SURFACE-BOUNDARY"
+>gts_surface_boundary</A
+>            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-surfaces.html#GTS-SURFACE-AREA"
+>gts_surface_area</A
+>                (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-surfaces.html#GTS-SURFACE-VOLUME"
+>gts_surface_volume</A
+>              (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-surfaces.html#GTS-SURFACE-CENTER-OF-MASS"
+>gts_surface_center_of_mass</A
+>      (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> cm);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-surfaces.html#GTS-SURFACE-CENTER-OF-AREA"
+>gts_surface_center_of_area</A
+>      (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> cm);
+            <A
+HREF="gts-surfaces.html#GTSSURFACESTATS"
+>GtsSurfaceStats</A
+>;
+            <A
+HREF="gts-surfaces.html#GTSSURFACEQUALITYSTATS"
+>GtsSurfaceQualityStats</A
+>;
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-STATS"
+>gts_surface_stats</A
+>               (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACESTATS"
+>GtsSurfaceStats</A
+> *stats);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-QUALITY-STATS"
+>gts_surface_quality_stats</A
+>       (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACEQUALITYSTATS"
+>GtsSurfaceQualityStats</A
+> *stats);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-PRINT-STATS"
+>gts_surface_print_stats</A
+>         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-WRITE"
+>gts_surface_write</A
+>               (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-WRITE-OOGL"
+>gts_surface_write_oogl</A
+>          (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-WRITE-OOGL-BOUNDARY"
+>gts_surface_write_oogl_boundary</A
+> (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-WRITE-VTK"
+>gts_surface_write_vtk</A
+>           (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);
+<GTKDOCLINK
+HREF="GINT"
+>gint</GTKDOCLINK
+>        (<A
+HREF="gts-surfaces.html#GTSFUNC"
+>*GtsFunc</A
+>)                      (<GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> item,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-FOREACH-VERTEX"
+>gts_surface_foreach_vertex</A
+>      (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSFUNC"
+>GtsFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-FOREACH-EDGE"
+>gts_surface_foreach_edge</A
+>        (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSFUNC"
+>GtsFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-FOREACH-FACE"
+>gts_surface_foreach_face</A
+>        (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSFUNC"
+>GtsFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       <A
+HREF="gts-surfaces.html#GTS-SURFACE-FOREACH-FACE-REMOVE"
+>gts_surface_foreach_face_remove</A
+> (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSFUNC"
+>GtsFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-surfaces.html#GTS-SURFACE-FOREACH-INTERSECTING-FACE"
+>gts_surface_foreach_intersecting_face</A
+>
+                                            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBTREETRAVERSEFUNC"
+>GtsBBTreeTraverseFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+            <A
+HREF="gts-surfaces.html#GTSSURFACETRAVERSE"
+>GtsSurfaceTraverse</A
+>;
+<A
+HREF="gts-surfaces.html#GTSSURFACETRAVERSE"
+>GtsSurfaceTraverse</A
+>* <A
+HREF="gts-surfaces.html#GTS-SURFACE-TRAVERSE-NEW"
+>gts_surface_traverse_new</A
+>
+                                            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *f);
+<A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+>*    <A
+HREF="gts-surfaces.html#GTS-SURFACE-TRAVERSE-NEXT"
+>gts_surface_traverse_next</A
+>       (<A
+HREF="gts-surfaces.html#GTSSURFACETRAVERSE"
+>GtsSurfaceTraverse</A
+> *t,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> *level);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-TRAVERSE-DESTROY"
+>gts_surface_traverse_destroy</A
+>    (<A
+HREF="gts-surfaces.html#GTSSURFACETRAVERSE"
+>GtsSurfaceTraverse</A
+> *t);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-DISTANCE"
+>gts_surface_distance</A
+>            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s1,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s2,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> delta,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *face_range,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *boundary_range);
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-surfaces.html#GTS-SURFACE-STRIP"
+>gts_surface_strip</A
+>               (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surfaces.html#GTS-SURFACE-TESSELLATE"
+>gts_surface_tessellate</A
+>          (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSREFINEFUNC"
+>GtsRefineFunc</A
+> refine_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> refine_data);
+<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+>* <A
+HREF="gts-surfaces.html#GTS-SURFACE-GENERATE-SPHERE"
+>gts_surface_generate_sphere</A
+>     (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> geodesation_order);
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-surfaces.html#GTS-SURFACE-SPLIT"
+>gts_surface_split</A
+>               (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN9141"
+></A
+><H2
+>Description</H2
+><P
+>A <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+> is defined as a collection of <A
+HREF="gts-faces.html#GTSFACE"
+><SPAN
+CLASS="TYPE"
+>GtsFace</SPAN
+></A
+>. No topological constraint is imposed: the surface may or may not be manifold, closed or orientable.</P
+><P
+>When destroying a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>, all the faces not used by another surface are also destroyed. This default behaviour can be changed punctually by setting the global variable gts_allow_floating_faces to <TT
+CLASS="LITERAL"
+>TRUE</TT
+>. You must not forget to set this variable back to <TT
+CLASS="LITERAL"
+>FALSE</TT
+> as all the algorithms of GTS assume the default behaviour.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN9153"
+></A
+><H2
+>Details</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9155"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-CLASS:CAPS"
+></A
+>GTS_SURFACE_CLASS()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_SURFACE_CLASS(klass)</PRE
+><P
+>Casts <CODE
+CLASS="PARAMETER"
+>klass</CODE
+> to <A
+HREF="gts-surfaces.html#GTSSURFACECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsSurfaceClass</SPAN
+></A
+>.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9166"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a descendant of <A
+HREF="gts-surfaces.html#GTSSURFACECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsSurfaceClass</SPAN
+></A
+>.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9173"
+></A
+><H3
+><A
+NAME="GTS-SURFACE:CAPS"
+></A
+>GTS_SURFACE()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_SURFACE(obj)</PRE
+><P
+>Casts <CODE
+CLASS="PARAMETER"
+>obj</CODE
+> to <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9184"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a descendant of <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9191"
+></A
+><H3
+><A
+NAME="GTS-IS-SURFACE:CAPS"
+></A
+>GTS_IS_SURFACE()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_IS_SURFACE(obj)</PRE
+><P
+>Evaluates to <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>obj</CODE
+> is a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9204"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a pointer to test.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9209"
+></A
+><H3
+><A
+NAME="GTSSURFACECLASS"
+></A
+>GtsSurfaceClass</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsObjectClass parent_class;
+
+  void (* add_face)    (GtsSurface *, GtsFace *);
+  void (* remove_face) (GtsSurface *, GtsFace *);
+} GtsSurfaceClass;</PRE
+><P
+>The surface class. No virtual function is defined.</P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9216"
+></A
+><H3
+><A
+NAME="GTSSURFACE"
+></A
+>GtsSurface</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsObject object;
+
+#ifdef USE_SURFACE_BTREE
+  GTree * faces;
+#else /* not USE_SURFACE_BTREE */
+  GHashTable * faces;
+#endif /* not USE_SURFACE_BTREE */
+  GtsFaceClass * face_class;
+  GtsEdgeClass * edge_class;
+  GtsVertexClass * vertex_class;
+  gboolean keep_faces;
+} GtsSurface;</PRE
+><P
+>The surface structure derived from <A
+HREF="gts-object-class.html#GTSOBJECT"
+><SPAN
+CLASS="TYPE"
+>GtsObject</SPAN
+></A
+>.
+This structure should only be accessed through the following functions.</P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9225"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-CLASS"
+></A
+>gts_surface_class ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-surfaces.html#GTSSURFACECLASS"
+>GtsSurfaceClass</A
+>* gts_surface_class          (void);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9235"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the <A
+HREF="gts-surfaces.html#GTSSURFACECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsSurfaceClass</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9242"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-NEW"
+></A
+>gts_surface_new ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+>* gts_surface_new                 (<A
+HREF="gts-surfaces.html#GTSSURFACECLASS"
+>GtsSurfaceClass</A
+> *klass,
+                                             <A
+HREF="gts-faces.html#GTSFACECLASS"
+>GtsFaceClass</A
+> *face_class,
+                                             <A
+HREF="gts-edges.html#GTSEDGECLASS"
+>GtsEdgeClass</A
+> *edge_class,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEXCLASS"
+>GtsVertexClass</A
+> *vertex_class);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9256"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsSurfaceClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9263"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>face_class</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-faces.html#GTSFACECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsFaceClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9270"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>edge_class</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsEdgeClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9277"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>vertex_class</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsVertexClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9284"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new empty <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9291"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-ADD-FACE"
+></A
+>gts_surface_add_face ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_add_face            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *f);</PRE
+><P
+>Adds face <CODE
+CLASS="PARAMETER"
+>f</CODE
+> to surface <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9305"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9312"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>f</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-faces.html#GTSFACE"
+><SPAN
+CLASS="TYPE"
+>GtsFace</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9319"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-REMOVE-FACE"
+></A
+>gts_surface_remove_face ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_remove_face         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *f);</PRE
+><P
+>Removes face <CODE
+CLASS="PARAMETER"
+>f</CODE
+> from surface <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9333"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9340"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>f</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-faces.html#GTSFACE"
+><SPAN
+CLASS="TYPE"
+>GtsFace</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9347"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-COPY"
+></A
+>gts_surface_copy ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+>* gts_surface_copy                (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s1,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s2);</PRE
+><P
+>Add a copy of all the faces, edges and vertices of <CODE
+CLASS="PARAMETER"
+>s2</CODE
+> to <CODE
+CLASS="PARAMETER"
+>s1</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9361"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9368"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9375"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <CODE
+CLASS="PARAMETER"
+>s1</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9381"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-MERGE"
+></A
+>gts_surface_merge ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_merge               (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *with);</PRE
+><P
+>Adds all the faces of <CODE
+CLASS="PARAMETER"
+>with</CODE
+> which do not already belong to <CODE
+CLASS="PARAMETER"
+>s</CODE
+>
+to <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9396"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9403"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>with</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> another <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9410"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-READ"
+></A
+>gts_surface_read ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       gts_surface_read                (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-miscellaneous-macros-and-functions.html#GTSFILE"
+>GtsFile</A
+> *f);</PRE
+><P
+>Add to <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> the data read from <CODE
+CLASS="PARAMETER"
+>f</CODE
+>. The format of the file pointed to
+by <CODE
+CLASS="PARAMETER"
+>f</CODE
+> is as described in <A
+HREF="gts-surfaces.html#GTS-SURFACE-WRITE"
+><CODE
+CLASS="FUNCTION"
+>gts_surface_write()</CODE
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9427"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9434"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>f</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-miscellaneous-macros-and-functions.html#GTSFILE"
+><SPAN
+CLASS="TYPE"
+>GtsFile</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9441"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> 0 if successful or the line number at which the parsing
+stopped in case of error (in which case the <CODE
+CLASS="PARAMETER"
+>error</CODE
+> field of <CODE
+CLASS="PARAMETER"
+>f</CODE
+> is
+set to a description of the error which occured).  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9448"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-IS-MANIFOLD"
+></A
+>gts_surface_is_manifold ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_surface_is_manifold         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9459"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9466"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if the surface is a manifold, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9473"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-IS-ORIENTABLE"
+></A
+>gts_surface_is_orientable ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_surface_is_orientable       (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9484"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9491"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if all the faces of <CODE
+CLASS="PARAMETER"
+>s</CODE
+> have compatible orientation
+as checked by <GTKDOCLINK
+HREF="GTS-FACES-ARE-COMPATIBLE"
+><CODE
+CLASS="FUNCTION"
+>gts_faces_are_compatible()</CODE
+></GTKDOCLINK
+>, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise. Note that
+an orientable surface is also a manifold.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9501"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-IS-CLOSED"
+></A
+>gts_surface_is_closed ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_surface_is_closed           (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9512"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9519"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>s</CODE
+> is a closed surface, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise. Note that a
+closed surface is also a manifold.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9527"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-VERTEX-NUMBER"
+></A
+>gts_surface_vertex_number ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       gts_surface_vertex_number       (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9538"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9545"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of vertices of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9551"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-EDGE-NUMBER"
+></A
+>gts_surface_edge_number ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       gts_surface_edge_number         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9562"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9569"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of edges of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9575"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-FACE-NUMBER"
+></A
+>gts_surface_face_number ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       gts_surface_face_number         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9586"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9593"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of faces of <CODE
+CLASS="PARAMETER"
+>s</CODE
+></P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9599"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-BOUNDARY"
+></A
+>gts_surface_boundary ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_surface_boundary            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9610"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9617"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> boundary of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9625"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-AREA"
+></A
+>gts_surface_area ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_surface_area                (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9636"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9643"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the area of <CODE
+CLASS="PARAMETER"
+>s</CODE
+> obtained as the sum of the signed areas of its
+faces.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9649"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-VOLUME"
+></A
+>gts_surface_volume ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_surface_volume              (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9660"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9667"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the signed volume of the domain bounded by the surface <CODE
+CLASS="PARAMETER"
+>s</CODE
+>. It
+makes sense only if <CODE
+CLASS="PARAMETER"
+>s</CODE
+> is a closed and orientable manifold.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9674"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-CENTER-OF-MASS"
+></A
+>gts_surface_center_of_mass ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_surface_center_of_mass      (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> cm);</PRE
+><P
+>Fills <CODE
+CLASS="PARAMETER"
+>cm</CODE
+> with the coordinates of the center of mass of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9688"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9695"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>cm</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <GTKDOCLINK
+HREF="GTSVECTOR"
+><SPAN
+CLASS="TYPE"
+>GtsVector</SPAN
+></GTKDOCLINK
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9702"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the signed volume of the domain bounded by the surface <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9708"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-CENTER-OF-AREA"
+></A
+>gts_surface_center_of_area ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_surface_center_of_area      (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GTSVECTOR"
+>GtsVector</GTKDOCLINK
+> cm);</PRE
+><P
+>Fills <CODE
+CLASS="PARAMETER"
+>cm</CODE
+> with the coordinates of the center of area of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9722"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9729"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>cm</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <GTKDOCLINK
+HREF="GTSVECTOR"
+><SPAN
+CLASS="TYPE"
+>GtsVector</SPAN
+></GTKDOCLINK
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9736"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the area of surface <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9742"
+></A
+><H3
+><A
+NAME="GTSSURFACESTATS"
+></A
+>GtsSurfaceStats</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  guint n_faces;
+  guint n_incompatible_faces;
+  guint n_duplicate_faces;
+  guint n_duplicate_edges;
+  guint n_boundary_edges;
+  guint n_non_manifold_edges;
+  GtsRange edges_per_vertex, faces_per_edge;
+  GtsSurface * parent;
+} GtsSurfaceStats;</PRE
+><P
+>Connectivity statistics.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9750"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>n_faces</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Number of faces.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9756"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>n_incompatible_faces</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Number of incompatible faces (see <A
+HREF="gts-triangles.html#GTS-TRIANGLES-ARE-COMPATIBLE"
+><CODE
+CLASS="FUNCTION"
+>gts_triangles_are_compatible()</CODE
+></A
+> for details).</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9764"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>n_duplicate_faces</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Number of duplicate faces (see <A
+HREF="gts-triangles.html#GTS-TRIANGLE-IS-DUPLICATE"
+><CODE
+CLASS="FUNCTION"
+>gts_triangle_is_duplicate()</CODE
+></A
+> for details).</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9772"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>n_duplicate_edges</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Number of duplicate edges (see <A
+HREF="gts-segments.html#GTS-SEGMENT-IS-DUPLICATE"
+><CODE
+CLASS="FUNCTION"
+>gts_segment_is_duplicate()</CODE
+></A
+> for details).</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9780"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>n_boundary_edges</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Number of boundary edges.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9786"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>n_non_manifold_edges</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Number of non-manifold edges.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9792"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>edges_per_vertex</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Statistics on the number of edges per vertex.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9798"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>faces_per_edge</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Statistics on the number of faces per vertex.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9804"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+>&nbsp;*<CODE
+CLASS="STRUCTFIELD"
+>parent</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Surface from which these statistics have been obtained.&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9810"
+></A
+><H3
+><A
+NAME="GTSSURFACEQUALITYSTATS"
+></A
+>GtsSurfaceQualityStats</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsRange face_quality;
+  GtsRange face_area;
+  GtsRange edge_length;
+  GtsRange edge_angle;
+  GtsSurface * parent;
+} GtsSurfaceQualityStats;</PRE
+><P
+>Quality and geometry statistics.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9818"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>face_quality</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Statistics for face quality (see <A
+HREF="gts-triangles.html#GTS-TRIANGLE-QUALITY"
+><CODE
+CLASS="FUNCTION"
+>gts_triangle_quality()</CODE
+></A
+> for details).</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9826"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>face_area</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Statistics for the face area.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9832"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>edge_length</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Statistics for the edge length.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9838"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>edge_angle</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Statistics for the edge angles.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9844"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+>&nbsp;*<CODE
+CLASS="STRUCTFIELD"
+>parent</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Surface from which these statistics have been obtained.&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9850"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-STATS"
+></A
+>gts_surface_stats ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_stats               (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACESTATS"
+>GtsSurfaceStats</A
+> *stats);</PRE
+><P
+>Fills <CODE
+CLASS="PARAMETER"
+>stats</CODE
+> with the statistics relevant to surface <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9864"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9871"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>stats</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACESTATS"
+><SPAN
+CLASS="TYPE"
+>GtsSurfaceStats</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9878"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-QUALITY-STATS"
+></A
+>gts_surface_quality_stats ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_quality_stats       (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACEQUALITYSTATS"
+>GtsSurfaceQualityStats</A
+> *stats);</PRE
+><P
+>Fills <CODE
+CLASS="PARAMETER"
+>stats</CODE
+> with quality statistics relevant to surface <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9892"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9899"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>stats</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACEQUALITYSTATS"
+><SPAN
+CLASS="TYPE"
+>GtsSurfaceQualityStats</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9906"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-PRINT-STATS"
+></A
+>gts_surface_print_stats ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_print_stats         (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);</PRE
+><P
+>Writes in the file pointed to by <CODE
+CLASS="PARAMETER"
+>fptr</CODE
+> the statistics for surface <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9920"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9927"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>fptr</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a file pointer.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9932"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-WRITE"
+></A
+>gts_surface_write ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_write               (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);</PRE
+><P
+>Writes in the file <CODE
+CLASS="PARAMETER"
+>fptr</CODE
+> an ASCII representation of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>. The file
+format is as follows. </P
+><P
+>All the lines beginning with <A
+HREF="gts-miscellaneous-macros-and-functions.html#GTS-COMMENTS:CAPS"
+><SPAN
+CLASS="TYPE"
+>GTS_COMMENTS</SPAN
+></A
+> are ignored. The first line
+contains three unsigned integers separated by spaces. The first
+integer is the number of vertices, nv, the second is the number of
+edges, ne and the third is the number of faces, nf.</P
+><P
+>Follows nv lines containing the x, y and z coordinates of the
+vertices.  Follows ne lines containing the two indices (starting
+from one) of the vertices of each edge. Follows nf lines containing
+the three ordered indices (also starting from one) of the edges of
+each face.  </P
+><P
+>The format described above is the least common denominator to all
+GTS files.  Consistent with an object-oriented approach, the GTS
+file format is extensible. Each of the lines of the file can be
+extended with user-specific attributes accessible through the
+<GTKDOCLINK
+HREF="READ"
+><CODE
+CLASS="FUNCTION"
+>read()</CODE
+></GTKDOCLINK
+> and <GTKDOCLINK
+HREF="WRITE"
+><CODE
+CLASS="FUNCTION"
+>write()</CODE
+></GTKDOCLINK
+> virtual methods of each of the objects written
+(surface, vertices, edges or faces). When read with different
+object classes, these extra attributes are just ignored.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9955"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9962"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>fptr</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a file pointer.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9967"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-WRITE-OOGL"
+></A
+>gts_surface_write_oogl ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_write_oogl          (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);</PRE
+><P
+>Writes in the file <CODE
+CLASS="PARAMETER"
+>fptr</CODE
+> an OOGL (Geomview) representation of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9981"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN9988"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>fptr</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a file pointer.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN9993"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-WRITE-OOGL-BOUNDARY"
+></A
+>gts_surface_write_oogl_boundary ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_write_oogl_boundary (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);</PRE
+><P
+>Writes in the file <CODE
+CLASS="PARAMETER"
+>fptr</CODE
+> an OOGL (Geomview) representation of the
+boundary of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10007"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10014"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>fptr</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a file pointer.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10019"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-WRITE-VTK"
+></A
+>gts_surface_write_vtk ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_write_vtk           (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);</PRE
+><P
+>Writes in the file <CODE
+CLASS="PARAMETER"
+>fptr</CODE
+> a VTK representation of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10033"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10040"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>fptr</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a file pointer.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10045"
+></A
+><H3
+><A
+NAME="GTSFUNC"
+></A
+>GtsFunc ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GINT"
+>gint</GTKDOCLINK
+>        (*GtsFunc)                      (<GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> item,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>A user function called for each item of a collection.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10056"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>item</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a pointer this function is called for.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10061"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>user data passed to the function.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10066"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>if 0 the calling sequence continues, otherwise it stops.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10071"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-FOREACH-VERTEX"
+></A
+>gts_surface_foreach_vertex ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_foreach_vertex      (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSFUNC"
+>GtsFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>Calls <CODE
+CLASS="PARAMETER"
+>func</CODE
+> once for each vertex of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10086"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10093"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10100"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>func</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10106"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-FOREACH-EDGE"
+></A
+>gts_surface_foreach_edge ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_foreach_edge        (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSFUNC"
+>GtsFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>Calls <CODE
+CLASS="PARAMETER"
+>func</CODE
+> once for each edge of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10121"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10128"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10135"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>func</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10141"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-FOREACH-FACE"
+></A
+>gts_surface_foreach_face ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_foreach_face        (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSFUNC"
+>GtsFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>Calls <CODE
+CLASS="PARAMETER"
+>func</CODE
+> once for each face of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10156"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10163"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10170"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>func</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10176"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-FOREACH-FACE-REMOVE"
+></A
+>gts_surface_foreach_face_remove ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       gts_surface_foreach_face_remove (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surfaces.html#GTSFUNC"
+>GtsFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>Calls <CODE
+CLASS="PARAMETER"
+>func</CODE
+> once for each face of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>. If <CODE
+CLASS="PARAMETER"
+>func</CODE
+> returns <TT
+CLASS="LITERAL"
+>TRUE</TT
+> the
+corresponding face is removed from <CODE
+CLASS="PARAMETER"
+>s</CODE
+> (and destroyed if it does not
+belong to any other surface and <GTKDOCLINK
+HREF="GTS-ALLOW-FLOATING-FACES"
+><SPAN
+CLASS="TYPE"
+>gts_allow_floating_faces</SPAN
+></GTKDOCLINK
+> is set to
+<TT
+CLASS="LITERAL"
+>FALSE</TT
+>).</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10197"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10204"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10211"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>func</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10217"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of faces removed from <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10223"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-FOREACH-INTERSECTING-FACE"
+></A
+>gts_surface_foreach_intersecting_face ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_surface_foreach_intersecting_face
+                                            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBTREETRAVERSEFUNC"
+>GtsBBTreeTraverseFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>Calls <CODE
+CLASS="PARAMETER"
+>func</CODE
+> for each intersecting pair of faces of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10238"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10245"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBTREETRAVERSEFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsBBTreeTraverseFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10252"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to pass to <CODE
+CLASS="PARAMETER"
+>func</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10258"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>func</CODE
+> was called at least once, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10266"
+></A
+><H3
+><A
+NAME="GTSSURFACETRAVERSE"
+></A
+>GtsSurfaceTraverse</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct _GtsSurfaceTraverse GtsSurfaceTraverse;</PRE
+><P
+></P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10273"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-TRAVERSE-NEW"
+></A
+>gts_surface_traverse_new ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-surfaces.html#GTSSURFACETRAVERSE"
+>GtsSurfaceTraverse</A
+>* gts_surface_traverse_new
+                                            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+> *f);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10285"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10292"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>f</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-faces.html#GTSFACE"
+><SPAN
+CLASS="TYPE"
+>GtsFace</SPAN
+></A
+> belonging to <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10300"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-surfaces.html#GTSSURFACETRAVERSE"
+><SPAN
+CLASS="TYPE"
+>GtsSurfaceTraverse</SPAN
+></A
+>, initialized to start traversing
+from face <CODE
+CLASS="PARAMETER"
+>f</CODE
+> of surface <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10309"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-TRAVERSE-NEXT"
+></A
+>gts_surface_traverse_next ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-faces.html#GTSFACE"
+>GtsFace</A
+>*    gts_surface_traverse_next       (<A
+HREF="gts-surfaces.html#GTSSURFACETRAVERSE"
+>GtsSurfaceTraverse</A
+> *t,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> *level);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10321"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACETRAVERSE"
+><SPAN
+CLASS="TYPE"
+>GtsSurfaceTraverse</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10328"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>level</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a pointer to a guint or <TT
+CLASS="LITERAL"
+>NULL</TT
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10334"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the next face of the traversal in breadth-first order or
+<TT
+CLASS="LITERAL"
+>NULL</TT
+> if no faces are left. If <CODE
+CLASS="PARAMETER"
+>level</CODE
+> if not <TT
+CLASS="LITERAL"
+>NULL</TT
+>, it is filled
+with the level of the returned face (0 for the initial face, 1 for
+its neighbors and so on).  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10342"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-TRAVERSE-DESTROY"
+></A
+>gts_surface_traverse_destroy ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_traverse_destroy    (<A
+HREF="gts-surfaces.html#GTSSURFACETRAVERSE"
+>GtsSurfaceTraverse</A
+> *t);</PRE
+><P
+>Frees all the memory allocated for <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10354"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACETRAVERSE"
+><SPAN
+CLASS="TYPE"
+>GtsSurfaceTraverse</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10361"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-DISTANCE"
+></A
+>gts_surface_distance ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_distance            (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s1,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s2,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> delta,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *face_range,
+                                             <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *boundary_range);</PRE
+><P
+>Using the <A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-SURFACE-DISTANCE"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_surface_distance()</CODE
+></A
+> and
+<A
+HREF="gts-bounding-boxes-trees.html#GTS-BB-TREE-SURFACE-BOUNDARY-DISTANCE"
+><CODE
+CLASS="FUNCTION"
+>gts_bb_tree_surface_boundary_distance()</CODE
+></A
+> functions fills <CODE
+CLASS="PARAMETER"
+>face_range</CODE
+>
+and <CODE
+CLASS="PARAMETER"
+>boundary_range</CODE
+> with the min, max and average Euclidean
+(minimum) distances between the faces of <CODE
+CLASS="PARAMETER"
+>s1</CODE
+> and the faces of <CODE
+CLASS="PARAMETER"
+>s2</CODE
+>
+and between the boundary edges of <CODE
+CLASS="PARAMETER"
+>s1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>s2</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10386"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10393"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10400"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>delta</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a spatial increment defined as the percentage of the diagonal
+of the bounding box of <CODE
+CLASS="PARAMETER"
+>s2</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10406"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>face_range</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10413"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>boundary_range</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10420"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-STRIP"
+></A
+>gts_surface_strip ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_surface_strip               (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+><P
+>Decompose <CODE
+CLASS="PARAMETER"
+>s</CODE
+> into triangle strips for fast-rendering.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10432"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10439"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of triangle strips containing all the triangles of <CODE
+CLASS="PARAMETER"
+>s</CODE
+>. 
+A triangle strip is itself a list of successive triangles having one edge
+in common.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10445"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-TESSELLATE"
+></A
+>gts_surface_tessellate ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_tessellate          (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSREFINEFUNC"
+>GtsRefineFunc</A
+> refine_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> refine_data);</PRE
+><P
+>Tessellate each triangle of <CODE
+CLASS="PARAMETER"
+>s</CODE
+> with 4 triangles:   
+the number of triangles is increased by a factor of 4.
+http://mathworld.wolfram.com/GeodesicDome.html</P
+><P
+>If <CODE
+CLASS="PARAMETER"
+>refine_func</CODE
+> is set to <TT
+CLASS="LITERAL"
+>NULL</TT
+> a mid arc function is used: if
+the surface is a polyhedron with the unit sphere as circum sphere,
+then <A
+HREF="gts-surfaces.html#GTS-SURFACE-TESSELLATE"
+><CODE
+CLASS="FUNCTION"
+>gts_surface_tessellate()</CODE
+></A
+> corresponds to a geodesation step
+(see <A
+HREF="gts-surfaces.html#GTS-SURFACE-GENERATE-SPHERE"
+><CODE
+CLASS="FUNCTION"
+>gts_surface_generate_sphere()</CODE
+></A
+>).</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10466"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10473"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>refine_func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surface-simplification-and-refinement.html#GTSREFINEFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsRefineFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10480"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>refine_data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>refine_func</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10486"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-GENERATE-SPHERE"
+></A
+>gts_surface_generate_sphere ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+>* gts_surface_generate_sphere     (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> geodesation_order);</PRE
+><P
+>Add a triangulated unit sphere generated by recursive subdivision to <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.
+First approximation is an isocahedron; each level of refinement
+(<CODE
+CLASS="PARAMETER"
+>geodesation_order</CODE
+>) increases the number of triangles by a factor of 4.
+http://mathworld.wolfram.com/GeodesicDome.html</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10500"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10507"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>geodesation_order</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <GTKDOCLINK
+HREF="GUINT"
+><SPAN
+CLASS="TYPE"
+>guint</SPAN
+></GTKDOCLINK
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10514"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <CODE
+CLASS="PARAMETER"
+>s</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10520"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-SPLIT"
+></A
+>gts_surface_split ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_surface_split               (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s);</PRE
+><P
+>Splits a surface into connected and manifold components.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10531"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10538"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of new <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><TABLE
+CLASS="navigation"
+WIDTH="100%"
+SUMMARY="Navigation footer"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+ALIGN="left"
+><A
+ACCESSKEY="p"
+HREF="gts-faces.html"
+><B
+>&lt;&lt;&lt;&nbsp;Faces</B
+></A
+></TD
+><TD
+ALIGN="right"
+><A
+ACCESSKEY="n"
+HREF="c10545.html"
+><B
+>Geometrical data structures&nbsp;&gt;&gt;&gt;</B
+></A
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

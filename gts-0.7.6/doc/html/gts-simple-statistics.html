@@ -1,0 +1,823 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Simple statistics</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="GTS Library Reference Manual"
+HREF="book1.html"><LINK
+REL="UP"
+TITLE="Basic Macros, functions and data structures"
+HREF="c4.html"><LINK
+REL="PREVIOUS"
+TITLE="Vectors and matrices"
+HREF="gts-vectors-and-matrices.html"><LINK
+REL="NEXT"
+TITLE="Miscellaneous macros and functions"
+HREF="gts-miscellaneous-macros-and-functions.html"><STYLE
+TYPE="text/css"
+>.synopsis, .classsynopsis {
+    background: #eeeeee;
+    border: solid 1px #aaaaaa;
+    padding: 0.5em;
+}
+.programlisting {
+    background: #eeeeff;
+    border: solid 1px #aaaaff;
+    padding: 0.5em;
+}
+.variablelist {
+    padding: 4px;
+    margin-left: 3em;
+}
+.navigation {
+    background: #ffeeee;
+    border: solid 1px #ffaaaa;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+.navigation a {
+    color: #770000;
+}
+.navigation a:visited {
+    color: #550000;
+}
+.navigation .title {
+    font-size: 200%;
+}</STYLE
+></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><TABLE
+WIDTH="100%"
+CLASS="navigation"
+SUMMARY="Navigation header"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+><A
+ACCESSKEY="p"
+HREF="gts-vectors-and-matrices.html"
+><IMG
+SRC="left.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Prev"></A
+></TD
+><TD
+><A
+ACCESSKEY="u"
+HREF="c4.html"
+><IMG
+SRC="up.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Up"></A
+></TD
+><TD
+><A
+ACCESSKEY="h"
+HREF="book1.html"
+><IMG
+SRC="home.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Home"></A
+></TD
+><TH
+WIDTH="100%"
+align="center"
+>GTS Library Reference Manual</TH
+><TD
+><A
+ACCESSKEY="n"
+HREF="gts-miscellaneous-macros-and-functions.html"
+><IMG
+SRC="right.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Next"></A
+></TD
+></TR
+></TABLE
+><H1
+><A
+NAME="GTS-SIMPLE-STATISTICS"
+></A
+>Simple statistics</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN2193"
+></A
+><H2
+>Name</H2
+>Simple statistics&nbsp;--&nbsp;a basic structure for computing min, max, average and variance.</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN2196"
+></A
+><H2
+>Synopsis</H2
+><PRE
+CLASS="SYNOPSIS"
+>&#13;#include &lt;gts.h&gt;
+
+
+            <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+>;
+
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-simple-statistics.html#GTS-RANGE-INIT"
+>gts_range_init</A
+>                  (<A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *r);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-simple-statistics.html#GTS-RANGE-ADD-VALUE"
+>gts_range_add_value</A
+>             (<A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *r,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> val);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-simple-statistics.html#GTS-RANGE-UPDATE"
+>gts_range_update</A
+>                (<A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *r);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-simple-statistics.html#GTS-RANGE-RESET"
+>gts_range_reset</A
+>                 (<A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *r);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-simple-statistics.html#GTS-RANGE-PRINT"
+>gts_range_print</A
+>                 (<A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *r,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);</PRE
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN2217"
+></A
+><H2
+>Description</H2
+><P
+>Using <A
+HREF="gts-simple-statistics.html#GTS-RANGE-INIT"
+><CODE
+CLASS="FUNCTION"
+>gts_range_init()</CODE
+></A
+>, <A
+HREF="gts-simple-statistics.html#GTS-RANGE-ADD-VALUE"
+><CODE
+CLASS="FUNCTION"
+>gts_range_add_value()</CODE
+></A
+> and <A
+HREF="gts-simple-statistics.html#GTS-RANGE-UPDATE"
+><CODE
+CLASS="FUNCTION"
+>gts_range_update()</CODE
+></A
+>, you can easily maintain basic statistics about an ensemble of values.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN2226"
+></A
+><H2
+>Details</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN2228"
+></A
+><H3
+><A
+NAME="GTSRANGE"
+></A
+>GtsRange</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  gdouble min, max, sum, sum2, mean, stddev;
+  guint n;
+} GtsRange;</PRE
+><P
+>A simple statistics structure.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2236"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>min</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Minimum value of the population.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2242"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>max</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Maximum value of the population.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2248"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>sum</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2254"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>sum2</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2260"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>mean</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Average value of the population.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2266"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>stddev</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Standard deviation of the population.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2272"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>n</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Number of samples in the population.&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN2278"
+></A
+><H3
+><A
+NAME="GTS-RANGE-INIT"
+></A
+>gts_range_init ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_range_init                  (<A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *r);</PRE
+><P
+>Initializes a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2291"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>r</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN2298"
+></A
+><H3
+><A
+NAME="GTS-RANGE-ADD-VALUE"
+></A
+>gts_range_add_value ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_range_add_value             (<A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *r,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> val);</PRE
+><P
+>Adds <CODE
+CLASS="PARAMETER"
+>val</CODE
+> to <CODE
+CLASS="PARAMETER"
+>r</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2312"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>r</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2319"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>val</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a value to add to <CODE
+CLASS="PARAMETER"
+>r</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN2325"
+></A
+><H3
+><A
+NAME="GTS-RANGE-UPDATE"
+></A
+>gts_range_update ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_range_update                (<A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *r);</PRE
+><P
+>Updates the fields of <CODE
+CLASS="PARAMETER"
+>r</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2337"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>r</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN2344"
+></A
+><H3
+><A
+NAME="GTS-RANGE-RESET"
+></A
+>gts_range_reset ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_range_reset                 (<A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *r);</PRE
+><P
+>Sets all the fields of <CODE
+CLASS="PARAMETER"
+>r</CODE
+> to 0.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2356"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>r</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN2363"
+></A
+><H3
+><A
+NAME="GTS-RANGE-PRINT"
+></A
+>gts_range_print ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_range_print                 (<A
+HREF="gts-simple-statistics.html#GTSRANGE"
+>GtsRange</A
+> *r,
+                                             <GTKDOCLINK
+HREF="FILE:CAPS"
+>FILE</GTKDOCLINK
+> *fptr);</PRE
+><P
+>Writes a text representation of <CODE
+CLASS="PARAMETER"
+>r</CODE
+> in <CODE
+CLASS="PARAMETER"
+>fptr</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2377"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>r</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-simple-statistics.html#GTSRANGE"
+><SPAN
+CLASS="TYPE"
+>GtsRange</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN2384"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>fptr</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a file pointer.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><TABLE
+CLASS="navigation"
+WIDTH="100%"
+SUMMARY="Navigation footer"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+ALIGN="left"
+><A
+ACCESSKEY="p"
+HREF="gts-vectors-and-matrices.html"
+><B
+>&lt;&lt;&lt;&nbsp;Vectors and matrices</B
+></A
+></TD
+><TD
+ALIGN="right"
+><A
+ACCESSKEY="n"
+HREF="gts-miscellaneous-macros-and-functions.html"
+><B
+>Miscellaneous macros and functions&nbsp;&gt;&gt;&gt;</B
+></A
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

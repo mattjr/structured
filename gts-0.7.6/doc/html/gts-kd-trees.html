@@ -1,0 +1,528 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Kd-Trees</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="GTS Library Reference Manual"
+HREF="book1.html"><LINK
+REL="UP"
+TITLE="Geometrical data structures"
+HREF="c10545.html"><LINK
+REL="PREVIOUS"
+TITLE="Geometrical data structures"
+HREF="c10545.html"><LINK
+REL="NEXT"
+TITLE="Bounding boxes trees"
+HREF="gts-bounding-boxes-trees.html"><STYLE
+TYPE="text/css"
+>.synopsis, .classsynopsis {
+    background: #eeeeee;
+    border: solid 1px #aaaaaa;
+    padding: 0.5em;
+}
+.programlisting {
+    background: #eeeeff;
+    border: solid 1px #aaaaff;
+    padding: 0.5em;
+}
+.variablelist {
+    padding: 4px;
+    margin-left: 3em;
+}
+.navigation {
+    background: #ffeeee;
+    border: solid 1px #ffaaaa;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+.navigation a {
+    color: #770000;
+}
+.navigation a:visited {
+    color: #550000;
+}
+.navigation .title {
+    font-size: 200%;
+}</STYLE
+></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><TABLE
+WIDTH="100%"
+CLASS="navigation"
+SUMMARY="Navigation header"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+><A
+ACCESSKEY="p"
+HREF="c10545.html"
+><IMG
+SRC="left.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Prev"></A
+></TD
+><TD
+><A
+ACCESSKEY="u"
+HREF="c10545.html"
+><IMG
+SRC="up.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Up"></A
+></TD
+><TD
+><A
+ACCESSKEY="h"
+HREF="book1.html"
+><IMG
+SRC="home.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Home"></A
+></TD
+><TH
+WIDTH="100%"
+align="center"
+>GTS Library Reference Manual</TH
+><TD
+><A
+ACCESSKEY="n"
+HREF="gts-bounding-boxes-trees.html"
+><IMG
+SRC="right.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Next"></A
+></TD
+></TR
+></TABLE
+><H1
+><A
+NAME="GTS-KD-TREES"
+></A
+>Kd-Trees</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN10552"
+></A
+><H2
+>Name</H2
+>Kd-Trees&nbsp;--&nbsp;an efficient way of doing point location queries.</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN10555"
+></A
+><H2
+>Synopsis</H2
+><PRE
+CLASS="SYNOPSIS"
+>&#13;#include &lt;gts.h&gt;
+
+
+<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+>*      <A
+HREF="gts-kd-trees.html#GTS-KDTREE-NEW"
+>gts_kdtree_new</A
+>                  (<GTKDOCLINK
+HREF="GPTRARRAY"
+>GPtrArray</GTKDOCLINK
+> *points,
+                                             <GTKDOCLINK
+HREF="INT"
+>int</GTKDOCLINK
+> (*compare) (const void *,const void *));
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-kd-trees.html#GTS-KDTREE-RANGE"
+>gts_kdtree_range</A
+>                (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bbox,
+                                             <GTKDOCLINK
+HREF="INT"
+>int</GTKDOCLINK
+> (*compare) (const void *,const void *));
+#define     <A
+HREF="gts-kd-trees.html#GTS-KDTREE-DESTROY"
+>gts_kdtree_destroy</A
+>              (tree)</PRE
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN10568"
+></A
+><H2
+>Description</H2
+><P
+>Kd-Trees (in this case 3D-Trees) are a relatively efficient way of doing point location queries.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN10571"
+></A
+><H2
+>Details</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10573"
+></A
+><H3
+><A
+NAME="GTS-KDTREE-NEW"
+></A
+>gts_kdtree_new ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+>*      gts_kdtree_new                  (<GTKDOCLINK
+HREF="GPTRARRAY"
+>GPtrArray</GTKDOCLINK
+> *points,
+                                             <GTKDOCLINK
+HREF="INT"
+>int</GTKDOCLINK
+> (*compare) (const void *,const void *));</PRE
+><P
+>Note that the order of the points in array <CODE
+CLASS="PARAMETER"
+>points</CODE
+> is modified by this
+function.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10586"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>points</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> an array of <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10593"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>compare</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> always <TT
+CLASS="LITERAL"
+>NULL</TT
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10599"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new 3D tree for <CODE
+CLASS="PARAMETER"
+>points</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10605"
+></A
+><H3
+><A
+NAME="GTS-KDTREE-RANGE"
+></A
+>gts_kdtree_range ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_kdtree_range                (<GTKDOCLINK
+HREF="GNODE"
+>GNode</GTKDOCLINK
+> *tree,
+                                             <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+>GtsBBox</A
+> *bbox,
+                                             <GTKDOCLINK
+HREF="INT"
+>int</GTKDOCLINK
+> (*compare) (const void *,const void *));</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10618"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a 3D tree.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10623"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>bbox</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-bounding-boxes-trees.html#GTSBBOX"
+><SPAN
+CLASS="TYPE"
+>GtsBBox</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10630"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>compare</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> always <TT
+CLASS="LITERAL"
+>NULL</TT
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10636"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+> belonging to <CODE
+CLASS="PARAMETER"
+>tree</CODE
+> which are inside <CODE
+CLASS="PARAMETER"
+>bbox</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN10645"
+></A
+><H3
+><A
+NAME="GTS-KDTREE-DESTROY"
+></A
+>gts_kdtree_destroy()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define       gts_kdtree_destroy(tree)               g_node_destroy(tree)</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN10653"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>tree</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><TABLE
+CLASS="navigation"
+WIDTH="100%"
+SUMMARY="Navigation footer"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+ALIGN="left"
+><A
+ACCESSKEY="p"
+HREF="c10545.html"
+><B
+>&lt;&lt;&lt;&nbsp;Geometrical data structures</B
+></A
+></TD
+><TD
+ALIGN="right"
+><A
+ACCESSKEY="n"
+HREF="gts-bounding-boxes-trees.html"
+><B
+>Bounding boxes trees&nbsp;&gt;&gt;&gt;</B
+></A
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

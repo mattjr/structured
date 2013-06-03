@@ -1,0 +1,2302 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Surface simplification and refinement</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="GTS Library Reference Manual"
+HREF="book1.html"><LINK
+REL="UP"
+TITLE="Surface operations"
+HREF="c12206.html"><LINK
+REL="PREVIOUS"
+TITLE="Boolean operations"
+HREF="gts-boolean-operations.html"><LINK
+REL="NEXT"
+TITLE="Out-of-core simplification"
+HREF="gts-out-of-core-simplification.html"><STYLE
+TYPE="text/css"
+>.synopsis, .classsynopsis {
+    background: #eeeeee;
+    border: solid 1px #aaaaaa;
+    padding: 0.5em;
+}
+.programlisting {
+    background: #eeeeff;
+    border: solid 1px #aaaaff;
+    padding: 0.5em;
+}
+.variablelist {
+    padding: 4px;
+    margin-left: 3em;
+}
+.navigation {
+    background: #ffeeee;
+    border: solid 1px #ffaaaa;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+.navigation a {
+    color: #770000;
+}
+.navigation a:visited {
+    color: #550000;
+}
+.navigation .title {
+    font-size: 200%;
+}</STYLE
+></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><TABLE
+WIDTH="100%"
+CLASS="navigation"
+SUMMARY="Navigation header"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+><A
+ACCESSKEY="p"
+HREF="gts-boolean-operations.html"
+><IMG
+SRC="left.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Prev"></A
+></TD
+><TD
+><A
+ACCESSKEY="u"
+HREF="c12206.html"
+><IMG
+SRC="up.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Up"></A
+></TD
+><TD
+><A
+ACCESSKEY="h"
+HREF="book1.html"
+><IMG
+SRC="home.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Home"></A
+></TD
+><TH
+WIDTH="100%"
+align="center"
+>GTS Library Reference Manual</TH
+><TD
+><A
+ACCESSKEY="n"
+HREF="gts-out-of-core-simplification.html"
+><IMG
+SRC="right.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Next"></A
+></TD
+></TR
+></TABLE
+><H1
+><A
+NAME="GTS-SURFACE-SIMPLIFICATION-AND-REFINEMENT"
+></A
+>Surface simplification and refinement</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN12636"
+></A
+><H2
+>Name</H2
+>Surface simplification and refinement&nbsp;--&nbsp;reducing or increasing the number of edges of a triangulated surface.</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN12639"
+></A
+><H2
+>Synopsis</H2
+><PRE
+CLASS="SYNOPSIS"
+>&#13;#include &lt;gts.h&gt;
+
+
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surface-simplification-and-refinement.html#GTS-SURFACE-REFINE"
+>gts_surface_refine</A
+>              (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-extended-binary-heaps.html#GTSKEYFUNC"
+>GtsKeyFunc</A
+> cost_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> cost_data,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSREFINEFUNC"
+>GtsRefineFunc</A
+> refine_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> refine_data,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSSTOPFUNC"
+>GtsStopFunc</A
+> stop_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> stop_data);
+
+<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  (<A
+HREF="gts-surface-simplification-and-refinement.html#GTSCOARSENFUNC"
+>*GtsCoarsenFunc</A
+>)               (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEXCLASS"
+>GtsVertexClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  (<A
+HREF="gts-surface-simplification-and-refinement.html#GTSREFINEFUNC"
+>*GtsRefineFunc</A
+>)                (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEXCLASS"
+>GtsVertexClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    (<A
+HREF="gts-surface-simplification-and-refinement.html#GTSSTOPFUNC"
+>*GtsStopFunc</A
+>)                  (<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> cost,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> nedge,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-surface-simplification-and-refinement.html#GTS-SURFACE-COARSEN"
+>gts_surface_coarsen</A
+>             (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-extended-binary-heaps.html#GTSKEYFUNC"
+>GtsKeyFunc</A
+> cost_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> cost_data,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSCOARSENFUNC"
+>GtsCoarsenFunc</A
+> coarsen_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> coarsen_data,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSSTOPFUNC"
+>GtsStopFunc</A
+> stop_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> stop_data,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> minangle);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-surface-simplification-and-refinement.html#GTS-COARSEN-STOP-NUMBER"
+>gts_coarsen_stop_number</A
+>         (<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> cost,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> nedge,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> *min_number);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-surface-simplification-and-refinement.html#GTS-COARSEN-STOP-COST"
+>gts_coarsen_stop_cost</A
+>           (<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> cost,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> nedge,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *max_cost);
+
+            <A
+HREF="gts-surface-simplification-and-refinement.html#GTSVOLUMEOPTIMIZEDPARAMS"
+>GtsVolumeOptimizedParams</A
+>;
+<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  <A
+HREF="gts-surface-simplification-and-refinement.html#GTS-VOLUME-OPTIMIZED-VERTEX"
+>gts_volume_optimized_vertex</A
+>     (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *edge,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEXCLASS"
+>GtsVertexClass</A
+> *klass,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSVOLUMEOPTIMIZEDPARAMS"
+>GtsVolumeOptimizedParams</A
+> *params);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-surface-simplification-and-refinement.html#GTS-VOLUME-OPTIMIZED-COST"
+>gts_volume_optimized_cost</A
+>       (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSVOLUMEOPTIMIZEDPARAMS"
+>GtsVolumeOptimizedParams</A
+> *params);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-surface-simplification-and-refinement.html#GTS-EDGE-COLLAPSE-IS-VALID"
+>gts_edge_collapse_is_valid</A
+>      (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-surface-simplification-and-refinement.html#GTS-EDGE-COLLAPSE-CREATES-FOLD"
+>gts_edge_collapse_creates_fold</A
+>  (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> max);</PRE
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN12704"
+></A
+><H2
+>Description</H2
+><P
+>The <A
+HREF="gts-surface-simplification-and-refinement.html#GTS-SURFACE-COARSEN"
+><CODE
+CLASS="FUNCTION"
+>gts_surface_coarsen()</CODE
+></A
+> function allows to reduce the number of edges (and of course faces and vertices) of a given surface. Each edge is collapsed according to an order described by a user-defined cost function. It is then replaced by a single vertex given by another user-defined function. Two sets of cost and replacement functions are provided with the library. The default uses the squared length of the segment as cost and replaces the segment with its midpoint.</P
+><P
+>The functions <A
+HREF="gts-surface-simplification-and-refinement.html#GTS-VOLUME-OPTIMIZED-COST"
+><CODE
+CLASS="FUNCTION"
+>gts_volume_optimized_cost()</CODE
+></A
+> and <A
+HREF="gts-surface-simplification-and-refinement.html#GTS-VOLUME-OPTIMIZED-VERTEX"
+><CODE
+CLASS="FUNCTION"
+>gts_volume_optimized_vertex()</CODE
+></A
+> are an implementation of an algorithm proposed by Lindstrom and Turk called "memoryless simplification". This algorithm has been shown to be both computationally efficient and very accurate in terms of error between the simplified surface and the original one. It also preserves the volume enclosed by the surface both globally and locally.</P
+><P
+>Surface refinement is obtained by splitting the edges in two equal parts according to an order described by a user-defined cost function. The default is to use the squared length of the segments as cost.</P
+><P
+>The coarsening or refinement processes are stopped using a user-defined stop function. Two functions are provided stopping either when the cost of collapsing an edge is too large (<A
+HREF="gts-surface-simplification-and-refinement.html#GTS-COARSEN-STOP-COST"
+><CODE
+CLASS="FUNCTION"
+>gts_coarsen_stop_cost()</CODE
+></A
+>) or when the number of edges is too small (<A
+HREF="gts-surface-simplification-and-refinement.html#GTS-COARSEN-STOP-NUMBER"
+><CODE
+CLASS="FUNCTION"
+>gts_coarsen_stop_number()</CODE
+></A
+>).</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN12720"
+></A
+><H2
+>Details</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN12722"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-REFINE"
+></A
+>gts_surface_refine ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_refine              (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-extended-binary-heaps.html#GTSKEYFUNC"
+>GtsKeyFunc</A
+> cost_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> cost_data,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSREFINEFUNC"
+>GtsRefineFunc</A
+> refine_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> refine_data,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSSTOPFUNC"
+>GtsStopFunc</A
+> stop_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> stop_data);</PRE
+><P
+>Refine <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> using a midvertex insertion technique. All the
+edges of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> are ordered according to <CODE
+CLASS="PARAMETER"
+>cost_func</CODE
+>. The edges
+are then processed in order until <CODE
+CLASS="PARAMETER"
+>stop_func</CODE
+> returns <TT
+CLASS="LITERAL"
+>TRUE</TT
+>. Each
+edge is split in two and new edges and faces are created.</P
+><P
+>If <CODE
+CLASS="PARAMETER"
+>cost_func</CODE
+> is set to <TT
+CLASS="LITERAL"
+>NULL</TT
+>, the edges are sorted according 
+to their length squared (the longest is on top).</P
+><P
+>If <CODE
+CLASS="PARAMETER"
+>refine_func</CODE
+> is set to <TT
+CLASS="LITERAL"
+>NULL</TT
+> <A
+HREF="gts-segments.html#GTS-SEGMENT-MIDVERTEX"
+><CODE
+CLASS="FUNCTION"
+>gts_segment_midvertex()</CODE
+></A
+> is used.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12752"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12759"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>cost_func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a function returning the cost for a given edge.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12764"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>cost_data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>cost_func</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12770"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>refine_func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surface-simplification-and-refinement.html#GTSREFINEFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsRefineFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12777"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>refine_data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>refine_func</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12783"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>stop_func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surface-simplification-and-refinement.html#GTSSTOPFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsStopFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12790"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>stop_data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>stop_func</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN12796"
+></A
+><H3
+><A
+NAME="GTSCOARSENFUNC"
+></A
+>GtsCoarsenFunc ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  (*GtsCoarsenFunc)               (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEXCLASS"
+>GtsVertexClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>User-defined function taking an edge <CODE
+CLASS="PARAMETER"
+>e</CODE
+> and returning a replacement vertex of class <CODE
+CLASS="PARAMETER"
+>klass</CODE
+>.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12810"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12817"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>the <A
+HREF="gts-vertices.html#GTSVERTEXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsVertexClass</SPAN
+></A
+> of the replacement vertex.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12824"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>user data passed to the function.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12829"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a replacement vertex of class <CODE
+CLASS="PARAMETER"
+>klass</CODE
+>.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN12835"
+></A
+><H3
+><A
+NAME="GTSREFINEFUNC"
+></A
+>GtsRefineFunc ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  (*GtsRefineFunc)                (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEXCLASS"
+>GtsVertexClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12847"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12852"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12857"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12862"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN12867"
+></A
+><H3
+><A
+NAME="GTSSTOPFUNC"
+></A
+>GtsStopFunc ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    (*GtsStopFunc)                  (<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> cost,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> nedge,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>User-defined function used to stop the coarsening process.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12879"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>cost</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>the cost of collapse of the current edge.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12884"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>nedge</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>the number of edges of the surface after collapse of the current edge.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12889"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>user data passed to the function.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12894"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+><TT
+CLASS="LITERAL"
+>TRUE</TT
+> if the collapse of the current edge is not to take place, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN12901"
+></A
+><H3
+><A
+NAME="GTS-SURFACE-COARSEN"
+></A
+>gts_surface_coarsen ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_surface_coarsen             (<A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *surface,
+                                             <A
+HREF="gts-extended-binary-heaps.html#GTSKEYFUNC"
+>GtsKeyFunc</A
+> cost_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> cost_data,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSCOARSENFUNC"
+>GtsCoarsenFunc</A
+> coarsen_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> coarsen_data,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSSTOPFUNC"
+>GtsStopFunc</A
+> stop_func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> stop_data,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> minangle);</PRE
+><P
+>The edges of <CODE
+CLASS="PARAMETER"
+>surface</CODE
+> are sorted according to <CODE
+CLASS="PARAMETER"
+>cost_func</CODE
+> to 
+create a priority heap (a <A
+HREF="gts-extended-binary-heaps.html#GTSEHEAP"
+><SPAN
+CLASS="TYPE"
+>GtsEHeap</SPAN
+></A
+>). The edges are extracted in
+turn from the top of the heap and collapsed (i.e. the vertices are
+replaced by the vertex returned by the <CODE
+CLASS="PARAMETER"
+>coarsen_func</CODE
+> function)
+until the <CODE
+CLASS="PARAMETER"
+>stop_func</CODE
+> functions returns <TT
+CLASS="LITERAL"
+>TRUE</TT
+>.</P
+><P
+>If <CODE
+CLASS="PARAMETER"
+>cost_func</CODE
+> is set to <TT
+CLASS="LITERAL"
+>NULL</TT
+>, the edges are sorted according 
+to their length squared (the shortest is on top).</P
+><P
+>If <CODE
+CLASS="PARAMETER"
+>coarsen_func</CODE
+> is set to <TT
+CLASS="LITERAL"
+>NULL</TT
+> <A
+HREF="gts-segments.html#GTS-SEGMENT-MIDVERTEX"
+><CODE
+CLASS="FUNCTION"
+>gts_segment_midvertex()</CODE
+></A
+> is used.</P
+><P
+>The minimum angle is used to avoid introducing faces which would be folded.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12935"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>surface</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12942"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>cost_func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a function returning the cost for a given edge.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12947"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>cost_data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>cost_func</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12953"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>coarsen_func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <GTKDOCLINK
+HREF="GTSCOARSENVERTEXFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsCoarsenVertexFunc</SPAN
+></GTKDOCLINK
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12960"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>coarsen_data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>coarsen_func</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12966"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>stop_func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surface-simplification-and-refinement.html#GTSSTOPFUNC"
+><SPAN
+CLASS="TYPE"
+>GtsStopFunc</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12973"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>stop_data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to be passed to <CODE
+CLASS="PARAMETER"
+>stop_func</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN12979"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>minangle</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> minimum angle between two neighboring triangles.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN12984"
+></A
+><H3
+><A
+NAME="GTS-COARSEN-STOP-NUMBER"
+></A
+>gts_coarsen_stop_number ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_coarsen_stop_number         (<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> cost,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> nedge,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> *min_number);</PRE
+><P
+>This function is to be used as the <CODE
+CLASS="PARAMETER"
+>stop_func</CODE
+> argument of 
+<A
+HREF="gts-surface-simplification-and-refinement.html#GTS-SURFACE-COARSEN"
+><CODE
+CLASS="FUNCTION"
+>gts_surface_coarsen()</CODE
+></A
+> or <A
+HREF="gts-progressive-surfaces.html#GTS-PSURFACE-NEW"
+><CODE
+CLASS="FUNCTION"
+>gts_psurface_new()</CODE
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13002"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>cost</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the cost of the edge collapse considered.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13007"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>nedge</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the current number of edges of the surface being simplified.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13012"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>min_number</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a pointer to the minimum number of edges desired for the 
+surface being simplified.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13017"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if the edge collapse would create a surface with a smaller 
+number of edges than given by <CODE
+CLASS="PARAMETER"
+>min_number</CODE
+>, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN13025"
+></A
+><H3
+><A
+NAME="GTS-COARSEN-STOP-COST"
+></A
+>gts_coarsen_stop_cost ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_coarsen_stop_cost           (<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> cost,
+                                             <GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+> nedge,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *max_cost);</PRE
+><P
+>This function is to be used as the <CODE
+CLASS="PARAMETER"
+>stop_func</CODE
+> argument of 
+<A
+HREF="gts-surface-simplification-and-refinement.html#GTS-SURFACE-COARSEN"
+><CODE
+CLASS="FUNCTION"
+>gts_surface_coarsen()</CODE
+></A
+> or <A
+HREF="gts-progressive-surfaces.html#GTS-PSURFACE-NEW"
+><CODE
+CLASS="FUNCTION"
+>gts_psurface_new()</CODE
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13043"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>cost</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the cost of the edge collapse considered.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13048"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>nedge</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the current number of edges of the surface being simplified.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13053"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>max_cost</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a pointer to the maximum cost allowed for an edge collapse.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13058"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if the cost of the edge collapse considered is larger than
+given by <CODE
+CLASS="PARAMETER"
+>max_cost</CODE
+>, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN13066"
+></A
+><H3
+><A
+NAME="GTSVOLUMEOPTIMIZEDPARAMS"
+></A
+>GtsVolumeOptimizedParams</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  gdouble volume_weight;
+  gdouble boundary_weight;
+  gdouble shape_weight;
+} GtsVolumeOptimizedParams;</PRE
+><P
+>The parameters for the volume optimization algorithm of Lindstrom and Turk. THey define the relative weight of the volume, boundary and shape optimization part of the algorithm. Lindstrom and Turk advice is to set them to 0.5, 0.5 and 0. You may want to experiment depending on your problem. Setting <CODE
+CLASS="PARAMETER"
+>shape_weight</CODE
+> to a very small value (1e-10) for example might help improve the quality of the resulting triangulation.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13075"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>volume_weight</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Weight of the volume optimization.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13081"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>boundary_weight</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Weight of the boundary optimization.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13087"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>shape_weight</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Weight of the shape optimization.&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN13093"
+></A
+><H3
+><A
+NAME="GTS-VOLUME-OPTIMIZED-VERTEX"
+></A
+>gts_volume_optimized_vertex ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  gts_volume_optimized_vertex     (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *edge,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEXCLASS"
+>GtsVertexClass</A
+> *klass,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSVOLUMEOPTIMIZEDPARAMS"
+>GtsVolumeOptimizedParams</A
+> *params);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13106"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>edge</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13113"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEXCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsVertexClass</SPAN
+></A
+> to be used for the new vertex.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13120"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>params</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <GTKDOCLINK
+HREF="GTSVOLUMEOPTIMIZEDPARMS"
+><SPAN
+CLASS="TYPE"
+>GtsVolumeOptimizedParms</SPAN
+></GTKDOCLINK
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13127"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+> which can be used to replace <CODE
+CLASS="PARAMETER"
+>edge</CODE
+> for an
+edge collapse operation. The position of the vertex is optimized in
+order to minimize the changes in area and volume for the surface
+using <CODE
+CLASS="PARAMETER"
+>edge</CODE
+>. The volume enclosed by the surface is locally
+preserved. For more details see "Fast and memory efficient
+polygonal simplification" (1998) and "Evaluation of memoryless
+simplification" (1999) by Lindstrom and Turk.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN13136"
+></A
+><H3
+><A
+NAME="GTS-VOLUME-OPTIMIZED-COST"
+></A
+>gts_volume_optimized_cost ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_volume_optimized_cost       (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e,
+                                             <A
+HREF="gts-surface-simplification-and-refinement.html#GTSVOLUMEOPTIMIZEDPARAMS"
+>GtsVolumeOptimizedParams</A
+> *params);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13148"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13155"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>params</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surface-simplification-and-refinement.html#GTSVOLUMEOPTIMIZEDPARAMS"
+><SPAN
+CLASS="TYPE"
+>GtsVolumeOptimizedParams</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13162"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the cost for the collapse of <CODE
+CLASS="PARAMETER"
+>e</CODE
+> as minimized by the function
+<A
+HREF="gts-surface-simplification-and-refinement.html#GTS-VOLUME-OPTIMIZED-VERTEX"
+><CODE
+CLASS="FUNCTION"
+>gts_volume_optimized_vertex()</CODE
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN13170"
+></A
+><H3
+><A
+NAME="GTS-EDGE-COLLAPSE-IS-VALID"
+></A
+>gts_edge_collapse_is_valid ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_edge_collapse_is_valid      (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e);</PRE
+><P
+>An implementation of the topological constraints described in the 
+"Mesh Optimization" article of Hoppe et al (1993).</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13181"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13188"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>e</CODE
+> can be collapsed without violation of the topological
+constraints, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN13196"
+></A
+><H3
+><A
+NAME="GTS-EDGE-COLLAPSE-CREATES-FOLD"
+></A
+>gts_edge_collapse_creates_fold ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_edge_collapse_creates_fold  (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> max);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13209"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13216"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13223"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>max</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>  the maximum value of the square of the cosine of the angle between
+two triangles.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN13228"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if collapsing edge <CODE
+CLASS="PARAMETER"
+>e</CODE
+> to vertex <CODE
+CLASS="PARAMETER"
+>v</CODE
+> would create
+faces making an angle the cosine squared of which would be larger than max,
+<TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><TABLE
+CLASS="navigation"
+WIDTH="100%"
+SUMMARY="Navigation footer"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+ALIGN="left"
+><A
+ACCESSKEY="p"
+HREF="gts-boolean-operations.html"
+><B
+>&lt;&lt;&lt;&nbsp;Boolean operations</B
+></A
+></TD
+><TD
+ALIGN="right"
+><A
+ACCESSKEY="n"
+HREF="gts-out-of-core-simplification.html"
+><B
+>Out-of-core simplification&nbsp;&gt;&gt;&gt;</B
+></A
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

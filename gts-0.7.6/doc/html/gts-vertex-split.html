@@ -1,0 +1,1822 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Vertex split</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="GTS Library Reference Manual"
+HREF="book1.html"><LINK
+REL="UP"
+TITLE="Progressive and Hierarchical surfaces"
+HREF="c15264.html"><LINK
+REL="PREVIOUS"
+TITLE="Progressive and Hierarchical surfaces"
+HREF="c15264.html"><LINK
+REL="NEXT"
+TITLE="Progressive surfaces"
+HREF="gts-progressive-surfaces.html"><STYLE
+TYPE="text/css"
+>.synopsis, .classsynopsis {
+    background: #eeeeee;
+    border: solid 1px #aaaaaa;
+    padding: 0.5em;
+}
+.programlisting {
+    background: #eeeeff;
+    border: solid 1px #aaaaff;
+    padding: 0.5em;
+}
+.variablelist {
+    padding: 4px;
+    margin-left: 3em;
+}
+.navigation {
+    background: #ffeeee;
+    border: solid 1px #ffaaaa;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+.navigation a {
+    color: #770000;
+}
+.navigation a:visited {
+    color: #550000;
+}
+.navigation .title {
+    font-size: 200%;
+}</STYLE
+></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><TABLE
+WIDTH="100%"
+CLASS="navigation"
+SUMMARY="Navigation header"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+><A
+ACCESSKEY="p"
+HREF="c15264.html"
+><IMG
+SRC="left.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Prev"></A
+></TD
+><TD
+><A
+ACCESSKEY="u"
+HREF="c15264.html"
+><IMG
+SRC="up.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Up"></A
+></TD
+><TD
+><A
+ACCESSKEY="h"
+HREF="book1.html"
+><IMG
+SRC="home.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Home"></A
+></TD
+><TH
+WIDTH="100%"
+align="center"
+>GTS Library Reference Manual</TH
+><TD
+><A
+ACCESSKEY="n"
+HREF="gts-progressive-surfaces.html"
+><IMG
+SRC="right.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Next"></A
+></TD
+></TR
+></TABLE
+><H1
+><A
+NAME="GTS-VERTEX-SPLIT"
+></A
+>Vertex split</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN15271"
+></A
+><H2
+>Name</H2
+>Vertex split&nbsp;--&nbsp;object encoding a reversible edge-collapse operation.</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN15274"
+></A
+><H2
+>Synopsis</H2
+><PRE
+CLASS="SYNOPSIS"
+>&#13;#include &lt;gts.h&gt;
+
+
+#define     <A
+HREF="gts-vertex-split.html#GTS-SPLIT-CLASS:CAPS"
+>GTS_SPLIT_CLASS</A
+>                 (klass)
+#define     <A
+HREF="gts-vertex-split.html#GTS-SPLIT:CAPS"
+>GTS_SPLIT</A
+>                       (obj)
+#define     <A
+HREF="gts-vertex-split.html#GTS-IS-SPLIT:CAPS"
+>GTS_IS_SPLIT</A
+>                    (obj)
+#define     <A
+HREF="gts-vertex-split.html#GTS-SPLIT-V1:CAPS"
+>GTS_SPLIT_V1</A
+>                    (vs)
+#define     <A
+HREF="gts-vertex-split.html#GTS-SPLIT-V2:CAPS"
+>GTS_SPLIT_V2</A
+>                    (vs)
+            <A
+HREF="gts-vertex-split.html#GTSSPLITCLASS"
+>GtsSplitClass</A
+>;
+            <A
+HREF="gts-vertex-split.html#GTSSPLITCFACE"
+>GtsSplitCFace</A
+>;
+            <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+>;
+
+<A
+HREF="gts-vertex-split.html#GTSSPLITCLASS"
+>GtsSplitClass</A
+>* <A
+HREF="gts-vertex-split.html#GTS-SPLIT-CLASS"
+>gts_split_class</A
+>              (void);
+<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+>*   <A
+HREF="gts-vertex-split.html#GTS-SPLIT-NEW"
+>gts_split_new</A
+>                   (<A
+HREF="gts-vertex-split.html#GTSSPLITCLASS"
+>GtsSplitClass</A
+> *klass,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+> *o1,
+                                             <A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+> *o2);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-vertex-split.html#GTS-SPLIT-COLLAPSE"
+>gts_split_collapse</A
+>              (<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+> *vs,
+                                             <A
+HREF="gts-edges.html#GTSEDGECLASS"
+>GtsEdgeClass</A
+> *klass,
+                                             <A
+HREF="gts-extended-binary-heaps.html#GTSEHEAP"
+>GtsEHeap</A
+> *heap);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-vertex-split.html#GTS-SPLIT-EXPAND"
+>gts_split_expand</A
+>                (<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+> *vs,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-edges.html#GTSEDGECLASS"
+>GtsEdgeClass</A
+> *klass);
+<GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       <A
+HREF="gts-vertex-split.html#GTS-SPLIT-HEIGHT"
+>gts_split_height</A
+>                (<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+> *root);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    (<A
+HREF="gts-vertex-split.html#GTSSPLITTRAVERSEFUNC"
+>*GtsSplitTraverseFunc</A
+>)         (<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+> *vs,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-vertex-split.html#GTS-SPLIT-TRAVERSE"
+>gts_split_traverse</A
+>              (<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+> *root,
+                                             <GTKDOCLINK
+HREF="GTRAVERSETYPE"
+>GTraverseType</GTKDOCLINK
+> order,
+                                             <GTKDOCLINK
+HREF="GINT"
+>gint</GTKDOCLINK
+> depth,
+                                             <A
+HREF="gts-vertex-split.html#GTSSPLITTRAVERSEFUNC"
+>GtsSplitTraverseFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN15317"
+></A
+><H2
+>Description</H2
+><P
+>The vertex split object is the building block of the progressive mesh representation proposed by Hoppe ("Progressive meshes", SIGGRAPH, 1996). It encodes an edge collapse operation and its inverse the "vertex split". The implementation of vertex split in GTS is somewhat more general than the original version of Hoppe. Non-manifold edges can be collapsed and non-manifold vertices can be split.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN15320"
+></A
+><H2
+>Details</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15322"
+></A
+><H3
+><A
+NAME="GTS-SPLIT-CLASS:CAPS"
+></A
+>GTS_SPLIT_CLASS()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_SPLIT_CLASS(klass)</PRE
+><P
+>Casts <CODE
+CLASS="PARAMETER"
+>klass</CODE
+> to <A
+HREF="gts-vertex-split.html#GTSSPLITCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsSplitClass</SPAN
+></A
+>.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15333"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a descendant of <A
+HREF="gts-vertex-split.html#GTSSPLITCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsSplitClass</SPAN
+></A
+>.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15340"
+></A
+><H3
+><A
+NAME="GTS-SPLIT:CAPS"
+></A
+>GTS_SPLIT()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_SPLIT(obj)</PRE
+><P
+>Casts <CODE
+CLASS="PARAMETER"
+>obj</CODE
+> to <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15351"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a descendant of <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15358"
+></A
+><H3
+><A
+NAME="GTS-IS-SPLIT:CAPS"
+></A
+>GTS_IS_SPLIT()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_IS_SPLIT(obj)</PRE
+><P
+>Evaluates to <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>obj</CODE
+> is a <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15370"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a pointer to test.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15375"
+></A
+><H3
+><A
+NAME="GTS-SPLIT-V1:CAPS"
+></A
+>GTS_SPLIT_V1()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_SPLIT_V1(vs)</PRE
+><P
+>Evaluates to the first vertex of the edge collapsed by <CODE
+CLASS="PARAMETER"
+>vs</CODE
+>.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15384"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>vs</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15391"
+></A
+><H3
+><A
+NAME="GTS-SPLIT-V2:CAPS"
+></A
+>GTS_SPLIT_V2()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_SPLIT_V2(vs)</PRE
+><P
+>Evaluates to the second vertex of the edge collapsed by <CODE
+CLASS="PARAMETER"
+>vs</CODE
+>.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15400"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>vs</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15407"
+></A
+><H3
+><A
+NAME="GTSSPLITCLASS"
+></A
+>GtsSplitClass</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsObjectClass parent_class;
+} GtsSplitClass;</PRE
+><P
+>The vertex split class.</P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15414"
+></A
+><H3
+><A
+NAME="GTSSPLITCFACE"
+></A
+>GtsSplitCFace</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct _GtsSplitCFace GtsSplitCFace;</PRE
+><P
+>An opaque structure describing the faces collapsed by a vertex split.</P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15421"
+></A
+><H3
+><A
+NAME="GTSSPLIT"
+></A
+>GtsSplit</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsObject object;
+
+  GtsVertex * v;
+  GtsObject * v1;
+  GtsObject * v2;
+  GtsSplitCFace * cfaces;
+  guint ncf;
+} GtsSplit;</PRE
+><P
+>The vertex split object. If <CODE
+CLASS="PARAMETER"
+>v1</CODE
+> is a <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+> the corresponding vertex can be found in GTS_SPLIT(v1)-&#62;v. This conversion is performed directly by the two macros <A
+HREF="gts-vertex-split.html#GTS-SPLIT-V1:CAPS"
+><SPAN
+CLASS="TYPE"
+>GTS_SPLIT_V1</SPAN
+></A
+> and <A
+HREF="gts-vertex-split.html#GTS-SPLIT-V2:CAPS"
+><SPAN
+CLASS="TYPE"
+>GTS_SPLIT_V2</SPAN
+></A
+>. Together with the current <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>, <CODE
+CLASS="PARAMETER"
+>v1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>v2</CODE
+> define one level of a vertex split tree. If <CODE
+CLASS="PARAMETER"
+>v1</CODE
+> or <CODE
+CLASS="PARAMETER"
+>v2</CODE
+> are both <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>, the current vertex split is a leaf of the tree.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15444"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>object</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+></P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15450"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>&nbsp;*<CODE
+CLASS="STRUCTFIELD"
+>v</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Vertex to be split.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15456"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+>&nbsp;*<CODE
+CLASS="STRUCTFIELD"
+>v1</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Either a <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+> or <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>, first vertex of the edge to be expanded.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15466"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+>&nbsp;*<CODE
+CLASS="STRUCTFIELD"
+>v2</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Either a <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+> or <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>, second vertex of the edge to be expanded.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15476"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-vertex-split.html#GTSSPLITCFACE"
+>GtsSplitCFace</A
+>&nbsp;*<CODE
+CLASS="STRUCTFIELD"
+>cfaces</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>An array of <A
+HREF="gts-vertex-split.html#GTSSPLITCFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSplitCFace</SPAN
+></A
+> describing the faces collapsed by the vertex split.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15484"><SPAN
+STYLE="white-space: nowrap"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>ncf</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Number of faces collapsed in <CODE
+CLASS="PARAMETER"
+>cfaces</CODE
+>.&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15491"
+></A
+><H3
+><A
+NAME="GTS-SPLIT-CLASS"
+></A
+>gts_split_class ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-vertex-split.html#GTSSPLITCLASS"
+>GtsSplitClass</A
+>* gts_split_class              (void);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15501"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the <A
+HREF="gts-vertex-split.html#GTSSPLITCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsSplitClass</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15508"
+></A
+><H3
+><A
+NAME="GTS-SPLIT-NEW"
+></A
+>gts_split_new ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+>*   gts_split_new                   (<A
+HREF="gts-vertex-split.html#GTSSPLITCLASS"
+>GtsSplitClass</A
+> *klass,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v,
+                                             <A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+> *o1,
+                                             <A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+> *o2);</PRE
+><P
+>Creates a new <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+> which would collapse <CODE
+CLASS="PARAMETER"
+>o1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>o2</CODE
+> into <CODE
+CLASS="PARAMETER"
+>v</CODE
+>. The 
+collapse itself is not performed.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15527"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertex-split.html#GTSSPLITCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsSplitClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15534"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15541"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>o1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> either a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+> or a <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15550"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>o2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> either a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+> or a <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15559"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the new <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15566"
+></A
+><H3
+><A
+NAME="GTS-SPLIT-COLLAPSE"
+></A
+>gts_split_collapse ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_split_collapse              (<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+> *vs,
+                                             <A
+HREF="gts-edges.html#GTSEDGECLASS"
+>GtsEdgeClass</A
+> *klass,
+                                             <A
+HREF="gts-extended-binary-heaps.html#GTSEHEAP"
+>GtsEHeap</A
+> *heap);</PRE
+><P
+>Collapses the vertex split <CODE
+CLASS="PARAMETER"
+>vs</CODE
+>. Any new edge created during the process will
+be of class <CODE
+CLASS="PARAMETER"
+>klass</CODE
+>. If heap is not <TT
+CLASS="LITERAL"
+>NULL</TT
+>, the new edges will be inserted
+into it and the destroyed edges will be removed from it.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15582"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>vs</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15589"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsEdgeClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15596"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>heap</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-extended-binary-heaps.html#GTSEHEAP"
+><SPAN
+CLASS="TYPE"
+>GtsEHeap</SPAN
+></A
+> or <TT
+CLASS="LITERAL"
+>NULL</TT
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15604"
+></A
+><H3
+><A
+NAME="GTS-SPLIT-EXPAND"
+></A
+>gts_split_expand ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_split_expand                (<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+> *vs,
+                                             <A
+HREF="gts-surfaces.html#GTSSURFACE"
+>GtsSurface</A
+> *s,
+                                             <A
+HREF="gts-edges.html#GTSEDGECLASS"
+>GtsEdgeClass</A
+> *klass);</PRE
+><P
+>Expands the vertex split <CODE
+CLASS="PARAMETER"
+>vs</CODE
+> adding the newly created faces to <CODE
+CLASS="PARAMETER"
+>s</CODE
+>. Any 
+new edge will be of class <CODE
+CLASS="PARAMETER"
+>klass</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15620"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>vs</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15627"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>s</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-surfaces.html#GTSSURFACE"
+><SPAN
+CLASS="TYPE"
+>GtsSurface</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15634"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsEdgeClass</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15641"
+></A
+><H3
+><A
+NAME="GTS-SPLIT-HEIGHT"
+></A
+>gts_split_height ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       gts_split_height                (<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+> *root);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15652"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>root</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15659"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the maximum height of the vertex split tree having <CODE
+CLASS="PARAMETER"
+>root</CODE
+> as root.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15665"
+></A
+><H3
+><A
+NAME="GTSSPLITTRAVERSEFUNC"
+></A
+>GtsSplitTraverseFunc ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    (*GtsSplitTraverseFunc)         (<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+> *vs,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>A user-defined function to be called when traversing a vertex split tree.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15676"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>vs</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>the <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+> for which this function is called.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15683"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>user data passed to the function.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15688"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+><TT
+CLASS="LITERAL"
+>TRUE</TT
+> to stop the traversal, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> to continue.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN15695"
+></A
+><H3
+><A
+NAME="GTS-SPLIT-TRAVERSE"
+></A
+>gts_split_traverse ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_split_traverse              (<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+>GtsSplit</A
+> *root,
+                                             <GTKDOCLINK
+HREF="GTRAVERSETYPE"
+>GTraverseType</GTKDOCLINK
+> order,
+                                             <GTKDOCLINK
+HREF="GINT"
+>gint</GTKDOCLINK
+> depth,
+                                             <A
+HREF="gts-vertex-split.html#GTSSPLITTRAVERSEFUNC"
+>GtsSplitTraverseFunc</A
+> func,
+                                             <GTKDOCLINK
+HREF="GPOINTER"
+>gpointer</GTKDOCLINK
+> data);</PRE
+><P
+>Traverses the <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+> tree having <CODE
+CLASS="PARAMETER"
+>root</CODE
+> as root. Calls <CODE
+CLASS="PARAMETER"
+>func</CODE
+> for each
+<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+> of the tree in the order specified by <CODE
+CLASS="PARAMETER"
+>order</CODE
+>. If order is set
+to G_PRE_ORDER <CODE
+CLASS="PARAMETER"
+>func</CODE
+> is called for the <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+> then its children, if order
+is set to G_POST_ORDER <CODE
+CLASS="PARAMETER"
+>func</CODE
+> is called for the children and then for the
+<A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15723"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>root</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the <A
+HREF="gts-vertex-split.html#GTSSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsSplit</SPAN
+></A
+> to start the traversal from.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15730"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>order</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the order in which nodes are visited - G_PRE_ORDER or G_POST_ORDER.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15735"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>depth</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the maximum depth of the traversal. Nodes below this depth
+will not be visited. If depth is -1 all nodes in the tree are
+visited. If depth is 1, only the root is visited. If depth is 2,
+the root and its children are visited. And so on.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15740"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>func</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the function to call for each visited <A
+HREF="gts-hierarchical-vertex-split.html#GTSHSPLIT"
+><SPAN
+CLASS="TYPE"
+>GtsHSplit</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN15747"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>data</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> user data to pass to the function.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><TABLE
+CLASS="navigation"
+WIDTH="100%"
+SUMMARY="Navigation footer"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+ALIGN="left"
+><A
+ACCESSKEY="p"
+HREF="c15264.html"
+><B
+>&lt;&lt;&lt;&nbsp;Progressive and Hierarchical surfaces</B
+></A
+></TD
+><TD
+ALIGN="right"
+><A
+ACCESSKEY="n"
+HREF="gts-progressive-surfaces.html"
+><B
+>Progressive surfaces&nbsp;&gt;&gt;&gt;</B
+></A
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

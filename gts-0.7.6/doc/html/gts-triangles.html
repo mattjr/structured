@@ -1,0 +1,4554 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Triangles</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="GTS Library Reference Manual"
+HREF="book1.html"><LINK
+REL="UP"
+TITLE="Geometrical Object Hierarchy"
+HREF="c2915.html"><LINK
+REL="PREVIOUS"
+TITLE="Edges"
+HREF="gts-edges.html"><LINK
+REL="NEXT"
+TITLE="Faces"
+HREF="gts-faces.html"><STYLE
+TYPE="text/css"
+>.synopsis, .classsynopsis {
+    background: #eeeeee;
+    border: solid 1px #aaaaaa;
+    padding: 0.5em;
+}
+.programlisting {
+    background: #eeeeff;
+    border: solid 1px #aaaaff;
+    padding: 0.5em;
+}
+.variablelist {
+    padding: 4px;
+    margin-left: 3em;
+}
+.navigation {
+    background: #ffeeee;
+    border: solid 1px #ffaaaa;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+.navigation a {
+    color: #770000;
+}
+.navigation a:visited {
+    color: #550000;
+}
+.navigation .title {
+    font-size: 200%;
+}</STYLE
+></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><TABLE
+WIDTH="100%"
+CLASS="navigation"
+SUMMARY="Navigation header"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+><A
+ACCESSKEY="p"
+HREF="gts-edges.html"
+><IMG
+SRC="left.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Prev"></A
+></TD
+><TD
+><A
+ACCESSKEY="u"
+HREF="c2915.html"
+><IMG
+SRC="up.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Up"></A
+></TD
+><TD
+><A
+ACCESSKEY="h"
+HREF="book1.html"
+><IMG
+SRC="home.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Home"></A
+></TD
+><TH
+WIDTH="100%"
+align="center"
+>GTS Library Reference Manual</TH
+><TD
+><A
+ACCESSKEY="n"
+HREF="gts-faces.html"
+><IMG
+SRC="right.png"
+WIDTH="24"
+HEIGHT="24"
+BORDER="0"
+ALT="Next"></A
+></TD
+></TR
+></TABLE
+><H1
+><A
+NAME="GTS-TRIANGLES"
+></A
+>Triangles</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN7291"
+></A
+><H2
+>Name</H2
+>Triangles&nbsp;--&nbsp;triangle object and related functions.</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN7294"
+></A
+><H2
+>Synopsis</H2
+><PRE
+CLASS="SYNOPSIS"
+>&#13;#include &lt;gts.h&gt;
+
+
+#define     <A
+HREF="gts-triangles.html#GTS-TRIANGLE-CLASS:CAPS"
+>GTS_TRIANGLE_CLASS</A
+>              (klass)
+#define     <A
+HREF="gts-triangles.html#GTS-TRIANGLE:CAPS"
+>GTS_TRIANGLE</A
+>                    (obj)
+#define     <A
+HREF="gts-triangles.html#GTS-IS-TRIANGLE:CAPS"
+>GTS_IS_TRIANGLE</A
+>                 (obj)
+            <A
+HREF="gts-triangles.html#GTSTRIANGLECLASS"
+>GtsTriangleClass</A
+>;
+            <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+>;
+
+<A
+HREF="gts-triangles.html#GTSTRIANGLECLASS"
+>GtsTriangleClass</A
+>* <A
+HREF="gts-triangles.html#GTS-TRIANGLE-CLASS"
+>gts_triangle_class</A
+>        (void);
+<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+>* <A
+HREF="gts-triangles.html#GTS-TRIANGLE-NEW"
+>gts_triangle_new</A
+>               (<A
+HREF="gts-triangles.html#GTSTRIANGLECLASS"
+>GtsTriangleClass</A
+> *klass,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e1,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e2,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e3);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-triangles.html#GTS-TRIANGLE-SET"
+>gts_triangle_set</A
+>                (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *triangle,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e1,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e2,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e3);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-triangles.html#GTS-TRIANGLE-AREA"
+>gts_triangle_area</A
+>               (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-triangles.html#GTS-TRIANGLE-PERIMETER"
+>gts_triangle_perimeter</A
+>          (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-triangles.html#GTS-TRIANGLE-QUALITY"
+>gts_triangle_quality</A
+>            (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-triangles.html#GTS-TRIANGLE-NORMAL"
+>gts_triangle_normal</A
+>             (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *x,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *y,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *z);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-triangles.html#GTS-TRIANGLE-REVERT"
+>gts_triangle_revert</A
+>             (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-triangles.html#GTS-TRIANGLE-ORIENTATION"
+>gts_triangle_orientation</A
+>        (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);
+<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+>* <A
+HREF="gts-triangles.html#GTS-TRIANGLE-IS-DUPLICATE"
+>gts_triangle_is_duplicate</A
+>      (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);
+<GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     <A
+HREF="gts-triangles.html#GTS-TRIANGLES-ANGLE"
+>gts_triangles_angle</A
+>             (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t1,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t2);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-triangles.html#GTS-TRIANGLES-ARE-COMPATIBLE"
+>gts_triangles_are_compatible</A
+>    (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t1,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t2,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e);
+<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+>* <A
+HREF="gts-triangles.html#GTS-TRIANGLE-ENCLOSING"
+>gts_triangle_enclosing</A
+>         (<A
+HREF="gts-triangles.html#GTSTRIANGLECLASS"
+>GtsTriangleClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *points,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> scale);
+<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+>*    <A
+HREF="gts-triangles.html#GTS-TRIANGLES-COMMON-EDGE"
+>gts_triangles_common_edge</A
+>       (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t1,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t2);
+<GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       <A
+HREF="gts-triangles.html#GTS-TRIANGLE-NEIGHBOR-NUMBER"
+>gts_triangle_neighbor_number</A
+>    (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-triangles.html#GTS-TRIANGLE-NEIGHBORS"
+>gts_triangle_neighbors</A
+>          (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-triangles.html#GTS-TRIANGLE-VERTICES-EDGES"
+>gts_triangle_vertices_edges</A
+>     (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v1,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v2,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v3,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> **e1,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> **e2,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> **e3);
+<A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  <A
+HREF="gts-triangles.html#GTS-TRIANGLE-VERTEX-OPPOSITE"
+>gts_triangle_vertex_opposite</A
+>    (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e);
+<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+>*    <A
+HREF="gts-triangles.html#GTS-TRIANGLE-EDGE-OPPOSITE"
+>gts_triangle_edge_opposite</A
+>      (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-triangles.html#GTS-TRIANGLE-VERTICES"
+>gts_triangle_vertices</A
+>           (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v1,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v2,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v3);
+#define     <A
+HREF="gts-triangles.html#GTS-TRIANGLE-VERTEX"
+>gts_triangle_vertex</A
+>             (t)
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-triangles.html#GTS-TRIANGLE-IS-OK"
+>gts_triangle_is_ok</A
+>              (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);
+<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+>* <A
+HREF="gts-triangles.html#GTS-TRIANGLE-USE-EDGES"
+>gts_triangle_use_edges</A
+>         (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e1,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e2,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e3);
+<A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+>*   <A
+HREF="gts-triangles.html#GTS-TRIANGLE-CIRCUMCIRCLE-CENTER"
+>gts_triangle_circumcircle_center</A
+>
+                                            (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-points.html#GTSPOINTCLASS"
+>GtsPointClass</A
+> *point_class);
+<A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+>*  <A
+HREF="gts-triangles.html#GTS-TRIANGLE-IS-STABBED"
+>gts_triangle_is_stabbed</A
+>         (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *orientation);
+<GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    <A
+HREF="gts-triangles.html#GTS-TRIANGLES-ARE-FOLDED"
+>gts_triangles_are_folded</A
+>        (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *triangles,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *A,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *B,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> max);
+<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     <A
+HREF="gts-triangles.html#GTS-TRIANGLES-FROM-EDGES"
+>gts_triangles_from_edges</A
+>        (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *edges);
+<GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        <A
+HREF="gts-triangles.html#GTS-TRIANGLE-INTERPOLATE-HEIGHT"
+>gts_triangle_interpolate_height</A
+> (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p);</PRE
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN7419"
+></A
+><H2
+>Description</H2
+><P
+>A <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+> is defined by three <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>. They are oriented, the normal to the triangle points toward an observer seing the three edges in counter-clockwise order.</P
+><P
+>When destroying a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>, all the edges not used by another triangle are also destroyed. This default behaviour can be changed punctually by setting the global variable gts_allow_floating_edges to <TT
+CLASS="LITERAL"
+>TRUE</TT
+>. You must not forget to set this variable back to <TT
+CLASS="LITERAL"
+>FALSE</TT
+> as all the algorithms of GTS assume the default behaviour.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN7431"
+></A
+><H2
+>Details</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7433"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-CLASS:CAPS"
+></A
+>GTS_TRIANGLE_CLASS()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_TRIANGLE_CLASS(klass)</PRE
+><P
+>Casts <CODE
+CLASS="PARAMETER"
+>klass</CODE
+> to <A
+HREF="gts-triangles.html#GTSTRIANGLECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsTriangleClass</SPAN
+></A
+>.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7444"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a descendant of <A
+HREF="gts-triangles.html#GTSTRIANGLECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsTriangleClass</SPAN
+></A
+>.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7451"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE:CAPS"
+></A
+>GTS_TRIANGLE()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_TRIANGLE(obj)</PRE
+><P
+>Casts <CODE
+CLASS="PARAMETER"
+>obj</CODE
+> to <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7462"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a descendant of <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7469"
+></A
+><H3
+><A
+NAME="GTS-IS-TRIANGLE:CAPS"
+></A
+>GTS_IS_TRIANGLE()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     GTS_IS_TRIANGLE(obj)</PRE
+><P
+>Evaluates to <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>obj</CODE
+> is a descendant of <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7482"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>obj</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a pointer to test.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7487"
+></A
+><H3
+><A
+NAME="GTSTRIANGLECLASS"
+></A
+>GtsTriangleClass</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsObjectClass parent_class;
+} GtsTriangleClass;</PRE
+><P
+>The triangle class, just derived from <A
+HREF="gts-object-class.html#GTSOBJECT"
+><SPAN
+CLASS="TYPE"
+>GtsObject</SPAN
+></A
+>.</P
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7496"
+></A
+><H3
+><A
+NAME="GTSTRIANGLE"
+></A
+>GtsTriangle</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct {
+  GtsObject object;
+
+  GtsEdge * e1;
+  GtsEdge * e2;
+  GtsEdge * e3;
+} GtsTriangle;</PRE
+><P
+>The triangle object.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7504"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+>&nbsp;<CODE
+CLASS="STRUCTFIELD"
+>object</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Parent object.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7510"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+>&nbsp;*<CODE
+CLASS="STRUCTFIELD"
+>e1</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>First edge.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7516"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+>&nbsp;*<CODE
+CLASS="STRUCTFIELD"
+>e2</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Second edge.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7522"><SPAN
+STYLE="white-space: nowrap"
+><A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+>&nbsp;*<CODE
+CLASS="STRUCTFIELD"
+>e3</CODE
+>;</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Third edge.&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7528"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-CLASS"
+></A
+>gts_triangle_class ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-triangles.html#GTSTRIANGLECLASS"
+>GtsTriangleClass</A
+>* gts_triangle_class        (void);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7538"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the <A
+HREF="gts-triangles.html#GTSTRIANGLECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsTriangleClass</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7545"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-NEW"
+></A
+>gts_triangle_new ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+>* gts_triangle_new               (<A
+HREF="gts-triangles.html#GTSTRIANGLECLASS"
+>GtsTriangleClass</A
+> *klass,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e1,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e2,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e3);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7559"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLECLASS"
+><SPAN
+CLASS="TYPE"
+>GtsTriangleClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7566"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7573"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> another <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> touching <CODE
+CLASS="PARAMETER"
+>e1</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7581"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e3</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> another <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> touching both <CODE
+CLASS="PARAMETER"
+>e1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>e2</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7590"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+> having <CODE
+CLASS="PARAMETER"
+>e1</CODE
+>, <CODE
+CLASS="PARAMETER"
+>e2</CODE
+> and <CODE
+CLASS="PARAMETER"
+>e3</CODE
+> as edges.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7600"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-SET"
+></A
+>gts_triangle_set ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_triangle_set                (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *triangle,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e1,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e2,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e3);</PRE
+><P
+>Sets the edge of <CODE
+CLASS="PARAMETER"
+>triangle</CODE
+> to <CODE
+CLASS="PARAMETER"
+>e1</CODE
+>, <CODE
+CLASS="PARAMETER"
+>e2</CODE
+> and <CODE
+CLASS="PARAMETER"
+>e3</CODE
+> while checking that they
+define a valid triangle.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7618"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>triangle</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7625"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7632"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> another <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> touching <CODE
+CLASS="PARAMETER"
+>e1</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7640"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e3</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> another <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> touching both <CODE
+CLASS="PARAMETER"
+>e1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>e2</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7649"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-AREA"
+></A
+>gts_triangle_area ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_triangle_area               (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7660"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7667"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the area of the triangle <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7673"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-PERIMETER"
+></A
+>gts_triangle_perimeter ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_triangle_perimeter          (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7684"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7691"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the perimeter of the triangle <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7697"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-QUALITY"
+></A
+>gts_triangle_quality ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_triangle_quality            (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);</PRE
+><P
+>The quality of a triangle is defined as the ratio of the square
+root of its surface area to its perimeter relative to this same
+ratio for an equilateral triangle with the same area. The quality
+is then one for an equilateral triangle and tends to zero for a
+very stretched triangle.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7708"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7715"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the quality of the triangle <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7721"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-NORMAL"
+></A
+>gts_triangle_normal ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_triangle_normal             (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *x,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *y,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *z);</PRE
+><P
+>Computes the coordinates of the oriented normal of <CODE
+CLASS="PARAMETER"
+>t</CODE
+> as the
+cross-product of two edges, using the left-hand rule. The normal is
+not normalized.  If this triangle is part of a closed and oriented
+surface, the normal points to the outside of the surface.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7736"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7743"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>x</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the x coordinate of the normal.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7748"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>y</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the y coordinate of the normal.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7753"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>z</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the z coordinate of the normal.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7758"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-REVERT"
+></A
+>gts_triangle_revert ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_triangle_revert             (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);</PRE
+><P
+>Changes the orientation of triangle <CODE
+CLASS="PARAMETER"
+>t</CODE
+>, turning it inside out.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7770"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7777"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-ORIENTATION"
+></A
+>gts_triangle_orientation ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_triangle_orientation        (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);</PRE
+><P
+>Checks for the orientation of the plane (x,y) projection of a
+triangle. See <A
+HREF="gts-points.html#GTS-POINT-ORIENTATION"
+><CODE
+CLASS="FUNCTION"
+>gts_point_orientation()</CODE
+></A
+> for details. This function
+is geometrically robust.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7790"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7797"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a number depending on the orientation of the vertices of <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7803"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-IS-DUPLICATE"
+></A
+>gts_triangle_is_duplicate ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+>* gts_triangle_is_duplicate      (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7814"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7821"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+> different from <CODE
+CLASS="PARAMETER"
+>t</CODE
+> but sharing all its edges 
+with <CODE
+CLASS="PARAMETER"
+>t</CODE
+> or <TT
+CLASS="LITERAL"
+>NULL</TT
+> if there is none.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7831"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLES-ANGLE"
+></A
+>gts_triangles_angle ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+>     gts_triangles_angle             (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t1,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t2);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7843"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7850"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7857"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the value (in radians) of the angle between <CODE
+CLASS="PARAMETER"
+>t1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>t2</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7864"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLES-ARE-COMPATIBLE"
+></A
+>gts_triangles_are_compatible ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_triangles_are_compatible    (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t1,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t2,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e);</PRE
+><P
+>Checks if <CODE
+CLASS="PARAMETER"
+>t1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>t2</CODE
+> have compatible orientations i.e. if <CODE
+CLASS="PARAMETER"
+>t1</CODE
+> and
+<CODE
+CLASS="PARAMETER"
+>t2</CODE
+> can be part of the same surface without conflict in the surface
+normal orientation.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7881"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7888"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7895"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> used by both <CODE
+CLASS="PARAMETER"
+>t1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>t2</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7904"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>t1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>t2</CODE
+> are compatible, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7913"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-ENCLOSING"
+></A
+>gts_triangle_enclosing ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+>* gts_triangle_enclosing         (<A
+HREF="gts-triangles.html#GTSTRIANGLECLASS"
+>GtsTriangleClass</A
+> *klass,
+                                             <GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *points,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> scale);</PRE
+><P
+>Builds a new triangle (including new vertices and edges) enclosing
+the plane projection of all the points in <CODE
+CLASS="PARAMETER"
+>points</CODE
+>. This triangle is
+equilateral and encloses a rectangle defined by the maximum and
+minimum x and y coordinates of the points. <CODE
+CLASS="PARAMETER"
+>scale</CODE
+> is an homothetic
+scaling factor. If equal to one, the triangle encloses exactly the
+enclosing rectangle.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7928"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>klass</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the class of the new triangle.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7933"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>points</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7940"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>scale</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a scaling factor (must be larger than one).</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7945"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7952"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLES-COMMON-EDGE"
+></A
+>gts_triangles_common_edge ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+>*    gts_triangles_common_edge       (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t1,
+                                             <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t2);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7964"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7971"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN7978"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> common to both <CODE
+CLASS="PARAMETER"
+>t1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>t2</CODE
+> or <TT
+CLASS="LITERAL"
+>NULL</TT
+> if <CODE
+CLASS="PARAMETER"
+>t1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>t2</CODE
+>
+do not share any edge.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN7990"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-NEIGHBOR-NUMBER"
+></A
+>gts_triangle_neighbor_number ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GUINT"
+>guint</GTKDOCLINK
+>       gts_triangle_neighbor_number    (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8001"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8008"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the number of triangles neighbors of <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8014"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-NEIGHBORS"
+></A
+>gts_triangle_neighbors ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_triangle_neighbors          (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8025"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8032"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+> neighbors of <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8040"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-VERTICES-EDGES"
+></A
+>gts_triangle_vertices_edges ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_triangle_vertices_edges     (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v1,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v2,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v3,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> **e1,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> **e2,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> **e3);</PRE
+><P
+>Given <CODE
+CLASS="PARAMETER"
+>t</CODE
+> and <CODE
+CLASS="PARAMETER"
+>e</CODE
+>, returns <CODE
+CLASS="PARAMETER"
+>v1</CODE
+>, <CODE
+CLASS="PARAMETER"
+>v2</CODE
+>, <CODE
+CLASS="PARAMETER"
+>v3</CODE
+>, <CODE
+CLASS="PARAMETER"
+>e1</CODE
+>, <CODE
+CLASS="PARAMETER"
+>e2</CODE
+> and <CODE
+CLASS="PARAMETER"
+>e3</CODE
+>. <CODE
+CLASS="PARAMETER"
+>e1</CODE
+>
+has <CODE
+CLASS="PARAMETER"
+>v1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>v2</CODE
+> as vertices, <CODE
+CLASS="PARAMETER"
+>e2</CODE
+> has <CODE
+CLASS="PARAMETER"
+>v2</CODE
+> and <CODE
+CLASS="PARAMETER"
+>v3</CODE
+> as vertices
+and <CODE
+CLASS="PARAMETER"
+>e3</CODE
+> has <CODE
+CLASS="PARAMETER"
+>v3</CODE
+> and <CODE
+CLASS="PARAMETER"
+>v1</CODE
+> as vertices. <CODE
+CLASS="PARAMETER"
+>v1</CODE
+>, <CODE
+CLASS="PARAMETER"
+>v2</CODE
+> and <CODE
+CLASS="PARAMETER"
+>v3</CODE
+> respects
+the orientation of <CODE
+CLASS="PARAMETER"
+>t</CODE
+>. If <CODE
+CLASS="PARAMETER"
+>e</CODE
+> is not NULL, <CODE
+CLASS="PARAMETER"
+>e1</CODE
+> and <CODE
+CLASS="PARAMETER"
+>e</CODE
+> are
+identical.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8082"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8089"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> belonging to the edges of <CODE
+CLASS="PARAMETER"
+>t</CODE
+> or <TT
+CLASS="LITERAL"
+>NULL</TT
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8098"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+> used by <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8106"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+> used by <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8114"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v3</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+> used by <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8122"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> used by <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8130"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> used by <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8138"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e3</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> used by <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8146"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-VERTEX-OPPOSITE"
+></A
+>gts_triangle_vertex_opposite ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+>*  gts_triangle_vertex_opposite    (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e);</PRE
+><P
+>This function fails if <CODE
+CLASS="PARAMETER"
+>e</CODE
+> is not an edge of <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8160"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8167"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+> used by <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8175"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>, vertex of <CODE
+CLASS="PARAMETER"
+>t</CODE
+> which does not belong to <CODE
+CLASS="PARAMETER"
+>e</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8184"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-EDGE-OPPOSITE"
+></A
+>gts_triangle_edge_opposite ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+>*    gts_triangle_edge_opposite      (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *v);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8196"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8203"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+> of <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8211"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the edge of <CODE
+CLASS="PARAMETER"
+>t</CODE
+> opposite <CODE
+CLASS="PARAMETER"
+>v</CODE
+> or <TT
+CLASS="LITERAL"
+>NULL</TT
+> if <CODE
+CLASS="PARAMETER"
+>v</CODE
+> is not a vertice of <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8221"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-VERTICES"
+></A
+>gts_triangle_vertices ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_triangle_vertices           (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v1,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v2,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> **v3);</PRE
+><P
+>Fills <CODE
+CLASS="PARAMETER"
+>v1</CODE
+>, <CODE
+CLASS="PARAMETER"
+>v2</CODE
+> and <CODE
+CLASS="PARAMETER"
+>v3</CODE
+> with the oriented set of vertices, summits of <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8239"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8246"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a pointer on a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8253"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a pointer on a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8260"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>v3</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a pointer on a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8267"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-VERTEX"
+></A
+>gts_triangle_vertex()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+>#define     gts_triangle_vertex(t)</PRE
+><P
+>Evaluates to the <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+> of <CODE
+CLASS="PARAMETER"
+>t</CODE
+> not used by <CODE
+CLASS="PARAMETER"
+>t-&#62;e1</CODE
+>.</P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8279"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.
+&#13;</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8286"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-IS-OK"
+></A
+>gts_triangle_is_ok ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_triangle_is_ok              (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8297"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8304"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if <CODE
+CLASS="PARAMETER"
+>t</CODE
+> is a non-degenerate, non-duplicate triangle,
+<TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8312"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-USE-EDGES"
+></A
+>gts_triangle_use_edges ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+>* gts_triangle_use_edges         (<A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e1,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e2,
+                                             <A
+HREF="gts-edges.html#GTSEDGE"
+>GtsEdge</A
+> *e3);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8325"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e1</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8332"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e2</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8339"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>e3</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8346"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+> having <CODE
+CLASS="PARAMETER"
+>e1</CODE
+>, <CODE
+CLASS="PARAMETER"
+>e2</CODE
+> and <CODE
+CLASS="PARAMETER"
+>e3</CODE
+> as edges or <TT
+CLASS="LITERAL"
+>NULL</TT
+> if <CODE
+CLASS="PARAMETER"
+>e1</CODE
+>,
+<CODE
+CLASS="PARAMETER"
+>e2</CODE
+> and <CODE
+CLASS="PARAMETER"
+>e3</CODE
+> are not part of any triangle.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8360"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-CIRCUMCIRCLE-CENTER"
+></A
+>gts_triangle_circumcircle_center ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+>*   gts_triangle_circumcircle_center
+                                            (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-points.html#GTSPOINTCLASS"
+>GtsPointClass</A
+> *point_class);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8372"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8379"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>point_class</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINTCLASS"
+><SPAN
+CLASS="TYPE"
+>GtsPointClass</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8386"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a new <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>, center of the circumscribing circle of <CODE
+CLASS="PARAMETER"
+>t</CODE
+> or
+<TT
+CLASS="LITERAL"
+>NULL</TT
+> if the circumscribing circle is not defined.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8395"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-IS-STABBED"
+></A
+>gts_triangle_is_stabbed ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><A
+HREF="gts-object-class.html#GTSOBJECT"
+>GtsObject</A
+>*  gts_triangle_is_stabbed         (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> *orientation);</PRE
+><P
+></P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8408"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8415"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8422"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>orientation</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a pointer or <TT
+CLASS="LITERAL"
+>NULL</TT
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8428"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> one of the vertices of <CODE
+CLASS="PARAMETER"
+>t</CODE
+>, one of the edges of <CODE
+CLASS="PARAMETER"
+>t</CODE
+> or <CODE
+CLASS="PARAMETER"
+>t</CODE
+> if
+any of these are stabbed by the ray starting at <CODE
+CLASS="PARAMETER"
+>p</CODE
+> (included) and
+ending at (<CODE
+CLASS="PARAMETER"
+>p</CODE
+>-&gt;x, <CODE
+CLASS="PARAMETER"
+>p</CODE
+>-&gt;y, +infty), <TT
+CLASS="LITERAL"
+>NULL</TT
+> otherwise. If the ray is
+contained in the plane of the triangle <TT
+CLASS="LITERAL"
+>NULL</TT
+> is also returned. If
+<CODE
+CLASS="PARAMETER"
+>orientation</CODE
+> is not <TT
+CLASS="LITERAL"
+>NULL</TT
+>, it is set to the value of the
+orientation of <CODE
+CLASS="PARAMETER"
+>p</CODE
+> relative to <CODE
+CLASS="PARAMETER"
+>t</CODE
+> (as given by
+<A
+HREF="gts-points.html#GTS-POINT-ORIENTATION-3D"
+><CODE
+CLASS="FUNCTION"
+>gts_point_orientation_3d()</CODE
+></A
+>).  </P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8447"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLES-ARE-FOLDED"
+></A
+>gts_triangles_are_folded ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GBOOLEAN"
+>gboolean</GTKDOCLINK
+>    gts_triangles_are_folded        (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *triangles,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *A,
+                                             <A
+HREF="gts-vertices.html#GTSVERTEX"
+>GtsVertex</A
+> *B,
+                                             <GTKDOCLINK
+HREF="GDOUBLE"
+>gdouble</GTKDOCLINK
+> max);</PRE
+><P
+>Given a list of triangles sharing <CODE
+CLASS="PARAMETER"
+>A</CODE
+> and <CODE
+CLASS="PARAMETER"
+>B</CODE
+> as vertices, checks if any
+two triangles in the list make an angle larger than a given value defined
+by <CODE
+CLASS="PARAMETER"
+>max</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8464"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>triangles</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8471"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>A</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8478"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>B</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> another <A
+HREF="gts-vertices.html#GTSVERTEX"
+><SPAN
+CLASS="TYPE"
+>GtsVertex</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8485"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>max</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the maximum value of the square of the cosine of the angle between
+two triangles.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8490"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> <TT
+CLASS="LITERAL"
+>TRUE</TT
+> if any pair of triangles in <CODE
+CLASS="PARAMETER"
+>triangles</CODE
+> makes an angle larger 
+than the maximum value, <TT
+CLASS="LITERAL"
+>FALSE</TT
+> otherwise.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8498"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLES-FROM-EDGES"
+></A
+>gts_triangles_from_edges ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+>*     gts_triangles_from_edges        (<GTKDOCLINK
+HREF="GSLIST"
+>GSList</GTKDOCLINK
+> *edges);</PRE
+><P
+>Builds a list of unique triangles which have one of their edges in <CODE
+CLASS="PARAMETER"
+>edges</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8510"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>edges</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a list of <A
+HREF="gts-edges.html#GTSEDGE"
+><SPAN
+CLASS="TYPE"
+>GtsEdge</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8517"><SPAN
+STYLE="white-space: nowrap"
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Returns</I
+></SPAN
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> the list of triangles.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><HR><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN8522"
+></A
+><H3
+><A
+NAME="GTS-TRIANGLE-INTERPOLATE-HEIGHT"
+></A
+>gts_triangle_interpolate_height ()</H3
+><PRE
+CLASS="PROGRAMLISTING"
+><GTKDOCLINK
+HREF="VOID"
+>void</GTKDOCLINK
+>        gts_triangle_interpolate_height (<A
+HREF="gts-triangles.html#GTSTRIANGLE"
+>GtsTriangle</A
+> *t,
+                                             <A
+HREF="gts-points.html#GTSPOINT"
+>GtsPoint</A
+> *p);</PRE
+><P
+>Fills the z-coordinate of point <CODE
+CLASS="PARAMETER"
+>p</CODE
+> belonging to the plane
+projection of triangle <CODE
+CLASS="PARAMETER"
+>t</CODE
+> with the linearly interpolated value of
+the z-coordinates of the vertices of <CODE
+CLASS="PARAMETER"
+>t</CODE
+>.</P
+><P
+></P
+><P
+></P
+><TABLE
+CLASS="variablelist"
+BORDER="0"
+CELLSPACING="0"
+CELLPADDING="4"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8537"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>t</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-triangles.html#GTSTRIANGLE"
+><SPAN
+CLASS="TYPE"
+>GtsTriangle</SPAN
+></A
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><A
+NAME="AEN8544"><SPAN
+STYLE="white-space: nowrap"
+><CODE
+CLASS="PARAMETER"
+>p</CODE
+>&nbsp;:</SPAN
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> a <A
+HREF="gts-points.html#GTSPOINT"
+><SPAN
+CLASS="TYPE"
+>GtsPoint</SPAN
+></A
+>.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><TABLE
+CLASS="navigation"
+WIDTH="100%"
+SUMMARY="Navigation footer"
+CELLPADDING="2"
+CELLSPACING="2"
+><TR
+VALIGN="middle"
+><TD
+ALIGN="left"
+><A
+ACCESSKEY="p"
+HREF="gts-edges.html"
+><B
+>&lt;&lt;&lt;&nbsp;Edges</B
+></A
+></TD
+><TD
+ALIGN="right"
+><A
+ACCESSKEY="n"
+HREF="gts-faces.html"
+><B
+>Faces&nbsp;&gt;&gt;&gt;</B
+></A
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

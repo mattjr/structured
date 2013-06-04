@@ -101,10 +101,10 @@ public:
 #define KFRGWHITE "\033[37m"
 
 #endif
-    static const int winSize = 10;
+ /*   static const int winSize = 10;
     static const int maxCount = 20;
     static const double quality = 0.01;
-    static const double minDistance = 10;
+    static const double minDistance = 10;*/
     pthread_t viewerThread;
     osgViewer::Viewer viewer;
 
@@ -127,7 +127,7 @@ public:
     std::vector<std::string> imageNames[2];
 public:
     StereoEngine(const StereoCalib &calib,Config_File &recon,double edgethresh,double max_triangulation_len,int max_feature_count,
-                 double min_feat_dist,double feat_quality,int tex_size,OpenThreads::Mutex &mutex,bool use_dense_stereo,bool pause_after_each_frame);
+                int tex_size,OpenThreads::Mutex &mutex,bool use_dense_stereo,bool pause_after_each_frame);
     virtual ~StereoEngine();
     void captureCalibrationImages(int number);
     static void stereoCalibrate(std::string imageList, int nx, int ny, int useUncalibrated);
@@ -148,8 +148,8 @@ public:
     double edgethresh;
     double max_triangulation_len;
     int max_feature_count;
-    double min_feat_dist;
-    double feat_quality;
+   // double min_feat_dist;
+   // double feat_quality;
     int tex_size;
     bool verbose;
     bool use_dense_stereo;

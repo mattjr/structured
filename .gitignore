@@ -159,3 +159,5 @@ taskworkers.pyc
 /gts-0.7.6/CMakeLists.txt~
 /gts-0.7.6/config.in.cmake~
 /gts-0.7.6/src/CMakeLists.txt~
+/trimesh2/CMakeLists.txt~
+/auv_mesh.cpp~

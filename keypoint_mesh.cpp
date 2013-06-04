@@ -51,9 +51,8 @@
 #include "TriMesh.h"
 #include "TriMesh_algo.h"
 #include "XForm.h"
-#include "auv_mesh_utils.hpp"
-#include "auv_mesh.hpp"
-#include "auv_mesh_io.hpp"
+#include "mesh_proc.hpp"
+//#include "auv_mesh_io.hpp"
 #include "auv_geometry.hpp"
 #include "RobustMatcher.h"
 using namespace libsnapper;
@@ -324,7 +323,7 @@ double max_dist = 0; double min_dist = 100;
     mesh_verts=localV->len;
     double mult=0.00;
     if(mesh_verts){
-        surf = auv_mesh_pts(localV,mult,0);
+        surf = mesh_proc::auv_mesh_pts(localV,mult,0);
         FILE *fp = fopen(argv[4], "w" );
         if(!fp){
             fprintf(stderr,"\nWARNING - Can't open mesh file %s\n",argv[4]);
@@ -337,7 +336,7 @@ double max_dist = 0; double min_dist = 100;
             return -1;
         }
         bool have_cov_file=false;
-        auv_write_ply(surf, fp,have_cov_file,"test");
+        mesh_proc::auv_write_ply(surf, fp,have_cov_file,"test");
         fflush(fp);
         fclose(fp);
         //Destory Surf

@@ -269,10 +269,9 @@ int main( int argc, char *argv[ ] )
      }
     StereoCalib stereocal((basedir+"/"+stereo_calib_file_name).c_str());
     OpenThreads::Mutex mutex;
-    double min_feat_dist=3.0;
-    double quality=0.0001;
 
-    StereoEngine engine(stereocal,*recon_config_file,edgethresh,max_triangulation_len,max_feature_count,min_feat_dist,quality,tex_size,mutex,false,false);
+
+    StereoEngine engine(stereocal,*recon_config_file,edgethresh,max_triangulation_len,max_feature_count,tex_size,mutex,false,false);
     cvSetNumThreads(1);
 
     osg::BoundingBox bbox;

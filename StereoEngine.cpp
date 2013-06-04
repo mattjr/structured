@@ -46,9 +46,7 @@
 #include "TriMesh.h"
 #include "TriMesh_algo.h"
 #include "XForm.h"
-#include "auv_mesh_utils.hpp"
-#include "auv_mesh.hpp"
-#include "auv_mesh_io.hpp"
+#include "mesh_proc.hpp"
 #include "auv_geometry.hpp"
 #include "RobustMatcher.h"
 using namespace libsnapper;
@@ -246,8 +244,8 @@ void apply_epipolar_constraints(
 
 
 
-StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double edgethresh,double max_triangulation_len,int max_feature_count,double min_feat_dist,double feat_quality,int tex_size,OpenThreads::Mutex &mutex,bool use_dense_stereo,bool pause_after_each_frame):
-        _calib(calib),_recon(recon),edgethresh(edgethresh),max_triangulation_len(max_triangulation_len),max_feature_count(max_feature_count),min_feat_dist(min_feat_dist),feat_quality(feat_quality), tex_size(tex_size),
+StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double edgethresh,double max_triangulation_len,int max_feature_count,int tex_size,OpenThreads::Mutex &mutex,bool use_dense_stereo,bool pause_after_each_frame):
+        _calib(calib),_recon(recon),edgethresh(edgethresh),max_triangulation_len(max_triangulation_len),max_feature_count(max_feature_count), tex_size(tex_size),
     verbose(false),display_debug_images(false),_osgDBMutex(mutex),use_dense_stereo(use_dense_stereo),pause_after_each_frame(pause_after_each_frame)
 {
 
@@ -1165,7 +1163,7 @@ bool is_new_corner_valid(
 //void StereoEngine::calculateOpticalFlow()
 void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int MAX_COUNT, list<osg::Vec3> &points,double zguess)
 {
-    int win_size = 5;
+    //int win_size = 5;
     //const int MAX_COUNT = 500;
     char* Lstatus = 0;
     char* Rstatus = 0;
@@ -1194,13 +1192,82 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
     goodPoints[2] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[2][0]));
     goodPoints[3] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[2][0]));
 
-    int blocksize=5;
-    bool useharris=true;
+ //   int blocksize=5;
+ //   bool useharris=true;
+
+    //! Minimum distance between selected corners
+     double min_distance;
+
+     //! Half size of the search window around initial search position.
+     //! For example if these variables have the value 5,5 then a window of size
+     //! 11x11 will be searched.
+     unsigned int search_window_x;
+     unsigned int search_window_y;
+
+     //! Half size of the dead region in the middle of the search window
+     //! The values should be used if no zero zone is to be used.
+     int zero_zone_x;
+     int zero_zone_y;
+
+     //! Maximum number of iterations for corner searching
+     unsigned int search_iterations;
+
+     //! Minimum quality level for corner features
+     double quality_level;
+
+     //! Size of neighbourhood in which the corner strength is measured
+     unsigned int block_size;
+
+     //! Should the Harris corner detected be used instead of the OpenCV
+     //! default method of minimum eigenvalue of gradient matrices
+     bool use_harris;
+
+     //! Size of the features to be tracked
+     unsigned int track_window_x, track_window_y;
+
+     //! Maximum allowable tracking error before features are rejected
+     double track_max_error;
+
+     //! Number of image pyramid levels used in tracking
+     unsigned int pyramid_level;
+
+     //! Maximum number of search iterations when tracking
+     unsigned int track_iterations;
+double l_to_r_max_epipolar_dist;
+     //! Acceptable error to stop search iterations when tracking
+     double track_epsilon;
+     _recon.get_value( "SCF_MIN_DISTANCE"     , min_distance      );
+     _recon.get_value( "SCF_SEARCH_WINDOW_X"  , search_window_x   );
+     _recon.get_value( "SCF_SEARCH_WINDOW_Y"  , search_window_y   );
+     _recon.get_value( "SCF_ZERO_ZONE_X"      , zero_zone_x       );
+     _recon.get_value( "SCF_ZERO_ZONE_Y"      , zero_zone_y       );
+     _recon.get_value( "SCF_SEARCH_ITERATIONS", search_iterations );
+     _recon.get_value( "SCF_QUALITY_LEVEL"    , quality_level     );
+     _recon.get_value( "SCF_BLOCK_SIZE"       , block_size        );
+     _recon.get_value( "SCF_USE_HARRIS"       , use_harris        );
+   _recon.get_value( "SCF_TRACK_MAX_ERROR", track_max_error  );
+   _recon.get_value( "SCF_TRACK_WINDOW_X"     , track_window_x      );
+    _recon.get_value( "SCF_TRACK_WINDOW_Y"     , track_window_y      );
+    _recon.get_value( "SCF_TRACK_MAX_ERROR"    , track_max_error     );
+    _recon.get_value( "SCF_PYRAMID_LEVEL"      , pyramid_level       );
+    _recon.get_value( "SCF_TRACK_ITERATIONS"   , track_iterations    );
+    _recon.get_value( "SCF_TRACK_EPSILON"      , track_epsilon       );
+
+    _recon.get_value( "SCF_MAX_EPIPOLAR_DIST", l_to_r_max_epipolar_dist);
+
     cvGoodFeaturesToTrack( leftGrey, eig, temp, goodPoints[0], &count,
-                           feat_quality, min_feat_dist, 0, blocksize, useharris);
+                           quality_level, min_distance, 0, block_size, use_harris);
+      //  printf("m: GFTT 1 %d\n",count);
+    CvSize win = cvSize( search_window_x, search_window_y );
+       CvSize zero_zone = cvSize( zero_zone_x, zero_zone_y );
+       CvTermCriteria criteria_csp = cvTermCriteria( CV_TERMCRIT_ITER,
+                                                 search_iterations,
+                                                 0.0f );
+
     cvFindCornerSubPix( leftGrey, goodPoints[0], count,
-                        cvSize(win_size,win_size), cvSize(-1,-1),
-                        cvTermCriteria(CV_TERMCRIT_ITER,10,0.0));
+                       win,zero_zone,
+                       criteria_csp);
+  //  printf("m: GFTT 2 %d\n",count);
 
 
     vector<CvPoint2D64f> undist_coords1;
@@ -1355,8 +1422,12 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
        cvProjectPoints2(&point, &RV1, &T1, &camInt1, &camDist1, &pointImg1);
        cvProjectPoints2(&point, &RV2, &T2, &camInt2, &camDist2, &pointImg2);
 */
+        int flags = 0;
+
+
 
         if(zguess != AUV_NO_Z_GUESS ){
+            flags |= CV_LKFLOW_INITIAL_GUESSES;
 
             //Convert pixel coords to normal coords
             double x_n = (pointImg1_a[0]-_calib.camera_calibs[0].ccx)/_calib.camera_calibs[0].fcx;
@@ -1372,14 +1443,13 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
 
     }
     float error[count];
-    float track_max_error=1000.0;
     for(int i=0; i< count; i++){
         double x= goodPoints[0][i].x;
         double y= goodPoints[0][i].y;
         if(!is_new_corner_valid( x,
                                  y,
                                  i,
-                                 min_feat_dist,goodPoints[0],Lstatus,count ))
+                                 min_distance,goodPoints[0],Lstatus,count ))
 
             Lstatus[i]=false;
         else
@@ -1393,14 +1463,23 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
     }
     ///           printf("%d %f %f\n",cnt1++,goodPoints[0][i].x,
     //               goodPoints[0][i].y);
+    //printf("m: GFTT 3 %d %f\n",cnt1,min_distance);
+    //printf("m: GFTT 4 %d\n",count);
+
     cvZero(leftPyr);
     cvZero(rightPyr);
-
+    CvSize win_size = cvSize( track_window_x, track_window_y );
+    CvTermCriteria criteria = cvTermCriteria( CV_TERMCRIT_ITER| CV_TERMCRIT_EPS,
+                                               track_iterations,
+                                               track_epsilon  );
     cvCalcOpticalFlowPyrLK( leftGrey, rightGrey, leftPyr, rightPyr,
-                            goodPoints[0], goodPoints[2], count, cvSize(25,25), 3, Rstatus, error,
-                            cvTermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03), flags );
+                            goodPoints[0], goodPoints[2], count, win_size, pyramid_level, Rstatus, error,
+                            criteria, flags );
+    //printf("m: GFTT 4 %d\n",count);
 
+    int validC=0;
     for(int i=0; i< count; i++){
+      // printf("! %f %f\n",goodPoints[2][i].x,goodPoints[2][i].y);
         double x= goodPoints[2][i].x;
         double y= goodPoints[2][i].y;
         if(
@@ -1408,7 +1487,11 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
                 ||           error[i] > track_max_error )
 
             Rstatus[i]=false;
+        else
+            validC++;
     }
+  //  printf("m: LK v %d\n",validC);
+
     //cvSaveImage("a1.png",leftGrey);  cvSaveImage("a2.png",rightGrey);;
     CvMat imagePointsLeft = cvMat(1, count, CV_32FC2, &goodPoints[0][0] );
 
@@ -1460,8 +1543,8 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
         //be sure the point's are saved in right matrix format 2xN 1 channel
 
     }
-    apply_epipolar_constraints(&F,2.0,undist_coords1,undist_coords2,Rstatus,_calib);
-
+    apply_epipolar_constraints(&F,l_to_r_max_epipolar_dist,undist_coords1,undist_coords2,Rstatus,_calib);
+    int ctt=0;
     for ( int i=0; i < count; i++)
     {
         if(!Rstatus[i]|| !Lstatus[i])
@@ -1485,7 +1568,7 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
         point3D->data.db[0] /= point3D->data.db[3];
         point3D->data.db[1] /= point3D->data.db[3];
         point3D->data.db[2] /= point3D->data.db[3];
-
+        ctt++;
         //et voila
         //  cout << point3D->data.db[0] << " " << point3D->data.db[1] << " " << point3D->data.db[2];
         //cout << " "<<tmpL.x<< " "<< tmpL.y<< " "<< tmpR.x<< " "<<tmpR.y << endl;
@@ -1498,6 +1581,7 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
 
 
     }
+  //  printf("ctt %d\n",ctt);
     cvFree(&Lstatus);
     cvFree(&Rstatus);
     cvFree( &(goodPoints[0]));
@@ -1556,24 +1640,7 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int 
 
 
 }
-#if 0
-void StereoEngine::displayOpticalFlow()
-{
-    CvMat part;
-    cvGetCols( pair, &part, 0, imageSize.width );
-    cvCvtColor( leftGreyR, &part, CV_GRAY2BGR );
-    cvGetCols( pair, &part, imageSize.width,
-               imageSize.width*2 );
-    cvCvtColor( rightGreyR, &part, CV_GRAY2BGR );
 
-    for (int j = 0; j < imageSize.height; j += 16 )
-        cvLine( pair, cvPoint(0,j),
-                cvPoint(imageSize.width*2,j),
-                CV_RGB(0,255,0));
-    cvShowImage( "rectified", pair );
-}
-
-#endif
 StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,MatchStats &stats,const double feature_depth_guess,bool cache_img,bool use_cached,bool force_keypoint){
 
     char cachedtexdir[1024];
@@ -1640,6 +1707,8 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
     TriMesh::verbose=0;
     bool no_depth=false;
     GtsSurface *surf=NULL;
+    GtsSurface *surf2=NULL;
+
     if(!cachedMesh){
     int mesh_verts=0;
       //printf("Not cached creating\n");
@@ -1649,6 +1718,7 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
 
       list<libsnapper::Stereo_Feature_Estimate> feature_positions;
       GPtrArray *localV=NULL;
+         GPtrArray *localV2=NULL;
       list<Feature *> features;
       if(!use_dense_stereo){
     //
@@ -1681,6 +1751,8 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
      list<libplankton::Vector>::iterator viter;
 
      localV = g_ptr_array_new ();
+     localV2 = g_ptr_array_new ();
+
      GtsRange r;
      gts_range_init(&r);
      TVertex *vert;
@@ -1689,6 +1761,7 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
     // Triangulate the features if requested
     //
      //Fallback slow matching
+#if 0
      if(statusFlag != STEREO_OK &&  features.size() < minForKeypoint || force_keypoint){
          statusFlag=FALLBACK_KEYPOINT;
 
@@ -1841,7 +1914,9 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
 
             }
 
-     }else{
+     }else
+     #endif
+     {
 
 
 
@@ -1856,6 +1931,24 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
                 right_frame_id,
                 NULL,//image_coord_covar,
                 feature_positions );
+    int MAX_COUNT=100000;
+    std::list<osg::Vec3> new_method_pts;
+    sparseDepth(left_frame,right_frame,100000,new_method_pts,feature_depth_guess);
+    printf("Feature Pos %d %d %d\n",feature_positions.size(),features.size(),new_method_pts.size());
+
+    TVertex *vert2;
+    std::list<osg::Vec3>::iterator litr2;
+    for( litr2  = new_method_pts.begin( ) ;
+         litr2 != new_method_pts.end( ) ;
+         litr2++ )
+      {   vert2=(TVertex*)  gts_vertex_new (t_vertex_class (),
+                                           (*litr2)[0],(*litr2)[1],(*litr2)[2]);
+                          //printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
+
+                          g_ptr_array_add(localV2,GTS_VERTEX(vert2));
+
+
+                        }
 
     for( litr  = feature_positions.begin( ) ;
          litr != feature_positions.end( ) ;
@@ -1938,7 +2031,7 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
         mesh_verts=localV->len;
         double mult=0.00;
         if(mesh_verts){
-            surf = auv_mesh_pts(localV,mult,0);
+            surf = mesh_proc::auv_mesh_pts(localV,mult,0);
             FILE *fp = fopen(meshfilename, "w" );
             if(!fp){
                 fprintf(stderr,"\nWARNING - Can't open mesh file %s\n",meshfilename);
@@ -1951,7 +2044,7 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
                 return FAIL_OTHER;
             }
             bool have_cov_file=false;
-            auv_write_ply(surf, fp,have_cov_file,"test");
+            mesh_proc::auv_write_ply(surf, fp,have_cov_file,"test");
             fflush(fp);
             fclose(fp);
             //Destory Surf
@@ -1962,6 +2055,35 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
             // delete the vertices
             g_ptr_array_free( localV, true );
         }
+
+
+       int  mesh_verts2=localV2->len;
+         mult=0.00;
+        if(mesh_verts2){
+            surf2 = mesh_proc::auv_mesh_pts(localV2,mult,0);
+            FILE *fp = fopen(string(string(meshfilename)+".new.ply").c_str(), "w" );
+            if(!fp){
+                fprintf(stderr,"\nWARNING - Can't open mesh file %s\n",meshfilename);
+                fflush(stderr);
+
+                // clean up
+                cvReleaseImage( &left_frame );
+                cvReleaseImage( &right_frame );
+                cvReleaseImage( &color_image);
+                return FAIL_OTHER;
+            }
+            bool have_cov_file=false;
+            mesh_proc::auv_write_ply(surf2, fp,have_cov_file,"test");
+            fflush(fp);
+            fclose(fp);
+            //Destory Surf
+            if(surf)
+              gts_object_destroy (GTS_OBJECT (surf2));
+
+
+            // delete the vertices
+            g_ptr_array_free( localV2, true );
+        }
       }else{
 #ifdef USE_DENSE_STEREO
 
@@ -1970,7 +2092,7 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
         IplImage *mask =cvCreateImage(cvSize(sdense->getDisp16()->width,sdense->getDisp16()->height),IPL_DEPTH_8U,1);
         cvZero(mask);
         sdense->get_points(points,mask);
-        mesh=get_dense_grid(mask,points);
+        mesh=mesh_proc::get_dense_grid(mask,points);
         cvReleaseImage(&mask);
         mesh_verts = points.size();
         if(mesh && mesh_verts)
@@ -2032,7 +2154,7 @@ if(!mesh)
   }
     unsigned int triFeat=mesh->vertices.size();
 
-  edge_len_thresh(mesh,edgethresh);
+  mesh_proc::edge_len_thresh(mesh,edgethresh);
   unsigned int postEdgeThreshTriFeat=mesh->vertices.size();
  // printf("%d/%d %f %f\n",(triFeat-postEdgeThreshTriFeat),triFeat,(triFeat-postEdgeThreshTriFeat)/(double)triFeat,
       //   thresh_per_rejected_output_debug);
@@ -2084,8 +2206,9 @@ if(!mesh)
   mesh->write(tcmeshfilename,str.str().c_str());
   bbox = tbbox;
   stats.total_faces=mesh->faces.size();
-#else
-    osg::ref_ptr<osg::DrawElementsUInt> tris;
+#endif
+#ifdef OSG_TRI
+  osg::ref_ptr<osg::DrawElementsUInt> tris;
     osg::ref_ptr<osg::Vec3Array> points;
     osg::ref_ptr<osg::Geometry> gm;
     osg::ref_ptr<osg::Geode> geode;

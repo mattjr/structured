@@ -154,3 +154,8 @@ taskworkers.pyc
 /create_mipmap
 /im_shrink_noblack.sh~
 /threadpool.pyc
+/gts-0.7.6/config.h
+/gts-0.7.6/src/predicates_init.h
+/gts-0.7.6/CMakeLists.txt~
+/gts-0.7.6/config.in.cmake~
+/gts-0.7.6/src/CMakeLists.txt~

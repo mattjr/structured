@@ -306,7 +306,10 @@ OptimizeForArchitecture()
 #add_definitions(-Wall -O3 -DNDEBUG -pipe -ffast-math -funroll-loops -ftree-vectorize -fomit-frame-pointer -pipe -mfpmath=sse -mmmx -msse -mtune=core2 -march=core2 -msse2 -msse3 -mssse3 -msse4)
 ENDIF()
 #SUBDIRS(src include tools )
-SUBDIRS(vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender )
+
+
+SUBDIRS(gts-0.7.6 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender  )
+
 SET( SRCS
                 Extents.cpp
 calibFile.cpp

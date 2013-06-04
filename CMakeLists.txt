@@ -83,24 +83,24 @@ IF( NOT LIBCARP_PREFIX )
    SET( LIBCARP_PREFIX /usr/local/ )
 ENDIF( NOT LIBCARP_PREFIX )
 
-IF( NOT LIBPOLYP_PREFIX )
-   SET( LIBPOLYP_PREFIX /usr/local )
-ENDIF( NOT LIBPOLYP_PREFIX )
+#IF( NOT LIBPOLYP_PREFIX )
+#   SET( LIBPOLYP_PREFIX /usr/local )
+#ENDIF( NOT LIBPOLYP_PREFIX )
 IF( NOT LIBPLANKTON_PREFIX )
    SET( LIBPLANKTON_PREFIX /usr/local/ )
 ENDIF( NOT LIBPLANKTON_PREFIX )
 
-SET( LIBPOLYP_INC ${LIBPOLYP_PREFIX}/include/libpolyp )
-SET( LIBPOLYP_LIBRARY polyp )
+#SET( LIBPOLYP_INC ${LIBPOLYP_PREFIX}/include/libpolyp )
+#SET( LIBPOLYP_LIBRARY polyp )
 
 # libcarp - FIXME: Remove use of this library
 SET( LIBCARP_INC ${LIBCARP_PREFIX}/include/libcarp )
 SET( LIBCARP_LIBRARY carp )
-pkg_check_modules( GTS "gts" )
-IF( NOT GTS_FOUND )
-   MESSAGE( FATAL_ERROR  "ERROR - Can't find Gts" )
-ENDIF( NOT GTS_FOUND )
-ADD_DEFINITIONS( ${GTS_CFLAGS} )
+#pkg_check_modules( GTS "gts" )
+#IF( NOT GTS_FOUND )
+#   MESSAGE( FATAL_ERROR  "ERROR - Can't find Gts" )
+#ENDIF( NOT GTS_FOUND )
+#ADD_DEFINITIONS( ${GTS_CFLAGS} )
 # libsnapper
 SET( LIBSNAPPER_INC ${LIBSNAPPER_PREFIX}/include/libsnapper )
 SET( LIBSNAPPER_LIBRARY snapper )
@@ -209,6 +209,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
                      ${OPENCV_INCLUDE_DIRS}
 		     ${OPENGL_INCLUDE_DIR}
                      ${VIPS_INCLUDE_DIRS}
+                     trimesh2/
                     spatialindex-src-1.6.1/src spatialindex-src-1.6.1/include
                      "/opt/local/include"
 "VirtualPlanetBuilder/include"
@@ -217,7 +218,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
 		     ${OSG_INCLUDE_DIR}
                    ${GLIB2_INCLUDE_DIRS}
                      ${LIBPOLYP_INC}
-                     ${GTS_INCLUDE_DIRS}
+                     gts-0.7.6/src/
                      ${LIBSNAPPER_INC}
                      ${LIBCARP_INC}
                      ${LIBPLANKTON_INCLUDE_DIR}
@@ -243,7 +244,7 @@ osgTerrain
 osgFX
 osgViewer
 osgSim
-                ${LIBPOLYP_LIBRARY}
+               trimesh2
         ${OpenCV_LIBS}
                 ${OSGSHADOW_LIBRARY}
                 ${OSGTEXT_LIBRARY_DEBUG}
@@ -254,7 +255,7 @@ osgSim
                 ${LIBSNAPPER_LIBRARY}
                 ${LIBCARP_LIBRARY}
                 ${LIBPLANKTON_LIB}
-                ${GTS_LIBRARIES})
+                gts)
 
 
 #-----------------------#
@@ -308,7 +309,7 @@ ENDIF()
 #SUBDIRS(src include tools )
 
 
-SUBDIRS(gts-0.7.6 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender  )
+SUBDIRS(gts-0.7.6 trimesh2 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender  )
 
 SET( SRCS
                 Extents.cpp
@@ -337,6 +338,7 @@ BuildAtlas.cpp
 TightFit.cpp
 GLImaging.cpp
 mipmap.cpp
+mesh_proc.cpp
                 )
 ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} ${SPINDEX_SRC})

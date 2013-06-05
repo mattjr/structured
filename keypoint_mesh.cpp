@@ -41,8 +41,7 @@
 #include <osgUtil/Optimizer>
 #include <osg/io_utils>
 #include <sys/time.h>
-#define USE_AUV_LIBS
-#ifdef USE_AUV_LIBS
+#ifdef OLD_AUV_CODE
 #include "auv_stereo_geometry_compat.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
 #include "adt_image_norm.hpp"

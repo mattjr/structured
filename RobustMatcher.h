@@ -20,6 +20,22 @@
  * You should have received a copy of the GNU General Public License
  * along with structured.  If not, see <http://www.gnu.org/licenses/>.
  */
+/*------------------------------------------------------------------------------------------*\
+   This file contains material supporting chapter 9 of the cookbook:
+   Computer Vision Programming using the OpenCV Library.
+   by Robert Laganiere, Packt Publishing, 2011.
+
+   This program is free software; permission is hereby granted to use, copy, modify,
+   and distribute this source code, or portions thereof, for any purpose, without fee,
+   subject to the restriction that the copyright notice may not be removed
+   or altered from any source or altered source distribution.
+   The software is released on an as-is basis and without any warranties of any kind.
+   In particular, the software is not guaranteed to be fault-tolerant or free from failure.
+   The author disclaims all warranties with regard to this software, any use,
+   and any consequent failure, is purely the responsibility of the user.
+
+   Copyright (C) 2010-2011 Robert Laganiere, www.laganiere.name
+\*------------------------------------------------------------------------------------------*/
 
 #ifndef ROBUSTMATCHER_H
 #define ROBUSTMATCHER_H
@@ -200,7 +216,7 @@ class RobustMatcher {
             }
         }
 
-        std::cout << "Number of matched points (after cleaning): " << outMatches.size() << std::endl;
+       // std::cout << "Number of matched points (after cleaning): " << outMatches.size() << std::endl;
 
         if (refineF) {
         // The F matrix will be recomputed with all accepted matches
@@ -242,15 +258,15 @@ class RobustMatcher {
         detector->detect(image1,keypoints1);
         detector->detect(image2,keypoints2);
 
-        std::cout << "Number of SURF points (1): " << keypoints1.size() << std::endl;
-        std::cout << "Number of SURF points (2): " << keypoints2.size() << std::endl;
+       // std::cout << "Number of SURF points (1): " << keypoints1.size() << std::endl;
+       // std::cout << "Number of SURF points (2): " << keypoints2.size() << std::endl;
 
         // 1b. Extraction of the SURF descriptors
         cv::Mat descriptors1, descriptors2;
         extractor->compute(image1,keypoints1,descriptors1);
         extractor->compute(image2,keypoints2,descriptors2);
 
-        std::cout << "descriptor matrix size: " << descriptors1.rows << " by " << descriptors1.cols << std::endl;
+    //    std::cout << "descriptor matrix size: " << descriptors1.rows << " by " << descriptors1.cols << std::endl;
 
         // 2. Match the two image descriptors
 
@@ -268,30 +284,30 @@ class RobustMatcher {
             matches1, // vector of matches (up to 2 per entry)
             2);		  // return 2 nearest neighbours
 
-        // from image 2 to image 1
+       // from image 2 to image 1
         // based on k nearest neighbours (with k=2)
         std::vector<std::vector<cv::DMatch> > matches2;
         matcher.knnMatch(descriptors2,descriptors1,
             matches2, // vector of matches (up to 2 per entry)
             2);		  // return 2 nearest neighbours
 
-        std::cout << "Number of matched points 1->2: " << matches1.size() << std::endl;
-        std::cout << "Number of matched points 2->1: " << matches2.size() << std::endl;
+        //std::cout << "Number of matched points 1->2: " << matches1.size() << std::endl;
+       // std::cout << "Number of matched points 2->1: " << matches2.size() << std::endl;
 
         // 3. Remove matches for which NN ratio is > than threshold
 
         // clean image 1 -> image 2 matches
         int removed= ratioTest(matches1);
-        std::cout << "Number of matched points 1->2 (ratio test) : " << matches1.size()-removed << std::endl;
+      //  std::cout << "Number of matched points 1->2 (ratio test) : " << matches1.size()-removed << std::endl;
         // clean image 2 -> image 1 matches
         removed= ratioTest(matches2);
-        std::cout << "Number of matched points 1->2 (ratio test) : " << matches2.size()-removed << std::endl;
+      //  std::cout << "Number of matched points 1->2 (ratio test) : " << matches2.size()-removed << std::endl;
 
         // 4. Remove non-symmetrical matches
         std::vector<cv::DMatch> symMatches;
         symmetryTest(matches1,matches2,symMatches);
 
-        std::cout << "Number of matched points (symmetry test): " << symMatches.size() << std::endl;
+     //   std::cout << "Number of matched points (symmetry test): " << symMatches.size() << std::endl;
        
         // 5. Validate matches using RANSAC
         cv::Mat fundemental;

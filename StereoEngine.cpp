@@ -36,21 +36,21 @@
 #include <osgUtil/Optimizer>
 #include <osg/io_utils>
 #include <sys/time.h>
-#define USE_AUV_LIBS
-#ifdef USE_AUV_LIBS
+#ifdef OLD_AUV_CODE
 #include "auv_stereo_geometry_compat.hpp"
 #include "auv_stereo_keypoint_finder.hpp"
 #include "adt_image_norm.hpp"
 #include "auv_stereo_dense.hpp"
+#include "auv_geometry.hpp"
+
+using namespace libsnapper;
+#endif
 #include "gts.h"
 #include "TriMesh.h"
 #include "TriMesh_algo.h"
 #include "XForm.h"
 #include "mesh_proc.hpp"
-#include "auv_geometry.hpp"
 #include "RobustMatcher.h"
-using namespace libsnapper;
-#endif
 using namespace std;
 using namespace cv;
 void cacheImage(IplImage *img,string name,int tex_size){
@@ -71,7 +71,12 @@ void cacheImage(IplImage *img,string name,int tex_size){
 
 
 
-
+std::ostream& operator<<(std::ostream& os, const MatchStats& ms)
+{
+    os << ms.total_init_feat << "/" <<ms.total_matched_feat<< "/"<<ms.total_accepted_feat<<"/"<<ms.total_tracking_fail<<"/"
+       <<ms.total_epi_fail<<"/"<<ms.total_tri_fail;
+    return os;
+}
 
 //
 // Get the time in seconds (since the Unix Epoch in 1970)
@@ -174,13 +179,15 @@ bool checkmkdir(std::string dir){
     }
     return true;
 }
-void apply_epipolar_constraints(
+int apply_epipolar_constraints(
         const CvMat *F,  double max_dist,
         const vector<CvPoint2D64f> &undist_coords1,
         const vector<CvPoint2D64f> &undist_coords2,
         char *valid,
+        char *valid2,
         const StereoCalib &_calib)
 {
+    int failNum=0;
     assert( undist_coords1.size()==undist_coords2.size() );
 
     unsigned int num_coords = undist_coords1.size();
@@ -190,7 +197,7 @@ void apply_epipolar_constraints(
     if( num_coords<3 ){
         for(unsigned int i=0; i <num_coords; i++)
             valid[i]=false;
-        return;
+        return -1;
     }
 
     // Create array of coordinates in frame 1
@@ -214,7 +221,7 @@ void apply_epipolar_constraints(
     // Check the distances of the current features from the epipolar lines
     for( unsigned int i=0; i<num_coords; i++ )
     {
-        if(!valid[i])
+        if(!valid[i] || !valid2[i])
             continue;
 
         // Line equation Ax+By+C = 0;
@@ -223,21 +230,23 @@ void apply_epipolar_constraints(
         double C = cvmGet( epi_lines, 2, i );
 
         double x = undist_coords2[i].x*_calib.camera_calibs[1].fcx+
-                   +_calib.camera_calibs[1].ccx;
+                +_calib.camera_calibs[1].ccx;
         double y = undist_coords2[i].y*_calib.camera_calibs[1].fcy+
-                   +_calib.camera_calibs[1].ccy;
+                +_calib.camera_calibs[1].ccy;
         double dist = fabs(A*x+B*y+C);
         if( dist<=max_dist )
             valid[i] = true;
-        else
+        else{
             valid[i]=false;
+            failNum++;
+        }
     }
 
     // Clean-up
     cvReleaseMat( &epi_lines);
     cvReleaseMat( &feature_matrix);
 
-
+    return failNum;
 }
 
 
@@ -245,7 +254,7 @@ void apply_epipolar_constraints(
 
 
 StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double edgethresh,double max_triangulation_len,int max_feature_count,int tex_size,OpenThreads::Mutex &mutex,bool use_dense_stereo,bool pause_after_each_frame):
-        _calib(calib),_recon(recon),edgethresh(edgethresh),max_triangulation_len(max_triangulation_len),max_feature_count(max_feature_count), tex_size(tex_size),
+    _calib(calib),_recon(recon),edgethresh(edgethresh),max_triangulation_len(max_triangulation_len),max_feature_count(max_feature_count), tex_size(tex_size),
     verbose(false),display_debug_images(false),_osgDBMutex(mutex),use_dense_stereo(use_dense_stereo),pause_after_each_frame(pause_after_each_frame)
 {
 
@@ -311,15 +320,14 @@ StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double ed
     std::cout<<"textureThreshold- "<<BMState->textureThreshold<<std::endl;//=10;
     std::cout<<"uniquenessRatio- "<<BMState->uniquenessRatio<<std::endl;//=15;
 */
-    loadMatrices();
-#ifdef USE_AUV_LIBS
+#ifdef OLD_AUV_CODE
     _auv_stereo_calib = new libsnapper::Stereo_Calib(calib.filename);
     double image_scale=1.0;
     bool use_undistorted_images=false;
     finder = new Stereo_Corner_Finder( recon,
-                       use_undistorted_images,
-                       image_scale,
-                       _auv_stereo_calib );
+                                       use_undistorted_images,
+                                       image_scale,
+                                       _auv_stereo_calib );
 
     sdense= new Stereo_Dense(recon,1.0,_auv_stereo_calib);
     frame_id=0;
@@ -327,9 +335,9 @@ StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double ed
     recon.get_value( "DEBUG_MIN_FEAT_PER_FRAME",minFeatPerFrameThresh,100);
     recon.get_value("SCF_SAVE_DEBUG_IMAGES",_writeDebugImages,false);
     recon.get_value( "SCF_MAX_EPIPOLAR_DIST", _max_epi_dist,4.0);
-                     recon.get_value( "SKF_SHOW_DEBUG_IMAGES",
-                                  show_debug_images);
-               /*_F.create(3,3,CV_64FC1);
+    recon.get_value( "SKF_SHOW_DEBUG_IMAGES",
+                     show_debug_images);
+    /*_F.create(3,3,CV_64FC1);
                for( int i=0 ; i<3 ; i++ )
                {
                   for( int j=0 ; j<3 ; j++ )
@@ -354,9 +362,13 @@ StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double ed
         local_calib[i].kc5=_calib.camera_calibs[i].kc5;
 
     }
-undist_left=NULL;
+    undist_left=NULL;
     undist_right=NULL;
 #endif
+
+
+
+    loadMatrices();
 }
 
 StereoEngine::~StereoEngine()
@@ -408,707 +420,7 @@ StereoEngine::~StereoEngine()
     if (realDisp) cvReleaseMat(&realDisp);
 */
 }
-#if 0
-void StereoEngine::captureCalibrationImages(int number)
-{
-    char left[50];
-    char right[50];
 
-    sprintf(left,"data/%.02dL.jpg",number);
-    sprintf(right,"data/%.02dR.jpg",number);
-
-    capture();
-
-    //cvSaveImage(left, leftGrey);
-    //cvSaveImage(right, rightGrey);
-}
-
-void StereoEngine::stereoCalibrate(std::string imageList, int nx, int ny, int useUncalibrated)
-        //Learning OpenCV: Computer Vision with the OpenCV Library
-        //by Gary Bradski and Adrian Kaehler
-        //Published by O'Reilly Media, October 3, 2008
-{
-    int displayCorners = 1;
-    int showUndistorted = 1;
-    bool isVerticalStereo = false;//OpenCV can handle left-right
-    //or up-down camera arrangements
-    const int maxScale = 1;
-    const float squareSize = .03f; //Set this to your actual square size
-    FILE* f = fopen(imageList.c_str(), "rt");
-    int i, j, lr, nframes, n = nx*ny, N = 0;
-
-    std::vector<CvPoint3D32f> objectPoints;
-    std::vector<CvPoint2D32f> points[2];
-    std::vector<int> npoints;
-    std::vector<uchar> active[2];
-    std::vector<CvPoint2D32f> temp(n);
-    CvSize imageSize = {0,0};
-    // ARRAY AND VECTOR STORAGE:
-    double M1[3][3], M2[3][3], D1[5], D2[5];
-    double R[3][3], T[3], E[3][3], F[3][3];
-    CvMat _M1 = cvMat(3, 3, CV_64F, M1 );
-    CvMat _M2 = cvMat(3, 3, CV_64F, M2 );
-    CvMat _D1 = cvMat(1, 5, CV_64F, D1 );
-    CvMat _D2 = cvMat(1, 5, CV_64F, D2 );
-    CvMat _R = cvMat(3, 3, CV_64F, R );
-    CvMat _T = cvMat(3, 1, CV_64F, T );
-    CvMat _E = cvMat(3, 3, CV_64F, E );
-    CvMat _F = cvMat(3, 3, CV_64F, F );
-    if ( displayCorners )
-        cvNamedWindow( "corners", 1 );
-    // READ IN THE LIST OF CHESSBOARDS:
-    if ( !f )
-    {
-        fprintf(stderr, "can not open file %s\n",imageList.c_str());
-        return;
-    }
-    for (i=0;;i++)
-    {
-        char buf[1024];
-        int count = 0, result=0;
-        lr = i % 2;
-        std::vector<CvPoint2D32f>& pts = points[lr];
-        if ( !fgets( buf, sizeof(buf)-3, f ))
-            break;
-        size_t len = strlen(buf);
-        while ( len > 0 && isspace(buf[len-1]))
-            buf[--len] = '\0';
-        if ( buf[0] == '#')
-            continue;
-        std::string imageFile = std::string("data/")+=std::string(buf);
-        IplImage* img = cvLoadImage( imageFile.c_str(), 0 );
-        if ( !img )
-            break;
-        imageSize = cvGetSize(img);
-        //imageNames[lr].push_back(imageFile.c_str());
-
-        //FIND CHESSBOARDS AND CORNERS THEREIN:
-        for ( int s = 1; s <= maxScale; s++ )
-        {
-            IplImage* timg = img;
-            if ( s > 1 )
-            {
-                timg = cvCreateImage(cvSize(img->width*s,img->height*s),
-                                     img->depth, img->nChannels );
-                cvResize( img, timg, CV_INTER_CUBIC );
-            }
-            result = cvFindChessboardCorners( timg, cvSize(nx, ny),
-                                              &temp[0], &count,
-                                              CV_CALIB_CB_ADAPTIVE_THRESH |
-                                              CV_CALIB_CB_NORMALIZE_IMAGE);
-            if ( timg != img )
-                cvReleaseImage( &timg );
-            if ( result || s == maxScale )
-                for ( j = 0; j < count; j++ )
-                {
-                temp[j].x /= s;
-                temp[j].y /= s;
-            }
-            if ( result )
-                break;
-        }
-        if ( displayCorners )
-        {
-            printf("%s\n", imageFile.c_str());
-            IplImage* cimg = cvCreateImage(imageSize, 8, 3 );
-
-            cvCvtColor( img, cimg, CV_GRAY2BGR );
-            cvDrawChessboardCorners( cimg, cvSize(nx, ny), &temp[0],
-                                     count, result );
-            cvShowImage( "corners", cimg );
-            cvReleaseImage( &cimg );
-            int c = cvWaitKey(1000);
-            if ( c == 27 || c == 'q' || c == 'Q' ) //Allow ESC to quit
-                exit(-1);
-        }
-        else
-            putchar('.');
-        N = pts.size();
-        pts.resize(N + n, cvPoint2D32f(0,0));
-        active[lr].push_back((uchar)result);
-        //assert( result != 0 );
-        if ( result )
-        {
-            //Calibration will suffer without subpixel interpolation
-            cvFindCornerSubPix( img, &temp[0], count,
-                                cvSize(11, 11), cvSize(-1,-1),
-                                cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,
-                                               30, 0.01) );
-            copy( temp.begin(), temp.end(), pts.begin() + N );
-        }
-        cvReleaseImage( &img );
-    }
-    fclose(f);
-    printf("\n");
-    // HARVEST CHESSBOARD 3D OBJECT POINT LIST:
-    nframes = active[0].size();//Number of good chessboads found
-    objectPoints.resize(nframes*n);
-    for ( i = 0; i < ny; i++ )
-        for ( j = 0; j < nx; j++ )
-            objectPoints[i*nx + j] =
-                    cvPoint3D32f(i*squareSize, j*squareSize, 0);
-    for ( i = 1; i < nframes; i++ )
-        copy( objectPoints.begin(), objectPoints.begin() + n,
-              objectPoints.begin() + i*n );
-    npoints.resize(nframes,n);
-    N = nframes*n;
-    CvMat _objectPoints = cvMat(1, N, CV_32FC3, &objectPoints[0] );
-    CvMat _imagePoints1 = cvMat(1, N, CV_32FC2, &points[0][0] );
-    CvMat _imagePoints2 = cvMat(1, N, CV_32FC2, &points[1][0] );
-    CvMat _npoints = cvMat(1, npoints.size(), CV_32S, &npoints[0] );
-    cvSetIdentity(&_M1);
-    cvSetIdentity(&_M2);
-    cvZero(&_D1);
-    cvZero(&_D2);
-
-    // CALIBRATE THE STEREO CAMERAS
-    printf("Running stereo calibration ...");
-    fflush(stdout);
-    cvStereoCalibrate( &_objectPoints, &_imagePoints1,
-                       &_imagePoints2, &_npoints,
-                       &_M1, &_D1, &_M2, &_D2,
-                       imageSize, &_R, &_T, &_E, &_F,
-                       cvTermCriteria(CV_TERMCRIT_ITER+
-                                      CV_TERMCRIT_EPS, 100, 1e-5),
-                       CV_CALIB_FIX_ASPECT_RATIO +
-                       CV_CALIB_ZERO_TANGENT_DIST +
-                       CV_CALIB_SAME_FOCAL_LENGTH );
-    printf(" done\n");
-    // CALIBRATION QUALITY CHECK
-    // because the output fundamental matrix implicitly
-    // includes all the output information,
-    // we can check the quality of calibration using the
-    // epipolar geometry constraint: m2^t*F*m1=0
-    std::vector<CvPoint3D32f> line[2];
-    points[0].resize(N);
-    points[1].resize(N);
-    _imagePoints1 = cvMat(1, N, CV_32FC2, &points[0][0] );
-    _imagePoints2 = cvMat(1, N, CV_32FC2, &points[1][0] );
-    line[0].resize(N);
-    line[1].resize(N);
-    CvMat _L1 = cvMat(1, N, CV_32FC3, &line[0][0]);
-    CvMat _L2 = cvMat(1, N, CV_32FC3, &line[1][0]);
-    //Always work in undistorted space
-    cvUndistortPoints( &_imagePoints1, &_imagePoints1,
-                       &_M1, &_D1, 0, &_M1 );
-    cvUndistortPoints( &_imagePoints2, &_imagePoints2,
-                       &_M2, &_D2, 0, &_M2 );
-    cvComputeCorrespondEpilines( &_imagePoints1, 1, &_F, &_L1 );
-    cvComputeCorrespondEpilines( &_imagePoints2, 2, &_F, &_L2 );
-    double avgErr = 0;
-    for ( i = 0; i < N; i++ )
-    {
-        double err = fabs(points[0][i].x*line[1][i].x +
-                          points[0][i].y*line[1][i].y + line[1][i].z)
-                + fabs(points[1][i].x*line[0][i].x +
-                       points[1][i].y*line[0][i].y + line[0][i].z);
-        avgErr += err;
-    }
-    printf( "avg err = %g\n", avgErr/(nframes*n) );
-
-    //Save the calibration data
-    cvSave("data/M1.xml",&_M1);
-    cvSave("data/M2.xml",&_M2);
-
-    cvSave("data/D1.xml",&_D1);
-    cvSave("data/D2.xml",&_D2);
-
-    cvSave("data/R.xml",&_R);
-    cvSave("data/T.xml",&_T);
-
-    cvSave("data/E.xml",&_E);
-    cvSave("data/F.xml",&_F);
-
-}
-
-void StereoEngine::findDisparity()
-{
-    //Capture Current Image from cameras and load calibration matrices
-    capture();
-    loadMatrices();
-    //COMPUTE AND DISPLAY RECTIFICATION
-
-
-
-    // IF BY CALIBRATED (BOUGUET'S METHOD)
-
-    cvStereoRectify( M1, M2, D1, D2, imageSize,
-                     R, T,
-                     R1, R2, P1, P2, Q,
-                     CV_CALIB_ZERO_DISPARITY);
-    int isVerticalStereo = fabs(CV_MAT_ELEM(*P1,double,1,3)) > fabs(CV_MAT_ELEM(*P2,double,0,3));
-    //Precompute maps for cvRemap()
-    cvInitUndistortRectifyMap(M1,D1,R1,P1,mx1,my1);
-    cvInitUndistortRectifyMap(M2,D2,R2,P2,mx2,my2);
-
-    //cvSave("data/Q.xml",Q);
-
-
-    // RECTIFY THE IMAGES AND FIND DISPARITY MAPS
-    pair = cvCreateMat( imageSize.height, imageSize.width*2, CV_8UC3 );
-
-    //Ensure BMState Exist
-    assert(BMState != 0);
-
-
-
-    /*  //Find disparity of arbitrary image set
-    if ( leftGrey && rightGrey )
-    {
-        cvRemap( leftGrey, leftGreyR, mx1, my1 );
-        cvRemap( rightGrey, rightGreyR, mx2, my2 );
-
-        //Remap color Image for 3d visualization coloring
-        cvRemap( leftImage, leftImageR, mx1, my1);
-
-
-        cvFindStereoCorrespondenceBM( leftGreyR, rightGreyR, disp,
-                                     BMState);
-        //Divide by 16 to get real disparity in subpixel
-        cvConvertScale( disp, realDisp, 1.0f/16.0f, 0 );
-        cvNormalize( disp, vdisp, 0, 256, CV_MINMAX );
-        //cvSave("/srv/homes/bwampler/Desktop/disp.xml",disp);
-        //cvSave("data/vdisp.xml",vdisp);
-        //cvSave("data/realDisp.xml",realDisp);
-    }
-
-*/
-    //Find Disparity of calibration images
-    //int i =5;
-    ////for (int i = 0; i < nframes; i++ )
-    ////{
-    //IplImage* img1=cvLoadImage(imageNames[0][i].c_str(),0);
-    //IplImage* img2=cvLoadImage(imageNames[1][i].c_str(),0);
-    //if ( img1 && img2 )
-    //{
-    //CvMat part;
-    //cvRemap( img1, img1r, mx1, my1 );
-    //cvRemap( img2, img2r, mx2, my2 );
-    //int useUncalibrated = 0;
-
-    //if ( !isVerticalStereo || useUncalibrated != 0 )
-    //{
-    ////When the stereo camera is oriented vertically,
-    ////useUncalibrated==0 does not transpose the
-    ////image, so the epipolar lines in the rectified
-    ////images are vertical. Stereo correspondence
-    ////function does not support such a case.
-    //cvFindStereoCorrespondenceBM( img1r, img2r, disp,
-    //BMState);
-    //cvNormalize( disp, vdisp, 0, 256, CV_MINMAX );
-    //cvConvertScale( disp, realDisp, 1.0f/16.0f, 0 );
-    //cvNamedWindow( "disparity" );
-    //cvShowImage( "disparity", vdisp );
-    //cvSave("data/disp.xml",disp);
-    //cvSave("data/vdisp.xml",vdisp);
-
-    //}
-    //if ( !isVerticalStereo )
-    //{
-    //cvGetCols( pair, &part, 0, imageSize.width );
-    //cvCvtColor( img1r, &part, CV_GRAY2BGR );
-    //cvGetCols( pair, &part, imageSize.width,
-    //imageSize.width*2 );
-    //cvCvtColor( img2r, &part, CV_GRAY2BGR );
-    //for (int j = 0; j < imageSize.height; j += 16 )
-    //cvLine( pair, cvPoint(0,j),
-    //cvPoint(imageSize.width*2,j),
-    //CV_RGB(0,255,0));
-    //}
-    //else
-    //{
-    //cvGetRows( pair, &part, 0, imageSize.height );
-    //cvCvtColor( img1r, &part, CV_GRAY2BGR );
-    //cvGetRows( pair, &part, imageSize.height,
-    //imageSize.height*2 );
-    //cvCvtColor( img2r, &part, CV_GRAY2BGR );
-    //for (int j = 0; j < imageSize.width; j += 16 )
-    //cvLine( pair, cvPoint(j,0),
-    //cvPoint(j,imageSize.height*2),
-    //CV_RGB(0,255,0));
-    //}
-    //cvShowImage( "rectified", pair );
-
-    //}
-    //cvReleaseImage( &img1 );
-    //cvReleaseImage( &img2 );
-    ////}
-}
-
-void StereoEngine::sparseDepth(const int MAX_COUNT, list<osg::Vec3> &points, list<osg::Vec3> &colors, int &featureCount)
-{
-    //if (bodyCoord.size2()>MAX_COUNT) std::cout<<"Sparse matrix should be of size 3 x n (where n is equal to MAX_COUNT)"<<std::endl;
-
-    CvPoint2D32f* goodPoints[2];
-    goodPoints[0] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[0][0]));
-    goodPoints[1] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[1][0]));
-
-    CvMat* points3D = cvCreateMat(1,1,CV_32FC3);
-    featureCount = 0;
-
-    int win_size = 10;
-    int count = MAX_COUNT;
-    double quality = 0.01;
-    double min_distance = 10;
-
-    count = MAX_COUNT;
-    cvGoodFeaturesToTrack( leftGrey, eig, temp, goodPoints[0], &count,
-                           quality, min_distance, 0, 3, 0, 0.04 );
-    cvFindCornerSubPix( leftGrey, goodPoints[0], count,
-                        cvSize(win_size,win_size), cvSize(-1,-1),
-                        cvTermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
-    CvMat imagePoints0 = cvMat(1, count, CV_32FC2, &goodPoints[0][0] );
-    CvMat imagePoints1 = cvMat(1, count, CV_32FC2, &goodPoints[1][0] );
-
-    //cvUndistortPoints(&imagePoints0, &imagePoints1, M1, D1, R1, P1);
-
-    for (int i = 0; i<count; i++)
-    {
-        cvCircle(leftGreyR, cvPointFrom32f(goodPoints[1][i]), 3, CV_RGB(255,255,255), -1, 8,0);
-        cvCircle(vdisp, cvPointFrom32f(goodPoints[1][i]), 3, CV_RGB(255,255,255), -1, 8,0);
-        cvCircle(leftGrey, cvPointFrom32f(goodPoints[0][i]), 3, CV_RGB(255,255,255), -1, 8,0);
-    }
-    int flags = 0;
-    //if( have_prev_pyr_image )
-    // flags |= CV_LKFLOW_PYR_A_READY;
-    bool have_guesses=false;
-    if( have_guesses )
-        flags |= CV_LKFLOW_INITIAL_GUESSES;
-    //
-    // Perform the Feature Tracking
-    //
-    //SCF_TRACK_ITERATIONS    20     # Tracking search iteration termination criteria
-    //SCF_TRACK_EPSILON       0.03
-
-    CvTermCriteria criteria = cvTermCriteria( CV_TERMCRIT_ITER| CV_TERMCRIT_EPS,
-                                              20,
-                                              0.03  );
-    int pyramid_level=3;
-    float error[count];
-    char feature_status[count];
-    cvCalcOpticalFlowPyrLK( leftGrey,
-                            rightGrey,
-                            leftPyr,
-                            rightPyr,
-                            goodPoints[0],
-                            goodPoints[1],
-                            count,
-                            cvSize(win_size,win_size),
-                            pyramid_level,
-                            feature_status,
-                            error,
-                            criteria,
-                            flags
-                            );
-    CvMat *triPoints = cvCreateMat(4,count, CV_32F );
-
-    cvTriangulatePoints(P1,P2,&imagePoints0,&imagePoints1,triPoints);
-    for ( int i=0; i < count; i++)
-    {
-        if(!feature_status[i])
-            continue;
-        CvPoint pointL = cvPointFrom32f(goodPoints[0][i]);
-
-        CvPoint pointR = cvPointFrom32f(goodPoints[1][i]);
-        int	y = pointL.y;
-        int x = pointL.x;
-        uint8_t* color_ptr = (uint8_t*) (leftImageR->imageData + y * leftImageR->widthStep);
-
-
-        /*  if ((disp_ptr[x] > (BMState->minDisparity) * 16) && (x > 0) && (y > 0))
-                //checks to see if there is disparity information for the image point (x,y)
-            {
-                float* ptr3d = (float*) (points3D->data.ptr);
-                ptr3d[0] = (float) x;
-                ptr3d[1] = (float) y;
-                ptr3d[2] = (float) realDisp_ptr[x];
-
-                cvPerspectiveTransform(points3D, points3D, Q);
-
-                bodyCoord(0,featureCount) = -ptr3d[2];
-                bodyCoord(1,featureCount) = -ptr3d[0];
-                bodyCoord(2,featureCount) = -ptr3d[1];
-
-                colors(0,featureCount) = color_ptr[leftImageR->nChannels*x + 2]/255.0;
-                colors(1,featureCount) = color_ptr[leftImageR->nChannels*x + 1]/255.0;
-                colors(2,featureCount) = color_ptr[leftImageR->nChannels*x + 0]/255.0;
-
-                featureCount++;
-            }*/
-
-    }
-    cvReleaseMat(&points3D);
-    cvFree(&goodPoints[0]);
-    cvFree(&goodPoints[0]);
-}
-
-void StereoEngine::displayDisparity()
-{
-    CvMat part;
-    cvGetCols( pair, &part, 0, imageSize.width );
-    cvCvtColor( leftGreyR, &part, CV_GRAY2BGR );
-    cvGetCols( pair, &part, imageSize.width,
-               imageSize.width*2 );
-    cvCvtColor( rightGreyR, &part, CV_GRAY2BGR );
-
-    for (int j = 0; j < imageSize.height; j += 16 )
-        cvLine( pair, cvPoint(0,j),
-                cvPoint(imageSize.width*2,j),
-                CV_RGB(0,255,0));
-    cvShowImage( "disparity", vdisp );
-    cvShowImage( "rectified", pair );
-}
-
-void StereoEngine::reprojectTo3d()
-{
-    cvReprojectImageTo3D(realDisp, threeD, Q);
-    //cvSave("data/threeD.xml",threeD);
-}
-
-/*void StereoEngine::denseDepth(const int MAX_COUNT, matrix<double> &bodyCoord, matrix<double> &colors, int &featureCount)
-{
-    featureCount = 0;
-    reprojectTo3d();
-
-    for ( int y=0; y<threeD->height; y++)
-    {
-        float* ptr = (float*) (threeD->imageData + y*threeD->widthStep);
-        signed short* disp_ptr = (signed short*) (disp->data.ptr + y*disp->step);
-        uint8_t* color_ptr = (uint8_t*) (leftImageR->imageData + y*leftImageR->widthStep);
-
-        for (int x=0; x<threeD->width; x++)
-        {
-            if (disp_ptr[x] > (BMState->minDisparity ) * 16)
-            {
-                bodyCoord(0,featureCount) = -ptr[threeD->nChannels*x + 2];
-                bodyCoord(1,featureCount) = -ptr[threeD->nChannels*x + 0];
-                bodyCoord(2,featureCount) = -ptr[threeD->nChannels*x + 1];
-
-                colors(0,featureCount) = color_ptr[leftImageR->nChannels*x + 2]/255.0;
-                colors(1,featureCount) = color_ptr[leftImageR->nChannels*x + 1]/255.0;
-                colors(2,featureCount) = color_ptr[leftImageR->nChannels*x + 0]/255.0;
-
-                featureCount++;
-            }
-        }
-    }
-}*/
-void StereoEngine::drawPointCloud()
-{
-
-    // osg
-    viewer.setCameraManipulator(new osgGA::TrackballManipulator);
-    osg::Geode *geode = new osg::Geode();
-    osg::Geometry *pointCloud = new osg::Geometry();
-    osg::Vec3Array *points = new osg::Vec3Array();
-    geode->setStateSet(makeStateSet(1.0f));
-
-    for ( int y=0; y<threeD->height; y++)
-    {
-        float* ptr = (float*) (threeD->imageData + y* threeD->widthStep);
-        signed short* disp_ptr = (signed short*) (disp->data.ptr + y*disp->step);
-
-        for (int x=0; x<threeD->width; x++)
-        {
-
-            if (disp_ptr[x] > ((BMState->minDisparity) * 16))
-            {
-                //std::cout<<"X- "<<ptr[3*x+0]<<"   Y- "<<ptr[3*x+1]<<"   Z- "<<ptr[3*x+2]<<std::endl;
-                points->push_back(osg::Vec3(-ptr[3*x+2], -ptr[3*x+0], -ptr[3*x+1] ));
-            }
-            //std::cout<<"X- "<<ptr[3*x+0]<<"   Y- "<<ptr[3*x+1]<<"   Z- "<<ptr[3*x+2]<<std::endl;
-            //points->push_back(osg::Vec3(ptr[3*x+0], ptr[3*x+1], ptr[3*x+2]));
-
-        }
-    }
-    pointCloud->setVertexArray(points);
-    pointCloud->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    pointCloud->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS, 0, points->size()));
-
-    geode->addDrawable(pointCloud);
-
-    // create Geometry object to store all the vertices and lines primitive.
-    osg::Geometry* linesGeom = new osg::Geometry();
-
-    // this time we'll preallocate the vertex array to the size we
-    // need and then simple set them as array elements, 8 points
-    // makes 4 line segments.
-    osg::Vec3Array* vertices = new osg::Vec3Array(8);
-    (*vertices)[0].set(0, 0, 0);
-    (*vertices)[1].set(5, 0, 0);
-    (*vertices)[2].set(0, 0, 0);
-    (*vertices)[3].set(0, 3, 0);
-    (*vertices)[4].set(0, 0, 0);
-    (*vertices)[5].set(0, 0, 1);
-
-
-
-    // pass the created vertex array to the points geometry object.
-    linesGeom->setVertexArray(vertices);
-
-    // set the colors as before, plus using the above
-    osg::Vec4Array* colors = new osg::Vec4Array;
-    colors->push_back(osg::Vec4(20.0f,20.0f,20.0f,20.0f));
-    linesGeom->setColorArray(colors);
-    linesGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
-
-
-    // set the normal in the same way color.
-    osg::Vec3Array* normals = new osg::Vec3Array;
-    normals->push_back(osg::Vec3(0.0f,-1.0f,0.0f));
-    linesGeom->setNormalArray(normals);
-    linesGeom->setNormalBinding(osg::Geometry::BIND_OVERALL);
-
-
-    // This time we simply use primitive, and hardwire the number of coords to use
-    // since we know up front,
-    linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES,0,6));
-
-
-    // add the points geometry to the geode.
-    geode->addDrawable(linesGeom);
-
-
-
-    viewer.setUpViewInWindow(0,0,300,300);
-    viewer.setSceneData(geode);
-    osg::Vec3 center(0,0,0), eye(-10,-10,0), up(0,0,1);
-    viewer.getCamera()->setViewMatrixAsLookAt(eye, center, up);
-
-    // launch viewer in background
-    viewer.realize();
-    viewer.run();
-    //pthread_create(&viewerThread, NULL, runViewerThread, (void *)(&viewer));
-
-
-}
-
-osg::StateSet* StereoEngine::makeStateSet(float size)
-{
-    osg::StateSet *set = new osg::StateSet();
-
-    /// Setup cool blending
-    set->setMode(GL_BLEND, osg::StateAttribute::ON);
-    osg::BlendFunc *fn = new osg::BlendFunc();
-    fn->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::DST_ALPHA);
-    set->setAttributeAndModes(fn, osg::StateAttribute::ON);
-
-    /// Setup the point sprites
-    osg::PointSprite *sprite = new osg::PointSprite();
-    set->setTextureAttributeAndModes(0, sprite, osg::StateAttribute::ON);
-
-    /// Give some size to the points to be able to see the sprite
-    osg::Point *point = new osg::Point();
-    point->setSize(size);
-    set->setAttribute(point);
-
-    /// Disable depth test to avoid sort problems and Lighting
-    set->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
-    set->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-
-    /// The texture for the sprites
-    //osg::Texture2D *tex = new osg::Texture2D();
-    //tex->setImage(osgDB::readImageFile("Images/particle.rgb"));
-    //set->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON);
-
-    return set;
-}
-#endif
-
-void StereoEngine::loadMatrices()
-{
-    /*  cvZero(D1);
-    cvZero(D2);
-    cvZero(M1);
-    cvZero(M2);
-    cvZero(P1);
-    cvZero(P2);
-    cvmSet(D1,0,0,_calib.camera_calibs[0].kc1);
-    cvmSet(D1,1,0,_calib.camera_calibs[0].kc2);
-    cvmSet(D1,2,0,_calib.camera_calibs[0].kc3);
-    cvmSet(D1,3,0,_calib.camera_calibs[0].kc4);
-    cvmSet(D1,4,0,_calib.camera_calibs[0].kc5);
-
-    cvmSet(D2,0,0,_calib.camera_calibs[1].kc1);
-    cvmSet(D2,1,0,_calib.camera_calibs[1].kc2);
-    cvmSet(D2,2,0,_calib.camera_calibs[1].kc3);
-    cvmSet(D2,3,0,_calib.camera_calibs[1].kc4);
-    cvmSet(D2,4,0,_calib.camera_calibs[1].kc5);
-
-    cvmSet(M1,0,0,_calib.camera_calibs[0].fcx);
-    cvmSet(M1,0,2,_calib.camera_calibs[0].ccx);
-    cvmSet(M1,1,1,_calib.camera_calibs[0].fcy);
-    cvmSet(M1,1,2,_calib.camera_calibs[0].ccy);
-    cvmSet(M1,2,2,1);
-
-    cvmSet(M2,0,0,_calib.camera_calibs[1].fcx);
-    cvmSet(M2,0,2,_calib.camera_calibs[1].ccx);
-    cvmSet(M2,1,1,_calib.camera_calibs[1].fcy);
-    cvmSet(M2,1,2,_calib.camera_calibs[1].ccy);
-    cvmSet(M2,2,2,1);
-
-
-
-    //CvMat* K=cvCreateMat(3,3,CV_64FC1);
-    CvMat* R=cvCreateMat(3,3,CV_64FC1);
-    CvMat* T=cvCreateMat(3,1,CV_64FC1);
-
-
-    for(int i=0; i<3; ++i) {
-        for(int j=0; j<3; ++j) {
-            //  cvmSet(K,i,j,_calib->matrix[i*3 + j]);
-            cvmSet(P1,i,j,_calib.camera_calibs[0].rotMatr[i*3 + j]);
-        }
-    }
-    for (int j=0; j<3; j++) {
-        cvmSet(P1,j,3,_calib.camera_calibs[0].transVect[j]);
-    }
-
-    cvMatMul( M1, P1, P1 ); //this is calibration matrix 1
-
-
-    // for (int j=0; j<5; j++) {
-    //   cvmSet(P1,j,3,pCamera->distortion);
-    //}
-    for(int i=0; i<3; ++i) {
-        for(int j=0; j<3; ++j) {
-            // cvmSet(K,i,j,pCamera->matrix[i*3 + j]);
-            cvmSet(P2,i,j,_calib.camera_calibs[1].rotMatr[i*3 + j]);
-        }
-    }
-    for (int j=0; j<3; j++) {
-        cvmSet(P2,j,3,_calib.camera_calibs[1].transVect[j]);
-    }
-
-    cvMatMul( M2, P2, P2 ); //this is the matrix for camera
-*/
-
-    /* if (fileExists("data/M1.xml") && fileExists("data/M2.xml") && fileExists("data/D1.xml") && fileExists("data/D2.xml") && fileExists("data/R.xml") && fileExists("data/T.xml") && fileExists("data/E.xml") && fileExists("data/F.xml"))
-    {
-        M1 = (CvMat*)cvLoad("data/M1.xml");
-        M2 = (CvMat*)cvLoad("data/M2.xml");
-
-        D1 = (CvMat*)cvLoad("data/D1.xml");
-        D2 = (CvMat*)cvLoad("data/D2.xml");
-
-        R = (CvMat*)cvLoad("data/R.xml");
-        T = (CvMat*)cvLoad("data/T.xml");
-
-        E = (CvMat*)cvLoad("data/E.xml");
-        F = (CvMat*)cvLoad("data/F.xml");
-    }
-    else
-    {
-        std::cout<<"Missing a calibration matrix .xml file in the data directory"<<std::endl;
-    }*/
-}
-
-void StereoEngine::capture()
-{
-
-
-
-}
 
 void StereoEngine::drawPoints(CvArr* image,CvPoint2D32f points[], int count)
 {
@@ -1160,139 +472,8 @@ bool is_new_corner_valid(
 
     return true;
 }
-//void StereoEngine::calculateOpticalFlow()
-void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int MAX_COUNT, list<osg::Vec3> &points,double zguess)
-{
-    //int win_size = 5;
-    //const int MAX_COUNT = 500;
-    char* Lstatus = 0;
-    char* Rstatus = 0;
 
-    int count = 0;
-    int flags = 0;
-
-
-
-
-    Lstatus = (char*)cvAlloc(MAX_COUNT);
-    Rstatus = (char*)cvAlloc(MAX_COUNT);
-    memset(Lstatus,0,sizeof(char)*MAX_COUNT);
-    memset(Rstatus,0,sizeof(char)*MAX_COUNT);
-
-    flags = 0;
-
-    /* automatic initialization */
-
-    count = MAX_COUNT;
-
-    //Point found on grey image then projected to rectified grey image
-    CvPoint2D32f* goodPoints[4]={0,0,0,0};
-    goodPoints[0] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[0][0]));
-    goodPoints[1] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[1][0]));
-    goodPoints[2] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[2][0]));
-    goodPoints[3] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[2][0]));
-
- //   int blocksize=5;
- //   bool useharris=true;
-
-    //! Minimum distance between selected corners
-     double min_distance;
-
-     //! Half size of the search window around initial search position.
-     //! For example if these variables have the value 5,5 then a window of size
-     //! 11x11 will be searched.
-     unsigned int search_window_x;
-     unsigned int search_window_y;
-
-     //! Half size of the dead region in the middle of the search window
-     //! The values should be used if no zero zone is to be used.
-     int zero_zone_x;
-     int zero_zone_y;
-
-     //! Maximum number of iterations for corner searching
-     unsigned int search_iterations;
-
-     //! Minimum quality level for corner features
-     double quality_level;
-
-     //! Size of neighbourhood in which the corner strength is measured
-     unsigned int block_size;
-
-     //! Should the Harris corner detected be used instead of the OpenCV
-     //! default method of minimum eigenvalue of gradient matrices
-     bool use_harris;
-
-     //! Size of the features to be tracked
-     unsigned int track_window_x, track_window_y;
-
-     //! Maximum allowable tracking error before features are rejected
-     double track_max_error;
-
-     //! Number of image pyramid levels used in tracking
-     unsigned int pyramid_level;
-
-     //! Maximum number of search iterations when tracking
-     unsigned int track_iterations;
-double l_to_r_max_epipolar_dist;
-     //! Acceptable error to stop search iterations when tracking
-     double track_epsilon;
-     _recon.get_value( "SCF_MIN_DISTANCE"     , min_distance      );
-     _recon.get_value( "SCF_SEARCH_WINDOW_X"  , search_window_x   );
-     _recon.get_value( "SCF_SEARCH_WINDOW_Y"  , search_window_y   );
-     _recon.get_value( "SCF_ZERO_ZONE_X"      , zero_zone_x       );
-     _recon.get_value( "SCF_ZERO_ZONE_Y"      , zero_zone_y       );
-     _recon.get_value( "SCF_SEARCH_ITERATIONS", search_iterations );
-     _recon.get_value( "SCF_QUALITY_LEVEL"    , quality_level     );
-     _recon.get_value( "SCF_BLOCK_SIZE"       , block_size        );
-     _recon.get_value( "SCF_USE_HARRIS"       , use_harris        );
-   _recon.get_value( "SCF_TRACK_MAX_ERROR", track_max_error  );
-   _recon.get_value( "SCF_TRACK_WINDOW_X"     , track_window_x      );
-    _recon.get_value( "SCF_TRACK_WINDOW_Y"     , track_window_y      );
-    _recon.get_value( "SCF_TRACK_MAX_ERROR"    , track_max_error     );
-    _recon.get_value( "SCF_PYRAMID_LEVEL"      , pyramid_level       );
-    _recon.get_value( "SCF_TRACK_ITERATIONS"   , track_iterations    );
-    _recon.get_value( "SCF_TRACK_EPSILON"      , track_epsilon       );
-
-    _recon.get_value( "SCF_MAX_EPIPOLAR_DIST", l_to_r_max_epipolar_dist);
-
-    cvGoodFeaturesToTrack( leftGrey, eig, temp, goodPoints[0], &count,
-                           quality_level, min_distance, 0, block_size, use_harris);
-      //  printf("m: GFTT 1 %d\n",count);
-    CvSize win = cvSize( search_window_x, search_window_y );
-       CvSize zero_zone = cvSize( zero_zone_x, zero_zone_y );
-       CvTermCriteria criteria_csp = cvTermCriteria( CV_TERMCRIT_ITER,
-                                                 search_iterations,
-                                                 0.0f );
-
-    cvFindCornerSubPix( leftGrey, goodPoints[0], count,
-                       win,zero_zone,
-                       criteria_csp);
-  //  printf("m: GFTT 2 %d\n",count);
-
-
-    vector<CvPoint2D64f> undist_coords1;
-
-    vector<CvPoint2D64f> undist_coords2;
-
-
-
-    /*
-
-
-    //Draw points on image
-    int i, valid;
-    for (i = valid = 0; i<count; i++)
-    {
-        cvCircle(leftGrey, cvPointFrom32f(goodPoints[0][i]), 3, CV_RGB(255,255,255), -1, 8,0);
-        //   cvCircle(vdisp, cvPointFrom32f(goodPoints[1][i]), 3, CV_RGB(255,255,255), -1, 8,0);
-        // cvCircle(rightGrey, cvPointFrom32f(goodPoints[1][i]), 3, CV_RGB(255,255,255), -1, 8,0);
-
-        if ( !status[i] ) continue;
-        goodPoints[0][valid] = goodPoints[0][i];
-        goodPoints[2][valid++] = goodPoints[2][i];
-        cvCircle( rightGrey, cvPointFrom32f(goodPoints[2][i]), 3, CV_RGB(0,255,0), -1, 8,0);
-    }
-*/
+void StereoEngine::loadMatrices(){
     double camInt1_a[9] = {     _calib.camera_calibs[0].fcx,  0,  _calib.camera_calibs[0].ccx,
                                 0,  _calib.camera_calibs[0].fcy, _calib.camera_calibs[0].ccy,
                                 0,  0 ,  1};
@@ -1329,12 +510,13 @@ double l_to_r_max_epipolar_dist;
     //calibration chessboard and we get R and T of the second camera.
     double rv1_a[3] = { 0,0,0 };
     CvMat RV1 = cvMat(3,1,CV_64F,rv1_a);
-    double rv2_a[3] = { 0,0,0 };
-    CvMat RV2 = cvMat(3,1,CV_64F,rv2_a);
+    // double rv2_a[3] = { 0,0,0 };
+    // CvMat RV2 = cvMat(3,1,CV_64F,rv2_a);
+    _RV2 = cvCreateMat(3,1,CV_64F);
     //rotation vector (same for both cameras)
     double *rm2_a= _calib.camera_calibs[1].rotMatr; //  = { 0,0,0, 0,0,0,  0,0,0};
     CvMat RM2 = cvMat(3,3,CV_64F,rm2_a);                //calculate rotation matrix
-    cvRodrigues2( &RM2,&RV2);
+    cvRodrigues2( &RM2,_RV2);
     double t1_a[3] = {  0.0, 0.0, 0.0 };
     CvMat T1 = cvMat(3,1,CV_64F,t1_a);                //transformation vector camera 1
     double t2_a[3] = {  _calib.camera_calibs[1].transVect[0],
@@ -1382,6 +564,333 @@ double l_to_r_max_epipolar_dist;
     //  cvMatMul(&E, &iK, &tmpF);
     CvMat F = cvMat(3, 3, CV_64F, f_real);
     cvCopy(&E,&F);
+    _T2=cvCloneMat(&T2);
+    _camInt1=cvCloneMat(&camInt1);
+    _camInt2=cvCloneMat(&camInt2);
+    _camDist1=cvCloneMat(&camDist1);
+    _camDist2=cvCloneMat(&camDist2);
+    _cam1Ext=cvCloneMat(&cam1Ext);
+    _cam2Ext=cvCloneMat(&cam2Ext);
+
+    _F=cvCloneMat(&F);
+    _recon.get_value( "SCF_MAX_EPIPOLAR_DIST", _l_to_r_max_epipolar_dist);
+    _recon.get_value( "SCF_DEBUG_PER_REJECTED_OUTPUT_DEBUG", thresh_per_rejected_output_debug, 0.33 );
+    _recon.get_value( "DEBUG_MIN_FEAT_PER_FRAME",minFeatPerFrameThresh,100);
+    _recon.get_value( "MIN_FEAT_RERUN",min_feat_rerun,100);
+
+    _recon.get_value("SCF_SAVE_DEBUG_IMAGES",_writeDebugImages,false);
+    _recon.get_value( "SKF_SHOW_DEBUG_IMAGES",
+                     show_debug_images);
+}
+int StereoEngine::keypointDepth(IplImage *leftGrey,IplImage *rightGrey,std::string left_file_name,MatchStats &stats,list<osg::Vec3> &points){
+
+
+    //printf("Orig %d\n",new_method_pts.size());
+    // SurfFeatureDetector detector(50);
+    // DynamicAdaptedFeatureDetector
+    // int n_features=400;
+    //Ptr<AdjusterAdapter> adjuster = new FastAdjuster(10);
+    // DynamicAdaptedFeatureDetector detector(adjuster, n_features * 0.9, n_features * 1.1, 1000);
+    // Ptr<FeatureDetector> detector(new DynamicAdaptedFeatureDetector (100, 110, 10,
+    //                          new FastAdjuster(20,true)));
+    vector<KeyPoint> keypoints1, keypoints2;
+    /*  detector.detect(left_frame, keypoints1);
+detector.detect(right_frame, keypoints2);
+*/
+    // computing descriptors
+    /*  SurfDescriptorExtractor extractor;
+Mat descriptors1, descriptors2;
+extractor.compute(left_frame, keypoints1, descriptors1);
+extractor.compute(right_frame, keypoints2, descriptors2);*/
+    /*    IplImage *left_undist_image=cvCreateImage(cvSize(left_frame->width,left_frame->height),IPL_DEPTH_8U,1);
+    IplImage *right_undist_image=cvCreateImage(cvSize(right_frame->width,right_frame->height),IPL_DEPTH_8U,1);
+    IplImage *invalidMask=cvCreateImage(cvSize(right_frame->width,right_frame->height),IPL_DEPTH_8U,1);
+    IplImage *tmp=cvCreateImage(cvSize(right_frame->width,right_frame->height),IPL_DEPTH_8U,1);
+
+    if(!undist_left)
+        undist_left=new Undistort_Data(local_calib[0],left_frame,true);
+    if(!undist_right)
+        undist_right=new Undistort_Data(local_calib[1],right_frame,true);
+
+    undistort_image(*undist_left,left_frame,left_undist_image);
+    undistort_image(*undist_right,right_frame,right_undist_image);
+    cvCmpS( left_undist_image, 1.0, invalidMask,  CV_CMP_LT );
+    cvCmpS( right_undist_image, 1.0, tmp,  CV_CMP_LT );
+    cvAdd(invalidMask,tmp,invalidMask);
+    cvReleaseImage(&tmp);
+*/
+    RobustMatcher matcher(5000,8000,0.65,_l_to_r_max_epipolar_dist);
+    vector<DMatch> matches;
+    matcher.match(leftGrey,rightGrey,matches,keypoints1, keypoints2);
+    /*  // matching descriptors
+FlannBasedMatcher matcher;
+vector<DMatch> matches;
+matcher.match(descriptors1, descriptors2, matches);
+double max_dist = 0; double min_dist = 100;
+
+
+
+//-- Quick calculation of max and min distances between keypoints
+for( int i = 0; i < descriptors1.rows; i++ )
+{ double dist = matches[i].distance;
+if( dist < min_dist ) min_dist = dist;
+if( dist > max_dist ) max_dist = dist;
+}
+
+printf("-- Max dist : %f \n", max_dist );
+printf("-- Min dist : %f \n", min_dist );
+
+//-- Draw only "good" matches (i.e. whose distance is less than 2*min_dist )
+//-- PS.- radiusMatch can also be used here.
+std::vector< DMatch > good_matches;*/
+    std::vector< DMatch > good_matches;
+    //  std::vector<CvPoint2D64f>  left_coords;
+    //  std::vector<CvPoint2D64f>  right_coords;
+    CvPoint2D32f* left_coords,*right_coords;
+    char* Lstatus = 0;
+    char* Rstatus = 0;
+
+    Lstatus = (char*)cvAlloc(matches.size()*sizeof(char));
+    Rstatus = (char*)cvAlloc(matches.size()*sizeof(char));
+    memset(Lstatus,0,sizeof(char)*matches.size());
+    memset(Rstatus,0,sizeof(char)*matches.size());
+    left_coords = (CvPoint2D32f*)cvAlloc(matches.size()*sizeof(CvPoint2D32f));
+    right_coords = (CvPoint2D32f*)cvAlloc(matches.size()*sizeof(CvPoint2D32f));
+
+    //vector<bool>status(descriptors1.rows,true);
+
+    for( int i = 0; i < matches.size(); i++ )
+    { //if( matches[i].distance < 2*min_dist )
+        {
+            // cv::Point2f lp,rp;
+            // lp=keypoints1[matches[i].queryIdx].pt;
+            // rp=keypoints1[matches[i].trainIdx].pt;
+            // double dist=pointToEpipolarLineCost(lp,rp,_F);
+            //printf("%f\n",dist);
+            // if(dist < 2.0)
+
+            {
+
+                CvPoint2D64f l,r;
+
+                l.x=keypoints1[matches[i].queryIdx].pt.x;
+                l.y=keypoints1[matches[i].queryIdx].pt.y;
+                r.x=keypoints2[matches[i].trainIdx].pt.x;
+                r.y=keypoints2[matches[i].trainIdx].pt.y;
+                left_coords[i].x=l.x;
+                left_coords[i].y=l.y;
+                right_coords[i].x=r.x;
+                right_coords[i].y=r.y;
+                Rstatus[i]=true;
+                Lstatus[i]=true;
+                good_matches.push_back( matches[i]);
+
+                //   printf("bad %f %f -- %f %f\n",l.x,l.y,r.x,r.y);
+                // cvShowImage( "Good Matches", invalidMask );
+                //  waitKey(0);
+                /*  if( CV_IMAGE_ELEM(invalidMask,uchar,(int)l.y,(int)l.x) ==0 &&  CV_IMAGE_ELEM(invalidMask,uchar,(int)r.y,(int)r.x) == 0){
+                    left_coords.push_back(l);
+                    right_coords.push_back(r);
+                    good_matches.push_back( matches[i]);
+                }*/
+
+            }
+        }
+    }
+    //cout << "Number of matched points (after dist clean): "<<good_matches.size()<<endl;
+    /*apply_epipolar_constraints(F,2.0,right_coords,left_coords,status,_calib);
+for(int i=0; i< status.size(); i++){
+  if(status[i]){
+      good_matches.push_back( matches[i]);
+
+  }
+}*/
+    //free(status);
+    if(show_debug_images|| _writeDebugImages){
+
+        Mat img_matches;
+        drawMatches( leftGrey, keypoints1, rightGrey, keypoints2,
+                     good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+                     vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+
+        //-- Show detected matches
+        if(show_debug_images)
+            imshow( "Good Matches", img_matches );
+
+        string debugfilename=string("debug/"+osgDB::getSimpleFileName(left_file_name)+".surf.png");
+        // cout <<debugfilename <<endl;
+        if(_writeDebugImages)
+        {
+            if(!imwrite(debugfilename.c_str(),img_matches))
+                fprintf(stderr,"Failed to write debug image %s\n",debugfilename.c_str());
+        }
+        if(show_debug_images)
+            waitKey(5);
+    }
+    /*cvReleaseImage(&left_undist_image);
+    cvReleaseImage(&right_undist_image);
+    cvReleaseImage(&invalidMask);
+*/
+
+    triangulatePoints(matches.size(),left_coords,right_coords,Lstatus,Rstatus,stats,points);
+    cvFree(&Lstatus);
+    cvFree(&Rstatus);
+    cvFree(&left_coords);
+    cvFree(&right_coords);
+    /*
+    std::vector<bool>          valid;
+    std::vector<libplankton::Vector> feats;
+    stereo_triangulate( *_auv_stereo_calib,
+                        ref_frame,
+                        left_coords,
+                        right_coords,
+                        valid,
+
+                        feats );
+    for(int i=0; i<feats.size(); i++)
+    {
+
+        vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+                                         feats[i][0],feats[i][1],feats[i][2]);
+        // printf("%f %f %f\n", feats[i][0],feats[i][1],feats[i][2]);
+
+        g_ptr_array_add(localV,GTS_VERTEX(vert));
+
+
+    }
+    */
+    return good_matches.size();
+}
+
+//void StereoEngine::calculateOpticalFlow()
+void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,MatchStats &stats,const int MAX_COUNT, list<osg::Vec3> &points,double zguess)
+{
+    //int win_size = 5;
+    //const int MAX_COUNT = 500;
+    char* Lstatus = 0;
+    char* Rstatus = 0;
+
+    int count = 0;
+    int flags = 0;
+
+
+
+
+    Lstatus = (char*)cvAlloc(MAX_COUNT);
+    Rstatus = (char*)cvAlloc(MAX_COUNT);
+    memset(Lstatus,0,sizeof(char)*MAX_COUNT);
+    memset(Rstatus,0,sizeof(char)*MAX_COUNT);
+
+    flags = 0;
+
+    /* automatic initialization */
+
+    count = MAX_COUNT;
+
+    //Point found on grey image then projected to rectified grey image
+    CvPoint2D32f* goodPoints[4]={0,0,0,0};
+    goodPoints[0] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[0][0]));
+    goodPoints[1] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[1][0]));
+    goodPoints[2] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[2][0]));
+    goodPoints[3] = (CvPoint2D32f*)cvAlloc(MAX_COUNT*sizeof(goodPoints[2][0]));
+
+    //   int blocksize=5;
+    //   bool useharris=true;
+
+    //! Minimum distance between selected corners
+    double min_distance;
+
+    //! Half size of the search window around initial search position.
+    //! For example if these variables have the value 5,5 then a window of size
+    //! 11x11 will be searched.
+    unsigned int search_window_x;
+    unsigned int search_window_y;
+
+    //! Half size of the dead region in the middle of the search window
+    //! The values should be used if no zero zone is to be used.
+    int zero_zone_x;
+    int zero_zone_y;
+
+    //! Maximum number of iterations for corner searching
+    unsigned int search_iterations;
+
+    //! Minimum quality level for corner features
+    double quality_level;
+
+    //! Size of neighbourhood in which the corner strength is measured
+    unsigned int block_size;
+
+    //! Should the Harris corner detected be used instead of the OpenCV
+    //! default method of minimum eigenvalue of gradient matrices
+    bool use_harris;
+
+    //! Size of the features to be tracked
+    unsigned int track_window_x, track_window_y;
+
+    //! Maximum allowable tracking error before features are rejected
+    double track_max_error;
+
+    //! Number of image pyramid levels used in tracking
+    unsigned int pyramid_level;
+
+    //! Maximum number of search iterations when tracking
+    unsigned int track_iterations;
+    //! Acceptable error to stop search iterations when tracking
+    double track_epsilon;
+    _recon.get_value( "SCF_MIN_DISTANCE"     , min_distance      );
+    _recon.get_value( "SCF_SEARCH_WINDOW_X"  , search_window_x   );
+    _recon.get_value( "SCF_SEARCH_WINDOW_Y"  , search_window_y   );
+    _recon.get_value( "SCF_ZERO_ZONE_X"      , zero_zone_x       );
+    _recon.get_value( "SCF_ZERO_ZONE_Y"      , zero_zone_y       );
+    _recon.get_value( "SCF_SEARCH_ITERATIONS", search_iterations );
+    _recon.get_value( "SCF_QUALITY_LEVEL"    , quality_level     );
+    _recon.get_value( "SCF_BLOCK_SIZE"       , block_size        );
+    _recon.get_value( "SCF_USE_HARRIS"       , use_harris        );
+    _recon.get_value( "SCF_TRACK_MAX_ERROR", track_max_error  );
+    _recon.get_value( "SCF_TRACK_WINDOW_X"     , track_window_x      );
+    _recon.get_value( "SCF_TRACK_WINDOW_Y"     , track_window_y      );
+    _recon.get_value( "SCF_TRACK_MAX_ERROR"    , track_max_error     );
+    _recon.get_value( "SCF_PYRAMID_LEVEL"      , pyramid_level       );
+    _recon.get_value( "SCF_TRACK_ITERATIONS"   , track_iterations    );
+    _recon.get_value( "SCF_TRACK_EPSILON"      , track_epsilon       );
+
+
+    cvGoodFeaturesToTrack( leftGrey, eig, temp, goodPoints[0], &count,
+                           quality_level, min_distance, 0, block_size, use_harris);
+    //  printf("m: GFTT 1 %d\n",count);
+    CvSize win = cvSize( search_window_x, search_window_y );
+    CvSize zero_zone = cvSize( zero_zone_x, zero_zone_y );
+    CvTermCriteria criteria_csp = cvTermCriteria( CV_TERMCRIT_ITER,
+                                                  search_iterations,
+                                                  0.0f );
+
+    cvFindCornerSubPix( leftGrey, goodPoints[0], count,
+                        win,zero_zone,
+                        criteria_csp);
+    //  printf("m: GFTT 2 %d\n",count);
+
+
+
+
+
+    /*
+
+
+    //Draw points on image
+    int i, valid;
+    for (i = valid = 0; i<count; i++)
+    {
+        cvCircle(leftGrey, cvPointFrom32f(goodPoints[0][i]), 3, CV_RGB(255,255,255), -1, 8,0);
+        //   cvCircle(vdisp, cvPointFrom32f(goodPoints[1][i]), 3, CV_RGB(255,255,255), -1, 8,0);
+        // cvCircle(rightGrey, cvPointFrom32f(goodPoints[1][i]), 3, CV_RGB(255,255,255), -1, 8,0);
+
+        if ( !status[i] ) continue;
+        goodPoints[0][valid] = goodPoints[0][i];
+        goodPoints[2][valid++] = goodPoints[2][i];
+        cvCircle( rightGrey, cvPointFrom32f(goodPoints[2][i]), 3, CV_RGB(0,255,0), -1, 8,0);
+    }
+*/
+
     //cvConvertScale( &E, &F, fabs(e[8]) > 0 ? 1./e[8] : 1 );
     //print_matrix("F=",&F);
     //for(int i=0; i<3; i++)
@@ -1436,7 +945,7 @@ double l_to_r_max_epipolar_dist;
                                   y_n*zguess,
                                   zguess};
             CvMat point = cvMat(1,1,CV_64FC3,point_a);
-            cvProjectPoints2(&point, &RV2, &T2, &camInt2, &camDist2, &pointImg2);
+            cvProjectPoints2(&point, _RV2, _T2,_camInt2, _camDist2, &pointImg2);
             goodPoints[2][i].x=pointImg2_a[0];
             goodPoints[2][i].y=pointImg2_a[1];
         }
@@ -1459,19 +968,20 @@ double l_to_r_max_epipolar_dist;
     int cnt1=0;
     for(int i=0; i< count; i++)
         if(Lstatus[i]){
-        cnt1++;
-    }
+            cnt1++;
+        }
     ///           printf("%d %f %f\n",cnt1++,goodPoints[0][i].x,
     //               goodPoints[0][i].y);
     //printf("m: GFTT 3 %d %f\n",cnt1,min_distance);
     //printf("m: GFTT 4 %d\n",count);
+    stats.total_init_feat=cnt1;
 
     cvZero(leftPyr);
     cvZero(rightPyr);
     CvSize win_size = cvSize( track_window_x, track_window_y );
     CvTermCriteria criteria = cvTermCriteria( CV_TERMCRIT_ITER| CV_TERMCRIT_EPS,
-                                               track_iterations,
-                                               track_epsilon  );
+                                              track_iterations,
+                                              track_epsilon  );
     cvCalcOpticalFlowPyrLK( leftGrey, rightGrey, leftPyr, rightPyr,
                             goodPoints[0], goodPoints[2], count, win_size, pyramid_level, Rstatus, error,
                             criteria, flags );
@@ -1479,7 +989,7 @@ double l_to_r_max_epipolar_dist;
 
     int validC=0;
     for(int i=0; i< count; i++){
-      // printf("! %f %f\n",goodPoints[2][i].x,goodPoints[2][i].y);
+        // printf("! %f %f\n",goodPoints[2][i].x,goodPoints[2][i].y);
         double x= goodPoints[2][i].x;
         double y= goodPoints[2][i].y;
         if(
@@ -1490,98 +1000,19 @@ double l_to_r_max_epipolar_dist;
         else
             validC++;
     }
-  //  printf("m: LK v %d\n",validC);
+
+    //  printf("m: LK v %d\n",validC);
 
     //cvSaveImage("a1.png",leftGrey);  cvSaveImage("a2.png",rightGrey);;
-    CvMat imagePointsLeft = cvMat(1, count, CV_32FC2, &goodPoints[0][0] );
+    // CvMat imagePointsLeft = cvMat(1, count, CV_32FC2, &goodPoints[0][0] );
 
     //Assign point data to CvMat data in order to use cvUndistortPoints
-    CvMat imagePointsRight = cvMat(1, count, CV_32FC2, &goodPoints[2][0] );
+    // CvMat imagePointsRight = cvMat(1, count, CV_32FC2, &goodPoints[2][0] );
 
-    //now we define a random point somewhere in front of both cameras
-    for ( int i=0; i < count; i++)
-    {
-        if(!Lstatus[i]||!Rstatus[i]){
-            undist_coords1.push_back(cvPoint2D64f(0,
-                                                  0));
+    stats.total_matched_feat=triangulatePoints(count,goodPoints[0],goodPoints[2],Lstatus,Rstatus,stats,points);
+    stats.total_tracking_fail=stats.total_init_feat-stats.total_matched_feat;
 
-            undist_coords2.push_back(cvPoint2D64f(0,
-                                                  0));
-
-        }else{
-
-            CvPoint2D32f tmpL = goodPoints[0][i];
-            CvPoint2D32f tmpR = goodPoints[2][i];
-
-
-            //and we project this ONE point onto BOTH images
-            double pointImg1_a[2] = { tmpL.x, tmpL.y};
-            CvMat pointImg1 = cvMat(1,1,CV_64FC2,pointImg1_a);
-            double pointImg2_a[2] = { tmpR.x,tmpR.y};
-            CvMat pointImg2 = cvMat(1,1,CV_64FC2,pointImg2_a);
-
-
-            /**
-        * 3D localization
-        * now we have all parameters we also get from our stereo frame
-        * - intrinsic and extrinsic of cameras
-        * - coordinates of a point in both images
-        *
-        * so we calculate the 3d position of this point in our system
-        */
-
-            //first we need do the inverse of the projective transformation to get
-            //the points coordinates in the cameras normal space
-            cvUndistortPoints(&pointImg1,&pointImg1,&camInt1,&camDist1);
-            cvUndistortPoints(&pointImg2,&pointImg2,&camInt2,&camDist2);
-            undist_coords1.push_back(cvPoint2D64f(pointImg1.data.db[0],
-                                                  pointImg1.data.db[1]));
-
-            undist_coords2.push_back(cvPoint2D64f(pointImg2.data.db[0],
-                                                  pointImg2.data.db[1]));
-        }
-        //be sure the point's are saved in right matrix format 2xN 1 channel
-
-    }
-    apply_epipolar_constraints(&F,l_to_r_max_epipolar_dist,undist_coords1,undist_coords2,Rstatus,_calib);
-    int ctt=0;
-    for ( int i=0; i < count; i++)
-    {
-        if(!Rstatus[i]|| !Lstatus[i])
-            continue;
-        CvPoint2D32f tmpL = goodPoints[0][i];
-        CvPoint2D32f tmpR = goodPoints[2][i];
-
-        CvMat *_pointImg1 = cvCreateMat(2,1,CV_64FC1);
-        CvMat *_pointImg2 = cvCreateMat(2,1,CV_64FC1);
-        CV_MAT_ELEM( *_pointImg1, double, 0, 0 ) = undist_coords1[i].x;
-        CV_MAT_ELEM( *_pointImg1, double, 1, 0 ) = undist_coords1[i].y;
-        CV_MAT_ELEM( *_pointImg2, double, 0, 0 ) = undist_coords2[i].x;
-        CV_MAT_ELEM( *_pointImg2, double, 1, 0 ) = undist_coords2[i].y;
-
-        //triangulate both projections to find real point position
-        //!!! all parameters must be double type
-        CvMat *point3D = cvCreateMat(4,1,CV_64F) ;
-        cvTriangulatePoints(&cam1Ext, &cam2Ext, _pointImg1, _pointImg2, point3D);
-
-        //to get the real position we need to do also a homogeneous division
-        point3D->data.db[0] /= point3D->data.db[3];
-        point3D->data.db[1] /= point3D->data.db[3];
-        point3D->data.db[2] /= point3D->data.db[3];
-        ctt++;
-        //et voila
-        //  cout << point3D->data.db[0] << " " << point3D->data.db[1] << " " << point3D->data.db[2];
-        //cout << " "<<tmpL.x<< " "<< tmpL.y<< " "<< tmpR.x<< " "<<tmpR.y << endl;
-        osg::Vec3 pt(point3D->data.db[0],point3D->data.db[1],point3D->data.db[2]);
-        if(pt.z() > 0.0 && pt.length2() < max_triangulation_len*max_triangulation_len)
-            points.push_back(pt);
-        cvReleaseMat(&_pointImg1);
-        cvReleaseMat(&_pointImg2);
-        cvReleaseMat(&point3D);
-
-
-    }
-  //  printf("ctt %d\n",ctt);
+    //  printf("ctt %d\n",ctt);
     cvFree(&Lstatus);
     cvFree(&Rstatus);
     cvFree( &(goodPoints[0]));
@@ -1640,6 +1071,96 @@ double l_to_r_max_epipolar_dist;
 
 
 }
+int StereoEngine::triangulatePoints(int count,CvPoint2D32f*leftP,CvPoint2D32f*rightP,char* Lstatus,char* Rstatus,MatchStats &stats,std::list<osg::Vec3> &points){
+
+    vector<CvPoint2D64f> undist_coords1;
+
+    vector<CvPoint2D64f> undist_coords2;
+
+    for ( int i=0; i < count; i++)
+    {
+        if(!Lstatus[i]||!Rstatus[i]){
+            undist_coords1.push_back(cvPoint2D64f(0,
+                                                  0));
+
+            undist_coords2.push_back(cvPoint2D64f(0,
+                                                  0));
+
+        }else{
+
+            CvPoint2D32f tmpL = leftP[i];
+            CvPoint2D32f tmpR = rightP[i];
+
+
+            //and we project this ONE point onto BOTH images
+            double pointImg1_a[2] = { tmpL.x, tmpL.y};
+            CvMat pointImg1 = cvMat(1,1,CV_64FC2,pointImg1_a);
+            double pointImg2_a[2] = { tmpR.x,tmpR.y};
+            CvMat pointImg2 = cvMat(1,1,CV_64FC2,pointImg2_a);
+
+
+            /**
+        * 3D localization
+        * now we have all parameters we also get from our stereo frame
+        * - intrinsic and extrinsic of cameras
+        * - coordinates of a point in both images
+        *
+        * so we calculate the 3d position of this point in our system
+        */
+
+            //first we need do the inverse of the projective transformation to get
+            //the points coordinates in the cameras normal space
+            cvUndistortPoints(&pointImg1,&pointImg1,_camInt1,_camDist1);
+            cvUndistortPoints(&pointImg2,&pointImg2,_camInt2,_camDist2);
+            undist_coords1.push_back(cvPoint2D64f(pointImg1.data.db[0],
+                                                  pointImg1.data.db[1]));
+
+            undist_coords2.push_back(cvPoint2D64f(pointImg2.data.db[0],
+                                                  pointImg2.data.db[1]));
+        }
+        //be sure the point's are saved in right matrix format 2xN 1 channel
+
+    }
+    stats.total_epi_fail=apply_epipolar_constraints(_F,_l_to_r_max_epipolar_dist,undist_coords1,undist_coords2,Rstatus,Lstatus,_calib);
+
+    int ctt=0;
+    for ( int i=0; i < count; i++)
+    {
+        if(!Rstatus[i]|| !Lstatus[i])
+            continue;
+
+
+        CvMat *_pointImg1 = cvCreateMat(2,1,CV_64FC1);
+        CvMat *_pointImg2 = cvCreateMat(2,1,CV_64FC1);
+        CV_MAT_ELEM( *_pointImg1, double, 0, 0 ) = undist_coords1[i].x;
+        CV_MAT_ELEM( *_pointImg1, double, 1, 0 ) = undist_coords1[i].y;
+        CV_MAT_ELEM( *_pointImg2, double, 0, 0 ) = undist_coords2[i].x;
+        CV_MAT_ELEM( *_pointImg2, double, 1, 0 ) = undist_coords2[i].y;
+
+        //triangulate both projections to find real point position
+        //!!! all parameters must be double type
+        CvMat *point3D = cvCreateMat(4,1,CV_64F) ;
+        cvTriangulatePoints(_cam1Ext, _cam2Ext, _pointImg1, _pointImg2, point3D);
+
+        //to get the real position we need to do also a homogeneous division
+        point3D->data.db[0] /= point3D->data.db[3];
+        point3D->data.db[1] /= point3D->data.db[3];
+        point3D->data.db[2] /= point3D->data.db[3];
+        ctt++;
+        //et voila
+        //  cout << point3D->data.db[0] << " " << point3D->data.db[1] << " " << point3D->data.db[2];
+        //cout << " "<<tmpL.x<< " "<< tmpL.y<< " "<< tmpR.x<< " "<<tmpR.y << endl;
+        osg::Vec3 pt(point3D->data.db[0],point3D->data.db[1],point3D->data.db[2]);
+        if(pt.z() > 0.0 && pt.length2() < max_triangulation_len*max_triangulation_len)
+            points.push_back(pt);
+        cvReleaseMat(&_pointImg1);
+        cvReleaseMat(&_pointImg2);
+        cvReleaseMat(&point3D);
+
+
+    }
+    return ctt;
+}
 
 StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::string left_file_name,const std::string &right_file_name ,const osg::Matrix &mat,osg::BoundingBox &bbox,MatchStats &stats,const double feature_depth_guess,bool cache_img,bool use_cached,bool force_keypoint){
 
@@ -1670,8 +1191,8 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
     IplImage *left_frame=NULL;
     IplImage *color_image=NULL;
     IplImage *right_frame=NULL;
-    unsigned int left_frame_id=frame_id++;
-    unsigned int right_frame_id=frame_id++;
+    /*unsigned int left_frame_id=frame_id++;
+    unsigned int right_frame_id=frame_id++;*/
     double load_start_time;
     double load_end_time;
 
@@ -1687,284 +1208,120 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
             cout << "Loading images..." << endl;
 
         if( !get_stereo_pair(
-                imgdir,
-                left_frame, right_frame,color_image,
-                left_file_name, right_file_name ) )
+                    imgdir,
+                    left_frame, right_frame,color_image,
+                    left_file_name, right_file_name ) )
         {
             return FAIL_OTHER;
         }
         load_end_time = get_time( );
         if(verbose)
             cout << "Loaded images: " << left_file_name << " and "
-                    << right_file_name << endl;
+                 << right_file_name << endl;
 
         if(!cachedTex)
             cacheImage(color_image,texfilename,tex_size);
     }
 
-#ifdef USE_AUV_LIBS
     TriMesh *mesh=NULL;
     TriMesh::verbose=0;
     bool no_depth=false;
     GtsSurface *surf=NULL;
-    GtsSurface *surf2=NULL;
+    int mesh_verts=0;
+    std::list<osg::Vec3> new_method_pts;
 
     if(!cachedMesh){
-    int mesh_verts=0;
-      //printf("Not cached creating\n");
+        //printf("Not cached creating\n");
 
-     // if(feature_depth_guess == AUV_NO_Z_GUESS && !no_depth)
-   // feature_depth_guess = name.alt;
+        // if(feature_depth_guess == AUV_NO_Z_GUESS && !no_depth)
+        // feature_depth_guess = name.alt;
 
-      list<libsnapper::Stereo_Feature_Estimate> feature_positions;
-      GPtrArray *localV=NULL;
-         GPtrArray *localV2=NULL;
-      list<Feature *> features;
-      if(!use_dense_stereo){
-    //
-    // Find the features
-    //
+        GPtrArray *localV=NULL;
+        if(!use_dense_stereo){
+            //
+            // Find the features
+            //
+#if OLD_AUV_CODE
+            list<Feature *> features;
 
-     stats=finder->find( left_frame,
-              right_frame,
-              left_frame_id,
-              right_frame_id,
-              max_feature_count,
-              features,
-              feature_depth_guess );
-    /* list<Feature *>::iterator fitr;
-     for(fitr=features.begin(); fitr != features.end(); fitr++){
-         printf("%f %f -- ",  (*fitr)->get_observation(left_frame_id)->u,(*fitr)->get_observation(left_frame_id)->v);
-           printf(" %f %f\n",       (*fitr)->get_observation(right_frame_id)->u,(*fitr)->get_observation(right_frame_id)->v);
-
-
-     }
-*/
-
-     double per_failed=(stats.total_epi_fail+stats.total_tracking_fail)/(double)stats.total_matched_feat;
-
-     if(thresh_per_rejected_output_debug > 0 && per_failed > thresh_per_rejected_output_debug){
-        statusFlag=FAIL_FEAT_THRESH;
-     }
-     Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
-     list<Stereo_Feature_Estimate>::iterator litr;
-     list<libplankton::Vector>::iterator viter;
-
-     localV = g_ptr_array_new ();
-     localV2 = g_ptr_array_new ();
-
-     GtsRange r;
-     gts_range_init(&r);
-     TVertex *vert;
-     int minForKeypoint =100;
-    //
-    // Triangulate the features if requested
-    //
-     //Fallback slow matching
-#if 0
-     if(statusFlag != STEREO_OK &&  features.size() < minForKeypoint || force_keypoint){
-         statusFlag=FALLBACK_KEYPOINT;
-
-         printf("Orig %d\n",features.size());
-         features.clear();;
-        // SurfFeatureDetector detector(50);
-        // DynamicAdaptedFeatureDetector
-        // int n_features=400;
-         //Ptr<AdjusterAdapter> adjuster = new FastAdjuster(10);
-        // DynamicAdaptedFeatureDetector detector(adjuster, n_features * 0.9, n_features * 1.1, 1000);
-        // Ptr<FeatureDetector> detector(new DynamicAdaptedFeatureDetector (100, 110, 10,
-             //                          new FastAdjuster(20,true)));
-         vector<KeyPoint> keypoints1, keypoints2;
-       /*  detector.detect(left_frame, keypoints1);
-         detector.detect(right_frame, keypoints2);
-*/
-         // computing descriptors
-       /*  SurfDescriptorExtractor extractor;
-         Mat descriptors1, descriptors2;
-         extractor.compute(left_frame, keypoints1, descriptors1);
-         extractor.compute(right_frame, keypoints2, descriptors2);*/
-         IplImage *left_undist_image=cvCreateImage(cvSize(left_frame->width,left_frame->height),IPL_DEPTH_8U,1);
-         IplImage *right_undist_image=cvCreateImage(cvSize(right_frame->width,right_frame->height),IPL_DEPTH_8U,1);
-         IplImage *invalidMask=cvCreateImage(cvSize(right_frame->width,right_frame->height),IPL_DEPTH_8U,1);
-         IplImage *tmp=cvCreateImage(cvSize(right_frame->width,right_frame->height),IPL_DEPTH_8U,1);
-
-         if(!undist_left)
-             undist_left=new Undistort_Data(local_calib[0],left_frame,true);
-         if(!undist_right)
-             undist_right=new Undistort_Data(local_calib[1],right_frame,true);
-
-         undistort_image(*undist_left,left_frame,left_undist_image);
-         undistort_image(*undist_right,right_frame,right_undist_image);
-         cvCmpS( left_undist_image, 1.0, invalidMask,  CV_CMP_LT );
-         cvCmpS( right_undist_image, 1.0, tmp,  CV_CMP_LT );
-         cvAdd(invalidMask,tmp,invalidMask);
-         cvReleaseImage(&tmp);
-
-         RobustMatcher matcher(5000,8000,0.65,_max_epi_dist);
-        vector<DMatch> matches;
-        matcher.match(left_undist_image,right_undist_image,matches,keypoints1, keypoints2);
-       /*  // matching descriptors
-         FlannBasedMatcher matcher;
-         vector<DMatch> matches;
-         matcher.match(descriptors1, descriptors2, matches);
-         double max_dist = 0; double min_dist = 100;
+            list<libsnapper::Stereo_Feature_Estimate> feature_positions;
+            stats=finder->find( left_frame,
+                                right_frame,
+                                left_frame_id,
+                                right_frame_id,
+                                max_feature_count,
+                                features,
+                                feature_depth_guess );
+            Stereo_Reference_Frame ref_frame = STEREO_LEFT_CAMERA;
+            list<libplankton::Vector>::iterator viter;
+#else
+            int MAX_COUNT=100000;
+            sparseDepth(left_frame,right_frame,stats,MAX_COUNT,new_method_pts,feature_depth_guess);
 
 
-
-         //-- Quick calculation of max and min distances between keypoints
-          for( int i = 0; i < descriptors1.rows; i++ )
-          { double dist = matches[i].distance;
-            if( dist < min_dist ) min_dist = dist;
-            if( dist > max_dist ) max_dist = dist;
-          }
-
-          printf("-- Max dist : %f \n", max_dist );
-          printf("-- Min dist : %f \n", min_dist );
-
-          //-- Draw only "good" matches (i.e. whose distance is less than 2*min_dist )
-          //-- PS.- radiusMatch can also be used here.
-          std::vector< DMatch > good_matches;*/
-        std::vector< DMatch > good_matches;
-          std::vector<CvPoint2D64f>  left_coords;
-          std::vector<CvPoint2D64f>  right_coords;
-          //vector<bool>status(descriptors1.rows,true);
-
-          for( int i = 0; i < matches.size(); i++ )
-          { //if( matches[i].distance < 2*min_dist )
-              {
-               // cv::Point2f lp,rp;
-                // lp=keypoints1[matches[i].queryIdx].pt;
-                // rp=keypoints1[matches[i].trainIdx].pt;
-               // double dist=pointToEpipolarLineCost(lp,rp,_F);
-                //printf("%f\n",dist);
-               // if(dist < 2.0)
-
-                {
-
-                      CvPoint2D64f l,r;
-
-                      l.x=keypoints1[matches[i].queryIdx].pt.x;
-                      l.y=keypoints1[matches[i].queryIdx].pt.y;
-                      r.x=keypoints2[matches[i].trainIdx].pt.x;
-                      r.y=keypoints2[matches[i].trainIdx].pt.y;
-                      //   printf("bad %f %f -- %f %f\n",l.x,l.y,r.x,r.y);
-                    // cvShowImage( "Good Matches", invalidMask );
-                      //  waitKey(0);
-                      if( CV_IMAGE_ELEM(invalidMask,uchar,(int)l.y,(int)l.x) ==0 &&  CV_IMAGE_ELEM(invalidMask,uchar,(int)r.y,(int)r.x) == 0){
-                      left_coords.push_back(l);
-                      right_coords.push_back(r);
-                      good_matches.push_back( matches[i]);
-                      }
-
-                  }
-              }
-          }
-          cout << "Number of matched points (after dist clean): "<<good_matches.size()<<endl;
-          /*apply_epipolar_constraints(F,2.0,right_coords,left_coords,status,_calib);
-          for(int i=0; i< status.size(); i++){
-              if(status[i]){
-                  good_matches.push_back( matches[i]);
-
-              }
-          }*/
-          //free(status);
-          if(show_debug_images|| _writeDebugImages){
-
-              Mat img_matches;
-              drawMatches( left_undist_image, keypoints1, right_undist_image, keypoints2,
-                           good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-                           vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-
-              //-- Show detected matches
-              if(show_debug_images)
-                  imshow( "Good Matches", img_matches );
-
-              string debugfilename=string("debug/"+osgDB::getSimpleFileName(left_file_name)+".surf.png");
-              // cout <<debugfilename <<endl;
-              if(_writeDebugImages)
-              {
-                  if(!imwrite(debugfilename.c_str(),img_matches))
-                  fprintf(stderr,"Failed to write debug image %s\n",debugfilename.c_str());
-              }
-               if(show_debug_images)
-                   waitKey(5);
-          }
-          cvReleaseImage(&left_undist_image);
-          cvReleaseImage(&right_undist_image);
-          cvReleaseImage(&invalidMask);
-
-          std::vector<bool>          valid;
-              std::vector<libplankton::Vector> feats;
-          stereo_triangulate( *_auv_stereo_calib,
-                              ref_frame,
-                              left_coords,
-                              right_coords,
-                              valid,
-
-                              feats );
-          for(int i=0; i<feats.size(); i++)
-            {
-
-              vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
-                               feats[i][0],feats[i][1],feats[i][2]);
-            // printf("%f %f %f\n", feats[i][0],feats[i][1],feats[i][2]);
-
-              g_ptr_array_add(localV,GTS_VERTEX(vert));
-
-
+#endif
+            double per_failed=(stats.total_epi_fail+stats.total_tracking_fail)/(double)stats.total_matched_feat;
+//            cout << thresh_per_rejected_output_debug << " " << per_failed<<endl;
+//cout <<stats.total_epi_fail<< " "<<stats.total_tracking_fail << " "<<(double)stats.total_matched_feat<<endl;
+            if(thresh_per_rejected_output_debug > 0 && per_failed > thresh_per_rejected_output_debug){
+                statusFlag=FAIL_FEAT_THRESH;
             }
 
-     }else
-     #endif
-     {
 
+            localV = g_ptr_array_new ();
 
+            GtsRange r;
+            gts_range_init(&r);
+            TVertex *vert;
+            //
+            // Triangulate the features if requested
+            //
+            //Fallback slow matching
 
-    /*Matrix pose_cov(4,4);
+            if(statusFlag != STEREO_OK &&  new_method_pts.size() < min_feat_rerun || force_keypoint){
+                statusFlag=FALLBACK_KEYPOINT;
+            //    printf("Orig points %d\n",new_method_pts.size());
+                int old_pts_cnt=new_method_pts.size();
+                new_method_pts.clear();
+                keypointDepth(left_frame,right_frame,left_file_name,stats,new_method_pts);
+               printf("Fallback LK pts: %d LK Fail Rate %d%% Feat Pts: %d \n",old_pts_cnt,(int)round(100*per_failed),new_method_pts.size());
+            }
+
+#ifdef OLD_AUV_CODE
+
+            /*Matrix pose_cov(4,4);
       get_cov_mat(cov_file,pose_cov);
     */
-    //cout << "Cov " << pose_cov << "Pose "<< veh_pose<<endl;
-    stereo_triangulate( *_auv_stereo_calib,
-                ref_frame,
-                features,
-                left_frame_id,
-                right_frame_id,
-                NULL,//image_coord_covar,
-                feature_positions );
-    int MAX_COUNT=100000;
-    std::list<osg::Vec3> new_method_pts;
-    sparseDepth(left_frame,right_frame,100000,new_method_pts,feature_depth_guess);
-    printf("Feature Pos %d %d %d\n",feature_positions.size(),features.size(),new_method_pts.size());
+            //cout << "Cov " << pose_cov << "Pose "<< veh_pose<<endl;
+            stereo_triangulate( *_auv_stereo_calib,
+                                ref_frame,
+                                features,
+                                left_frame_id,
+                                right_frame_id,
+                                NULL,//image_coord_covar,
+                                feature_positions );
 
-    TVertex *vert2;
-    std::list<osg::Vec3>::iterator litr2;
-    for( litr2  = new_method_pts.begin( ) ;
-         litr2 != new_method_pts.end( ) ;
-         litr2++ )
-      {   vert2=(TVertex*)  gts_vertex_new (t_vertex_class (),
-                                           (*litr2)[0],(*litr2)[1],(*litr2)[2]);
-                          //printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
-
-                          g_ptr_array_add(localV2,GTS_VERTEX(vert2));
+            // printf("Feature Pos %d %d %d\n",feature_positions.size(),features.size(),new_method_pts.size());
+            //  cout << "1 "<< stats <<endl<<"2 "<<stats2<<endl;
 
 
-                        }
+            list<Stereo_Feature_Estimate>::iterator litr;
 
-    for( litr  = feature_positions.begin( ) ;
-         litr != feature_positions.end( ) ;
-         litr++ )
-      {
-        // if(litr->x[2] > 8.0 || litr->x[2] < 0.25)
-        //continue;
-        //  if(name.alt > 5.0 || name.alt < 0.75)
-        //litr->x[2]=name.alt;
-        vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
-                         litr->x[0],litr->x[1],litr->x[2]);
-        //printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
+            for( litr  = feature_positions.begin( ) ;
+                 litr != feature_positions.end( ) ;
+                 litr++ )
+            {
+                // if(litr->x[2] > 8.0 || litr->x[2] < 0.25)
+                //continue;
+                //  if(name.alt > 5.0 || name.alt < 0.75)
+                //litr->x[2]=name.alt;
+                vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+                                                 litr->x[0],litr->x[1],litr->x[2]);
+                //printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
 
-        //double confidence=1.0;
-        libplankton::Vector max_eig_v(3);
-        /*  if(have_cov_file){
+                //double confidence=1.0;
+                libplankton::Vector max_eig_v(3);
+                /*  if(have_cov_file){
 
         Matrix eig_vecs( litr->P );
         Vector eig_vals(3);
@@ -1996,109 +1353,78 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
         vert->ey=max_eig_v(1);
         vert->ez=max_eig_v(2);
         gts_range_add_value(&r,vert->confidence);*/
-        g_ptr_array_add(localV,GTS_VERTEX(vert));
+                g_ptr_array_add(localV,GTS_VERTEX(vert));
 
 
-      }
-    list<Feature*>::iterator fitr;
-    for( fitr  = features.begin( ) ;
-         fitr != features.end( ) ;
-         fitr++ )
-      {
-        delete *fitr;
-      }
-
-    }
-    //   static ofstream out_file( triangulation_file_name.c_str( ) );
-
-
-    //static libplankton::Vector stereo1_nav( AUV_NUM_POSE_STATES );
-    // Estimates of the stereo poses in the navigation frame
-
-
-
-
-
-    /*	 gts_range_update(&r);
-         for(unsigned int i=0; i < localV->len; i++){
-         TVertex *v=(TVertex *) g_ptr_array_index(localV,i);
-         if(have_cov_file){
-         float val= (v->confidence -r.min) /(r.max-r.min);
-         jet_color_map(val,v->r,v->g,v->b);
-         }
-         }
-    */
-        mesh_verts=localV->len;
-        double mult=0.00;
-        if(mesh_verts){
-            surf = mesh_proc::auv_mesh_pts(localV,mult,0);
-            FILE *fp = fopen(meshfilename, "w" );
-            if(!fp){
-                fprintf(stderr,"\nWARNING - Can't open mesh file %s\n",meshfilename);
-                fflush(stderr);
-
-                // clean up
-                cvReleaseImage( &left_frame );
-                cvReleaseImage( &right_frame );
-                cvReleaseImage( &color_image);
-                return FAIL_OTHER;
             }
-            bool have_cov_file=false;
-            mesh_proc::auv_write_ply(surf, fp,have_cov_file,"test");
-            fflush(fp);
-            fclose(fp);
-            //Destory Surf
-            if(surf)
-              gts_object_destroy (GTS_OBJECT (surf));
-
-
-            // delete the vertices
-            g_ptr_array_free( localV, true );
-        }
-
-
-       int  mesh_verts2=localV2->len;
-         mult=0.00;
-        if(mesh_verts2){
-            surf2 = mesh_proc::auv_mesh_pts(localV2,mult,0);
-            FILE *fp = fopen(string(string(meshfilename)+".new.ply").c_str(), "w" );
-            if(!fp){
-                fprintf(stderr,"\nWARNING - Can't open mesh file %s\n",meshfilename);
-                fflush(stderr);
-
-                // clean up
-                cvReleaseImage( &left_frame );
-                cvReleaseImage( &right_frame );
-                cvReleaseImage( &color_image);
-                return FAIL_OTHER;
+            list<Feature*>::iterator fitr;
+            for( fitr  = features.begin( ) ;
+                 fitr != features.end( ) ;
+                 fitr++ )
+            {
+                delete *fitr;
             }
-            bool have_cov_file=false;
-            mesh_proc::auv_write_ply(surf2, fp,have_cov_file,"test");
-            fflush(fp);
-            fclose(fp);
-            //Destory Surf
-            if(surf)
-              gts_object_destroy (GTS_OBJECT (surf2));
 
-
-            // delete the vertices
-            g_ptr_array_free( localV2, true );
         }
-      }else{
-#ifdef USE_DENSE_STEREO
+#else
+            std::list<osg::Vec3>::iterator litr;
+            for( litr  = new_method_pts.begin( ) ;
+                 litr != new_method_pts.end( ) ;
+                 litr++ )
+            {   vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
+                                                 (*litr)[0],(*litr)[1],(*litr)[2]);
+                //printf("%f %f %f\n", litr->x[0],litr->x[1],litr->x[2]);
 
-    sdense->dense_stereo(left_frame,right_frame);
-        std::vector<libplankton::Vector> points;
-        IplImage *mask =cvCreateImage(cvSize(sdense->getDisp16()->width,sdense->getDisp16()->height),IPL_DEPTH_8U,1);
-        cvZero(mask);
-        sdense->get_points(points,mask);
-        mesh=mesh_proc::get_dense_grid(mask,points);
-        cvReleaseImage(&mask);
-        mesh_verts = points.size();
-        if(mesh && mesh_verts)
-            mesh->write(meshfilename);
+                g_ptr_array_add(localV,GTS_VERTEX(vert));
 
-        /*TVertex *vert;
+
+            }
+#endif
+
+            mesh_verts=localV->len;
+         //   printf("Writing points %d %d\n",mesh_verts,new_method_pts.size());
+
+            double mult=0.00;
+            if(mesh_verts){
+                surf = mesh_proc::auv_mesh_pts(localV,mult,0);
+                FILE *fp = fopen(meshfilename, "w" );
+                if(!fp){
+                    fprintf(stderr,"\nWARNING - Can't open mesh file %s\n",meshfilename);
+                    fflush(stderr);
+
+                    // clean up
+                    cvReleaseImage( &left_frame );
+                    cvReleaseImage( &right_frame );
+                    cvReleaseImage( &color_image);
+                    return FAIL_OTHER;
+                }
+                bool have_cov_file=false;
+                mesh_proc::auv_write_ply(surf, fp,have_cov_file,"test");
+                fflush(fp);
+                fclose(fp);
+                //Destory Surf
+                if(surf)
+                    gts_object_destroy (GTS_OBJECT (surf));
+
+
+                // delete the vertices
+                g_ptr_array_free( localV, true );
+            }
+        }else{
+#if 0 //def USE_DENSE_STEREO
+
+            sdense->dense_stereo(left_frame,right_frame);
+            std::vector<libplankton::Vector> points;
+            IplImage *mask =cvCreateImage(cvSize(sdense->getDisp16()->width,sdense->getDisp16()->height),IPL_DEPTH_8U,1);
+            cvZero(mask);
+            sdense->get_points(points,mask);
+            mesh=mesh_proc::get_dense_grid(mask,points);
+            cvReleaseImage(&mask);
+            mesh_verts = points.size();
+            if(mesh && mesh_verts)
+                mesh->write(meshfilename);
+
+            /*TVertex *vert;
     for(int i=0; i<(int)points.size(); i++){
       //	  printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
       if(points[i](2) > dense_z_cutoff )
@@ -2110,105 +1436,105 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
       g_ptr_array_add(localV,GTS_VERTEX(vert));
         } */
 #else
-    fprintf(stderr,"Dense support not compiled\n");
-    exit(0);
-    }
+            fprintf(stderr,"Dense support not compiled\n");
+            exit(0);
+        }
 #endif
+   }
+
+    if(!cachedMesh){
+
+        if( display_debug_images && pause_after_each_frame ){
+            cout << left_file_name<<endl;
+            cvWaitKey( 0 );
+        }
+        else if( display_debug_images )
+            cvWaitKey( 100 );
+
     }
-      if(!cachedMesh){
 
-              if( display_debug_images && pause_after_each_frame ){
-                  cout << left_file_name<<endl;
-                          cvWaitKey( 0 );
-              }
-              else if( display_debug_images )
-                  cvWaitKey( 100 );
 
+    mesh = TriMesh::read(meshfilename);
+    if(!mesh)
+        fprintf(stderr,"\nWARNING - mesh null after doing dense stereo\n");
+
+    if(!mesh){
+        fprintf(stderr,"\nWARNING - No cached mesh file %s\n",meshfilename);
+        fflush(stderr);
+
+        // clean up
+        if(!cachedTex || !cachedMesh){
+            if(left_frame){
+                cvReleaseImage( &left_frame );
+                left_frame=NULL;
+            }
+            if(right_frame){
+                cvReleaseImage( &right_frame );
+                right_frame=NULL;
+            }
+            if(color_image){
+                cvReleaseImage( &color_image );
+                color_image=NULL;
+            }
+        }
+        return FAIL_OTHER;
     }
-    }
-
-mesh = TriMesh::read(meshfilename);
-if(!mesh)
-    fprintf(stderr,"\nWARNING - mesh null after doing dense stereo\n");
-
-  if(!mesh){
-      fprintf(stderr,"\nWARNING - No cached mesh file %s\n",meshfilename);
-      fflush(stderr);
-
-      // clean up
-      if(!cachedTex || !cachedMesh){
-          if(left_frame){
-              cvReleaseImage( &left_frame );
-              left_frame=NULL;
-          }
-          if(right_frame){
-              cvReleaseImage( &right_frame );
-              right_frame=NULL;
-          }
-          if(color_image){
-              cvReleaseImage( &color_image );
-              color_image=NULL;
-          }
-      }
-      return FAIL_OTHER;
-  }
     unsigned int triFeat=mesh->vertices.size();
 
-  mesh_proc::edge_len_thresh(mesh,edgethresh);
-  unsigned int postEdgeThreshTriFeat=mesh->vertices.size();
- // printf("%d/%d %f %f\n",(triFeat-postEdgeThreshTriFeat),triFeat,(triFeat-postEdgeThreshTriFeat)/(double)triFeat,
-      //   thresh_per_rejected_output_debug);
-  stats.total_tri_fail=triFeat-postEdgeThreshTriFeat;
-  if(( stats.total_tri_fail)/(double)triFeat > thresh_per_rejected_output_debug || postEdgeThreshTriFeat < minFeatPerFrameThresh){
-      char tmp[1024];
-      sprintf(tmp,"debug/%s-edgefail.txt",osgDB::getSimpleFileName(osgDB::getNameLessExtension(left_file_name)).c_str());
+    mesh_proc::edge_len_thresh(mesh,edgethresh);
+    unsigned int postEdgeThreshTriFeat=mesh->vertices.size();
+    // printf("%d/%d %f %f\n",(triFeat-postEdgeThreshTriFeat),triFeat,(triFeat-postEdgeThreshTriFeat)/(double)triFeat,
+    //   thresh_per_rejected_output_debug);
+    stats.total_tri_fail=triFeat-postEdgeThreshTriFeat;
+    if(( stats.total_tri_fail)/(double)triFeat > thresh_per_rejected_output_debug || postEdgeThreshTriFeat < minFeatPerFrameThresh){
+        char tmp[1024];
+        sprintf(tmp,"debug/%s-edgefail.txt",osgDB::getSimpleFileName(osgDB::getNameLessExtension(left_file_name)).c_str());
 
-      FILE *fp=fopen(tmp,"w");
-      fprintf(fp,"Init,Matched,PostEpipolar,Tri,TriEdge\n");
-      fprintf(fp,"%d,%d,%d,%d,%d\n",stats.total_init_feat,stats.total_matched_feat,stats.total_accepted_feat,triFeat,postEdgeThreshTriFeat);
-      fclose(fp);
-  }
+        FILE *fp=fopen(tmp,"w");
+        fprintf(fp,"Init,Matched,PostEpipolar,Tri,TriEdge\n");
+        fprintf(fp,"%d,%d,%d,%d,%d\n",stats.total_init_feat,stats.total_matched_feat,stats.total_accepted_feat,triFeat,postEdgeThreshTriFeat);
+        fclose(fp);
+    }
 
-  if(!mesh->faces.size()){
-      fprintf(stderr,"\nWARNING - Mesh empty after edge threshold clipping %s\n",meshfilename);
-      fflush(stderr);
+    if(!mesh->faces.size()){
+        fprintf(stderr,"\nWARNING - Mesh empty after edge threshold clipping %s\n",meshfilename);
+        fflush(stderr);
 
-      // clean up
-      cvReleaseImage( &left_frame );
-      cvReleaseImage( &right_frame );
-      cvReleaseImage( &color_image);
-      return FAIL_TRI_EDGE_THRESH;
-  }
+        // clean up
+        cvReleaseImage( &left_frame );
+        cvReleaseImage( &right_frame );
+        cvReleaseImage( &color_image);
+        return FAIL_TRI_EDGE_THRESH;
+    }
 
-  /*xform xf(mat(0,0),mat(1,0),mat(2,0),mat(3,0),
+    /*xform xf(mat(0,0),mat(1,0),mat(2,0),mat(3,0),
        mat(0,1),mat(1,1),mat(2,1),mat(3,1),
        mat(0,2),mat(1,2),mat(2,2),mat(3,2),
            mat(0,3),mat(1,3),mat(2,3),mat(3,3));
 */
-  xform xf(mat(0,0),mat(0,1),mat(0,2),mat(0,3),
-       mat(1,0),mat(1,1),mat(1,2),mat(2,3),
-       mat(2,0),mat(2,1),mat(2,2),mat(2,3),
-           mat(3,0),mat(3,1),mat(3,2),mat(3,3));
+    xform xf(mat(0,0),mat(0,1),mat(0,2),mat(0,3),
+             mat(1,0),mat(1,1),mat(1,2),mat(2,3),
+             mat(2,0),mat(2,1),mat(2,2),mat(2,3),
+             mat(3,0),mat(3,1),mat(3,2),mat(3,3));
 
 
-  stats.total_accepted_feat=mesh->vertices.size();
+    stats.total_accepted_feat=mesh->vertices.size();
 
-  apply_xform(mesh,xf);
-  mesh->need_bbox();
-  osg::Vec3 maxbb(mesh->bbox.max[0],mesh->bbox.max[1],mesh->bbox.max[2]);
+    apply_xform(mesh,xf);
+    mesh->need_bbox();
+    osg::Vec3 maxbb(mesh->bbox.max[0],mesh->bbox.max[1],mesh->bbox.max[2]);
 
-  osg::Vec3 minbb(mesh->bbox.min[0],mesh->bbox.min[1],mesh->bbox.min[2]);
-  osg::BoundingBox tbbox;
-  tbbox.expandBy(maxbb);
-  tbbox.expandBy(minbb);
-  std::stringstream str;
-  str << minbb << " " << maxbb;
-  mesh->write(tcmeshfilename,str.str().c_str());
-  bbox = tbbox;
-  stats.total_faces=mesh->faces.size();
-#endif
+    osg::Vec3 minbb(mesh->bbox.min[0],mesh->bbox.min[1],mesh->bbox.min[2]);
+    osg::BoundingBox tbbox;
+    tbbox.expandBy(maxbb);
+    tbbox.expandBy(minbb);
+    std::stringstream str;
+    str << minbb << " " << maxbb;
+    mesh->write(tcmeshfilename,str.str().c_str());
+    bbox = tbbox;
+    stats.total_faces=mesh->faces.size();
 #ifdef OSG_TRI
-  osg::ref_ptr<osg::DrawElementsUInt> tris;
+    osg::ref_ptr<osg::DrawElementsUInt> tris;
     osg::ref_ptr<osg::Vec3Array> points;
     osg::ref_ptr<osg::Geometry> gm;
     osg::ref_ptr<osg::Geode> geode;
@@ -2224,37 +1550,37 @@ if(!mesh)
         if(!node.valid()){
             fprintf(stderr,"Can't load ply file\n");
             cachedMesh=false;
-        return false;
+            return false;
         }else{
-      geode=node->asGeode();
-      if(!geode.valid()){
-            fprintf(stderr,"Can't load ply file not GEODE\n");
-            cachedMesh=false;
-      }
-      osg::Drawable *drawable = geode->getDrawable(0);
-      gm = dynamic_cast< osg::Geometry*>(drawable);
-      if(!gm.valid()){
-            fprintf(stderr,"Can't load ply file not GEOM\n");
-            cachedMesh=false;
-      }
-          points=static_cast<osg::Vec3Array*>(gm->getVertexArray());
-          tris=static_cast<osg::DrawElementsUInt *>(gm->getPrimitiveSet(0));
-
-      if(!points || !tris){
-            fprintf(stderr,"Can't load ply file no points\n");
-            cachedMesh=false;
-      }
-      if(points->size()< 3 || !tris->size()){
-            if(!cachedTex){
-          cvReleaseImage( &left_frame );
-          cvReleaseImage( &right_frame );
-          if(color_image)
-        cvReleaseImage( &color_image );
-
+            geode=node->asGeode();
+            if(!geode.valid()){
+                fprintf(stderr,"Can't load ply file not GEODE\n");
+                cachedMesh=false;
             }
-            return FAIL_FEAT_THRESH;
-      }
-    }
+            osg::Drawable *drawable = geode->getDrawable(0);
+            gm = dynamic_cast< osg::Geometry*>(drawable);
+            if(!gm.valid()){
+                fprintf(stderr,"Can't load ply file not GEOM\n");
+                cachedMesh=false;
+            }
+            points=static_cast<osg::Vec3Array*>(gm->getVertexArray());
+            tris=static_cast<osg::DrawElementsUInt *>(gm->getPrimitiveSet(0));
+
+            if(!points || !tris){
+                fprintf(stderr,"Can't load ply file no points\n");
+                cachedMesh=false;
+            }
+            if(points->size()< 3 || !tris->size()){
+                if(!cachedTex){
+                    cvReleaseImage( &left_frame );
+                    cvReleaseImage( &right_frame );
+                    if(color_image)
+                        cvReleaseImage( &color_image );
+
+                }
+                return FAIL_FEAT_THRESH;
+            }
+        }
     }
     if(!cachedMesh){
 
@@ -2434,6 +1760,9 @@ if(!mesh)
             color_image=NULL;
         }
     }
+    if(mesh)
+        delete mesh;
     return statusFlag;
 }
+
 // vim:ts=4:sw=4

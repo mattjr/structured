@@ -16,7 +16,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 IF(COMMAND CMAKE_POLICY)
   CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(COMMAND CMAKE_POLICY)
-SET(USE_AUV_FOR_STEREO ON CACHE BOOL "Use AUVLibs for stereo currently good to have on!")
+SET(USE_AUV_FOR_STEREO OFF CACHE BOOL "Use AUVLibs for stereo if want to use AUV tree code")
 
 #-----------------------#
 # Includes              #
@@ -69,6 +69,7 @@ IF( NOT CMAKE_INSTALL_PREFIX )
 ENDIF( NOT CMAKE_INSTALL_PREFIX )
 
 IF(USE_AUV_FOR_STEREO)
+message("Using AUV Code for Stereo")
     ADD_DEFINITIONS("-DUSE_AUV_LIBS=1")
 IF( NOT LIBKEYPOINT_PREFIX )
    SET( LIBKEYPOINT_PREFIX /usr/local/ )
@@ -364,7 +365,7 @@ ADD_EXECUTABLE(vipsVTAtlas vipsVTAtlas.cpp)
 ADD_EXECUTABLE(atlasmesh atlasmesh.cpp)
 ADD_EXECUTABLE( borderClip borderClip.cpp  )
 ADD_EXECUTABLE( dumpPCD dumpPCD.cpp  )
-ADD_EXECUTABLE( keypoint_mesh keypoint_mesh.cpp  )
+#ADD_EXECUTABLE( keypoint_mesh keypoint_mesh.cpp  )
 
 ADD_EXECUTABLE(genOverlappingPoses genOverlappingPoses.cpp)
 
@@ -379,7 +380,7 @@ TARGET_LINK_LIBRARIES( vipsVTAtlas ts  vips vipsCC spindex   ${OGF_LIBS})
 TARGET_LINK_LIBRARIES( atlasmesh ts  vips vipsCC spindex  ${OGF_LIBS})
 TARGET_LINK_LIBRARIES(im_shrink_noblack ts vips vipsCC ${OGF_LIBS})
 TARGET_LINK_LIBRARIES(create_mipmap ts vips vipsCC ${OGF_LIBS} dl)
-TARGET_LINK_LIBRARIES(keypoint_mesh ts vips vipsCC ${OGF_LIBS} dl)
+#TARGET_LINK_LIBRARIES(keypoint_mesh ts vips vipsCC ${OGF_LIBS} dl)
 
 TARGET_LINK_LIBRARIES( testImageModel ts  )
 TARGET_LINK_LIBRARIES( deepzoomVIPS  vips vipsCC)

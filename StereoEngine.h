@@ -33,7 +33,7 @@
 #include <osg/BlendFunc>
 #include "pthread.h"
 #include <osgViewer/Viewer>
-#ifndef USE_AUV_LIBS
+#ifndef OLD_AUV_CODE
 
 #include "configFile.h"
 #else
@@ -51,7 +51,7 @@ using libsnapper::MatchStats;
 #include "calibFile.h"
 
 #define AUV_NO_Z_GUESS -100.0
-#ifndef USE_AUV_LIBS
+#ifndef OLD_AUV_CODE
 
 class MatchStats{
  public:
@@ -69,6 +69,7 @@ class MatchStats{
   { }
 };
 #endif
+
 typedef enum {
     STEREO_OK,
     FAIL_FEAT_THRESH,
@@ -80,33 +81,36 @@ class StereoEngine
 {
 public:
 
-#if USE_AUV_LIBS
+#if 0
     libsnapper::Stereo_Feature_Finder *finder;
     unsigned int frame_id;
     libsnapper::Stereo_Dense *sdense;
     libsnapper::Stereo_Calib *_auv_stereo_calib;
-    double thresh_per_rejected_output_debug;
-    int minFeatPerFrameThresh;
+
   //  CvMat *F;
    // cv::Mat _F;
     libsnapper::Camera_Calib local_calib[2];
     libsnapper::Undistort_Data *undist_left;
     libsnapper::Undistort_Data *undist_right;
-    bool _writeDebugImages;
-    double _max_epi_dist;
-    bool show_debug_images;
+
+
+
+#endif
 #define KRED  "\x1B[31m"
 #define KNRM  "\x1B[0m"
 #define KBGRDRED "\033[41m"
 #define KFRGWHITE "\033[37m"
+    bool _writeDebugImages;
+    double thresh_per_rejected_output_debug;
+    int minFeatPerFrameThresh;
+    bool show_debug_images;
 
-#endif
  /*   static const int winSize = 10;
     static const int maxCount = 20;
     static const double quality = 0.01;
-    static const double minDistance = 10;*/
+    static const double minDistance = 10;
     pthread_t viewerThread;
-    osgViewer::Viewer viewer;
+    osgViewer::Viewer viewer;*/
 
     // Dynamically Allocated (Must Release Memory)
     IplImage *temp,*eig, /**leftImage, *rightImage, *leftGreyR, *rightGreyR,*/*leftPyr,*rightPyr;
@@ -114,7 +118,7 @@ public:
     //CvPoint2D32f *points[2];
 //    CvMat *Q, /**F,*/ *R1, *R2, *P1, *P2, *M1, *M2, *D1, *D2,
   //  *mx1, *my1, *mx2, *my2, *pair, *R, *T, *E, *disp, *vdisp, *img1r, *img2r, *realDisp;
-    CvCalibFilter m_CalibFilter;
+   // CvCalibFilter m_CalibFilter;
     CvStereoBMState *BMState;
 
     // Links (Don't Deallocate)
@@ -133,8 +137,9 @@ public:
     static void stereoCalibrate(std::string imageList, int nx, int ny, int useUncalibrated);
     void findDisparity();
     void displayDisparity();
-    void sparseDepth(IplImage *leftGrey,IplImage *rightGrey,const int MAX_COUNT, std::list<osg::Vec3> &points,double zguess);
+    void sparseDepth(IplImage *leftGrey,IplImage *rightGrey,MatchStats &stats,const int MAX_COUNT, std::list<osg::Vec3> &points,double zguess);
  //   void denseDepth(const int MAX_COUNT, matrix<double> &bodyCoord, matrix<double> &colors, int &sparseFeatureCount);
+    int triangulatePoints(int count,CvPoint2D32f*left,CvPoint2D32f*right,char* Lstatus,char* Rstatus,MatchStats &stats,std::list<osg::Vec3> &points);
 
     void reprojectTo3d();
     void drawPointCloud();
@@ -157,6 +162,23 @@ public:
     bool pause_after_each_frame;
     OpenThreads::Mutex &_osgDBMutex;
     Config_File &_recon;
+int keypointDepth(IplImage *leftGrey,IplImage *rightGrey,std::string left_file_name,MatchStats &stats,std::list<osg::Vec3> &points);
+
+
+
+    CvMat *_RV2;
+    CvMat *_T2;
+    CvMat *_camInt1;
+    CvMat *_camInt2;
+    CvMat *_camDist1;
+    CvMat *_camDist2;
+    CvMat *_cam1Ext;
+    CvMat *_cam2Ext;
+
+    CvMat *_F;
+    double _l_to_r_max_epipolar_dist;
+    int min_feat_rerun;
+
 };
 
 class is_same_vec3_xy

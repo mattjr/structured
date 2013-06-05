@@ -340,6 +340,8 @@ TightFit.cpp
 GLImaging.cpp
 mipmap.cpp
 mesh_proc.cpp
+stereo_dense.cpp
+image_rect.cpp
                 )
 ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} ${SPINDEX_SRC})

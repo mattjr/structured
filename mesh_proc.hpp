@@ -1,18 +1,36 @@
-//!
-//! \file auv_mesh.hpp
-//!
-
-#ifndef LIBSNAPPER_AUV_MESH_UTILS_HPP
-#define LIBSNAPPER_AUV_MESH_UTILS_HPP
+//
+// structured - Tools for the Generation and Visualization of Large-scale
+// Three-dimensional Reconstructions from Image Data. This software includes
+// source code from other projects, which is subject to different licensing,
+// see COPYING for details. If this project is used for research see COPYING
+// for making the appropriate citations.
+// Copyright (C) 2013 Matthew Johnson-Roberson <mattkjr@gmail.com>
+//
+// This file is part of structured.
+//
+// structured is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// structured is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with structured.  If not, see <http://www.gnu.org/licenses/>.
+//
+#ifndef MESH_PROC_HPP
+#define MESH_PROC_HPP
 
 #include <vector>
 #include <glib.h>
 #include <gts.h>
 
-#include <boost/thread/thread.hpp>
-#include <boost/thread/once.hpp>
 #include "TriMesh.h"
-
+#include <osg/Vec3>
+#include <cv.h>
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -94,12 +112,7 @@ namespace mesh_proc
   void edge_len_thresh_percent(TriMesh *mesh,double thresh);
   extern guint nmax,nold;
   extern GTimer * timer, *total_timer;	       
-  extern boost::once_flag once;
-  extern boost::once_flag once2;
-  extern boost::once_flag once3;
-  void timer_init(void);
-  void timer_destroy(void);
-
+  \
   gboolean tex_add_verbose ( guint number, guint total, int reject);
   void jet_color_map(const float& val,float &r,float &g, float &b);
   void clean_surf_pts(GtsSurface *surface,double edgemax);
@@ -110,7 +123,7 @@ namespace mesh_proc
   void remove_duplicate_vertices(TriMesh *mesh,double eps=1e-5);
 bool  find_closest_pt_idx( TriMesh *mesh, const point &p,
 			  int &ind,double _maxdist);
-//TriMesh* get_dense_grid(IplImage *disp,std::vector<libplankton::Vector> points);
+TriMesh* get_dense_grid(IplImage *disp,std::vector<osg::Vec3> points);
 void auv_write_ply(GtsSurface *s,FILE *f, bool write_conf=false,
             const char *comment=NULL,bool bin=true);
 GtsSurface *auv_mesh_pts(GPtrArray *vertices,double zedgemax=DBL_MAX,int coarsenNumber=0);
@@ -123,6 +136,6 @@ GtsSurface *auv_mesh_pts(GPtrArray *vertices,double zedgemax=DBL_MAX,int coarsen
 //!
   float clamp(float x, float low,float hi);
 
-}  // namespace libsnapper
+}
 
-#endif // !LIBSNAPPER_AUV_MESH_HPP
+#endif // !MESH_PROC_HPP

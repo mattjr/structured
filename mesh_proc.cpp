@@ -1,11 +1,26 @@
-//!
-//! \file auv_mesh.cpp
-//!
-//!Meshing functions
-//! \author Ian Mahon
-//!
-
-#include <libsnapper/auv_stereo_geometry.hpp>
+//
+// structured - Tools for the Generation and Visualization of Large-scale
+// Three-dimensional Reconstructions from Image Data. This software includes
+// source code from other projects, which is subject to different licensing,
+// see COPYING for details. If this project is used for research see COPYING
+// for making the appropriate citations.
+// Copyright (C) 2013 Matthew Johnson-Roberson <mattkjr@gmail.com>
+//
+// This file is part of structured.
+//
+// structured is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// structured is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with structured.  If not, see <http://www.gnu.org/licenses/>.
+//
 
 #include <iomanip>
 #include <fstream>
@@ -14,10 +29,7 @@
 #include "TriMesh_algo.h"
 #include "mesh_proc.hpp"
 
-#include <boost/version.hpp>
 #include <math.h>
-using namespace libsnapper;
-using namespace libplankton;
 
 
 using namespace std;
@@ -26,10 +38,6 @@ using namespace std;
 namespace mesh_proc
 {
 guint nmax = 0, nold = 0;
-GTimer * timer = NULL, * total_timer = NULL;		       
-boost::once_flag once = BOOST_ONCE_INIT;
-boost::once_flag once2 = BOOST_ONCE_INIT;
-boost::once_flag once3 = BOOST_ONCE_INIT;
 //maps [0,1] --> (r,g,b) where blue is close to 0 and red is close to 1.
 void jet_color_map(const float& val,float &r,float &g, float &b) {
   
@@ -348,7 +356,7 @@ gboolean stop_number_verbose (gdouble cost, guint number, guint * min)
   return FALSE;
 }
 #endif
-TriMesh *get_dense_grid(IplImage *mask,std::vector<libplankton::Vector> points){
+TriMesh *get_dense_grid(IplImage *mask,std::vector<osg::Vec3> points){
 
    int ngrid = mask->width * mask->height;
    TriMesh *mesh = new TriMesh();
@@ -365,7 +373,7 @@ TriMesh *get_dense_grid(IplImage *mask,std::vector<libplankton::Vector> points){
    short val=(CV_IMAGE_ELEM(mask,uchar,row,col));
    if(val > 0){
        mesh->grid[cnt]=valid;
-     libpolyp::point p(points[valid][0],points[valid][1],points[valid][2]);
+     point p(points[valid][0],points[valid][1],points[valid][2]);
      mesh->vertices.push_back(p);
      valid++;
    }
@@ -674,53 +682,7 @@ void clean_surf_pts(GtsSurface *surface,double edgemult){
   
 }
 
-bool valid_tex_coord(Camera_Calib &calib,gfloat x,gfloat y){
- //
-   // Test for valid image coords
-   //
-
-   if( x >= 0.0f && x < calib.width &&
-       y >= 0.0f && y < calib.height   ){
-     
-     return true;
-   }       
-   else{
-     
-     return false;
-   }  
 }
-
-
-
-
-bool valid_tex_coord_margin(Camera_Calib &calib,double &x,double &y,int margin){
- //
-   // Test for valid image coords
-   //
-
-   if( x >= 0.0f-margin && x < calib.width+margin &&
-       y >= 0.0f -margin&& y < calib.height+margin   ){
-     
-     if(x <= 0.0)
-       x=0.0;
-     if(y <= 0.0)
-       y=0.0;
-
-     if(x >= calib.width)
-       x=calib.width-1;
-     if(y >= calib.height)
-       y=calib.height-1;
-
-     return true;
-   }       
-   else{
-     
-     return false;
-   }  
-}
-
-}
-
 static void t_face_destroy( GtsObject * object )
 {
    /* do object-specific cleanup here */

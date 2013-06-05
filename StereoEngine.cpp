@@ -53,6 +53,7 @@ using namespace libsnapper;
 #include "RobustMatcher.h"
 using namespace std;
 using namespace cv;
+using namespace mesh_proc;
 void cacheImage(IplImage *img,string name,int tex_size){
 
 
@@ -580,7 +581,32 @@ void StereoEngine::loadMatrices(){
 
     _recon.get_value("SCF_SAVE_DEBUG_IMAGES",_writeDebugImages,false);
     _recon.get_value( "SKF_SHOW_DEBUG_IMAGES",
-                     show_debug_images);
+                      show_debug_images);
+
+    _recon.get_value( "ROBUSTMATCHER_MIN_FEAT",
+                      _robust_matcher_min_feat,5000);
+    _recon.get_value( "ROBUSTMATCHER_MAX_FEAT",
+                      _robust_matcher_max_feat,8000);
+    _recon.get_value( "ROBUSTMATCHER_NN_RATIO",
+                      _robust_matcher_nn_ratio,0.65);
+
+    _recon.get_value( "SCF_MIN_DISTANCE"     , _min_distance      );
+    _recon.get_value( "SCF_SEARCH_WINDOW_X"  , _search_window_x   );
+    _recon.get_value( "SCF_SEARCH_WINDOW_Y"  , _search_window_y   );
+    _recon.get_value( "SCF_ZERO_ZONE_X"      , _zero_zone_x       );
+    _recon.get_value( "SCF_ZERO_ZONE_Y"      , _zero_zone_y       );
+    _recon.get_value( "SCF_SEARCH_ITERATIONS", _search_iterations );
+    _recon.get_value( "SCF_QUALITY_LEVEL"    , _quality_level     );
+    _recon.get_value( "SCF_BLOCK_SIZE"       , _block_size        );
+    _recon.get_value( "SCF_USE_HARRIS"       , _use_harris        );
+    _recon.get_value( "SCF_TRACK_MAX_ERROR", _track_max_error  );
+    _recon.get_value( "SCF_TRACK_WINDOW_X"     , _track_window_x      );
+    _recon.get_value( "SCF_TRACK_WINDOW_Y"     , _track_window_y      );
+    _recon.get_value( "SCF_TRACK_MAX_ERROR"    , _track_max_error     );
+    _recon.get_value( "SCF_PYRAMID_LEVEL"      , _pyramid_level       );
+    _recon.get_value( "SCF_TRACK_ITERATIONS"   , _track_iterations    );
+    _recon.get_value( "SCF_TRACK_EPSILON"      , _track_epsilon       );
+
 }
 int StereoEngine::keypointDepth(IplImage *leftGrey,IplImage *rightGrey,std::string left_file_name,MatchStats &stats,list<osg::Vec3> &points){
 
@@ -619,7 +645,9 @@ extractor.compute(right_frame, keypoints2, descriptors2);*/
     cvAdd(invalidMask,tmp,invalidMask);
     cvReleaseImage(&tmp);
 */
-    RobustMatcher matcher(5000,8000,0.65,_l_to_r_max_epipolar_dist);
+    RobustMatcher matcher(_robust_matcher_min_feat,
+                          _robust_matcher_max_feat,
+                          _robust_matcher_nn_ratio,_l_to_r_max_epipolar_dist);
     vector<DMatch> matches;
     matcher.match(leftGrey,rightGrey,matches,keypoints1, keypoints2);
     /*  // matching descriptors
@@ -797,71 +825,16 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,MatchStats
     //   int blocksize=5;
     //   bool useharris=true;
 
-    //! Minimum distance between selected corners
-    double min_distance;
 
-    //! Half size of the search window around initial search position.
-    //! For example if these variables have the value 5,5 then a window of size
-    //! 11x11 will be searched.
-    unsigned int search_window_x;
-    unsigned int search_window_y;
-
-    //! Half size of the dead region in the middle of the search window
-    //! The values should be used if no zero zone is to be used.
-    int zero_zone_x;
-    int zero_zone_y;
-
-    //! Maximum number of iterations for corner searching
-    unsigned int search_iterations;
-
-    //! Minimum quality level for corner features
-    double quality_level;
-
-    //! Size of neighbourhood in which the corner strength is measured
-    unsigned int block_size;
-
-    //! Should the Harris corner detected be used instead of the OpenCV
-    //! default method of minimum eigenvalue of gradient matrices
-    bool use_harris;
-
-    //! Size of the features to be tracked
-    unsigned int track_window_x, track_window_y;
-
-    //! Maximum allowable tracking error before features are rejected
-    double track_max_error;
-
-    //! Number of image pyramid levels used in tracking
-    unsigned int pyramid_level;
-
-    //! Maximum number of search iterations when tracking
-    unsigned int track_iterations;
-    //! Acceptable error to stop search iterations when tracking
-    double track_epsilon;
-    _recon.get_value( "SCF_MIN_DISTANCE"     , min_distance      );
-    _recon.get_value( "SCF_SEARCH_WINDOW_X"  , search_window_x   );
-    _recon.get_value( "SCF_SEARCH_WINDOW_Y"  , search_window_y   );
-    _recon.get_value( "SCF_ZERO_ZONE_X"      , zero_zone_x       );
-    _recon.get_value( "SCF_ZERO_ZONE_Y"      , zero_zone_y       );
-    _recon.get_value( "SCF_SEARCH_ITERATIONS", search_iterations );
-    _recon.get_value( "SCF_QUALITY_LEVEL"    , quality_level     );
-    _recon.get_value( "SCF_BLOCK_SIZE"       , block_size        );
-    _recon.get_value( "SCF_USE_HARRIS"       , use_harris        );
-    _recon.get_value( "SCF_TRACK_MAX_ERROR", track_max_error  );
-    _recon.get_value( "SCF_TRACK_WINDOW_X"     , track_window_x      );
-    _recon.get_value( "SCF_TRACK_WINDOW_Y"     , track_window_y      );
-    _recon.get_value( "SCF_TRACK_MAX_ERROR"    , track_max_error     );
-    _recon.get_value( "SCF_PYRAMID_LEVEL"      , pyramid_level       );
-    _recon.get_value( "SCF_TRACK_ITERATIONS"   , track_iterations    );
-    _recon.get_value( "SCF_TRACK_EPSILON"      , track_epsilon       );
 
 
     cvGoodFeaturesToTrack( leftGrey, eig, temp, goodPoints[0], &count,
-                           quality_level, min_distance, 0, block_size, use_harris);
+                           _quality_level, _min_distance, 0, _block_size, _use_harris);
     //  printf("m: GFTT 1 %d\n",count);
-    CvSize win = cvSize( search_window_x, search_window_y );
-    CvSize zero_zone = cvSize( zero_zone_x, zero_zone_y );
+    CvSize win = cvSize( _search_window_x, _search_window_y );
+    CvSize zero_zone = cvSize( _zero_zone_x, _zero_zone_y );
     CvTermCriteria criteria_csp = cvTermCriteria( CV_TERMCRIT_ITER,
-                                                  search_iterations,
+                                                  _search_iterations,
                                                   0.0f );
 
     cvFindCornerSubPix( leftGrey, goodPoints[0], count,
@@ -958,7 +931,7 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,MatchStats
         if(!is_new_corner_valid( x,
                                  y,
                                  i,
-                                 min_distance,goodPoints[0],Lstatus,count ))
+                                 _min_distance,goodPoints[0],Lstatus,count ))
 
             Lstatus[i]=false;
         else
@@ -978,12 +951,12 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,MatchStats
 
     cvZero(leftPyr);
     cvZero(rightPyr);
-    CvSize win_size = cvSize( track_window_x, track_window_y );
+    CvSize win_size = cvSize( _track_window_x, _track_window_y );
     CvTermCriteria criteria = cvTermCriteria( CV_TERMCRIT_ITER| CV_TERMCRIT_EPS,
-                                              track_iterations,
-                                              track_epsilon  );
+                                              _track_iterations,
+                                              _track_epsilon  );
     cvCalcOpticalFlowPyrLK( leftGrey, rightGrey, leftPyr, rightPyr,
-                            goodPoints[0], goodPoints[2], count, win_size, pyramid_level, Rstatus, error,
+                            goodPoints[0], goodPoints[2], count, win_size, _pyramid_level, Rstatus, error,
                             criteria, flags );
     //printf("m: GFTT 4 %d\n",count);
 
@@ -994,7 +967,7 @@ void StereoEngine::sparseDepth(IplImage *leftGrey,IplImage *rightGrey,MatchStats
         double y= goodPoints[2][i].y;
         if(
                 x< 0 || y< 0 || x > _calib.camera_calibs[0].width || y > _calib.camera_calibs[0].height
-                ||           error[i] > track_max_error )
+                ||           error[i] > _track_max_error )
 
             Rstatus[i]=false;
         else
@@ -1261,8 +1234,8 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
 
 #endif
             double per_failed=(stats.total_epi_fail+stats.total_tracking_fail)/(double)stats.total_matched_feat;
-//            cout << thresh_per_rejected_output_debug << " " << per_failed<<endl;
-//cout <<stats.total_epi_fail<< " "<<stats.total_tracking_fail << " "<<(double)stats.total_matched_feat<<endl;
+            //            cout << thresh_per_rejected_output_debug << " " << per_failed<<endl;
+            //cout <<stats.total_epi_fail<< " "<<stats.total_tracking_fail << " "<<(double)stats.total_matched_feat<<endl;
             if(thresh_per_rejected_output_debug > 0 && per_failed > thresh_per_rejected_output_debug){
                 statusFlag=FAIL_FEAT_THRESH;
             }
@@ -1280,11 +1253,11 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
 
             if(statusFlag != STEREO_OK &&  new_method_pts.size() < min_feat_rerun || force_keypoint){
                 statusFlag=FALLBACK_KEYPOINT;
-            //    printf("Orig points %d\n",new_method_pts.size());
+                //    printf("Orig points %d\n",new_method_pts.size());
                 int old_pts_cnt=new_method_pts.size();
                 new_method_pts.clear();
                 keypointDepth(left_frame,right_frame,left_file_name,stats,new_method_pts);
-               printf("Fallback LK pts: %d LK Fail Rate %d%% Feat Pts: %d \n",old_pts_cnt,(int)round(100*per_failed),new_method_pts.size());
+                printf("Fallback LK pts: %d LK Fail Rate %d%% Feat Pts: %d \n",old_pts_cnt,(int)round(100*per_failed),new_method_pts.size());
             }
 
 #ifdef OLD_AUV_CODE
@@ -1382,7 +1355,7 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
 #endif
 
             mesh_verts=localV->len;
-         //   printf("Writing points %d %d\n",mesh_verts,new_method_pts.size());
+            //   printf("Writing points %d %d\n",mesh_verts,new_method_pts.size());
 
             double mult=0.00;
             if(mesh_verts){
@@ -1411,10 +1384,9 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
                 g_ptr_array_free( localV, true );
             }
         }else{
-#if 0 //def USE_DENSE_STEREO
 
             sdense->dense_stereo(left_frame,right_frame);
-            std::vector<libplankton::Vector> points;
+            std::vector<osg::Vec3> points;
             IplImage *mask =cvCreateImage(cvSize(sdense->getDisp16()->width,sdense->getDisp16()->height),IPL_DEPTH_8U,1);
             cvZero(mask);
             sdense->get_points(points,mask);
@@ -1424,23 +1396,8 @@ StereoStatusFlag StereoEngine::processPair(const std::string basedir,const std::
             if(mesh && mesh_verts)
                 mesh->write(meshfilename);
 
-            /*TVertex *vert;
-    for(int i=0; i<(int)points.size(); i++){
-      //	  printf("%f %f %f\n",points[i](0),points[i](1),points[i](2));
-      if(points[i](2) > dense_z_cutoff )
-        continue;
-
-      vert=(TVertex*)  gts_vertex_new (t_vertex_class (),
-                       points[i](0),points[i](1),
-                       points[i](2));
-      g_ptr_array_add(localV,GTS_VERTEX(vert));
-        } */
-#else
-            fprintf(stderr,"Dense support not compiled\n");
-            exit(0);
         }
-#endif
-   }
+    }
 
     if(!cachedMesh){
 

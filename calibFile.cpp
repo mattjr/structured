@@ -112,22 +112,22 @@ void StereoCalib::load_from_file( const string &calib_file_name )
     camera_calibs.push_back(sec_calib);
 
     // Calculate fundamental matrices
-
-    /*calc_fundamental_matrices( );
+    double temp2[9];
+    //calc_fundamental_matrices( );
     if(have_rect_params){
         for( unsigned int i=0 ; i < 9 ; i++ )
-            in_file >> left_R(i/3,i%3);
+            in_file >> left_R[i];
 
         for( unsigned int i=0 ; i < 9 ; i++ )
-            in_file >> right_R(i/3,i%3);
+            in_file >> right_R[i];
 
         for( unsigned int i=0 ; i < 9 ; i++ )
-            in_file >> rectK(i/3,i%3);
+            in_file >> rectK[i];
 
         for( unsigned int i=0 ; i < 16 ; i++ )
-            in_file >> Q(i/4,i%4);
+            in_file >> Q[i];
     }
-*/
+
     // Clean-up
     in_file.close( );
 }

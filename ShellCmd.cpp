@@ -43,7 +43,7 @@ void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const
     fprintf(fp,"import setupts\n");
     fprintf(fp,"setupts.setup(os)\n");
     fprintf(fp,"print 'Running %s...'\n",cmdname.c_str());
-    fprintf(fp,"sys.stdout.flush()\n",cmdname.c_str());
+    fprintf(fp,"sys.stdout.flush()\n");
 
     int loc_num_threads=num_threads;
     if(thread_override >0)

@@ -331,6 +331,7 @@ static bool parse_args( int argc, char *argv[ ] )
         externalStereo=true;
         clusterRun=true;
     }
+
     if(argp.read("--debug-shader")){
         use_debug_shader=true;
         useAtlas=true;
@@ -1099,7 +1100,7 @@ double totalValidArea=0;
                 StereoStatusFlag statusFlag=engine.processPair(base_dir,tasks[i].left_name,
                                                                tasks[i].right_name,tasks[i].mat,tasks[i].bbox,stats,feature_depth_guess,hw_image,use_cached);
                 if(statusFlag == FAIL_FEAT_THRESH || statusFlag == FAIL_TRI_EDGE_THRESH){
-                    fprintf(stderr,"Rerunning\n");
+                    fprintf(stderr,"Rerunning: %s\n",statusFlag == FAIL_FEAT_THRESH ? "fail feat thresh": "fail tri edge thresh");
                     statusFlag=engine.processPair(base_dir,tasks[i].left_name,
                                        tasks[i].right_name,tasks[i].mat,tasks[i].bbox,stats,feature_depth_guess,hw_image,false,true);
 

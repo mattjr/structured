@@ -35,12 +35,12 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_CONFIG_H")
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/config.in.cmake
     ${CMAKE_CURRENT_SOURCE_DIR}/config.h)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-ADD_CUSTOM_TARGET(predicates_init
-    COMMAND ${CMAKE_CXX_COMPILER} -I${CMAKE_CURRENT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR}/src/predicates_init.c -o ${CMAKE_BINARY_DIR}/predicates_init    
+#ADD_CUSTOM_TARGET(predicates_init
+#    COMMAND ${CMAKE_CXX_COMPILER} -I${CMAKE_CURRENT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR}/src/predicates_init.c -o ${CMAKE_BINARY_DIR}/predicates_init    
    # DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/gts-0.7.6/src/predicates_init.c
-    COMMENT "Generating precompiled headers"
-    )
-add_custom_target (predicates_init_app DEPENDS predicates_init  ${CMAKE_CURRENT_SOURCE_DIR}/config.h)
+#    COMMENT "Generating precompiled headers"
+#    )
+#add_custom_target (predicates_init_app DEPENDS predicates_init  ${CMAKE_CURRENT_SOURCE_DIR}/config.h)
 
 ########### Generate predicates_init.h #########################################
 

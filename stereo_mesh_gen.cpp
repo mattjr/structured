@@ -285,7 +285,7 @@ int main( int argc, char *argv[ ] )
             StereoStatusFlag statusFlag=engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,
                                                            stats,feature_depth_guess,false,true,false);
             if(statusFlag == FAIL_FEAT_THRESH || statusFlag == FAIL_TRI_EDGE_THRESH){
-                fprintf(stderr,"Rerunning\n");
+                fprintf(stderr,"Rerunning :%s\n",statusFlag == FAIL_FEAT_THRESH ? "fail feat thresh": "fail tri edge thresh");
                 statusFlag=engine.processPair(basedir,left_file_name,right_file_name,mat,bbox,
                                               stats,feature_depth_guess,false,false,true);
 

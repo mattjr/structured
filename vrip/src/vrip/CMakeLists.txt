@@ -1,0 +1,16 @@
+ADD_EXECUTABLE(vrip vripInit.cc vripMain.cc vripMiscCmds.cc OccGrid.cc OccGridRLE.cc plyio.cc DepthMap.cc Mesh.cc softRenderGeom.cc ChunkAllocator.cc ChunkLink.cc DepthMapAux.cc vripFillCmds.cc vripFileCmds.cc vripGridCmds.cc vripRangeCmds.cc vripGUICmds.cc vripGlobals.cc vripAux.cc BBox3f.cc rangePly.cc linePersp.cc perspective.cc scan.cc scanRLE.cc scanLinePerspRLE.cc configure.cc occFunc.cc resample.cc OccGridNormRLE.cc scanNormRLE.cc vripPlyCmds.cc scanPerspRLE.cc)
+ADD_EXECUTABLE(vriphead vriphead.cc)
+find_package(TCL REQUIRED)
+find_program(CSHBIN csh)
+IF(NOT CSHBIN)
+message(FATAL_ERROR "csh is required please install")
+ENDIF()
+SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/vrip/src/vrip)
+
+INCLUDE_DIRECTORIES( . ${TCL_INCLUDE_PATH} ${TK_INCLUDE_PATH})
+file(COPY vripnew.csh DESTINATION ${PROJECT_SOURCE_DIR}/vrip/bin/)
+file(COPY vripsurf.csh DESTINATION ${PROJECT_SOURCE_DIR}/vrip/bin/)
+file(RENAME ${PROJECT_SOURCE_DIR}/vrip/bin/vripnew.csh ${PROJECT_SOURCE_DIR}/vrip/bin/vripnew )
+file(RENAME ${PROJECT_SOURCE_DIR}/vrip/bin/vripsurf.csh ${PROJECT_SOURCE_DIR}/vrip/bin/vripsurf )
+
+TARGET_LINK_LIBRARIES(vrip ply ${TCL_LIBRARY} ${TK_LIBRARY} m linear softrender)

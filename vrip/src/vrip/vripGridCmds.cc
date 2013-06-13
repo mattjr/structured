@@ -142,12 +142,12 @@ Vrip_NewGridRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[])
 	origin[2] = atof(argv[7])-zdim*res/2;
     printf("orig %f %f %f\n",origin[0],origin[1],origin[2]);
 
-    /*	origin[0]=round(origin[0]/res)*res;
+	origin[0]=round(origin[0]/res)*res;
 	origin[1]=round(origin[1]/res)*res;
 	origin[2]=round(origin[2]/res)*res;
-    */	
+	
 
-    //printf("A %f %f %f\n",origin[0],origin[1],origin[2]);
+    printf("A %f %f %f\n",origin[0],origin[1],origin[2]);
 
     }
 

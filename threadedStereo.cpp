@@ -1160,14 +1160,16 @@ double totalValidArea=0;
        // printf("Bbox margin is %f\n",bbox_margin);
         for(vector<Stereo_Pose_Data>::iterator itr=tasks.begin(); itr != tasks.end(); itr++){
             Stereo_Pose_Data &name=(*itr);
+            if(name.valid){
 
-            double area= ((name.bbox.xMax()-name.bbox.xMin())*
-                          (name.bbox.yMax()-name.bbox.yMin()));
-            if(isfinite(area)){
-                totalValidArea+=area;
-                float margin=(name.bbox.radius() * bbox_margin);
-                name.bbox_margin.expandBy(name.bbox._min-osg::Vec3(margin,margin,margin));
-                name.bbox_margin.expandBy(name.bbox._max+osg::Vec3(margin,margin,margin));
+                double area= ((name.bbox.xMax()-name.bbox.xMin())*
+                              (name.bbox.yMax()-name.bbox.yMin()));
+                if(isfinite(area)){
+                    totalValidArea+=area;
+                    float margin=(name.bbox.radius() * bbox_margin);
+                    name.bbox_margin.expandBy(name.bbox._min-osg::Vec3(margin,margin,margin));
+                    name.bbox_margin.expandBy(name.bbox._max+osg::Vec3(margin,margin,margin));
+                }
             }
             fprintf(fpp_ic,"%d %f %s\n",
                     name.id,name.time,osgDB::getNameLessExtension(name.left_name).c_str());

@@ -86,8 +86,11 @@ Vrip_PhotoSliceCmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[])
     axis = argv[3];
 
     slice = theGrid->getSlice(axis, sliceNum, &xdim, &ydim);
-
+#if (TK_MAJOR_VERSION == 8) && (TK_MINOR_VERSION < 5)
     Tk_PhotoSetSize(handle, xdim, ydim);
+                 #else
+    Tk_PhotoSetSize(theInterp,handle, xdim, ydim);
+                 #endif
 
     Tk_PhotoImageBlock block;
 //    block.ptr = (uchar *)(slice + xdim*(ydim-1));
@@ -108,7 +111,11 @@ Vrip_PhotoSliceCmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[])
     block.offset[2] = 0;
 #endif
 
+#if (TK_MAJOR_VERSION == 8) && (TK_MINOR_VERSION < 5)
     Tk_PhotoPutBlock(handle, &block, 0, 0, xdim, ydim, TK_PHOTO_COMPOSITE_SET);
+                 #else
+    Tk_PhotoPutBlock(theInterp,handle, &block, 0, 0, xdim, ydim, TK_PHOTO_COMPOSITE_SET);
+                 #endif
 
     return TCL_OK;
 
@@ -278,8 +285,11 @@ Vrip_PhotoSliceRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv
 	}
     }
 
+#if (TK_MAJOR_VERSION == 8) && (TK_MINOR_VERSION < 5)
     Tk_PhotoSetSize(handle, xdim, ydim);
-
+                 #else
+    Tk_PhotoSetSize(theInterp,handle, xdim, ydim);
+                 #endif
     Tk_PhotoImageBlock block;
     
     if (EQSTR(axis, "x")) {
@@ -300,8 +310,11 @@ Vrip_PhotoSliceRLECmd(ClientData, Tcl_Interp *interp, int argc, const char *argv
     block.width = xdim;
     block.height = ydim;
 
+#if (TK_MAJOR_VERSION == 8) && (TK_MINOR_VERSION < 5)
     Tk_PhotoPutBlock(handle, &block, 0, 0, xdim, ydim, TK_PHOTO_COMPOSITE_SET);
-
+                 #else
+    Tk_PhotoPutBlock(theInterp,handle, &block, 0, 0, xdim, ydim, TK_PHOTO_COMPOSITE_SET);
+                 #endif
     return TCL_OK;
 
 }
@@ -370,7 +383,11 @@ Vrip_PhotoSliceNormRLECmd(ClientData, Tcl_Interp *interp, int argc,
 	}
     }
 
+#if (TK_MAJOR_VERSION == 8) && (TK_MINOR_VERSION < 5)
     Tk_PhotoSetSize(handle, xdim, ydim);
+                 #else
+    Tk_PhotoSetSize(theInterp,handle, xdim, ydim);
+                 #endif
 
     Tk_PhotoImageBlock block;
     
@@ -400,8 +417,11 @@ Vrip_PhotoSliceNormRLECmd(ClientData, Tcl_Interp *interp, int argc,
     block.width = xdim;
     block.height = ydim;
 
+#if (TK_MAJOR_VERSION == 8) && (TK_MINOR_VERSION < 5)
     Tk_PhotoPutBlock(handle, &block, 0, 0, xdim, ydim, TK_PHOTO_COMPOSITE_SET);
-
+                 #else
+    Tk_PhotoPutBlock(theInterp,handle, &block, 0, 0, xdim, ydim, TK_PHOTO_COMPOSITE_SET);
+                 #endif
     return TCL_OK;
 
 }
@@ -495,8 +515,11 @@ updateRenderPhoto(DepthMap *dm)
 	renderBuf[i] = uchar(fabs(dm->elems[i].conf*255+0.5));
     }
 
+#if (TK_MAJOR_VERSION == 8) && (TK_MINOR_VERSION < 5)
     Tk_PhotoSetSize(handle, xdim, ydim);
-
+                 #else
+    Tk_PhotoSetSize(theInterp,handle, xdim, ydim);
+                 #endif
     Tk_PhotoImageBlock block;
     
     block.pixelPtr = renderBuf + xdim*(ydim-1);
@@ -508,8 +531,11 @@ updateRenderPhoto(DepthMap *dm)
     block.width = xdim;
     block.height = ydim;
 
+#if (TK_MAJOR_VERSION == 8) && (TK_MINOR_VERSION < 5)
     Tk_PhotoPutBlock(handle, &block, 0, 0, xdim, ydim, TK_PHOTO_COMPOSITE_SET);
-
+                 #else
+    Tk_PhotoPutBlock(theInterp,handle, &block, 0, 0, xdim, ydim, TK_PHOTO_COMPOSITE_SET);
+                 #endif
     return 1;
 
 }

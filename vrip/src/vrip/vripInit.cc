@@ -99,20 +99,20 @@ Vrip_Init(Tcl_Interp *interp)
 		      NULL, NULL);
     Tcl_CreateCommand(interp, "vrip_transpyzrle", Vrip_TransposeYZRLECmd, 
 		      NULL, NULL);
-    Tcl_CreateCommand(interp, "vrip_photoslice", Vrip_PhotoSliceCmd, NULL, NULL);
+    /*Tcl_CreateCommand(interp, "vrip_photoslice", Vrip_PhotoSliceCmd, NULL, NULL);
     Tcl_CreateCommand(interp, "vrip_photoslicerle", Vrip_PhotoSliceRLECmd,
-		      NULL, NULL);
+                      NULL, NULL);*/
     Tcl_CreateCommand(interp, "vrip_getvoxelrle", Vrip_GetVoxelRLECmd,
 		      NULL, NULL);
 
     Tcl_CreateCommand(interp, "vrip_volSize", Vrip_VolSizeCmd,
 		      NULL, NULL);
-    Tcl_CreateCommand(interp, "vrip_photoslicenormrle", 
+/*    Tcl_CreateCommand(interp, "vrip_photoslicenormrle",
 		      Vrip_PhotoSliceNormRLECmd, NULL, NULL);
     Tcl_CreateCommand(interp, "vrip_setrenderphoto", Vrip_SetRenderPhotoCmd, 
 		      NULL, NULL);
     Tcl_CreateCommand(interp, "vrip_setphotoslice", Vrip_SetPhotoSliceCmd, 
-		      NULL, NULL);
+                      NULL, NULL);*/
     Tcl_CreateCommand(interp, "vrip_rangescan", Vrip_RangeScanCmd, NULL, NULL);
     Tcl_CreateCommand(interp, "vrip_rangescantree", Vrip_RangeScanTreeCmd, 
 		      NULL, NULL);

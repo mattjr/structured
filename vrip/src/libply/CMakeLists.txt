@@ -1,0 +1,1 @@
+ADD_LIBRARY(ply plyfile.c)

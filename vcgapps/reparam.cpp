@@ -249,6 +249,7 @@ void readFile(string fname,map<int,imgData> &imageList){
     }
 }
 
+#include <OGF/basic/os/process.h>
 
 
 int main(int ac, char *av[]) {
@@ -269,7 +270,8 @@ int main(int ac, char *av[]) {
     arguments.read("--jpeg-quality",jpegQuality);
     bool useDisk=arguments.read("--outofcore");
     arguments.read("--scale",scaleTex);
-
+    //Turn off FPE CHOLMOD freaks out and sig handler aborts in debug mode
+    OGF::Process::disable_FPE();
     osg::Vec2 vtSize(-1,-1);
     arguments.read("--vt",vtSize.x(),vtSize.y());
 

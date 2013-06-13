@@ -732,7 +732,6 @@ proc newfromconf {confFile res} {
 
 
 proc newfromlist {listfile res} {
-   puts "New from list"
    global env
    global conservativeBbox
    global conservativeBboxFactor
@@ -796,17 +795,7 @@ proc newfromlist {listfile res} {
 
 	  #puts $msg
 	  scan $msg "%f %f %f %f %f %f" newMinx newMiny newMinz newMaxx newMaxy newMaxz;
-#	  puts $newMinx
-#TO ALIGN
-#	  set newMinx [expr floor($newMinx)]
-#	  set newMiny [expr floor($newMiny)]
-#	  set newMinz [expr floor($newMinz)]
-
-#	  set newMaxx [expr ceil($newMaxx)]
-#	  set newMaxy [expr ceil($newMaxy)]
-#	  set newMaxz [expr ceil($newMaxz)]
-#########
-
+  
 	  set minx [min $minx $newMinx]
 	  set miny [min $miny $newMiny]
 	  set minz [min $minz $newMinz]
@@ -828,6 +817,7 @@ proc newfromlist {listfile res} {
     set orgx [expr $xlen/2 + $minx]
     set orgy [expr $ylen/2 + $miny]
     set orgz [expr $zlen/2 + $minz]
+
     #if {$xlen > $ylen} {set maxdim $xlen} else {set maxdim $ylen}
     #if {$maxdim < $zlen} {set maxdim $zlen}
     #set dim [expr int(1.2*$maxdim/$res)]
@@ -852,20 +842,6 @@ proc newfromlist {listfile res} {
     if {[expr (round($xlen/$res))%2] != [expr $xdim%2]} {incr xdim}
     if {[expr (round($ylen/$res))%2] != [expr $ydim%2]} {incr ydim}
     if {[expr (round($zlen/$res))%2] != [expr $zdim%2]} {incr zdim}
-###TO ALIGN DO THIS
-    #set orgx [expr $orgx + (($xdim*$res/2)-floor($xdim*$res/2))+$res]
-    #set orgy [expr $orgy + (($ydim*$res/2)-floor($ydim*$res/2))+$res]
-    #set orgz [expr $orgz + (($zdim*$res/2)-floor($zdim*$res/2))+$res]
-######
-#    puts "ASda s $orgx"
-  #set orgx [expr $orgx - (floor($xdim*$res/2)-($xdim*$res/2))]
-
-
-  #  puts "Fu [expr $orgx -$xdim*$res/2]"
-  #  puts "Fu [expr $xdim*$res/2]"
-   
-   # puts "Fu [expr $xdim*$res/2]"
-
 
     puts "newgrid $xdim $ydim $zdim $res $orgx $orgy $orgz"
     newgrid $xdim $ydim $zdim $res $orgx $orgy $orgz
@@ -890,7 +866,7 @@ proc wc-l files {
 
 
 proc newFromConf {gridFile confFile boundMesh voxelSize} {
-    puts "New From Conf"
+
     set ext [file extension $boundMesh]
     if {$ext == ".ply"} {
 	newfromply $boundMesh $voxelSize

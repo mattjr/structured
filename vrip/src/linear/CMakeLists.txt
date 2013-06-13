@@ -1,0 +1,1 @@
+ADD_LIBRARY(linear Vec3f.cc Matrix2f.cc Matrix3f.cc Matrix4f.cc Quaternion.cc)

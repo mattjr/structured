@@ -23,7 +23,7 @@ CONCERNING THIS SOFTWARE.  No support is implied or provided.
 
 #include <stdio.h>
 #include <unistd.h>
-
+#include <stdlib.h>
 ChunkLink::ChunkLink()
 {
     this->size = 0;

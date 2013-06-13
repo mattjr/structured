@@ -26,6 +26,7 @@ CONCERNING THIS SOFTWARE.  No support is implied or provided.
 #include <malloc.h>
 #include <stdlib.h>
 #endif
+#include <stdlib.h>
 
 #include <string.h>
 

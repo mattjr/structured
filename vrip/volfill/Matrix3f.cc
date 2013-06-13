@@ -24,6 +24,7 @@ CONCERNING THIS SOFTWARE.  No support is implied or provided.
 #include <math.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /* #include "NR.h" */
 

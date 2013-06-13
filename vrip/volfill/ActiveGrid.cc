@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <stdlib.h>
 #include "ActiveGrid.h"
 
 const unsigned char MAX_DIST = 255;

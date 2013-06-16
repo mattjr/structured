@@ -150,8 +150,11 @@ namespace Raster
 		
 		Vector3 de0 = t3 - t1;
 		Vector3 de1 = t2 - t1;
-		
-		float denom = 1.0f / (e0.y() * e1.x() - e1.y() * e0.x());
+        float d = (e0.y() * e1.x() - e1.y() * e0.x());
+        if(d == 0.0)
+            return  false;
+
+        float denom = 1.0f / d;
         if (!isfinite(denom)) {
 			return false;
 		}
@@ -171,9 +174,10 @@ namespace Raster
 	// compute unit inward normals for each edge.
 	void Triangle::computeUnitInwardNormals()
 	{
-		n1 = v1 - v2; n1 = Vector2(-n1.y(), n1.x()); n1 = n1 * (1.0f/sqrtf(n1.x()*n1.x() + n1.y()*n1.y()));
-		n2 = v2 - v3; n2 = Vector2(-n2.y(), n2.x()); n2 = n2 * (1.0f/sqrtf(n2.x()*n2.x() + n2.y()*n2.y()));
-		n3 = v3 - v1; n3 = Vector2(-n3.y(), n3.x()); n3 = n3 * (1.0f/sqrtf(n3.x()*n3.x() + n3.y()*n3.y()));
+        float d;
+        n1 = v1 - v2; n1 = Vector2(-n1.y(), n1.x()); d = sqrtf(n1.x()*n1.x() + n1.y()*n1.y()); n1 = n1 * ((d != 0.0) ? (1.0f/d) : 0.0);
+        n2 = v2 - v3; n2 = Vector2(-n2.y(), n2.x()); d = sqrtf(n2.x()*n2.x() + n2.y()*n2.y()); n2 = n2 * ((d != 0.0) ? (1.0f/d) : 0.0);
+        n3 = v3 - v1; n3 = Vector2(-n3.y(), n3.x()); d = sqrtf(n3.x()*n3.x() + n3.y()*n3.y()); n3 = n3 * ((d != 0.0) ? (1.0f/d) : 0.0);
 	}
 
 	// From cbloom's galaxy:

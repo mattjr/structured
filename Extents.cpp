@@ -2229,9 +2229,9 @@ void MyDataSet::processTile(MyDestinationTile *tile,TexturedSource *src){
     log(osg::INFO,"   source:%s",src->getFileName().c_str());
     osg::BoundingBox ext_bbox(osg::Vec3d(tile->_extents._min.x(),
                                          tile->_extents._min.y(),
-                                         -DBL_MAX),osg::Vec3d(tile->_extents._max.x(),
+                                         -FLT_MAX),osg::Vec3d(tile->_extents._max.x(),
                                                               tile->_extents._max.y(),
-                                                              DBL_MAX));
+                                                              FLT_MAX));
     osg::ref_ptr<osg::Node> root;
 
 

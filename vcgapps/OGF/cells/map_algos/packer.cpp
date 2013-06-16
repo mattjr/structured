@@ -652,6 +652,9 @@ namespace OGF {
 
     static void rectangle(const Polygon2d& P, Vector2d& v1, Vector2d& v2) {
         Vector2d up = longuest_edge(P) ; 
+       //FIX SIG FPE later in cos_angle
+        if(up.norm() ==0)
+            return;
         up.normalize() ;
 //        up = Vector2d(0,1) ;
         AverageDirection2d dir ;

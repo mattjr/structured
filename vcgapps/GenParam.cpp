@@ -175,7 +175,7 @@ std::vector<double> pixelSides;
              if(orig_tex_area>max_orig_tex_area)
                  max_orig_tex_area=orig_tex_area;
             }
-            if(max_orig_tex_area ==0.0)
+            if(max_orig_tex_area ==0.0 || tex_area == 0.0)
                 continue;
            // printf("%f %f\n",max_orig_tex_area,8192*tex_area);
             double sidePixels=sqrt(max_orig_tex_area/tex_area);
@@ -186,7 +186,7 @@ std::vector<double> pixelSides;
     if(pixelSides.size() ==0)
         return 1;
     double avgEl=0.0;
-    for(int i=0;i < pixelSides.size(); i++){
+    for(int i=0;i < (int)pixelSides.size(); i++){
        avgEl+= (pixelSides[i]/pixelSides.size());
     }
     double medianVal=median(pixelSides);

@@ -24,6 +24,8 @@ spatialindex (spatialindex-src-1.6.1/*) is released LGPL
 
 vcg (vcgapps/vcglib/*) is released under the GPL license
 
+OGF/Graphite (vcgapps/OGF/*) is released under the GPL license
+
 vrip (vrip/*) is released under Stanford General Software License, which is 
 based on the BSD license.
 

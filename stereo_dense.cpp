@@ -89,11 +89,11 @@ Stereo_Dense::Stereo_Dense( const Config_File &config_file,
      BMState->numberOfDisparities=dense_config.num_disp;
      BMState->textureThreshold=10;
      BMState->uniquenessRatio=15;*/
-   } else if(dense_config.method == "opencvGC"){
+   }/* else if(dense_config.method == "opencvGC"){
      GCstate = cvCreateStereoGCState( 128, 5 );  
      GCstate->minDisparity=-64;
      //assert(GCState != 0);    
-   }
+   }*/
      
    
    // printf("Scaled Height %d %d \n",scaled_size.width,scaled_size.height);
@@ -252,7 +252,9 @@ if(dense_config.method == "existing"){
        output[i] = disp16->imageData[i] ;
        }*/
 
-  }else if(dense_config.method == "opencvGC"){
+  }
+#if 0
+else if(dense_config.method == "opencvGC"){
 
 const int nPixels = rect_right->width * rect_right->height;
     cvFindStereoCorrespondenceGC(scaled_left,scaled_right,disp16,disp16R,
@@ -268,7 +270,9 @@ const int nPixels = rect_right->width * rect_right->height;
        output[i] = disp16->imageData[i] ;
     }
 
-  }else{
+  }
+#endif 
+else{
     fprintf(stderr,"Unknown method %s\n",dense_config.method.c_str());
     return false;
   }

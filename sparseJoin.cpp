@@ -190,9 +190,9 @@ int
     im_demand_hint_array( out, IM_SMALLTILE, vec );
     out->Xsize = ins->rout.width;
     out->Ysize = ins->rout.height;
-    out->generate =NULL;
+    /*out->generate =NULL;
     out->start = NULL;
-    out->stop =NULL;
+    out->stop =NULL;*/
     /* Make output image.
          */
     if( im_generate( out,

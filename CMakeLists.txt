@@ -27,7 +27,8 @@ find_package(PkgConfig)
 find_package(OpenMP)
 include(ExternalProject)
 FIND_PACKAGE( OpenCV REQUIRED )
-pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+pkg_check_modules(GOBJ REQUIRED gobject-2.0)
+pkg_check_modules(GLIB2 REQUIRED  glib-2.0)
 set(OSG_COMPONENTS osg osgUtil osgViewer osgGA osgManipulator osgText osgDB)
 find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
 #GDAL
@@ -251,7 +252,9 @@ osgSim
                 ${OSGTEXT_LIBRARY_DEBUG}
                 ${OSGGA_LIBRARY_DEBUG}
                 ${OPENTHREADS_LIBRARY}
+         ${GOBJ_LIBRARIES}
          ${GLIB2_LIBRARIES}
+         ${CMAKE_DL_LIBS}
           ${OPENGL_LIBRARY}
                 ${LIBSNAPPER_LIBRARY}
                 ${LIBCARP_LIBRARY}

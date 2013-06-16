@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <unistd.h>
 void process_mem_usage(double& vm_usage, double& resident_set);
 std::string get_size_string(double kb);
 /* Hold our state in this.

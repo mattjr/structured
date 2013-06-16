@@ -162,7 +162,7 @@ protected:
   const CameraCalib *left_calib;   //!< Left camera calibration parameters
   const CameraCalib *right_calib;  //!< Right camera calibration parameters
   CvStereoBMState *BMState;
-  CvStereoGCState* GCstate ;
+//  CvStereoGCState* GCstate ;
   Dense_Config dense_config;
  //
    // Debugging

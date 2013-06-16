@@ -28,6 +28,7 @@
 #include <osg/State>
 #include <osg/Referenced>
 #include "SpatialIndex.h"
+#include <unistd.h>
 using SpatialIndex::id_type;
 typedef std::vector<std::pair<std::string,int> > texcache_t;
 

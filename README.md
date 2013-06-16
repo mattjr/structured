@@ -196,8 +196,7 @@ Notes: for a stereo config, the number of cameras is two.
 
 ```
 
-## Converting the Stereo-rig Z-axis Euler Angle to an Image Rotation for
-GIS Programs
+## Converting the Stereo-rig Z-axis Euler Angle to an Image Rotation for GIS Programs
 
 The stereo-rig Z-axis Euler angle (shown as φ in the figure below) is
 the angle between the X-axis of the navigation frame (north) and the

@@ -1,3 +1,6 @@
+# structured
+Tools for the Generation and Visualization of Large-scale Three-dimensional Reconstructions from Image Data.
+
 ## Installing
 
 structured requires:

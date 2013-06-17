@@ -59,7 +59,7 @@ def key_generator(size=12, chars=string.letters + string.digits):
 
 # parse the arguments first
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(filename)s - %(funcName)s - %(message)s')
-logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(filename)s - %(funcName)s - %(message)s')
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(filename)s - %(funcName)s - %(message)s')
 
 # check we have sufficient arguments
 if len(sys.argv) < 3:

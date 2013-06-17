@@ -17,15 +17,16 @@ structured requires:
 For installing on Ubuntu the following apt-get install lines should pull in the requirements:
 
 ### 12.04
-```sudo apt-get install cmake libcv-dev libopenscenegraph-dev gdal-bin 
-libgdal1-dev python-gdal libvips-dev libopencv-dev libhighgui-dev 
-libcvaux-dev libopencv-gpu-dev libopencv-gpu2.3 tcl8.4-dev 
-tk8.4-dev csh imagemagick```
+```sudo apt-get install cmake libcv-dev libopenscenegraph-dev gdal-bin```
+```sudo apt-get install libgdal1-dev python-gdal libvips-dev libopencv-dev```
+```sudo apt-get install libhighgui-dev libcvaux-dev libopencv-gpu-dev```
+```sudo apt-get installlibopencv-gpu2.3 tcl8.4-dev tk8.4-dev csh imagemagick```
 
 ### 13.04
-```sudo apt-get install cmake libcv-dev libopencv-dev libopenscenegraph-dev 
-gdal-bin libgdal1-dev python-gdal libvips-dev libhighgui-dev libcvaux-dev 
-tcl8.4-dev tk8.4-dev csh imagemagick```
+```sudo apt-get install cmake libcv-dev libopencv-dev libopenscenegraph-dev```
+```sudo apt-get install gdal-bin libgdal1-dev python-gdal libvips-dev ```
+```sudo apt-get install libhighgui-dev libcvaux-dev tcl8.4-dev tk8.4-dev```
+```sudo apt-get install csh imagemagick```
 
 ## Running 
 

@@ -18,15 +18,22 @@ For installing on Ubuntu the following apt-get install lines should pull in the 
 
 ### 12.04
 ```sudo apt-get install cmake libcv-dev libopenscenegraph-dev gdal-bin```
+
 ```sudo apt-get install libgdal1-dev python-gdal libvips-dev libopencv-dev```
+
 ```sudo apt-get install libhighgui-dev libcvaux-dev libopencv-gpu-dev```
+
 ```sudo apt-get installlibopencv-gpu2.3 tcl8.4-dev tk8.4-dev csh imagemagick```
 
 ### 13.04
 ```sudo apt-get install cmake libcv-dev libopencv-dev libopenscenegraph-dev```
-```sudo apt-get install gdal-bin libgdal1-dev python-gdal libvips-dev ```
-```sudo apt-get install libhighgui-dev libcvaux-dev tcl8.4-dev ```
+
+```sudo apt-get install gdal-bin libgdal1-dev python-gdal libvips-dev```
+
+```sudo apt-get install libhighgui-dev libcvaux-dev tcl8.4-dev```
+
 ```sudo apt-get install tk8.4-dev csh imagemagick```
+
 
 ## Running 
 
@@ -49,7 +56,7 @@ Once data folder is setup as below.
 |stereo_pose_est.data	|A link to the file stereo_pose_est.data produced by seabed_slam|
 
 ## Viewing the Meshes
-The meshes can be viewed using the program benthicQT also avalaible on github.
+The meshes can be viewed using the program [benthicQT](https://github.com/mattjr/benthicQT) also avalaible on github.
 
 ## The AUV Navigation Frame
 

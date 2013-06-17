@@ -25,8 +25,8 @@ For installing on Ubuntu the following apt-get install lines should pull in the 
 ### 13.04
 ```sudo apt-get install cmake libcv-dev libopencv-dev libopenscenegraph-dev```
 ```sudo apt-get install gdal-bin libgdal1-dev python-gdal libvips-dev ```
-```sudo apt-get install libhighgui-dev libcvaux-dev tcl8.4-dev tk8.4-dev```
-```sudo apt-get install csh imagemagick```
+```sudo apt-get install libhighgui-dev libcvaux-dev tcl8.4-dev ```
+```sudo apt-get install tk8.4-dev csh imagemagick```
 
 ## Running 
 

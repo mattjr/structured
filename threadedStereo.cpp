@@ -174,6 +174,9 @@ static double feat_quality_level;
 const char *aggdir="tmp/mesh-agg";
 static const char *serfile="localserver";
 static double plymc_expand_by=0.0;
+static int extern_mesh_smooth=0;
+static double extern_err_stop;
+
 MyGraphicsContext *mgc=NULL;
 #define diced_fopen(x,y) fopen((string(diced_dir)+string(x)).c_str(),y)
 
@@ -421,6 +424,10 @@ static bool parse_args( int argc, char *argv[ ] )
                                   4.0);
     recon_config_file->get_value( "PLYMC_EXPAND_BY", plymc_expand_by,
                                   0.0);
+
+    recon_config_file->get_value( "EXTERN_MESH_SMOOTH", extern_mesh_smooth,
+                                  5);
+     recon_config_file->get_value( "EXTERN_MESH_SIMP_ERR",extern_err_stop,5e-15);
     if(recon_config_file->get_value( "REIMAGE_RES",reimageSize.x(),-1)){
         reimageSize.y()=reimageSize.x();
     }
@@ -896,16 +903,12 @@ int main( int argc, char *argv[ ] )
     }
     if(externalMode){
         char cptmp[8192];
-        int iter=5;
-        sprintf(cptmp,"%s/vcgapps/bin/mergeMesh %s/surface.ply -smooth %d -out %s/%s/full-total.ply",
-                basepath.c_str(),cwd,iter,cwd,diced_dir);
-        sprintf(cptmp,"%s/vcgapps/bin/mergeMesh %s/surface.ply -smooth %d -out %s/%s/full-total.ply",basepath.c_str(),cwd,iter,cwd,diced_dir);
+        sprintf(cptmp,"%s/vcgapps/bin/mergeMesh %s/surface.ply -smooth %d -out %s/%s/full-total.ply",basepath.c_str(),cwd,extern_mesh_smooth,cwd,diced_dir);
 
         //printf("%s\n",cptmp);
         if(!no_init)
          sysres=system(cptmp);
-        double err_stop=1e-14*0.5;
-        sprintf(cptmp,"%s/vcgapps/bin/tridecimator %s/%s/full-total.ply %s/%s/vis-total.ply 1 -q0.3 -P -e%g",basepath.c_str(),cwd,diced_dir,cwd,diced_dir,err_stop);
+        sprintf(cptmp,"%s/vcgapps/bin/tridecimator %s/%s/full-total.ply %s/%s/vis-total.ply 1 -q0.3 -P -e%g",basepath.c_str(),cwd,diced_dir,cwd,diced_dir,extern_err_stop);
        // printf("%s\n",cptmp);
         if(!no_init)
          sysres=system(cptmp);

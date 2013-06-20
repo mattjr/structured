@@ -164,8 +164,14 @@ void VipsAtlasBuilder::buildAtlas()
 
     if(_sourceList.size() == 1)
        {
+
            VSource * source = _sourceList.front();
            osg::ref_ptr<VAtlas> atlas = new VAtlas(_maximumAtlasWidth,_maximumAtlasHeight,_margin);
+           VAtlas::FitsIn fitsIn =atlas->doesSourceFit(_sourceList.front());
+           //If only one image and doesn't fit don't add
+           //Hopefully check that it wasn't added anywhere
+           if(fitsIn == VAtlas::DOES_NOT_FIT_IN_ANY_ROW)
+               return;
            if (!source->_atlas) atlas->addSource(source);
           // atlas->_height=_maximumAtlasHeight;
            atlas->_width=_maximumAtlasWidth;

@@ -176,7 +176,9 @@ static const char *serfile="localserver";
 static double plymc_expand_by=0.0;
 static int extern_mesh_smooth=0;
 static double extern_err_stop;
-
+static bool newmvs=false;
+static bool no_runmvs_tri=false;
+static double triangCleanEdge=5.0;
 MyGraphicsContext *mgc=NULL;
 #define diced_fopen(x,y) fopen((string(diced_dir)+string(x)).c_str(),y)
 
@@ -300,6 +302,12 @@ static bool parse_args( int argc, char *argv[ ] )
     contents_file_name = "stereo_pose_est.data";
 
     dir_name = "img/";
+    if(argp.read("--mvs")){
+            externalMode=true;
+            newmvs=true;
+            printf("Using MVS Mode for computation of structure\n");
+
+    }
     if(argp.read("--extern")){
         externalMode=true;
         printf("Using EXTERNAL Mode for outside computation of structure\n");
@@ -427,6 +435,8 @@ static bool parse_args( int argc, char *argv[ ] )
 
     recon_config_file->get_value( "EXTERN_MESH_SMOOTH", extern_mesh_smooth,
                                   5);
+    recon_config_file->get_value( "TRIANG_CLEAN_LG", triangCleanEdge,
+                                  5.0);
      recon_config_file->get_value( "EXTERN_MESH_SIMP_ERR",extern_err_stop,5e-15);
     if(recon_config_file->get_value( "REIMAGE_RES",reimageSize.x(),-1)){
         reimageSize.y()=reimageSize.x();
@@ -560,7 +570,8 @@ static bool parse_args( int argc, char *argv[ ] )
         no_tex=true;
     if(argp.read("--notc"))
         no_tc=true;
-
+    if(argp.read("--nomvstri"))
+        no_runmvs_tri=true;
     if(argp.read("--novttex"))
         no_vttex=true;
 
@@ -852,9 +863,12 @@ int main( int argc, char *argv[ ] )
             exit( 1 );
         }
     }else{
-        tasks=load_tex_pose_file("camboxdata.txt");
-        printf("Loaded %d metadata images for texturing\n",(int)tasks.size());
+        if(!newmvs){
+            tasks=load_tex_pose_file("camboxdata.txt");
+            printf("Loaded %d metadata images for texturing\n",(int)tasks.size());
+        }else{
 
+        }
     }
     StereoCalib calib(stereo_calib_file_name);
 
@@ -901,18 +915,104 @@ int main( int argc, char *argv[ ] )
         fprintf(stderr,"Can't get current working dir\n");
 
     }
+
+    //const char *simplogdir="/mnt/shared/log-simp";
+    const char *pos_simp_log_dir="/mnt/shared/log-possimp";
+    //const char *vriplogdir="/mnt/shared/log-vrip";
+
+    float simp_mult=1.0;
+    ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,cwd,aggdir,diced_dir,num_threads);
+    shellcm.write_setup();
+
+
     if(externalMode){
-        char cptmp[8192];
-        sprintf(cptmp,"%s/vcgapps/bin/mergeMesh %s/surface.ply -smooth %d -out %s/%s/full-total.ply",basepath.c_str(),cwd,extern_mesh_smooth,cwd,diced_dir);
+        if(newmvs){
+            // Get info on multi-view stereo point clouds
+            ifstream ifstr;
+            char filename[4096];
+            sprintf(filename,"%s/../00/ske.dat",base_dir.c_str());
+            ifstr.open(filename);
+            if(!ifstr){
+                fprintf(stderr,"Failed to open %s/../00/ske.dat",base_dir.c_str());
+                exit(-1);
+            }
+            string header;
+            int inum, cnum;
+            ifstr >> header >> inum >> cnum;
+            ifstr.close();
+            string mvs_tri_cmd="mvs_tri.py";
+            string mvs_cmd_fn=aggdir+string("/mvs_tri_cmds");
+            FILE *fpp2=fopen(mvs_cmd_fn.c_str(),"w");
+            if(!fpp2 ){
+                fprintf(stderr,"Cannot open mvs_tri_cmds\n");
+                exit(-1);
+            }
+            for(int i=0; i < cnum; i++){
+                fprintf(fpp2,"%s/delaunay %s/cameras.ply %s/../00/models/option-%04d -o %s/%s/mvs-%04d.cgal;",basepath.c_str(),cwd,base_dir.c_str(),i,cwd,aggdir,i);
+                fprintf(fpp2,"%s/triangclean %s/%s/mvs-%04d.cgal %s/%s/mvs-%04d.ply -lg %f -flip\n",basepath.c_str(),cwd,aggdir,i,cwd,aggdir,i,triangCleanEdge);
 
-        //printf("%s\n",cptmp);
-        if(!no_init)
-         sysres=system(cptmp);
-        sprintf(cptmp,"%s/vcgapps/bin/tridecimator %s/%s/full-total.ply %s/%s/vis-total.ply 1 -q0.3 -P -e%g",basepath.c_str(),cwd,diced_dir,cwd,diced_dir,extern_err_stop);
-       // printf("%s\n",cptmp);
-        if(!no_init)
-         sysres=system(cptmp);
+            }
+            fclose(fpp2);
+            vector<std::string> precmd;
+            char tmp11[4096];
+            sprintf(tmp11,"%s/triangulation/drawcameras.py -o %s/cameras.ply -i %s/../00/bundle.rd.out",basepath.c_str(),cwd,base_dir.c_str());
+            precmd.push_back(tmp11);
 
+
+            shellcm.write_generic(mvs_tri_cmd,mvs_cmd_fn,"MVSTRI",&(precmd),NULL,1, "");
+            if(!no_runmvs_tri){
+                sysres=system((string(cwd)+"/"+mvs_tri_cmd).c_str());
+            }
+            for(int i=0; i < cnum; i++){
+                char tmpf[1024];
+                sprintf(tmpf,"%s/%s/mvs-%04d.ply",cwd,aggdir,i);
+
+                {
+                    osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(tmpf);
+                    if(!model.valid()){
+                        fprintf(stderr,"Failed to load model %s\n",tmpf);
+                        exit(-1);
+                    }
+                    osg::Drawable *drawable = model->asGeode()->getDrawable(0);
+                    if(!drawable){
+                        fprintf(stderr,"Failed to load model\n");
+                        exit(-1);
+                    }
+                    osg::Geometry *geom = dynamic_cast< osg::Geometry*>(drawable);
+                    int faces=geom->getPrimitiveSet(0)->getNumPrimitives();
+                    osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+                    model->asGeode()->accept(cbbv);
+
+                    Stereo_Pose_Data tmp_pose;
+                    tmp_pose.mesh_name=tmpf;
+                    tmp_pose.left_name=tmpf;
+                    tmp_pose.file_name=tmpf;
+                    tmp_pose.bbox = cbbv.getBoundingBox();
+                    float margin=(tmp_pose.bbox.radius() * bbox_margin);
+                    tmp_pose.bbox_margin.expandBy(tmp_pose.bbox._min-osg::Vec3(margin,margin,margin));
+                    tmp_pose.bbox_margin.expandBy(tmp_pose.bbox._max+osg::Vec3(margin,margin,margin));
+                    tmp_pose.faces=faces;
+                    tmp_pose.valid=true;
+                    tasks.push_back(tmp_pose);
+
+
+                }
+
+            }
+
+
+        }else{
+            char cptmp[8192];
+            sprintf(cptmp,"%s/vcgapps/bin/mergeMesh %s/surface.ply -smooth %d -out %s/%s/full-total.ply",basepath.c_str(),cwd,extern_mesh_smooth,cwd,diced_dir);
+
+            //printf("%s\n",cptmp);
+            if(!no_init)
+                sysres=system(cptmp);
+            sprintf(cptmp,"%s/vcgapps/bin/tridecimator %s/%s/full-total.ply %s/%s/vis-total.ply 1 -q0.3 -P -e%g",basepath.c_str(),cwd,diced_dir,cwd,diced_dir,extern_err_stop);
+            // printf("%s\n",cptmp);
+            if(!no_init)
+                sysres=system(cptmp);
+        }
         FILE *firstpt=diced_fopen("firstpt.txt","w");
         if(!firstpt ){
             fprintf(stderr,"Cannot open mesh/firstpt.txt\n");
@@ -1057,13 +1157,7 @@ int main( int argc, char *argv[ ] )
         exit(-1);
     }
 
-    //const char *simplogdir="/mnt/shared/log-simp";
-    const char *pos_simp_log_dir="/mnt/shared/log-possimp";
-    //const char *vriplogdir="/mnt/shared/log-vrip";
 
-    float simp_mult=1.0;
-    ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,cwd,aggdir,diced_dir,num_threads);
-    shellcm.write_setup();
     if(!externalMode){
 
 double totalValidArea=0;
@@ -1405,7 +1499,7 @@ double totalValidArea=0;
                 osg::DegreesToRadians( rx ), osg::Vec3( 1, 0, 0 ),
                 osg::DegreesToRadians( ry ), osg::Vec3( 0, 1, 0 ),
                 osg::DegreesToRadians( rz ), osg::Vec3( 0, 0, 1 ) );
-    if(externalMode){
+    if(externalMode && !newmvs){
         cout << "Loading full mesh...\n";
         char tmp[1024];
         sprintf(tmp,".%d,%d,%d.rot",(int)rx,(int)ry,(int)rz);
@@ -1458,7 +1552,7 @@ double totalValidArea=0;
 
     CellDataT<Stereo_Pose_Data>::type vol;
     int minSplits=-1;
-    int faceGuess = externalMode ? numberFacesAll : ((rangeX * rangeY) / (vrip_res*vrip_res));
+    int faceGuess = (externalMode && !newmvs) ? numberFacesAll : ((rangeX * rangeY) / (vrip_res*vrip_res));
     //printf("%d %f\n",faceGuess,largerAxis);
     double targetSide=((double)faceChunkTarget/faceGuess)*largerAxis;
     //printf("Target Side %f\n",targetSide);
@@ -1470,7 +1564,7 @@ double totalValidArea=0;
     split_boundsOctree<Stereo_Pose_Data>(bounds,tasks , faceChunkTarget,minSplits,vol);
     std::vector<osg::BoundingBox> kd_bboxes;
     double avgEdgeLen=0.0;
-    if(!externalMode){
+    if(!externalMode || newmvs){
         {
             WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks,plymc_expand_by,smallCCPer);
             WriteBoundVRIP wbvrip(vrip_res,string(aggdir)+"/vripcmd",basepath,cwd,tasks,vrip_ramp,smallCCPer);
@@ -1749,7 +1843,7 @@ double totalValidArea=0;
             _file2.write(reinterpret_cast<char*>(&(rotM(i,j))),sizeof(double));
     _file2.close();
 
-    if(externalMode){
+    if(externalMode && !newmvs){
         osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(string(diced_dir)+"/vis-total.ply");
         if(!getFaceDivision(model,avgEdgeLen,numberFacesAll,texRemapChunk,kd_bboxes)){
             fprintf(stderr,"Can't load divisions\n");
@@ -1770,7 +1864,7 @@ double totalValidArea=0;
    int  faketileRows=kd_bboxes.size();
    int faketileColumns=1;
 
-    if(!externalMode){
+    if(!externalMode || newmvs){
 
 
         {
@@ -2372,7 +2466,8 @@ double totalValidArea=0;
 
         fprintf(calcTexFn_fp,"cd %s",
                 cwd);
-        fprintf(calcTexFn_fp,";%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin %f\n",
+        if(newmvs){
+            fprintf(calcTexFn_fp,";%s/calcTexCoordBundler %s/../00/ %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin %f\n",
                 basepath.c_str(),
                 base_dir.c_str(),
                 diced_dir,
@@ -2382,7 +2477,18 @@ double totalValidArea=0;
                 cells[i].row,cells[i].col,
                 vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
                 rx,ry,rz,tex_margin,bbox_margin);
-
+        }else{
+            fprintf(calcTexFn_fp,";%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin %f\n",
+                basepath.c_str(),
+                base_dir.c_str(),
+                diced_dir,
+                cells[i].row,cells[i].col,
+                diced_dir,cells[i].row,cells[i].col,
+                diced_dir,
+                cells[i].row,cells[i].col,
+                vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
+                rx,ry,rz,tex_margin,bbox_margin);
+        }
 
         for(int z=0; z<NUM_TEX_FILES; z++){
             fprintf(texcmds_fp[z],"cd %s",
@@ -2438,19 +2544,32 @@ double totalValidArea=0;
 
                 if(useVirtTex)
                     sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
-
-                fprintf(texcmds_fp[z],";%s/%s  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s  --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
+                if(newmvs){
+                fprintf(texcmds_fp[z],";%s/%s %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply camboxdata.txt %s  --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
                         basepath.c_str(),
                         teximgcmd.c_str(),
                         diced_dir,
                         cells[i].row,cells[i].col,
                         vpblod,
-                        diced_dir,
-                        cells[i].row,cells[i].col,
                         (base_dir+imgbase).c_str(),
                         rx,ry,rz,
                         cells[i].row,cells[i].col,_tileRows,_tileColumns,
                         latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
+                }else{
+                    fprintf(texcmds_fp[z],";%s/%s  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s  --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
+                            basepath.c_str(),
+                            teximgcmd.c_str(),
+                            diced_dir,
+                            cells[i].row,cells[i].col,
+                            vpblod,
+                            diced_dir,
+                            cells[i].row,cells[i].col,
+                            (base_dir+imgbase).c_str(),
+                            rx,ry,rz,
+                            cells[i].row,cells[i].col,_tileRows,_tileColumns,
+                            latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
+
+                }
                 if(blending)
                     fprintf(texcmds_fp[z]," --blend");
 
@@ -2817,7 +2936,7 @@ double totalValidArea=0;
     }
     fclose(dBFP);
     fclose(FP5);
-    if(!externalMode){
+    if(!externalMode || newmvs){
         double margin=vrip_res*10;
         string rangeimgcmds_fn[]={(string(diced_dir)+"/rangeimgcmds").c_str(),(string(diced_dir)+"/globalimgcmds").c_str()};
         string rangecmd[]={"rangeimg.py","globaldepth.py"};

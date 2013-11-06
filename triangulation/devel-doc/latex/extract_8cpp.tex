@@ -1,0 +1,177 @@
+\hypertarget{extract_8cpp}{
+\section{extract.cpp File Reference}
+\label{extract_8cpp}\index{extract.cpp@{extract.cpp}}
+}
+
+
+Functions for surface facets extraction.  
+
+
+{\ttfamily \#include \char`\"{}delaunay.h\char`\"{}}\par
+{\ttfamily \#include $<$map$>$}\par
+{\ttfamily \#include $<$time.h$>$}\par
+{\ttfamily \#include \char`\"{}graph.h\char`\"{}}\par
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{extract_8cpp_ae5fec6bd42bde60febdf742e46eb08df}{
+typedef Graph$<$ int, int, int $>$ {\bfseries GraphType}}
+\label{extract_8cpp_ae5fec6bd42bde60febdf742e46eb08df}
+
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{extract_8cpp_aa3d1a643b30214f4bd2a329fccd915df}{
+static int {\bfseries nb\_\-rm\_\-normals} (0)}
+\label{extract_8cpp_aa3d1a643b30214f4bd2a329fccd915df}
+
+\item 
+void \hyperlink{extract_8cpp_a26978c33758607ba306f3d2b0c1e03ab}{prepare\_\-extract\_\-mxf} (Delaunay \&T, \hyperlink{classTrParams}{TrParams} \&params, CGAL::Geomview\_\-stream \&gv)
+\begin{DoxyCompactList}\small\item\em Find tetrahedrons to keep and remove with a cost function minimization. \item\end{DoxyCompactList}\item 
+void \hyperlink{extract_8cpp_a167f83b783516fe8d36f0e7af4e027f1}{prepare\_\-extract\_\-std} (Delaunay \&T, \hyperlink{classTrParams}{TrParams} \&params, CGAL::Geomview\_\-stream \&gv)
+\begin{DoxyCompactList}\small\item\em Find which tetrahedrons to remove or keep, based on nb of ray intersections. \item\end{DoxyCompactList}\item 
+int \hyperlink{extract_8cpp_a389285443a3430fd83b07e42aac6669d}{clean1} (Delaunay \&T)
+\begin{DoxyCompactList}\small\item\em try to remove rough elements, that is tetrahedrons with only one face adjacent to a non infinite tetrahedron. \item\end{DoxyCompactList}\item 
+bool \hyperlink{extract_8cpp_a39e32cb3880e31a041658da6df07e410}{clean2} (Delaunay \&T, Facet \&f, int $\ast$nb\_\-rmlg, int $\ast$nb\_\-rmsurf, \hyperlink{classTrParams}{TrParams} \&params)
+\begin{DoxyCompactList}\small\item\em Check if a facet is too wide and/or has a too long edge. \item\end{DoxyCompactList}\item 
+void \hyperlink{extract_8cpp_a389992ce06aa7ed3d025dbc7c46ee196}{prepare\_\-facets} (Delaunay \&T, std::vector$<$ Facet $>$ \&facets, std::vector$<$ Point $>$ \&normals, int nbcams, int $\ast$cams\_\-index, \hyperlink{classTrParams}{TrParams} \&params, CGAL::Geomview\_\-stream \&gv)
+\begin{DoxyCompactList}\small\item\em build the list of surface facets \item\end{DoxyCompactList}\item 
+void \hyperlink{extract_8cpp_a5c692fd0193f2ae09d32f6cca2f529c3}{save\_\-ply} (const char $\ast$file, Delaunay \&T, std::vector$<$ Facet $>$ \&facets, Vector $\ast$points, std::vector$<$ Point $>$ \&normals, PointColor \&pcolors, int nbcams, int $\ast$cams\_\-index, TPoint \&bad\_\-cameras, \hyperlink{classTrParams}{TrParams} \&params, char $\ast$comment)  throw (const char $\ast$)
+\begin{DoxyCompactList}\small\item\em Save results (points and facets) in an ascii ply file. For test only (data is partial). \item\end{DoxyCompactList}\item 
+void \hyperlink{extract_8cpp_aa57fff0856cd0b25556d5f26e04ff5c4}{save\_\-ply\_\-binary} (const char $\ast$file, Delaunay \&T, std::vector$<$ Facet $>$ \&facets, Vector $\ast$points, std::vector$<$ Point $>$ \&normals, PointColor \&pcolors, int nbcams, int $\ast$cams\_\-index, TPoint \&bad\_\-cameras, \hyperlink{classTrParams}{TrParams} \&params, char $\ast$comment)  throw (const char $\ast$)
+\begin{DoxyCompactList}\small\item\em Save vertices and extracted faces in a binary ply file. \item\end{DoxyCompactList}\item 
+void \hyperlink{extract_8cpp_a80d924a46d464e5c40bdd9c54522d802}{delaunay\_\-extract} (const char $\ast$outply, Delaunay \&T, std::vector$<$ Point $>$ \&normals, PointColor \&pcolors, int nbcams, int $\ast$cams\_\-index, TPoint \&bad\_\-cameras, \hyperlink{classTrParams}{TrParams} \&params, CGAL::Geomview\_\-stream \&gv, char $\ast$comment)
+\begin{DoxyCompactList}\small\item\em Extract surface facets from the delaunay triangulation. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions for surface facets extraction. 
+
+Definition in file \hyperlink{extract_8cpp_source}{extract.cpp}.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{extract_8cpp_a389285443a3430fd83b07e42aac6669d}{
+\index{extract.cpp@{extract.cpp}!clean1@{clean1}}
+\index{clean1@{clean1}!extract.cpp@{extract.cpp}}
+\subsubsection[{clean1}]{\setlength{\rightskip}{0pt plus 5cm}int clean1 (Delaunay \& {\em T})}}
+\label{extract_8cpp_a389285443a3430fd83b07e42aac6669d}
+
+
+try to remove rough elements, that is tetrahedrons with only one face adjacent to a non infinite tetrahedron. 
+
+
+
+Definition at line 156 of file extract.cpp.
+
+\hypertarget{extract_8cpp_a39e32cb3880e31a041658da6df07e410}{
+\index{extract.cpp@{extract.cpp}!clean2@{clean2}}
+\index{clean2@{clean2}!extract.cpp@{extract.cpp}}
+\subsubsection[{clean2}]{\setlength{\rightskip}{0pt plus 5cm}bool clean2 (Delaunay \& {\em T}, \/  Facet \& {\em f}, \/  int $\ast$ {\em nb\_\-rmlg}, \/  int $\ast$ {\em nb\_\-rmsurf}, \/  {\bf TrParams} \& {\em params})}}
+\label{extract_8cpp_a39e32cb3880e31a041658da6df07e410}
+
+
+Check if a facet is too wide and/or has a too long edge. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em T}]: the delaunay data. \item[{\em f}]: the facet to test. \item[\mbox{$\leftrightarrow$} {\em nb\_\-rmlg}]: nb of faces removed by edge length check; incremented . \item[\mbox{$\leftrightarrow$} {\em nb\_\-rmsurf}]: nb of faces removed by surface check; incremented . \item[{\em params.do\_\-clean}]: define what checking to do \item[{\em params.lgr\_\-threshold}]: threshold for length check. \item[{\em params.surf\_\-threshold}]: threshold for surface check. \end{DoxyParams}
+
+
+Definition at line 185 of file extract.cpp.
+
+\hypertarget{extract_8cpp_a80d924a46d464e5c40bdd9c54522d802}{
+\index{extract.cpp@{extract.cpp}!delaunay\_\-extract@{delaunay\_\-extract}}
+\index{delaunay\_\-extract@{delaunay\_\-extract}!extract.cpp@{extract.cpp}}
+\subsubsection[{delaunay\_\-extract}]{\setlength{\rightskip}{0pt plus 5cm}void delaunay\_\-extract (const char $\ast$ {\em outply}, \/  Delaunay \& {\em T}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  PointColor \& {\em pcolors}, \/  int {\em nbcams}, \/  int $\ast$ {\em cams\_\-index}, \/  TPoint \& {\em bad\_\-cameras}, \/  {\bf TrParams} \& {\em params}, \/  CGAL::Geomview\_\-stream \& {\em gv}, \/  char $\ast$ {\em comment})}}
+\label{extract_8cpp_a80d924a46d464e5c40bdd9c54522d802}
+
+
+Extract surface facets from the delaunay triangulation. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em outply}]: name of output ply file. \item[{\em T}]: delaunay data \item[{\em normals}]: vector of PMVS normals \item[{\em pcolors}]: vector of PMVS point colors \item[{\em nbcams}]: number of cameras \item[{\em cams\_\-index}]: indices of camera coords in points vector \item[{\em bad\_\-cameras}]: vector of the vertices of bad cameras. \item[{\em params.extract\_\-type}]: call prepare\_\-extract\_\-mxf or prepare\_\-extract\_\-std \item[{\em params.smooth\_\-coef}]: if $>$0., run the smooth program on vertices. \item[{\em comment}]: comment to put in the header (the arguments of the command line) \item[{\em }]\end{DoxyParams}
+
+
+Definition at line 589 of file extract.cpp.
+
+\hypertarget{extract_8cpp_a26978c33758607ba306f3d2b0c1e03ab}{
+\index{extract.cpp@{extract.cpp}!prepare\_\-extract\_\-mxf@{prepare\_\-extract\_\-mxf}}
+\index{prepare\_\-extract\_\-mxf@{prepare\_\-extract\_\-mxf}!extract.cpp@{extract.cpp}}
+\subsubsection[{prepare\_\-extract\_\-mxf}]{\setlength{\rightskip}{0pt plus 5cm}void prepare\_\-extract\_\-mxf (Delaunay \& {\em T}, \/  {\bf TrParams} \& {\em params}, \/  CGAL::Geomview\_\-stream \& {\em gv})}}
+\label{extract_8cpp_a26978c33758607ba306f3d2b0c1e03ab}
+
+
+Find tetrahedrons to keep and remove with a cost function minimization. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[\mbox{$\leftrightarrow$} {\em T}]: delaunay triangulation. Removed and valid cells are flagged in field info \item[{\em params.nb\_\-intersect}]: number of intersection threshold \end{DoxyParams}
+
+
+Definition at line 31 of file extract.cpp.
+
+\hypertarget{extract_8cpp_a167f83b783516fe8d36f0e7af4e027f1}{
+\index{extract.cpp@{extract.cpp}!prepare\_\-extract\_\-std@{prepare\_\-extract\_\-std}}
+\index{prepare\_\-extract\_\-std@{prepare\_\-extract\_\-std}!extract.cpp@{extract.cpp}}
+\subsubsection[{prepare\_\-extract\_\-std}]{\setlength{\rightskip}{0pt plus 5cm}void prepare\_\-extract\_\-std (Delaunay \& {\em T}, \/  {\bf TrParams} \& {\em params}, \/  CGAL::Geomview\_\-stream \& {\em gv})}}
+\label{extract_8cpp_a167f83b783516fe8d36f0e7af4e027f1}
+
+
+Find which tetrahedrons to remove or keep, based on nb of ray intersections. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[\mbox{$\leftrightarrow$} {\em T}]: delaunay triangulation. Removed and valid cells are flagged in field info \item[{\em params.nb\_\-intersect}]: number of intersection threshold \item[{\em params.average\_\-volume}]: increase the threshold for cells having a larger volume. \end{DoxyParams}
+
+
+Definition at line 106 of file extract.cpp.
+
+\hypertarget{extract_8cpp_a389992ce06aa7ed3d025dbc7c46ee196}{
+\index{extract.cpp@{extract.cpp}!prepare\_\-facets@{prepare\_\-facets}}
+\index{prepare\_\-facets@{prepare\_\-facets}!extract.cpp@{extract.cpp}}
+\subsubsection[{prepare\_\-facets}]{\setlength{\rightskip}{0pt plus 5cm}void prepare\_\-facets (Delaunay \& {\em T}, \/  std::vector$<$ Facet $>$ \& {\em facets}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  int {\em nbcams}, \/  int $\ast$ {\em cams\_\-index}, \/  {\bf TrParams} \& {\em params}, \/  CGAL::Geomview\_\-stream \& {\em gv})}}
+\label{extract_8cpp_a389992ce06aa7ed3d025dbc7c46ee196}
+
+
+build the list of surface facets 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em normals,:}]the vector of PMVS normals \item[{\em nbcams}]: number of cameras \item[{\em cams\_\-index}]: indexes of cameras coords in PMVS points table \item[{\em params.extract\_\-mode}]: 0/1 = use removed/valid cells to find facets +2 = retrieve all facets of corresponding tetrahedrons (for test purpose) \item[{\em params.do\_\-clean}]: type of desired cleaning \end{DoxyParams}
+
+
+Definition at line 262 of file extract.cpp.
+
+\hypertarget{extract_8cpp_a5c692fd0193f2ae09d32f6cca2f529c3}{
+\index{extract.cpp@{extract.cpp}!save\_\-ply@{save\_\-ply}}
+\index{save\_\-ply@{save\_\-ply}!extract.cpp@{extract.cpp}}
+\subsubsection[{save\_\-ply}]{\setlength{\rightskip}{0pt plus 5cm}void save\_\-ply (const char $\ast$ {\em file}, \/  Delaunay \& {\em T}, \/  std::vector$<$ Facet $>$ \& {\em facets}, \/  Vector $\ast$ {\em points}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  PointColor \& {\em pcolors}, \/  int {\em nbcams}, \/  int $\ast$ {\em cams\_\-index}, \/  TPoint \& {\em bad\_\-cameras}, \/  {\bf TrParams} \& {\em params}, \/  char $\ast$ {\em comment})  throw (const char $\ast$)}}
+\label{extract_8cpp_a5c692fd0193f2ae09d32f6cca2f529c3}
+
+
+Save results (points and facets) in an ascii ply file. For test only (data is partial). 
+
+
+
+Definition at line 384 of file extract.cpp.
+
+\hypertarget{extract_8cpp_aa57fff0856cd0b25556d5f26e04ff5c4}{
+\index{extract.cpp@{extract.cpp}!save\_\-ply\_\-binary@{save\_\-ply\_\-binary}}
+\index{save\_\-ply\_\-binary@{save\_\-ply\_\-binary}!extract.cpp@{extract.cpp}}
+\subsubsection[{save\_\-ply\_\-binary}]{\setlength{\rightskip}{0pt plus 5cm}void save\_\-ply\_\-binary (const char $\ast$ {\em file}, \/  Delaunay \& {\em T}, \/  std::vector$<$ Facet $>$ \& {\em facets}, \/  Vector $\ast$ {\em points}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  PointColor \& {\em pcolors}, \/  int {\em nbcams}, \/  int $\ast$ {\em cams\_\-index}, \/  TPoint \& {\em bad\_\-cameras}, \/  {\bf TrParams} \& {\em params}, \/  char $\ast$ {\em comment})  throw (const char $\ast$)}}
+\label{extract_8cpp_aa57fff0856cd0b25556d5f26e04ff5c4}
+
+
+Save vertices and extracted faces in a binary ply file. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em file}]: destination file \item[{\em T}]: delaunay data \item[{\em points}]: optional vector of points. If non nul use it for points coords instead of delaunay vertices. \item[{\em normals}]: vector of PMVS normals \item[{\em pcolors}]: vector of PMVS point colors \item[{\em nbcams}]: number of cameras \item[{\em cams\_\-index}]: indices of camera coords in points vector \item[{\em bad\_\-cameras}]: vector of the vertices of bad cameras. \item[{\em params.extract\_\-mode}]: use to print facet vertice in the correct order \item[{\em comment}]: comment to put in the header (the arguments of the command line) \end{DoxyParams}
+
+
+Definition at line 474 of file extract.cpp.
+

@@ -172,7 +172,7 @@ vector<Point3f> ViewVector;
 
 bool cb(const char *buf)
 {
-    printf(buf);
+    printf("%s",buf);
     return true;
 }
 #ifdef USEGL

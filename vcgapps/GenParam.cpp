@@ -145,8 +145,10 @@ int median(vector<double> &v)
     return v[n];
 }
 int calcOptimalImageSizeRaw(const osg::Vec2 imageSize,osg::Vec3Array *verts,osg::DrawElementsUInt* triangles,std::vector<osg::Vec3Array *>   &texCoord,double scaletex,int VTtileSize,int border){
-    if(!verts || !triangles || texCoord.size()==0)
-    return -1;
+    if(!verts || !triangles || texCoord.size()==0){
+        fprintf(stderr,"Can't get verts tris or tex coords\n");
+        return -1;
+    }
 std::vector<double> pixelSides;
     for (int i = 0 ; i < (int)triangles->size()-2 ; i+=3) {
         int idx=i/3;
@@ -167,19 +169,19 @@ std::vector<double> pixelSides;
               osg::Vec3 tc1=  osg::Vec3(texCoord[c]->at(in0).x()*imageSize.x(),texCoord[c]->at(in0).y()*imageSize.y(),0);
               osg::Vec3 tc2=   osg::Vec3(texCoord[c]->at(in1).x()*imageSize.x(),texCoord[c]->at(in1).y()*imageSize.y(),0);
               osg::Vec3 tc3=   osg::Vec3(texCoord[c]->at(in2).x()*imageSize.x(),texCoord[c]->at(in2).y()*imageSize.y(),0);
-//              cout <<tc1 <<" " <<tc2<< " "<<tc3<<endl;
+             // cout <<tc1 <<" " <<tc2<< " "<<tc3<<endl;
               if(tc1.x() < 0 || tc1.y() < 0 ||tc2.x() < 0 || tc2.y() < 0||tc3.x() < 0 || tc3.y() < 0)
                   continue;
              double orig_tex_area=((tc2-tc1)^(tc3-tc2)).length()/2.0;
-            // cout <<orig_tex_area<<endl;
+   //          cout <<orig_tex_area<<endl;
              if(orig_tex_area>max_orig_tex_area)
                  max_orig_tex_area=orig_tex_area;
             }
             if(max_orig_tex_area ==0.0 || tex_area == 0.0)
                 continue;
-           // printf("%f %f\n",max_orig_tex_area,8192*tex_area);
+           // printf("%f %f\n",max_orig_tex_area,tex_area);
             double sidePixels=sqrt(max_orig_tex_area/tex_area);
-            //cout <<sidePixels<<endl;
+           // cout <<sidePixels<<endl;
             if(isfinite(sidePixels) && sidePixels >0 && sidePixels < pow(2.0f,17))
                 pixelSides.push_back(sidePixels);
     }
@@ -190,6 +192,7 @@ std::vector<double> pixelSides;
        avgEl+= (pixelSides[i]/pixelSides.size());
     }
     double medianVal=median(pixelSides);
+  //  printf("MEDIAN %f\n",medianVal)
    // long double sum = std::accumulate( pixelSides.begin(), pixelSides.begin()+pixelSides.size(), 0 ) ;
 
 //   double avgEl =sum/pixelSides.size();

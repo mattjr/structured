@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my $eps = 0.001;
+
+sub usage {
+    print "Usage: $0 [-e eps] x y z <ply-file\n";
+    exit 1;
+}
+my @xyz = ();
+while($#ARGV >= 0) {
+    $_ = shift(@ARGV);
+    if(/^-e$/) {
+	($#ARGV >= 0) || usage();
+	$eps = shift(@ARGV);
+	next;
+    }
+    ($#xyz >=2) && usage();
+    push(@xyz,$_);
+}
+
+($#xyz == 2) || usage();
+my $found = 0;
+while(<STDIN>) {
+    chomp;
+    if (/^end_header/) {
+	$found = 1;
+	last;
+    }
+}
+($found) || die "Not a ply file\n";
+my ($x0,$y0,$z0) = ($xyz[0] - $eps,$xyz[1] - $eps,$xyz[2] - $eps,);
+my ($x1,$y1,$z1) = ($xyz[0] + $eps,$xyz[1] + $eps,$xyz[2] + $eps,);
+
+print "-b $x0 $y0 $x1 $y1 ($z0 $z1)\n";
+my $i = -1;
+while(<STDIN>) {
+    chomp;
+    $i++;
+    my ($x,$y,$z,@tmp) = split(/\s+/,$_);
+    ($x < $x0 || $x > $x1) && next;
+    ($y < $y0 || $y > $y1) && next;
+    ($z < $z0 || $z > $z1) && next;
+    print "I = $i, $x $y $z\n";
+}
+ 
+exit 0;

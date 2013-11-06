@@ -1,0 +1,123 @@
+\indexentry{Intersect@{Intersect}|hyperpage}{7}
+\indexentry{Intersect@{Intersect}!intersected\_\discretionary {-}{}{}facet@{intersected\_\discretionary {-}{}{}facet}|hyperpage}{7}
+\indexentry{intersected\_\discretionary {-}{}{}facet@{intersected\_\discretionary {-}{}{}facet}!Intersect@{Intersect}|hyperpage}{7}
+\indexentry{Intersect@{Intersect}!v1@{v1}|hyperpage}{7}
+\indexentry{v1@{v1}!Intersect@{Intersect}|hyperpage}{7}
+\indexentry{Intersect@{Intersect}!v2@{v2}|hyperpage}{8}
+\indexentry{v2@{v2}!Intersect@{Intersect}|hyperpage}{8}
+\indexentry{TrParams@{TrParams}|hyperpage}{9}
+\indexentry{TrParams@{TrParams}!average\_\discretionary {-}{}{}volume@{average\_\discretionary {-}{}{}volume}|hyperpage}{10}
+\indexentry{average\_\discretionary {-}{}{}volume@{average\_\discretionary {-}{}{}volume}!TrParams@{TrParams}|hyperpage}{10}
+\indexentry{TrParams@{TrParams}!cosinus\_\discretionary {-}{}{}thresh@{cosinus\_\discretionary {-}{}{}thresh}|hyperpage}{10}
+\indexentry{cosinus\_\discretionary {-}{}{}thresh@{cosinus\_\discretionary {-}{}{}thresh}!TrParams@{TrParams}|hyperpage}{10}
+\indexentry{TrParams@{TrParams}!extract\_\discretionary {-}{}{}mode@{extract\_\discretionary {-}{}{}mode}|hyperpage}{10}
+\indexentry{extract\_\discretionary {-}{}{}mode@{extract\_\discretionary {-}{}{}mode}!TrParams@{TrParams}|hyperpage}{10}
+\indexentry{TrParams@{TrParams}!extract\_\discretionary {-}{}{}type@{extract\_\discretionary {-}{}{}type}|hyperpage}{10}
+\indexentry{extract\_\discretionary {-}{}{}type@{extract\_\discretionary {-}{}{}type}!TrParams@{TrParams}|hyperpage}{10}
+\indexentry{TrParams@{TrParams}!lgr\_\discretionary {-}{}{}threshold@{lgr\_\discretionary {-}{}{}threshold}|hyperpage}{10}
+\indexentry{lgr\_\discretionary {-}{}{}threshold@{lgr\_\discretionary {-}{}{}threshold}!TrParams@{TrParams}|hyperpage}{10}
+\indexentry{TrParams@{TrParams}!moy\_\discretionary {-}{}{}normal@{moy\_\discretionary {-}{}{}normal}|hyperpage}{10}
+\indexentry{moy\_\discretionary {-}{}{}normal@{moy\_\discretionary {-}{}{}normal}!TrParams@{TrParams}|hyperpage}{10}
+\indexentry{TrParams@{TrParams}!nb\_\discretionary {-}{}{}intersect@{nb\_\discretionary {-}{}{}intersect}|hyperpage}{10}
+\indexentry{nb\_\discretionary {-}{}{}intersect@{nb\_\discretionary {-}{}{}intersect}!TrParams@{TrParams}|hyperpage}{10}
+\indexentry{TrParams@{TrParams}!smooth\_\discretionary {-}{}{}coef@{smooth\_\discretionary {-}{}{}coef}|hyperpage}{10}
+\indexentry{smooth\_\discretionary {-}{}{}coef@{smooth\_\discretionary {-}{}{}coef}!TrParams@{TrParams}|hyperpage}{10}
+\indexentry{TrParams@{TrParams}!smooth\_\discretionary {-}{}{}nb\_\discretionary {-}{}{}iter@{smooth\_\discretionary {-}{}{}nb\_\discretionary {-}{}{}iter}|hyperpage}{10}
+\indexentry{smooth\_\discretionary {-}{}{}nb\_\discretionary {-}{}{}iter@{smooth\_\discretionary {-}{}{}nb\_\discretionary {-}{}{}iter}!TrParams@{TrParams}|hyperpage}{10}
+\indexentry{TrParams@{TrParams}!surf\_\discretionary {-}{}{}threshold@{surf\_\discretionary {-}{}{}threshold}|hyperpage}{11}
+\indexentry{surf\_\discretionary {-}{}{}threshold@{surf\_\discretionary {-}{}{}threshold}!TrParams@{TrParams}|hyperpage}{11}
+\indexentry{TrStats@{TrStats}|hyperpage}{12}
+\indexentry{TrStats@{TrStats}!sum@{sum}|hyperpage}{12}
+\indexentry{sum@{sum}!TrStats@{TrStats}|hyperpage}{12}
+\indexentry{TrStats@{TrStats}!nb\_\discretionary {-}{}{}int\_\discretionary {-}{}{}edge@{nb\_\discretionary {-}{}{}int\_\discretionary {-}{}{}edge}|hyperpage}{13}
+\indexentry{nb\_\discretionary {-}{}{}int\_\discretionary {-}{}{}edge@{nb\_\discretionary {-}{}{}int\_\discretionary {-}{}{}edge}!TrStats@{TrStats}|hyperpage}{13}
+\indexentry{TrStats@{TrStats}!nb\_\discretionary {-}{}{}intv@{nb\_\discretionary {-}{}{}intv}|hyperpage}{13}
+\indexentry{nb\_\discretionary {-}{}{}intv@{nb\_\discretionary {-}{}{}intv}!TrStats@{TrStats}|hyperpage}{13}
+\indexentry{TrStats@{TrStats}!nb\_\discretionary {-}{}{}rayons@{nb\_\discretionary {-}{}{}rayons}|hyperpage}{13}
+\indexentry{nb\_\discretionary {-}{}{}rayons@{nb\_\discretionary {-}{}{}rayons}!TrStats@{TrStats}|hyperpage}{13}
+\indexentry{TrStats@{TrStats}!nb\_\discretionary {-}{}{}test\_\discretionary {-}{}{}facets@{nb\_\discretionary {-}{}{}test\_\discretionary {-}{}{}facets}|hyperpage}{13}
+\indexentry{nb\_\discretionary {-}{}{}test\_\discretionary {-}{}{}facets@{nb\_\discretionary {-}{}{}test\_\discretionary {-}{}{}facets}!TrStats@{TrStats}|hyperpage}{13}
+\indexentry{TrStats@{TrStats}!nb\_\discretionary {-}{}{}tested\_\discretionary {-}{}{}lv0@{nb\_\discretionary {-}{}{}tested\_\discretionary {-}{}{}lv0}|hyperpage}{13}
+\indexentry{nb\_\discretionary {-}{}{}tested\_\discretionary {-}{}{}lv0@{nb\_\discretionary {-}{}{}tested\_\discretionary {-}{}{}lv0}!TrStats@{TrStats}|hyperpage}{13}
+\indexentry{TrStats@{TrStats}!nb\_\discretionary {-}{}{}tetra0@{nb\_\discretionary {-}{}{}tetra0}|hyperpage}{13}
+\indexentry{nb\_\discretionary {-}{}{}tetra0@{nb\_\discretionary {-}{}{}tetra0}!TrStats@{TrStats}|hyperpage}{13}
+\indexentry{TrStats@{TrStats}!nb\_\discretionary {-}{}{}tot\_\discretionary {-}{}{}intersect@{nb\_\discretionary {-}{}{}tot\_\discretionary {-}{}{}intersect}|hyperpage}{13}
+\indexentry{nb\_\discretionary {-}{}{}tot\_\discretionary {-}{}{}intersect@{nb\_\discretionary {-}{}{}tot\_\discretionary {-}{}{}intersect}!TrStats@{TrStats}|hyperpage}{13}
+\indexentry{Viewer@{Viewer}|hyperpage}{14}
+\indexentry{addcells.cpp@{addcells.cpp}|hyperpage}{15}
+\indexentry{addcells.cpp@{addcells.cpp}!add\_\discretionary {-}{}{}cells@{add\_\discretionary {-}{}{}cells}|hyperpage}{16}
+\indexentry{add\_\discretionary {-}{}{}cells@{add\_\discretionary {-}{}{}cells}!addcells.cpp@{addcells.cpp}|hyperpage}{16}
+\indexentry{addcells.cpp@{addcells.cpp}!mean\_\discretionary {-}{}{}edge@{mean\_\discretionary {-}{}{}edge}|hyperpage}{16}
+\indexentry{mean\_\discretionary {-}{}{}edge@{mean\_\discretionary {-}{}{}edge}!addcells.cpp@{addcells.cpp}|hyperpage}{16}
+\indexentry{config.cpp@{config.cpp}|hyperpage}{17}
+\indexentry{config.cpp@{config.cpp}!mygetopt@{mygetopt}|hyperpage}{17}
+\indexentry{mygetopt@{mygetopt}!config.cpp@{config.cpp}|hyperpage}{17}
+\indexentry{config.cpp@{config.cpp}!debug\_\discretionary {-}{}{}stop@{debug\_\discretionary {-}{}{}stop}|hyperpage}{18}
+\indexentry{debug\_\discretionary {-}{}{}stop@{debug\_\discretionary {-}{}{}stop}!config.cpp@{config.cpp}|hyperpage}{18}
+\indexentry{delaunay.cpp@{delaunay.cpp}|hyperpage}{19}
+\indexentry{delaunay.cpp@{delaunay.cpp}!check\_\discretionary {-}{}{}cam@{check\_\discretionary {-}{}{}cam}|hyperpage}{19}
+\indexentry{check\_\discretionary {-}{}{}cam@{check\_\discretionary {-}{}{}cam}!delaunay.cpp@{delaunay.cpp}|hyperpage}{19}
+\indexentry{delaunay.cpp@{delaunay.cpp}!check\_\discretionary {-}{}{}point@{check\_\discretionary {-}{}{}point}|hyperpage}{19}
+\indexentry{check\_\discretionary {-}{}{}point@{check\_\discretionary {-}{}{}point}!delaunay.cpp@{delaunay.cpp}|hyperpage}{19}
+\indexentry{delaunay.cpp@{delaunay.cpp}!dump\_\discretionary {-}{}{}data@{dump\_\discretionary {-}{}{}data}|hyperpage}{20}
+\indexentry{dump\_\discretionary {-}{}{}data@{dump\_\discretionary {-}{}{}data}!delaunay.cpp@{delaunay.cpp}|hyperpage}{20}
+\indexentry{delaunay.cpp@{delaunay.cpp}!usage@{usage}|hyperpage}{21}
+\indexentry{usage@{usage}!delaunay.cpp@{delaunay.cpp}|hyperpage}{21}
+\indexentry{delaunay.h@{delaunay.h}|hyperpage}{22}
+\indexentry{delaunay.h@{delaunay.h}!add\_\discretionary {-}{}{}cells@{add\_\discretionary {-}{}{}cells}|hyperpage}{24}
+\indexentry{add\_\discretionary {-}{}{}cells@{add\_\discretionary {-}{}{}cells}!delaunay.h@{delaunay.h}|hyperpage}{24}
+\indexentry{delaunay.h@{delaunay.h}!delaunay\_\discretionary {-}{}{}extract@{delaunay\_\discretionary {-}{}{}extract}|hyperpage}{24}
+\indexentry{delaunay\_\discretionary {-}{}{}extract@{delaunay\_\discretionary {-}{}{}extract}!delaunay.h@{delaunay.h}|hyperpage}{24}
+\indexentry{delaunay.h@{delaunay.h}!intersect@{intersect}|hyperpage}{24}
+\indexentry{intersect@{intersect}!delaunay.h@{delaunay.h}|hyperpage}{24}
+\indexentry{delaunay.h@{delaunay.h}!mean\_\discretionary {-}{}{}edge@{mean\_\discretionary {-}{}{}edge}|hyperpage}{25}
+\indexentry{mean\_\discretionary {-}{}{}edge@{mean\_\discretionary {-}{}{}edge}!delaunay.h@{delaunay.h}|hyperpage}{25}
+\indexentry{delaunay.h@{delaunay.h}!mygetopt@{mygetopt}|hyperpage}{25}
+\indexentry{mygetopt@{mygetopt}!delaunay.h@{delaunay.h}|hyperpage}{25}
+\indexentry{delaunay.h@{delaunay.h}!read\_\discretionary {-}{}{}ply@{read\_\discretionary {-}{}{}ply}|hyperpage}{25}
+\indexentry{read\_\discretionary {-}{}{}ply@{read\_\discretionary {-}{}{}ply}!delaunay.h@{delaunay.h}|hyperpage}{25}
+\indexentry{delaunay.h@{delaunay.h}!read\_\discretionary {-}{}{}ply@{read\_\discretionary {-}{}{}ply}|hyperpage}{25}
+\indexentry{read\_\discretionary {-}{}{}ply@{read\_\discretionary {-}{}{}ply}!delaunay.h@{delaunay.h}|hyperpage}{25}
+\indexentry{delaunay.h@{delaunay.h}!smooth@{smooth}|hyperpage}{26}
+\indexentry{smooth@{smooth}!delaunay.h@{delaunay.h}|hyperpage}{26}
+\indexentry{delaunay.h@{delaunay.h}!debug\_\discretionary {-}{}{}stop@{debug\_\discretionary {-}{}{}stop}|hyperpage}{26}
+\indexentry{debug\_\discretionary {-}{}{}stop@{debug\_\discretionary {-}{}{}stop}!delaunay.h@{delaunay.h}|hyperpage}{26}
+\indexentry{delaunay\_\discretionary {-}{}{}io.cpp@{delaunay\_\discretionary {-}{}{}io.cpp}|hyperpage}{27}
+\indexentry{delaunay\_\discretionary {-}{}{}io.cpp@{delaunay\_\discretionary {-}{}{}io.cpp}!ply\_\discretionary {-}{}{}binary\_\discretionary {-}{}{}data@{ply\_\discretionary {-}{}{}binary\_\discretionary {-}{}{}data}|hyperpage}{27}
+\indexentry{ply\_\discretionary {-}{}{}binary\_\discretionary {-}{}{}data@{ply\_\discretionary {-}{}{}binary\_\discretionary {-}{}{}data}!delaunay_io.cpp@{delaunay\_\discretionary {-}{}{}io.cpp}|hyperpage}{27}
+\indexentry{delaunay\_\discretionary {-}{}{}io.cpp@{delaunay\_\discretionary {-}{}{}io.cpp}!read\_\discretionary {-}{}{}ply@{read\_\discretionary {-}{}{}ply}|hyperpage}{28}
+\indexentry{read\_\discretionary {-}{}{}ply@{read\_\discretionary {-}{}{}ply}!delaunay_io.cpp@{delaunay\_\discretionary {-}{}{}io.cpp}|hyperpage}{28}
+\indexentry{delaunay\_\discretionary {-}{}{}io.cpp@{delaunay\_\discretionary {-}{}{}io.cpp}!read\_\discretionary {-}{}{}ply@{read\_\discretionary {-}{}{}ply}|hyperpage}{28}
+\indexentry{read\_\discretionary {-}{}{}ply@{read\_\discretionary {-}{}{}ply}!delaunay_io.cpp@{delaunay\_\discretionary {-}{}{}io.cpp}|hyperpage}{28}
+\indexentry{extract.cpp@{extract.cpp}|hyperpage}{29}
+\indexentry{extract.cpp@{extract.cpp}!clean1@{clean1}|hyperpage}{30}
+\indexentry{clean1@{clean1}!extract.cpp@{extract.cpp}|hyperpage}{30}
+\indexentry{extract.cpp@{extract.cpp}!clean2@{clean2}|hyperpage}{30}
+\indexentry{clean2@{clean2}!extract.cpp@{extract.cpp}|hyperpage}{30}
+\indexentry{extract.cpp@{extract.cpp}!delaunay\_\discretionary {-}{}{}extract@{delaunay\_\discretionary {-}{}{}extract}|hyperpage}{30}
+\indexentry{delaunay\_\discretionary {-}{}{}extract@{delaunay\_\discretionary {-}{}{}extract}!extract.cpp@{extract.cpp}|hyperpage}{30}
+\indexentry{extract.cpp@{extract.cpp}!prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}mxf@{prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}mxf}|hyperpage}{31}
+\indexentry{prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}mxf@{prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}mxf}!extract.cpp@{extract.cpp}|hyperpage}{31}
+\indexentry{extract.cpp@{extract.cpp}!prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}std@{prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}std}|hyperpage}{31}
+\indexentry{prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}std@{prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}std}!extract.cpp@{extract.cpp}|hyperpage}{31}
+\indexentry{extract.cpp@{extract.cpp}!prepare\_\discretionary {-}{}{}facets@{prepare\_\discretionary {-}{}{}facets}|hyperpage}{31}
+\indexentry{prepare\_\discretionary {-}{}{}facets@{prepare\_\discretionary {-}{}{}facets}!extract.cpp@{extract.cpp}|hyperpage}{31}
+\indexentry{extract.cpp@{extract.cpp}!save\_\discretionary {-}{}{}ply@{save\_\discretionary {-}{}{}ply}|hyperpage}{31}
+\indexentry{save\_\discretionary {-}{}{}ply@{save\_\discretionary {-}{}{}ply}!extract.cpp@{extract.cpp}|hyperpage}{31}
+\indexentry{extract.cpp@{extract.cpp}!save\_\discretionary {-}{}{}ply\_\discretionary {-}{}{}binary@{save\_\discretionary {-}{}{}ply\_\discretionary {-}{}{}binary}|hyperpage}{32}
+\indexentry{save\_\discretionary {-}{}{}ply\_\discretionary {-}{}{}binary@{save\_\discretionary {-}{}{}ply\_\discretionary {-}{}{}binary}!extract.cpp@{extract.cpp}|hyperpage}{32}
+\indexentry{intersect.cpp@{intersect.cpp}|hyperpage}{33}
+\indexentry{intersect.cpp@{intersect.cpp}!check\_\discretionary {-}{}{}edges@{check\_\discretionary {-}{}{}edges}|hyperpage}{33}
+\indexentry{check\_\discretionary {-}{}{}edges@{check\_\discretionary {-}{}{}edges}!intersect.cpp@{intersect.cpp}|hyperpage}{33}
+\indexentry{intersect.cpp@{intersect.cpp}!intersect@{intersect}|hyperpage}{33}
+\indexentry{intersect@{intersect}!intersect.cpp@{intersect.cpp}|hyperpage}{33}
+\indexentry{intersect.cpp@{intersect.cpp}!is\_\discretionary {-}{}{}cell\_\discretionary {-}{}{}vertex@{is\_\discretionary {-}{}{}cell\_\discretionary {-}{}{}vertex}|hyperpage}{34}
+\indexentry{is\_\discretionary {-}{}{}cell\_\discretionary {-}{}{}vertex@{is\_\discretionary {-}{}{}cell\_\discretionary {-}{}{}vertex}!intersect.cpp@{intersect.cpp}|hyperpage}{34}
+\indexentry{intersect.cpp@{intersect.cpp}!my\_\discretionary {-}{}{}intersect@{my\_\discretionary {-}{}{}intersect}|hyperpage}{34}
+\indexentry{my\_\discretionary {-}{}{}intersect@{my\_\discretionary {-}{}{}intersect}!intersect.cpp@{intersect.cpp}|hyperpage}{34}
+\indexentry{smooth.cpp@{smooth.cpp}|hyperpage}{35}
+\indexentry{smooth.cpp@{smooth.cpp}!smooth@{smooth}|hyperpage}{35}
+\indexentry{smooth@{smooth}!smooth.cpp@{smooth.cpp}|hyperpage}{35}
+\indexentry{smooth.cpp@{smooth.cpp}!smooth1@{smooth1}|hyperpage}{35}
+\indexentry{smooth1@{smooth1}!smooth.cpp@{smooth.cpp}|hyperpage}{35}
+\indexentry{triangdefs.h@{triangdefs.h}|hyperpage}{37}

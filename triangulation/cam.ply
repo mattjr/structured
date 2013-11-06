@@ -1,0 +1,14 @@
+ply
+format ascii 1.0
+element face 0
+property list uchar int vertex_indices
+element vertex 2
+property float x
+property float y
+property float z
+property uchar diffuse_red
+property uchar diffuse_green
+property uchar diffuse_blue
+end_header
+-0.5 0.5 0.5 0 255 255
+1.5 .5 0.5 0 255 255

@@ -360,7 +360,7 @@ FILE* OpenHeadedCopy (char* pszInputPlyFile, char* pszOutputFile)
       if (strncmp (szLine, "element face", 12)
 	  && strncmp (szLine, "element tristrips", 17)) {
 	// copy verbatim
-	fprintf (outfile, szLine);
+    fprintf (outfile, "%s",szLine);
       } else {
 	// we'll print the rest ourselves
 	break;

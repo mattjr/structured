@@ -1,0 +1,13 @@
+\form#0:$p = \lambda p + \sum_{q \ in neihbours(p)} (1 - \lambda)q$
+\form#1:$p = \lambda p + \sum_{q \in neihbours(p)} (1 - \lambda)q$
+\form#2:$p = \lambda p + (1 - \lambda) \sum_{q \in N_p} w_q q$
+\form#3:$N_p$
+\form#4:$\lambda$
+\form#5:$< 1$
+\form#6:$w_q$
+\form#7:$n_p n_q$
+\form#8:$w_q = \mu[n_p.n_q]_+^k$
+\form#9:$x_+ = x$
+\form#10:$x \geq 0$
+\form#11:$\sum_a\in N_pw_q = 1$
+\form#12:$\mu$

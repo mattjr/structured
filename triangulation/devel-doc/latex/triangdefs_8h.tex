@@ -1,0 +1,181 @@
+\hypertarget{triangdefs_8h}{
+\section{triangdefs.h File Reference}
+\label{triangdefs_8h}\index{triangdefs.h@{triangdefs.h}}
+}
+
+
+Definitions of types.  
+
+
+{\ttfamily \#include $<$CGAL/basic.h$>$}\par
+{\ttfamily \#include $<$CGAL/Object.h$>$}\par
+{\ttfamily \#include $<$CGAL/Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel.h$>$}\par
+{\ttfamily \#include $<$CGAL/Triangulation\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/Delaunay\_\-triangulation\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/Triangulation\_\-cell\_\-base\_\-with\_\-info\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/intersections.h$>$}\par
+{\ttfamily \#include $<$CGAL/circulator.h$>$}\par
+{\ttfamily \#include $<$CGAL/IO/Triangulation\_\-geomview\_\-ostream\_\-3.h$>$}\par
+{\ttfamily \#include $<$iostream$>$}\par
+{\ttfamily \#include $<$fstream$>$}\par
+{\ttfamily \#include $<$iterator$>$}\par
+{\ttfamily \#include $<$unistd.h$>$}\par
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structIntersect}{Intersect}
+\begin{DoxyCompactList}\small\item\em information about an intersectection between a ray and a facet \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Defines}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{triangdefs_8h_aaa13d8234db6f761ff1e01bb4f1605e9}{
+\#define {\bfseries DEF\_\-LGR\_\-COEF}~0.14}
+\label{triangdefs_8h_aaa13d8234db6f761ff1e01bb4f1605e9}
+
+\item 
+\hypertarget{triangdefs_8h_af0612dddfcfe6d7e579e02df65f44302}{
+\#define {\bfseries DEF\_\-SURF\_\-COEF}~0.01}
+\label{triangdefs_8h_af0612dddfcfe6d7e579e02df65f44302}
+
+\item 
+\hypertarget{triangdefs_8h_ad02ddb4d9305a8951fff3446bdab6a0f}{
+\#define {\bfseries MAX\_\-INTERSECT}~2 $\ast$ 100000}
+\label{triangdefs_8h_ad02ddb4d9305a8951fff3446bdab6a0f}
+
+\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{triangdefs_8h_a891e241aa245ae63618f03737efba309}{
+typedef CGAL::Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel {\bfseries K}}
+\label{triangdefs_8h_a891e241aa245ae63618f03737efba309}
+
+\item 
+\hypertarget{triangdefs_8h_aad531c3cd65449b86e2861c560fe9d67}{
+typedef CGAL::Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3$<$ int, K $>$ {\bfseries Vb}}
+\label{triangdefs_8h_aad531c3cd65449b86e2861c560fe9d67}
+
+\item 
+\hypertarget{triangdefs_8h_a0cdda479297f17390305c07e5a5c909b}{
+typedef K::Vector\_\-3 {\bfseries Vector}}
+\label{triangdefs_8h_a0cdda479297f17390305c07e5a5c909b}
+
+\item 
+\hypertarget{triangdefs_8h_af339e1d632652500193ed5b5a88bab98}{
+typedef CGAL::Triangulation\_\-cell\_\-base\_\-with\_\-info\_\-3$<$ int, K $>$ {\bfseries Cb}}
+\label{triangdefs_8h_af339e1d632652500193ed5b5a88bab98}
+
+\item 
+\hypertarget{triangdefs_8h_a8c38d8c537d6ede7b2a774801623ca51}{
+typedef CGAL::Triangulation\_\-data\_\-structure\_\-3$<$ Vb, Cb $>$ {\bfseries Tds}}
+\label{triangdefs_8h_a8c38d8c537d6ede7b2a774801623ca51}
+
+\item 
+\hypertarget{triangdefs_8h_aaca765768a8bc0aed856b44d4f9e10e2}{
+typedef CGAL::Delaunay\_\-triangulation\_\-3$<$ K, Tds $>$ {\bfseries Delaunay}}
+\label{triangdefs_8h_aaca765768a8bc0aed856b44d4f9e10e2}
+
+\item 
+\hypertarget{triangdefs_8h_aa5acf70a1c48c8f9446423f5522abeb8}{
+typedef Delaunay::Point {\bfseries Point}}
+\label{triangdefs_8h_aa5acf70a1c48c8f9446423f5522abeb8}
+
+\item 
+\hypertarget{triangdefs_8h_a2e5c26781232fc41a81d1abf3d393bf1}{
+typedef Delaunay::Edge {\bfseries Edge}}
+\label{triangdefs_8h_a2e5c26781232fc41a81d1abf3d393bf1}
+
+\item 
+\hypertarget{triangdefs_8h_a1bee2a3764c2dcc73a8f73a627b520a9}{
+typedef Delaunay::Cell\_\-handle {\bfseries Cell\_\-handle}}
+\label{triangdefs_8h_a1bee2a3764c2dcc73a8f73a627b520a9}
+
+\item 
+\hypertarget{triangdefs_8h_aabf026568cf598fad37681ab57237bbb}{
+typedef Delaunay::Vertex\_\-handle {\bfseries Vertex\_\-handle}}
+\label{triangdefs_8h_aabf026568cf598fad37681ab57237bbb}
+
+\item 
+\hypertarget{triangdefs_8h_ad9241d0445ed975a0a8529825866e634}{
+typedef Delaunay::Locate\_\-type {\bfseries Locate\_\-type}}
+\label{triangdefs_8h_ad9241d0445ed975a0a8529825866e634}
+
+\item 
+\hypertarget{triangdefs_8h_a52b2b2ea1dd9f28588050d4e472c4685}{
+typedef Delaunay::Segment {\bfseries Segment}}
+\label{triangdefs_8h_a52b2b2ea1dd9f28588050d4e472c4685}
+
+\item 
+\hypertarget{triangdefs_8h_a83e2f64e61382305da72734d57e1d1b8}{
+typedef Delaunay::Triangle {\bfseries Triangle}}
+\label{triangdefs_8h_a83e2f64e61382305da72734d57e1d1b8}
+
+\item 
+\hypertarget{triangdefs_8h_a7a2b0f02b3586f8729ff7b68472d5b07}{
+typedef Delaunay::Tetrahedron {\bfseries Tetrahedron}}
+\label{triangdefs_8h_a7a2b0f02b3586f8729ff7b68472d5b07}
+
+\item 
+\hypertarget{triangdefs_8h_accd0e58d9bc45829d75016fc2420a085}{
+typedef std::pair$<$ Cell\_\-handle, int $>$ {\bfseries Facet}}
+\label{triangdefs_8h_accd0e58d9bc45829d75016fc2420a085}
+
+\item 
+\hypertarget{triangdefs_8h_a16732ca2c2584901d4d33cd5de38eab4}{
+typedef CGAL::Triple$<$ int, int, int $>$ {\bfseries Face}}
+\label{triangdefs_8h_a16732ca2c2584901d4d33cd5de38eab4}
+
+\item 
+\hypertarget{triangdefs_8h_a2d66bbb80939803eefea724b1ec6a4a5}{
+typedef std::vector$<$ Facet $>$::iterator {\bfseries I}}
+\label{triangdefs_8h_a2d66bbb80939803eefea724b1ec6a4a5}
+
+\item 
+\hypertarget{triangdefs_8h_a8277b6fab5ca7bf7f877c87d6b588b4b}{
+typedef CGAL::Circulator\_\-from\_\-iterator$<$ I $>$ {\bfseries Circulator}}
+\label{triangdefs_8h_a8277b6fab5ca7bf7f877c87d6b588b4b}
+
+\item 
+\hypertarget{triangdefs_8h_acc5beadfbc1aae94927ea5a2809d8339}{
+typedef std::vector$<$ int $>$ {\bfseries VisiblePatches}}
+\label{triangdefs_8h_acc5beadfbc1aae94927ea5a2809d8339}
+
+\item 
+\hypertarget{triangdefs_8h_a23dce00beb7bfe96995af9bbc801f2fc}{
+typedef std::vector$<$ CGAL::Color $>$ {\bfseries PointColor}}
+\label{triangdefs_8h_a23dce00beb7bfe96995af9bbc801f2fc}
+
+\item 
+\hypertarget{triangdefs_8h_a3ff83c7e963981c7c5a461df0b7c0b6f}{
+typedef std::vector$<$ std::pair$<$ Point, int $>$ $>$ {\bfseries TPoint}}
+\label{triangdefs_8h_a3ff83c7e963981c7c5a461df0b7c0b6f}
+
+\end{DoxyCompactItemize}
+\subsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum {\bfseries OP\_\-TYPE} \{ {\bfseries OPT\_\-INT}, 
+{\bfseries OPT\_\-FLOAT}, 
+{\bfseries OPT\_\-STRING}, 
+{\bfseries OPT\_\-NOARGS}
+ \}
+\item 
+enum {\bfseries ExtractType} \{ {\bfseries XTR\_\-DEFAULT}, 
+{\bfseries XTR\_\-STD}, 
+{\bfseries XTR\_\-STD\_\-VOL}, 
+{\bfseries XTR\_\-MAXFLOW}
+ \}
+\item 
+enum {\bfseries InterType} \{ {\bfseries INT\_\-FACET}, 
+{\bfseries INT\_\-EDGE}, 
+{\bfseries INT\_\-VERTEX}
+ \}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Definitions of types. 
+
+Definition in file \hyperlink{triangdefs_8h_source}{triangdefs.h}.
+

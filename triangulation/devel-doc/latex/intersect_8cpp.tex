@@ -1,0 +1,105 @@
+\hypertarget{intersect_8cpp}{
+\section{intersect.cpp File Reference}
+\label{intersect_8cpp}\index{intersect.cpp@{intersect.cpp}}
+}
+
+
+Compute imtersection of tetrahedrons with rays issued from cameras.  
+
+
+{\ttfamily \#include \char`\"{}delaunay.h\char`\"{}}\par
+{\ttfamily \#include $<$map$>$}\par
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{intersect_8cpp_ace098b1578233a9d7724aaa1fb806f7f}{is\_\-cell\_\-vertex} (Cell\_\-handle c, Point \&pt)
+\begin{DoxyCompactList}\small\item\em Return the vertex index of a cell {\bfseries c} corresponding to point {\bfseries pt}. \item\end{DoxyCompactList}\item 
+int \hyperlink{intersect_8cpp_ac75e9db11d83f2034b51ce109324e68b}{check\_\-edges} (Point \&a, Point \&b, Point \&c, Point \&p, Point \&q, int $\ast$coplanar)  throw (const char $\ast$)
+\begin{DoxyCompactList}\small\item\em Check if a segement is coplanar with edges of a triangle. \item\end{DoxyCompactList}\item 
+int \hyperlink{intersect_8cpp_af0417a96b409b20c53f906f60a772004}{my\_\-intersect} (Triangle \&t, Segment \&s, int $\ast$coplanar)
+\begin{DoxyCompactList}\small\item\em Check intersection between a facet {\bfseries f} and a segment {\bfseries seg}. Derived from {\bfseries CGAL::do\_\-intersect} in include/CGAL/Triangle\_\-3\_\-Segment\_\-3\_\-do\_\-intersect.h. \item\end{DoxyCompactList}\item 
+std::vector$<$ Facet $>$ $\ast$ \hyperlink{intersect_8cpp_a9fd03c5962e838e378c1c39be342f6df}{intersect} (int $\ast$err, int $\ast$nb\_\-tested, Segment \&seg, \hyperlink{structIntersect}{Intersect} \&in\_\-inter, \hyperlink{structIntersect}{Intersect} \&out\_\-inter, std::vector$<$ Facet $>$ $\ast$facets, Delaunay \&Tr, std::vector$<$ Cell\_\-handle $>$ \&marked\_\-cells, \hyperlink{classTrStats}{TrStats} $\ast$stats, CGAL::Geomview\_\-stream \&gv)  throw (const char $\ast$)
+\begin{DoxyCompactList}\small\item\em Find which facet is intersected and return next facets to check. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Compute imtersection of tetrahedrons with rays issued from cameras. 
+
+Definition in file \hyperlink{intersect_8cpp_source}{intersect.cpp}.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{intersect_8cpp_ac75e9db11d83f2034b51ce109324e68b}{
+\index{intersect.cpp@{intersect.cpp}!check\_\-edges@{check\_\-edges}}
+\index{check\_\-edges@{check\_\-edges}!intersect.cpp@{intersect.cpp}}
+\subsubsection[{check\_\-edges}]{\setlength{\rightskip}{0pt plus 5cm}int check\_\-edges (Point \& {\em a}, \/  Point \& {\em b}, \/  Point \& {\em c}, \/  Point \& {\em p}, \/  Point \& {\em q}, \/  int $\ast$ {\em coplanar})  throw (const char $\ast$)}}
+\label{intersect_8cpp_ac75e9db11d83f2034b51ce109324e68b}
+
+
+Check if a segement is coplanar with edges of a triangle. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em a,b,c}]: coords of the triangle vertices \item[{\em p,q}]: segment with end points {\bfseries p} and {\bfseries q} \item[\mbox{$\leftrightarrow$} {\em coplanar}]: pointer to the 3 int array of indices of the edges coplanr with {\bfseries pq}. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Nb of entries in {\bfseries coplanar}. 
+\end{DoxyReturn}
+
+
+Definition at line 39 of file intersect.cpp.
+
+\hypertarget{intersect_8cpp_a9fd03c5962e838e378c1c39be342f6df}{
+\index{intersect.cpp@{intersect.cpp}!intersect@{intersect}}
+\index{intersect@{intersect}!intersect.cpp@{intersect.cpp}}
+\subsubsection[{intersect}]{\setlength{\rightskip}{0pt plus 5cm}std::vector$<$Facet$>$$\ast$ intersect (int $\ast$ {\em err}, \/  int $\ast$ {\em nb\_\-tested}, \/  Segment \& {\em seg}, \/  {\bf Intersect} \& {\em in\_\-inter}, \/  {\bf Intersect} \& {\em out\_\-inter}, \/  std::vector$<$ Facet $>$ $\ast$ {\em facets}, \/  Delaunay \& {\em Tr}, \/  std::vector$<$ Cell\_\-handle $>$ \& {\em marked\_\-cells}, \/  {\bf TrStats} $\ast$ {\em stats}, \/  CGAL::Geomview\_\-stream \& {\em gv})  throw (const char $\ast$)}}
+\label{intersect_8cpp_a9fd03c5962e838e378c1c39be342f6df}
+
+
+Find which facet is intersected and return next facets to check. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[\mbox{$\rightarrow$} {\em err}]: -\/1 if no intersection and not at end of segment, 0 otherwise \item[\mbox{$\rightarrow$} {\em nb\_\-tested}]: number of facets effectively tested (for statistics). \item[{\em seg}]: segment from a camera to a visible poins. \item[{\em in\_\-inter}]: kind of previous intersection (entry in cell). \item[\mbox{$\rightarrow$} {\em out\_\-inter}]: kind of intersection. \item[{\em facets}]: vector of facets to check. \item[{\em T}]: delaunay data. \item[\mbox{$\leftrightarrow$} {\em marked\_\-cells}]: intersected cell will be added to this vector. \item[\mbox{$\leftrightarrow$} {\em stats}]: statistics counters. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+: pointer to vector of facets to check at next step. 
+\end{DoxyReturn}
+
+
+Definition at line 181 of file intersect.cpp.
+
+\hypertarget{intersect_8cpp_ace098b1578233a9d7724aaa1fb806f7f}{
+\index{intersect.cpp@{intersect.cpp}!is\_\-cell\_\-vertex@{is\_\-cell\_\-vertex}}
+\index{is\_\-cell\_\-vertex@{is\_\-cell\_\-vertex}!intersect.cpp@{intersect.cpp}}
+\subsubsection[{is\_\-cell\_\-vertex}]{\setlength{\rightskip}{0pt plus 5cm}int is\_\-cell\_\-vertex (Cell\_\-handle {\em c}, \/  Point \& {\em pt})}}
+\label{intersect_8cpp_ace098b1578233a9d7724aaa1fb806f7f}
+
+
+Return the vertex index of a cell {\bfseries c} corresponding to point {\bfseries pt}. 
+
+\begin{DoxyReturn}{Returns}
+the vertex index (0-\/3), -\/1 if the point is not a cell vertex. 
+\end{DoxyReturn}
+
+
+Definition at line 26 of file intersect.cpp.
+
+\hypertarget{intersect_8cpp_af0417a96b409b20c53f906f60a772004}{
+\index{intersect.cpp@{intersect.cpp}!my\_\-intersect@{my\_\-intersect}}
+\index{my\_\-intersect@{my\_\-intersect}!intersect.cpp@{intersect.cpp}}
+\subsubsection[{my\_\-intersect}]{\setlength{\rightskip}{0pt plus 5cm}int my\_\-intersect (Triangle \& {\em t}, \/  Segment \& {\em s}, \/  int $\ast$ {\em coplanar})}}
+\label{intersect_8cpp_af0417a96b409b20c53f906f60a772004}
+
+
+Check intersection between a facet {\bfseries f} and a segment {\bfseries seg}. Derived from {\bfseries CGAL::do\_\-intersect} in include/CGAL/Triangle\_\-3\_\-Segment\_\-3\_\-do\_\-intersect.h. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[\mbox{$\leftrightarrow$} {\em coplanar}]: pointer to the 3 int array of indices of the edges coplanr with {\bfseries pq}. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+-\/1 if there is no intersection, the number of edges coplanar with the segment otherwise (0 = intersection inside the triangle). 
+\end{DoxyReturn}
+
+
+Definition at line 68 of file intersect.cpp.
+

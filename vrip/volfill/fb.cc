@@ -97,7 +97,7 @@ void FrameBuffer::Write(char *filename)
 	unsigned char   r, g, b;
 	FILE *fp;
 	
-	printf(filename);
+    printf("%s",filename);
 	fp = fopen(filename, "wb");
 	if (fp == NULL)
 		return;

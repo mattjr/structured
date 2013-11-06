@@ -1,0 +1,90 @@
+\hypertarget{tst__info_8cpp}{
+\section{tst\_\-info.cpp File Reference}
+\label{tst__info_8cpp}\index{tst\_\-info.cpp@{tst\_\-info.cpp}}
+}
+{\ttfamily \#include $<$CGAL/Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel.h$>$}\par
+{\ttfamily \#include $<$CGAL/Delaunay\_\-triangulation\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/IO/Triangulation\_\-geomview\_\-ostream\_\-3.h$>$}\par
+{\ttfamily \#include $<$iostream$>$}\par
+{\ttfamily \#include $<$fstream$>$}\par
+{\ttfamily \#include $<$iterator$>$}\par
+{\ttfamily \#include $<$unistd.h$>$}\par
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef CGAL::Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel \hyperlink{tst__info_8cpp_a891e241aa245ae63618f03737efba309}{K}
+\item 
+typedef CGAL::Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3$<$ unsigned, \hyperlink{tst__info_8cpp_a891e241aa245ae63618f03737efba309}{K} $>$ \hyperlink{tst__info_8cpp_a3bf8a2b64134355d805171df5dc05101}{Vb}
+\item 
+typedef CGAL::Triangulation\_\-data\_\-structure\_\-3$<$ \hyperlink{tst__info_8cpp_a3bf8a2b64134355d805171df5dc05101}{Vb} $>$ \hyperlink{tst__info_8cpp_a2c94e68b962973b8c8da8aa0fa8f7a47}{Tds}
+\item 
+typedef CGAL::Delaunay\_\-triangulation\_\-3$<$ \hyperlink{tst__info_8cpp_a891e241aa245ae63618f03737efba309}{K}, \hyperlink{tst__info_8cpp_a2c94e68b962973b8c8da8aa0fa8f7a47}{Tds} $>$ \hyperlink{tst__info_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{Delaunay}
+\item 
+typedef \hyperlink{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Delaunay::Point} \hyperlink{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Point}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{tst__info_8cpp_ae66f6b31b5ad750f1fe042a706a4e3d4}{main} ()
+\end{DoxyCompactItemize}
+
+
+\subsection{Typedef Documentation}
+\hypertarget{tst__info_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{
+\index{tst\_\-info.cpp@{tst\_\-info.cpp}!Delaunay@{Delaunay}}
+\index{Delaunay@{Delaunay}!tst_info.cpp@{tst\_\-info.cpp}}
+\subsubsection[{Delaunay}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Delaunay\_\-triangulation\_\-3$<${\bf K}, {\bf Tds}$>$ {\bf Delaunay}}}
+\label{tst__info_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}
+
+
+Definition at line 15 of file tst\_\-info.cpp.
+
+\hypertarget{tst__info_8cpp_a891e241aa245ae63618f03737efba309}{
+\index{tst\_\-info.cpp@{tst\_\-info.cpp}!K@{K}}
+\index{K@{K}!tst_info.cpp@{tst\_\-info.cpp}}
+\subsubsection[{K}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel {\bf K}}}
+\label{tst__info_8cpp_a891e241aa245ae63618f03737efba309}
+
+
+Definition at line 12 of file tst\_\-info.cpp.
+
+\hypertarget{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{
+\index{tst\_\-info.cpp@{tst\_\-info.cpp}!Point@{Point}}
+\index{Point@{Point}!tst_info.cpp@{tst\_\-info.cpp}}
+\subsubsection[{Point}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf Delaunay::Point} {\bf Point}}}
+\label{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}
+
+
+Definition at line 16 of file tst\_\-info.cpp.
+
+\hypertarget{tst__info_8cpp_a2c94e68b962973b8c8da8aa0fa8f7a47}{
+\index{tst\_\-info.cpp@{tst\_\-info.cpp}!Tds@{Tds}}
+\index{Tds@{Tds}!tst_info.cpp@{tst\_\-info.cpp}}
+\subsubsection[{Tds}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Triangulation\_\-data\_\-structure\_\-3$<${\bf Vb}$>$ {\bf Tds}}}
+\label{tst__info_8cpp_a2c94e68b962973b8c8da8aa0fa8f7a47}
+
+
+Definition at line 14 of file tst\_\-info.cpp.
+
+\hypertarget{tst__info_8cpp_a3bf8a2b64134355d805171df5dc05101}{
+\index{tst\_\-info.cpp@{tst\_\-info.cpp}!Vb@{Vb}}
+\index{Vb@{Vb}!tst_info.cpp@{tst\_\-info.cpp}}
+\subsubsection[{Vb}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3$<$unsigned, {\bf K}$>$ {\bf Vb}}}
+\label{tst__info_8cpp_a3bf8a2b64134355d805171df5dc05101}
+
+
+Definition at line 13 of file tst\_\-info.cpp.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{tst__info_8cpp_ae66f6b31b5ad750f1fe042a706a4e3d4}{
+\index{tst\_\-info.cpp@{tst\_\-info.cpp}!main@{main}}
+\index{main@{main}!tst_info.cpp@{tst\_\-info.cpp}}
+\subsubsection[{main}]{\setlength{\rightskip}{0pt plus 5cm}int main ()}}
+\label{tst__info_8cpp_ae66f6b31b5ad750f1fe042a706a4e3d4}
+
+
+Definition at line 19 of file tst\_\-info.cpp.
+

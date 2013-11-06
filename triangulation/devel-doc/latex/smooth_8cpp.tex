@@ -1,0 +1,64 @@
+\hypertarget{smooth_8cpp}{
+\section{smooth.cpp File Reference}
+\label{smooth_8cpp}\index{smooth.cpp@{smooth.cpp}}
+}
+
+
+\char`\"{}Smoothing\char`\"{} of verices coordinates.  
+
+
+{\ttfamily \#include \char`\"{}delaunay.h\char`\"{}}\par
+{\ttfamily \#include $<$map$>$}\par
+{\ttfamily \#include $<$time.h$>$}\par
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{smooth_8cpp_a498064d704abd55876330d8e367c344a}{smooth1} (Delaunay \&T, std::vector$<$ Point $>$ \&normals, std::map$<$ Facet, bool $>$ keep\_\-facets, Vector $\ast$in\_\-pts, Vector $\ast$out\_\-pts, float lambda, std::map$<$ int, bool $>$ \&cams\_\-map, bool same\_\-weight)
+\begin{DoxyCompactList}\small\item\em Does one iteration of smoothing. \item\end{DoxyCompactList}\item 
+Vector $\ast$ \hyperlink{smooth_8cpp_adc65f37237479438ceea7cf7402c56ba}{smooth} (Delaunay \&T, std::vector$<$ Point $>$ \&normals, std::vector$<$ Facet $>$ \&facets, float lambda, int nbiter, int nbcams, int $\ast$cams\_\-index)
+\begin{DoxyCompactList}\small\item\em Replace vertices coordinates by a function of their neighbours. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\char`\"{}Smoothing\char`\"{} of verices coordinates. 
+
+Definition in file \hyperlink{smooth_8cpp_source}{smooth.cpp}.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{smooth_8cpp_adc65f37237479438ceea7cf7402c56ba}{
+\index{smooth.cpp@{smooth.cpp}!smooth@{smooth}}
+\index{smooth@{smooth}!smooth.cpp@{smooth.cpp}}
+\subsubsection[{smooth}]{\setlength{\rightskip}{0pt plus 5cm}Vector$\ast$ smooth (Delaunay \& {\em T}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  std::vector$<$ Facet $>$ \& {\em facets}, \/  float {\em lambda}, \/  int {\em nbiter}, \/  int {\em nbcams}, \/  int $\ast$ {\em cams\_\-index})}}
+\label{smooth_8cpp_adc65f37237479438ceea7cf7402c56ba}
+
+
+Replace vertices coordinates by a function of their neighbours. 
+
+$p = \lambda p + (1 - \lambda) \sum_{q \in N_p} w_q q$
+
+$N_p$ is the set of neighbours of p, $\lambda$ is a positive scalar $< 1$, weights $w_q$ sums to 1 and are a function of the unit normals $n_p n_q$.
+
+For example $w_q = \mu[n_p.n_q]_+^k$, where $x_+ = x$ if $x \geq 0$ and 0 otherwise, and $\mu$ is choosen so that $\sum_a\in N_pw_q = 1$.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em T}]: delaunay data \item[{\em normals}]: vector of vertices PMVS normals. \item[{\em facets}]: vector of facets on the surface. The neighbourhood is restricted to cells containing te facets. \item[{\em lambda}]: the $\lambda$ coefficient. \item[{\em nbiter}]: number of iterations. If negative, \item[{\em nbcams}]: number of cameras \item[{\em cams\_\-index}]: indexes of cameras coords in PMVS points table. \end{DoxyParams}
+
+
+Definition at line 131 of file smooth.cpp.
+
+\hypertarget{smooth_8cpp_a498064d704abd55876330d8e367c344a}{
+\index{smooth.cpp@{smooth.cpp}!smooth1@{smooth1}}
+\index{smooth1@{smooth1}!smooth.cpp@{smooth.cpp}}
+\subsubsection[{smooth1}]{\setlength{\rightskip}{0pt plus 5cm}void smooth1 (Delaunay \& {\em T}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  std::map$<$ Facet, bool $>$ {\em keep\_\-facets}, \/  Vector $\ast$ {\em in\_\-pts}, \/  Vector $\ast$ {\em out\_\-pts}, \/  float {\em lambda}, \/  std::map$<$ int, bool $>$ \& {\em cams\_\-map}, \/  bool {\em same\_\-weight})}}
+\label{smooth_8cpp_a498064d704abd55876330d8e367c344a}
+
+
+Does one iteration of smoothing. 
+
+
+
+Definition at line 25 of file smooth.cpp.
+

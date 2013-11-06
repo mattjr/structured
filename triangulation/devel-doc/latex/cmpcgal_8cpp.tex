@@ -1,0 +1,80 @@
+\hypertarget{cmpcgal_8cpp}{
+\section{cmpcgal.cpp File Reference}
+\label{cmpcgal_8cpp}\index{cmpcgal.cpp@{cmpcgal.cpp}}
+}
+{\ttfamily \#include \char`\"{}cmpcgal.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}delaunay.h\char`\"{}}\par
+{\ttfamily \#include $<$qapplication.h$>$}\par
+{\ttfamily \#include $<$QGLViewer/qglviewer.h$>$}\par
+{\ttfamily \#include $<$QtOpenGL/qgl.h$>$}\par
+{\ttfamily \#include $<$QKeyEvent$>$}\par
+{\ttfamily \#include $<$iostream$>$}\par
+{\ttfamily \#include $<$cmath$>$}\par
+{\ttfamily \#include $<$vector$>$}\par
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef \hyperlink{qviewer_8cpp_ad5926e73384bff1d382df42f43d72e11}{qglviewer::Vec} \hyperlink{cmpcgal_8cpp_ad5926e73384bff1d382df42f43d72e11}{Vec}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{cmpcgal_8cpp_aa4817482b1728bf62acf8030cab9842c}{usage} (char $\ast$prog)
+\item 
+void \hyperlink{cmpcgal_8cpp_a87bf39345cefd3d6fc2acbe5b9c4ee11}{read\_\-data} (char $\ast$file, CGAL::Bbox\_\-3 \&bb, \hyperlink{triangdefs_8h_a523591bc6acbe92da4b23634870d4636}{TPoint} \&points, std::vector$<$ \hyperlink{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Point} $>$ \&normals, \hyperlink{triangdefs_8h_a23dce00beb7bfe96995af9bbc801f2fc}{PointColor} \&colors, std::vector$<$ \hyperlink{triangdefs_8h_a16732ca2c2584901d4d33cd5de38eab4}{Face} $>$ \&faces)  throw (const char $\ast$)
+\item 
+void \hyperlink{cmpcgal_8cpp_af33e9054272347a86548d59385a643a0}{read\_\-data\_\-in\_\-box} (char $\ast$file, CGAL::Bbox\_\-3 \&cbbox, CGAL::Bbox\_\-3 \&bb, \hyperlink{triangdefs_8h_a523591bc6acbe92da4b23634870d4636}{TPoint} \&points, std::vector$<$ \hyperlink{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Point} $>$ \&normals, \hyperlink{triangdefs_8h_a23dce00beb7bfe96995af9bbc801f2fc}{PointColor} \&colors, std::vector$<$ \hyperlink{triangdefs_8h_a16732ca2c2584901d4d33cd5de38eab4}{Face} $>$ \&faces)  throw (const char $\ast$)
+\item 
+int \hyperlink{cmpcgal_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}{main} (int argc, char $\ast$$\ast$argv)
+\end{DoxyCompactItemize}
+
+
+\subsection{Typedef Documentation}
+\hypertarget{cmpcgal_8cpp_ad5926e73384bff1d382df42f43d72e11}{
+\index{cmpcgal.cpp@{cmpcgal.cpp}!Vec@{Vec}}
+\index{Vec@{Vec}!cmpcgal.cpp@{cmpcgal.cpp}}
+\subsubsection[{Vec}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf qglviewer::Vec} {\bf Vec}}}
+\label{cmpcgal_8cpp_ad5926e73384bff1d382df42f43d72e11}
+
+
+Definition at line 10 of file cmpcgal.cpp.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{cmpcgal_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}{
+\index{cmpcgal.cpp@{cmpcgal.cpp}!main@{main}}
+\index{main@{main}!cmpcgal.cpp@{cmpcgal.cpp}}
+\subsubsection[{main}]{\setlength{\rightskip}{0pt plus 5cm}int main (int {\em argc}, \/  char $\ast$$\ast$ {\em argv})}}
+\label{cmpcgal_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}
+
+
+Definition at line 185 of file cmpcgal.cpp.
+
+\hypertarget{cmpcgal_8cpp_a87bf39345cefd3d6fc2acbe5b9c4ee11}{
+\index{cmpcgal.cpp@{cmpcgal.cpp}!read\_\-data@{read\_\-data}}
+\index{read\_\-data@{read\_\-data}!cmpcgal.cpp@{cmpcgal.cpp}}
+\subsubsection[{read\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}void read\_\-data (char $\ast$ {\em file}, \/  CGAL::Bbox\_\-3 \& {\em bb}, \/  {\bf TPoint} \& {\em points}, \/  std::vector$<$ {\bf Point} $>$ \& {\em normals}, \/  {\bf PointColor} \& {\em colors}, \/  std::vector$<$ {\bf Face} $>$ \& {\em faces})  throw (const char $\ast$)}}
+\label{cmpcgal_8cpp_a87bf39345cefd3d6fc2acbe5b9c4ee11}
+
+
+Definition at line 134 of file cmpcgal.cpp.
+
+\hypertarget{cmpcgal_8cpp_af33e9054272347a86548d59385a643a0}{
+\index{cmpcgal.cpp@{cmpcgal.cpp}!read\_\-data\_\-in\_\-box@{read\_\-data\_\-in\_\-box}}
+\index{read\_\-data\_\-in\_\-box@{read\_\-data\_\-in\_\-box}!cmpcgal.cpp@{cmpcgal.cpp}}
+\subsubsection[{read\_\-data\_\-in\_\-box}]{\setlength{\rightskip}{0pt plus 5cm}void read\_\-data\_\-in\_\-box (char $\ast$ {\em file}, \/  CGAL::Bbox\_\-3 \& {\em cbbox}, \/  CGAL::Bbox\_\-3 \& {\em bb}, \/  {\bf TPoint} \& {\em points}, \/  std::vector$<$ {\bf Point} $>$ \& {\em normals}, \/  {\bf PointColor} \& {\em colors}, \/  std::vector$<$ {\bf Face} $>$ \& {\em faces})  throw (const char $\ast$)}}
+\label{cmpcgal_8cpp_af33e9054272347a86548d59385a643a0}
+
+
+Definition at line 161 of file cmpcgal.cpp.
+
+\hypertarget{cmpcgal_8cpp_aa4817482b1728bf62acf8030cab9842c}{
+\index{cmpcgal.cpp@{cmpcgal.cpp}!usage@{usage}}
+\index{usage@{usage}!cmpcgal.cpp@{cmpcgal.cpp}}
+\subsubsection[{usage}]{\setlength{\rightskip}{0pt plus 5cm}void usage (char $\ast$ {\em prog})}}
+\label{cmpcgal_8cpp_aa4817482b1728bf62acf8030cab9842c}
+
+
+Definition at line 4 of file cmpcgal.cpp.
+

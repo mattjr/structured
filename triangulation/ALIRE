@@ -1,0 +1,28 @@
+https://who.rocq.inria.fr/Jean-Paul.Chieze/test/
+
+
+Les fichier .ply produits contiennent en commentaire (3e ligne) les options
+du programme.
+  -i nb_intersections : nb min d'intersections pour éliminer un tétra (1 par défaut)
+  -iw : nb d'intersections proportionnel au volume du tétraèdre 
+       (avec minimum défini par -i)
+  -a alpha : test sur l'angle des normales (éliminer les faces dont la normale
+       fait un angle >alpha avec l'une des normales de ses sommets)
+  -lg coef_lgr : éliminer les faces dont la plus grande arête est plus grande
+      que (coef_lgr * dim_max_boundig_box), la boundin box étant celle des
+      points pmvs2 (sans les caméras)
+       -1 => ignorer
+        0 => 0.14
+  -s coef_surf : éliminer les faces dont la surface est > (surf_coef * surf_bbox_max_face)
+      -1 => ignorer
+       0 => 0.01
+
+  -sm lambda nb_iter : effectuer un lissage des points avec lambda et nb itération donnés.
+
+Dans la visualisation en mode "points" de meshlab, les caméras apparaissent
+sous forme de points verts ou rouges (rouges = caméras qui ne voient
+aucun point PMVS).
+
+
+----------------------------------
+

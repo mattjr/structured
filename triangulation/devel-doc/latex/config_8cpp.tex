@@ -1,0 +1,95 @@
+\hypertarget{config_8cpp}{
+\section{config.cpp File Reference}
+\label{config_8cpp}\index{config.cpp@{config.cpp}}
+}
+
+
+Configuration parameters.  
+
+
+{\ttfamily \#include \char`\"{}delaunay.h\char`\"{}}\par
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{config_8cpp_a9e2656ff0a5080ce2d64f6e55b80238c}{
+float {\bfseries delta\_\-t} (time\_\-t $\ast$t1, time\_\-t $\ast$t2)}
+\label{config_8cpp_a9e2656ff0a5080ce2d64f6e55b80238c}
+
+\item 
+\hypertarget{config_8cpp_ac0cb758ac60f47a1641f99652ebbeb0d}{
+void {\bfseries prompt} (std::string s)}
+\label{config_8cpp_ac0cb758ac60f47a1641f99652ebbeb0d}
+
+\item 
+bool \hyperlink{config_8cpp_a8f7c71a4528e6593a110e6112f81b3ff}{mygetopt} (const char $\ast$opt, OP\_\-TYPE op\_\-type, int i, int argc, char $\ast$$\ast$argv, void $\ast$res, int nbargs)
+\begin{DoxyCompactList}\small\item\em Find presence and arguments of a program option. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{config_8cpp_aad32a5d5828c2c47acc0074e5626b5d7}{
+char {\bfseries file\_\-version} \mbox{[}$\,$\mbox{]} = \char`\"{}GG05\char`\"{}}
+\label{config_8cpp_aad32a5d5828c2c47acc0074e5626b5d7}
+
+\item 
+int \hyperlink{config_8cpp_a4b140b33c17f4fb021fbaa36318de80b}{debug\_\-stop} = 0
+\begin{DoxyCompactList}\small\item\em used to tag .cgal files \item\end{DoxyCompactList}\item 
+\hypertarget{config_8cpp_ae67a2192ba51220c74ed9883b05ce91d}{
+int {\bfseries debug\_\-vis} = 0}
+\label{config_8cpp_ae67a2192ba51220c74ed9883b05ce91d}
+
+\item 
+\hypertarget{config_8cpp_a36c34f1eacf43ebba70560b9f727efc3}{
+bool {\bfseries gv\_\-on} = false}
+\label{config_8cpp_a36c34f1eacf43ebba70560b9f727efc3}
+
+\item 
+\hypertarget{config_8cpp_af0fbf9e0bf8d8926311fcf329c8d6f65}{
+int {\bfseries facet\_\-vertex\_\-order} \mbox{[}$\,$\mbox{]} = \{2,1,3,2,2,3,0,2,0,3,1,0,0,1,2,0\}}
+\label{config_8cpp_af0fbf9e0bf8d8926311fcf329c8d6f65}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Configuration parameters. 
+
+Definition in file \hyperlink{config_8cpp_source}{config.cpp}.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{config_8cpp_a8f7c71a4528e6593a110e6112f81b3ff}{
+\index{config.cpp@{config.cpp}!mygetopt@{mygetopt}}
+\index{mygetopt@{mygetopt}!config.cpp@{config.cpp}}
+\subsubsection[{mygetopt}]{\setlength{\rightskip}{0pt plus 5cm}bool mygetopt (const char $\ast$ {\em opt}, \/  OP\_\-TYPE {\em op\_\-type}, \/  int {\em i}, \/  int {\em argc}, \/  char $\ast$$\ast$ {\em argv}, \/  void $\ast$ {\em res}, \/  int {\em nbargs})}}
+\label{config_8cpp_a8f7c71a4528e6593a110e6112f81b3ff}
+
+
+Find presence and arguments of a program option. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em opt}]The option string (for example -\/i) \item[{\em op\_\-type}]The argument(s) type : OPT\_\-INT,OPT\_\-FLOAT,OPT\_\-STRING,OPT\_\-NOARGS \item[{\em i}]Index of argv entry to compare with opt \item[{\em argc}]Nb of elements in argv \item[{\em argv}]string list of program arguments \item[{\em res}]Pointer to store the value or values associated to option \item[{\em nbargs}]Number of args of option (default 1, ignored for OPT\_\-NOARGS) \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+bool Whether option was found or not. 
+\end{DoxyReturn}
+
+
+Definition at line 57 of file config.cpp.
+
+
+
+\subsection{Variable Documentation}
+\hypertarget{config_8cpp_a4b140b33c17f4fb021fbaa36318de80b}{
+\index{config.cpp@{config.cpp}!debug\_\-stop@{debug\_\-stop}}
+\index{debug\_\-stop@{debug\_\-stop}!config.cpp@{config.cpp}}
+\subsubsection[{debug\_\-stop}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf debug\_\-stop} = 0}}
+\label{config_8cpp_a4b140b33c17f4fb021fbaa36318de80b}
+
+
+used to tag .cgal files 
+
+
+
+Definition at line 19 of file config.cpp.
+

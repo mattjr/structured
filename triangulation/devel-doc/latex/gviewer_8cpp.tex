@@ -1,0 +1,99 @@
+\hypertarget{gviewer_8cpp}{
+\section{gviewer.cpp File Reference}
+\label{gviewer_8cpp}\index{gviewer.cpp@{gviewer.cpp}}
+}
+{\ttfamily \#include \char`\"{}delaunay.h\char`\"{}}\par
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{gviewer_8cpp_a8b2d46051d3fba2a941a2dc4e31f38f1}{draw\_\-all} (CGAL::Geomview\_\-stream \&gv, \hyperlink{tst__info_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{Delaunay} \&Tr)
+\item 
+void \hyperlink{gviewer_8cpp_a003072990ed40ecaa65b1c42121ab68b}{draw\_\-seg} (CGAL::Geomview\_\-stream \&gv, \hyperlink{triangdefs_8h_a52b2b2ea1dd9f28588050d4e472c4685}{Segment} \&seg)
+\item 
+void \hyperlink{gviewer_8cpp_a097993295e34620d205a657797713e2b}{draw\_\-segs} (CGAL::Geomview\_\-stream \&gv, std::vector$<$ \hyperlink{triangdefs_8h_a52b2b2ea1dd9f28588050d4e472c4685}{Segment} $>$ \&segs)
+\item 
+void \hyperlink{gviewer_8cpp_a7310d4f6df37c1cc38f596db06fcd072}{draw\_\-tetra} (\hyperlink{tst__info_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{Delaunay} \&Tr, std::vector$<$ \hyperlink{triangdefs_8h_a1bee2a3764c2dcc73a8f73a627b520a9}{Cell\_\-handle} $>$ \&cells, CGAL::Geomview\_\-stream \&gv)
+\item 
+void \hyperlink{gviewer_8cpp_ad8bf3c1b9a9d8c081b78cb4e15d06393}{draw\_\-line\_\-tetra} (\hyperlink{tst__info_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{Delaunay} \&Tr, std::vector$<$ \hyperlink{triangdefs_8h_a1bee2a3764c2dcc73a8f73a627b520a9}{Cell\_\-handle} $>$ \&cells, CGAL::Geomview\_\-stream \&gv)
+\item 
+void \hyperlink{gviewer_8cpp_ad48f463f92d3285bac1471ae44babc52}{draw\_\-facets} (\hyperlink{tst__info_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{Delaunay} \&Tr, std::vector$<$ \hyperlink{triangdefs_8h_accd0e58d9bc45829d75016fc2420a085}{Facet} $>$ \&facets, CGAL::Geomview\_\-stream \&gv)
+\item 
+void \hyperlink{gviewer_8cpp_a4f9233911fbf8321d89e0f04ea9698f7}{draw\_\-facets} (\hyperlink{tst__info_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{Delaunay} \&Tr, std::vector$<$ \hyperlink{triangdefs_8h_accd0e58d9bc45829d75016fc2420a085}{Facet} $>$ \&facets, \hyperlink{triangdefs_8h_a23dce00beb7bfe96995af9bbc801f2fc}{PointColor} pcolors, CGAL::Geomview\_\-stream \&gv)
+\item 
+void \hyperlink{gviewer_8cpp_af528e3684c8e35eb2d4c64016c193950}{draw\_\-cells\_\-edges} (\hyperlink{tst__info_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{Delaunay} \&Tr, std::vector$<$ \hyperlink{triangdefs_8h_a1bee2a3764c2dcc73a8f73a627b520a9}{Cell\_\-handle} $>$ \&cells, CGAL::Geomview\_\-stream \&gv)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\hypertarget{gviewer_8cpp_a8b2d46051d3fba2a941a2dc4e31f38f1}{
+\index{gviewer.cpp@{gviewer.cpp}!draw\_\-all@{draw\_\-all}}
+\index{draw\_\-all@{draw\_\-all}!gviewer.cpp@{gviewer.cpp}}
+\subsubsection[{draw\_\-all}]{\setlength{\rightskip}{0pt plus 5cm}void draw\_\-all (CGAL::Geomview\_\-stream \& {\em gv}, \/  {\bf Delaunay} \& {\em Tr})}}
+\label{gviewer_8cpp_a8b2d46051d3fba2a941a2dc4e31f38f1}
+
+
+Definition at line 3 of file gviewer.cpp.
+
+\hypertarget{gviewer_8cpp_af528e3684c8e35eb2d4c64016c193950}{
+\index{gviewer.cpp@{gviewer.cpp}!draw\_\-cells\_\-edges@{draw\_\-cells\_\-edges}}
+\index{draw\_\-cells\_\-edges@{draw\_\-cells\_\-edges}!gviewer.cpp@{gviewer.cpp}}
+\subsubsection[{draw\_\-cells\_\-edges}]{\setlength{\rightskip}{0pt plus 5cm}void draw\_\-cells\_\-edges ({\bf Delaunay} \& {\em Tr}, \/  std::vector$<$ {\bf Cell\_\-handle} $>$ \& {\em cells}, \/  CGAL::Geomview\_\-stream \& {\em gv})}}
+\label{gviewer_8cpp_af528e3684c8e35eb2d4c64016c193950}
+
+
+Definition at line 94 of file gviewer.cpp.
+
+\hypertarget{gviewer_8cpp_a4f9233911fbf8321d89e0f04ea9698f7}{
+\index{gviewer.cpp@{gviewer.cpp}!draw\_\-facets@{draw\_\-facets}}
+\index{draw\_\-facets@{draw\_\-facets}!gviewer.cpp@{gviewer.cpp}}
+\subsubsection[{draw\_\-facets}]{\setlength{\rightskip}{0pt plus 5cm}void draw\_\-facets ({\bf Delaunay} \& {\em Tr}, \/  std::vector$<$ {\bf Facet} $>$ \& {\em facets}, \/  {\bf PointColor} {\em pcolors}, \/  CGAL::Geomview\_\-stream \& {\em gv})}}
+\label{gviewer_8cpp_a4f9233911fbf8321d89e0f04ea9698f7}
+
+
+Definition at line 68 of file gviewer.cpp.
+
+\hypertarget{gviewer_8cpp_ad48f463f92d3285bac1471ae44babc52}{
+\index{gviewer.cpp@{gviewer.cpp}!draw\_\-facets@{draw\_\-facets}}
+\index{draw\_\-facets@{draw\_\-facets}!gviewer.cpp@{gviewer.cpp}}
+\subsubsection[{draw\_\-facets}]{\setlength{\rightskip}{0pt plus 5cm}void draw\_\-facets ({\bf Delaunay} \& {\em Tr}, \/  std::vector$<$ {\bf Facet} $>$ \& {\em facets}, \/  CGAL::Geomview\_\-stream \& {\em gv})}}
+\label{gviewer_8cpp_ad48f463f92d3285bac1471ae44babc52}
+
+
+Definition at line 56 of file gviewer.cpp.
+
+\hypertarget{gviewer_8cpp_ad8bf3c1b9a9d8c081b78cb4e15d06393}{
+\index{gviewer.cpp@{gviewer.cpp}!draw\_\-line\_\-tetra@{draw\_\-line\_\-tetra}}
+\index{draw\_\-line\_\-tetra@{draw\_\-line\_\-tetra}!gviewer.cpp@{gviewer.cpp}}
+\subsubsection[{draw\_\-line\_\-tetra}]{\setlength{\rightskip}{0pt plus 5cm}void draw\_\-line\_\-tetra ({\bf Delaunay} \& {\em Tr}, \/  std::vector$<$ {\bf Cell\_\-handle} $>$ \& {\em cells}, \/  CGAL::Geomview\_\-stream \& {\em gv})}}
+\label{gviewer_8cpp_ad8bf3c1b9a9d8c081b78cb4e15d06393}
+
+
+Definition at line 39 of file gviewer.cpp.
+
+\hypertarget{gviewer_8cpp_a003072990ed40ecaa65b1c42121ab68b}{
+\index{gviewer.cpp@{gviewer.cpp}!draw\_\-seg@{draw\_\-seg}}
+\index{draw\_\-seg@{draw\_\-seg}!gviewer.cpp@{gviewer.cpp}}
+\subsubsection[{draw\_\-seg}]{\setlength{\rightskip}{0pt plus 5cm}void draw\_\-seg (CGAL::Geomview\_\-stream \& {\em gv}, \/  {\bf Segment} \& {\em seg})}}
+\label{gviewer_8cpp_a003072990ed40ecaa65b1c42121ab68b}
+
+
+Definition at line 12 of file gviewer.cpp.
+
+\hypertarget{gviewer_8cpp_a097993295e34620d205a657797713e2b}{
+\index{gviewer.cpp@{gviewer.cpp}!draw\_\-segs@{draw\_\-segs}}
+\index{draw\_\-segs@{draw\_\-segs}!gviewer.cpp@{gviewer.cpp}}
+\subsubsection[{draw\_\-segs}]{\setlength{\rightskip}{0pt plus 5cm}void draw\_\-segs (CGAL::Geomview\_\-stream \& {\em gv}, \/  std::vector$<$ {\bf Segment} $>$ \& {\em segs})}}
+\label{gviewer_8cpp_a097993295e34620d205a657797713e2b}
+
+
+Definition at line 18 of file gviewer.cpp.
+
+\hypertarget{gviewer_8cpp_a7310d4f6df37c1cc38f596db06fcd072}{
+\index{gviewer.cpp@{gviewer.cpp}!draw\_\-tetra@{draw\_\-tetra}}
+\index{draw\_\-tetra@{draw\_\-tetra}!gviewer.cpp@{gviewer.cpp}}
+\subsubsection[{draw\_\-tetra}]{\setlength{\rightskip}{0pt plus 5cm}void draw\_\-tetra ({\bf Delaunay} \& {\em Tr}, \/  std::vector$<$ {\bf Cell\_\-handle} $>$ \& {\em cells}, \/  CGAL::Geomview\_\-stream \& {\em gv})}}
+\label{gviewer_8cpp_a7310d4f6df37c1cc38f596db06fcd072}
+
+
+Definition at line 25 of file gviewer.cpp.
+

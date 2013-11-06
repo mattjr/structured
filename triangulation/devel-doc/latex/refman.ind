@@ -1,0 +1,217 @@
+\begin{theindex}
+
+  \item {add\_\discretionary {-}{}{}cells}
+    \subitem {addcells.cpp}, \hyperpage{16}
+    \subitem {delaunay.h}, \hyperpage{24}
+  \item {addcells.cpp}, \hyperpage{15}
+    \subitem {add\_\discretionary {-}{}{}cells}, \hyperpage{16}
+    \subitem {mean\_\discretionary {-}{}{}edge}, \hyperpage{16}
+  \item {average\_\discretionary {-}{}{}volume}
+    \subitem {TrParams}, \hyperpage{10}
+
+  \indexspace
+
+  \item {check\_\discretionary {-}{}{}cam}
+    \subitem {delaunay.cpp}, \hyperpage{19}
+  \item {check\_\discretionary {-}{}{}edges}
+    \subitem {intersect.cpp}, \hyperpage{33}
+  \item {check\_\discretionary {-}{}{}point}
+    \subitem {delaunay.cpp}, \hyperpage{19}
+  \item {clean1}
+    \subitem {extract.cpp}, \hyperpage{30}
+  \item {clean2}
+    \subitem {extract.cpp}, \hyperpage{30}
+  \item {config.cpp}, \hyperpage{17}
+    \subitem {debug\_\discretionary {-}{}{}stop}, \hyperpage{18}
+    \subitem {mygetopt}, \hyperpage{17}
+  \item {cosinus\_\discretionary {-}{}{}thresh}
+    \subitem {TrParams}, \hyperpage{10}
+
+  \indexspace
+
+  \item {debug\_\discretionary {-}{}{}stop}
+    \subitem {config.cpp}, \hyperpage{18}
+    \subitem {delaunay.h}, \hyperpage{26}
+  \item {delaunay.cpp}, \hyperpage{19}
+    \subitem {check\_\discretionary {-}{}{}cam}, \hyperpage{19}
+    \subitem {check\_\discretionary {-}{}{}point}, \hyperpage{19}
+    \subitem {dump\_\discretionary {-}{}{}data}, \hyperpage{20}
+    \subitem {usage}, \hyperpage{21}
+  \item {delaunay.h}, \hyperpage{22}
+    \subitem {add\_\discretionary {-}{}{}cells}, \hyperpage{24}
+    \subitem {debug\_\discretionary {-}{}{}stop}, \hyperpage{26}
+    \subitem {delaunay\_\discretionary {-}{}{}extract}, \hyperpage{24}
+    \subitem {intersect}, \hyperpage{24}
+    \subitem {mean\_\discretionary {-}{}{}edge}, \hyperpage{25}
+    \subitem {mygetopt}, \hyperpage{25}
+    \subitem {read\_\discretionary {-}{}{}ply}, \hyperpage{25}
+    \subitem {smooth}, \hyperpage{26}
+  \item {delaunay\_\discretionary {-}{}{}extract}
+    \subitem {delaunay.h}, \hyperpage{24}
+    \subitem {extract.cpp}, \hyperpage{30}
+  \item {delaunay\_\discretionary {-}{}{}io.cpp}, \hyperpage{27}
+    \subitem {ply\_\discretionary {-}{}{}binary\_\discretionary {-}{}{}data}, 
+		\hyperpage{27}
+    \subitem {read\_\discretionary {-}{}{}ply}, \hyperpage{28}
+  \item {dump\_\discretionary {-}{}{}data}
+    \subitem {delaunay.cpp}, \hyperpage{20}
+
+  \indexspace
+
+  \item {extract.cpp}, \hyperpage{29}
+    \subitem {clean1}, \hyperpage{30}
+    \subitem {clean2}, \hyperpage{30}
+    \subitem {delaunay\_\discretionary {-}{}{}extract}, \hyperpage{30}
+    \subitem {prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}mxf}, 
+		\hyperpage{31}
+    \subitem {prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}std}, 
+		\hyperpage{31}
+    \subitem {prepare\_\discretionary {-}{}{}facets}, \hyperpage{31}
+    \subitem {save\_\discretionary {-}{}{}ply}, \hyperpage{31}
+    \subitem {save\_\discretionary {-}{}{}ply\_\discretionary {-}{}{}binary}, 
+		\hyperpage{32}
+  \item {extract\_\discretionary {-}{}{}mode}
+    \subitem {TrParams}, \hyperpage{10}
+  \item {extract\_\discretionary {-}{}{}type}
+    \subitem {TrParams}, \hyperpage{10}
+
+  \indexspace
+
+  \item {Intersect}, \hyperpage{7}
+    \subitem {intersected\_\discretionary {-}{}{}facet}, \hyperpage{7}
+    \subitem {v1}, \hyperpage{7}
+    \subitem {v2}, \hyperpage{8}
+  \item {intersect}
+    \subitem {delaunay.h}, \hyperpage{24}
+    \subitem {intersect.cpp}, \hyperpage{33}
+  \item {intersect.cpp}, \hyperpage{33}
+    \subitem {check\_\discretionary {-}{}{}edges}, \hyperpage{33}
+    \subitem {intersect}, \hyperpage{33}
+    \subitem {is\_\discretionary {-}{}{}cell\_\discretionary {-}{}{}vertex}, 
+		\hyperpage{34}
+    \subitem {my\_\discretionary {-}{}{}intersect}, \hyperpage{34}
+  \item {intersected\_\discretionary {-}{}{}facet}
+    \subitem {Intersect}, \hyperpage{7}
+  \item {is\_\discretionary {-}{}{}cell\_\discretionary {-}{}{}vertex}
+    \subitem {intersect.cpp}, \hyperpage{34}
+
+  \indexspace
+
+  \item {lgr\_\discretionary {-}{}{}threshold}
+    \subitem {TrParams}, \hyperpage{10}
+
+  \indexspace
+
+  \item {mean\_\discretionary {-}{}{}edge}
+    \subitem {addcells.cpp}, \hyperpage{16}
+    \subitem {delaunay.h}, \hyperpage{25}
+  \item {moy\_\discretionary {-}{}{}normal}
+    \subitem {TrParams}, \hyperpage{10}
+  \item {my\_\discretionary {-}{}{}intersect}
+    \subitem {intersect.cpp}, \hyperpage{34}
+  \item {mygetopt}
+    \subitem {config.cpp}, \hyperpage{17}
+    \subitem {delaunay.h}, \hyperpage{25}
+
+  \indexspace
+
+  \item {nb\_\discretionary {-}{}{}int\_\discretionary {-}{}{}edge}
+    \subitem {TrStats}, \hyperpage{13}
+  \item {nb\_\discretionary {-}{}{}intersect}
+    \subitem {TrParams}, \hyperpage{10}
+  \item {nb\_\discretionary {-}{}{}intv}
+    \subitem {TrStats}, \hyperpage{13}
+  \item {nb\_\discretionary {-}{}{}rayons}
+    \subitem {TrStats}, \hyperpage{13}
+  \item {nb\_\discretionary {-}{}{}test\_\discretionary {-}{}{}facets}
+    \subitem {TrStats}, \hyperpage{13}
+  \item {nb\_\discretionary {-}{}{}tested\_\discretionary {-}{}{}lv0}
+    \subitem {TrStats}, \hyperpage{13}
+  \item {nb\_\discretionary {-}{}{}tetra0}
+    \subitem {TrStats}, \hyperpage{13}
+  \item {nb\_\discretionary {-}{}{}tot\_\discretionary {-}{}{}intersect}
+    \subitem {TrStats}, \hyperpage{13}
+
+  \indexspace
+
+  \item {ply\_\discretionary {-}{}{}binary\_\discretionary {-}{}{}data}
+    \subitem {delaunay\_\discretionary {-}{}{}io.cpp}, \hyperpage{27}
+  \item {prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}mxf}
+    \subitem {extract.cpp}, \hyperpage{31}
+  \item {prepare\_\discretionary {-}{}{}extract\_\discretionary {-}{}{}std}
+    \subitem {extract.cpp}, \hyperpage{31}
+  \item {prepare\_\discretionary {-}{}{}facets}
+    \subitem {extract.cpp}, \hyperpage{31}
+
+  \indexspace
+
+  \item {read\_\discretionary {-}{}{}ply}
+    \subitem {delaunay.h}, \hyperpage{25}
+    \subitem {delaunay\_\discretionary {-}{}{}io.cpp}, \hyperpage{28}
+
+  \indexspace
+
+  \item {save\_\discretionary {-}{}{}ply}
+    \subitem {extract.cpp}, \hyperpage{31}
+  \item {save\_\discretionary {-}{}{}ply\_\discretionary {-}{}{}binary}
+    \subitem {extract.cpp}, \hyperpage{32}
+  \item {smooth}
+    \subitem {delaunay.h}, \hyperpage{26}
+    \subitem {smooth.cpp}, \hyperpage{35}
+  \item {smooth.cpp}, \hyperpage{35}
+    \subitem {smooth}, \hyperpage{35}
+    \subitem {smooth1}, \hyperpage{35}
+  \item {smooth1}
+    \subitem {smooth.cpp}, \hyperpage{35}
+  \item {smooth\_\discretionary {-}{}{}coef}
+    \subitem {TrParams}, \hyperpage{10}
+  \item {smooth\_\discretionary {-}{}{}nb\_\discretionary {-}{}{}iter}
+    \subitem {TrParams}, \hyperpage{10}
+  \item {sum}
+    \subitem {TrStats}, \hyperpage{12}
+  \item {surf\_\discretionary {-}{}{}threshold}
+    \subitem {TrParams}, \hyperpage{11}
+
+  \indexspace
+
+  \item {triangdefs.h}, \hyperpage{37}
+  \item {TrParams}, \hyperpage{9}
+    \subitem {average\_\discretionary {-}{}{}volume}, \hyperpage{10}
+    \subitem {cosinus\_\discretionary {-}{}{}thresh}, \hyperpage{10}
+    \subitem {extract\_\discretionary {-}{}{}mode}, \hyperpage{10}
+    \subitem {extract\_\discretionary {-}{}{}type}, \hyperpage{10}
+    \subitem {lgr\_\discretionary {-}{}{}threshold}, \hyperpage{10}
+    \subitem {moy\_\discretionary {-}{}{}normal}, \hyperpage{10}
+    \subitem {nb\_\discretionary {-}{}{}intersect}, \hyperpage{10}
+    \subitem {smooth\_\discretionary {-}{}{}coef}, \hyperpage{10}
+    \subitem {smooth\_\discretionary {-}{}{}nb\_\discretionary {-}{}{}iter}, 
+		\hyperpage{10}
+    \subitem {surf\_\discretionary {-}{}{}threshold}, \hyperpage{11}
+  \item {TrStats}, \hyperpage{12}
+    \subitem {nb\_\discretionary {-}{}{}int\_\discretionary {-}{}{}edge}, 
+		\hyperpage{13}
+    \subitem {nb\_\discretionary {-}{}{}intv}, \hyperpage{13}
+    \subitem {nb\_\discretionary {-}{}{}rayons}, \hyperpage{13}
+    \subitem {nb\_\discretionary {-}{}{}test\_\discretionary {-}{}{}facets}, 
+		\hyperpage{13}
+    \subitem {nb\_\discretionary {-}{}{}tested\_\discretionary {-}{}{}lv0}, 
+		\hyperpage{13}
+    \subitem {nb\_\discretionary {-}{}{}tetra0}, \hyperpage{13}
+    \subitem {nb\_\discretionary {-}{}{}tot\_\discretionary {-}{}{}intersect}, 
+		\hyperpage{13}
+    \subitem {sum}, \hyperpage{12}
+
+  \indexspace
+
+  \item {usage}
+    \subitem {delaunay.cpp}, \hyperpage{21}
+
+  \indexspace
+
+  \item {v1}
+    \subitem {Intersect}, \hyperpage{7}
+  \item {v2}
+    \subitem {Intersect}, \hyperpage{8}
+  \item {Viewer}, \hyperpage{14}
+
+\end{theindex}

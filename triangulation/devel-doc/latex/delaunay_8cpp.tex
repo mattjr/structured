@@ -1,0 +1,122 @@
+\hypertarget{delaunay_8cpp}{
+\section{delaunay.cpp File Reference}
+\label{delaunay_8cpp}\index{delaunay.cpp@{delaunay.cpp}}
+}
+
+
+Main program for delaunay triangulation and ray tracing.  
+
+
+{\ttfamily \#include \char`\"{}delaunay.h\char`\"{}}\par
+{\ttfamily \#include $<$time.h$>$}\par
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{delaunay_8cpp_aa4817482b1728bf62acf8030cab9842c}{usage} (char $\ast$prog)
+\item 
+std::vector$<$ Facet $>$::iterator \hyperlink{delaunay_8cpp_a4962ffe4af69f28c4e4f5a11c5783316}{check\_\-point} (Delaunay \&Tr, std::vector$<$ Cell\_\-handle $>$ \&marked\_\-cells, TPoint \&points, std::vector$<$ Cell\_\-handle $>$ \&cells, std::vector$<$ Facet $>$ \&ifacets, std::vector$<$ Facet $>$::iterator itf0, int icam, Vertex\_\-handle vcam, int ipt, \hyperlink{classTrStats}{TrStats} $\ast$stats, CGAL::Geomview\_\-stream \&gv)  throw (const char $\ast$)
+\item 
+\hypertarget{delaunay_8cpp_a709a345e7b42bd53bdf4d63b43141f8e}{
+void {\bfseries dump\_\-cell} (Cell\_\-handle \&c)}
+\label{delaunay_8cpp_a709a345e7b42bd53bdf4d63b43141f8e}
+
+\item 
+void \hyperlink{delaunay_8cpp_a579e1dff33375e8fc00f718d8bd8b460}{check\_\-cam} (Delaunay \&Tr, TPoint \&points, int icam, VisiblePatches $\ast$vpatches, \hyperlink{classTrStats}{TrStats} $\ast$stats, CGAL::Geomview\_\-stream \&gv)  throw (const char $\ast$)
+\item 
+void \hyperlink{delaunay_8cpp_a58d7089146b4967cedb22d64665a7dcc}{dump\_\-data} (char $\ast$file, Delaunay \&T, TPoint \&cam\_\-points, TPoint \&points, PointColor \&pcolors, std::vector$<$ Point $>$ \&normals, CGAL::Bbox\_\-3 \&bb, int totpts, int nbpts0, std::vector$<$ int $>$ \&cameras, std::vector$<$ int $>$ \&bad\_\-cameras, std::map$<$ int, VisiblePatches $\ast$ $>$ \&image\_\-patches, float edge\_\-mean, float $\ast$tetra\_\-coefs)
+\item 
+\hypertarget{delaunay_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}{
+int {\bfseries main} (int argc, char $\ast$$\ast$argv)}
+\label{delaunay_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Main program for delaunay triangulation and ray tracing. 
+
+Definition in file \hyperlink{delaunay_8cpp_source}{delaunay.cpp}.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{delaunay_8cpp_a579e1dff33375e8fc00f718d8bd8b460}{
+\index{delaunay.cpp@{delaunay.cpp}!check\_\-cam@{check\_\-cam}}
+\index{check\_\-cam@{check\_\-cam}!delaunay.cpp@{delaunay.cpp}}
+\subsubsection[{check\_\-cam}]{\setlength{\rightskip}{0pt plus 5cm}void check\_\-cam (Delaunay \& {\em Tr}, \/  TPoint \& {\em points}, \/  int {\em icam}, \/  VisiblePatches $\ast$ {\em vpatches}, \/  {\bf TrStats} $\ast$ {\em stats}, \/  CGAL::Geomview\_\-stream \& {\em gv})  throw (const char $\ast$)}}
+\label{delaunay_8cpp_a579e1dff33375e8fc00f718d8bd8b460}
+Find cells intersected by the rays joining the camera number icam to all its visible points. The number of intersections is added to field 'info' of cells
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em points,:}]vector of points \item[{\em icam}]: camera number \item[{\em vpatches}]: vector of indices of the points that are visible from the camera\item[\mbox{$\rightarrow$} {\em stats}]: statistics \end{DoxyParams}
+
+
+Definition at line 153 of file delaunay.cpp.
+
+\hypertarget{delaunay_8cpp_a4962ffe4af69f28c4e4f5a11c5783316}{
+\index{delaunay.cpp@{delaunay.cpp}!check\_\-point@{check\_\-point}}
+\index{check\_\-point@{check\_\-point}!delaunay.cpp@{delaunay.cpp}}
+\subsubsection[{check\_\-point}]{\setlength{\rightskip}{0pt plus 5cm}std::vector$<$Facet$>$::iterator check\_\-point (Delaunay \& {\em Tr}, \/  std::vector$<$ Cell\_\-handle $>$ \& {\em marked\_\-cells}, \/  TPoint \& {\em points}, \/  std::vector$<$ Cell\_\-handle $>$ \& {\em cells}, \/  std::vector$<$ Facet $>$ \& {\em ifacets}, \/  std::vector$<$ Facet $>$::iterator {\em itf0}, \/  int {\em icam}, \/  Vertex\_\-handle {\em vcam}, \/  int {\em ipt}, \/  {\bf TrStats} $\ast$ {\em stats}, \/  CGAL::Geomview\_\-stream \& {\em gv})  throw (const char $\ast$)}}
+\label{delaunay_8cpp_a4962ffe4af69f28c4e4f5a11c5783316}
+Find cells intersected by the ray joining camera num icam to point num ipt
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em points}]: vector of points \item[{\em cells}]: incident cells at camera point \item[{\em ifacets}]: vector of facets of incident cells to be tested. \item[{\em itf0}]: where to start in ifacets \item[{\em icam}]: cam index \item[{\em vcam}]: vertex of cam \item[{\em ipt}]: target point index\item[\mbox{$\rightarrow$} {\em marked\_\-cells}]: intersected cells are added to this vector \item[\mbox{$\rightarrow$} {\em stats}]: statistics \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+iterator where to start in the camera incident facet vector (try to optimize initial facets search). 
+\end{DoxyReturn}
+
+
+Definition at line 68 of file delaunay.cpp.
+
+\hypertarget{delaunay_8cpp_a58d7089146b4967cedb22d64665a7dcc}{
+\index{delaunay.cpp@{delaunay.cpp}!dump\_\-data@{dump\_\-data}}
+\index{dump\_\-data@{dump\_\-data}!delaunay.cpp@{delaunay.cpp}}
+\subsubsection[{dump\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}void dump\_\-data (char $\ast$ {\em file}, \/  Delaunay \& {\em T}, \/  TPoint \& {\em cam\_\-points}, \/  TPoint \& {\em points}, \/  PointColor \& {\em pcolors}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  CGAL::Bbox\_\-3 \& {\em bb}, \/  int {\em totpts}, \/  int {\em nbpts0}, \/  std::vector$<$ int $>$ \& {\em cameras}, \/  std::vector$<$ int $>$ \& {\em bad\_\-cameras}, \/  std::map$<$ int, VisiblePatches $\ast$ $>$ \& {\em image\_\-patches}, \/  float {\em edge\_\-mean}, \/  float $\ast$ {\em tetra\_\-coefs})}}
+\label{delaunay_8cpp_a58d7089146b4967cedb22d64665a7dcc}
+Dump to a binary file all data needed to extract surface facets extraction :
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em file}]: name of file \item[{\em T}]: the delaunay structure \item[{\em cam\_\-points}]: vector of cameras coords and index in cam\_\-points. \item[{\em pcolors}]: vector of initial points colors \item[{\em normals}]: vector of intitial points normals \item[{\em bb}]: bounding box of PMVS points \item[{\em totpts}]: total number of points (PMVS points + camera points) \item[{\em nbpts0}]: nb of points without cameras (= index of 1st camera) \item[{\em cameras}]: vector of valid cameras giving their index in cam\_\-points \item[{\em bad\_\-cameras}]: vector of bad cameras giving their index in cam\_\-points \item[{\em image\_\-patches}]: map of visible points per camera \item[{\em edge\_\-mean}]: average edge length (PMVS2 points only) \item[{\em tetra\_\-coefs}]: the coefficients of option -\/a\end{DoxyParams}
+The structure of the file is :
+\begin{DoxyItemize}
+\item 4 bytes version (CGxx)
+\item delaunay data
+\item 6 $\ast$ float : bounding box (without cams)
+\item 3 $\ast$ float : average edge length (in pmvs points), 0 0 or coefs min and max used for points addition in large tetras
+\item int : nbcams = nb of \char`\"{}good\char`\"{} cameras
+\item npts $\ast$ 3 uchars : colors of points
+\item bool : 'with\_\-normals'
+\item npts $\ast$ 3-\/floats : normals of finite vertices
+\item nbcams $\ast$ 2 $\ast$ int : nbcams camera indexes (in finite vertices list), nbcams original cameras nums
+\item nbcell $\ast$ int : finites cells info
+\item nbcams $\ast$ (points visible by each camera) :
+\begin{DoxyItemize}
+\item int : cam num
+\item int : nb of visible points
+\item nbv $\ast$ int : indexes (in finite vertices list) of visible points
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+int : nbbadcams
+\begin{DoxyItemize}
+\item nbbadcams $\ast$ 3 float : bad cameras coords 
+\end{DoxyItemize}
+
+Definition at line 242 of file delaunay.cpp.
+
+\hypertarget{delaunay_8cpp_aa4817482b1728bf62acf8030cab9842c}{
+\index{delaunay.cpp@{delaunay.cpp}!usage@{usage}}
+\index{usage@{usage}!delaunay.cpp@{delaunay.cpp}}
+\subsubsection[{usage}]{\setlength{\rightskip}{0pt plus 5cm}void usage (char $\ast$ {\em prog})}}
+\label{delaunay_8cpp_aa4817482b1728bf62acf8030cab9842c}
+print the unsage message 
+\begin{DoxyParams}{Parameters}
+\item[{\em prog}]: program name \end{DoxyParams}
+
+
+Definition at line 31 of file delaunay.cpp.
+

@@ -1,0 +1,71 @@
+\hypertarget{addcells_8cpp}{
+\section{addcells.cpp File Reference}
+\label{addcells_8cpp}\index{addcells.cpp@{addcells.cpp}}
+}
+
+
+Add the barycenter of \char`\"{}large\char`\"{} tetrahedrons to the triangulation.  
+
+
+{\ttfamily \#include \char`\"{}delaunay.h\char`\"{}}\par
+{\ttfamily \#include $<$CGAL/basic.h$>$}\par
+{\ttfamily \#include $<$CGAL/Object.h$>$}\par
+{\ttfamily \#include $<$CGAL/Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel.h$>$}\par
+{\ttfamily \#include $<$CGAL/Triangulation\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/Delaunay\_\-triangulation\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/Triangulation\_\-cell\_\-base\_\-with\_\-info\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/intersections.h$>$}\par
+{\ttfamily \#include $<$CGAL/circulator.h$>$}\par
+{\ttfamily \#include $<$CGAL/IO/Triangulation\_\-geomview\_\-ostream\_\-3.h$>$}\par
+{\ttfamily \#include $<$iostream$>$}\par
+{\ttfamily \#include $<$fstream$>$}\par
+{\ttfamily \#include $<$iterator$>$}\par
+{\ttfamily \#include $<$unistd.h$>$}\par
+{\ttfamily \#include $<$time.h$>$}\par
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+float \hyperlink{addcells_8cpp_a66d434b22f373f5e2993522dafbf5567}{mean\_\-edge} (Delaunay \&T)
+\begin{DoxyCompactList}\small\item\em Compute the average edge length in a delaunay triangulation. \item\end{DoxyCompactList}\item 
+int \hyperlink{addcells_8cpp_af34bf1c77969a82376526e063c240830}{add\_\-cells} (Delaunay \&T, float edge\_\-min, float edge\_\-max, TPoint \&points, PointColor \&pcolors, std::vector$<$ Point $>$ \&normals)
+\begin{DoxyCompactList}\small\item\em Add the barycenter of \char`\"{}large\char`\"{} tetrahedrons to the set of points and update the triangulation. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Add the barycenter of \char`\"{}large\char`\"{} tetrahedrons to the triangulation. 
+
+Definition in file \hyperlink{addcells_8cpp_source}{addcells.cpp}.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{addcells_8cpp_af34bf1c77969a82376526e063c240830}{
+\index{addcells.cpp@{addcells.cpp}!add\_\-cells@{add\_\-cells}}
+\index{add\_\-cells@{add\_\-cells}!addcells.cpp@{addcells.cpp}}
+\subsubsection[{add\_\-cells}]{\setlength{\rightskip}{0pt plus 5cm}int add\_\-cells (Delaunay \& {\em T}, \/  float {\em edge\_\-min}, \/  float {\em edge\_\-max}, \/  TPoint \& {\em points}, \/  PointColor \& {\em pcolors}, \/  std::vector$<$ Point $>$ \& {\em normals})}}
+\label{addcells_8cpp_af34bf1c77969a82376526e063c240830}
+
+
+Add the barycenter of \char`\"{}large\char`\"{} tetrahedrons to the set of points and update the triangulation. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[\mbox{$\leftrightarrow$} {\em T}]: the delaunay data \item[{\em edge\_\-min}]: consider tetrahedrons that have at least one edge longer than {\bfseries edge\_\-min} \item[{\em edge\_\-max}]: but ignore tetrahedrons that have at least one edge longer than {\bfseries edge\_\-max} \item[\mbox{$\leftrightarrow$} {\em points}]: the vector of points. New points will be appended. \item[\mbox{$\leftrightarrow$} {\em pcolors}]: the vector of colors. Colors of new points will be estimated and appended. \item[\mbox{$\leftrightarrow$} {\em normals}]: the vector of normals. Normals of new points will be estimated and appended. \end{DoxyParams}
+
+
+Definition at line 46 of file addcells.cpp.
+
+\hypertarget{addcells_8cpp_a66d434b22f373f5e2993522dafbf5567}{
+\index{addcells.cpp@{addcells.cpp}!mean\_\-edge@{mean\_\-edge}}
+\index{mean\_\-edge@{mean\_\-edge}!addcells.cpp@{addcells.cpp}}
+\subsubsection[{mean\_\-edge}]{\setlength{\rightskip}{0pt plus 5cm}float mean\_\-edge (Delaunay \& {\em T})}}
+\label{addcells_8cpp_a66d434b22f373f5e2993522dafbf5567}
+
+
+Compute the average edge length in a delaunay triangulation. 
+
+
+
+Definition at line 24 of file addcells.cpp.
+

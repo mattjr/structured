@@ -1,0 +1,163 @@
+\hypertarget{classTrStats}{
+\section{TrStats Class Reference}
+\label{classTrStats}\index{TrStats@{TrStats}}
+}
+
+
+Store statistics.  
+
+
+
+
+{\ttfamily \#include \char`\"{}delaunay.h\char`\"{}}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{classTrStats_adc078942b91e4940d7cd479ad141c7b5}{sum} (\hyperlink{classTrStats}{TrStats} $\ast$stats2)
+\begin{DoxyCompactList}\small\item\em Sum of 2 statistics objects (to gather statistics from multiple threads). \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classTrStats_a87a12908493a4065111d0c77ff009678}{
+unsigned long {\bfseries nb\_\-tested\_\-facets}}
+\label{classTrStats_a87a12908493a4065111d0c77ff009678}
+
+\item 
+unsigned long \hyperlink{classTrStats_a3d4033d7f4886cfb82d941e21897acce}{nb\_\-tot\_\-intersect}
+\begin{DoxyCompactList}\small\item\em nb of tested facets \item\end{DoxyCompactList}\item 
+unsigned long \hyperlink{classTrStats_aa4d9812c2ef74f9d86b4b5cc50b9766d}{nb\_\-intv}
+\begin{DoxyCompactList}\small\item\em nb of intersections found \item\end{DoxyCompactList}\item 
+unsigned long \hyperlink{classTrStats_a95aed605db899b514028a615f6ed444f}{nb\_\-int\_\-edge}
+\begin{DoxyCompactList}\small\item\em nb of intersections on vertex \item\end{DoxyCompactList}\item 
+unsigned long \hyperlink{classTrStats_aa6d678657deb3ddb2723ef804ca3c7c6}{nb\_\-test\_\-facets}
+\begin{DoxyCompactList}\small\item\em nb of intersections on edge \item\end{DoxyCompactList}\item 
+int \hyperlink{classTrStats_a50445249236e80915c7d3cc9556c53b5}{nb\_\-tetra0}
+\begin{DoxyCompactList}\small\item\em nb of facets candidate for ray intersection \item\end{DoxyCompactList}\item 
+unsigned long \hyperlink{classTrStats_a0f7b2ad9c9363b68608cbcec16c82af3}{nb\_\-tested\_\-lv0}
+\begin{DoxyCompactList}\small\item\em nb of tetraedrons with a camera vertex \item\end{DoxyCompactList}\item 
+unsigned long \hyperlink{classTrStats_a8bdc211d4e6e25d9f1c0c00a7d35faf9}{nb\_\-rayons}
+\begin{DoxyCompactList}\small\item\em nb of intersected facets of tetrahedrons with a camera as vertex \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Store statistics. 
+
+Definition at line 27 of file delaunay.h.
+
+
+
+\subsection{Member Function Documentation}
+\hypertarget{classTrStats_adc078942b91e4940d7cd479ad141c7b5}{
+\index{TrStats@{TrStats}!sum@{sum}}
+\index{sum@{sum}!TrStats@{TrStats}}
+\subsubsection[{sum}]{\setlength{\rightskip}{0pt plus 5cm}void TrStats::sum ({\bf TrStats} $\ast$ {\em stats2})}}
+\label{classTrStats_adc078942b91e4940d7cd479ad141c7b5}
+
+
+Sum of 2 statistics objects (to gather statistics from multiple threads). 
+
+
+
+Definition at line 95 of file config.cpp.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classTrStats_a95aed605db899b514028a615f6ed444f}{
+\index{TrStats@{TrStats}!nb\_\-int\_\-edge@{nb\_\-int\_\-edge}}
+\index{nb\_\-int\_\-edge@{nb\_\-int\_\-edge}!TrStats@{TrStats}}
+\subsubsection[{nb\_\-int\_\-edge}]{\setlength{\rightskip}{0pt plus 5cm}unsigned long {\bf TrStats::nb\_\-int\_\-edge}}}
+\label{classTrStats_a95aed605db899b514028a615f6ed444f}
+
+
+nb of intersections on vertex 
+
+
+
+Definition at line 36 of file delaunay.h.
+
+\hypertarget{classTrStats_aa4d9812c2ef74f9d86b4b5cc50b9766d}{
+\index{TrStats@{TrStats}!nb\_\-intv@{nb\_\-intv}}
+\index{nb\_\-intv@{nb\_\-intv}!TrStats@{TrStats}}
+\subsubsection[{nb\_\-intv}]{\setlength{\rightskip}{0pt plus 5cm}unsigned long {\bf TrStats::nb\_\-intv}}}
+\label{classTrStats_aa4d9812c2ef74f9d86b4b5cc50b9766d}
+
+
+nb of intersections found 
+
+
+
+Definition at line 35 of file delaunay.h.
+
+\hypertarget{classTrStats_a8bdc211d4e6e25d9f1c0c00a7d35faf9}{
+\index{TrStats@{TrStats}!nb\_\-rayons@{nb\_\-rayons}}
+\index{nb\_\-rayons@{nb\_\-rayons}!TrStats@{TrStats}}
+\subsubsection[{nb\_\-rayons}]{\setlength{\rightskip}{0pt plus 5cm}unsigned long {\bf TrStats::nb\_\-rayons}}}
+\label{classTrStats_a8bdc211d4e6e25d9f1c0c00a7d35faf9}
+
+
+nb of intersected facets of tetrahedrons with a camera as vertex 
+
+
+
+Definition at line 40 of file delaunay.h.
+
+\hypertarget{classTrStats_aa6d678657deb3ddb2723ef804ca3c7c6}{
+\index{TrStats@{TrStats}!nb\_\-test\_\-facets@{nb\_\-test\_\-facets}}
+\index{nb\_\-test\_\-facets@{nb\_\-test\_\-facets}!TrStats@{TrStats}}
+\subsubsection[{nb\_\-test\_\-facets}]{\setlength{\rightskip}{0pt plus 5cm}unsigned long {\bf TrStats::nb\_\-test\_\-facets}}}
+\label{classTrStats_aa6d678657deb3ddb2723ef804ca3c7c6}
+
+
+nb of intersections on edge 
+
+
+
+Definition at line 37 of file delaunay.h.
+
+\hypertarget{classTrStats_a0f7b2ad9c9363b68608cbcec16c82af3}{
+\index{TrStats@{TrStats}!nb\_\-tested\_\-lv0@{nb\_\-tested\_\-lv0}}
+\index{nb\_\-tested\_\-lv0@{nb\_\-tested\_\-lv0}!TrStats@{TrStats}}
+\subsubsection[{nb\_\-tested\_\-lv0}]{\setlength{\rightskip}{0pt plus 5cm}unsigned long {\bf TrStats::nb\_\-tested\_\-lv0}}}
+\label{classTrStats_a0f7b2ad9c9363b68608cbcec16c82af3}
+
+
+nb of tetraedrons with a camera vertex 
+
+
+
+Definition at line 39 of file delaunay.h.
+
+\hypertarget{classTrStats_a50445249236e80915c7d3cc9556c53b5}{
+\index{TrStats@{TrStats}!nb\_\-tetra0@{nb\_\-tetra0}}
+\index{nb\_\-tetra0@{nb\_\-tetra0}!TrStats@{TrStats}}
+\subsubsection[{nb\_\-tetra0}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf TrStats::nb\_\-tetra0}}}
+\label{classTrStats_a50445249236e80915c7d3cc9556c53b5}
+
+
+nb of facets candidate for ray intersection 
+
+
+
+Definition at line 38 of file delaunay.h.
+
+\hypertarget{classTrStats_a3d4033d7f4886cfb82d941e21897acce}{
+\index{TrStats@{TrStats}!nb\_\-tot\_\-intersect@{nb\_\-tot\_\-intersect}}
+\index{nb\_\-tot\_\-intersect@{nb\_\-tot\_\-intersect}!TrStats@{TrStats}}
+\subsubsection[{nb\_\-tot\_\-intersect}]{\setlength{\rightskip}{0pt plus 5cm}unsigned long {\bf TrStats::nb\_\-tot\_\-intersect}}}
+\label{classTrStats_a3d4033d7f4886cfb82d941e21897acce}
+
+
+nb of tested facets 
+
+
+
+Definition at line 34 of file delaunay.h.
+
+
+
+The documentation for this class was generated from the following files:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{delaunay_8h}{delaunay.h}\item 
+\hyperlink{config_8cpp}{config.cpp}\end{DoxyCompactItemize}

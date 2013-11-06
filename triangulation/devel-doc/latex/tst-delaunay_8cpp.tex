@@ -1,0 +1,123 @@
+\hypertarget{tst-delaunay_8cpp}{
+\section{tst-\/delaunay.cpp File Reference}
+\label{tst-delaunay_8cpp}\index{tst-\/delaunay.cpp@{tst-\/delaunay.cpp}}
+}
+{\ttfamily \#include $<$CGAL/Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel.h$>$}\par
+{\ttfamily \#include $<$CGAL/Delaunay\_\-triangulation\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/IO/Triangulation\_\-geomview\_\-ostream\_\-3.h$>$}\par
+{\ttfamily \#include $<$iostream$>$}\par
+{\ttfamily \#include $<$fstream$>$}\par
+{\ttfamily \#include $<$iterator$>$}\par
+{\ttfamily \#include $<$unistd.h$>$}\par
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef CGAL::Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel \hyperlink{tst-delaunay_8cpp_a891e241aa245ae63618f03737efba309}{K}
+\item 
+typedef CGAL::Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3$<$ unsigned, \hyperlink{tst__info_8cpp_a891e241aa245ae63618f03737efba309}{K} $>$ \hyperlink{tst-delaunay_8cpp_a3bf8a2b64134355d805171df5dc05101}{Vb}
+\item 
+typedef CGAL::Triangulation\_\-data\_\-structure\_\-3$<$ \hyperlink{tst__info_8cpp_a3bf8a2b64134355d805171df5dc05101}{Vb} $>$ \hyperlink{tst-delaunay_8cpp_a2c94e68b962973b8c8da8aa0fa8f7a47}{Tds}
+\item 
+typedef CGAL::Delaunay\_\-triangulation\_\-3$<$ \hyperlink{tst__info_8cpp_a891e241aa245ae63618f03737efba309}{K}, \hyperlink{tst__info_8cpp_a2c94e68b962973b8c8da8aa0fa8f7a47}{Tds} $>$ \hyperlink{tst-delaunay_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{Delaunay}
+\item 
+typedef \hyperlink{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Delaunay::Point} \hyperlink{tst-delaunay_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Point}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{tst-delaunay_8cpp_a46e50ae2d9d8049dd03c290d2cf89cc7}{read\_\-data} (const char $\ast$filename, std::vector$<$ std::pair$<$ \hyperlink{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Point}, unsigned $>$ $>$ \&points)  throw (const char $\ast$)
+\item 
+void \hyperlink{tst-delaunay_8cpp_aaa57925527b5ce7c4bb1d6d94b943c85}{read\_\-ply} (const char $\ast$filename, std::vector$<$ std::pair$<$ \hyperlink{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Point}, unsigned $>$ $>$ \&points)  throw (const char $\ast$)
+\item 
+void \hyperlink{tst-delaunay_8cpp_aa4817482b1728bf62acf8030cab9842c}{usage} (char $\ast$prog)
+\item 
+int \hyperlink{tst-delaunay_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}{main} (int argc, char $\ast$$\ast$argv)
+\end{DoxyCompactItemize}
+
+
+\subsection{Typedef Documentation}
+\hypertarget{tst-delaunay_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{
+\index{tst-\/delaunay.cpp@{tst-\/delaunay.cpp}!Delaunay@{Delaunay}}
+\index{Delaunay@{Delaunay}!tst-delaunay.cpp@{tst-\/delaunay.cpp}}
+\subsubsection[{Delaunay}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Delaunay\_\-triangulation\_\-3$<${\bf K}, {\bf Tds}$>$ {\bf Delaunay}}}
+\label{tst-delaunay_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}
+
+
+Definition at line 15 of file tst-\/delaunay.cpp.
+
+\hypertarget{tst-delaunay_8cpp_a891e241aa245ae63618f03737efba309}{
+\index{tst-\/delaunay.cpp@{tst-\/delaunay.cpp}!K@{K}}
+\index{K@{K}!tst-delaunay.cpp@{tst-\/delaunay.cpp}}
+\subsubsection[{K}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel {\bf K}}}
+\label{tst-delaunay_8cpp_a891e241aa245ae63618f03737efba309}
+
+
+Definition at line 12 of file tst-\/delaunay.cpp.
+
+\hypertarget{tst-delaunay_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{
+\index{tst-\/delaunay.cpp@{tst-\/delaunay.cpp}!Point@{Point}}
+\index{Point@{Point}!tst-delaunay.cpp@{tst-\/delaunay.cpp}}
+\subsubsection[{Point}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf Delaunay::Point} {\bf Point}}}
+\label{tst-delaunay_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}
+
+
+Definition at line 16 of file tst-\/delaunay.cpp.
+
+\hypertarget{tst-delaunay_8cpp_a2c94e68b962973b8c8da8aa0fa8f7a47}{
+\index{tst-\/delaunay.cpp@{tst-\/delaunay.cpp}!Tds@{Tds}}
+\index{Tds@{Tds}!tst-delaunay.cpp@{tst-\/delaunay.cpp}}
+\subsubsection[{Tds}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Triangulation\_\-data\_\-structure\_\-3$<${\bf Vb}$>$ {\bf Tds}}}
+\label{tst-delaunay_8cpp_a2c94e68b962973b8c8da8aa0fa8f7a47}
+
+
+Definition at line 14 of file tst-\/delaunay.cpp.
+
+\hypertarget{tst-delaunay_8cpp_a3bf8a2b64134355d805171df5dc05101}{
+\index{tst-\/delaunay.cpp@{tst-\/delaunay.cpp}!Vb@{Vb}}
+\index{Vb@{Vb}!tst-delaunay.cpp@{tst-\/delaunay.cpp}}
+\subsubsection[{Vb}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3$<$unsigned, {\bf K}$>$ {\bf Vb}}}
+\label{tst-delaunay_8cpp_a3bf8a2b64134355d805171df5dc05101}
+
+
+Definition at line 13 of file tst-\/delaunay.cpp.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{tst-delaunay_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}{
+\index{tst-\/delaunay.cpp@{tst-\/delaunay.cpp}!main@{main}}
+\index{main@{main}!tst-delaunay.cpp@{tst-\/delaunay.cpp}}
+\subsubsection[{main}]{\setlength{\rightskip}{0pt plus 5cm}int main (int {\em argc}, \/  char $\ast$$\ast$ {\em argv})}}
+\label{tst-delaunay_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}
+
+
+Definition at line 102 of file tst-\/delaunay.cpp.
+
+\hypertarget{tst-delaunay_8cpp_a46e50ae2d9d8049dd03c290d2cf89cc7}{
+\index{tst-\/delaunay.cpp@{tst-\/delaunay.cpp}!read\_\-data@{read\_\-data}}
+\index{read\_\-data@{read\_\-data}!tst-delaunay.cpp@{tst-\/delaunay.cpp}}
+\subsubsection[{read\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}void read\_\-data (const char $\ast$ {\em filename}, \/  std::vector$<$ std::pair$<$ {\bf Point}, unsigned $>$ $>$ \& {\em points})  throw (const char $\ast$)}}
+\label{tst-delaunay_8cpp_a46e50ae2d9d8049dd03c290d2cf89cc7}
+
+
+Definition at line 18 of file tst-\/delaunay.cpp.
+
+\hypertarget{tst-delaunay_8cpp_aaa57925527b5ce7c4bb1d6d94b943c85}{
+\index{tst-\/delaunay.cpp@{tst-\/delaunay.cpp}!read\_\-ply@{read\_\-ply}}
+\index{read\_\-ply@{read\_\-ply}!tst-delaunay.cpp@{tst-\/delaunay.cpp}}
+\subsubsection[{read\_\-ply}]{\setlength{\rightskip}{0pt plus 5cm}void read\_\-ply (const char $\ast$ {\em filename}, \/  std::vector$<$ std::pair$<$ {\bf Point}, unsigned $>$ $>$ \& {\em points})  throw (const char $\ast$)}}
+\label{tst-delaunay_8cpp_aaa57925527b5ce7c4bb1d6d94b943c85}
+
+
+Definition at line 35 of file tst-\/delaunay.cpp.
+
+\hypertarget{tst-delaunay_8cpp_aa4817482b1728bf62acf8030cab9842c}{
+\index{tst-\/delaunay.cpp@{tst-\/delaunay.cpp}!usage@{usage}}
+\index{usage@{usage}!tst-delaunay.cpp@{tst-\/delaunay.cpp}}
+\subsubsection[{usage}]{\setlength{\rightskip}{0pt plus 5cm}void usage (char $\ast$ {\em prog})}}
+\label{tst-delaunay_8cpp_aa4817482b1728bf62acf8030cab9842c}
+
+
+Definition at line 96 of file tst-\/delaunay.cpp.
+

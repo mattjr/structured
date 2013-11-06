@@ -1,0 +1,307 @@
+\hypertarget{delaunay_8h}{
+\section{delaunay.h File Reference}
+\label{delaunay_8h}\index{delaunay.h@{delaunay.h}}
+}
+{\ttfamily \#include \char`\"{}triangdefs.h\char`\"{}}\par
+{\ttfamily \#include $<$time.h$>$}\par
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classTrStats}{TrStats}
+\begin{DoxyCompactList}\small\item\em Store statistics. \item\end{DoxyCompactList}\item 
+class \hyperlink{classTrParams}{TrParams}
+\begin{DoxyCompactList}\small\item\em params for facets extraction \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Defines}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{delaunay_8h_a8451819c7cf2e6f49eedefd2c6eb5785}{
+\#define {\bfseries CLEAN\_\-LGR}~1}
+\label{delaunay_8h_a8451819c7cf2e6f49eedefd2c6eb5785}
+
+\item 
+\hypertarget{delaunay_8h_a9b847abec311cd080ab305f64bae193e}{
+\#define {\bfseries CLEAN\_\-SURF}~2}
+\label{delaunay_8h_a9b847abec311cd080ab305f64bae193e}
+
+\item 
+\hypertarget{delaunay_8h_a93fdd2b3d7de4c7f72e511a5acf8bb5f}{
+\#define {\bfseries CLEAN\_\-TETRA}~4}
+\label{delaunay_8h_a93fdd2b3d7de4c7f72e511a5acf8bb5f}
+
+\item 
+\hypertarget{delaunay_8h_a62046f700ea4d3a1331cbda8f5ba84ba}{
+\#define {\bfseries CG\_\-PATCHES}~1}
+\label{delaunay_8h_a62046f700ea4d3a1331cbda8f5ba84ba}
+
+\item 
+\hypertarget{delaunay_8h_a0ad5e8c3c399cae9b14c7ce1396836ba}{
+\#define {\bfseries CG\_\-BADCAMS}~2}
+\label{delaunay_8h_a0ad5e8c3c399cae9b14c7ce1396836ba}
+
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+bool \hyperlink{delaunay_8h_a85909ddf8036dad9767488f683c6de9e}{mygetopt} (const char $\ast$opt, OP\_\-TYPE op\_\-type, int i, int argc, char $\ast$$\ast$argv, void $\ast$res, int nbargs=1)
+\begin{DoxyCompactList}\small\item\em Find presence and arguments of a program option. \item\end{DoxyCompactList}\item 
+\hypertarget{delaunay_8h_a8b2d46051d3fba2a941a2dc4e31f38f1}{
+void {\bfseries draw\_\-all} (CGAL::Geomview\_\-stream \&gv, Delaunay \&Tr)}
+\label{delaunay_8h_a8b2d46051d3fba2a941a2dc4e31f38f1}
+
+\item 
+\hypertarget{delaunay_8h_a003072990ed40ecaa65b1c42121ab68b}{
+void {\bfseries draw\_\-seg} (CGAL::Geomview\_\-stream \&gv, Segment \&seg)}
+\label{delaunay_8h_a003072990ed40ecaa65b1c42121ab68b}
+
+\item 
+\hypertarget{delaunay_8h_ac0cb758ac60f47a1641f99652ebbeb0d}{
+void {\bfseries prompt} (std::string s)}
+\label{delaunay_8h_ac0cb758ac60f47a1641f99652ebbeb0d}
+
+\item 
+\hypertarget{delaunay_8h_a7310d4f6df37c1cc38f596db06fcd072}{
+void {\bfseries draw\_\-tetra} (Delaunay \&Tr, std::vector$<$ Cell\_\-handle $>$ \&cells, CGAL::Geomview\_\-stream \&gv)}
+\label{delaunay_8h_a7310d4f6df37c1cc38f596db06fcd072}
+
+\item 
+\hypertarget{delaunay_8h_ad8bf3c1b9a9d8c081b78cb4e15d06393}{
+void {\bfseries draw\_\-line\_\-tetra} (Delaunay \&Tr, std::vector$<$ Cell\_\-handle $>$ \&cells, CGAL::Geomview\_\-stream \&gv)}
+\label{delaunay_8h_ad8bf3c1b9a9d8c081b78cb4e15d06393}
+
+\item 
+\hypertarget{delaunay_8h_acfb844f97117c7a865c027a91116fc2d}{
+void {\bfseries draw\_\-facets} (Delaunay \&Tr, std::vector$<$ Facet $>$ facets, PointColor pcolors, CGAL::Geomview\_\-stream \&gv)}
+\label{delaunay_8h_acfb844f97117c7a865c027a91116fc2d}
+
+\item 
+\hypertarget{delaunay_8h_ad48f463f92d3285bac1471ae44babc52}{
+void {\bfseries draw\_\-facets} (Delaunay \&Tr, std::vector$<$ Facet $>$ \&facets, CGAL::Geomview\_\-stream \&gv)}
+\label{delaunay_8h_ad48f463f92d3285bac1471ae44babc52}
+
+\item 
+\hypertarget{delaunay_8h_af528e3684c8e35eb2d4c64016c193950}{
+void {\bfseries draw\_\-cells\_\-edges} (Delaunay \&Tr, std::vector$<$ Cell\_\-handle $>$ \&cells, CGAL::Geomview\_\-stream \&gv)}
+\label{delaunay_8h_af528e3684c8e35eb2d4c64016c193950}
+
+\item 
+\hypertarget{delaunay_8h_a097993295e34620d205a657797713e2b}{
+void {\bfseries draw\_\-segs} (CGAL::Geomview\_\-stream \&gv, std::vector$<$ Segment $>$ \&segs)}
+\label{delaunay_8h_a097993295e34620d205a657797713e2b}
+
+\item 
+void \hyperlink{delaunay_8h_a8b4e55c629463b63a851262f3bcf78c9}{delaunay\_\-extract} (const char $\ast$outply, Delaunay \&T, std::vector$<$ Point $>$ \&normals, PointColor \&pcolors, int nbcams, int $\ast$cams\_\-index, TPoint \&bad\_\-cameras, \hyperlink{classTrParams}{TrParams} \&params, CGAL::Geomview\_\-stream \&gv, char $\ast$comment=NULL)
+\begin{DoxyCompactList}\small\item\em Extract surface facets from the delaunay triangulation. \item\end{DoxyCompactList}\item 
+CGAL::Bbox\_\-3 \hyperlink{delaunay_8h_a13836f26cc1d5f874661710b7ea6699b}{read\_\-ply} (const char $\ast$filename, TPoint \&points, std::vector$<$ Point $>$ \&normals, PointColor \&colors)  throw (const char $\ast$)
+\begin{DoxyCompactList}\small\item\em read a ply file containing only points, optionnaly with colors and normals \item\end{DoxyCompactList}\item 
+CGAL::Bbox\_\-3 \hyperlink{delaunay_8h_a00ccf12329af2785ce5f5f489a830c23}{read\_\-ply} (const char $\ast$filename, TPoint \&points, std::vector$<$ Point $>$ \&normals, PointColor \&colors, std::vector$<$ Face $>$ \&faces, char $\ast$$\ast$coment=NULL)  throw (const char $\ast$)
+\begin{DoxyCompactList}\small\item\em read a ply file containing points and facets. \item\end{DoxyCompactList}\item 
+\hypertarget{delaunay_8h_afeb1894e226b915f41948afaf785cf78}{
+void {\bfseries read\_\-patches} (const char $\ast$filename, int firstpoint, int nbcams, TPoint \&points, std::map$<$ int, VisiblePatches $\ast$ $>$ \&image\_\-patches, bool read\_\-points=false)  throw (const char $\ast$)}
+\label{delaunay_8h_afeb1894e226b915f41948afaf785cf78}
+
+\item 
+\hypertarget{delaunay_8h_acd5ae3172c81c56134a5dcf07b52d183}{
+void {\bfseries read\_\-cgal\_\-data} (char $\ast$file, Delaunay \&T, PointColor \&pcolors, std::vector$<$ Point $>$ \&normals, CGAL::Bbox\_\-3 \&bb, int $\ast$nbcams, int $\ast$$\ast$cams\_\-index, std::map$<$ int, VisiblePatches $\ast$ $>$ \&image\_\-patches, TPoint \&bad\_\-cameras, int data\_\-mode, float $\ast$edge\_\-mean, float $\ast$tetra\_\-coefs)  throw (const char $\ast$)}
+\label{delaunay_8h_acd5ae3172c81c56134a5dcf07b52d183}
+
+\item 
+\hypertarget{delaunay_8h_a40ce5ef390a8fee63746d07dabcbbad3}{
+void {\bfseries read\_\-cgal\_\-xdata} (char $\ast$file, int $\ast$nbcams, int $\ast$$\ast$cams\_\-index, CGAL::Bbox\_\-3 \&bb, std::map$<$ int, VisiblePatches $\ast$ $>$ \&image\_\-patches, TPoint \&bad\_\-cameras, int data\_\-mode, float $\ast$edge\_\-mean, float $\ast$tetra\_\-coefs)  throw (const char $\ast$)}
+\label{delaunay_8h_a40ce5ef390a8fee63746d07dabcbbad3}
+
+\item 
+std::vector$<$ Facet $>$ $\ast$ \hyperlink{delaunay_8h_a9fd03c5962e838e378c1c39be342f6df}{intersect} (int $\ast$err, int $\ast$nb\_\-tested, Segment \&seg, \hyperlink{structIntersect}{Intersect} \&in\_\-inter, \hyperlink{structIntersect}{Intersect} \&out\_\-inter, std::vector$<$ Facet $>$ $\ast$facets, Delaunay \&Tr, std::vector$<$ Cell\_\-handle $>$ \&marked\_\-cells, \hyperlink{classTrStats}{TrStats} $\ast$stats, CGAL::Geomview\_\-stream \&gv)  throw (const char $\ast$)
+\begin{DoxyCompactList}\small\item\em Find which facet is intersected and return next facets to check. \item\end{DoxyCompactList}\item 
+Vector $\ast$ \hyperlink{delaunay_8h_adc65f37237479438ceea7cf7402c56ba}{smooth} (Delaunay \&T, std::vector$<$ Point $>$ \&normals, std::vector$<$ Facet $>$ \&facets, float lambda, int nbiter, int nbcams, int $\ast$cams\_\-index)
+\begin{DoxyCompactList}\small\item\em Replace vertices coordinates by a function of their neighbours. \item\end{DoxyCompactList}\item 
+\hypertarget{delaunay_8h_a9e2656ff0a5080ce2d64f6e55b80238c}{
+float {\bfseries delta\_\-t} (time\_\-t $\ast$t1, time\_\-t $\ast$t2)}
+\label{delaunay_8h_a9e2656ff0a5080ce2d64f6e55b80238c}
+
+\item 
+float \hyperlink{delaunay_8h_a66d434b22f373f5e2993522dafbf5567}{mean\_\-edge} (Delaunay \&T)
+\begin{DoxyCompactList}\small\item\em Compute the average edge length in a delaunay triangulation. \item\end{DoxyCompactList}\item 
+int \hyperlink{delaunay_8h_af34bf1c77969a82376526e063c240830}{add\_\-cells} (Delaunay \&T, float edge\_\-min, float edge\_\-max, TPoint \&points, PointColor \&pcolors, std::vector$<$ Point $>$ \&normals)
+\begin{DoxyCompactList}\small\item\em Add the barycenter of \char`\"{}large\char`\"{} tetrahedrons to the set of points and update the triangulation. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{delaunay_8h_a36c34f1eacf43ebba70560b9f727efc3}{
+bool {\bfseries gv\_\-on}}
+\label{delaunay_8h_a36c34f1eacf43ebba70560b9f727efc3}
+
+\item 
+int \hyperlink{delaunay_8h_a4b140b33c17f4fb021fbaa36318de80b}{debug\_\-stop}
+\begin{DoxyCompactList}\small\item\em used to tag .cgal files \item\end{DoxyCompactList}\item 
+\hypertarget{delaunay_8h_ae67a2192ba51220c74ed9883b05ce91d}{
+int {\bfseries debug\_\-vis}}
+\label{delaunay_8h_ae67a2192ba51220c74ed9883b05ce91d}
+
+\item 
+\hypertarget{delaunay_8h_af0fbf9e0bf8d8926311fcf329c8d6f65}{
+int {\bfseries facet\_\-vertex\_\-order} \mbox{[}$\,$\mbox{]}}
+\label{delaunay_8h_af0fbf9e0bf8d8926311fcf329c8d6f65}
+
+\item 
+\hypertarget{delaunay_8h_aad32a5d5828c2c47acc0074e5626b5d7}{
+char {\bfseries file\_\-version} \mbox{[}$\,$\mbox{]}}
+\label{delaunay_8h_aad32a5d5828c2c47acc0074e5626b5d7}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition in file \hyperlink{delaunay_8h_source}{delaunay.h}.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{delaunay_8h_af34bf1c77969a82376526e063c240830}{
+\index{delaunay.h@{delaunay.h}!add\_\-cells@{add\_\-cells}}
+\index{add\_\-cells@{add\_\-cells}!delaunay.h@{delaunay.h}}
+\subsubsection[{add\_\-cells}]{\setlength{\rightskip}{0pt plus 5cm}int add\_\-cells (Delaunay \& {\em T}, \/  float {\em edge\_\-min}, \/  float {\em edge\_\-max}, \/  TPoint \& {\em points}, \/  PointColor \& {\em pcolors}, \/  std::vector$<$ Point $>$ \& {\em normals})}}
+\label{delaunay_8h_af34bf1c77969a82376526e063c240830}
+
+
+Add the barycenter of \char`\"{}large\char`\"{} tetrahedrons to the set of points and update the triangulation. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[\mbox{$\leftrightarrow$} {\em T}]: the delaunay data \item[{\em edge\_\-min}]: consider tetrahedrons that have at least one edge longer than {\bfseries edge\_\-min} \item[{\em edge\_\-max}]: but ignore tetrahedrons that have at least one edge longer than {\bfseries edge\_\-max} \item[\mbox{$\leftrightarrow$} {\em points}]: the vector of points. New points will be appended. \item[\mbox{$\leftrightarrow$} {\em pcolors}]: the vector of colors. Colors of new points will be estimated and appended. \item[\mbox{$\leftrightarrow$} {\em normals}]: the vector of normals. Normals of new points will be estimated and appended. \end{DoxyParams}
+
+
+Definition at line 46 of file addcells.cpp.
+
+\hypertarget{delaunay_8h_a8b4e55c629463b63a851262f3bcf78c9}{
+\index{delaunay.h@{delaunay.h}!delaunay\_\-extract@{delaunay\_\-extract}}
+\index{delaunay\_\-extract@{delaunay\_\-extract}!delaunay.h@{delaunay.h}}
+\subsubsection[{delaunay\_\-extract}]{\setlength{\rightskip}{0pt plus 5cm}void delaunay\_\-extract (const char $\ast$ {\em outply}, \/  Delaunay \& {\em T}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  PointColor \& {\em pcolors}, \/  int {\em nbcams}, \/  int $\ast$ {\em cams\_\-index}, \/  TPoint \& {\em bad\_\-cameras}, \/  {\bf TrParams} \& {\em params}, \/  CGAL::Geomview\_\-stream \& {\em gv}, \/  char $\ast$ {\em comment})}}
+\label{delaunay_8h_a8b4e55c629463b63a851262f3bcf78c9}
+
+
+Extract surface facets from the delaunay triangulation. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em outply}]: name of output ply file. \item[{\em T}]: delaunay data \item[{\em normals}]: vector of PMVS normals \item[{\em pcolors}]: vector of PMVS point colors \item[{\em nbcams}]: number of cameras \item[{\em cams\_\-index}]: indices of camera coords in points vector \item[{\em bad\_\-cameras}]: vector of the vertices of bad cameras. \item[{\em params.extract\_\-type}]: call prepare\_\-extract\_\-mxf or prepare\_\-extract\_\-std \item[{\em params.smooth\_\-coef}]: if $>$0., run the smooth program on vertices. \item[{\em comment}]: comment to put in the header (the arguments of the command line) \item[{\em }]\end{DoxyParams}
+
+
+Definition at line 589 of file extract.cpp.
+
+\hypertarget{delaunay_8h_a9fd03c5962e838e378c1c39be342f6df}{
+\index{delaunay.h@{delaunay.h}!intersect@{intersect}}
+\index{intersect@{intersect}!delaunay.h@{delaunay.h}}
+\subsubsection[{intersect}]{\setlength{\rightskip}{0pt plus 5cm}std::vector$<$Facet$>$$\ast$ intersect (int $\ast$ {\em err}, \/  int $\ast$ {\em nb\_\-tested}, \/  Segment \& {\em seg}, \/  {\bf Intersect} \& {\em in\_\-inter}, \/  {\bf Intersect} \& {\em out\_\-inter}, \/  std::vector$<$ Facet $>$ $\ast$ {\em facets}, \/  Delaunay \& {\em Tr}, \/  std::vector$<$ Cell\_\-handle $>$ \& {\em marked\_\-cells}, \/  {\bf TrStats} $\ast$ {\em stats}, \/  CGAL::Geomview\_\-stream \& {\em gv})  throw (const char $\ast$)}}
+\label{delaunay_8h_a9fd03c5962e838e378c1c39be342f6df}
+
+
+Find which facet is intersected and return next facets to check. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[\mbox{$\rightarrow$} {\em err}]: -\/1 if no intersection and not at end of segment, 0 otherwise \item[\mbox{$\rightarrow$} {\em nb\_\-tested}]: number of facets effectively tested (for statistics). \item[{\em seg}]: segment from a camera to a visible poins. \item[{\em in\_\-inter}]: kind of previous intersection (entry in cell). \item[\mbox{$\rightarrow$} {\em out\_\-inter}]: kind of intersection. \item[{\em facets}]: vector of facets to check. \item[{\em T}]: delaunay data. \item[\mbox{$\leftrightarrow$} {\em marked\_\-cells}]: intersected cell will be added to this vector. \item[\mbox{$\leftrightarrow$} {\em stats}]: statistics counters. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+: pointer to vector of facets to check at next step. 
+\end{DoxyReturn}
+
+
+Definition at line 181 of file intersect.cpp.
+
+\hypertarget{delaunay_8h_a66d434b22f373f5e2993522dafbf5567}{
+\index{delaunay.h@{delaunay.h}!mean\_\-edge@{mean\_\-edge}}
+\index{mean\_\-edge@{mean\_\-edge}!delaunay.h@{delaunay.h}}
+\subsubsection[{mean\_\-edge}]{\setlength{\rightskip}{0pt plus 5cm}float mean\_\-edge (Delaunay \& {\em T})}}
+\label{delaunay_8h_a66d434b22f373f5e2993522dafbf5567}
+
+
+Compute the average edge length in a delaunay triangulation. 
+
+
+
+Definition at line 24 of file addcells.cpp.
+
+\hypertarget{delaunay_8h_a85909ddf8036dad9767488f683c6de9e}{
+\index{delaunay.h@{delaunay.h}!mygetopt@{mygetopt}}
+\index{mygetopt@{mygetopt}!delaunay.h@{delaunay.h}}
+\subsubsection[{mygetopt}]{\setlength{\rightskip}{0pt plus 5cm}bool mygetopt (const char $\ast$ {\em opt}, \/  OP\_\-TYPE {\em op\_\-type}, \/  int {\em i}, \/  int {\em argc}, \/  char $\ast$$\ast$ {\em argv}, \/  void $\ast$ {\em res}, \/  int {\em nbargs})}}
+\label{delaunay_8h_a85909ddf8036dad9767488f683c6de9e}
+
+
+Find presence and arguments of a program option. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em opt}]The option string (for example -\/i) \item[{\em op\_\-type}]The argument(s) type : OPT\_\-INT,OPT\_\-FLOAT,OPT\_\-STRING,OPT\_\-NOARGS \item[{\em i}]Index of argv entry to compare with opt \item[{\em argc}]Nb of elements in argv \item[{\em argv}]string list of program arguments \item[{\em res}]Pointer to store the value or values associated to option \item[{\em nbargs}]Number of args of option (default 1, ignored for OPT\_\-NOARGS) \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+bool Whether option was found or not. 
+\end{DoxyReturn}
+
+
+Definition at line 57 of file config.cpp.
+
+\hypertarget{delaunay_8h_a00ccf12329af2785ce5f5f489a830c23}{
+\index{delaunay.h@{delaunay.h}!read\_\-ply@{read\_\-ply}}
+\index{read\_\-ply@{read\_\-ply}!delaunay.h@{delaunay.h}}
+\subsubsection[{read\_\-ply}]{\setlength{\rightskip}{0pt plus 5cm}CGAL::Bbox\_\-3 read\_\-ply (const char $\ast$ {\em filename}, \/  TPoint \& {\em points}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  PointColor \& {\em colors}, \/  std::vector$<$ Face $>$ \& {\em faces}, \/  char $\ast$$\ast$ {\em coment} = {\ttfamily NULL})  throw (const char $\ast$)}}
+\label{delaunay_8h_a00ccf12329af2785ce5f5f489a830c23}
+
+
+read a ply file containing points and facets. 
+
+
+
+Definition at line 177 of file delaunay\_\-io.cpp.
+
+\hypertarget{delaunay_8h_a13836f26cc1d5f874661710b7ea6699b}{
+\index{delaunay.h@{delaunay.h}!read\_\-ply@{read\_\-ply}}
+\index{read\_\-ply@{read\_\-ply}!delaunay.h@{delaunay.h}}
+\subsubsection[{read\_\-ply}]{\setlength{\rightskip}{0pt plus 5cm}CGAL::Bbox\_\-3 read\_\-ply (const char $\ast$ {\em filename}, \/  TPoint \& {\em points}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  PointColor \& {\em colors})  throw (const char $\ast$)}}
+\label{delaunay_8h_a13836f26cc1d5f874661710b7ea6699b}
+
+
+read a ply file containing only points, optionnaly with colors and normals 
+
+
+
+Definition at line 170 of file delaunay\_\-io.cpp.
+
+\hypertarget{delaunay_8h_adc65f37237479438ceea7cf7402c56ba}{
+\index{delaunay.h@{delaunay.h}!smooth@{smooth}}
+\index{smooth@{smooth}!delaunay.h@{delaunay.h}}
+\subsubsection[{smooth}]{\setlength{\rightskip}{0pt plus 5cm}Vector$\ast$ smooth (Delaunay \& {\em T}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  std::vector$<$ Facet $>$ \& {\em facets}, \/  float {\em lambda}, \/  int {\em nbiter}, \/  int {\em nbcams}, \/  int $\ast$ {\em cams\_\-index})}}
+\label{delaunay_8h_adc65f37237479438ceea7cf7402c56ba}
+
+
+Replace vertices coordinates by a function of their neighbours. 
+
+$p = \lambda p + (1 - \lambda) \sum_{q \in N_p} w_q q$
+
+$N_p$ is the set of neighbours of p, $\lambda$ is a positive scalar $< 1$, weights $w_q$ sums to 1 and are a function of the unit normals $n_p n_q$.
+
+For example $w_q = \mu[n_p.n_q]_+^k$, where $x_+ = x$ if $x \geq 0$ and 0 otherwise, and $\mu$ is choosen so that $\sum_a\in N_pw_q = 1$.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em T}]: delaunay data \item[{\em normals}]: vector of vertices PMVS normals. \item[{\em facets}]: vector of facets on the surface. The neighbourhood is restricted to cells containing te facets. \item[{\em lambda}]: the $\lambda$ coefficient. \item[{\em nbiter}]: number of iterations. If negative, \item[{\em nbcams}]: number of cameras \item[{\em cams\_\-index}]: indexes of cameras coords in PMVS points table. \end{DoxyParams}
+
+
+Definition at line 131 of file smooth.cpp.
+
+
+
+\subsection{Variable Documentation}
+\hypertarget{delaunay_8h_a4b140b33c17f4fb021fbaa36318de80b}{
+\index{delaunay.h@{delaunay.h}!debug\_\-stop@{debug\_\-stop}}
+\index{debug\_\-stop@{debug\_\-stop}!delaunay.h@{delaunay.h}}
+\subsubsection[{debug\_\-stop}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf debug\_\-stop}}}
+\label{delaunay_8h_a4b140b33c17f4fb021fbaa36318de80b}
+
+
+used to tag .cgal files 
+
+
+
+Definition at line 19 of file config.cpp.
+

@@ -160,3 +160,16 @@ taskworkers.pyc
 /gts-0.7.6/src/CMakeLists.txt~
 /trimesh2/CMakeLists.txt~
 /auv_mesh.cpp~
+structured-build/calcTexCoordBundler
+/camtest
+/camtest0
+/cmpcgal
+/delaunay
+/delaunay1
+/delaunayb
+/hist
+/triangclean
+/triangclean.d
+/triangulation/myoptions.pyc
+/triangulation/myutils.pyc
+/structured-build//calcTexCoordBundler

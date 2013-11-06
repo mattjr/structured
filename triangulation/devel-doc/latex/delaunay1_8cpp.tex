@@ -1,0 +1,134 @@
+\hypertarget{delaunay1_8cpp}{
+\section{delaunay1.cpp File Reference}
+\label{delaunay1_8cpp}\index{delaunay1.cpp@{delaunay1.cpp}}
+}
+{\ttfamily \#include $<$CGAL/Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel.h$>$}\par
+{\ttfamily \#include $<$CGAL/Delaunay\_\-triangulation\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3.h$>$}\par
+{\ttfamily \#include $<$CGAL/IO/Triangulation\_\-geomview\_\-ostream\_\-3.h$>$}\par
+{\ttfamily \#include $<$iostream$>$}\par
+{\ttfamily \#include $<$fstream$>$}\par
+{\ttfamily \#include $<$iterator$>$}\par
+{\ttfamily \#include $<$unistd.h$>$}\par
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef CGAL::Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel \hyperlink{delaunay1_8cpp_a891e241aa245ae63618f03737efba309}{K}
+\item 
+typedef CGAL::Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3$<$ unsigned, \hyperlink{tst__info_8cpp_a891e241aa245ae63618f03737efba309}{K} $>$ \hyperlink{delaunay1_8cpp_a503841a940c5aa2c4f7c21a6234156b4}{Cb}
+\item 
+typedef CGAL::Triangulation\_\-data\_\-structure\_\-3$<$ \hyperlink{triangdefs_8h_af339e1d632652500193ed5b5a88bab98}{Cb} $>$ \hyperlink{delaunay1_8cpp_a0be3ac258fbbe0e5d3f083ffc0cf6dba}{Tds}
+\item 
+typedef CGAL::Delaunay\_\-triangulation\_\-3$<$ \hyperlink{tst__info_8cpp_a891e241aa245ae63618f03737efba309}{K}, \hyperlink{tst__info_8cpp_a2c94e68b962973b8c8da8aa0fa8f7a47}{Tds} $>$ \hyperlink{delaunay1_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{Delaunay}
+\item 
+typedef \hyperlink{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Delaunay::Point} \hyperlink{delaunay1_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Point}
+\item 
+typedef std::vector$<$ int $>$ \hyperlink{delaunay1_8cpp_acc5beadfbc1aae94927ea5a2809d8339}{VisiblePatches}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{delaunay1_8cpp_ab86892865556130ad41f5b368a944013}{read\_\-ply} (const char $\ast$filename, std::vector$<$ \hyperlink{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Point} $>$ \&points)  throw (const char $\ast$)
+\item 
+void \hyperlink{delaunay1_8cpp_a9a32189b1769150686ab025d697611ea}{read\_\-patches} (const char $\ast$filename, std::vector$<$ \hyperlink{tst__info_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{Point} $>$ \&points, std::map$<$ int, \hyperlink{triangdefs_8h_a942fb5152dd1a60db450ac6f192db567}{VisiblePatches} $\ast$ $>$ \&image\_\-patches)
+\item 
+void \hyperlink{delaunay1_8cpp_aa4817482b1728bf62acf8030cab9842c}{usage} (char $\ast$prog)
+\item 
+int \hyperlink{delaunay1_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}{main} (int argc, char $\ast$$\ast$argv)
+\end{DoxyCompactItemize}
+
+
+\subsection{Typedef Documentation}
+\hypertarget{delaunay1_8cpp_a503841a940c5aa2c4f7c21a6234156b4}{
+\index{delaunay1.cpp@{delaunay1.cpp}!Cb@{Cb}}
+\index{Cb@{Cb}!delaunay1.cpp@{delaunay1.cpp}}
+\subsubsection[{Cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Triangulation\_\-vertex\_\-base\_\-with\_\-info\_\-3$<$unsigned, {\bf K}$>$ {\bf Cb}}}
+\label{delaunay1_8cpp_a503841a940c5aa2c4f7c21a6234156b4}
+
+
+Definition at line 13 of file delaunay1.cpp.
+
+\hypertarget{delaunay1_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}{
+\index{delaunay1.cpp@{delaunay1.cpp}!Delaunay@{Delaunay}}
+\index{Delaunay@{Delaunay}!delaunay1.cpp@{delaunay1.cpp}}
+\subsubsection[{Delaunay}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Delaunay\_\-triangulation\_\-3$<${\bf K}, {\bf Tds}$>$ {\bf Delaunay}}}
+\label{delaunay1_8cpp_aaca765768a8bc0aed856b44d4f9e10e2}
+
+
+Definition at line 15 of file delaunay1.cpp.
+
+\hypertarget{delaunay1_8cpp_a891e241aa245ae63618f03737efba309}{
+\index{delaunay1.cpp@{delaunay1.cpp}!K@{K}}
+\index{K@{K}!delaunay1.cpp@{delaunay1.cpp}}
+\subsubsection[{K}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Exact\_\-predicates\_\-inexact\_\-constructions\_\-kernel {\bf K}}}
+\label{delaunay1_8cpp_a891e241aa245ae63618f03737efba309}
+
+
+Definition at line 12 of file delaunay1.cpp.
+
+\hypertarget{delaunay1_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}{
+\index{delaunay1.cpp@{delaunay1.cpp}!Point@{Point}}
+\index{Point@{Point}!delaunay1.cpp@{delaunay1.cpp}}
+\subsubsection[{Point}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf Delaunay::Point} {\bf Point}}}
+\label{delaunay1_8cpp_aa5acf70a1c48c8f9446423f5522abeb8}
+
+
+Definition at line 16 of file delaunay1.cpp.
+
+\hypertarget{delaunay1_8cpp_a0be3ac258fbbe0e5d3f083ffc0cf6dba}{
+\index{delaunay1.cpp@{delaunay1.cpp}!Tds@{Tds}}
+\index{Tds@{Tds}!delaunay1.cpp@{delaunay1.cpp}}
+\subsubsection[{Tds}]{\setlength{\rightskip}{0pt plus 5cm}typedef CGAL::Triangulation\_\-data\_\-structure\_\-3$<${\bf Cb}$>$ {\bf Tds}}}
+\label{delaunay1_8cpp_a0be3ac258fbbe0e5d3f083ffc0cf6dba}
+
+
+Definition at line 14 of file delaunay1.cpp.
+
+\hypertarget{delaunay1_8cpp_acc5beadfbc1aae94927ea5a2809d8339}{
+\index{delaunay1.cpp@{delaunay1.cpp}!VisiblePatches@{VisiblePatches}}
+\index{VisiblePatches@{VisiblePatches}!delaunay1.cpp@{delaunay1.cpp}}
+\subsubsection[{VisiblePatches}]{\setlength{\rightskip}{0pt plus 5cm}typedef std::vector$<$int$>$ {\bf VisiblePatches}}}
+\label{delaunay1_8cpp_acc5beadfbc1aae94927ea5a2809d8339}
+
+
+Definition at line 91 of file delaunay1.cpp.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{delaunay1_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}{
+\index{delaunay1.cpp@{delaunay1.cpp}!main@{main}}
+\index{main@{main}!delaunay1.cpp@{delaunay1.cpp}}
+\subsubsection[{main}]{\setlength{\rightskip}{0pt plus 5cm}int main (int {\em argc}, \/  char $\ast$$\ast$ {\em argv})}}
+\label{delaunay1_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}
+
+
+Definition at line 145 of file delaunay1.cpp.
+
+\hypertarget{delaunay1_8cpp_a9a32189b1769150686ab025d697611ea}{
+\index{delaunay1.cpp@{delaunay1.cpp}!read\_\-patches@{read\_\-patches}}
+\index{read\_\-patches@{read\_\-patches}!delaunay1.cpp@{delaunay1.cpp}}
+\subsubsection[{read\_\-patches}]{\setlength{\rightskip}{0pt plus 5cm}void read\_\-patches (const char $\ast$ {\em filename}, \/  std::vector$<$ {\bf Point} $>$ \& {\em points}, \/  std::map$<$ int, {\bf VisiblePatches} $\ast$ $>$ \& {\em image\_\-patches})}}
+\label{delaunay1_8cpp_a9a32189b1769150686ab025d697611ea}
+
+
+Definition at line 92 of file delaunay1.cpp.
+
+\hypertarget{delaunay1_8cpp_ab86892865556130ad41f5b368a944013}{
+\index{delaunay1.cpp@{delaunay1.cpp}!read\_\-ply@{read\_\-ply}}
+\index{read\_\-ply@{read\_\-ply}!delaunay1.cpp@{delaunay1.cpp}}
+\subsubsection[{read\_\-ply}]{\setlength{\rightskip}{0pt plus 5cm}void read\_\-ply (const char $\ast$ {\em filename}, \/  std::vector$<$ {\bf Point} $>$ \& {\em points})  throw (const char $\ast$)}}
+\label{delaunay1_8cpp_ab86892865556130ad41f5b368a944013}
+
+
+Definition at line 18 of file delaunay1.cpp.
+
+\hypertarget{delaunay1_8cpp_aa4817482b1728bf62acf8030cab9842c}{
+\index{delaunay1.cpp@{delaunay1.cpp}!usage@{usage}}
+\index{usage@{usage}!delaunay1.cpp@{delaunay1.cpp}}
+\subsubsection[{usage}]{\setlength{\rightskip}{0pt plus 5cm}void usage (char $\ast$ {\em prog})}}
+\label{delaunay1_8cpp_aa4817482b1728bf62acf8030cab9842c}
+
+
+Definition at line 139 of file delaunay1.cpp.
+

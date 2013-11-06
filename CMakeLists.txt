@@ -212,6 +212,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
 		     ${OPENGL_INCLUDE_DIR}
                      ${VIPS_INCLUDE_DIRS}
                      trimesh2/
+                     ann/include/
                     spatialindex-src-1.6.1/src spatialindex-src-1.6.1/include
                      "/opt/local/include"
 "VirtualPlanetBuilder/include"
@@ -313,7 +314,7 @@ ENDIF()
 #SUBDIRS(src include tools )
 
 
-SUBDIRS(gts-0.7.6 trimesh2 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender  )
+SUBDIRS(gts-0.7.6 trimesh2 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender triangulation ann/src/ )
 
 SET( SRCS
                 Extents.cpp
@@ -345,7 +346,7 @@ mipmap.cpp
 mesh_proc.cpp
 stereo_dense.cpp
 image_rect.cpp
-                )
+   ANNWrapper.cpp             )
 ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} ${SPINDEX_SRC})
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
@@ -359,6 +360,8 @@ ADD_EXECUTABLE( osgdem  VirtualPlanetBuilder/applications/osgdem/osgdem.cpp )
 ADD_EXECUTABLE(create_mipmap create_mipmap.cpp)
 ADD_EXECUTABLE( treeBBClip treeBBClip.cpp  )
 ADD_EXECUTABLE( calcTexCoord calcTexCoord.cpp )
+ADD_EXECUTABLE( calcTexCoordBundler calcTexCoordBundler.cpp )
+
 ADD_EXECUTABLE( testImageModel testImageModel.cpp )
 ADD_EXECUTABLE( dicedImage dicedImage.cpp )
 ADD_EXECUTABLE(deepzoomVIPS DeepZoom.cpp)
@@ -397,6 +400,8 @@ TARGET_LINK_LIBRARIES( genRangeImg ts spindex )
 
 TARGET_LINK_LIBRARIES( vertCheck ts spindex )
 TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC  ${OGF_LIBS})
+TARGET_LINK_LIBRARIES( calcTexCoordBundler ts spindex vpb vips vipsCC  ${OGF_LIBS} ANN)
+
 TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC  ${OGF_LIBS})
 TARGET_LINK_LIBRARIES( borderClip ts spindex )
 TARGET_LINK_LIBRARIES( dumpPCD vips vipsCC ts z)

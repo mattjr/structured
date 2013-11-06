@@ -1,0 +1,9 @@
+créer un nouveau graph, ajouter des noeuds avec la fonction
+add_nodes(#nodes)
+Définir les coûts unitaires pour chaque noeud d'appartenir à l'objet ou
+non avec la function add_tweights(numero du noeud,cout1,cout2)
+ Ajouter le terme de smoothness entre noeud voisins avec 
+add_edge(num_noeud1,num_noeud2,cout 1->2 ,cout 2->1). 
+Dans notre cas on suppose
+que les cout 1->2 et 2->1 seront egaux.
+Finalement  calculer le flow avec maxflow.

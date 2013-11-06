@@ -1,0 +1,95 @@
+\hypertarget{delaunay__io_8cpp}{
+\section{delaunay\_\-io.cpp File Reference}
+\label{delaunay__io_8cpp}\index{delaunay\_\-io.cpp@{delaunay\_\-io.cpp}}
+}
+
+
+functions to read data from ply or cgal files  
+
+
+{\ttfamily \#include \char`\"{}delaunay.h\char`\"{}}\par
+{\ttfamily \#include $<$stdlib.h$>$}\par
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+CGAL::Bbox\_\-3 \hyperlink{delaunay__io_8cpp_a9bdd03ec77e016ad50638e0b434143cc}{ply\_\-binary\_\-data} (std::ifstream \&ifstr, TPoint \&points, std::vector$<$ Point $>$ \&normals, PointColor \&colors, std::vector$<$ Face $>$ \&faces, int nbpts, int nbfaces, int nbflt, int nbint)  throw (const char $\ast$)
+\item 
+\hypertarget{delaunay__io_8cpp_aa37c9d5b178598bb804258ab84d94184}{
+CGAL::Bbox\_\-3 {\bfseries ply\_\-ascii\_\-data} (std::ifstream \&ifstr, TPoint \&points, std::vector$<$ Point $>$ \&normals, PointColor \&colors, std::vector$<$ Face $>$ \&faces, int nbpts, int nbfaces, int nbflt, int nbint)  throw (const char $\ast$)}
+\label{delaunay__io_8cpp_aa37c9d5b178598bb804258ab84d94184}
+
+\item 
+\hypertarget{delaunay__io_8cpp_a79b5800ce9efb040798f1e4238584337}{
+CGAL::Bbox\_\-3 {\bfseries read\_\-all\_\-ply} (const char $\ast$filename, TPoint \&points, std::vector$<$ Point $>$ \&normals, PointColor \&colors, std::vector$<$ Face $>$ \&faces, char $\ast$$\ast$comment, bool with\_\-faces)  throw (const char $\ast$)}
+\label{delaunay__io_8cpp_a79b5800ce9efb040798f1e4238584337}
+
+\item 
+CGAL::Bbox\_\-3 \hyperlink{delaunay__io_8cpp_a13836f26cc1d5f874661710b7ea6699b}{read\_\-ply} (const char $\ast$filename, TPoint \&points, std::vector$<$ Point $>$ \&normals, PointColor \&colors)  throw (const char $\ast$)
+\begin{DoxyCompactList}\small\item\em read a ply file containing only points, optionnaly with colors and normals \item\end{DoxyCompactList}\item 
+CGAL::Bbox\_\-3 \hyperlink{delaunay__io_8cpp_ae5d5d2a95cf3f0d0133f3f1e3eaaa4b4}{read\_\-ply} (const char $\ast$filename, TPoint \&points, std::vector$<$ Point $>$ \&normals, PointColor \&colors, std::vector$<$ Face $>$ \&faces, char $\ast$$\ast$comment)  throw (const char $\ast$)
+\begin{DoxyCompactList}\small\item\em read a ply file containing points and facets. \item\end{DoxyCompactList}\item 
+\hypertarget{delaunay__io_8cpp_ad755a93dcfa0e06c4e776675f1b0b936}{
+void {\bfseries read\_\-patches} (const char $\ast$filename, int firstpoint, int nbcams, TPoint \&points, std::map$<$ int, VisiblePatches $\ast$ $>$ \&image\_\-patches, bool read\_\-points)  throw (const char $\ast$)}
+\label{delaunay__io_8cpp_ad755a93dcfa0e06c4e776675f1b0b936}
+
+\item 
+\hypertarget{delaunay__io_8cpp_af8c87a7b51c99668a1ce059980b9c3c2}{
+void {\bfseries get\_\-patches} (std::ifstream \&iFileT, int nbcams, std::map$<$ int, VisiblePatches $\ast$ $>$ \&image\_\-patches, TPoint \&bad\_\-cameras, int data\_\-mode)  throw (const char $\ast$)}
+\label{delaunay__io_8cpp_af8c87a7b51c99668a1ce059980b9c3c2}
+
+\item 
+\hypertarget{delaunay__io_8cpp_acd5ae3172c81c56134a5dcf07b52d183}{
+void {\bfseries read\_\-cgal\_\-data} (char $\ast$file, Delaunay \&T, PointColor \&pcolors, std::vector$<$ Point $>$ \&normals, CGAL::Bbox\_\-3 \&bb, int $\ast$nbcams, int $\ast$$\ast$cams\_\-index, std::map$<$ int, VisiblePatches $\ast$ $>$ \&image\_\-patches, TPoint \&bad\_\-cameras, int data\_\-mode, float $\ast$edge\_\-mean, float $\ast$tetra\_\-coefs)  throw (const char $\ast$)}
+\label{delaunay__io_8cpp_acd5ae3172c81c56134a5dcf07b52d183}
+
+\item 
+\hypertarget{delaunay__io_8cpp_a40ce5ef390a8fee63746d07dabcbbad3}{
+void {\bfseries read\_\-cgal\_\-xdata} (char $\ast$file, int $\ast$nbcams, int $\ast$$\ast$cams\_\-index, CGAL::Bbox\_\-3 \&bb, std::map$<$ int, VisiblePatches $\ast$ $>$ \&image\_\-patches, TPoint \&bad\_\-cameras, int data\_\-mode, float $\ast$edge\_\-mean, float $\ast$tetra\_\-coefs)  throw (const char $\ast$)}
+\label{delaunay__io_8cpp_a40ce5ef390a8fee63746d07dabcbbad3}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+functions to read data from ply or cgal files 
+
+Definition in file \hyperlink{delaunay__io_8cpp_source}{delaunay\_\-io.cpp}.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{delaunay__io_8cpp_a9bdd03ec77e016ad50638e0b434143cc}{
+\index{delaunay\_\-io.cpp@{delaunay\_\-io.cpp}!ply\_\-binary\_\-data@{ply\_\-binary\_\-data}}
+\index{ply\_\-binary\_\-data@{ply\_\-binary\_\-data}!delaunay_io.cpp@{delaunay\_\-io.cpp}}
+\subsubsection[{ply\_\-binary\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}CGAL::Bbox\_\-3 ply\_\-binary\_\-data (std::ifstream \& {\em ifstr}, \/  TPoint \& {\em points}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  PointColor \& {\em colors}, \/  std::vector$<$ Face $>$ \& {\em faces}, \/  int {\em nbpts}, \/  int {\em nbfaces}, \/  int {\em nbflt}, \/  int {\em nbint})  throw (const char $\ast$)}}
+\label{delaunay__io_8cpp_a9bdd03ec77e016ad50638e0b434143cc}
+Read the data part of a binary ply file 
+
+Definition at line 23 of file delaunay\_\-io.cpp.
+
+\hypertarget{delaunay__io_8cpp_ae5d5d2a95cf3f0d0133f3f1e3eaaa4b4}{
+\index{delaunay\_\-io.cpp@{delaunay\_\-io.cpp}!read\_\-ply@{read\_\-ply}}
+\index{read\_\-ply@{read\_\-ply}!delaunay_io.cpp@{delaunay\_\-io.cpp}}
+\subsubsection[{read\_\-ply}]{\setlength{\rightskip}{0pt plus 5cm}CGAL::Bbox\_\-3 read\_\-ply (const char $\ast$ {\em filename}, \/  TPoint \& {\em points}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  PointColor \& {\em colors}, \/  std::vector$<$ Face $>$ \& {\em faces}, \/  char $\ast$$\ast$ {\em comment})  throw (const char $\ast$)}}
+\label{delaunay__io_8cpp_ae5d5d2a95cf3f0d0133f3f1e3eaaa4b4}
+
+
+read a ply file containing points and facets. 
+
+
+
+Definition at line 177 of file delaunay\_\-io.cpp.
+
+\hypertarget{delaunay__io_8cpp_a13836f26cc1d5f874661710b7ea6699b}{
+\index{delaunay\_\-io.cpp@{delaunay\_\-io.cpp}!read\_\-ply@{read\_\-ply}}
+\index{read\_\-ply@{read\_\-ply}!delaunay_io.cpp@{delaunay\_\-io.cpp}}
+\subsubsection[{read\_\-ply}]{\setlength{\rightskip}{0pt plus 5cm}CGAL::Bbox\_\-3 read\_\-ply (const char $\ast$ {\em filename}, \/  TPoint \& {\em points}, \/  std::vector$<$ Point $>$ \& {\em normals}, \/  PointColor \& {\em colors})  throw (const char $\ast$)}}
+\label{delaunay__io_8cpp_a13836f26cc1d5f874661710b7ea6699b}
+
+
+read a ply file containing only points, optionnaly with colors and normals 
+
+
+
+Definition at line 170 of file delaunay\_\-io.cpp.
+

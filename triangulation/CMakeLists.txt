@@ -61,7 +61,7 @@ if ( CGAL_FOUND )
 
 #  include_directories (BEFORE "../../include")
   add_executable(triangclean triangclean.cpp config.cpp extract.cpp smooth.cpp gviewer.cpp delaunay_io.cpp)
-  target_link_libraries(triangclean maxflow ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+  target_link_libraries(triangclean maxflow rt ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
 
   add_executable(delaunay delaunay.cpp config.cpp delaunay_io.cpp addcells.cpp intersect.cpp gviewer.cpp )
   target_link_libraries(delaunay ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
@@ -75,10 +75,10 @@ if ( CGAL_FOUND )
   target_link_libraries(delaunay1 ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
 
   add_executable(hist hist.cpp config.cpp delaunay_io.cpp)
-  target_link_libraries(hist ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+  target_link_libraries(hist rt ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
 
   add_executable(triangclean.d triangclean.cpp config.cpp extract.cpp smooth.cpp gviewer.cpp delaunay_io.cpp)
-  target_link_libraries(triangclean.d maxflow ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+  target_link_libraries(triangclean.d maxflow rt ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
   set_target_properties(triangclean.d PROPERTIES COMPILE_FLAGS "-DTRIANGDEBUG")
   message("QGL ${QGLVIEWER_LIBRARIES}")
 

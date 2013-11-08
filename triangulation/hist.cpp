@@ -14,6 +14,9 @@
 #include "delaunay.h"
 #include <math.h>
 #include <ctype.h>
+#ifdef __USE_POSIX
+#include <time.h>
+#endif
 
 void usage(char *prog, bool fatal = true) {
   std::cout << "Usage : " << prog << " input.cgal " << std::endl;

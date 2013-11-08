@@ -163,7 +163,7 @@ IF( NOT OSG_FOUND )
   MESSAGE( FATAL_ERROR  "ERROR - Can't find OSG" )
 ENDIF( NOT OSG_FOUND )
 
-pkg_check_modules( VIPS vips-7.24 )
+pkg_check_modules( VIPS vips-7.26 )
 # UF
 SET( UF_LIBRARY ufGeographicConversions ufGPSParser )
 

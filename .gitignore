@@ -177,6 +177,9 @@ structured-build/calcTexCoordBundler
 /cmvs
 /genOption
 /pmvs2
-
 /driver
 /driverGPU
+/libpbaCPU.so
+/libpbaGPU.so
+/libpba.so
+

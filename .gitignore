@@ -174,3 +174,7 @@ structured-build/calcTexCoordBundler
 /triangulation/myutils.pyc
 /structured-build/*
 /calcTexCoordBundler
+/cmvs
+/genOption
+/pmvs2
+

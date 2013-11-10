@@ -178,3 +178,5 @@ structured-build/calcTexCoordBundler
 /genOption
 /pmvs2
 
+/driver
+/driverGPU

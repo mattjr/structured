@@ -182,4 +182,6 @@ structured-build/calcTexCoordBundler
 /libpbaCPU.so
 /libpbaGPU.so
 /libpba.so
+/VisualSFM
+/nv.ini
 

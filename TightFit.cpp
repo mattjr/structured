@@ -27,14 +27,19 @@
 #include <algorithm>
 #include <iostream>
 using namespace std;
-bool getScaleFactorForAtlasFit(float &scale,std::vector<std::pair<int,int> > &imageSizes,int POTsize,int VTtileSize,int VToverlap){
+bool getScaleFactorForAtlasFit(float &scale,std::vector<std::pair<int,int> > &imageSizes,int &POTsize,int VTtileSize,int VToverlap){
+    if(POTsize < 8192);{
+        scale=(8192/POTsize);
+        POTsize=8192;
+        printf("Too small for vt jumping scale to %f\n",scale);
+    }
     double scaleStep=0.001;
      //scaleStep=0.00001;
 
     for(;scale > 0.0; scale-=scaleStep){
         FitChecker fit(imageSizes,POTsize,scale, VTtileSize, VToverlap ,true);
 
-        //printf("Checking fit at %f\n",scale);
+       // printf("Checking fit at %f\n",scale);
         fit.buildAtlas();
         if(fit.getNumAtlases() == 1 && fit._atlasList.front()->_sourceList.size() == imageSizes.size()){
 

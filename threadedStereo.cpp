@@ -179,10 +179,12 @@ static double extern_err_stop;
 static bool newmvs=false;
 static bool no_runmvs_tri=false;
 static double triangCleanEdge=5.0;
+static bool no_runmvs=false;
 MyGraphicsContext *mgc=NULL;
 #define diced_fopen(x,y) fopen((string(diced_dir)+string(x)).c_str(),y)
 
-
+static int imageWidth,imageHeight;
+//imageWidth=imageHeight=-1;
 
 vector<Stereo_Pose_Data> load_tex_pose_file( const string &file_name )
 {
@@ -245,6 +247,36 @@ vector<Stereo_Pose_Data> load_tex_pose_file( const string &file_name )
     }
 
     return poses;
+}
+#include <dirent.h>
+osgDB::DirectoryContents getDirectoryContents(const std::string& dirName,std::vector<string> validExts)
+{
+    osgDB::DirectoryContents contents;
+
+    DIR *handle = opendir(dirName.c_str());
+    if (handle)
+    {
+        dirent *rc;
+        while((rc = readdir(handle))!=NULL)
+        {
+            bool foundExt=false;
+            int len = strlen (rc->d_name);
+
+            if (len >= 4) {
+                for(int i=0; i < (int) validExts.size(); i++)
+                    if (strcmp (validExts[i].c_str(), &(rc->d_name[len - 4])) == 0) {
+                        foundExt=true;
+                        break;
+                    }
+
+                if(foundExt)
+                    contents.push_back(rc->d_name);
+            }
+        }
+        closedir(handle);
+    }
+
+    return contents;
 }
 
 //
@@ -572,6 +604,8 @@ static bool parse_args( int argc, char *argv[ ] )
         no_tc=true;
     if(argp.read("--nomvstri"))
         no_runmvs_tri=true;
+    if(argp.read("--norunmvs"))
+        no_runmvs=true;
     if(argp.read("--novttex"))
         no_vttex=true;
 
@@ -870,7 +904,12 @@ int main( int argc, char *argv[ ] )
 
         }
     }
-    StereoCalib calib(stereo_calib_file_name);
+    StereoCalib *calib=NULL;
+    if(!newmvs){
+     calib = new StereoCalib(stereo_calib_file_name);
+     imageHeight=calib->camera_calibs[0].height;
+     imageWidth=calib->camera_calibs[0].width;
+    }
 
 
     FILE *fpp_ic=fopen("mesh/img_num.txt","w");
@@ -924,18 +963,87 @@ int main( int argc, char *argv[ ] )
     ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,cwd,aggdir,diced_dir,num_threads);
     shellcm.write_setup();
 
-
+    string mvs_output_dir;
     if(externalMode){
         if(newmvs){
+            osgDB::makeDirectory("tmp/mvs/");
+
+            if(!osgDB::fileExists(base_dir+"tmp/mvs/image_list.txt")){
+                std::vector<string> validExts;
+                validExts.push_back(".ppm");
+                validExts.push_back(".pgm");
+                validExts.push_back(".jpg");
+                validExts.push_back(".png");
+
+               osgDB::DirectoryContents dirConts= getDirectoryContents(base_dir,validExts);
+               ofstream fileList((base_dir+"/tmp/mvs/image_list.txt").c_str());
+
+               for(int i=0; i < (int)dirConts.size(); i++){
+                   fileList <<  base_dir<<"/"<<dirConts[i] << std::endl;
+               }
+               fileList.close();
+
+
+               vector<std::string> precmd;
+
+               string bundle_cmd="bundle.py";
+               char tmp_bundle[8192];
+               sprintf(tmp_bundle,"cd %s/tmp/mvs/;%s/VisualSFM sfm+pmvs image_list.txt result.nvm",cwd,basepath.c_str());
+               precmd.push_back(tmp_bundle);
+               shellcm.write_generic(bundle_cmd,"","Bundle",&(precmd),NULL,1, "");
+               if(!no_runmvs)
+                   sysres=system((base_dir+"/"+bundle_cmd).c_str());
+
+
+               //  precmd.clear();
+              // string mvs_cmd="mvs.py";
+               //shellcm.write_generic(mvs_cmd,"","MVS",&(precmd),NULL,1, "");
+
+            }
+            mvs_output_dir=string("/tmp/mvs/result.nvm.cmvs/00/");
             // Get info on multi-view stereo point clouds
             ifstream ifstr;
             char filename[4096];
-            sprintf(filename,"%s/../00/ske.dat",base_dir.c_str());
+            sprintf(filename,"%s/%s/ske.dat",cwd,mvs_output_dir.c_str());
             ifstr.open(filename);
             if(!ifstr){
-                fprintf(stderr,"Failed to open %s/../00/ske.dat",base_dir.c_str());
+                fprintf(stderr,"Failed to open %s/%s/ske.dat",cwd,mvs_output_dir.c_str());
                 exit(-1);
             }
+            ofstream idList((base_dir+"/tmp/mvs/id_image_list.txt").c_str());
+            ifstream ifstr2;
+            sprintf(filename,"%s/%s/list.txt",base_dir.c_str(),mvs_output_dir.c_str());
+            ifstr2.open(filename);
+            if(!ifstr2){
+                fprintf(stderr,"Failed to open %s\n",filename);
+                exit(-1);
+            }
+            int c_id=0;
+            while(ifstr2.good()){
+                string line;
+
+                getline (ifstr2,line);
+                if(line.size() < 1)
+                    continue;
+                sprintf(filename,"%s/%s/%s",cwd,mvs_output_dir.c_str(),line.c_str());
+                if(c_id ==0){
+
+
+                    cv::Mat img=cv::imread(filename);
+                    if(!img.data){
+                        fprintf(stderr,"%s cannot be found no valid images in list\n",filename);
+                        exit(-1);
+                    }
+                    imageWidth=img.cols;
+                    imageHeight=img.rows;
+                }
+                idList << c_id++ << " "<<osgDB::getSimpleFileName(line);
+                for(int j=0; j <22; j++)
+                    idList<< " "<< 0.0 ;
+                idList  << std::endl;
+            }
+            idList.close();
+
             string header;
             int inum, cnum;
             ifstr >> header >> inum >> cnum;
@@ -948,14 +1056,14 @@ int main( int argc, char *argv[ ] )
                 exit(-1);
             }
             for(int i=0; i < cnum; i++){
-                fprintf(fpp2,"%s/delaunay %s/cameras.ply %s/../00/models/option-%04d -o %s/%s/mvs-%04d.cgal;",basepath.c_str(),cwd,base_dir.c_str(),i,cwd,aggdir,i);
+                fprintf(fpp2,"%s/delaunay %s/cameras.ply %s/%s/models/option-%04d -o %s/%s/mvs-%04d.cgal;",basepath.c_str(),cwd,base_dir.c_str(),mvs_output_dir.c_str(),i,cwd,aggdir,i);
                 fprintf(fpp2,"%s/triangclean %s/%s/mvs-%04d.cgal %s/%s/mvs-%04d.ply -lg %f -flip\n",basepath.c_str(),cwd,aggdir,i,cwd,aggdir,i,triangCleanEdge);
 
             }
             fclose(fpp2);
             vector<std::string> precmd;
             char tmp11[4096];
-            sprintf(tmp11,"%s/triangulation/drawcameras.py -o %s/cameras.ply -i %s/../00/bundle.rd.out",basepath.c_str(),cwd,base_dir.c_str());
+            sprintf(tmp11,"%s/triangulation/drawcameras.py -o %s/cameras.ply -i %s/%s/bundle.rd.out",basepath.c_str(),cwd,base_dir.c_str(),mvs_output_dir.c_str());
             precmd.push_back(tmp11);
 
 
@@ -1189,7 +1297,7 @@ double totalValidArea=0;
         double max_triangulation_len =  max_alt > 0.0 ? max_alt*3 : edgethresh * 20;
 #pragma omp parallel num_threads(num_threads)
         if(run_stereo){
-            StereoEngine engine(calib,*recon_config_file,edgethresh,max_triangulation_len,max_feature_count, lodTexSize[0],mutex,use_dense_stereo,pause_after_each_frame);
+            StereoEngine engine(*calib,*recon_config_file,edgethresh,max_triangulation_len,max_feature_count, lodTexSize[0],mutex,use_dense_stereo,pause_after_each_frame);
             cvSetNumThreads(1);
 #pragma omp for
             for(int i=0; i < (int)tasks.size(); i++){
@@ -2398,7 +2506,11 @@ double totalValidArea=0;
 
     string vartexcmds_fn=string(diced_dir)+"/vartexcmds";
 
-    string imgbase=(compositeMission? "/":"/img/");
+    string imgbase;
+    if(newmvs)
+        imgbase=mvs_output_dir+"/visualize/";
+    else
+        imgbase=(compositeMission? "/":"/img/");
     int VTtileSize=256;
     int tileBorder=1;
     int ajustedGLImageSizeX=(int)reimageSize.x() - (!useVirtTex ?  0 : ((reimageSize.x()/VTtileSize)*2*tileBorder));
@@ -2467,9 +2579,10 @@ double totalValidArea=0;
         fprintf(calcTexFn_fp,"cd %s",
                 cwd);
         if(newmvs){
-            fprintf(calcTexFn_fp,";%s/calcTexCoordBundler %s/../00/ %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin %f\n",
+            fprintf(calcTexFn_fp,";%s/calcTexCoordBundler %s/%s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin %f\n",
                 basepath.c_str(),
                 base_dir.c_str(),
+                mvs_output_dir.c_str(),
                 diced_dir,
                 cells[i].row,cells[i].col,
                 diced_dir,cells[i].row,cells[i].col,
@@ -2514,7 +2627,7 @@ double totalValidArea=0;
                 switch(z){
                 case REMAP:
                     teximgcmd = "vcgapps/bin/reparam";
-                    sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
+                    sizestr << "--srcsize " <<imageWidth << " "<<imageHeight << " ";
                     sizestr<<"--scale "<<scaleRemapTex;
                     break;
                 case DEPTH:
@@ -2529,7 +2642,7 @@ double totalValidArea=0;
                     break;
                 case REMAP_FLAT_SIZE:
                     teximgcmd = "vcgapps/bin/renderReorderAA";
-                    sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
+                    sizestr << "--srcsize " <<imageWidth << " "<<imageHeight << " ";
 
 //                    sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
                     sprintf(tmpfn," --remap %s/param-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ",
@@ -2545,7 +2658,7 @@ double totalValidArea=0;
                 if(useVirtTex)
                     sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
                 if(newmvs){
-                fprintf(texcmds_fp[z],";%s/%s %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply camboxdata.txt %s  --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
+                fprintf(texcmds_fp[z],";%s/%s %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply tmp/mvs/id_image_list.txt %s  --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
                         basepath.c_str(),
                         teximgcmd.c_str(),
                         diced_dir,
@@ -2735,7 +2848,7 @@ double totalValidArea=0;
 
           /*      case REMAP_FLAT_SIZE:
                     teximgcmd = "vcgapps/bin/renderReorderAA";
-                    sizestr << "--srcsize " <<calib.camera_calibs[0].width << " "<<calib.camera_calibs[0].height << " ";
+                    sizestr << "--srcsize " <<imageWidth << " "<<imageHeight << " ";
 
 //                    sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
                     sprintf(tmpfn," --remap %s/param-tex-clipped-diced-r_%04d_c_%04d-lod%d.ply ",
@@ -2748,7 +2861,26 @@ double totalValidArea=0;
 
                 if(useVirtTex)
                     sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
-
+                if(newmvs){
+                    fprintf(mosaiccmds_fp[z],";%s/%s  %s  --bbox %.16f %.16f %.16f %.16f %.16f %.16f --imglist tmp/mvs/id_image_list.txt --imagedir %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
+                            basepath.c_str(),
+                            teximgcmd.c_str(),
+                            mesh_list.c_str(),
+                            cells_mosaic[i].bbox.xMin(),
+                            cells_mosaic[i].bbox.yMin(),
+                            cells_mosaic[i].bbox.zMin(),
+                            cells_mosaic[i].bbox.xMax(),
+                            cells_mosaic[i].bbox.yMax(),
+                            cells_mosaic[i].bbox.zMax(),
+                            //diced_dir,
+                            //cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns,
+                            (base_dir+imgbase).c_str(),
+                            diced_dir,
+                            cells_mosaic[i].row,cells_mosaic[i].col,
+                            rx,ry,rz,
+                            cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns,
+                            latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
+                }else{
                 fprintf(mosaiccmds_fp[z],";%s/%s  %s  --bbox %.16f %.16f %.16f %.16f %.16f %.16f --imglist %s/even-bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d_rs%04d_cs%04d.ply.txt --imagedir %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
                         basepath.c_str(),
                         teximgcmd.c_str(),
@@ -2767,6 +2899,7 @@ double totalValidArea=0;
                         rx,ry,rz,
                         cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns,
                         latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
+                }
                 if(blending)
                     fprintf(mosaiccmds_fp[z]," --blend");
 
@@ -2872,8 +3005,8 @@ double totalValidArea=0;
     fchmod(fileno(FP5),0777);
     /*fprintf(FP5,"#!/bin/bash\n%s/rangeimg  mesh-diced/vis-total.ply mesh-diced/totalbbox.txt --size %d %d -calib %s\n",
             basepath.c_str(),
-            calib.camera_calibs[0].width,
-            calib.camera_calibs[0].height,
+            imageWidth,
+            imageHeight,
             stereo_calib_file_name.c_str()
             );*/
     fclose(FP4);
@@ -2969,8 +3102,8 @@ double totalValidArea=0;
                         mesh_list.c_str(),
                         aggdir,
                         cur->volIdx[0],cur->volIdx[1],cur->volIdx[2],
-                        calib.camera_calibs[0].width,
-                        calib.camera_calibs[0].height,
+                        imageWidth,
+                        imageHeight,
                         stereo_calib_file_name.c_str(),
                         globalstr
                         );
@@ -3074,6 +3207,10 @@ double totalValidArea=0;
             remapSizes.push_back(make_pair<int,int>(sizeX,sizeY));
         }
         int sqrtSize=    ceil(sqrt(totalSide));
+        if(sqrtSize < 8){
+            fprintf(stderr,"Atlas size %d invalid no texures generated\n",sqrtSize);
+            exit(-1);
+        }
         // printf("Un adjusted size %d\n",sqrtSize);
         int ajustedGLImageSize=(int)sqrtSize+((sqrtSize/VTtileSize)*2*tileBorder);
         int maxVTSize=(int)pow(2,17); //~128k max size
@@ -3442,7 +3579,13 @@ double totalValidArea=0;
         }else{
             no_hw_context=true;
         }
-        doQuadTreeVPB(basepath,datalist_lod,bounds,calib.camera_calibs[0],cachedtexdir,POTatlasSize,useTextureArray,useReimage,useVirtTex,totalbb_unrot,src_proj4,dst_proj4_coord_system,sparseRatio,no_hw_context,no_atlas);
+        CameraCalib *cam_calib;
+        if(newmvs)
+            cam_calib=new CameraCalib();
+        else
+            cam_calib=&(calib->camera_calibs[0]);
+
+        doQuadTreeVPB(basepath,datalist_lod,bounds,*cam_calib,cachedtexdir,POTatlasSize,useTextureArray,useReimage,useVirtTex,totalbb_unrot,src_proj4,dst_proj4_coord_system,sparseRatio,no_hw_context,no_atlas);
     }
 
     char zipstr[1024];

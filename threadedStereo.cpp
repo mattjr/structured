@@ -180,6 +180,7 @@ static bool newmvs=false;
 static bool no_runmvs_tri=false;
 static double triangCleanEdge=5.0;
 static bool no_runmvs=false;
+static bool mvs_tex_only_color=false;
 MyGraphicsContext *mgc=NULL;
 #define diced_fopen(x,y) fopen((string(diced_dir)+string(x)).c_str(),y)
 
@@ -339,6 +340,9 @@ static bool parse_args( int argc, char *argv[ ] )
             newmvs=true;
             printf("Using MVS Mode for computation of structure\n");
 
+    }
+    if(argp.read("--onlymvscolor")){
+        mvs_tex_only_color=true;
     }
     if(argp.read("--extern")){
         externalMode=true;
@@ -962,13 +966,14 @@ int main( int argc, char *argv[ ] )
     float simp_mult=1.0;
     ShellCmd shellcm(basepath.c_str(),simp_mult,pos_simp_log_dir,cwd,aggdir,diced_dir,num_threads);
     shellcm.write_setup();
+    std::vector<bool> isGrayImageList;
 
-    string mvs_output_dir;
+    string mvs_output_dir=string("/tmp/mvs/result.nvm.cmvs/00/");
     if(externalMode){
         if(newmvs){
             osgDB::makeDirectory("tmp/mvs/");
 
-            if(!osgDB::fileExists(base_dir+"tmp/mvs/image_list.txt")){
+            if(!osgDB::fileExists(string(cwd)+"tmp/mvs/image_list.txt")){
                 std::vector<string> validExts;
                 validExts.push_back(".ppm");
                 validExts.push_back(".pgm");
@@ -976,23 +981,47 @@ int main( int argc, char *argv[ ] )
                 validExts.push_back(".png");
 
                osgDB::DirectoryContents dirConts= getDirectoryContents(base_dir,validExts);
-               ofstream fileList((base_dir+"/tmp/mvs/image_list.txt").c_str());
-
+               ofstream fileList((string(cwd)+"/tmp/mvs/image_list.txt").c_str());
+               string tmp_imgdir=string(cwd)+"/tmp/cvt_images/";
+               osgDB::makeDirectory(tmp_imgdir);
                for(int i=0; i < (int)dirConts.size(); i++){
-                   fileList <<  base_dir<<"/"<<dirConts[i] << std::endl;
+                   string stripped=osgDB::getNameLessExtension(dirConts[i]);
+                   if(mvs_tex_only_color)
+                       isGrayImageList.push_back(stripped.substr(stripped.size()-3)=="M16");
+                   else
+                       isGrayImageList.push_back(false);
+                   fileList <<  tmp_imgdir<<"/"<<stripped <<".jpg" << std::endl;
                }
                fileList.close();
 
 
                vector<std::string> precmd;
+               vector<std::string> postcmd;
 
                string bundle_cmd="bundle.py";
                char tmp_bundle[8192];
-               sprintf(tmp_bundle,"cd %s/tmp/mvs/;%s/VisualSFM sfm+pmvs image_list.txt result.nvm",cwd,basepath.c_str());
+               char optstring[1024];
+               validExts.clear();
+               validExts.push_back(".gcp");
+
+               osgDB::DirectoryContents gcpfile= getDirectoryContents(base_dir,validExts);
+               if(gcpfile.size()){
+                   osgDB::copyFile(base_dir+"/"+gcpfile.front(),string(cwd)+"/tmp/mvs/image_list.txt.gcp");
+                   sprintf(optstring,"sfm+gcp+sort");
+               }else{
+                   sprintf(optstring,"sfm+sort");
+               }
+
+               sprintf(tmp_bundle,"cd %s;mogrify -format jpg -path %s \\'*.png\\';cd %s/tmp/mvs/;%s/VisualSFM %s image_list.txt tmp.nvm; %s/VisualSFM sfm+loadnvm+cmvs tmp.nvm result.nvm",base_dir.c_str(),tmp_imgdir.c_str(),cwd,basepath.c_str(),optstring,basepath.c_str());
                precmd.push_back(tmp_bundle);
-               shellcm.write_generic(bundle_cmd,"","Bundle",&(precmd),NULL,1, "");
+               sprintf(tmp_bundle,"cd %s/%s/;mv visualize visualize.color;mkdir visualize; cd visualize.color; mogrify -path ../visualize -type Grayscale -gamma 2.2 *.jpg;cd  ../visualize; mogrify -type TrueColor -colorspace RGB *.jpg",cwd,mvs_output_dir.c_str());
+               postcmd.push_back(tmp_bundle);
+               sprintf(tmp_bundle,"cd %s/%s/;PATH=$PATH:%s bash pmvs.sh",cwd,mvs_output_dir.c_str(),basepath.c_str());
+               postcmd.push_back(tmp_bundle);
+
+               shellcm.write_generic(bundle_cmd,"","Bundle",&(precmd),&(postcmd),1, "");
                if(!no_runmvs)
-                   sysres=system((base_dir+"/"+bundle_cmd).c_str());
+                   sysres=system((string(cwd)+"/"+bundle_cmd).c_str());
 
 
                //  precmd.clear();
@@ -1000,25 +1029,26 @@ int main( int argc, char *argv[ ] )
                //shellcm.write_generic(mvs_cmd,"","MVS",&(precmd),NULL,1, "");
 
             }
-            mvs_output_dir=string("/tmp/mvs/result.nvm.cmvs/00/");
             // Get info on multi-view stereo point clouds
             ifstream ifstr;
             char filename[4096];
             sprintf(filename,"%s/%s/ske.dat",cwd,mvs_output_dir.c_str());
             ifstr.open(filename);
             if(!ifstr){
-                fprintf(stderr,"Failed to open %s/%s/ske.dat",cwd,mvs_output_dir.c_str());
+                fprintf(stderr,"Failed to open %s/%s/ske.dat\n",cwd,mvs_output_dir.c_str());
                 exit(-1);
             }
-            ofstream idList((base_dir+"/tmp/mvs/id_image_list.txt").c_str());
+            ofstream idList((string(cwd)+"/tmp/mvs/id_image_list.txt").c_str());
             ifstream ifstr2;
-            sprintf(filename,"%s/%s/list.txt",base_dir.c_str(),mvs_output_dir.c_str());
+            sprintf(filename,"%s/%s/list.txt",cwd,mvs_output_dir.c_str());
             ifstr2.open(filename);
             if(!ifstr2){
                 fprintf(stderr,"Failed to open %s\n",filename);
                 exit(-1);
             }
             int c_id=0;
+            int valid_cnt=0;
+
             while(ifstr2.good()){
                 string line;
 
@@ -1037,13 +1067,44 @@ int main( int argc, char *argv[ ] )
                     imageWidth=img.cols;
                     imageHeight=img.rows;
                 }
+
+                if(mvs_tex_only_color){
+                    sprintf(filename,"%s/%s/visualize.color/%s",cwd,mvs_output_dir.c_str(),osgDB::getSimpleFileName(line.c_str()).c_str());
+                    cv::Mat img=cv::imread(filename);
+                    if(!img.data){
+                        fprintf(stderr,"Cannot open %s for scanning grayscale in mvs\n",filename);
+                        exit(-1);
+                    }
+                    //printf("%d %d\n",img.rows,img.cols);
+                    bool isgray=true;
+                    for(int k=0; k<img.rows; k++){
+                        for(int l=0; l<img.cols; l++){
+                            cv::Vec3b p = img.at<cv::Vec3b>(k,l);
+                            //printf("%d %d %d\n",p[0],p[1],p[2]);
+                            if(p[0] != p[1] || p[1] != p[2]){
+                                isgray=false;
+                                break;
+                            }
+                        }
+                    }
+                    if(isgray){
+                        c_id++;
+                        continue;
+                    }
+
+                }
+
                 idList << c_id++ << " "<<osgDB::getSimpleFileName(line);
                 for(int j=0; j <22; j++)
                     idList<< " "<< 0.0 ;
                 idList  << std::endl;
+                valid_cnt++;
             }
             idList.close();
-
+            if(valid_cnt==0){
+                fprintf(stderr,"No valid images Bailing!\n");
+                exit(-1);
+            }
             string header;
             int inum, cnum;
             ifstr >> header >> inum >> cnum;
@@ -1056,14 +1117,14 @@ int main( int argc, char *argv[ ] )
                 exit(-1);
             }
             for(int i=0; i < cnum; i++){
-                fprintf(fpp2,"%s/delaunay %s/cameras.ply %s/%s/models/option-%04d -o %s/%s/mvs-%04d.cgal;",basepath.c_str(),cwd,base_dir.c_str(),mvs_output_dir.c_str(),i,cwd,aggdir,i);
+                fprintf(fpp2,"%s/delaunay %s/cameras.ply %s/%s/models/option-%04d -o %s/%s/mvs-%04d.cgal;",basepath.c_str(),cwd,cwd,mvs_output_dir.c_str(),i,cwd,aggdir,i);
                 fprintf(fpp2,"%s/triangclean %s/%s/mvs-%04d.cgal %s/%s/mvs-%04d.ply -lg %f -flip\n",basepath.c_str(),cwd,aggdir,i,cwd,aggdir,i,triangCleanEdge);
 
             }
             fclose(fpp2);
             vector<std::string> precmd;
             char tmp11[4096];
-            sprintf(tmp11,"%s/triangulation/drawcameras.py -o %s/cameras.ply -i %s/%s/bundle.rd.out",basepath.c_str(),cwd,base_dir.c_str(),mvs_output_dir.c_str());
+            sprintf(tmp11,"%s/triangulation/drawcameras.py -o %s/cameras.ply -i %s/%s/bundle.rd.out",basepath.c_str(),cwd,cwd,mvs_output_dir.c_str());
             precmd.push_back(tmp11);
 
 
@@ -2508,7 +2569,7 @@ double totalValidArea=0;
 
     string imgbase;
     if(newmvs)
-        imgbase=mvs_output_dir+"/visualize/";
+        imgbase=mvs_output_dir+"/visualize.color/";
     else
         imgbase=(compositeMission? "/":"/img/");
     int VTtileSize=256;
@@ -2579,13 +2640,14 @@ double totalValidArea=0;
         fprintf(calcTexFn_fp,"cd %s",
                 cwd);
         if(newmvs){
-            fprintf(calcTexFn_fp,";%s/calcTexCoordBundler %s/%s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin %f\n",
+            fprintf(calcTexFn_fp,";%s/calcTexCoordBundler %s/%s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --camimgfile  %s/tmp/mvs/id_image_list.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin %f\n",
                 basepath.c_str(),
-                base_dir.c_str(),
+                cwd,
                 mvs_output_dir.c_str(),
                 diced_dir,
                 cells[i].row,cells[i].col,
-                diced_dir,cells[i].row,cells[i].col,
+                cwd,
+             //   diced_dir,cells[i].row,cells[i].col,
                 diced_dir,
                 cells[i].row,cells[i].col,
                 vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
@@ -2664,7 +2726,7 @@ double totalValidArea=0;
                         diced_dir,
                         cells[i].row,cells[i].col,
                         vpblod,
-                        (base_dir+imgbase).c_str(),
+                        (cwd+imgbase).c_str(),
                         rx,ry,rz,
                         cells[i].row,cells[i].col,_tileRows,_tileColumns,
                         latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
@@ -2874,7 +2936,7 @@ double totalValidArea=0;
                             cells_mosaic[i].bbox.zMax(),
                             //diced_dir,
                             //cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns,
-                            (base_dir+imgbase).c_str(),
+                            (cwd+imgbase).c_str(),
                             diced_dir,
                             cells_mosaic[i].row,cells_mosaic[i].col,
                             rx,ry,rz,

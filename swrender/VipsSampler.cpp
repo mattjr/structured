@@ -122,8 +122,10 @@ void VipsSampler::blendPassTri(int x, int y, const osg::Vec3& bar, const osg::Ve
 {
 
 
-    if(doublecountmapPtr->count(std::make_pair<int,int>(x,y)) && (*doublecountmapPtr)[std::make_pair<int,int>(x,y)] != triIdx)
+    if(doublecountmapPtr->count(std::make_pair<int,int>(x,y)) ){//&& (*doublecountmapPtr)[std::make_pair<int,int>(x,y)] != triIdx)
+      //  printf("dd %d %d\n",(*doublecountmapPtr)[std::make_pair<int,int>(x,y)],triIdx);
         return;
+    }
 
     gRect.left=x;
     gRect.top=y;

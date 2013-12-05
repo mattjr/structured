@@ -75,7 +75,7 @@ if ( CGAL_FOUND )
   target_link_libraries(delaunay1 ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
 
   add_executable(hist hist.cpp config.cpp delaunay_io.cpp)
-  target_link_libraries(hist ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+  target_link_libraries(hist ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} rt)
 
   add_executable(triangclean.d triangclean.cpp config.cpp extract.cpp smooth.cpp gviewer.cpp delaunay_io.cpp)
   target_link_libraries(triangclean.d maxflow ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})

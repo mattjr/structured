@@ -61,24 +61,24 @@ if ( CGAL_FOUND )
 
 #  include_directories (BEFORE "../../include")
   add_executable(triangclean triangclean.cpp config.cpp extract.cpp smooth.cpp gviewer.cpp delaunay_io.cpp)
-  target_link_libraries(triangclean maxflow ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+  target_link_libraries(triangclean maxflow ${CGAL_LIBRARIES}  rt ${CGAL_3RD_PARTY_LIBRARIES})
 
   add_executable(delaunay delaunay.cpp config.cpp delaunay_io.cpp addcells.cpp intersect.cpp gviewer.cpp )
-  target_link_libraries(delaunay ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+  target_link_libraries(delaunay ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} rt)
   set_target_properties(delaunay PROPERTIES COMPILE_FLAGS  "${OpenMP_CXX_FLAGS}" LINK_FLAGS "${OpenMP_CXX_FLAGS} ")
 
   add_executable(delaunayb delaunay.cpp config.cpp delaunay_io.cpp read_bunbler.cpp addcells.cpp intersect.cpp gviewer.cpp )
-  target_link_libraries(delaunayb ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+  target_link_libraries(delaunayb ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} rt)
   set_target_properties(delaunayb PROPERTIES COMPILE_FLAGS  "-DUSE_BUNDLER ${OpenMP_CXX_FLAGS}" LINK_FLAGS "${OpenMP_CXX_FLAGS} ")
 
   add_executable(delaunay1 delaunay.cpp config.cpp delaunay_io.cpp addcells.cpp intersect.cpp gviewer.cpp )
-  target_link_libraries(delaunay1 ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+  target_link_libraries(delaunay1 ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} rt)
 
   add_executable(hist hist.cpp config.cpp delaunay_io.cpp)
   target_link_libraries(hist ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} rt)
 
   add_executable(triangclean.d triangclean.cpp config.cpp extract.cpp smooth.cpp gviewer.cpp delaunay_io.cpp)
-  target_link_libraries(triangclean.d maxflow ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+  target_link_libraries(triangclean.d maxflow ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} rt)
   set_target_properties(triangclean.d PROPERTIES COMPILE_FLAGS "-DTRIANGDEBUG")
   message("QGL ${QGLVIEWER_LIBRARIES}")
 
@@ -87,13 +87,13 @@ if ( CGAL_FOUND )
   endif()
   if(NOT ("${QGLVIEWER_LIBRARIES}" STREQUAL ""))
     add_executable(cmpcgal cmpcgal.cpp config.cpp delaunay_io.cpp)
-    target_link_libraries(cmpcgal ${QT_LIBRARIES} ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} ${QGLVIEWER_LIBRARIES} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} )
+    target_link_libraries(cmpcgal ${QT_LIBRARIES} ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} rt ${QGLVIEWER_LIBRARIES} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} )
 
     add_executable(camtest0 camtest0.cpp config.cpp qviewer.cpp delaunay_io.cpp)
-    target_link_libraries(camtest0 ${QT_LIBRARIES} ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} ${QGLVIEWER_LIBRARIES} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} )
+    target_link_libraries(camtest0 ${QT_LIBRARIES} ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} rt ${QGLVIEWER_LIBRARIES} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} )
 
     add_executable(camtest camtest.cpp config.cpp qviewer.cpp delaunay_io.cpp)
-    target_link_libraries(camtest ${QT_LIBRARIES} ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} ${QGLVIEWER_LIBRARIES} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} )
+    target_link_libraries(camtest ${QT_LIBRARIES} ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES} rt ${QGLVIEWER_LIBRARIES} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} )
 
     if(NOT ("${INST_BIN}" STREQUAL ""))
       install(TARGETS camtest camtest0 cmpcgal RUNTIME DESTINATION ${INST_BIN})

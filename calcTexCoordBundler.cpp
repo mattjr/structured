@@ -339,11 +339,11 @@ bool LoadPMVSPatch(const string& patch_file, vector <Point3D> &points)
     str >> num_pts;
 
     cout << "    points = " << num_pts << endl;
-
-    points.resize(num_pts);
+    int subsample=10;
+    points.resize(num_pts/subsample);
 
     for(int i=0; i < num_pts; i++) {
-        Point3D &pt = points[i];
+        Point3D pt;
         int num;
 
         input.getline(line, sizeof(line)); // another header
@@ -396,7 +396,9 @@ bool LoadPMVSPatch(const string& patch_file, vector <Point3D> &points)
         }
 
         input.getline(line, sizeof(line)); // blank line
-
+        if(i % subsample ==0 && (i/subsample) <points.size()){
+            points[i/subsample]=pt;
+        }
         if(input.eof()) {
             cerr << "LoadPMVSPatch(): Premature end of file" << endl;
             return false;

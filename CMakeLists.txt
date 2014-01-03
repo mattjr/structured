@@ -314,7 +314,7 @@ ENDIF()
 #SUBDIRS(src include tools )
 
 
-SUBDIRS(gts-0.7.6 trimesh2 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender triangulation ann/src/ CMVS-PMVS/program SiftGPU pba vsfm )
+SUBDIRS(gts-0.7.6 trimesh2 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender triangulation ann/src/ CMVS-PMVS/program SiftGPU pba vsfm re_vision )
 
 SET( SRCS
                 Extents.cpp

@@ -39,7 +39,12 @@
 #include "vertexData.h"
 #include "ANNWrapper.h"
 #include <opencv2/highgui/highgui.hpp>
-
+typedef struct _imgData{
+    osg::BoundingBox bbox;
+    osg::Matrix m;
+    std::string filename;
+    int id;
+}imgData;
 using namespace std;
 struct Camera
 {
@@ -55,6 +60,7 @@ struct Camera
         R = cv::Mat::zeros(3, 3, CV_32F);
         t = cv::Mat::zeros(3, 1, CV_32F);
     }
+    bool valid;
 };
 
 
@@ -99,7 +105,7 @@ void LoadBundle(const string& filename, vector <Camera> &cameras)
 
     for(int i=0; i < num; i++) {
         Camera new_camera;
-
+        new_camera.valid=true;
         bundle.getline(line, sizeof(line)); // focal, r1, r2
 
         str.str(line);
@@ -165,9 +171,29 @@ void LoadBundle(const string& filename, vector <Camera> &cameras)
 
     bundle.close();
 }
+void readFile(string fname,map<int,imgData> &imageList){
 
+    std::ifstream m_fin(fname.c_str());
+    if(!osgDB::fileExists(fname.c_str())||!m_fin.good() ){
+        fprintf(stderr,"Can't load %s\n",fname.c_str());
+        exit(-1);
+    }
+    while(!m_fin.eof()){
+        imgData cam;
+        double low[3], high[3];
+        if(m_fin >> cam.id >> cam.filename >> low[0] >> low[1] >> low[2] >> high[0] >> high[1] >> high[2]
+                >> cam.m(0,0) >>cam.m(0,1)>>cam.m(0,2) >>cam.m(0,3)
+                >> cam.m(1,0) >>cam.m(1,1)>>cam.m(1,2) >>cam.m(1,3)
+                >> cam.m(2,0) >>cam.m(2,1)>>cam.m(2,2) >>cam.m(2,3)
+                >> cam.m(3,0) >>cam.m(3,1)>>cam.m(3,2) >>cam.m(3,3)){
+            cam.bbox.expandBy(low[0],low[1],low[2]);
+            cam.bbox.expandBy(high[0],high[1],high[2]);
+            imageList[cam.id]=cam;
+        }
+    }
+}
 void AssignVisibleCameras(const osg::Vec3Array *vertices, const vector <Point3D> &points, const vector <Camera> &cameras,
-                          osg::ref_ptr<osg::DrawElementsUInt> &triangles,osg::ref_ptr<osg::Vec4Array> &textureID)
+                          osg::ref_ptr<osg::DrawElementsUInt> &triangles,osg::ref_ptr<osg::Vec4Array> &textureID,map<int,imgData> &imageList)
 {
     ANNWrapper ann;
 
@@ -200,9 +226,20 @@ void AssignVisibleCameras(const osg::Vec3Array *vertices, const vector <Point3D>
         ann.FindClosest(c, &dist2, &index);
 
         //faces[i].visible_in = points[index].visible_in;
+        vector <int> visible_in_valid;
+        for( int j=0; j < (int)points[index].visible_in.size(); j++){
+            if(imageList.count(points[index].visible_in[j])){
+                visible_in_valid.push_back(points[index].visible_in[j]);
+            }
+        }
         for(int k=0; k<4; k++)
-            for(int l=0; l<3; l++)
-            textureID->at(i+l)[k]=(float)points[index].visible_in[k];
+            for(int l=0; l<3; l++){
+                if(k < (int)visible_in_valid.size())
+                    textureID->at(i+l)[k]=(float)visible_in_valid[k];
+                else
+                    textureID->at(i+l)[k]= -1.0f;
+            }
+
     }
 }
 
@@ -246,6 +283,8 @@ void AssignTexture(const osg::Vec3Array *vertices, const vector <Camera> &camera
 
                 float u = (xx*camera.focal + cx) / IMAGE_WIDTH;
                 float v = (yy*camera.focal + cy) / IMAGE_HEIGHT;
+                if(u > 1.0 || u <0.0 || v>1.0 || v <0.0)
+                    continue;
                 texCoords[j]->at(i+k)=osg::Vec3(u,v,0.0);
                 printf("Camera: %d (%.2f,%.2f)\n",image_num,u,v);
              //   faces[i].u[k] = u;
@@ -300,11 +339,11 @@ bool LoadPMVSPatch(const string& patch_file, vector <Point3D> &points)
     str >> num_pts;
 
     cout << "    points = " << num_pts << endl;
-
-    points.resize(num_pts);
+    int subsample=10;
+    points.resize(num_pts/subsample);
 
     for(int i=0; i < num_pts; i++) {
-        Point3D &pt = points[i];
+        Point3D pt;
         int num;
 
         input.getline(line, sizeof(line)); // another header
@@ -357,7 +396,9 @@ bool LoadPMVSPatch(const string& patch_file, vector <Point3D> &points)
         }
 
         input.getline(line, sizeof(line)); // blank line
-
+        if(i % subsample ==0 && (i/subsample) <points.size()){
+            points[i/subsample]=pt;
+        }
         if(input.eof()) {
             cerr << "LoadPMVSPatch(): Premature end of file" << endl;
             return false;
@@ -391,11 +432,14 @@ int main( int argc, char **argv )
         return -1;
     }
 
-   /* string bundlefile;
-    if(!arguments.read("--bundle",bundlefile)){
-        fprintf(stderr,"Need bundlefile \n");
+    string camimgfile;
+    if(!arguments.read("--camimgfile",camimgfile)){
+        fprintf(stderr,"Need camimgfile \n");
         return -1;
-    }*/
+    }
+    map<int,imgData> imageList;
+    readFile(camimgfile,imageList);
+
     vector<Camera> cameras;
     vector <Point3D> points;
 
@@ -453,24 +497,7 @@ int main( int argc, char **argv )
 
 
     std::string mf=argv[2];
-    /* std::string sha2hash;
-    int res=checkCached(mf,outfilename,sha2hash);
-    if(res == -1)
-        return -1;
-    else if(res == 1)
-        return 0;//Hash is valid
-    cout <<"Computing hash\n";*/
-    //Differing hash or no hash
-    //int npos=mf.find("/");
-    /*std::string bbox_file;
-    if(!arguments.read("--bbfile",bbox_file)){
-        fprintf(stderr,"Can't get bbox \n");
-        exit(-1);
-        }//std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
-    printf("SS %s\n",bbox_file.c_str());
-  */ /* TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file,true,false,bbox_margin);
-    osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
-   */   ply::VertexDataMosaic vertexData;
+    ply::VertexDataMosaic vertexData;
     osg::Node* model = vertexData.readPlyFile(mf.c_str());//osgDB::readNodeFile(sourceModel->getFileName().c_str());
 
     if(!model){
@@ -493,7 +520,7 @@ int main( int argc, char **argv )
     zrange[3]=bb.zMax();
     if (model)
     {
-        osg::KdTree* kdTree=NULL;
+        /*osg::KdTree* kdTree=NULL;
         osg::Geode *geode= dynamic_cast<osg::Geode*>(model);
         if(geode && geode->getNumDrawables()){
             //addDups(geode);
@@ -502,6 +529,7 @@ int main( int argc, char **argv )
         }else{
             std::cerr << "No drawbables \n";
         }
+          */
             osg::ref_ptr<osg::Vec4Array> textureID=new osg::Vec4Array;
             std::vector<osg::ref_ptr<osg::Vec3Array> > texCoords;
             texCoords.resize(4);
@@ -514,7 +542,7 @@ int main( int argc, char **argv )
             texCoords[2]->resize(vertexData._vertices->size(),osg::Vec3(-1.0,-1.0,-1.0));
             texCoords[3]->resize(vertexData._vertices->size(),osg::Vec3(-1.0,-1.0,-1.0));
             textureID->resize(vertexData._vertices->size(),osg::Vec4(-1.0,-1.0,-1.0,-1.0));;
-            AssignVisibleCameras(vertexData._vertices, points, cameras,vertexData._triangles,textureID);
+            AssignVisibleCameras(vertexData._vertices, points, cameras,vertexData._triangles,textureID,imageList);
             AssignTexture(vertexData._vertices,cameras,vertexData._triangles,textureID,texCoords);
        // bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(model),tex_margin);
         if(1){

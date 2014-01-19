@@ -61,10 +61,10 @@ void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const
         fprintf(ffp,"LOCAL %d\n",loc_num_threads);
         fclose(ffp);
     }
-
-    fprintf(fp,"os.system(setupts.basepath +'/%s %s %s %s')\n",
-            thrpool,cmdfile.c_str(),loc_file.c_str(),cmdname.c_str());
-
+    if(cmdfile.size() != 0){
+       fprintf(fp,"os.system(setupts.basepath +'/%s %s %s %s')\n",
+                thrpool,cmdfile.c_str(),loc_file.c_str(),cmdname.c_str());
+    }
     if(postcmds){
         for(int i=0; i<(int) postcmds->size(); i++)
             fprintf(fp,"os.system('%s')\n",(*postcmds)[i].c_str());

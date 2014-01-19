@@ -137,7 +137,7 @@ class FitChecker  : public VipsAtlasBuilder{
     std::vector<vips::VImage *> _tmp_images;
     ~FitChecker();
 };
-bool getScaleFactorForAtlasFit(float &scale,std::vector<std::pair<int,int> > &imageSizes,int POTsize,int VTtileSize,int VToverlap);
+bool getScaleFactorForAtlasFit(float &scale,std::vector<std::pair<int,int> > &imageSizes,int &POTsize,int VTtileSize,int VToverlap);
 
 
 #endif // TightFit_H

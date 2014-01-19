@@ -226,7 +226,7 @@ void write_all(std::ostream& _fout,osg::DrawElementsUInt *tri,osg::Vec3Array *ve
 
 
 
-
+/*
 void readFile(string fname,map<int,imgData> &imageList){
 
     std::ifstream m_fin(fname.c_str());
@@ -248,7 +248,7 @@ void readFile(string fname,map<int,imgData> &imageList){
         }
     }
 }
-
+*/
 #include <OGF/basic/os/process.h>
 
 
@@ -327,9 +327,9 @@ int main(int ac, char *av[]) {
     if(blending)
         printf("Blending Enabled\n");
 
-    map<int,imgData> imageList;
+   // map<int,imgData> imageList;
     model= vertexData.readPlyFile(av[1],false,NULL,DUP,true);
-    readFile(av[2],imageList);
+   // readFile(av[2],imageList);
     osg::Vec3Array *dupfreeVerts= new osg::Vec3Array;
     osg::DrawElementsUInt *dupfreeTri= new osg::DrawElementsUInt;
 

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.4.6)
       cmake_policy(SET CMP0003 NEW)
     endif(COMMAND cmake_policy)
 # add zlib
-include($ENV{ROS_ROOT}/core/rosbuild/FindPkgConfig.cmake)
+# include($ENV{ROS_ROOT}/core/rosbuild/FindPkgConfig.cmake)
 #pkg_check_modules(ZLIB REQUIRED zlib)
 #include_directories(${ZLIB_INCLUDE_DIRS})
 #link_directories(${ZLIB_LIBRARY_DIRS})

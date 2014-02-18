@@ -1,0 +1,76 @@
+--- Bundle2PMVS.cpp	2010-09-12 17:54:13.000000000 +0200
++++ Bundle2PMVS2.cpp	2010-09-12 17:54:02.000000000 +0200
+@@ -155,16 +155,40 @@
+ 
+     FILE *f_scr = fopen(buf, "w");
+ 
++    fprintf(f_scr, "#!/bin/bash\n\n");
+     fprintf(f_scr, "# Script for preparing images and calibration data \n"
+-            "#   for Yasutaka Furukawa's PMVS system\n\n");
+-    fprintf(f_scr, "BUNDLER_BIN_PATH="" # Edit this line before running\n");
+-    fprintf(f_scr, "if [ \"$BUNDLER_BIN_PATH\" == \"\" ] ; then "
+-            "echo Please edit prep_pmvs.sh to specify the path to the "
+-            " bundler binaries.; exit; fi\n");
++            "#   for Yasutaka Furukawa's PMVS system\n");
++    fprintf(f_scr, "# Modified by Dorian Galvez for RoboEarth WP1\n\n");
++    
++    fprintf(f_scr, "BUNDLER_BIN_PATH=\"$1\" # Edit this line before running\n");
++    fprintf(f_scr, "USE_IMAGES_WITH_BG=$2\n\n");
++    /*
++    fprintf(f_scr, "if [ \"$BUNDLER_BIN_PATH\" == \"\" ]; then\n"
++            "  echo \"Please edit prep_pmvs.sh to specify the path to the "
++            " bundler binaries.\"\n  exit\nfi\n");
++    */
++
++    std::string list_file_with_bg;
++    std::string s_list_file = list_file;
++
++    std::string::size_type n = s_list_file.find_last_of('.');
++
++    if(n == std::string::npos)
++      list_file_with_bg = s_list_file + "_with_bg";
++    else
++    {
++      list_file_with_bg = s_list_file.substr(0, n) + "_with_bg.txt";
++    }
++
++    fprintf(f_scr, "if [ $USE_IMAGES_WITH_BG -eq 0 ]; then\n");
++    fprintf(f_scr, "  LIST_FILE=%s\n", list_file);
++    fprintf(f_scr, "else\n");
++    fprintf(f_scr, "  LIST_FILE=%s\n", list_file_with_bg.c_str());
++    fprintf(f_scr, "fi\n\n");
+ 
+     fprintf(f_scr, "# Apply radial undistortion to the images\n");
+     fprintf(f_scr, "$BUNDLER_BIN_PATH/RadialUndistort %s %s %s\n", 
+-            list_file, bundle_file, output_path);
++            "$LIST_FILE", bundle_file, output_path);
+     fprintf(f_scr, "\n# Create directory structure\n");
+     // fprintf(f_scr, "mkdir -p %s/\n", output_path);
+     fprintf(f_scr, "mkdir -p %s/txt/\n", output_path);
+@@ -212,10 +236,14 @@
+         fclose(f);
+ 
+         int last_dot = images[i].rfind('.', images[i].length()-1);
+-        std::string basename = images[i].substr(0, last_dot);
++        int first_pos = images[i].rfind('/');
++        if(first_pos == std::string::npos) first_pos = 0;
++        else first_pos++;
++                
++        std::string basename = images[i].substr(first_pos, last_dot-first_pos);
+ 
+-        fprintf(f_scr, "mv pmvs/%s.rd.jpg %s/visualize/%08d.jpg\n", 
+-                basename.c_str(), output_path, count);
++        fprintf(f_scr, "mv %s/%s.rd.jpg %s/visualize/%08d.jpg\n", 
++                output_path, basename.c_str(), output_path, count);
+         fprintf(f_scr, "mv %s %s/txt/\n", buf, output_path);
+ 
+         count++;
+@@ -240,7 +268,7 @@
+ 
+     fclose(f_opt);
+ 
+-    fprintf(f_scr, "\necho \"Running Bundle2Vis to generate vis.dat\n\"\n");
++    fprintf(f_scr, "\necho \"Running Bundle2Vis to generate vis.dat\"\n");
+     fprintf(f_scr, "$BUNDLER_BIN_PATH/Bundle2Vis %s/bundle.rd.out %s/vis.dat\n", 
+             output_path, output_path);
+ 

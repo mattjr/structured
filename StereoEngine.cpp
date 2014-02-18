@@ -110,7 +110,7 @@ bool get_stereo_pair(
     // Load the images (-1 for unchanged grey/rgb)
     //
     string complete_left_name( contents_dir_name+left_image_name );
-    left_image  = cvLoadImage( complete_left_name.c_str( ) , -1 );
+    left_image  = cvLoadImage( complete_left_name.c_str( ) , CV_LOAD_IMAGE_ANYCOLOR );
     color_image=NULL;
     if( left_image == NULL )
     {
@@ -119,7 +119,7 @@ bool get_stereo_pair(
     }
 
     string complete_right_name( contents_dir_name+right_image_name );
-    right_image = cvLoadImage( complete_right_name.c_str( ), -1 );
+    right_image = cvLoadImage( complete_right_name.c_str( ), CV_LOAD_IMAGE_ANYCOLOR );
     if( right_image == NULL )
     {
         cerr << "ERROR - unable to load image: " << complete_right_name << endl;
@@ -132,12 +132,14 @@ bool get_stereo_pair(
     // Convert to greyscale. Use cvCvtColor for consistency. Getting cvLoadImage to load
     // the images as greyscale may use different RGB->greyscale weights
     //
+    bool color_exists=false;
     if( left_image->nChannels == 3 )
     {
         IplImage *grey_left  = cvCreateImage( cvGetSize(left_image) , IPL_DEPTH_8U, 1 );
         cvCvtColor( left_image , grey_left , CV_BGR2GRAY );
         color_image=left_image;
         left_image = grey_left;
+        color_exists=true;
     }
 
     if( right_image->nChannels == 3 )
@@ -146,8 +148,13 @@ bool get_stereo_pair(
         cvCvtColor( right_image, grey_right, CV_BGR2GRAY );
         color_image = right_image;
         right_image = grey_right;
+        color_exists=true;
     }
+    if(!color_exists){
+        IplImage *color_image  = cvCreateImage( cvGetSize(left_image) , IPL_DEPTH_8U, 3 );
+        cvCvtColor( left_image , color_image , CV_GRAY2BGR );
 
+    }
     //
     // Scale images if required
     //

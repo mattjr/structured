@@ -28,7 +28,7 @@
 #include <iostream>
 using namespace std;
 bool getScaleFactorForAtlasFit(float &scale,std::vector<std::pair<int,int> > &imageSizes,int &POTsize,int VTtileSize,int VToverlap){
-    if(POTsize < 8192);{
+    if(POTsize < 8192){
       printf("Orig POTSize %d\n",POTsize);
       scale=(scale*(8192.0/(float)POTsize));
         POTsize=8192;

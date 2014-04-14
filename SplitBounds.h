@@ -298,7 +298,7 @@ class WriteSplitTP : public WriteTP{
 
 class WriteBoundVRIP : private WriteTP{
     public:
-  WriteBoundVRIP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer);
+  WriteBoundVRIP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer,bool expand_vol);
     bool write_cmd(Cell_Data<Stereo_Pose_Data> cell);
     std::string bboxfn;
     std::string getCmdFileName(){return cmdfn;}
@@ -306,7 +306,7 @@ class WriteBoundVRIP : private WriteTP{
     double _expandBy;
     double _smallCCPer;
     std::string getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol);
-
+    bool _expand_vol;
 
 
 };

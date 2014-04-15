@@ -620,7 +620,13 @@ void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cel
                         atlas->atlasSourceMatrix[i]=v;
                         if(level >0 ){
                             char tmp[1024];
-                            sprintf(tmp,"%s-%02d.ppm",osgDB::getNameLessExtension(mosaic_cells[i].name).c_str(),level);
+			    int levels=(int)ceil(log( min( v->Xsize(),v->Ysize() ))/log(2.0) );
+			    if(level > levels){
+			      printf("Adjusting %d to %d\n",level,levels);
+			      sprintf(tmp,"%s-%02d.ppm",osgDB::getNameLessExtension(mosaic_cells[i].name).c_str(),levels);
+			    }else{
+			      sprintf(tmp,"%s-%02d.ppm",osgDB::getNameLessExtension(mosaic_cells[i].name).c_str(),level);
+			    }
                             vips::VImage* level_img=new vips::VImage (tmp);
                             if(!level_img){
                                 fprintf(stderr,"Failed to load ds image %s\n",tmp);

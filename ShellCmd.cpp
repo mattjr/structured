@@ -28,7 +28,7 @@
 #include <osgDB/FileUtils>
 #include <osgDB/FileNameUtils>
 
-const char *thrpool="runtasks.py";
+const char *thrpool="runtp_dist.py";
 const char *serfile="localserver";
 
 void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds,int thread_override,string custom){

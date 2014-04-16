@@ -52,7 +52,7 @@ osg::Matrix  osgTranspose( const osg::Matrix& src )
     return dest;
 }
 
-WriteBoundVRIP::WriteBoundVRIP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer):WriteTP(res,fname,basepath,cwd),_expandBy(expandBy),_smallCCPer(smallCCPer){
+WriteBoundVRIP::WriteBoundVRIP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer,bool expand_vol):WriteTP(res,fname,basepath,cwd),_expandBy(expandBy),_smallCCPer(smallCCPer),_expand_vol(expand_vol){
     cmdfp =fopen(fname.c_str(),"w");
     if(!cmdfp){
         fprintf(stderr,"Can't create cmd file");
@@ -86,7 +86,11 @@ std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol)
    // output <<tmp;
     sprintf(tmp,"export BASEDIR=\"%s\"; export OUTDIR=\"%s/\";export VRIP_HOME=\"$BASEDIR/vrip\";export VRIP_DIR=\"$VRIP_HOME/src/vrip/\";export PATH=$PATH:$VRIP_HOME/bin;cd %s/$OUTDIR;",_basepath.c_str(),diced_dir,_cwd.c_str());
     output << tmp;
-    sprintf(tmp,"$BASEDIR/vrip/bin/vripnew tmp-total.vri tmp-total.txt tmp-total.txt %f -rampscale %f > log-tmp-total.txt;$BASEDIR/vrip/bin/volfill tmp-total.vri exp-total.vri >log-volfill.txt;$BASEDIR/vrip/bin/vripsurf exp-total.vri exp-total.ply >log-surf.txt;",_res,_expandBy);
+    if(_expand_vol){
+      sprintf(tmp,"$BASEDIR/vrip/bin/vripnew tmp-total.vri tmp-total.txt tmp-total.txt %f -rampscale %f > log-tmp-total.txt;$BASEDIR/vrip/bin/volfill tmp-total.vri exp-total.vri >log-volfill.txt;$BASEDIR/vrip/bin/vripsurf exp-total.vri exp-total.ply >log-surf.txt;",_res,_expandBy);
+    }else{
+      sprintf(tmp,"$BASEDIR/vrip/bin/vripnew exp-total.vri tmp-total.txt tmp-total.txt %f -rampscale %f > log-tmp-total.txt;$BASEDIR/vrip/bin/vripsurf exp-total.vri exp-total.ply >log-surf.txt;",_res,_expandBy);
+    }
     output << tmp;
     sprintf(tmp,"%s/vcgapps/bin/mergeMesh exp-total.ply  -cleansize %f -P -out total.ply > log-merge.txt",_basepath.c_str(),_smallCCPer);
     output << tmp;

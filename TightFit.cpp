@@ -28,7 +28,7 @@
 #include <iostream>
 using namespace std;
 bool getScaleFactorForAtlasFit(float &scale,std::vector<std::pair<int,int> > &imageSizes,int &POTsize,int VTtileSize,int VToverlap){
-    if(POTsize < 8192);{
+    if(POTsize < 8192){
       printf("Orig POTSize %d\n",POTsize);
       scale=(scale*(8192.0/(float)POTsize));
         POTsize=8192;
@@ -68,6 +68,9 @@ FitChecker::FitChecker(std::vector<std::pair<int,int> > &imageSizes,int POTsize,
         std::pair<int,int> p=imageSizes[i];
         p.first=(int)ceil(p.first*scale);
         p.second=(int)ceil(p.second*scale);
+	if(p.first < 1 || p.second < 1)
+	  continue;
+	//	printf("%d %d\n",p.first,p.second);
         _tmp_images[i] = new vips::VImage;
         _tmp_images[i]->initdesc(p.first,p.second,
                                 3,vips::VImage::FMTUCHAR,vips::VImage::NOCODING,vips::VImage::sRGB,1.0,1.0,0,0);

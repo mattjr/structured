@@ -36,6 +36,9 @@ if (CUDA_FOUND)
     TARGET pbaGPU POST_BUILD
     COMMAND ln ARGS -s -f ${PROJECT_SOURCE_DIR}/../libpbaGPU.so ${PROJECT_SOURCE_DIR}/../libpba.so
     )
+set_target_properties(pbaGPU PROPERTIES
+       ARCHIVE_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/../" LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../")
+
 else()
     add_custom_command(
     TARGET pbaCPU POST_BUILD
@@ -43,5 +46,3 @@ else()
     )
 endif(CUDA_FOUND) 
 
-set_target_properties(pbaGPU PROPERTIES
-       ARCHIVE_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/../" LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../")

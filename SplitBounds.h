@@ -254,6 +254,11 @@ bool split_bounds(const Bounds &bounds,const std::vector<CellType> &poses ,doubl
     return true;
 
 }
+enum{
+  VOLFILL_STEP,
+  VRIPCLEAN_STEP,
+  PLYMERGE_STEP
+};
 
 typedef struct _picture_cell{
     int row;
@@ -298,7 +303,7 @@ class WriteSplitTP : public WriteTP{
 
 class WriteBoundVRIP : private WriteTP{
     public:
-  WriteBoundVRIP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer,bool expand_vol);
+  WriteBoundVRIP(double res,std::string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer,int expand_vol);
     bool write_cmd(Cell_Data<Stereo_Pose_Data> cell);
     std::string bboxfn;
     std::string getCmdFileName(){return cmdfn;}
@@ -306,7 +311,7 @@ class WriteBoundVRIP : private WriteTP{
     double _expandBy;
     double _smallCCPer;
     std::string getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol);
-    bool _expand_vol;
+    int _expand_vol;
 
 
 };

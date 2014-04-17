@@ -77,7 +77,7 @@ static bool writeout_meshvar=true;
 static double smallCCPer;
 static unsigned int faceChunkTarget;
 static unsigned int texRemapChunk;
-static bool expand_vol=true;
+static int expand_vol=PLYMERGE_STEP;
 //
 // Command-line arguments
 //
@@ -446,7 +446,7 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("REMAP_FACE_CHUNK_SIZE",texRemapChunk,50000);
     recon_config_file->get_value("MARGIN_EXPAND_REMAP_BBOX",marginExpand,10);
     recon_config_file->get_value("SPARSE_RATIO",sparseRatio,0.2);
-    recon_config_file->get_value("VOLFILL_HOLES",expand_vol,true);
+    recon_config_file->get_value("VOLFILL_HOLES",expand_vol,PLYMERGE_STEP);
 
     recon_config_file->get_value("VRIP_RES",vrip_res,0.033);
     recon_config_file->get_value("IMAGE_SPLIT_COL",_tileColumns,-1);

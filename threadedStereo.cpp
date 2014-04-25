@@ -2850,7 +2850,7 @@ double totalValidArea=0;
     fprintf(FP5,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  depth.vrt ");
 
 
-    fprintf(mosaic_txt_fp,"%d %d %d %d total\n",ajustedSize,ajustedSize,_tileRows,_tileColumns);
+    fprintf(mosaic_txt_fp,"%d %d %d %d total\n",adjustedSize,adjustedSize,_tileRows,_tileColumns);
 
     for(int i=0; i <(int)cells_mosaic.size(); i++){
         char tmpfn[1024];

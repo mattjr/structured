@@ -125,7 +125,7 @@ void StereoCalib::load_from_file( const string &calib_file_name )
             in_file >> rectK[i];
 
         for( unsigned int i=0 ; i < 16 ; i++ )
-            in_file >> Q[i];
+	  in_file >> Qloaded[i];
     }
 
     // Clean-up

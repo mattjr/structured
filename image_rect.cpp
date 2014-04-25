@@ -65,16 +65,16 @@ Rect_Data::Rect_Data( const StereoCalib &calib,
               bool interpolate ):undist(undist)
   //rect_matrix_l(3,3), rect_matrix_r(3,3),left_proj(3,3),left_proj_rect(3,3)
 {
- 
+  printf("Rect map created\n");
 //  cv_stereo.camera[0] = convert_to_opencv(calib.camera_calibs[0]);
   //cv_stereo.camera[1] =convert_to_opencv(calib.camera_calibs[1]);
 
-  rectMap[LEFT_CAM][0] = cvCreateMat(calib.camera_calibs[0].height,
+  /* rectMap[LEFT_CAM][0] = cvCreateMat(calib.camera_calibs[0].height,
                      calib.camera_calibs[0].width,
-				     CV_32FC1);
+				     CV_16SC2);
   rectMap[LEFT_CAM][1] = cvCreateMat(calib.camera_calibs[0].height,
                      calib.camera_calibs[0].width,
-				     CV_32FC1);
+		     CV_16SC2);*/
   double K1[3][3];
   double D1[5];
 
@@ -86,7 +86,7 @@ Rect_Data::Rect_Data( const StereoCalib &calib,
   D1[2]=calib.camera_calibs[0].kc3;
   D1[3]=calib.camera_calibs[0].kc4;
   D1[4]=calib.camera_calibs[0].kc5;
-  CvMat D_left  = cvMat(1, 5, CV_64F, D1 );
+  cv::Mat D_left  = cv::Mat(1, 5, CV_64F, D1 );
 
   for(int i=0; i< 3; i++)
     for(int j=0; j<3; j++)
@@ -98,21 +98,20 @@ Rect_Data::Rect_Data( const StereoCalib &calib,
   K1[1][2] = calib.camera_calibs[0].ccy;
   K1[2][2] = 1;
 
-  CvMat K_left  = cvMat(3, 3, CV_64F, K1 );
+  cv::Mat K_left  = cv::Mat(3, 3, CV_64F, K1 );
 
-  CvMat *Krect  = cvCreateMat(3,3,CV_64F);
   CvMat *R_left  = cvCreateMat(3,3,CV_64F);
   CvMat *R_right  = cvCreateMat(3,3,CV_64F);
   for( unsigned int i=0 ; i < 3 ; i++ )
     for(int j=0; j < 3; j++){
-      cvmSet(Krect,i,j, calib.rectK[(4*i)+j]);
+      //cvmSet(Krect,i,j, calib.rectK[(4*i)+j]);
       cvmSet(R_left,i,j, calib.left_R[(4*i)+j]);
       cvmSet(R_right,i,j, calib.right_R[(4*i)+j]);
     }
 
-  cvInitUndistortRectifyMap(&K_left, &D_left, R_left, Krect,
-			    rectMap[LEFT_CAM][0], 
-			    rectMap[LEFT_CAM][1]);
+
+  // CvMat *Krect  = cvCreateMat(3,3,CV_64F);
+ 
 
   double K2[3][3];
   double  D2[5];
@@ -125,7 +124,7 @@ Rect_Data::Rect_Data( const StereoCalib &calib,
   D2[3]=calib.camera_calibs[1].kc4;
   D2[4]=calib.camera_calibs[1].kc5;
 
-  CvMat D_right = cvMat(1, 5, CV_64F, D2 );
+  cv::Mat D_right = cv::Mat(1, 5, CV_64F, D2 );
 
   
   for(int i=0; i< 3; i++)
@@ -137,15 +136,37 @@ Rect_Data::Rect_Data( const StereoCalib &calib,
   K2[1][1] = calib.camera_calibs[1].fcy;
   K2[1][2] = calib.camera_calibs[1].ccy;
   K2[2][2] = 1;
-  CvMat K_right = cvMat(3, 3, CV_64F, K2 );
-  rectMap[RIGHT_CAM][0] = cvCreateMat(calib.camera_calibs[1].height,
+  cv::Mat K_right = cv::Mat(3, 3, CV_64F, K2 );
+  /*  rectMap[RIGHT_CAM][0] = cvCreateMat(calib.camera_calibs[1].height,
                       calib.camera_calibs[1].width,
 				      CV_32FC1);
   rectMap[RIGHT_CAM][1] = cvCreateMat(calib.camera_calibs[1].height,
                     calib.camera_calibs[1].width,
-				      CV_32FC1);
+		    CV_32FC1);*/
+  double *rm2_a= (double *)calib.camera_calibs[1].rotMatr; //  = { 0,0,0, 0,0,0,  0,0,0};
+  cv::Mat R = cv::Mat(3,3,CV_64F,rm2_a);                //calculate rotation matrix
+  
+  
+  double t2_a[3] = {  calib.camera_calibs[1].transVect[0],
+		      calib.camera_calibs[1].transVect[1],
+		      calib.camera_calibs[1].transVect[2] };
+  
+  cv::Mat T = cv::Mat(3,1,CV_64F,t2_a);                //transformation vector camera 2
 
-  cvInitUndistortRectifyMap(&K_right, &D_right, R_right, Krect,  
+cv::Mat R1; // 3x3 matrix
+cv::Mat R2; // 3x3 matrix
+cv::Mat P1; // 3x4 matrix
+cv::Mat P2; // 3x4 matrix
+ CvSize imageSize;
+ imageSize.height=calib.camera_calibs[1].height;
+ imageSize.width=calib.camera_calibs[1].width;
+
+ cv::stereoRectify(K_left,D_left,K_right,D_right,imageSize,R,T,R1,R2,P1,P2,Q);
+
+ cv::initUndistortRectifyMap(K_left, D_left, R1,P1,imageSize,CV_16SC2,
+			    rectMap[LEFT_CAM][0], 
+			    rectMap[LEFT_CAM][1]);
+ cv::initUndistortRectifyMap(K_right, D_right, R2,P2,imageSize,CV_16SC2,
 			    rectMap[RIGHT_CAM][0], 
 			    rectMap[RIGHT_CAM][1]);
 
@@ -208,29 +229,33 @@ void rect_image(  Rect_Data &data,
 {
 
   if(destL == NULL)
-    destL=cvCloneImage(sourceL);
+    destL=cvCloneImage(sourceL);    
+//    destL=cvCreateImage(cvSize(sourceL->width,sourceL->height),sourceL->depth,sourceL->nChannels);
 
   if(destR == NULL)
     destR=cvCloneImage(sourceR);
-  
+  //destR=cvCreateImage(cvSize(sourceR->width,sourceR->height),sourceR->depth,sourceR->nChannels);
+
   if(sourceC){  
     if(destC == NULL)
       destC=cvCloneImage(sourceC);
+    //  destC=cvCreateImage(cvSize(sourceC->width,sourceC->height),sourceC->depth,sourceC->nChannels);
+
   }
 
   
 
-  cvRemap( sourceL, destL, data.rectMap[LEFT_CAM][0], 
-	   data.rectMap[LEFT_CAM][1] );
+  cv::remap( cv::Mat(sourceL), cv::Mat(destL), data.rectMap[LEFT_CAM][0], 
+	     data.rectMap[LEFT_CAM][1] ,CV_INTER_LINEAR);
 
   
  
-  cvRemap( sourceR, destR, data.rectMap[RIGHT_CAM][0],
-	   data.rectMap[RIGHT_CAM][1] );
+  cv::remap( cv::Mat(sourceR), cv::Mat(destR), data.rectMap[RIGHT_CAM][0],
+	     data.rectMap[RIGHT_CAM][1],CV_INTER_LINEAR );
   
   if(sourceC){
-    cvRemap( sourceC, destC, data.rectMap[LEFT_CAM][0], 
-	     data.rectMap[LEFT_CAM][1] );
+    cv::remap( cv::Mat(sourceC), cv::Mat(destC), data.rectMap[LEFT_CAM][0], 
+	       data.rectMap[LEFT_CAM][1] ,CV_INTER_LINEAR);
   }
 
 }

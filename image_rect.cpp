@@ -245,16 +245,16 @@ void rect_image(  Rect_Data &data,
 
   
 
-  cv::remap( cv::Mat(sourceL), cv::Mat(destL), data.rectMap[LEFT_CAM][0], 
+  cv::remap( cv::Mat(sourceL), cv::OutputArray(destL), data.rectMap[LEFT_CAM][0], 
 	     data.rectMap[LEFT_CAM][1] ,CV_INTER_LINEAR);
 
   
  
-  cv::remap( cv::Mat(sourceR), cv::Mat(destR), data.rectMap[RIGHT_CAM][0],
+  cv::remap( cv::Mat(sourceR), cv::OutputArray(destR), data.rectMap[RIGHT_CAM][0],
 	     data.rectMap[RIGHT_CAM][1],CV_INTER_LINEAR );
   
   if(sourceC){
-    cv::remap( cv::Mat(sourceC), cv::Mat(destC), data.rectMap[LEFT_CAM][0], 
+    cv::remap( cv::Mat(sourceC), cv::OutputArray(destC), data.rectMap[LEFT_CAM][0], 
 	       data.rectMap[LEFT_CAM][1] ,CV_INTER_LINEAR);
   }
 

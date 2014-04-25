@@ -163,7 +163,7 @@ IF( NOT OSG_FOUND )
   MESSAGE( FATAL_ERROR  "ERROR - Can't find OSG" )
 ENDIF( NOT OSG_FOUND )
 
-pkg_check_modules( VIPS vips-7.24 )
+pkg_check_modules( VIPS vips-7.26 )
 # UF
 SET( UF_LIBRARY ufGeographicConversions ufGPSParser )
 
@@ -314,7 +314,8 @@ ENDIF()
 #SUBDIRS(src include tools )
 
 
-SUBDIRS(gts-0.7.6 trimesh2 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender triangulation ann/src/ CMVS-PMVS/program SiftGPU pba vsfm re_vision )
+#SUBDIRS(gts-0.7.6 trimesh2 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender triangulation ann/src/ CMVS-PMVS/program SiftGPU pba vsfm re_vision )
+SUBDIRS(gts-0.7.6 trimesh2 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender triangulation ann/src/ CMVS-PMVS/program SiftGPU pba vsfm )
 
 SET( SRCS
                 Extents.cpp

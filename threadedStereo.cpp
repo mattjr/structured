@@ -77,7 +77,7 @@ static bool writeout_meshvar=true;
 static double smallCCPer;
 static unsigned int faceChunkTarget;
 static unsigned int texRemapChunk;
-
+static bool expand_vol=true;
 //
 // Command-line arguments
 //
@@ -446,6 +446,7 @@ static bool parse_args( int argc, char *argv[ ] )
     recon_config_file->get_value("REMAP_FACE_CHUNK_SIZE",texRemapChunk,50000);
     recon_config_file->get_value("MARGIN_EXPAND_REMAP_BBOX",marginExpand,10);
     recon_config_file->get_value("SPARSE_RATIO",sparseRatio,0.2);
+    recon_config_file->get_value("VOLFILL_HOLES",expand_vol,true);
 
     recon_config_file->get_value("VRIP_RES",vrip_res,0.033);
     recon_config_file->get_value("IMAGE_SPLIT_COL",_tileColumns,-1);
@@ -973,7 +974,7 @@ int main( int argc, char *argv[ ] )
         if(newmvs){
             osgDB::makeDirectory("tmp/mvs/");
 
-            if(!osgDB::fileExists(string(cwd)+"tmp/mvs/image_list.txt")){
+            if(!osgDB::fileExists(string(cwd)+"/tmp/mvs/image_list.txt")){
                 std::vector<string> validExts;
                 validExts.push_back(".ppm");
                 validExts.push_back(".pgm");
@@ -986,6 +987,7 @@ int main( int argc, char *argv[ ] )
                osgDB::makeDirectory(tmp_imgdir);
                for(int i=0; i < (int)dirConts.size(); i++){
                    string stripped=osgDB::getNameLessExtension(dirConts[i]);
+cout << "Stripped: " << stripped << endl;
                    if(mvs_tex_only_color)
                        isGrayImageList.push_back(stripped.substr(stripped.size()-3)=="M16");
                    else
@@ -1736,7 +1738,7 @@ double totalValidArea=0;
     if(!externalMode || newmvs){
         {
             WriteBoundTP wbtp(vrip_res,string(aggdir)+"/plymccmd",basepath,cwd,tasks,plymc_expand_by,smallCCPer);
-            WriteBoundVRIP wbvrip(vrip_res,string(aggdir)+"/vripcmd",basepath,cwd,tasks,vrip_ramp,smallCCPer);
+            WriteBoundVRIP wbvrip(vrip_res,string(aggdir)+"/vripcmd",basepath,cwd,tasks,vrip_ramp,smallCCPer,expand_vol);
 
            // int splits[3]={0,0,0};
             foreach_vol(cur,vol){

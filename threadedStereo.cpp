@@ -2838,7 +2838,7 @@ double totalValidArea=0;
     FILE *FP3=fopen("createmosaic.sh","w");
     FILE *FP4=fopen("createmosaicvar.sh","w");
     FILE *FP5=fopen("createmosaicdepth.sh","w");
-
+    FILE *mosaic_txt_fp=fopen("mosaic_files.txt","w");
     // FILE *FP5=fopen("createrangeimg.sh","w");
 
     if( ! FP3){
@@ -2848,6 +2848,10 @@ double totalValidArea=0;
     fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaic.vrt ");
     fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaicvar.vrt ");
     fprintf(FP5,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  depth.vrt ");
+
+
+    fprintf(mosaic_txt_fp,"%d %d %d %d total\n",adjustedSize,adjustedSize,_tileRows,_tileColumns);
+
     for(int i=0; i <(int)cells_mosaic.size(); i++){
         char tmpfn[1024];
         string mesh_list;
@@ -2859,9 +2863,16 @@ double totalValidArea=0;
                 mesh_list+=tmpfn;
             }
         }
+
+
+
             if( cells_mosaic[i].images.size() == 0 || mesh_list.size() == 0){
+                fprintf(mosaic_txt_fp,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells_mosaic[i].bbox.xMin(),cells_mosaic[i].bbox.xMax(),cells_mosaic[i].bbox.yMin(),cells_mosaic[i].bbox.yMax(),cells_mosaic[i].bbox.zMin(),
+                        cells_mosaic[i].bbox.zMax(),cells_mosaic[i].col,cells_mosaic[i].row,"null");
                 continue;
             }
+            fprintf(mosaic_txt_fp,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells_mosaic[i].bbox.xMin(),cells_mosaic[i].bbox.xMax(),cells_mosaic[i].bbox.yMin(),cells_mosaic[i].bbox.yMax(),cells_mosaic[i].bbox.zMin(),
+                           cells_mosaic[i].bbox.zMax(),cells_mosaic[i].col,cells_mosaic[i].row,cells_mosaic[i].name.c_str());
 /*
         if( cells_mosaic[i].images.size() == 0 || mesh_list.size() == 0){
 
@@ -3042,7 +3053,7 @@ double totalValidArea=0;
     for(int z=0; z<NUM_MOSAIC_FILES; z++)
         fclose(mosaiccmds_fp[z]);
     fclose(vartexcmds_fp);
-
+    fclose(mosaic_txt_fp);
     fclose(calcTexFn_fp);
     fprintf(FP3,"\nrm -f thumb.tif\ngdalwarp mosaic.vrt -ts 512 512 thumb.tif\nconvert -quiet thumb.tif thumb.png\n");
         //#gdaladdo -ro --config INTERLEAVE_OVERVIEW PIXEL --config COMPRESS_OVERVIEW JPEG mosaic.vrt 2 4 8 16 32\n");

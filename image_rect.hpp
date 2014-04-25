@@ -70,9 +70,10 @@ public:
   IplImage *undistL;
   IplImage *undistR;
   IplImage *undistC;
+cv::Mat Q;  // 4x4 matrix
 
 
-  CvMat*  rectMap[NUM_CAMERAS][2];
+  cv::Mat  rectMap[NUM_CAMERAS][2];
 
    
    bool undist;     //!< Should interpolation be used.

@@ -31,7 +31,10 @@
 #include <string>
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
-#include <opencv2/nonfree/features2d.hpp>
+#if CV_MAJOR_VERSION==2 && CV_MINOR_VERSION==3 && CV_SUBMINOR_VERSION>=3
+#include "opencv2/nonfree/nonfree.hpp"
+#include "opencv2/legacy/legacy.hpp"
+#endif
 #include <vector>
 
 using namespace std;

@@ -291,10 +291,10 @@ void Stereo_Dense::get_points( std::vector<osg::Vec3> &points,IplImage *mask){
   int pts_skip=1;//round(1/ratio);
   //  int *pcoord;
   // int y = iy;
-  float cx = (float)calib->Q[(4*0)+3];
-  float cy = (float)calib->Q[(4*1)+3];
-  float f  = (float)calib->Q[(4*2)+3];
-  float itx = (float)calib->Q[(4*3)+2];
+  float cx = (float)_rect->Q.at<double>((4*0)+3);
+  float cy = (float)_rect->Q.at<double>((4*1)+3);
+  float f  = (float)_rect->Q.at<double>((4*2)+3);
+  float itx = (float)_rect->Q.at<double>((4*3)+2);
   int dmax=INT_MAX;
   int dmin=INT_MIN;
 

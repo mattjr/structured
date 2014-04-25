@@ -618,7 +618,10 @@ void splitPictureCellsEven( std::vector<picture_cell> &cells,const CellDataT<Ste
                 double left,right,bottom,top;//,znear,zfar;
                 osg::Matrix m;//=(view*proj*offsetMatrix);
                 //m.getOrtho(left,right,bottom,top,znear,zfar);
-                double chunkSize=(totalbb.xMax()-totalbb.xMin())/(double)_tileRows;
+                double xrange=(totalbb.xMax()-totalbb.xMin());
+                double yrange=(totalbb.yMax()-totalbb.yMin());
+
+                double chunkSize= (xrange > yrange) ? xrange/(double)_tileRows : yrange/(double)_tileColumns;
                 double widthEnd=totalbb.xMin()+((row+1)*chunkSize);
                 double widthStart=totalbb.xMin()+((row)*chunkSize);
                 double heightEnd=totalbb.yMin()+((col+1)*chunkSize);

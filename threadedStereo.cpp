@@ -2838,6 +2838,7 @@ double totalValidArea=0;
     FILE *FP3=fopen("createmosaic.sh","w");
     FILE *FP4=fopen("createmosaicvar.sh","w");
     FILE *FP5=fopen("createmosaicdepth.sh","w");
+    FILE *FP6=fopen("createjp2.sh","w");
     FILE *mosaic_txt_fp=fopen("mosaic_files.txt","w");
     // FILE *FP5=fopen("createrangeimg.sh","w");
 
@@ -2849,8 +2850,10 @@ double totalValidArea=0;
     fprintf(FP4,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaicvar.vrt ");
     fprintf(FP5,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  depth.vrt ");
 
+    fprintf(FP6,"#!/bin/bash\n %s/gen_j2k.py mosaic_files.txt mosaic/mosaic.jp2 %d\n",basepath.c_str(),num_threads);
+    
 
-    fprintf(mosaic_txt_fp,"%d %d %d %d total\n",adjustedSize,adjustedSize,_tileRows,_tileColumns);
+    fprintf(mosaic_txt_fp,"%d %d %d %d %d %d total\n",adjustedSize,adjustedSize,ajustedGLImageSizeX,ajustedGLImageSizeY,_tileRows,_tileColumns);
 
     for(int i=0; i <(int)cells_mosaic.size(); i++){
         char tmpfn[1024];
@@ -2871,8 +2874,8 @@ double totalValidArea=0;
                         cells_mosaic[i].bbox.zMax(),cells_mosaic[i].col,cells_mosaic[i].row,"null");
                 continue;
             }
-            fprintf(mosaic_txt_fp,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s\n",cells_mosaic[i].bbox.xMin(),cells_mosaic[i].bbox.xMax(),cells_mosaic[i].bbox.yMin(),cells_mosaic[i].bbox.yMax(),cells_mosaic[i].bbox.zMin(),
-                           cells_mosaic[i].bbox.zMax(),cells_mosaic[i].col,cells_mosaic[i].row,cells_mosaic[i].name.c_str());
+            fprintf(mosaic_txt_fp,"%.16f %.16f %.16f %.16f %.16f %.16f %d %d %s/image_r%04d_c%04d_rs%04d_cs%04d-tmp.ppm\n",cells_mosaic[i].bbox.xMin(),cells_mosaic[i].bbox.xMax(),cells_mosaic[i].bbox.yMin(),cells_mosaic[i].bbox.yMax(),cells_mosaic[i].bbox.zMin(),
+		    cells_mosaic[i].bbox.zMax(),cells_mosaic[i].col,cells_mosaic[i].row,diced_img_dir,cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns);
 /*
         if( cells_mosaic[i].images.size() == 0 || mesh_list.size() == 0){
 
@@ -3085,6 +3088,8 @@ double totalValidArea=0;
             stereo_calib_file_name.c_str()
             );*/
     fclose(FP4);
+    fchmod(fileno(FP6),0777);                                                    
+    fclose(FP6);
     vector<std::string> precmd;
     std::ostringstream p1;
     if(hw_image){

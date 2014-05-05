@@ -2842,8 +2842,8 @@ double totalValidArea=0;
     FILE *mosaic_txt_fp=fopen("mosaic_files.txt","w");
     // FILE *FP5=fopen("createrangeimg.sh","w");
 
-    if( ! FP3){
-        fprintf(stderr,"Can't open mosaic scripts\n");
+    if( ! FP3 || !FP4 || !FP5 || !FP6){
+        fprintf(stderr,"Can't open mosaic scripts %d %d %d %d %s\n",!FP3,!FP4,!FP5,!FP6,strerror(errno));
         exit(-1);
     }
     fprintf(FP3,"#!/bin/bash\n cd mosaic \n gdalbuildvrt  mosaic.vrt ");
@@ -3088,7 +3088,7 @@ double totalValidArea=0;
             stereo_calib_file_name.c_str()
             );*/
     fclose(FP4);
-    fchmod(fileno(FP6),0777);                                                    
+    fchmod(fileno(FP6),0777);
     fclose(FP6);
     vector<std::string> precmd;
     std::ostringstream p1;

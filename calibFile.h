@@ -58,7 +58,7 @@ public:
     bool have_3rd_radial_param;
     bool have_rect_params;
     std::string filename;
-    double Q[16];
+    double Qloaded[16];
     double rectK[9];
     double left_R[9];
     double right_R[9];

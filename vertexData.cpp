@@ -851,6 +851,7 @@ bool checkIsEmptyPly(const char *filename){
              << fileType << ", version = " << version << endl;
 #endif
 
+    bool ret=true;
 
     for( int i = 0; i < nPlyElems; ++i )
     {
@@ -878,16 +879,15 @@ bool checkIsEmptyPly(const char *filename){
                      << "name = " << props[j]->name << endl;
         }
 #endif
-
         // if the string is vertex means vertex data is started
         if( equal_strings( elemNames[i], "vertex" ) )
         {
 
 
             if(nElems > 0)
-                return false;
+                ret= false;
             else
-                return true;
+                ret= true;
         }
 
         // free the memory that was allocated by ply_get_element_description
@@ -903,7 +903,7 @@ bool checkIsEmptyPly(const char *filename){
         free( elemNames[i] );
     free( elemNames );
 
-    return true;
+    return ret;
 }
 osg::Node* VertexDataMosaic::readPlyFile( const char* filename )
 {

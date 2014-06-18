@@ -337,7 +337,7 @@ StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double ed
                                        image_scale,
                                        _auv_stereo_calib );
 
-    sdense= new Stereo_Dense(recon,1.0,_auv_stereo_calib);
+
     frame_id=0;
     recon.get_value( "SCF_DEBUG_PER_REJECTED_OUTPUT_DEBUG", thresh_per_rejected_output_debug, SCF_THRESH_PER_REJECT );
     recon.get_value( "DEBUG_MIN_FEAT_PER_FRAME",minFeatPerFrameThresh,100);
@@ -374,7 +374,8 @@ StereoEngine::StereoEngine(const StereoCalib &calib,Config_File &recon,double ed
     undist_right=NULL;
 #endif
 
-
+    if(use_dense_stereo)
+      sdense= new Stereo_Dense(recon,1.0,&_calib);
 
     loadMatrices();
 }

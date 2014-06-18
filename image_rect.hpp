@@ -26,6 +26,7 @@
 #define IMAGE_RECT_HPP
 
 #include <cv.h>
+#include "opencv2/imgproc/imgproc.hpp"
 
 #include "calibFile.h"
 
@@ -70,9 +71,10 @@ public:
   IplImage *undistL;
   IplImage *undistR;
   IplImage *undistC;
+cv::Mat Q;  // 4x4 matrix
 
 
-  CvMat*  rectMap[NUM_CAMERAS][2];
+  cv::Mat  rectMap[NUM_CAMERAS][2];
 
    
    bool undist;     //!< Should interpolation be used.

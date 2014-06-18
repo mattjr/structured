@@ -52,7 +52,7 @@ osg::Matrix  osgTranspose( const osg::Matrix& src )
     return dest;
 }
 
-WriteBoundVRIP::WriteBoundVRIP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer,bool expand_vol):WriteTP(res,fname,basepath,cwd),_expandBy(expandBy),_smallCCPer(smallCCPer),_expand_vol(expand_vol){
+WriteBoundVRIP::WriteBoundVRIP(double res,string fname,std::string basepath,std::string cwd,const std::vector<Stereo_Pose_Data> &tasks,double expandBy,double smallCCPer,int expand_vol):WriteTP(res,fname,basepath,cwd),_expandBy(expandBy),_smallCCPer(smallCCPer),_expand_vol(expand_vol){
     cmdfp =fopen(fname.c_str(),"w");
     if(!cmdfp){
         fprintf(stderr,"Can't create cmd file");
@@ -86,10 +86,12 @@ std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol)
    // output <<tmp;
     sprintf(tmp,"export BASEDIR=\"%s\"; export OUTDIR=\"%s/\";export VRIP_HOME=\"$BASEDIR/vrip\";export VRIP_DIR=\"$VRIP_HOME/src/vrip/\";export PATH=$PATH:$VRIP_HOME/bin;cd %s/$OUTDIR;",_basepath.c_str(),diced_dir,_cwd.c_str());
     output << tmp;
-    if(_expand_vol){
+    if(_expand_vol == VOLFILL_STEP){
       sprintf(tmp,"$BASEDIR/vrip/bin/vripnew tmp-total.vri tmp-total.txt tmp-total.txt %f -rampscale %f > log-tmp-total.txt;$BASEDIR/vrip/bin/volfill tmp-total.vri exp-total.vri >log-volfill.txt;$BASEDIR/vrip/bin/vripsurf exp-total.vri exp-total.ply >log-surf.txt;",_res,_expandBy);
-    }else{
+    }else if(_expand_vol == VRIPCLEAN_STEP){
       sprintf(tmp,"$BASEDIR/vrip/bin/vripnew exp-total.vri tmp-total.txt tmp-total.txt %f -rampscale %f > log-tmp-total.txt;$BASEDIR/vrip/bin/vripsurf exp-total.vri exp-total.ply >log-surf.txt;",_res,_expandBy);
+    }else{
+      sprintf(tmp,"$BASEDIR/vrip/bin/plyshared -t %f < tmp-total.ply > tmp2-total.ply;$BASEDIR/vrip/bin/plyclean -defaults tmp2-total.ply > exp-total.ply;",_res*0.75);
     }
     output << tmp;
     sprintf(tmp,"%s/vcgapps/bin/mergeMesh exp-total.ply  -cleansize %f -P -out total.ply > log-merge.txt",_basepath.c_str(),_smallCCPer);
@@ -616,7 +618,10 @@ void splitPictureCellsEven( std::vector<picture_cell> &cells,const CellDataT<Ste
                 double left,right,bottom,top;//,znear,zfar;
                 osg::Matrix m;//=(view*proj*offsetMatrix);
                 //m.getOrtho(left,right,bottom,top,znear,zfar);
-                double chunkSize=(totalbb.xMax()-totalbb.xMin())/(double)_tileRows;
+                double xrange=(totalbb.xMax()-totalbb.xMin());
+                double yrange=(totalbb.yMax()-totalbb.yMin());
+
+                double chunkSize= (xrange > yrange) ? xrange/(double)_tileRows : yrange/(double)_tileColumns;
                 double widthEnd=totalbb.xMin()+((row+1)*chunkSize);
                 double widthStart=totalbb.xMin()+((row)*chunkSize);
                 double heightEnd=totalbb.yMin()+((col+1)*chunkSize);

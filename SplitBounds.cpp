@@ -61,7 +61,7 @@ WriteBoundVRIP::WriteBoundVRIP(double res,string fname,std::string basepath,std:
 
 
 }
-std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol){
+std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol, bool skip_total_gen){
     vector<string> allmeshes;
     stringstream cmdpost;
 
@@ -114,8 +114,11 @@ std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol)
             cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
     }
     fclose(fp2);
-    sprintf(tmp,"\nos.system(setupts.basepath +'/%s %s %s %s')\n",
-            thrpool,cmdfile.c_str(),serfile,"Presplit");
+    if (skip_total_gen) {
+        sprintf(tmp,"\nos.system(setupts.basepath +'/%s %s %s %s')\n",
+                thrpool,cmdfile.c_str(),serfile,"Presplit");
+        return tmp;
+    }
     return createFileCheckPython(cmdpost.str(),_cwd+"/"+diced_dir,allmeshes,output.str(),4)+tmp;
 
 }
@@ -580,7 +583,8 @@ void splitPictureCells( std::vector<picture_cell> &cells,    const CellDataT<Ste
             }
             //#pragma omp critical
             {
-                cells.push_back(cell);
+                if (cell.imagesMargin.size()) 
+                    cells.push_back(cell);
             }
            // cout << "i : " <<i<< " " <<cell.images.size()<<" "<<cell.imagesMargin.size()<<endl;
 

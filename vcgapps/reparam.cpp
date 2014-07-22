@@ -121,6 +121,9 @@ using namespace std;
 #include <vips/vips>
 #include <osgDB/FileUtils>
 #include <vips/vips.h>
+
+#define MIN_SIZE 8
+
 bool removeDups(std::string basename,osg::Vec3Array *verts,osg::DrawElementsUInt * triangles);
 
 static osg::Vec3 debugV;
@@ -128,7 +131,6 @@ bool USE_BGR=false;
 struct InputVertex {
     vec3x vertex;
 };
-
 
 
 void write_header(std::ostream& _fout,int total_face_count,bool color){
@@ -368,13 +370,16 @@ int main(int ac, char *av[]) {
         }
         int sizeImage=  calcOptimalImageSizeRaw(srcsize,newVerts,tri,texCoord,scaleTex,(int)vtSize.x(),(int)vtSize.y());
         sizeX=sizeY=sizeImage;
+        sizeX = max (sizeX, MIN_SIZE);
+        sizeY = max (sizeY, MIN_SIZE);
+        
     }
     osg::Vec2 minTC,maxTC;
     double margin=0.05;
     getBoundsForClippingReparam(newVerts,minTC,maxTC,margin);
     cout << minTC << " -- "<< maxTC<<endl;
     osg::Vec2 rangeTC((maxTC-minTC).x(),(maxTC-minTC).y());
-    osg::Vec2 adjSize=osg::Vec2(sizeX *(rangeTC.x()+(2*margin)),sizeY*(rangeTC.y()+(2*margin)));
+    osg::Vec2 adjSize=osg::Vec2(std::max (sizeX *(rangeTC.x()+(2*margin)), (double)MIN_SIZE), std::max (sizeY*(rangeTC.y()+(2*margin)), (double)MIN_SIZE));
     char tmp11[8192];
     sprintf(tmp11,"%s/image_r%04d_c%04d_rs%04d_cs%04d-remap.size.txt",diced_dir,row,col,_tileRows,_tileColumns);
     FILE *fp=fopen(tmp11,"w");

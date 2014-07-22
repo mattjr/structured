@@ -310,7 +310,7 @@ class WriteBoundVRIP : private WriteTP{
     void close(){ if(cmdfp) fclose(cmdfp); }
     double _expandBy;
     double _smallCCPer;
-    std::string getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol);
+    std::string getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol, bool skip_total_gen=false);
     int _expand_vol;
 
 

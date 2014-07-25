@@ -289,9 +289,9 @@ public:
             //std::cout << m<<std::endl;
             if(_expandBy>0.0){
 
-                double mod0=(high[0]-low[0])*_expandBy;
+            double mod0=(high[0]-low[0])*_expandBy;
             double mod1=(high[1]-low[1])*_expandBy;
-            double mod2=(high[2]-low[2])*_expandBy;
+            double mod2=(high[2]-low[2])*_expandBy*10;
             high[0]+=mod0;
             high[1]+=mod1;
             high[2]+=mod2;

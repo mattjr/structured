@@ -141,7 +141,10 @@ static FILE *fpp;
 static bool useVirtTex=false;
 static bool useReimage=true;
 static float tex_margin=0.01;
-static float bbox_margin=0.2;
+static float bbox_marginAll=0.2;
+static float bbox_marginX=0.2;
+static float bbox_marginY=0.2;
+static float bbox_marginZ=0.2;
 static bool no_vrip=false;
 static bool externalStereo=false;
 static bool plymc_over_vrip=false;
@@ -433,8 +436,11 @@ static bool parse_args( int argc, char *argv[ ] )
         exit( 1 );
     }
     recon_config_file->get_value( "TEX_CLAMP_MARGIN", tex_margin,0.01);
-    recon_config_file->get_value( "BBOX_MARGIN_PERCENTAGE", bbox_margin,0.2);
-
+    if (recon_config_file->get_value( "BBOX_MARGIN_PERCENTAGE", bbox_marginAll,0.2)) {
+        bbox_marginX = bbox_marginAll;
+        bbox_marginY = bbox_marginAll;
+        bbox_marginZ = bbox_marginAll;
+    }
 
     recon_config_file->get_value( "SD_SCALE", dense_scale,0.5);
     recon_config_file->get_value("TEX_IMG_PER_CELL",tex_img_per_cell,80);
@@ -513,7 +519,14 @@ static bool parse_args( int argc, char *argv[ ] )
     argp.read( "--vpblod" ,vpblod_override);
     argp.read( "--scale" ,scaleRemapTex);
     argp.read("--tex-margin",tex_margin);
-    argp.read("--bbox-margin",bbox_margin);
+    if (argp.read("--bbox-margin",bbox_marginAll)) {
+        bbox_marginX = bbox_marginAll;
+        bbox_marginY = bbox_marginAll;
+        bbox_marginZ = bbox_marginAll;
+    }
+    argp.read("--bbox-margin-x",bbox_marginX);
+    argp.read("--bbox-margin-y",bbox_marginY);
+    argp.read("--bbox-margin-z",bbox_marginZ);
     argp.read( "--sparseratio" ,sparseRatio);
     argp.read( "--expand" ,plymc_expand_by);
 
@@ -1166,9 +1179,11 @@ cout << "Stripped: " << stripped << endl;
                     tmp_pose.left_name=tmpf;
                     tmp_pose.file_name=tmpf;
                     tmp_pose.bbox = cbbv.getBoundingBox();
-                    float margin=(tmp_pose.bbox.radius() * bbox_margin);
-                    tmp_pose.bbox_margin.expandBy(tmp_pose.bbox._min-osg::Vec3(margin,margin,margin));
-                    tmp_pose.bbox_margin.expandBy(tmp_pose.bbox._max+osg::Vec3(margin,margin,margin));
+                    float marginX=(tmp_pose.bbox.radius() * bbox_marginX);
+                    float marginY=(tmp_pose.bbox.radius() * bbox_marginY);
+                    float marginZ=(tmp_pose.bbox.radius() * bbox_marginZ);
+                    tmp_pose.bbox_margin.expandBy(tmp_pose.bbox._min-osg::Vec3(marginX,marginY,marginZ));
+                    tmp_pose.bbox_margin.expandBy(tmp_pose.bbox._max+osg::Vec3(marginX,marginY,marginZ));
                     tmp_pose.faces=faces;
                     tmp_pose.valid=true;
                     tasks.push_back(tmp_pose);
@@ -1441,9 +1456,11 @@ double totalValidArea=0;
                               (name.bbox.yMax()-name.bbox.yMin()));
                 if(isfinite(area)){
                     totalValidArea+=area;
-                    float margin=(name.bbox.radius() * bbox_margin);
-                    name.bbox_margin.expandBy(name.bbox._min-osg::Vec3(margin,margin,margin));
-                    name.bbox_margin.expandBy(name.bbox._max+osg::Vec3(margin,margin,margin));
+                    float marginX=(name.bbox.radius() * bbox_marginX);
+                    float marginY=(name.bbox.radius() * bbox_marginY);
+                    float marginZ=(name.bbox.radius() * bbox_marginZ);
+                    name.bbox_margin.expandBy(name.bbox._min-osg::Vec3(marginX,marginY,marginZ));
+                    name.bbox_margin.expandBy(name.bbox._max+osg::Vec3(marginX,marginY,marginZ));
                 }
             }
             fprintf(fpp_ic,"%d %f %s\n",
@@ -2658,29 +2675,29 @@ double totalValidArea=0;
         fprintf(calcTexFn_fp,"cd %s",
                 cwd);
         if(newmvs){
-            fprintf(calcTexFn_fp,";%s/calcTexCoordBundler %s/%s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --camimgfile  %s/tmp/mvs/id_image_list.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin %f\n",
-                basepath.c_str(),
-                cwd,
-                mvs_output_dir.c_str(),
-                diced_dir,
-                cells[i].row,cells[i].col,
-                cwd,
-             //   diced_dir,cells[i].row,cells[i].col,
-                diced_dir,
-                cells[i].row,cells[i].col,
-                vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
-                rx,ry,rz,tex_margin,bbox_margin);
+            fprintf(calcTexFn_fp,";%s/calcTexCoordBundler %s/%s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --camimgfile  %s/tmp/mvs/id_image_list.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin-x %f --bbox-margin-y %f --bbox-margin-z %f\n",
+                    basepath.c_str(),
+                    cwd,
+                    mvs_output_dir.c_str(),
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    cwd,
+                    //   diced_dir,cells[i].row,cells[i].col,
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
+                    rx,ry,rz,tex_margin,bbox_marginX,bbox_marginY,bbox_marginZ);
         }else{
-            fprintf(calcTexFn_fp,";%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin %f\n",
-                basepath.c_str(),
-                base_dir.c_str(),
-                diced_dir,
-                cells[i].row,cells[i].col,
-                diced_dir,cells[i].row,cells[i].col,
-                diced_dir,
-                cells[i].row,cells[i].col,
-                vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
-                rx,ry,rz,tex_margin,bbox_margin);
+            fprintf(calcTexFn_fp,";%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin-x %f --bbox-margin-y %f --bbox-margin-z %f\n",
+                    basepath.c_str(),
+                    base_dir.c_str(),
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    diced_dir,cells[i].row,cells[i].col,
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
+                    rx,ry,rz,tex_margin,bbox_marginX,bbox_marginY,bbox_marginZ);
         }
 
         for(int z=0; z<NUM_TEX_FILES; z++){

@@ -76,12 +76,21 @@ int main( int argc, char **argv )
     arguments.read("--zrange",zrange[0],zrange[1]);
     bool useAtlas=arguments.read("--atlas");
     float tex_margin=0.0;
-float bbox_margin=0.0;
+    float bbox_marginX=0.0;
+    float bbox_marginY=0.0;
+    float bbox_marginZ=0.0;
+
     if(    arguments.read("--tex-margin",tex_margin)){
         printf("Tex Margin %f\n",tex_margin);
     }
-    if(    arguments.read("--bbox-margin",bbox_margin)){
-        printf("BBox Margin %f\n",bbox_margin);
+    if(    arguments.read("--bbox-margin-x",bbox_marginX)){
+        printf("BBox Margin (X) %f\n",bbox_marginX);
+    }
+    if(    arguments.read("--bbox-margin-y",bbox_marginY)){
+        printf("BBox Margin (Y) %f\n",bbox_marginY);
+    }
+    if(    arguments.read("--bbox-margin-z",bbox_marginZ)){
+        printf("BBox Margin (Z) %f\n",bbox_marginZ);
     }
 
     int row,col,numRows,numCols,width,height;
@@ -184,7 +193,7 @@ float bbox_margin=0.0;
         exit(-1);
         }//std::string(mf.substr(0,npos)+"/bbox-"+mf.substr(npos+1,mf.size()-9-npos-1)+".ply.txt");
     printf("SS %s\n",bbox_file.c_str());
-    TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file,true,false,bbox_margin);
+    TexturedSource *sourceModel=new TexturedSource(vpb::Source::MODEL,mf,bbox_file,true,false,bbox_marginX,bbox_marginY,bbox_marginZ);
     osgDB::Registry::instance()->setBuildKdTreesHint(osgDB::ReaderWriter::Options::BUILD_KDTREES);
       ply::VertexDataMosaic vertexData;
     osg::Node* model = vertexData.readPlyFile(sourceModel->getFileName().c_str());//osgDB::readNodeFile(sourceModel->getFileName().c_str());

@@ -211,7 +211,7 @@ public:
         }
 
         // not sure if this is correct?
-        if(_geo->getNormalBinding() && _geo->getNormalBinding() == osg::Geometry::BIND_PER_PRIMITIVE) ++_normalIndex;
+        //if(_geo->getNormalBinding() && _geo->getNormalBinding() == osg::Geometry::BIND_PER_PRIMITIVE) ++_normalIndex;
     }
 
     // operator for lines
@@ -222,7 +222,7 @@ public:
         write(i2);
         _fout << std::endl;
         // not sure if this is correct?
-        if(_geo->getNormalBinding() && _geo->getNormalBinding() == osg::Geometry::BIND_PER_PRIMITIVE) ++_normalIndex;
+	//  if(_geo->getNormalBinding() && _geo->getNormalBinding() == osg::Geometry::BIND_PER_PRIMITIVE) ++_normalIndex;
     }
 
     // operator for points
@@ -232,7 +232,7 @@ public:
         write(i1);
         _fout << std::endl;
         // not sure if this is correct?
-        if(_geo->getNormalBinding() && _geo->getNormalBinding() == osg::Geometry::BIND_PER_PRIMITIVE) ++_normalIndex;
+	//  if(_geo->getNormalBinding() && _geo->getNormalBinding() == osg::Geometry::BIND_PER_PRIMITIVE) ++_normalIndex;
     }
 
     virtual void begin(GLenum mode)

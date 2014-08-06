@@ -1,5 +1,10 @@
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
+if( DEFINED GLUT_Xmu_LIBRARY AND NOT GLUT_Xmu_LIBRARY)
+
+ list(REMOVE_ITEM GLUT_LIBRARIES ${GLUT_Xmu_LIBRARY})
+endif()
+
 #find_package(Glew)
 include(../../../FindGlew.cmake)
 FIND_PACKAGE(CUDA)

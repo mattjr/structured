@@ -155,7 +155,7 @@ namespace Raster
             return  false;
 
         float denom = 1.0f / d;
-        if (!isfinite(denom)) {
+        if (!std::isfinite(denom)) {
 			return false;
 		}
 		

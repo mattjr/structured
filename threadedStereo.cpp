@@ -55,6 +55,7 @@
 #include "MemUtils.h"
 #include "SplitBounds.h"
 #include <vips/vips.h>
+
 static bool hw_image=false;
 static bool blending=true;
 static bool externalMode=false;

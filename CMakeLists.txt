@@ -9,6 +9,7 @@
 # * vips
 # *glib2
 PROJECT(threadedStereo)
+SET(THREADED_STEREO_LIB "ts")
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
@@ -198,8 +199,6 @@ IF(NOT PY_OGR)
  MESSAGE(FATAL_ERROR "Unable to find python bidning for OGR: Try installing python-gdal")
 ENDIF(NOT PY_OGR)
 
-
-
 #-----------------------#
 # Compiler setup        #
 #-----------------------#
@@ -317,7 +316,7 @@ ENDIF()
 
 
 #SUBDIRS(gts-0.7.6 trimesh2 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender triangulation ann/src/ CMVS-PMVS/program SiftGPU pba vsfm re_vision )
-SUBDIRS(gts-0.7.6 trimesh2 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender triangulation ann/src/ CMVS-PMVS/program SiftGPU pba vsfm )
+SUBDIRS(gts-0.7.6 trimesh2 vrip VirtualPlanetBuilder vcgapps spatialindex-src-1.6.1/src swrender triangulation ann/src/ CMVS-PMVS/program SiftGPU pba vsfm ts-sonar)
 
 SET( SRCS
                 Extents.cpp
@@ -350,12 +349,10 @@ mesh_proc.cpp
 stereo_dense.cpp
 image_rect.cpp
    ANNWrapper.cpp             
-Didson.cpp
-Sonar.cpp
 )
 ADD_DEFINITIONS( "-g")
-ADD_LIBRARY( ts STATIC ${SRCS} ${SPINDEX_SRC})
-ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )
+ADD_LIBRARY( ${THREADED_STEREO_LIB} STATIC ${SRCS} ${SPINDEX_SRC})
+ADD_EXECUTABLE( ${CMAKE_PROJECT_NAME} threadedStereo.cpp ShellCmd.cpp )
 #ADD_EXECUTABLE( engine engine.cpp ShellCmd.cpp )
 
 ADD_EXECUTABLE( stereo_mesh_gen stereo_mesh_gen.cpp )
@@ -384,42 +381,42 @@ ADD_EXECUTABLE( dumpPCD dumpPCD.cpp  )
 ADD_EXECUTABLE(genOverlappingPoses genOverlappingPoses.cpp)
 
 #ADD_EXECUTABLE(temp temp.cpp)
-TARGET_LINK_LIBRARIES( genOverlappingPoses ts )
+TARGET_LINK_LIBRARIES( genOverlappingPoses ${THREADED_STEREO_LIB} )
 SET(OGF_LIBS basic math  cells  numeric_stuff image z  m )
 LINK_LIBRARIES(osgTerrain  osgFX osg  spindex vips vipsCC)
-TARGET_LINK_LIBRARIES( threadedStereo ts  vips vipsCC vpb spindex  ${OGF_LIBS})
-#TARGET_LINK_LIBRARIES( engine ts  vips vipsCC vpb spindex)
+TARGET_LINK_LIBRARIES( ${CMAKE_PROJECT_NAME} ${THREADED_STEREO_LIB}  vips vipsCC vpb spindex  ${THREADED_STEREO_LIB}-sonar ${OGF_LIBS})
+#TARGET_LINK_LIBRARIES( engine ${THREADED_STEREO_LIB}  vips vipsCC vpb spindex)
 TARGET_LINK_LIBRARIES( osgdem vpb  )
-TARGET_LINK_LIBRARIES( vipsVTAtlas ts  vips vipsCC spindex   ${OGF_LIBS})
-TARGET_LINK_LIBRARIES( atlasmesh ts  vips vipsCC spindex  ${OGF_LIBS})
-TARGET_LINK_LIBRARIES(im_shrink_noblack ts vips vipsCC ${OGF_LIBS})
-TARGET_LINK_LIBRARIES(create_mipmap ts vips vipsCC ${OGF_LIBS} dl)
-#TARGET_LINK_LIBRARIES(keypoint_mesh ts vips vipsCC ${OGF_LIBS} dl)
+TARGET_LINK_LIBRARIES( vipsVTAtlas ${THREADED_STEREO_LIB}  vips vipsCC spindex   ${OGF_LIBS})
+TARGET_LINK_LIBRARIES( atlasmesh ${THREADED_STEREO_LIB}  vips vipsCC spindex  ${OGF_LIBS})
+TARGET_LINK_LIBRARIES(im_shrink_noblack ${THREADED_STEREO_LIB} vips vipsCC ${OGF_LIBS})
+TARGET_LINK_LIBRARIES(create_mipmap ${THREADED_STEREO_LIB} vips vipsCC ${OGF_LIBS} dl)
+#TARGET_LINK_LIBRARIES(keypoint_mesh ${THREADED_STEREO_LIB} vips vipsCC ${OGF_LIBS} dl)
 
-TARGET_LINK_LIBRARIES( testImageModel ts  )
+TARGET_LINK_LIBRARIES( testImageModel ${THREADED_STEREO_LIB}  )
 TARGET_LINK_LIBRARIES( deepzoomVIPS  vips vipsCC)
-TARGET_LINK_LIBRARIES( testImageModel ts  )
+TARGET_LINK_LIBRARIES( testImageModel ${THREADED_STEREO_LIB}  )
 
-TARGET_LINK_LIBRARIES( stereo_mesh_gen ts  )
-TARGET_LINK_LIBRARIES( treeBBClip ts spindex  )
-TARGET_LINK_LIBRARIES( genRangeImg ts spindex )
+TARGET_LINK_LIBRARIES( stereo_mesh_gen ${THREADED_STEREO_LIB}  )
+TARGET_LINK_LIBRARIES( treeBBClip ${THREADED_STEREO_LIB} spindex  )
+TARGET_LINK_LIBRARIES( genRangeImg ${THREADED_STEREO_LIB} spindex )
 
-TARGET_LINK_LIBRARIES( vertCheck ts spindex )
-TARGET_LINK_LIBRARIES( calcTexCoord ts spindex vpb vips vipsCC  ${OGF_LIBS})
-TARGET_LINK_LIBRARIES( calcTexCoordBundler ts spindex vpb vips vipsCC  ${OGF_LIBS} ANN)
+TARGET_LINK_LIBRARIES( vertCheck ${THREADED_STEREO_LIB} spindex )
+TARGET_LINK_LIBRARIES( calcTexCoord ${THREADED_STEREO_LIB} spindex vpb vips vipsCC  ${OGF_LIBS})
+TARGET_LINK_LIBRARIES( calcTexCoordBundler ${THREADED_STEREO_LIB} spindex vpb vips vipsCC  ${OGF_LIBS} ANN)
 
-TARGET_LINK_LIBRARIES( singleImageTex ts spindex vpb vips vipsCC  ${OGF_LIBS})
-TARGET_LINK_LIBRARIES( borderClip ts spindex )
-TARGET_LINK_LIBRARIES( dumpPCD vips vipsCC ts z)
+TARGET_LINK_LIBRARIES( singleImageTex ${THREADED_STEREO_LIB} spindex vpb vips vipsCC  ${OGF_LIBS})
+TARGET_LINK_LIBRARIES( borderClip ${THREADED_STEREO_LIB} spindex )
+TARGET_LINK_LIBRARIES( dumpPCD vips vipsCC ${THREADED_STEREO_LIB} z)
 
-TARGET_LINK_LIBRARIES( dicedImage vips vipsCC ts z)
-TARGET_LINK_LIBRARIES( sparseJoin vips vipsCC ts z)
+TARGET_LINK_LIBRARIES( dicedImage vips vipsCC ${THREADED_STEREO_LIB} z)
+TARGET_LINK_LIBRARIES( sparseJoin vips vipsCC ${THREADED_STEREO_LIB} z)
 
-#TARGET_LINK_LIBRARIES( threshold ts )
+#TARGET_LINK_LIBRARIES( threshold ${THREADED_STEREO_LIB} )
 
 # Disabled by DJLM. 
 # Threaded stereo expects access to a large bunch of other executables
 # and scripts and is expecting to in the same directory as these other
 # tools. To do this  properly you need to know all of the external utilities
 # that T.S. calls and these all need to appear in /usr/local/bin
-# INSTALL_TARGETS( /bin threadedStereo )
+# INSTALL_TARGETS( /bin ${CMAKE_PROJECT_NAME} )

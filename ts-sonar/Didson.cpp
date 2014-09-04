@@ -199,8 +199,8 @@ Didson::Didson(int windowStart, int windowLength, const unsigned char* data,
     Sonar(consts.startBase * windowStart,
         consts.startBase * windowStart + consts.lengths[windowLength],
         consts.bearingFov, consts.elevationFov, consts.numBearings,
-        consts.numRanges), _vehiclePose(vehiclePose), _tiltRad(tiltRad), _rollRad(
-        rollRad) {
+        consts.numRanges), _tiltRad(tiltRad), _rollRad(
+        rollRad), _vehiclePose(vehiclePose) {
   if (windowStart < 1 || windowStart > 31) {
     cout << "ERROR: windowStart out of range" << endl;
     exit(1);

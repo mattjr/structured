@@ -36,6 +36,7 @@ find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
 find_package(GDAL REQUIRED)
 include ("${CMAKE_SOURCE_DIR}/OptimizeForArchitecture.cmake")
 include ("${CMAKE_SOURCE_DIR}/FindPythonModule.cmake")
+pkg_check_modules(EIGEN3 REQUIRED eigen3)
 
 #--------------------------------#
 # Enforce an out-of-source build #
@@ -218,6 +219,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
 "VirtualPlanetBuilder/include"
  ${OpenCV_INCLUDE_DIR}
                      ${GDAL_INCLUDE_DIR}
+                     ${EIGEN3_INCLUDE_DIRS}
 		     ${OSG_INCLUDE_DIR}
                    ${GLIB2_INCLUDE_DIRS}
                      ${LIBPOLYP_INC}
@@ -347,7 +349,10 @@ mipmap.cpp
 mesh_proc.cpp
 stereo_dense.cpp
 image_rect.cpp
-   ANNWrapper.cpp             )
+   ANNWrapper.cpp             
+Didson.cpp
+Sonar.cpp
+)
 ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ts STATIC ${SRCS} ${SPINDEX_SRC})
 ADD_EXECUTABLE( threadedStereo threadedStereo.cpp ShellCmd.cpp )

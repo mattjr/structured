@@ -5,12 +5,11 @@
  * @date: Aug 2014
  */
 
+#include <iostream>
 #include <vector>
 #include <utility>
 
 #include <Eigen/Dense>
-
-#include <isam/isam.h>
 
 #include "Sonar.h"
 

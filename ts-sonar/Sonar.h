@@ -9,7 +9,9 @@
 
 #include <vector>
 
-#include <isam/isam.h>
+#include <isam/Pose3d.h>
+#include <isam/Point3d.h>
+#include <isam/Point2d.h>
 
 namespace sonar {
 

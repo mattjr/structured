@@ -12,8 +12,6 @@
 
 #include <Eigen/Dense>
 
-#include <isam/isam.h>
-
 #include "Didson.h"
 
 using namespace boost;

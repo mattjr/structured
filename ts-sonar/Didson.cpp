@@ -140,7 +140,7 @@ pair<vector<int>, int> Didson::createMapping(int ixsize, double rmax,
 
 // create a Cartesian image suitable for texture mapping from the raw
 // bearing/range measurements; also return a mask of valid image regions
-shared_ptr<DidsonCartesian> Didson::getCartesian(int width) const {
+shared_ptr<DidsonCartesian> Didson::getCartesian(int width, int widthTmp) const {
   // generate map for Cartesian image
   vector<int> map;
   int height;
@@ -154,7 +154,6 @@ shared_ptr<DidsonCartesian> Didson::getCartesian(int width) const {
   // not ideal, but works...
   vector<int> invMap(consts.numRanges * consts.numBearings);
   vector<int> mapTmp;
-  int widthTmp = 1000;
   int heightTmp;
   pair<vector<int>, int> tmp2 = createMapping(widthTmp, maxRange(), minRange(),
       consts.bearingFov * 0.5, numBearings(), consts.numRanges);

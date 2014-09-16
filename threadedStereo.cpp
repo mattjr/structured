@@ -151,6 +151,7 @@ static bool externalStereo=false;
 static bool plymc_over_vrip=false;
 static bool manual_total_ply=false;
 static string manual_total_ply_file_name;
+static bool fill_nonsalient_keyframes=false;
 
 static double vrip_res;
 static string basepath;
@@ -633,11 +634,11 @@ static bool parse_args( int argc, char *argv[ ] )
         no_vttex=true;
     if(argp.find("--manual_total_ply") >= 0) {
         manual_total_ply=true;
+        fill_nonsalient_keyframes=true;
         argp.read ("--manual_total_ply", manual_total_ply_file_name);
     }
-
-
-
+    if(argp.find("--fill_nonsalient_keyframes"))
+        fill_nonsalient_keyframes=true;
 
     if(use_dense_stereo)
         sprintf(cachedmeshdir,"tmp/cache-mesh-dense/");
@@ -1444,8 +1445,47 @@ double totalValidArea=0;
         printf("\n");
 }
 
-        FILE *totalfp=diced_fopen("totalbbox.txt","w");
+        if (fill_nonsalient_keyframes) {
+            for (vector<Stereo_Pose_Data>::iterator it=tasks.begin (); it!=tasks.end (); ++it) {
+                Stereo_Pose_Data &name = *it;
+                if (!name.valid) {
+                    // get pose of camera os osg matrix
+                    // transforms points in camera frame to points in world frame
+                    osg::Matrix cam2world = osgTranspose(name.mat);
 
+                    // compute bbox corners in camera frame, assuming camera that's orthogonal to seafloor
+                    float fovHoriz = 2*atan2 (calib->camera_calibs[0].width/2.0, calib->camera_calibs[0].fcx);
+                    float fovVert = 2*atan2 (calib->camera_calibs[0].height/2.0, calib->camera_calibs[0].fcy);
+                    osg::Vec3 camCorner1, camCorner2, worldCorner1, worldCorner2;
+
+                    double Z_FUDGE_POS = 1.3, Z_FUDGE_NEG = 0.7;
+
+                    camCorner1[POSE_INDEX_Z] = name.alt * Z_FUDGE_POS;
+                    camCorner1[POSE_INDEX_X] = camCorner1[POSE_INDEX_Z] * sin (fovHoriz/2);
+                    camCorner1[POSE_INDEX_Y] = camCorner1[POSE_INDEX_Z] * sin (fovVert/2);
+
+                    camCorner2[POSE_INDEX_Z] = name.alt * Z_FUDGE_NEG;
+                    camCorner2[POSE_INDEX_X] = camCorner2[POSE_INDEX_Z] * -sin (fovHoriz/2);
+                    camCorner2[POSE_INDEX_Y] = camCorner2[POSE_INDEX_Z] * -sin (fovVert/2);
+                
+                    // transform to world frame
+                    worldCorner1 = cam2world * camCorner1;
+                    worldCorner2 = cam2world * camCorner2;
+
+                    // compute bbox
+                    name.bbox = osg::BoundingBox (std::min (worldCorner1[POSE_INDEX_X], worldCorner2[POSE_INDEX_X]),
+                                                  std::min (worldCorner1[POSE_INDEX_Y], worldCorner2[POSE_INDEX_Y]),
+                                                  std::min (worldCorner1[POSE_INDEX_Z], worldCorner2[POSE_INDEX_Z]),
+                                                  std::max (worldCorner1[POSE_INDEX_X], worldCorner2[POSE_INDEX_X]),
+                                                  std::max (worldCorner1[POSE_INDEX_Y], worldCorner2[POSE_INDEX_Y]),
+                                                  std::max (worldCorner1[POSE_INDEX_Z], worldCorner2[POSE_INDEX_Z]));
+
+                    name.valid = true;
+                }
+            }
+        }
+
+        FILE *totalfp=diced_fopen("totalbbox.txt","w");
 
         int ct=0;
        // printf("Bbox margin is %f\n",bbox_margin);

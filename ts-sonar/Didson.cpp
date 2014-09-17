@@ -191,8 +191,9 @@ shared_ptr<DidsonCartesian> Didson::getCartesian(int width, int widthTmp) const 
 }
 
 // constructor taking a DIDSON frame
-Didson::Didson(int windowStart, int windowLength, const unsigned char* data,
-    const isam::Pose3d& vehiclePose, double tiltRad, double rollRad) :
+Didson::Didson(int windowStart, int windowLength,
+               const isam::Pose3d& vehiclePose, double tiltRad, double rollRad,
+               const unsigned char* data, bool transformFrame) :
     Sonar(consts.startBase * windowStart,
         consts.startBase * windowStart + consts.lengths[windowLength],
         consts.bearingFov, consts.elevationFov, consts.numBearings,
@@ -208,13 +209,18 @@ Didson::Didson(int windowStart, int windowLength, const unsigned char* data,
   }
 
   _image = cv::Mat(consts.numRanges, consts.numBearings, CV_8UC1);
-  memcpy(_image.data, data, consts.numRanges * consts.numBearings);
+  if (data)
+      memcpy(_image.data, data, consts.numRanges * consts.numBearings);
 
   // we assume DIDSON facing to the right (DVL in hull lock mode)
   // i.e. 90 degrees yaw and -90 degrees roll configuration + tilt and roll actuators
-  Pose3d didsonOffset(0, 0.2, 0, 0, 0, 0); // DIDSON is to the right of the DVL along y  // todo: check DIDSON offset
-  Pose3d didsonActuators(0, 0, 0, M_PI * 0.5, tiltRad, rollRad - M_PI * 0.5);
-  _didsonPose = vehiclePose.oplus(didsonOffset).oplus(didsonActuators);
+  if (transformFrame) {
+      Pose3d didsonOffset(0, 0.2, 0, 0, 0, 0); // DIDSON is to the right of the DVL along y  // todo: check DIDSON offset
+      Pose3d didsonActuators(0, 0, 0, M_PI * 0.5, tiltRad, rollRad - M_PI * 0.5);
+      _didsonPose = vehiclePose.oplus(didsonOffset).oplus(didsonActuators);
+  } else {
+      _didsonPose = vehiclePose;
+  }
 }
 
 Pose3d Didson::didsonHuls3Pose() const {

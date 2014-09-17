@@ -55,6 +55,7 @@
 #include "MemUtils.h"
 #include "SplitBounds.h"
 #include <vips/vips.h>
+#include "ts-sonar/Didson.h"
 
 static bool hw_image=false;
 static bool blending=true;
@@ -152,6 +153,7 @@ static bool plymc_over_vrip=false;
 static bool manual_total_ply=false;
 static string manual_total_ply_file_name;
 static bool fill_nonsalient_keyframes=false;
+static bool sonar_mode=false;
 
 static double vrip_res;
 static string basepath;
@@ -639,6 +641,13 @@ static bool parse_args( int argc, char *argv[ ] )
     }
     if(argp.find("--fill_nonsalient_keyframes"))
         fill_nonsalient_keyframes=true;
+    if(argp.find("--sonar")) {
+        sonar_mode=true;
+        run_stereo=false;
+        fill_nonsalient_keyframes=true;
+        if(!manual_total_ply)
+            throw std::runtime_error ("--manual_total_ply mesh required for sonar mode!");
+    }
 
     if(use_dense_stereo)
         sprintf(cachedmeshdir,"tmp/cache-mesh-dense/");
@@ -1482,6 +1491,36 @@ double totalValidArea=0;
 
                     name.valid = true;
                 }
+            }
+        }
+
+        if (sonar_mode) {
+            DidsonParams didson_params ("didson-params.txt");
+            for (vector<Stereo_Pose_Data>::iterator it=tasks.begin (); it!=tasks.end (); ++it) {
+                Stereo_Pose_Data &name = *it;
+                name.valid = true;
+
+                // pan and tilt will be ignored
+                double pan = 0, tilt = 0;
+                sonar::Didson didson (didson_params.windowStart, didson_params.windowLength,
+                                      isam::Pose3d (name.pose[POSE_INDEX_X], name.pose[POSE_INDEX_Y], name.pose[POSE_INDEX_Z], 
+                                                    name.pose[POSE_INDEX_PSI], name.pose[POSE_INDEX_THETA], name.pose[POSE_INDEX_PHI]),
+                                      pan, tilt, NULL, false);
+
+                vector<isam::Point3d> frustum = didson.getFrustum ();
+                vector<double> x_coords, y_coords, z_coords;
+                for (vector<isam::Point3d>::const_iterator it=frustum.begin (); it!=frustum.end (); ++it) {
+                    x_coords.push_back (it->x ());
+                    y_coords.push_back (it->y ());
+                    z_coords.push_back (it->z ());
+                }
+
+                name.bbox = osg::BoundingBox (*std::min_element (x_coords.begin (), x_coords.end ()),
+                                              *std::min_element (y_coords.begin (), y_coords.end ()),
+                                              *std::min_element (z_coords.begin (), z_coords.end ()),
+                                              *std::max_element (x_coords.begin (), x_coords.end ()),
+                                              *std::max_element (y_coords.begin (), y_coords.end ()),
+                                              *std::max_element (z_coords.begin (), z_coords.end ()));
             }
         }
 
@@ -2728,6 +2767,7 @@ double totalValidArea=0;
                     cells[i].row,cells[i].col,
                     vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
                     rx,ry,rz,tex_margin,bbox_marginX,bbox_marginY,bbox_marginZ);
+            /* else if sonar ... */
         }else{
             fprintf(calcTexFn_fp,";%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin-x %f --bbox-margin-y %f --bbox-margin-z %f\n",
                     basepath.c_str(),
@@ -2806,6 +2846,7 @@ double totalValidArea=0;
                         rx,ry,rz,
                         cells[i].row,cells[i].col,_tileRows,_tileColumns,
                         latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
+                /* else if sonar ... (maybe?) */
                 }else{
                     fprintf(texcmds_fp[z],";%s/%s  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s  --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s",
                             basepath.c_str(),

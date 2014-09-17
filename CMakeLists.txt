@@ -331,6 +331,7 @@ vertexData.cpp
 TexPyrAtlas.cpp
 Semaphore.cpp
 TexturingQuery.cpp
+TexturingQueryDidson.cpp
 configFile.cpp
 SeaBedIO.cpp
 SpatialReference.cpp
@@ -352,6 +353,7 @@ image_rect.cpp
 )
 ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ${THREADED_STEREO_LIB} STATIC ${SRCS} ${SPINDEX_SRC})
+TARGET_LINK_LIBRARIES (${THREADED_STEREO_LIB} ${THREADED_STEREO_LIB}-sonar)
 ADD_EXECUTABLE( ${CMAKE_PROJECT_NAME} threadedStereo.cpp ShellCmd.cpp )
 #ADD_EXECUTABLE( engine engine.cpp ShellCmd.cpp )
 
@@ -364,6 +366,7 @@ ADD_EXECUTABLE(create_mipmap create_mipmap.cpp)
 ADD_EXECUTABLE( treeBBClip treeBBClip.cpp  )
 ADD_EXECUTABLE( calcTexCoord calcTexCoord.cpp )
 ADD_EXECUTABLE( calcTexCoordBundler calcTexCoordBundler.cpp )
+ADD_EXECUTABLE( calcTexCoordDidson calcTexCoordDidson.cpp )
 
 ADD_EXECUTABLE( testImageModel testImageModel.cpp )
 ADD_EXECUTABLE( dicedImage dicedImage.cpp )
@@ -404,6 +407,7 @@ TARGET_LINK_LIBRARIES( genRangeImg ${THREADED_STEREO_LIB} spindex )
 TARGET_LINK_LIBRARIES( vertCheck ${THREADED_STEREO_LIB} spindex )
 TARGET_LINK_LIBRARIES( calcTexCoord ${THREADED_STEREO_LIB} spindex vpb vips vipsCC  ${OGF_LIBS})
 TARGET_LINK_LIBRARIES( calcTexCoordBundler ${THREADED_STEREO_LIB} spindex vpb vips vipsCC  ${OGF_LIBS} ANN)
+TARGET_LINK_LIBRARIES( calcTexCoordDidson ${THREADED_STEREO_LIB} spindex vpb vips vipsCC  ${OGF_LIBS})
 
 TARGET_LINK_LIBRARIES( singleImageTex ${THREADED_STEREO_LIB} spindex vpb vips vipsCC  ${OGF_LIBS})
 TARGET_LINK_LIBRARIES( borderClip ${THREADED_STEREO_LIB} spindex )

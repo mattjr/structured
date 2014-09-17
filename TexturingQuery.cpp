@@ -421,7 +421,7 @@ void TexturingQuery::addImagesToAtlasGen(map<SpatialIndex::id_type,int> allIds, 
 }
 
 
-osg::Vec2 TexturingQuery::reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v){
+osg::Vec2 TexturingQuery::reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v, bool *is_visible){
     osg::Vec3 cam_frame=mat*v;
    // cout << mat << endl;
     //cout << "orig" << v <<endl;

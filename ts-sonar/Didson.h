@@ -46,8 +46,9 @@ class Didson: public Sonar {
 public:
 
   // constructor taking a DIDSON frame
-  Didson(int windowStart, int windowLength, const unsigned char* data,
-      const isam::Pose3d& vehiclePose, double pan, double tilt);
+  Didson(int windowStart, int windowLength,
+         const isam::Pose3d& vehiclePose, double pan, double tilt,
+         const unsigned char* data=NULL, bool transformFrame=true);
 
   // provides the pose of the DIDSON sensor for the HULS3 vehicle,
   // taking into account offsets and actuator angles

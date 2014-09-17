@@ -47,6 +47,15 @@ public:
    double   transVect[3];
 };
 
+class DidsonParams
+{
+public:
+    DidsonParams (const std::string &filename);
+
+    int windowStart;
+    int windowLength;
+};
+
 class StereoCalib
 {
 public:

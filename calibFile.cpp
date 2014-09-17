@@ -177,3 +177,24 @@ CameraCalib StereoCalib::extract_from_file( istream &in_file,
 
     return calib;
 }
+
+DidsonParams::DidsonParams (const std::string &filename)
+{
+    ifstream in_file (filename.c_str ());
+    if (!in_file) {
+        stringstream buf;
+        buf << "Unable to load DIDSON parameter file: " << filename;
+        throw runtime_error (buf.str ());
+    }
+
+    double tmp;
+    vector<double> params;
+    while (in_file >> tmp)
+        params.push_back (tmp);
+
+    if (params.size () != 2)
+        throw runtime_error ("DIDSON parameter file should only have 2 values");
+
+    this->windowStart = params[0];
+    this->windowLength = params[1];
+}

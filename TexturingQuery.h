@@ -68,8 +68,12 @@ public:
 
 protected:
     typedef std::multimap<int,SpatialIndex::id_type> ProjectsToMap;
-    double getDistToCenter(osg::Vec3 v, TexturedSource::ProjectionCamera cam);
-    void findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,SpatialIndex::id_type id);
+
+    // overwritable by e.g. sonar
+    virtual double getDistToCenter(osg::Vec3 v, TexturedSource::ProjectionCamera cam);
+    virtual void findCamProjAndDist(CamProjAndDist &cpad,osg::Vec3 v,SpatialIndex::id_type id);
+    virtual osg::Vec2 reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v, bool *is_visible=NULL);
+
     osg::Vec2 convertToUV(const osg::Vec2 &pix);
     const CamDists getClosest(std::vector<int> tri_v,const osg::Vec3Array &verts);
  //   std::string _bbox_file;
@@ -90,7 +94,6 @@ protected:
     void generateStateAndSplitDrawables(std::vector<osg::Geometry*> &geoms,osg::Vec4Array *v, const osg::PrimitiveSet& prset,
                                         osg::Vec2Array* texCoordsArray,
                                         const osg::Vec3Array &verts,int texSizeIdx);
-    osg::Vec2 reprojectPt(const osg::Matrixf &mat,const osg::Vec3 &v);
     AttributeAlias _vertexAlias;
 
 public :

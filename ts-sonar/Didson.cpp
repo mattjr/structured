@@ -57,7 +57,8 @@ pair<int, int> DidsonCartesian::bearingRange2Cartesian(int bearing,
   int pos = _invMap[range * consts.numBearings + bearing];
   int col = pos % image.cols;
   int row = (pos - col) / image.cols;
-  return make_pair(row, col);
+  // HACK: don't just return col, it needs to be flipped
+  return make_pair(row, (image.cols - 1) - col);
 }
 
 // conversion of Matlab DIDSON code from Soundmetrics ---

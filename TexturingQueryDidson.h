@@ -1,4 +1,7 @@
 #include "TexturingQuery.h"
+#include "ts-sonar/Didson.h"
+
+#include <boost/shared_ptr.hpp>
 
 class TexturingQueryDidson : public TexturingQuery {
 
@@ -16,4 +19,6 @@ protected:
 
     int windowStart;
     int windowLength;
+    boost::shared_ptr<sonar::DidsonCartesian> cartesian;
+    sonar::Didson *tmp;
 };

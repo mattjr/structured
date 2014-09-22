@@ -2767,7 +2767,17 @@ double totalValidArea=0;
                     cells[i].row,cells[i].col,
                     vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
                     rx,ry,rz,tex_margin,bbox_marginX,bbox_marginY,bbox_marginZ);
-            /* else if sonar ... */
+        } else if (sonar_mode) {
+            fprintf(calcTexFn_fp,";%s/calcTexCoordDidson %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin-x %f --bbox-margin-y %f --bbox-margin-z %f\n",
+                    basepath.c_str(),
+                    base_dir.c_str(),
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    diced_dir,cells[i].row,cells[i].col,
+                    diced_dir,
+                    cells[i].row,cells[i].col,
+                    vpblod,totalbb_unrot.zMin(),totalbb_unrot.zMax(),
+                    rx,ry,rz,tex_margin,bbox_marginX,bbox_marginY,bbox_marginZ);
         }else{
             fprintf(calcTexFn_fp,";%s/calcTexCoord %s %s/vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply --bbfile  %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt --outfile %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply --zrange %f %f --invrot %f %f %f --tex-margin %f --bbox-margin-x %f --bbox-margin-y %f --bbox-margin-z %f\n",
                     basepath.c_str(),

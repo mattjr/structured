@@ -71,7 +71,7 @@ public:
 
   // objection with Cartesian image, mask, and bearingRange2Cartesian
   // conversion suitable for texture mapping
-  boost::shared_ptr<DidsonCartesian> getCartesian(int numCols, int widthTmp=200) const;
+  boost::shared_ptr<DidsonCartesian> getCartesian(int numCols, int widthTmp=1000) const;
 };
 
 } /* namespace sonar */

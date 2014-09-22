@@ -1,8 +1,8 @@
 #include "TexturingQueryDidson.h"
 
-#include "ts-sonar/Didson.h"
-
 using namespace std;
+
+const static int IMAGE_WIDTH = 240;
 
 static Eigen::MatrixXd _osgToEigen (const osg::Matrixf &mat)
 {
@@ -18,6 +18,9 @@ TexturingQueryDidson::TexturingQueryDidson(TexturedSource *source,const CameraCa
     : TexturingQuery (source, calib, atlasGen, useTextureArray), windowStart (0), windowLength (0)
 {
     this->setDidsonParams (_windowStart, _windowLength);
+    this->tmp = new sonar::Didson (this->windowStart, this->windowLength, isam::Pose3d (), 0, 0, NULL, false);
+    // pre-allocate conversion from bearing/range to image coordinates
+    this->cartesian = this->tmp->getCartesian (IMAGE_WIDTH);
 }
 
 void TexturingQueryDidson::setDidsonParams (int _windowStart, int _windowLength)
@@ -31,12 +34,12 @@ osg::Vec2 TexturingQueryDidson::reprojectPt(const osg::Matrixf &mat,const osg::V
     osg::Vec2 ret;
 
     // decompose matrix
-    Eigen::MatrixXd _mat = _osgToEigen (mat);
+    Eigen::MatrixXd _mat = _osgToEigen (osg::Matrixf::inverse (mat));
     isam::Pose3d pose (_mat);
 
     // these will be ignored
     double tilt = 0., pan = 0.;
-    sonar::Didson didson (0, 0, pose, pan, tilt, NULL, false);
+    sonar::Didson didson (this->windowStart, this->windowLength, pose, pan, tilt, NULL, false);
 
     isam::Point3d p (v[0], v[1], v[2]);
     isam::Point2d br;
@@ -44,9 +47,13 @@ osg::Vec2 TexturingQueryDidson::reprojectPt(const osg::Matrixf &mat,const osg::V
     if (is_visible)
         *is_visible = is_visible_flag;
 
-    pair<int, int> uv = didson.getCartesian (240)->bearingRange2Cartesian (br.x (), br.y ());
-    ret[0] = uv.first; ret[1] = uv.second;
-
+    if (is_visible_flag) {
+        pair<int, int> rowcol = this->cartesian->bearingRange2Cartesian (br.x (), br.y ());
+        ret[0] = rowcol.second; ret[1] = rowcol.first;
+    } else {
+        ret[0] = -1;
+        ret[1] = -1;
+    }
     return ret;
 }
 

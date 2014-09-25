@@ -3110,21 +3110,28 @@ double totalValidArea=0;
 
         }
         if(!hw_image){
+            ostringstream sizestr;
 
-            fprintf(vartexcmds_fp,"%s/meshvar  %s/tex-clipped-diced-r_%04d_c_%04d-lod%d.ply %s/bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d.ply.txt %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f --size %d %d --image %d %d %d %d -lat %.28f -lon %.28f",
+                sizestr<<"--size "<<ajustedGLImageSizeX<<" "<<ajustedGLImageSizeY;
+                if(useVirtTex)
+                    sizestr<< " --vt " <<VTtileSize<< " " <<tileBorder<< " ";
+            fprintf(vartexcmds_fp,"%s/vcgapps/bin/renderSquareAAVar  %s  --bbox %.16f %.16f %.16f %.16f %.16f %.16f --imglist %s/even-bbox-vis-tmp-tex-clipped-diced-r_%04d_c_%04d_rs%04d_cs%04d.ply.txt --imagedir %s --mat %s/tex-clipped-diced-r_%04d_c_%04d.mat --invrot %f %f %f  --image %d %d %d %d -lat %.28f -lon %.28f --jpeg-quality %d --mosaicid %d %s --blend",
                     basepath.c_str(),
+                    mesh_list.c_str(),
+                    cells_mosaic[i].bbox.xMin(),
+                    cells_mosaic[i].bbox.yMin(),
+                    cells_mosaic[i].bbox.zMin(),
+                    cells_mosaic[i].bbox.xMax(),
+                    cells_mosaic[i].bbox.yMax(),
+                    cells_mosaic[i].bbox.zMax(),
                     diced_dir,
-                    cells_mosaic[i].row,cells_mosaic[i].col,
-                    vpblod,
-                    diced_dir,
-                    cells_mosaic[i].row,cells_mosaic[i].col,
+                    cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns,
                     (base_dir+imgbase).c_str(),
                     diced_dir,
                     cells_mosaic[i].row,cells_mosaic[i].col,
                     rx,ry,rz,
-                    ajustedGLImageSizeX,ajustedGLImageSizeY,
                     cells_mosaic[i].row,cells_mosaic[i].col,_tileRows,_tileColumns,
-                    latOrigin , longOrigin);
+                    latOrigin , longOrigin,jpegQuality,i,sizestr.str().c_str());
             if(writeout_meshvar)
                 fprintf(vartexcmds_fp," --write");
         }

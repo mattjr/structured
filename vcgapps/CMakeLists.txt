@@ -37,6 +37,7 @@ ADD_EXECUTABLE( reparam  reparam.cpp  GenParam.cpp vcglib/wrap/ply/plylib.cpp vc
 ADD_EXECUTABLE( renderReorder  renderReorder.cpp  GenParam.cpp vcglib/wrap/ply/plylib.cpp vcglib/wrap/gui/trackball.cpp vcglib/wrap/gui/trackmode.cpp  ../swrender/render_utils.cpp ../swrender/generic_fragment_shader.cpp ../swrender/generic_vertex_shader.cpp)
 ADD_EXECUTABLE( renderReorderAA  renderReorderAA.cpp  GenParam.cpp vcglib/wrap/ply/plylib.cpp vcglib/wrap/gui/trackball.cpp vcglib/wrap/gui/trackmode.cpp  ../swrender/render_utils.cpp ../swrender/generic_fragment_shader.cpp ../swrender/generic_vertex_shader.cpp)
 ADD_EXECUTABLE( renderSquareAA  renderSquareAA.cpp  GenParam.cpp vcglib/wrap/ply/plylib.cpp vcglib/wrap/gui/trackball.cpp vcglib/wrap/gui/trackmode.cpp  ../swrender/render_utils.cpp ../swrender/generic_fragment_shader.cpp ../swrender/generic_vertex_shader.cpp)
+ADD_EXECUTABLE( renderSquareAAVar  renderSquareAAVar.cpp  GenParam.cpp vcglib/wrap/ply/plylib.cpp vcglib/wrap/gui/trackball.cpp vcglib/wrap/gui/trackmode.cpp  ../swrender/render_utils.cpp ../swrender/generic_fragment_shader.cpp ../swrender/generic_vertex_shader.cpp)
 
 #IF( APPLE )
 #SET(GLEW_LIB glew)
@@ -49,6 +50,7 @@ TARGET_LINK_LIBRARIES(reparam  ${OPENGL_LIBRARIES} ts swrender ${CGAL_3RD_PARTY_
 TARGET_LINK_LIBRARIES(renderReorder  ${OPENGL_LIBRARIES} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )
 TARGET_LINK_LIBRARIES(renderReorderAA  ${OPENGL_LIBRARIES} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )
 TARGET_LINK_LIBRARIES(renderSquareAA  ${OPENGL_LIBRARIES} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )
+TARGET_LINK_LIBRARIES(renderSquareAAVar  ${OPENGL_LIBRARIES} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )
 
 TARGET_LINK_LIBRARIES(reorder  ${OPENGL_LIBRARIES} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )
 TARGET_LINK_LIBRARIES(OGFClean  ${OPENGL_LIBRARIES} swrender ${CGAL_3RD_PARTY_LIBRARIES} ${CGAL_LIBRARIES} basic math  cells  numeric_stuff image z  m  )

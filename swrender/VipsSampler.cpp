@@ -275,90 +275,79 @@ void VipsSampler::blendVarTri(int x, int y, const osg::Vec3& bar, const osg::Vec
     }
    // cout << u << " " << v<<endl;
     unsigned int *depth=(unsigned int*)IM_REGION_ADDR( regRange, x, y );
-    osg::Vec3 WSum(0.0,0.0,0.0);
-    osg::Vec3d outComp[3];
-    osg::Vec3d sepOutComp[3][4];
-    for(int j=0; j<3; j++)
-        outComp[j]=osg::Vec3d(0,0,0);
-    for(int curr_img=0; curr_img<4; curr_img++){
 
-        unsigned char dist_curr=reinterpret_cast<unsigned char *>(depth)[curr_img];
-        //Need to handle invalid dist
-        float local_r=(dist_curr/255.0)*rmax;
-        if(inCoreTextureArr[curr_img]){
-            if(!inCoreTextureArr[curr_img]->surface)
+
+    unsigned char dist_curr=reinterpret_cast<unsigned char *>(depth)[idx];
+    //Need to handle invalid dist
+    float local_r=(dist_curr/255.0)*rmax;
+
+    osg::Vec3d outComp[3];
+    for(int j=0; j < 3; j++){
+        float W=exp(-local_r*10.0*16.0*Cb[j]);
+        // sample the texture and write the color information
+        if(j == 0){
+            outComp[j]=((texture->sample_nearest(u,v,mipmapL[0])-texture->sample_nearest(u,v,mipmapL[1]))*W);
+        }else if (j==1){
+            outComp[j]=((texture->sample_nearest(u,v,mipmapL[1])-texture->sample_nearest(u,v,mipmapL[2]))*W);
+        }else if(j==2){
+            outComp[j]=(texture->sample_nearest(u,v,mipmapL[2])*W);
+        }
+        // always write the color;
+    }
+    osg::Vec3 WSum(0.0,0.0,0.0);
+    osg::Vec4 r4(0.0,0.0,0.0,0.0);
+    for(int j=0; j < 3; j++){
+        for(int i=0;i<4; i++){
+            unsigned int d=*depth;
+            unsigned char oldd[4];
+
+            oldd[0]= d & 0xFF;
+            oldd[1] = (d >> 8) & 0xFF;
+            oldd[2] = (d >> 16) & 0xFF;
+            oldd[3]= (d >> 24) & 0xFF;
+            unsigned char dist=oldd[i];
+            if(dist ==255)
                 continue;
-        for(int j=0; j < 3; j++){
+            //Need to handle invalid dist
+            float local_r=(dist/255.0)*rmax;
+            r4[i]=local_r;
             float W=exp(-local_r*10.0*16.0*Cb[j]);
             WSum[j]+=W;
-            // sample the texture and write the color information
-            if(j == 0){
-                sepOutComp[j][curr_img]=((inCoreTextureArr[curr_img]->sample_nearest(u,v,mipmapL[0])-inCoreTextureArr[curr_img]->sample_nearest(u,v,mipmapL[1]))*W);
-                outComp[j]+= sepOutComp[j][curr_img];
-            }else if (j==1){
-                sepOutComp[j][curr_img]=((inCoreTextureArr[curr_img]->sample_nearest(u,v,mipmapL[1])-inCoreTextureArr[curr_img]->sample_nearest(u,v,mipmapL[2]))*W);
-                outComp[j]+=sepOutComp[j][curr_img];
-            }else if(j==2){
-                sepOutComp[j][curr_img]=(inCoreTextureArr[curr_img]->sample_nearest(u,v,mipmapL[2])*W);
-                outComp[j]+=sepOutComp[j][curr_img];
-            }
-            // always write the color;
         }
-      }
     }
-
     outComp[0]=outComp[0]/WSum[0];
     outComp[1]=outComp[1]/WSum[1];
     outComp[2]=outComp[2]/WSum[2];
-    osg::Vec3d colorPerImage[4];
-    std::vector<double>greyPerImage;
-    for(int curr_img=0; curr_img<4; curr_img++){
-        for(int j=0; j < 3; j++){
-            sepOutComp[j][curr_img]/=WSum[j];
-        }
-        colorPerImage[curr_img]=sepOutComp[0][curr_img]+sepOutComp[1][curr_img]+sepOutComp[2][curr_img];
-    }
-    for(int curr_img=0; curr_img<4; curr_img++){
-        greyPerImage.push_back(rgb_to_grey(colorPerImage[curr_img]));
-    }
-    osg::Vec3 outP;
 
-    double std_dev_gray=standard_dev(greyPerImage);
-    //printf("%f\n",std_dev_gray);
-    if(std::isfinite(std_dev_gray)){
-    std_dev_gray=clamp((std_dev_gray/0.05f),0.0f,1.0f);
-    outP=jetColorMap(std_dev_gray);
-    }else{
-        outP=osg::Vec3(0.,0.,0.);
-
-    }
-
-    //outP= outComp[0]+outComp[1]+outComp[2];
-
-   unsigned int *color=(unsigned int*)IM_REGION_ADDR( regOutput, x, y );
-    int r,g,b;
+    osg::Vec3 outP = outComp[0]+outComp[1]+outComp[2];
+    double greyVal=rgb_to_grey(outP);
+    unsigned int *color=(unsigned int*)IM_REGION_ADDR( regOutput, x, y );
+    int val;
+    int allcolors[4];
     unsigned int c=*color;
-/*    int oldblue,oldgreen,oldred;
+    int oldblue,oldgreen,oldred,oldalpha;
     if(USE_BGR){
-        oldblue = c & 0xFF;
-        oldred = (c >> 16) & 0xFF;
+        allcolors[2] = c & 0xFF;
+        allcolors[0] = (c >> 16) & 0xFF;
     }else{
-        oldred = c & 0xFF;
-        oldblue = (c >> 16) & 0xFF;
+        allcolors[0] = c & 0xFF;
+        allcolors[2] = (c >> 16) & 0xFF;
     }
-    oldgreen = (c >> 8) & 0xFF;
-*/
-    r=(int)(outP.x()*255.0);
-    g=(int)(outP.y()*255.0);
-    b=(int)(outP.z()*255.0);
+    allcolors[1] = (c >> 8) & 0xFF;
+
+    allcolors[3] = (c >> 24) & 0xFF;
+
+    val=(int)(greyVal*255.0);
+    allcolors[idx]=clamp(val,0,255);
 
     if(USE_BGR)
-        c= clamp(b,0,255) | clamp(g,0,255) << 8 | clamp(r,0,255) << 16 | 255 << 24;
+        c= clamp(allcolors[2],0,255) | clamp(allcolors[1],0,255) << 8 | clamp(allcolors[0],0,255) << 16 | clamp(allcolors[3],0,255) << 24;
     else
-        c=  clamp(r,0,255) | clamp(g,0,255) << 8 | clamp(b,0,255) << 16 | 255 << 24;
+        c= clamp(allcolors[0],0,255) | clamp(allcolors[1],0,255) << 8 | clamp(allcolors[2],0,255) << 16 | clamp(allcolors[3],0,255) << 24;
 
     *color = c;
 }
+
 static inline float triangleArea(const osg::Vec2& a, const osg::Vec2& b, const osg::Vec2& c)
 {
     osg::Vec2 v0 = a - c;

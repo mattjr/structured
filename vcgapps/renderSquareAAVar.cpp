@@ -107,6 +107,9 @@
 #include "../swrender/Raster.h"
 #include "../swrender/VipsSampler.h"
 #include "GenParam.h"
+#include "gdal_priv.h"
+#include "cpl_conv.h" // for CPLMalloc()
+#include "ogr_spatialref.h" //OGRSpatialReference
 // the software renderer stuff is located in the namespace "swr" so include
 // that here
 using namespace swr;
@@ -128,6 +131,7 @@ struct InputVertex {
 static REGION *regRange[2];
 static REGION *regOutput[2];
 
+#define NODATA -32767.0
 
 static IMAGE *outputImage[2];
 static IMAGE *rangeImage[2];
@@ -184,9 +188,48 @@ im_white( IMAGE *out, int x, int y, int bands )
     return( 0 );
 }
 
+static void TiffWrite( float *pFloatImage, const char *pFilename, int width, int height, string proj4,osg::Vec4 ullr)
+{
+    const char *pszFormat = "GTiff";
+       GDALDriver *poDriver;
+       char **papszMetadata;
+
+       poDriver = GetGDALDriverManager()->GetDriverByName(pszFormat);
+
+       if( poDriver == NULL ){
+           fprintf(stderr,"Can't create geotiff driver\n");
+           exit( -1 );
+       }
+
+       papszMetadata = poDriver->GetMetadata();
+       if( CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE ) )
+           printf( "Driver %s supports Create() method.\n", pszFormat );
 
 
+    GDALDataset *poDstDS;
+        char **papszOptions = NULL;
 
+        poDstDS = poDriver->Create( pFilename, width, height, 1, GDT_Float32,
+                                    papszOptions );
+  OGRSpatialReference oSRS;
+  GDALRasterBand *poBand;
+
+  oSRS.importFromProj4(proj4.c_str());
+  double geoTransform []= {ullr[0], (ullr[2] - ullr[0]) / width, 0.0,
+                         ullr[1], 0.0, (ullr[3] - ullr[1]) / height};
+   poDstDS->SetGeoTransform( geoTransform );
+   char *pszSRS_WKT = NULL;
+   oSRS.exportToWkt( &pszSRS_WKT );
+   poDstDS->SetProjection( pszSRS_WKT );
+   CPLFree( pszSRS_WKT );
+
+   poBand = poDstDS->GetRasterBand(1);
+   poBand->SetNoDataValue(NODATA);
+     poBand->RasterIO( GF_Write, 0, 0, width,height,
+                       pFloatImage, width, height, GDT_Float32, 0, 0 );
+     GDALClose( (GDALDatasetH) poDstDS );
+
+}
 
 
 void write_header(std::ostream& _fout,int total_face_count,bool color){
@@ -978,63 +1021,55 @@ int main(int ac, char *av[]) {
         if(sizeI){
             delete sizeI;
         }
-        int pass =0;
-
         unsigned int total_tri_count=0,count=0;
         for( map<int,vector<ply::tri_t> >::iterator itr=vertexData[ORIG_MAPPING]._img2tri.begin(); itr!=vertexData[ORIG_MAPPING]._img2tri.end(); itr++)
             total_tri_count+=itr->second.size();
 
-        for(int i=0; i<(int)vertexData[ORIG_MAPPING]._triangles->size()-2; i+=3){
-            osg::Vec3 v1=verts->at(vertexData[ORIG_MAPPING]._triangles->at(i));
-            osg::Vec3 v2=verts->at(vertexData[ORIG_MAPPING]._triangles->at(i+1));
-            osg::Vec3 v3=verts->at(vertexData[ORIG_MAPPING]._triangles->at(i+2));
-            //cout << v1 << " "<<v2 << " "<<v3 <<endl;
-            osg::Vec3 tc1[4],tc2[4],tc3[4];
-            ply::tri_t tri;
-            tri.idx[0]=vertexData[ORIG_MAPPING]._triangles->at(i);
-            tri.idx[1]=vertexData[ORIG_MAPPING]._triangles->at(i+1);
-            tri.idx[2]=vertexData[ORIG_MAPPING]._triangles->at(i+2);
-            tri.tri_idx=i/3;
+        for( map<int,vector<ply::tri_t> >::iterator itr=vertexData[ORIG_MAPPING]._img2tri.begin(); itr!=vertexData[ORIG_MAPPING]._img2tri.end(); itr++){
+            string tmp=string(string(imgdir)+string("/")+imageList[itr->first].filename);
 
-            if(vertexData[ORIG_MAPPING]._texCoord.size()){
+            Texture *texture=NULL;
+            TextureMipMap *textureMipMap=NULL;
 
-                TextureMipMap **textureMipMapArr=new TextureMipMap*[4];
-                for(int a=0;a<4; a++)
-                    textureMipMapArr[a]=NULL;
-                for(int a=0;a<4; a++){
-                    float curr_id=vertexData[ORIG_MAPPING]._texIds->at(vertexData[ORIG_MAPPING]._triangles->at(i))[a];
-                    int curr_id_int= (int)curr_id;
-                    tc1[a]=vertexData[ORIG_MAPPING]._texCoord[a]->at(vertexData[ORIG_MAPPING]._triangles->at(i));
-                    tc1[a].z()=curr_id;
-                    tc2[a]=vertexData[ORIG_MAPPING]._texCoord[a]->at(vertexData[ORIG_MAPPING]._triangles->at(i+1));;
-                    tc2[a].z()=curr_id;
+            if(!blending){
+                texture = new Texture(tmp);
+                FragmentShader::texture = texture;
+                VertexShader::texture = texture;
+                if(!texture->surface)
+                    continue;
+            }else{
+                textureMipMap = new TextureMipMap(tmp,itr->first);
+                FragmentShaderBlendingMain::texture = textureMipMap;
+                VertexShaderBlending::texture =textureMipMap;
+                if(!textureMipMap->surface)
+                    continue;
 
-                    tc3[a]=vertexData[ORIG_MAPPING]._texCoord[a]->at(vertexData[ORIG_MAPPING]._triangles->at(i+2));;
-                    tc3[a].z()=curr_id;
-                    //cout <<"Zig "<<tc1[a] << " "<< tc2[a]<< " "<<tc3[a]<<endl;
-
-
-
-                   string tmp=string(string(imgdir)+string("/")+imageList[curr_id_int].filename);
-                   textureMipMapArr[a] = new TextureMipMap(tmp,curr_id_int);
-
-
+            }
+            for(int i=0;i <passesFlatRemap; i++){
+                if(!blending)
+                    VertexShader::modelviewprojection_matrix=(*viewProjMats[i]);
+                else{
+                    VertexShaderBlendingDistPass::modelviewprojection_matrix=(*viewProjMats[i]);
+                    VertexShaderBlending::modelviewprojection_matrix=(*viewProjMats[i]);
                 }
-
-                viSamp.regOutput=regOutput[pass];
-                viSamp.regRange=regRange[pass];
-                viSamp.doublecountmapPtr =&(doublecountmap[pass]);
-                viSamp.inCoreTextureArr =textureMipMapArr;
-
-
-                        if(i % 300 == 0){
-                            printf("\r %02d%%: %d/%d",(int)(100.0*(i/(float)total_tri_count)),i,total_tri_count);
+                FragmentShaderBlendingMain::regOutput=regOutput[i];
+                FragmentShaderBlendingMain::regRange=regRange[i];
+                FragmentShaderBlendingMain::doublecountmapPtr =&(doublecountmap[i]);
+                viSamp.regOutput=regOutput[i];
+                viSamp.regRange=regRange[i];
+                viSamp.doublecountmapPtr =&(doublecountmap[i]);
+                viSamp.texture =textureMipMap;
+                for(int t=0; t< (int)itr->second.size(); t++){
+                    if(i==0){
+                        if(count % 300 == 0){
+                            printf("\r %02d%%: %d/%d",(int)(100.0*(count/(float)total_tri_count)),count,total_tri_count);
                             fflush(stdout);
                         }
                         count++;
-
-
-                    osg::Vec3Array *use_vert= (1) ? verts : vertexData[ORIG_MAPPING]._vertices.get() ;
+                    }
+                    if(!blending && itr->second[t].pos !=0 )
+                        continue;
+                    osg::Vec3Array *use_vert= (i==0) ? verts : vertexData[ORIG_MAPPING]._vertices.get() ;
                     int aliasing;
                     osg::Matrix *proj;
                     int mapping;
@@ -1047,26 +1082,21 @@ int main(int ac, char *av[]) {
                         mapping=ORIG_MAPPING;
                         proj=&viewProjRead;
                     }
-                    for(int a=0;a<4; a++){
-                        if(textureMipMapArr[a])
-                             if(!textureMipMapArr[a]->surface)
-                            continue;
-                        tri.pos=a;
-                        viSamp.texture=textureMipMapArr[a];
-                        if(process_tri_new(tri,vertexData[mapping]._vertices,vertexData[mapping]._texCoord,blending,sizeX,sizeY,viSamp,sData,proj)){
-                            Raster::drawTriangle(aliasing, texSize, sData.positions,sData.texcoords,
-                                                 VipsSampler::renderVarTriCallback, &viSamp);
-                        }
-                    }
-                    for(int a=0;a<4; a++){
-                        if(textureMipMapArr[a] && textureMipMapArr[a]->surface)
-                        delete textureMipMapArr[a];
+                    if(process_tri_new(itr->second[t],vertexData[mapping]._vertices,vertexData[mapping]._texCoord,blending,sizeX,sizeY,viSamp,sData,proj)){
+                        Raster::drawTriangle(aliasing, texSize, sData.positions,sData.texcoords,
+                                             VipsSampler::renderVarTriCallback, &viSamp);
                     }
                 }
+            }
+            if(!blending){
+                delete texture;
 
+            }
+            else{
+                delete textureMipMap;
+            }
 
         }
-
         printf("\r %02d%%: %d/%d\n",(int)(100.0*(count/(float)total_tri_count)),count,total_tri_count);
         fflush(stdout);
         double elapsed=osg::Timer::instance()->delta_s(start,osg::Timer::instance()->tick());
@@ -1074,11 +1104,11 @@ int main(int ac, char *av[]) {
         process_mem_usage(vm, rss);
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
         for(int i=0; i<passesFlatRemap; i++){
-            im_region_free(regOutput[pass]);
+            im_region_free(regOutput[i]);
 
             if(blending){
-                im_region_free(regRange[pass]);
-                im_close(rangeImage[pass]);
+                im_region_free(regRange[i]);
+                im_close(rangeImage[i]);
 
                 /*       if(useDisk){
                 if( remove( depthName.c_str() ) != 0 )
@@ -1115,8 +1145,45 @@ int main(int ac, char *av[]) {
         }
         IMAGE * invMask=im_open("tmp11","p");
         im_invert(maskBand,invMask);
+
+        /*IMAGE * varI=im_open("tmp","p");
+        im_initdesc( varI,
+                     outputImage[0]->Xsize, outputImage[0]->Ysize, 4,
+                     IM_BBITS_BYTE, IM_BANDFMT_UCHAR, IM_CODING_NONE,
+                     IM_TYPE_MULTIBAND,
+                     1.0, 1.0, 0, 0 );
+        vips_RGBA2Var(outputImage[0],&varI);*/
+        vips::VImage varI(outputImage[0]);
+        vips::VImage rangeI(rangeImage[0]);
+
+
+
+        vips::VImage meanI=varI.bandmean();
+
+        vips::VImage noDataI=meanI.lin(0.0,NODATA);;
+
+
+
+        vips::VImage res=((varI.extract_band(0)-meanI).pow(2.)+(varI.extract_band(1)-meanI).pow(2.)+(varI.extract_band(2)-meanI).pow(2.)+(varI.extract_band(3)-meanI).pow(2.)/4.0).pow(0.5);
+       // printf("%d %d\n",noDataI.BandFmt(),noDataI.Bands());
+        vips::VImage maskedRes=(meanI==255).ifthenelse(noDataI,res);
+        GDALAllRegister();
+     // PFMWrite((float*)outputImage->imageData,tmp2,outputImage->width,outputImage->height);
+     // cvSet(outputImage,cvScalar(-1.0));
+   //   if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,basepath.c_str(),"ppm",jpegQuality)){
+
+       string proj4=getProj4StringForAUVFrame(lat,lon);
+       osg::Vec4 a_ullr;
+       getULLR(viewProjRead,sizeX,sizeY,a_ullr);
+
+       char filename[4096];
+       sprintf(filename,"mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif",row,col,_tileRows,_tileColumns);
+
+       TiffWrite((float*)maskedRes.data(),filename,res.Xsize(),res.Ysize(),proj4,a_ullr);
+        /* res=res/60.0;
+        res.falsecolour().write("/tmp/ball.v");return 0;
         IMAGE * rgbI=im_open("tmp","p");
-        im_extract_bands(outputImage[0],rgbI,0,3);
+        im_extract_bands(res.image(),rgbI,0,3);
         IMAGE * joinedMask=im_open("tmp7","p");
         IMAGE *arr[]={invMask,invMask,invMask};
         im_gbandjoin(arr,joinedMask,3);
@@ -1135,7 +1202,8 @@ int main(int ac, char *av[]) {
 
         im_close(joinedMask);
         im_close(maskBand);
-        im_close(rgbI);
+        im_close(rgbI);*/
+        //im_close(varI);
 
         /*  vips::VImage maskI(tmpI);
         vips::VImage dilatedI(tmpI);
@@ -1148,7 +1216,7 @@ int main(int ac, char *av[]) {
 
         maskI.more(1.0).invert().andimage(dilatedI.dilate(mask)).write("wa.ppm");
         (maskI.more(1.0).invert().andimage(dilatedI.dilate(mask))).add(maskI).write("total.png");*/
-        im_close(finalI);
+     //   im_close(finalI);
 
             /*int levels=(int)ceil(log( max( sizeX, sizeY ))/log(2.0) );
         if(pyramid){ if(!genPyramid(osgDB::getNameLessExtension(imageName)+".tif",levels,"ppm")){
@@ -1164,7 +1232,8 @@ int main(int ac, char *av[]) {
         process_mem_usage(vm, rss);
         cout << "VM: " << get_size_string(vm) << "; RSS: " << get_size_string(rss) << endl;
         for(int i=0; i<passesFlatRemap; i++)
-            im_close(outputImage[pass]);
+            im_close(outputImage[i]);
+      #if 0
         if(applyGeoTags(osgDB::getNameLessExtension(imageName)+".tif",osg::Vec2(lat,lon),viewProjRead,sizeX,sizeY,basepath,"ppm",jpegQuality)){
             /* if( remove((osgDB::getNameLessExtension(imageName)+"-tmp.tif").c_str() ) != 0 )
                 perror( "Error deleting file" );
@@ -1172,7 +1241,7 @@ int main(int ac, char *av[]) {
                 puts( "File successfully deleted" );*/
         }
 
-
+#endif
 
         if(useDisk){
             if( remove( imageName.c_str() ) != 0 )

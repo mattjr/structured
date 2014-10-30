@@ -652,6 +652,7 @@ void generateAtlasAndTexCoordMappingFromExtentsVips(const std::vector<mosaic_cel
         }
 
         if(atlas->_atlasList.front()->_sourceList.size() < mosaic_cells.size()){
+
             fprintf(stderr,"Atlas sizes different %d %d Downsample didn't allow for one atlas FitCheck failing for some reason look there.\n",(int)atlas->_atlasList.front()->_sourceList.size() ,(int)mosaic_cells.size());
             exit(-1);
         }
@@ -731,9 +732,10 @@ void loadMosaicCells(std::string fname,int &totalX,int &totalY,std::vector<mosai
                         std::cerr << "Can't open "<<cell.name<<  " on reimaging run\n";
                         cell.img=NULL;
                     }
+                    mosaic_cells.push_back(cell);
+                }else{
+                    std::cerr << "cell filename is null" << endl;
                 }
-                mosaic_cells.push_back(cell);
-
 
             }
             cnt++;

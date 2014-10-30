@@ -31,7 +31,8 @@
 const char *thrpool="runtp_dist.py";
 const char *serfile="localserver";
 
-void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds,int thread_override,string custom){
+void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const vector<string> *precmds , const vector<string> *postcmds,int thread_override,string custom,bool skipJob){
+
     FILE *fp=fopen(filename.c_str(),"w");
     if(!fp){
         fprintf(stderr,"Can't open %s\n",filename.c_str());
@@ -42,32 +43,35 @@ void ShellCmd::write_generic(string filename,string cmdfile,string cmdname,const
     fprintf(fp,"import os\n");
     fprintf(fp,"import setupts\n");
     fprintf(fp,"setupts.setup(os)\n");
-    fprintf(fp,"print 'Running %s...'\n",cmdname.c_str());
-    fprintf(fp,"sys.stdout.flush()\n");
 
-    int loc_num_threads=num_threads;
-    if(thread_override >0)
-        loc_num_threads=thread_override;
-    if(precmds){
-        for(int i=0; i< (int)precmds->size(); i++)
-            fprintf(fp,"os.system('%s')\n",(*precmds)[i].c_str());
-    }
-    string path=osgDB::getFilePath(filename);
-    path = path.size() == 0 ? "." : path;
-    string loc_file = (path +"/"+string(serfile));
+    if (!skipJob) {
+        fprintf(fp,"print 'Running %s...'\n",cmdname.c_str());
+        fprintf(fp,"sys.stdout.flush()\n");
 
-    if(!osgDB::fileExists(loc_file)){
-        FILE *ffp=fopen(loc_file.c_str(),"w");
-        fprintf(ffp,"LOCAL %d\n",loc_num_threads);
-        fclose(ffp);
-    }
-    if(cmdfile.size() != 0){
-       fprintf(fp,"os.system(setupts.basepath +'/%s %s %s %s')\n",
-                thrpool,cmdfile.c_str(),loc_file.c_str(),cmdname.c_str());
-    }
-    if(postcmds){
-        for(int i=0; i<(int) postcmds->size(); i++)
-            fprintf(fp,"os.system('%s')\n",(*postcmds)[i].c_str());
+        int loc_num_threads=num_threads;
+        if(thread_override >0)
+            loc_num_threads=thread_override;
+        if(precmds){
+            for(int i=0; i< (int)precmds->size(); i++)
+                fprintf(fp,"os.system('%s')\n",(*precmds)[i].c_str());
+        }
+        string path=osgDB::getFilePath(filename);
+        path = path.size() == 0 ? "." : path;
+        string loc_file = (path +"/"+string(serfile));
+
+        if(!osgDB::fileExists(loc_file)){
+            FILE *ffp=fopen(loc_file.c_str(),"w");
+            fprintf(ffp,"LOCAL %d\n",loc_num_threads);
+            fclose(ffp);
+        }
+        if(cmdfile.size() != 0){
+            fprintf(fp,"os.system(setupts.basepath +'/%s %s %s %s')\n",
+                    thrpool,cmdfile.c_str(),loc_file.c_str(),cmdname.c_str());
+        }
+        if(postcmds){
+            for(int i=0; i<(int) postcmds->size(); i++)
+                fprintf(fp,"os.system('%s')\n",(*postcmds)[i].c_str());
+        }
     }
     fprintf(fp,"%s\n",custom.c_str());
 

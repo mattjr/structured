@@ -4,6 +4,7 @@ depthmap
 blendincore
 build/
 calcTexCoord
+calcTexCoordDidson
 createSem
 deepzoomVIPS
 dicedImage

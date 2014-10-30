@@ -229,3 +229,9 @@ the image rotation angle is 45°.
 ![Gis Angle](https://github.com/mattjr/structured/raw/master/GIS_angle.png "GIS Angle")
 
 
+## Using Manually-aligned CAD model as mesh
+
+1. Align the CAD model to a the same frame as the stereo_pose_est file. 
+2. Ensure that the face normals are pointed towards the exterior of the surface. 
+3. Remesh the surface to have ~7cm vertex resolution. For instance, use the midpoint resampling method in meshlab.
+4. Pass the '--manual_total_ply <remeshed-cad-file>' option to threadedStereo to use this instead of vrip-ing the individual stereo-derived surfaces

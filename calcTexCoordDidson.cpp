@@ -30,7 +30,7 @@
 #include <osg/ComputeBoundsVisitor>
 #include "PLYWriterNodeVisitor.h"
 #include "TexturedSource.h"
-#include "TexturingQuery.h"
+#include "TexturingQueryDidson.h"
 #include "Extents.h"
 #include "calcTexCoord.h"
 #include "calibFile.h"
@@ -247,7 +247,9 @@ int main( int argc, char **argv )
         tile->_atlasGen->_useAtlas=useAtlas;
         tile->_atlasGen->_useStub=false;
 
-        TexturingQuery *tq=new TexturingQuery(sourceModel,calib.camera_calibs[0],*tile->_atlasGen,true);
+        DidsonParams didson_params ("didson-params.txt");
+        TexturingQueryDidson *tq=new TexturingQueryDidson(sourceModel,calib.camera_calibs[0],*tile->_atlasGen,true, 
+                                                          didson_params.windowStart, didson_params.windowLength);
 
         tq->_tile=tile;
         bool projectSucess=tq->projectModel(dynamic_cast<osg::Geode*>(model),tex_margin);

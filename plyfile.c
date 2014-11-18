@@ -95,7 +95,7 @@ properly to target OSs with binary files.
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "ply.h"
+#include "fply.h"
 
 char *type_names[] = {
 "invalid",

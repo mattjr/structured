@@ -165,7 +165,7 @@ IF( NOT OSG_FOUND )
   MESSAGE( FATAL_ERROR  "ERROR - Can't find OSG" )
 ENDIF( NOT OSG_FOUND )
 
-pkg_check_modules( VIPS vips-7.26 )
+pkg_check_modules( VIPS vips)
 # UF
 SET( UF_LIBRARY ufGeographicConversions ufGPSParser )
 
@@ -212,6 +212,7 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/include
 		     ${OPENGL_INCLUDE_DIR}
                      ${VIPS_INCLUDE_DIRS}
                      trimesh2/
+		     .
                      ann/include/
                     spatialindex-src-1.6.1/src spatialindex-src-1.6.1/include
                      "/opt/local/include"

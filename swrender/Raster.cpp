@@ -17,6 +17,7 @@
 #include "Raster.h"
 #include <stdlib.h>
 #include <algorithm>
+#include <cmath>
 #include <osg/io_utils>
 #define RA_EPSILON		0.00001f
 

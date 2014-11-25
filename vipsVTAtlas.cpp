@@ -70,6 +70,10 @@ int main( int argc, char **argv )
 
     vips_init(argv[0]);
 #endif
+    int th=im_concurrency_get();
+    if(th > 8)
+        th=8;
+    im_concurrency_set(th);
     loadMosaicCells(mosaic_cells_fname,totalX,totalY,mosaic_cells);
 
     osg::Matrix viewProj;

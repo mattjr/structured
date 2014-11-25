@@ -641,7 +641,8 @@ static bool parse_args( int argc, char *argv[ ] )
     }
     if(argp.find("--fill_nonsalient_keyframes"))
         fill_nonsalient_keyframes=true;
-    if(argp.find("--sonar")) {
+    if(argp.find("--sonar") != -1) {
+      std::cout << "Sonar mode enabled!\n" << " "<< argp.find("--sonar")<<"\n";
         sonar_mode=true;
         run_stereo=false;
         fill_nonsalient_keyframes=true;

@@ -114,12 +114,13 @@ std::string WriteBoundVRIP::getPostCmds( CellDataT<Stereo_Pose_Data>::type &vol,
             cur->volIdx[0],cur->volIdx[1],cur->volIdx[2]);
     }
     fclose(fp2);
+    char presplit[8192];
+    sprintf(presplit,"\nos.system(setupts.basepath +'/%s %s %s %s')\n",
+            thrpool,cmdfile.c_str(),serfile,"Presplit");
     if (skip_total_gen) {
-        sprintf(tmp,"\nos.system(setupts.basepath +'/%s %s %s %s')\n",
-                thrpool,cmdfile.c_str(),serfile,"Presplit");
-        return tmp;
+        return presplit;
     }
-    return createFileCheckPython(cmdpost.str(),_cwd+"/"+diced_dir,allmeshes,output.str(),4)+tmp;
+    return createFileCheckPython(cmdpost.str(),_cwd+"/"+diced_dir,allmeshes,output.str(),4)+presplit;
 
 }
 bool WriteBoundVRIP::write_cmd(Cell_Data<Stereo_Pose_Data> cell){

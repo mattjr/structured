@@ -3212,7 +3212,7 @@ double totalValidArea=0;
             "convert color.tif "\
             "-compose soft-light hillshade.tif -composite "\
             " -compose multiply slope_render.tif -composite "\
-            " relief.tif\n");
+            " TIFF64:relief.tif\n");
     fchmod(fileno(FP5),0777);
     /*fprintf(FP5,"#!/bin/bash\n%s/rangeimg  mesh-diced/vis-total.ply mesh-diced/totalbbox.txt --size %d %d -calib %s\n",
             basepath.c_str(),
@@ -3811,9 +3811,9 @@ double totalValidArea=0;
     }
 
     char zipstr[1024];
-    sprintf(zipstr,"7z a -r -sfx7z.sfx mesharchive.7z.exe mesh/ -m0=lzma2 -mmt%d -mx9",num_threads);
+    sprintf(zipstr,"7z a -r archive/mesh.7z mesh/ -m0=lzma2 -mmt%d -mx9 -v250m\n7z a -r archive/mosaic.7z mosaic/ -m0=lzma2 -mmt%d -mx9 -v250m",num_threads);
     FILE *zfp=fopen("zip.sh","w");
-    fprintf(zfp,"#!/bin/bash\n%s\n",zipstr);
+    fprintf(zfp,"#!/bin/bash\nmkdir archive\n%s\n",zipstr);
     fclose(zfp);
 
 

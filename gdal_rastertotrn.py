@@ -4,7 +4,7 @@ import sys
 import numpy as np
 from osgeo import gdal
 
-def write_ply(filename, coordinates, triangles, binary=True):
+def write_ply(filename, coordinates, triangles, uv,binary=True):
     template = "ply\n"
     if binary:
         template += "format binary_" + sys.byteorder + "_endian 1.0\n"
@@ -16,6 +16,7 @@ property float y
 property float z
 element face {nfaces:n}
 property list int int vertex_index
+property list uchar float texcoord
 end_header
 """
 
@@ -38,7 +39,12 @@ end_header
         with  open(filename,'w') as outfile:
             outfile.write(template.format(**context))
             np.savetxt(outfile, coordinates, fmt="%.3f")
-            np.savetxt(outfile, triangles, fmt="3 %i %i %i")
+            for i in range(0,triangles.shape[0]):
+                str = '3 %i %i %i ' % tuple(triangles[i,:])
+                str += '6 %f %f %f %f %f %f\n' %tuple(uv[triangles[i,:]].ravel())
+#                print str
+                outfile.write(str)
+#            np.savetxt(outfile, np.hstack((triangles,uv)), fmt="3 %i %i %i 6 %f %f %f %f %f %f")
 
 def write_obj(filename, vertices, triangles, uv=None):
     with  open(filename,'w') as outfile:
@@ -69,14 +75,14 @@ def createvertexarray(raster):
     y = np.arange(0, height) * transform[5] + transform[3]
     xx, yy = np.meshgrid(x, y)
     zz = raster.ReadAsArray()
-    print nodata
+#    print nodata
     
     vertices = np.vstack((xx,yy,zz)).reshape([3, -1]).transpose()
     vertices[vertices == nodata] = np.nan
     mask= ~np.isnan(vertices).any(1)
-    print vertices.shape,mask.shape
+#    print vertices.shape,mask.shape
     
-    print np.count_nonzero(mask)
+#    print np.count_nonzero(mask)
    # print vertices[mask,:].shape,mask
     #vertices=vertices[mask,:]
     return vertices,mask
@@ -121,16 +127,16 @@ def main(argv):
   #  print triangles.shape,mask.shape
     #triangles= triangles[np.dstack((mask,mask)),:]
    # print triangles.shape,mask.shape
-    print mask.shape,triangles.shape
+#    print mask.shape,triangles.shape
     triangles_vals = ~np.isnan(np.take(vertices[:,2],triangles))
-    print triangles_vals.shape,triangles.shape
+#    print triangles_vals.shape,triangles.shape
     triangles = triangles[np.where(np.all(triangles_vals,axis=1))]
-    print triangles_vals.shape,triangles.shape
+#    print triangles_vals.shape,triangles.shape
     vertices[np.isnan(vertices)] = 0.0
 
     uv = createuvarray(raster)
-    write_obj(outputfile, vertices, triangles,uv)
-    #write_ply(outputfile, vertices, triangles, binary=True)
+    #write_obj(outputfile, vertices, triangles,uv)
+    write_ply(outputfile, vertices, triangles, uv,binary=False)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

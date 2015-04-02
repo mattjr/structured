@@ -27,7 +27,7 @@ except:		print_exit("Error: Python Imaging Library or later not found")
 
 f = sys.argv[len(sys.argv) - 1]
 try:
-	im = Image.open(f)
+	im = Image.open(f).convert('RGB')
 	for i in range(1, len(sys.argv) - 1):
 		if sys.argv[i].startswith("-t="):	tileSize = int(sys.argv[i][3:])
 		elif sys.argv[i].startswith("-f="):	format = sys.argv[i][3:]

@@ -72,12 +72,14 @@ def createvertexarray(raster):
         nodata=255
 
     metric_width=100.0
+    metric_scale=metric_width/float(width)
+    final_scale=metric_scale/transform[1]
     x = np.linspace(-(metric_width/2.0),(metric_width/2.0),num=width) 
     y = np.linspace(-(metric_width/2.0),(metric_width/2.0),num=height) 
 #    x = np.arange(0, width) * transform[1] + transform[0]
 #    y = np.arange(0, height) * transform[5] + transform[3]
     xx, yy = np.meshgrid(x, y)
-    zz = raster.ReadAsArray()
+    zz = raster.ReadAsArray()*final_scale
 #    print nodata
     
     vertices = np.vstack((xx,yy,zz)).reshape([3, -1]).transpose()

@@ -71,8 +71,11 @@ def createvertexarray(raster):
     if nodata is None:
         nodata=255
 
-    x = np.arange(0, width) * transform[1] + transform[0]
-    y = np.arange(0, height) * transform[5] + transform[3]
+    metric_width=100.0
+    x = np.linspace(-(metric_width/2.0),(metric_width/2.0),num=width) 
+    y = np.linspace(-(metric_width/2.0),(metric_width/2.0),num=height) 
+#    x = np.arange(0, width) * transform[1] + transform[0]
+#    y = np.arange(0, height) * transform[5] + transform[3]
     xx, yy = np.meshgrid(x, y)
     zz = raster.ReadAsArray()
 #    print nodata

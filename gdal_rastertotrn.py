@@ -40,7 +40,7 @@ end_header
             outfile.write(template.format(**context))
             np.savetxt(outfile, coordinates, fmt="%.3f")
             for i in range(0,triangles.shape[0]):
-                str = '3 %i %i %i ' % tuple(triangles[i,:])
+                str = '3 %i %i %i ' % tuple(triangles[i,:][::-1])
                 str += '6 %f %f %f %f %f %f\n' %tuple(uv[triangles[i,:]].ravel())
 #                print str
                 outfile.write(str)

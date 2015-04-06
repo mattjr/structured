@@ -21,7 +21,7 @@ format = "bmp"
 def print_exit(s): print s;	sys.exit()
 
 
-try:		import Image
+try:		from PIL import Image
 except:		print_exit("Error: Python Imaging Library or later not found")
 
 

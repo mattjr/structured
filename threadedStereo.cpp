@@ -1394,8 +1394,9 @@ double totalValidArea=0;
         double max_triangulation_len =  max_alt > 0.0 ? max_alt*3 : edgethresh * 20;
 #pragma omp parallel num_threads(num_threads)
         if(run_stereo){
+	  cv::setNumThreads(0);
             StereoEngine engine(*calib,*recon_config_file,edgethresh,max_triangulation_len,max_feature_count, lodTexSize[0],mutex,use_dense_stereo,pause_after_each_frame);
-            cvSetNumThreads(1);
+	    cv::setNumThreads(0);
 #pragma omp for
             for(int i=0; i < (int)tasks.size(); i++){
                 MatchStats stats;

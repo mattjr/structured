@@ -149,5 +149,5 @@ typedef uchar byte;
 
 /* Stop using this? */
 /*typedef int Bool;*/
-
+#define USE_INTERP_RESULT 1
 #endif

@@ -907,6 +907,7 @@ int main(int ac, char *av[]) {
             }
         }
         //  return 0;
+
         for(int i=0; i<passesFlatRemap; i++){
             if(!blending){
                 g[i]->vertex_shader<VertexShader>();
@@ -921,6 +922,7 @@ int main(int ac, char *av[]) {
         }
 
 
+        if(blending){
 
         for(int i=0;i <passesFlatRemap; i++){
 
@@ -975,9 +977,12 @@ int main(int ac, char *av[]) {
 
         }
 
+
         if(sizeI){
             delete sizeI;
         }
+
+    }
         unsigned int total_tri_count=0,count=0;
         for( map<int,vector<ply::tri_t> >::iterator itr=vertexData[ORIG_MAPPING]._img2tri.begin(); itr!=vertexData[ORIG_MAPPING]._img2tri.end(); itr++)
             total_tri_count+=itr->second.size();
@@ -1015,7 +1020,11 @@ int main(int ac, char *av[]) {
                 viSamp.regOutput=regOutput[i];
                 viSamp.regRange=regRange[i];
                 viSamp.doublecountmapPtr =&(doublecountmap[i]);
-                viSamp.texture =textureMipMap;
+                if(blending)
+                     viSamp.texture =textureMipMap;
+                else
+                    viSamp.texture_no_mm =texture;
+
                 for(int t=0; t< (int)itr->second.size(); t++){
                     if(i==0){
                         if(count % 300 == 0){
@@ -1039,9 +1048,15 @@ int main(int ac, char *av[]) {
                         mapping=ORIG_MAPPING;
                         proj=&viewProjRead;
                     }
+
                     if(process_tri_new(itr->second[t],vertexData[mapping]._vertices,vertexData[mapping]._texCoord,blending,sizeX,sizeY,viSamp,sData,proj)){
-                        Raster::drawTriangle(aliasing, texSize, sData.positions,sData.texcoords,
+                     {   if(blending)
+                            Raster::drawTriangle(aliasing, texSize, sData.positions,sData.texcoords,
                                              VipsSampler::renderBlendedTriCallback, &viSamp);
+                        else
+                                Raster::drawTriangle(aliasing, texSize, sData.positions,sData.texcoords,
+                                                 VipsSampler::renderTriCallback, &viSamp);
+                    }
                     }
                 }
             }

@@ -245,6 +245,13 @@ struct Texture {
 
         return sample;
     }
+    osg::Vec3 sample_nearest_vec(float x, float y) const{
+        osg::Vec3 tmp;
+        Spectrum c =mipmapTex->triangle(0,x,y);
+        c.toLinearRGB(tmp[0],tmp[1],tmp[2]);
+
+         return tmp;
+     }
 };
 
 class  TextureMipMap: public Texture {
@@ -264,6 +271,14 @@ public:
         osg::Vec3 c=sample_nearest(x,y,0);
         res= (unsigned char)(c[0]*255) | (unsigned char)(c[1]*255) << 8 | (unsigned char)(c[2]*255) << 16 | 255 << 24;
         return res;
+    }
+
+   osg::Vec3 sample_nearest_vec(float x, float y) const{
+        int res;
+
+        osg::Vec3 c=sample_nearest(x,y,0);
+
+        return c;
     }
     ~TextureMipMap()
     {

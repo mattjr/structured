@@ -1157,6 +1157,11 @@ int main(int ac, char *av[]) {
         vips::VImage rangeI(rangeImage[0]);
 
 
+        char filename[4096];
+        for(int k=0; k < 4; k++){
+           sprintf(filename,"tmp/mesh-img/map-%d-var_r%04d_c%04d_rs%04d_cs%04d.pgm",k,row,col,_tileRows,_tileColumns);
+           varI.extract_band(k).write(filename);
+        }
 
         vips::VImage meanI=varI.bandmean();
 
@@ -1176,9 +1181,8 @@ int main(int ac, char *av[]) {
        osg::Vec4 a_ullr;
        getULLR(viewProjRead,sizeX,sizeY,a_ullr);
 
-       char filename[4096];
+       //char filename[4096];
        sprintf(filename,"mosaic/var_r%04d_c%04d_rs%04d_cs%04d.tif",row,col,_tileRows,_tileColumns);
-
        TiffWrite((float*)maskedRes.data(),filename,res.Xsize(),res.Ysize(),proj4,a_ullr);
         /* res=res/60.0;
         res.falsecolour().write("/tmp/ball.v");return 0;

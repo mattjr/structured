@@ -1,3 +1,4 @@
+
 /* module: strings.h */
 
 /* @(#)strings.h	1.25 */

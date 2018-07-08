@@ -20,7 +20,7 @@ CONCERNING THIS SOFTWARE.  No support is implied or provided.
 
 
 #include <tcl.h>
-#include <DepthMap.h>
+#include "DepthMap.h"
 
 int Vrip_PhotoSliceCmd(ClientData, Tcl_Interp *interp, 
 		      int argc, const char *argv[]);

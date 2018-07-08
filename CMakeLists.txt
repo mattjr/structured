@@ -12,7 +12,7 @@ PROJECT(threadedStereo)
 SET(THREADED_STEREO_LIB "ts")
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
-
+set(CMAKE_CXX_STANDARD 98)
 # This can removed if the required cmake version is increased to 2.6
 IF(COMMAND CMAKE_POLICY)
   CMAKE_POLICY(SET CMP0003 NEW)
@@ -30,6 +30,7 @@ include(ExternalProject)
 FIND_PACKAGE( OpenCV REQUIRED )
 pkg_check_modules(GOBJ REQUIRED gobject-2.0)
 pkg_check_modules(GLIB2 REQUIRED  glib-2.0)
+pkg_check_modules(ZLIB REQUIRED zlib)
 set(OSG_COMPONENTS osg osgUtil osgViewer osgGA osgManipulator osgText osgDB)
 find_package(OpenSceneGraph REQUIRED COMPONENTS ${OSG_COMPONENTS})
 #GDAL
@@ -57,19 +58,12 @@ ENDIF(INSOURCE)
 #   eg. cmake . -DCMAKE_BUILD_TYPE=Release -DDEBUG_PROFILING=on
     
 
-# Build types are: Release, Debug, RelWithDebInfo, MinSizeRel
-IF( NOT CMAKE_BUILD_TYPE )
- SET( CMAKE_BUILD_TYPE Release )  
-ENDIF( NOT CMAKE_BUILD_TYPE )
 
 
 #-----------------------#
 # Installation Options  #
 #-----------------------#
 
-IF( NOT CMAKE_INSTALL_PREFIX )
-   SET( CMAKE_INSTALL_PREFIX "/usr/local" )
-ENDIF( NOT CMAKE_INSTALL_PREFIX )
 
 IF(USE_AUV_FOR_STEREO)
 message("Using AUV Code for Stereo")
@@ -352,7 +346,6 @@ stereo_dense.cpp
 image_rect.cpp
    ANNWrapper.cpp             
 )
-ADD_DEFINITIONS( "-g")
 ADD_LIBRARY( ${THREADED_STEREO_LIB} STATIC ${SRCS} ${SPINDEX_SRC})
 TARGET_LINK_LIBRARIES (${THREADED_STEREO_LIB} ${THREADED_STEREO_LIB}-sonar)
 ADD_EXECUTABLE( ${CMAKE_PROJECT_NAME} threadedStereo.cpp ShellCmd.cpp )
@@ -386,7 +379,7 @@ ADD_EXECUTABLE(genOverlappingPoses genOverlappingPoses.cpp)
 
 #ADD_EXECUTABLE(temp temp.cpp)
 TARGET_LINK_LIBRARIES( genOverlappingPoses ${THREADED_STEREO_LIB} )
-SET(OGF_LIBS basic math  cells  numeric_stuff image z  m )
+SET(OGF_LIBS basic math  cells  numeric_stuff image ${ZLIB_LIBRARIES} )
 LINK_LIBRARIES(osgTerrain  osgFX osg  spindex vips vipsCC)
 TARGET_LINK_LIBRARIES( ${CMAKE_PROJECT_NAME} ${THREADED_STEREO_LIB}  vips vipsCC vpb spindex  ${THREADED_STEREO_LIB}-sonar ${OGF_LIBS})
 #TARGET_LINK_LIBRARIES( engine ${THREADED_STEREO_LIB}  vips vipsCC vpb spindex)
@@ -412,10 +405,10 @@ TARGET_LINK_LIBRARIES( calcTexCoordDidson ${THREADED_STEREO_LIB} spindex vpb vip
 
 TARGET_LINK_LIBRARIES( singleImageTex ${THREADED_STEREO_LIB} spindex vpb vips vipsCC  ${OGF_LIBS})
 TARGET_LINK_LIBRARIES( borderClip ${THREADED_STEREO_LIB} spindex )
-TARGET_LINK_LIBRARIES( dumpPCD vips vipsCC ${THREADED_STEREO_LIB} z)
+TARGET_LINK_LIBRARIES( dumpPCD vips vipsCC ${THREADED_STEREO_LIB} ${ZLIB_LIBRARIES})
 
-TARGET_LINK_LIBRARIES( dicedImage vips vipsCC ${THREADED_STEREO_LIB} z)
-TARGET_LINK_LIBRARIES( sparseJoin vips vipsCC ${THREADED_STEREO_LIB} z)
+TARGET_LINK_LIBRARIES( dicedImage vips vipsCC ${THREADED_STEREO_LIB} ${ZLIB_LIBRARIES})
+TARGET_LINK_LIBRARIES( sparseJoin vips vipsCC ${THREADED_STEREO_LIB} ${ZLIB_LIBRARIES})
 
 #TARGET_LINK_LIBRARIES( threshold ${THREADED_STEREO_LIB} )
 

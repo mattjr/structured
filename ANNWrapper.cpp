@@ -1,5 +1,4 @@
 #include "ANNWrapper.h"
-
 ANNWrapper::ANNWrapper()
 {
 	m_anything_to_free = false;

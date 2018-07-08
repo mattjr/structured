@@ -4,6 +4,7 @@
 #configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 include(CheckIncludeFile)
+include(CheckFunctionExists)
 
 check_function_exists (getopt_long  HAVE_GETOPT_LONG)
 check_function_exists (getpagesize  HAVE_GETPAGESIZE)

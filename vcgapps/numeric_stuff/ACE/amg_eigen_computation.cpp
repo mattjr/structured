@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <iostream>
 #include <malloc.h>
 #include <time.h>
 #include "defs.h"
@@ -11,7 +12,6 @@
 #include "coarsen_amg.h"
 #include "coarsen_match.h"
 #include "RQI/rqi.h"
-#include <iostream>
 
 
 /********************************************

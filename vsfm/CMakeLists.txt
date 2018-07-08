@@ -1,4 +1,6 @@
 set(LIB_DIR ${PROJECT_SOURCE_DIR}/vsfm/lib/)
-FIND_PACKAGE(GTK2 REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(x11 REQUIRED IMPORTED_TARGET x11)
+pkg_check_modules(gtk2 REQUIRED IMPORTED_TARGET gtk+-2.0)
 add_executable(VisualSFM dummy.c)
-TARGET_LINK_LIBRARIES(VisualSFM ${LIB_DIR}/VisualSFM.a  ${LIB_DIR}/lapack.a  ${LIB_DIR}/blas.a ${LIB_DIR}/libf2c.a ${LIB_DIR}/libjpeg.a ${GTK2_LIBRARIES} gthread-2.0)
+TARGET_LINK_LIBRARIES(VisualSFM ${LIB_DIR}/VisualSFM.a  ${LIB_DIR}/lapack.a  ${LIB_DIR}/blas.a ${LIB_DIR}/libf2c.a ${LIB_DIR}/libjpeg.a ${GTK2_LIBRARIES} gthread-2.0 PkgConfig::x11 PkgConfig::gtk2)

@@ -1,0 +1,11 @@
+#+title: Requirements
+#+description: build requirements for structured
+#+keywords: build, dependencies, requirements
+#+language: en
+#+author: Charles Barto
+
+This file lists working versions of required libraries,
+other versions may also work
+
++ opencv 2.4
++ OpenSceneGraph 3.2

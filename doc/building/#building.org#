@@ -1,0 +1,20 @@
+First build requirements listed in [[file:requirements.org]].
+
+#+title: Building
+#+begin_src fish
+  mkdir builddir
+  cd builddir
+  cmake -DCMAKE_PREFIX_PATH=$HOME/.local -GNinja ..
+  cmake --build .
+#+end_src
+
+
+*** notes
+
+There's a lot of "legacy" linking in the cmake files, that is linking a library like:
+#+BEGIN_SRC cmake
+target_link_libraries(whatever osg)
+#+END_SRC
+where osg is not a cmake target. This causes -losg to be added to the compiler command line,
+which can cause unexpected symbol search issues. You can set the environment variable ~LIBRARY_PATH~ to
+work around this
